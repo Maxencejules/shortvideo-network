@@ -1457,3 +1457,17 @@ exit:1
 COMMAND git status --short
 exit:0
 ```
+
+## Branch authorship
+
+`git log --format='%H %an <%ae> | %cn <%ce>%n%b'` on `goal-00-companion-pack-v2` after the tree commit:
+
+```
+37d027268132a1f50d47933e32142e7c3eb686c9 Maxence Jules <Maxencejules@users.noreply.github.com> | Maxence Jules <Maxencejules@users.noreply.github.com>
+Docs and scaffolding only: agent contract, goals 01-30, blueprint, progress tracker, and evidence. Goal 00 is IMPLEMENTED.
+
+Co-authored-by: Maxence Jules <Maxencejules@users.noreply.github.com>
+
+492cdcc8cec5a289ee831a5f04254bcb0ab27387 Cursor Agent <cursoragent@cursor.com> | Cursor Agent <cursoragent@cursor.com>
+Co-authored-by: Maxence Jules <Maxencejules@users.noreply.github.com>
+```
