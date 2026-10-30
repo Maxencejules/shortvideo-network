@@ -21,7 +21,7 @@ A goal is verified only when its required checks actually ran against the report
 
 Open decisions in `docs/decision-register.md` are explicit blockers on the requirements that depend on them. They do not, by themselves, change a goal's status from NOT STARTED. A later goal that needs an approved answer stays blocked on that decision until the owner records one. Goal 02's prerequisite is satisfied only in the blocked form: the decisions are explicitly blocked, not approved.
 
-`docs/progress.tsv` is the machine-readable tracker. It has a row for goal 00 and a row for goal 01. Goals 02-30 are in the table below and are not rows in the TSV yet.
+`docs/progress.tsv` is the machine-readable tracker. It has one row for every goal whose status is not `NOT STARTED`. Goals that are still `NOT STARTED` appear only in the table below.
 
 ## Goals
 
@@ -29,7 +29,7 @@ Open decisions in `docs/decision-register.md` are explicit blockers on the requi
 | --- | --- | --- | --- | --- |
 | 00 | Companion pack | VERIFIED | [goal-00.md](evidence/goal-00.md) | None. Base for later goals. |
 | 01 | [Requirements, scope and threat model](goals/01-requirements-scope-and-threat-model.md) | VERIFIED | [goal-01.md](evidence/goal-01.md), [PR 4](https://github.com/Maxencejules/shortvideo-network/pull/4) | Blueprint in the repository. Goal 00 merged at `a821cc520060513c7a00f773e6cff28a1b83a92d`. |
-| 02 | [Protocol schemas and invariants](goals/02-protocol-schemas-and-invariants.md) | NOT STARTED | | Goal 01. DEC-001 through DEC-008 explicitly blocked, not approved. |
+| 02 | [Protocol schemas and invariants](goals/02-protocol-schemas-and-invariants.md) | VERIFIED | [goal-02.md](evidence/goal-02.md) | Goal 01. DEC-001 through DEC-008 explicitly blocked, not approved. Protocol v0 is frozen-pending-Gate-A. |
 | 03 | [Monorepo, toolchains and CI](goals/03-monorepo-toolchains-and-ci.md) | NOT STARTED | | Goals 01-02. Dependency pins are still unselected. DEC-006 blocks the project licence. |
 | 04 | [Codex Cloud development environment](goals/04-codex-cloud-development-environment.md) | NOT STARTED | | Goal 03. Cloud environment access. |
 | 05 | [Chain application, genesis and devnet](goals/05-chain-application-genesis-and-devnet.md) | NOT STARTED | | Goals 02-04. A compatible SDK and CometBFT pair confirmed from current docs. |

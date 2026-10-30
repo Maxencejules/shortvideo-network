@@ -1,0 +1,37 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SVN client API v0",
+    "version": "0",
+    "description": "Draft contract. Login is not a chain signature. A broadcast acknowledgement is not committed success. Public launch: DISABLED. There is no public sign-up route."
+  },
+  "paths": {
+    "/upload-intents": {
+      "post": {
+        "operationId": "createUploadIntent",
+        "responses": {"202": {"description": "requested, not committed"}, "403": {"description": "quota or decision blocked"}}
+      }
+    },
+    "/uploads/{upload_id}": {
+      "get": {
+        "operationId": "getUpload",
+        "responses": {"200": {"description": "requested, submitted, committed, or failed"}}
+      }
+    },
+    "/publish": {
+      "post": {
+        "operationId": "publish",
+        "responses": {"409": {"description": "publication is separate from the hosting obligation"}, "403": {"description": "DEC-003 or DEC-006 blocked"}}
+      }
+    },
+    "/feeds": {"get": {"operationId": "getFeeds", "responses": {"200": {"description": "public records only"}}}},
+    "/reports": {"post": {"operationId": "createReport", "responses": {"202": {"description": "report accepted off chain"}}}},
+    "/removal": {"post": {"operationId": "requestRemoval", "responses": {"202": {"description": "removal requested; ledger history remains"}}}},
+    "/exports": {"get": {"operationId": "exportAccount", "responses": {"403": {"description": "DEC-001 and DEC-004 block the export promise"}}}}
+  },
+  "components": {
+    "securitySchemes": {
+      "accountSession": {"type": "http", "scheme": "bearer", "description": "Off-chain login session. Not a Cosmos key."}
+    }
+  }
+}

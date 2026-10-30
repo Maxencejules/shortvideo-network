@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// DEC-001 through DEC-008 are OPEN. No field below approves them.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.leases.v1;
+
+import "svn/leases/v1/state.proto";
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1;leasesv1";
+
+// Genesis offers and leases are empty.
+message GenesisState {
+  repeated Offer offers = 1;
+  repeated Lease leases = 2;
+}

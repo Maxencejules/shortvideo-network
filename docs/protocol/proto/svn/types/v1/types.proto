@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// DEC-001 through DEC-008 are OPEN. No field below approves them.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.types.v1;
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1;typesv1";
+
+// DigestAlgorithm. Zero and any unknown value must be rejected.
+// Protocol v0 accepts only SHA-256. value length is digest_bytes (32).
+enum DigestAlgorithm {
+  DIGEST_ALGORITHM_UNSPECIFIED = 0;
+  DIGEST_ALGORITHM_SHA256 = 1;
+}
+
+message Digest {
+  DigestAlgorithm algorithm = 1;
+  // bound: digest_bytes=32
+  bytes value = 2;
+}
+
+// ErrorCode. Zero is not a failure code. ABCI success remains 0.
+// UNSPECIFIED must never be returned. Idempotent success uses ABCI 0.
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_UNAUTHORIZED = 1;
+  ERROR_CODE_FORBIDDEN = 2;
+  ERROR_CODE_REPLAY = 3;
+  ERROR_CODE_DUPLICATE_ID = 4;
+  ERROR_CODE_STALE_VERSION = 5;
+  ERROR_CODE_EXPIRED = 6;
+  ERROR_CODE_MALFORMED = 7;
+  ERROR_CODE_UNKNOWN_FIELD = 8;
+  ERROR_CODE_OUT_OF_RANGE = 9;
+  ERROR_CODE_OVERFLOW = 10;
+  ERROR_CODE_UNDERFLOW = 11;
+  ERROR_CODE_WRONG_DOMAIN = 12;
+  ERROR_CODE_CAPACITY = 13;
+  ERROR_CODE_CONFLICT = 14;
+  ERROR_CODE_WITHDRAWN = 15;
+  ERROR_CODE_NOT_FOUND = 16;
+  ERROR_CODE_DECISION_BLOCKED = 17;
+  ERROR_CODE_INTEGRITY = 18;
+  ERROR_CODE_BOUNDS = 19;
+  ERROR_CODE_QUORUM = 20;
+  ERROR_CODE_FEE_REJECTED = 21;
+}
+
+// BlockedDecisionParameter is the versioned slot for one OPEN decision.
+// approved must be false. value_version 0 means no approved value exists.
+message BlockedDecisionParameter {
+  // bound: decision_id in DEC-001..DEC-008
+  string decision_id = 1;
+  uint32 schema_version = 2;
+  uint32 value_version = 3;
+  bool approved = 4;
+}
+
+// DevnetTestParameter is a labeled test value. It is not an approved policy.
+// approved_policy must be false. label must be PROPOSED_TEST_PARAMETER.
+message DevnetTestParameter {
+  string label = 1;
+  string decision_id = 2;
+  bool approved_policy = 3;
+  uint64 numeric_value = 4;
+  string role_name = 5;
+  int64 delay_seconds = 6;
+}
+
+message PageRequest {
+  // bound: safety_max_page_limit=100
+  uint32 limit = 1;
+  // bound: page_key_max_bytes=64
+  bytes page_key = 2;
+}
+
+message PageResponse {
+  bytes next_page_key = 1;
+}
+
+// SignatureDomain numbers identify a domain. Verifiers compare the ASCII
+// string in docs/protocol/bounds.json, not the numeric value alone.
+enum SignatureDomain {
+  SIGNATURE_DOMAIN_UNSPECIFIED = 0;
+  SIGNATURE_DOMAIN_HOSTING_INTENT = 1;
+  SIGNATURE_DOMAIN_PROVIDER_ACCEPT = 2;
+  SIGNATURE_DOMAIN_PROVIDER_RENEW = 3;
+  SIGNATURE_DOMAIN_PROVIDER_END = 4;
+  SIGNATURE_DOMAIN_CAPABILITY = 5;
+  SIGNATURE_DOMAIN_MEDIA_MANIFEST = 6;
+  SIGNATURE_DOMAIN_EVIDENCE_ATTESTATION = 7;
+  SIGNATURE_DOMAIN_PUBLIC_RECORD = 8;
+  SIGNATURE_DOMAIN_TRANSFER_RECEIPT = 9;
+  SIGNATURE_DOMAIN_INVENTORY = 10;
+  SIGNATURE_DOMAIN_PROVIDER_DRAIN = 11;
+  SIGNATURE_DOMAIN_PROVIDER_ROTATE = 12;
+}
+
+// InnerSignature is not a Cosmos SDK transaction signature.
+// The signed bytes are domain || 0x00 || SVN-JCS-1 canonical JSON.
+message InnerSignature {
+  SignatureDomain domain = 1;
+  // bound: ed25519_public_bytes=32
+  bytes public_key = 2;
+  // bound: ed25519_signature_bytes=64
+  bytes signature = 3;
+  // bound: id_max_bytes=64
+  string key_id = 4;
+  uint32 canonical_profile_version = 5;
+}
+
+// ReconciliationRecord is the coordination residue kept after a tombstone.
+// It is not a retention period. DEC-004 does not set how long it is kept.
+message ReconciliationRecord {
+  string business_id = 1;
+  bytes tx_hash = 2;
+  string message_type = 3;
+  uint64 height = 4;
+  int64 committed_unix_seconds = 5;
+  ErrorCode result = 6;
+  string object_id = 7;
+  Digest digest = 8;
+  uint64 byte_count = 9;
+  int64 reservation_delta = 10;
+  bool idempotent = 11;
+}
+
+enum SubmitterRole {
+  SUBMITTER_ROLE_UNSPECIFIED = 0;
+  SUBMITTER_ROLE_AUTHORITY = 1;
+  SUBMITTER_ROLE_ADMITTED_SERVICE = 2;
+  SUBMITTER_ROLE_ADMITTED_PROVIDER = 3;
+  SUBMITTER_ROLE_BROADCASTER = 4;
+  SUBMITTER_ROLE_AUDITOR = 5;
+}
+
+message Submitter {
+  // bound: account_address_bytes=20
+  bytes address = 1;
+  SubmitterRole role = 2;
+}

@@ -1,0 +1,208 @@
+{
+  "profile": "SVN-JCS-1",
+  "note": "The RFC 8032 seed is a public test vector. RFC8032_TEST_VECTOR_NOT_A_SECRET. Do not use it outside these fixtures.",
+  "valid": [
+    {
+      "id": "empty-object",
+      "input_raw": "{}",
+      "canonical": "{}"
+    },
+    {
+      "id": "sort-keys",
+      "input_raw": "{\"b\":1,\"a\":2}",
+      "canonical": "{\"a\":2,\"b\":1}"
+    },
+    {
+      "id": "whitespace",
+      "input_raw": "{ \"a\" : true }",
+      "canonical": "{\"a\":true}"
+    },
+    {
+      "id": "nested",
+      "input_raw": "{\"z\":[1,{\"b\":true,\"a\":false}]}",
+      "canonical": "{\"z\":[1,{\"a\":false,\"b\":true}]}"
+    },
+    {
+      "id": "newline",
+      "input_raw": "{\"s\":\"a\\n\"}",
+      "canonical": "{\"s\":\"a\\n\"}"
+    },
+    {
+      "id": "control",
+      "input_raw": "{\"s\":\"\\u0001\"}",
+      "canonical": "{\"s\":\"\\u0001\"}"
+    },
+    {
+      "id": "unicode",
+      "input_raw": "{\"s\":\"é\"}",
+      "canonical": "{\"s\":\"é\"}"
+    },
+    {
+      "id": "slash",
+      "input_raw": "{\"s\":\"a\\/b\"}",
+      "canonical": "{\"s\":\"a/b\"}"
+    },
+    {
+      "id": "quote",
+      "input_raw": "{\"s\":\"a\\\"b\"}",
+      "canonical": "{\"s\":\"a\\\"b\"}"
+    },
+    {
+      "id": "safe-max",
+      "input_raw": "{\"n\":9007199254740991}",
+      "canonical": "{\"n\":9007199254740991}"
+    },
+    {
+      "id": "safe-min",
+      "input_raw": "{\"n\":-9007199254740991}",
+      "canonical": "{\"n\":-9007199254740991}"
+    },
+    {
+      "id": "letter-escape",
+      "input_raw": "{\"s\":\"\\u0041\"}",
+      "canonical": "{\"s\":\"A\"}"
+    },
+    {
+      "id": "zero",
+      "input_raw": "{\"n\":0}",
+      "canonical": "{\"n\":0}"
+    }
+  ],
+  "invalid": [
+    {
+      "id": "null",
+      "raw": "null",
+      "reason": "null"
+    },
+    {
+      "id": "fraction",
+      "raw": "1.5",
+      "reason": "fraction"
+    },
+    {
+      "id": "exponent",
+      "raw": "1e2",
+      "reason": "exponent"
+    },
+    {
+      "id": "leading-zero",
+      "raw": "01",
+      "reason": "leading_zero"
+    },
+    {
+      "id": "negative-zero",
+      "raw": "-0",
+      "reason": "negative_zero"
+    },
+    {
+      "id": "unsafe-integer",
+      "raw": "9007199254740992",
+      "reason": "unsafe_integer"
+    },
+    {
+      "id": "duplicate-key",
+      "raw": "{\"a\":1,\"a\":2}",
+      "reason": "duplicate_key"
+    },
+    {
+      "id": "trailing-comma",
+      "raw": "[1,]",
+      "reason": "trailing_comma"
+    },
+    {
+      "id": "bad-key",
+      "raw": "{\"\":1}",
+      "reason": "bad_key"
+    },
+    {
+      "id": "unicode-key",
+      "raw": "{\"é\":1}",
+      "reason": "bad_key"
+    }
+  ],
+  "integers": [
+    {
+      "id": "zero",
+      "decimal": "0",
+      "safe": true,
+      "uint64": true
+    },
+    {
+      "id": "safe-max",
+      "decimal": "9007199254740991",
+      "safe": true,
+      "uint64": true
+    },
+    {
+      "id": "safe-max-plus-one",
+      "decimal": "9007199254740992",
+      "safe": false,
+      "uint64": true
+    },
+    {
+      "id": "uint64-max",
+      "decimal": "18446744073709551615",
+      "safe": false,
+      "uint64": true
+    },
+    {
+      "id": "uint64-max-plus-one",
+      "decimal": "18446744073709551616",
+      "safe": false,
+      "uint64": false
+    },
+    {
+      "id": "negative",
+      "decimal": "-1",
+      "safe": true,
+      "uint64": false
+    }
+  ],
+  "arithmetic": [
+    {
+      "id": "add-ok",
+      "op": "add",
+      "a": "100",
+      "b": "23",
+      "result": "123"
+    },
+    {
+      "id": "add-overflow",
+      "op": "add",
+      "a": "18446744073709551615",
+      "b": "1",
+      "result": "overflow"
+    },
+    {
+      "id": "sub-ok",
+      "op": "sub",
+      "a": "50",
+      "b": "50",
+      "result": "0"
+    },
+    {
+      "id": "sub-underflow",
+      "op": "sub",
+      "a": "0",
+      "b": "1",
+      "result": "underflow"
+    },
+    {
+      "id": "add-near-max",
+      "op": "add",
+      "a": "18446744073709551610",
+      "b": "5",
+      "result": "18446744073709551615"
+    }
+  ],
+  "rfc8032_empty_signature": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
+  "rfc8032_public": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+  "rfc8032_seed": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+  "sign": [
+    {
+      "id": "accept-domain",
+      "domain": "SVN-PROVIDER-ACCEPT-1",
+      "vector_id": "sort-keys"
+    }
+  ]
+}

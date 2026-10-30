@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// DEC-001 through DEC-008 are OPEN. No field below approves them.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.authority.v1;
+
+import "svn/types/v1/types.proto";
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1;authorityv1";
+
+// Governance messages. Threshold, delay, expiry, and seats are DEC-008.
+// ExecuteChange fails closed with ERROR_CODE_DECISION_BLOCKED when that
+// parameter is unapproved and devnet test parameters are not enabled.
+// There is no MsgCreateValidator in this protocol.
+
+message MsgProposeChange {
+  bytes signer = 1;
+  string business_id = 2;
+  string proposal_id = 3;
+  string parameter_key = 4;
+  uint64 base_policy_version = 5;
+  svn.types.v1.Digest payload_digest = 6;
+  int64 expiry_unix_seconds = 7;
+}
+
+message MsgApproveChange {
+  bytes signer = 1;
+  string business_id = 2;
+  string proposal_id = 3;
+}
+
+message MsgExecuteChange {
+  bytes signer = 1;
+  string business_id = 2;
+  string proposal_id = 3;
+}
+
+service Msg {
+  rpc ProposeChange(MsgProposeChange) returns (MsgProposeChangeResponse);
+  rpc ApproveChange(MsgApproveChange) returns (MsgApproveChangeResponse);
+  rpc ExecuteChange(MsgExecuteChange) returns (MsgExecuteChangeResponse);
+}
+
+message MsgProposeChangeResponse {}
+message MsgApproveChangeResponse {}
+message MsgExecuteChangeResponse {}

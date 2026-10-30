@@ -160,7 +160,115 @@ SOURCE_SUFFIXES = {".go", ".ts", ".tsx", ".jsx", ".rs", ".sol", ".proto"}
 PY_ALLOW = (
     "docs/evidence/goal-00/",
     "docs/evidence/goal-01/",
+    "docs/evidence/goal-02/",
 )
+# Goal 02 protocol drafts and fixture runners are specification artifacts.
+# They are not the chain, the client, or a service implementation.
+SOURCE_ALLOW = (
+    "docs/protocol/",
+    "docs/evidence/goal-02/",
+)
+
+
+def exact_section(text: str, heading: str) -> str | None:
+    """Return the body under a heading line that equals `heading`.
+
+    A longer heading such as `## TM-SECRETS` does not match `## TM-SECRET`.
+    """
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if line == heading:
+            body: list[str] = []
+            for later in lines[index + 1 :]:
+                if later.startswith("## "):
+                    break
+                body.append(later)
+            return "\n".join(body)
+    return None
+
+
+def goals_named_in_text(text: str) -> set[int]:
+    """Goal numbers named in a TEST disposition, including `Goals 1, 2, and 3`."""
+    found: set[int] = set()
+    for match in re.finditer(r"\b[Gg]oal\s+(\d{1,2})\b", text):
+        found.add(int(match.group(1)))
+    for match in re.finditer(
+        r"\b[Gg]oals\s+((?:\d{1,2}\b(?:\s*,\s*and\s+|\s*,\s*|\s+and\s+)?)*)",
+        text,
+    ):
+        for number in re.findall(r"\d{1,2}", match.group(1)):
+            found.add(int(number))
+    return found
+
+
+def column_goals(raw: str) -> set[int]:
+    if raw == "none":
+        return set()
+    return {int(part) for part in raw.split(",") if part}
+
+
+def check_row_goals(rows: list[dict[str, str]]) -> list[str]:
+    """The goals column and the goals named in a TEST disposition are the same set."""
+    errors: list[str] = []
+    for row in rows:
+        if row["scope"] != "IN_SCOPE" or not row["disposition"].startswith("TEST:"):
+            continue
+        named = goals_named_in_text(row["disposition"])
+        column = column_goals(row["goals"])
+        if named != column:
+            errors.append(
+                f"{row['id']} goals {sorted(column)} != test goals {sorted(named)}"
+            )
+    return errors
+
+
+def parse_progress_table(progress: str) -> dict[str, str]:
+    found: dict[str, str] = {}
+    for goal in [f"{i:02d}" for i in range(0, 31)]:
+        token = f"| {goal} |"
+        if token not in progress:
+            continue
+        row = progress.split(token, 1)[1].split("\n", 1)[0]
+        cells = [cell.strip() for cell in row.split("|")]
+        found[goal] = cells[1] if len(cells) > 1 else ""
+    return found
+
+
+def check_progress_agreement(progress: str, tsv: str) -> list[str]:
+    """Started goals in the markdown table and progress.tsv have the same status."""
+    errors: list[str] = []
+    lines = tsv.splitlines()
+    if not lines or not lines[0].startswith("goal\tstatus\t"):
+        return ["progress.tsv header missing"]
+    statuses: dict[str, str] = {}
+    for line in lines[1:]:
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        if len(parts) < 2:
+            errors.append("progress.tsv short row")
+            continue
+        goal, status = parts[0], parts[1]
+        if goal in statuses:
+            errors.append(f"progress.tsv duplicate goal {goal}")
+        statuses[goal] = status
+        if status not in STATUSES:
+            errors.append(f"progress.tsv goal {goal} status {status!r} is not a known status")
+    table = parse_progress_table(progress)
+    for goal, status in statuses.items():
+        if goal not in table:
+            errors.append(f"progress.tsv goal {goal} missing from progress.md")
+        elif table[goal] != status:
+            errors.append(
+                f"progress status mismatch {goal}: markdown {table[goal]} tsv {status}"
+            )
+    for goal, status in table.items():
+        if status == "NOT STARTED":
+            if goal in statuses:
+                errors.append(f"progress.tsv includes NOT STARTED goal {goal}")
+        elif goal not in statuses:
+            errors.append(f"progress.tsv missing started goal {goal}")
+    return errors
 
 
 def expand_pages(raw: str) -> set[int]:
@@ -417,10 +525,10 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
         "TM-SECRET": ("committed to git",),
     }
     for threat_id in REQUIRED_THREATS:
-        if f"## {threat_id}" not in threat:
-            errors.append(f"missing {threat_id}")
+        body = exact_section(threat, f"## {threat_id}")
+        if body is None:
+            errors.append(f"missing exact heading ## {threat_id}")
             continue
-        body = threat.split(f"## {threat_id}", 1)[1].split("\n## ", 1)[0]
         for heading in ("### Mitigation", "### Test", "### Residual limitation"):
             if heading not in body:
                 errors.append(f"{threat_id} missing {heading}")
@@ -458,8 +566,6 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
             errors.append(f"progress missing {phrase!r}")
     tsv = PROGRESS_TSV.read_text(encoding="utf-8")
     lines = tsv.splitlines()
-    if not lines or not lines[0].startswith("goal\tstatus\t"):
-        errors.append("progress.tsv header missing")
     if not any(line.startswith("00\t") for line in lines):
         errors.append("progress.tsv lost goal 00")
     goal_01 = [line for line in lines if line.startswith("01\t")]
@@ -467,6 +573,8 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
         errors.append("progress.tsv missing goal 01 row on branch goal-01")
     elif goal_01[0].split("\t")[1] not in STATUSES:
         errors.append("progress.tsv goal 01 status is not a known status")
+    errors.extend(check_progress_agreement(progress, tsv))
+    errors.extend(check_row_goals(rows))
     return errors
 
 
@@ -481,7 +589,7 @@ def validate_tree() -> list[str]:
         if ".git" in path.parts:
             continue
         rel = path.relative_to(ROOT).as_posix()
-        if path.suffix in SOURCE_SUFFIXES:
+        if path.suffix in SOURCE_SUFFIXES and not rel.startswith(SOURCE_ALLOW):
             errors.append(f"application source present: {rel}")
         if path.suffix == ".py" and not rel.startswith(PY_ALLOW):
             errors.append(f"unexpected python: {rel}")
@@ -497,68 +605,92 @@ def _one_row(body: str) -> str:
     return f"```{FENCE}\n{HEADER}\n{body}\n```\n"
 
 
-def _expect(name: str, errors: list[str], needle: str) -> list[str]:
-    if any(needle in item for item in errors):
-        print(f"self_test {name} fail_as_expected")
-        return []
-    print(f"self_test {name} MISSED")
-    return [f"self-test {name} did not fail with {needle!r}; got {errors}"]
-
-
-def self_test() -> list[str]:
+def self_test() -> tuple[list[str], int]:
     """Each case is a separate negative fixture and must fail for its own reason."""
     problems: list[str] = []
+    cases = 0
+
+    def expect(name: str, errors: list[str], needle: str) -> None:
+        nonlocal cases
+        cases += 1
+        if any(needle in item for item in errors):
+            print(f"self_test {name} fail_as_expected")
+            return
+        print(f"self_test {name} MISSED")
+        problems.append(f"self-test {name} did not fail with {needle!r}; got {errors}")
 
     dup = (
         "REQ-BAD-001\tIN_SCOPE\t3\tchain/security\t01\tTEST: a sufficiently long self-test disposition\tok\n"
         "REQ-BAD-001\tIN_SCOPE\t3\tchain/security\t01\tTEST: a sufficiently long self-test disposition\tok\n"
     )
     _rows, dup_errors = parse_matrix(_one_row(dup))
-    problems.extend(_expect("duplicate id", dup_errors, "duplicate id"))
+    expect("duplicate id", dup_errors, "duplicate id")
 
     _rows, role_parse = parse_matrix(_one_row(
         "REQ-BAD-002\tIN_SCOPE\t3\t\t01\tTEST: a sufficiently long self-test disposition\tok"
     ))
-    problems.extend(_expect("missing role", role_parse + validate_rows(_rows, set()), "bad role"))
+    expect("missing role", role_parse + validate_rows(_rows, set()), "bad role")
 
     _rows, goal_parse = parse_matrix(_one_row(
         "REQ-BAD-003\tIN_SCOPE\t3\tchain/security\t99\tTEST: a sufficiently long self-test disposition\tok"
     ))
-    problems.extend(_expect("bad goal", goal_parse + validate_rows(_rows, set()), "bad goals"))
+    expect("bad goal", goal_parse + validate_rows(_rows, set()), "bad goals")
 
     _rows, defer_parse = parse_matrix(_one_row(
         "REQ-BAD-004\tDEFERRED\t5\tproduct/application\t05\tOUT: deferred work given an implementation goal\tlater"
     ))
-    problems.extend(_expect(
+    expect(
         "deferred with a goal",
         defer_parse + validate_rows(_rows, set()),
         "must use goals none",
-    ))
+    )
 
     _rows, open_parse = parse_matrix(_one_row(
         "REQ-BAD-005\tIN_SCOPE\t3\tchain/security\t01\tNOTE: neither a test assignment nor a decision blocker\tok"
     ))
-    problems.extend(_expect(
+    expect(
         "missing test or blocker",
         open_parse + validate_rows(_rows, set()),
         "needs TEST: or BLOCKER:",
-    ))
+    )
 
     page_errors = check_blueprint_page_coverage([
         {"scope": "IN_SCOPE", "pages": "3", "_pages": {3}},
     ])
-    problems.extend(_expect("missing blueprint page", page_errors, "miss blueprint pages"))
+    expect("missing blueprint page", page_errors, "miss blueprint pages")
 
     scenario_errors = check_scenario_lists(
         "## S-PLAYBACK\nThe prose cites REQ-MEDIA-002.\n### Requirements\nREQ-MEDIA-001\n### Open decisions\nDEC-001\n",
         ["S-PLAYBACK"],
     )
-    problems.extend(_expect("scenario list", scenario_errors, "requirements list omits"))
-    return problems
+    expect("scenario list", scenario_errors, "requirements list omits")
+
+    if exact_section("## TM-SECRETS\n", "## TM-SECRET") is None:
+        heading_errors = ["missing exact heading ## TM-SECRET"]
+    else:
+        heading_errors = ["matched substring"]
+    expect("threat heading exact", heading_errors, "missing exact heading")
+
+    progress_errors = check_progress_agreement(
+        "| 01 | item | VERIFIED | evidence | depends |\n",
+        "goal\tstatus\tbranch\n01\tBLOCKED\tgoal-01\n",
+    )
+    expect("progress mismatch", progress_errors, "status mismatch")
+
+    goal_errors = check_row_goals([
+        {
+            "id": "REQ-BAD-006",
+            "scope": "IN_SCOPE",
+            "goals": "20,24",
+            "disposition": "TEST: Goal 30 success demonstration is the assigned check for this row.",
+        }
+    ])
+    expect("row goals", goal_errors, "!= test goals")
+    return problems, cases
 
 
 def main() -> int:
-    self_errors = self_test()
+    self_errors, self_cases = self_test()
     rows, parse_errors = parse_matrix(REQ.read_text(encoding="utf-8"))
     decision_ids = set(REQUIRED_DECISIONS)
     row_errors = validate_rows(rows, decision_ids) if rows else ["no rows"]
@@ -579,7 +711,7 @@ def main() -> int:
     print(f"threats {len(REQUIRED_THREATS)}")
     print(f"scenarios {len(REQUIRED_SCENARIOS)}")
     print(f"contradictions {len(REQUIRED_CONTRADICTIONS)}")
-    print(f"self_test_cases 7")
+    print(f"self_test_cases {self_cases}")
     print(f"self_test_problems {len(self_errors)}")
     print(f"page_coverage {'ok' if not page_errors else 'fail'}")
     print(f"errors {len(errors)}")

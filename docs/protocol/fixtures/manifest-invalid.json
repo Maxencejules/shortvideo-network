@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "profile": "SVN-JCS-1",
+  "manifest_id": "m1",
+  "content_id": "c1",
+  "content_version": 1,
+  "package_bytes": "4",
+  "video_bytes": "aaaa",
+  "renditions": []
+}

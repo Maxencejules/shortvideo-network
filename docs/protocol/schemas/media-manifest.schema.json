@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "svn-media-manifest-v1",
+  "title": "SVN media manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile", "manifest_id", "content_id", "content_version", "package_bytes", "renditions"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "profile": {"const": "SVN-JCS-1"},
+    "manifest_id": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+    "content_id": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+    "content_version": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "package_bytes": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
+    "renditions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rendition_id", "codec", "segments"],
+        "properties": {
+          "rendition_id": {"type": "string", "minLength": 1, "maxLength": 64},
+          "codec": {"type": "string", "minLength": 1, "maxLength": 32},
+          "segments": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4096,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["segment_id", "sha256", "byte_count"],
+              "properties": {
+                "segment_id": {"type": "string", "minLength": 1, "maxLength": 64},
+                "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "byte_count": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

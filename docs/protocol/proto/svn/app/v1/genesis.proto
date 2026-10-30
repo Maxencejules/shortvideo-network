@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// DEC-001 through DEC-008 are OPEN. No field below approves them.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.app.v1;
+
+import "svn/authority/v1/genesis.proto";
+import "svn/providers/v1/genesis.proto";
+import "svn/content/v1/genesis.proto";
+import "svn/leases/v1/genesis.proto";
+import "svn/evidence/v1/genesis.proto";
+import "svn/policy/v1/genesis.proto";
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/app/v1;appv1";
+
+// AppGenesis is the field inventory for Goal 05. It is not a runnable genesis
+// file and it contains no private keys.
+// mint, distribution, slashing, and staking must be false.
+// permissionless_validator_creation must be false. x/authority is the only
+// writer of validator power. MsgCreateValidator is not a beta message.
+message AppGenesis {
+  string chain_id = 1;
+  int64 genesis_unix_seconds = 2;
+  uint32 protocol_version = 3;
+  bool mint_module_enabled = 4;
+  bool distribution_module_enabled = 5;
+  bool slashing_module_enabled = 6;
+  bool staking_module_enabled = 7;
+  bool permissionless_validator_creation = 8;
+  bool allow_devnet_test_parameters = 9;
+  svn.authority.v1.GenesisState authority = 10;
+  svn.providers.v1.GenesisState providers = 11;
+  svn.content.v1.GenesisState content = 12;
+  svn.leases.v1.GenesisState leases = 13;
+  svn.evidence.v1.GenesisState evidence = 14;
+  svn.policy.v1.GenesisState policy = 15;
+}

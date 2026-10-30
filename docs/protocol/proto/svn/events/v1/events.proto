@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// DEC-001 through DEC-008 are OPEN. No field below approves them.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.events.v1;
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/events/v1;eventsv1";
+
+// Indexer attribute values use decimal strings and lowercase hex.
+// Event names required by the blueprint integration table are the message names.
+
+message ProviderRegistered {
+  string provider_id = 1;
+  string state = 2;
+}
+
+message ProviderStateChanged {
+  string provider_id = 1;
+  string state = 2;
+  uint64 key_generation = 3;
+}
+
+message ContentRegistered {
+  string content_id = 1;
+  uint64 content_version = 2;
+  string manifest_sha256 = 3;
+  string package_bytes = 4;
+}
+
+message ContentWithdrawn {
+  string content_id = 1;
+  uint64 content_version = 2;
+  bool history_erased = 3;
+}
+
+message LeaseOffered {
+  string offer_id = 1;
+  string provider_id = 2;
+  string content_id = 3;
+}
+
+message LeaseAccepted {
+  string lease_id = 1;
+  string provider_id = 2;
+  string content_id = 3;
+  uint64 content_version = 4;
+  string package_bytes = 5;
+  int64 deadline_unix_seconds = 6;
+}
+
+message LeaseRenewed {
+  string lease_id = 1;
+  uint64 term_version = 2;
+  int64 deadline_unix_seconds = 3;
+}
+
+message LeaseEnded {
+  string lease_id = 1;
+  string state = 2;
+  string released_bytes = 3;
+}
+
+message EvidenceAccepted {
+  string evidence_id = 1;
+  string batch_id = 2;
+  string kind = 3;
+  bool attestation = 4;
+}
+
+message PolicyChanged {
+  uint64 policy_version = 1;
+  string parameter_key = 2;
+}
+
+message ProposalExecuted {
+  string proposal_id = 1;
+  uint64 policy_version = 2;
+}
