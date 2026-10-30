@@ -186,3 +186,70 @@ These are specification walks, not executed network runs. The full text is in `d
 ## Handoff
 
 Changed files are the specification, the progress row, this evidence, and the checker. No application code. Next safe action is Goal 02, using the input checklist in `docs/requirements.md`, with DEC-001 through DEC-008 explicitly blocked. Public launch stays disabled.
+
+## Recorded specification commit
+
+Tested commit: `ad9f054205469e061b2dbb42a6d834ec11edd45b`
+
+Tested tree: `bca0404952eeaae9fd9aa5055930aac9323ecb44`
+
+That commit's message trailer `Tested-tree` matches the tree. The command log higher up is the pre-commit capture. The commands below ran on the clean commit, before this paragraph was added. Specification file hashes matched the values quoted above. This paragraph is the only evidence change in the following commit.
+
+```
+COMMAND git rev-parse HEAD
+ad9f054205469e061b2dbb42a6d834ec11edd45b
+exit:0
+
+COMMAND git rev-parse HEAD^{tree}
+bca0404952eeaae9fd9aa5055930aac9323ecb44
+exit:0
+
+COMMAND git status --short --branch
+## goal-01
+exit:0
+
+COMMAND python3 docs/evidence/goal-01/check_requirements.py
+requirements 265
+in_scope 250
+with_test 216
+with_blocker 34
+deferred 9
+non_goal 6
+decisions 8
+threats 10
+scenarios 5
+contradictions 13
+self_test_problems 0
+errors 0
+scenario S-PLAYBACK recorded
+scenario S-ORIGIN recorded
+scenario S-DEPART recorded
+scenario S-STALL recorded
+scenario S-REMOVE recorded
+contradiction CR-001 recorded
+contradiction CR-002 recorded
+contradiction CR-003 recorded
+contradiction CR-004 recorded
+contradiction CR-005 recorded
+contradiction CR-006 recorded
+contradiction CR-007 recorded
+contradiction CR-008 recorded
+contradiction CR-009 recorded
+contradiction CR-010 recorded
+contradiction CR-011 recorded
+contradiction CR-012 recorded
+contradiction CR-013 recorded
+threat TM-UPLOAD recorded
+threat TM-UNAUTH-TX recorded
+threat TM-KEYS recorded
+threat TM-DISHONEST recorded
+threat TM-REPLICAS recorded
+threat TM-STALL recorded
+threat TM-STALE-GW recorded
+threat TM-ABUSE recorded
+threat TM-SUPPLY recorded
+threat TM-VALIDATOR recorded
+result PASS
+note document check only; protocol not approved; public launch disabled
+exit:0
+```
