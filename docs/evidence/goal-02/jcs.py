@@ -38,6 +38,16 @@ def parse_and_canonicalize(raw: str) -> str:
     return canonicalize(value)
 
 
+def parse_bytes(raw: bytes) -> str:
+    if raw.startswith(b"\xef\xbb\xbf"):
+        raise JCSError("bom")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise JCSError("invalid_utf8") from exc
+    return parse_and_canonicalize(text)
+
+
 def _emit(value: object, depth: int) -> str:
     if depth > MAX_DEPTH:
         raise JCSError("depth")

@@ -91,6 +91,7 @@ REQUIRED_CASES = {
     "stall-one-validator",
     "stall-two-validators",
     "corrupt-manifest",
+    "replica-match",
     "withdrawn-blocks-offer",
     "withdrawn-blocks-revival",
     "underflow-double-end",
@@ -111,8 +112,63 @@ REQUIRED_CASES = {
     "capacity-exceeded",
     "idempotent-retry-no-double-reserve",
     "bounded-expiry",
-    "host-custody-not-assumed",
+    "drain-stops-new-offers",
+    "rotate-key-stale-generation",
     "storage-proof-rejected",
+    "host-custody-not-assumed",
+    "renew-succeeds",
+    "renew-changed-bytes",
+    "update-provider",
+    "update-provider-below-reserved",
+    "admit-blocked-by-dec-002",
+    "admit-non-authority",
+    "second-withdraw",
+    "approve-same-seat-replay",
+    "propose-stale-base",
+    "propose-dec-named-key",
+    "execute-before-delay",
+    "authority-end-lease",
+    "rotate-then-old-key-fails",
+    "provider-disabled",
+    "proposal-expired",
+    "proposal-rejected",
+    "validator-power-applied",
+    "evidence-rejected",
+    "force-withdraw",
+    "force-withdraw-non-authority",
+    "replay-app-hash",
+    "hosting-resilience",
+}
+REQUIRED_VALID_IDS = {
+    "empty-object",
+    "sort-keys",
+    "whitespace",
+    "nested",
+    "newline",
+    "control",
+    "unicode",
+    "slash",
+    "quote",
+    "safe-max",
+    "safe-min",
+    "letter-escape",
+    "zero",
+}
+REQUIRED_INVALID_IDS = {
+    "null",
+    "fraction",
+    "exponent",
+    "leading-zero",
+    "negative-zero",
+    "unsafe-integer",
+    "duplicate-key",
+    "trailing-comma",
+    "bad-key",
+    "unicode-key",
+    "lone-surrogate",
+    "above-int64",
+    "bom",
+    "invalid-utf8",
 }
 CLIENT_PATHS = [
     "/upload-intents",
@@ -263,23 +319,161 @@ def check_protos(bounds: dict) -> list[str]:
         errors.append(f"protoc failed {completed.stderr.strip()}")
     elif completed.stderr.strip():
         errors.append(f"protoc warning {completed.stderr.strip()}")
+    else:
+        errors.extend(scan_real_descriptor(Path("/tmp/svn-protocol.pb")))
+        errors.extend(scan_negative_descriptors())
     return errors
+
+
+def decode_descriptor(pb_path: Path) -> str:
+    completed = subprocess.run(
+        [
+            "protoc",
+            "--decode=google.protobuf.FileDescriptorSet",
+            "--proto_path=/usr/include",
+            "google/protobuf/descriptor.proto",
+        ],
+        input=pb_path.read_bytes(),
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(completed.stderr.decode())
+    return completed.stdout.decode()
+
+
+def descriptor_hits(text: str) -> set[str]:
+    hits: set[str] = set()
+    if re.search(r"type: TYPE_(DOUBLE|FLOAT)\b", text):
+        hits.add("float")
+    if "google.protobuf.Timestamp" in text:
+        hits.add("timestamp")
+    for name, label in (
+        ("MsgMint", "mint"),
+        ("MsgSlashValidator", "slash"),
+        ("MsgCreateValidator", "create-validator"),
+        ("video_data", "video_data"),
+        ("uploader_ip", "uploader_ip"),
+        ("reward_amount", "reward_amount"),
+        ("video_bytes", "video_bytes"),
+    ):
+        if re.search(rf'name: "{name}"', text):
+            hits.add(label)
+    if re.search(r'(?:^|[^\w])name: "[^"]*STORAGE_PROOF[^"]*"', text):
+        hits.add("storage-proof")
+    return hits
+
+
+def scan_real_descriptor(pb_path: Path) -> list[str]:
+    text = decode_descriptor(pb_path)
+    hits = descriptor_hits(text)
+    errors = [f"descriptor hit {hit}" for hit in sorted(hits)]
+    for name in ("MsgAdmitProvider", "MsgForceWithdraw", "MsgDisableProvider", "ProposalPayload", "ValidatorPowerChange"):
+        if f'name: "{name}"' not in text:
+            errors.append(f"descriptor missing {name}")
+    return errors
+
+
+def scan_negative_descriptors() -> list[str]:
+    errors: list[str] = []
+    expected = {
+        "timestamp.proto": "timestamp",
+        "mint.proto": "mint",
+        "slash.proto": "slash",
+        "media.proto": "video_data",
+        "storage_proof.proto": "storage-proof",
+    }
+    negative = Path(__file__).resolve().parent / "negative"
+    for name, needle in expected.items():
+        proto = negative / name
+        out = Path("/tmp") / f"negative-{name}.pb"
+        completed = subprocess.run(
+            [
+                "protoc",
+                f"--proto_path={proto.parent}",
+                "--proto_path=/usr/include",
+                f"--descriptor_set_out={out}",
+                str(proto),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            errors.append(f"negative proto {name} did not compile")
+            continue
+        hits = descriptor_hits(decode_descriptor(out))
+        if needle not in hits:
+            errors.append(f"negative {name} missed {needle}")
+        if name == "media.proto" and not {"float", "uploader_ip", "reward_amount"} <= hits:
+            errors.append(f"negative media hits {sorted(hits)}")
+    return errors
+
+
+def closed_schema_errors(schema: dict, path: str = "$") -> list[str]:
+    errors: list[str] = []
+    if schema.get("type") == "object":
+        if schema.get("additionalProperties") is not False:
+            errors.append(f"{path} additionalProperties")
+        for key, sub in schema.get("properties", {}).items():
+            if isinstance(sub, dict):
+                if sub.get("type") == "string" and "maxLength" not in sub and "const" not in sub:
+                    errors.append(f"{path}.{key} maxLength")
+                errors.extend(closed_schema_errors(sub, f"{path}.{key}"))
+    elif schema.get("type") == "array":
+        if "maxItems" not in schema:
+            errors.append(f"{path} maxItems")
+        items = schema.get("items")
+        if isinstance(items, dict):
+            errors.extend(closed_schema_errors(items, path + "[]"))
+    return errors
+
+
+def segment_ids(manifest: dict) -> list[str]:
+    found: list[str] = []
+    for rendition in manifest.get("renditions", []):
+        for segment in rendition.get("segments", []):
+            found.append(segment.get("segment_id", ""))
+    return found
 
 
 def check_contracts(bounds: dict) -> list[str]:
     errors: list[str] = []
-    manifest_schema = json.loads((ROOT / "docs/protocol/schemas/media-manifest.schema.json").read_text(encoding="utf-8"))
-    valid = json.loads((ROOT / "docs/protocol/fixtures/manifest-valid.json").read_text(encoding="utf-8"))
-    invalid = json.loads((ROOT / "docs/protocol/fixtures/manifest-invalid.json").read_text(encoding="utf-8"))
-    if validate_schema(valid, manifest_schema):
-        errors.append(f"valid manifest rejected {validate_schema(valid, manifest_schema)}")
-    if not validate_schema(invalid, manifest_schema):
-        errors.append("invalid manifest accepted")
-    for name in ("provider-capability.schema.json", "evidence-envelope.schema.json", "public-record.schema.json"):
+    schemas = {}
+    for name in (
+        "media-manifest.schema.json",
+        "provider-capability.schema.json",
+        "evidence-envelope.schema.json",
+        "public-record.schema.json",
+    ):
         schema = json.loads((ROOT / "docs/protocol/schemas" / name).read_text(encoding="utf-8"))
-        if schema.get("type") != "object" or schema.get("additionalProperties") is not False:
-            errors.append(f"{name} is not a closed object")
-    evidence = json.loads((ROOT / "docs/protocol/schemas/evidence-envelope.schema.json").read_text(encoding="utf-8"))
+        schemas[name] = schema
+        closed = closed_schema_errors(schema, name)
+        if closed:
+            errors.append(f"{name} not closed: {closed}")
+    manifest_schema = schemas["media-manifest.schema.json"]
+    valid = json.loads((ROOT / "docs/protocol/fixtures/manifest-valid.json").read_text(encoding="utf-8"))
+    if validate_schema(valid, manifest_schema) or len(segment_ids(valid)) != len(set(segment_ids(valid))):
+        errors.append("valid manifest rejected")
+    fault_files = {
+        "manifest-invalid-boundary.json": "schema",
+        "manifest-invalid-unknown.json": "schema",
+        "manifest-invalid-wrong-domain.json": "schema",
+        "manifest-invalid-duplicate-id.json": "duplicate",
+    }
+    for name, kind in fault_files.items():
+        document = json.loads((ROOT / "docs/protocol/fixtures" / name).read_text(encoding="utf-8"))
+        schema_errors = validate_schema(document, manifest_schema)
+        duplicate = len(segment_ids(document)) != len(set(segment_ids(document)))
+        if kind == "schema" and not schema_errors:
+            errors.append(f"{name} was accepted")
+        if kind == "schema" and duplicate:
+            errors.append(f"{name} stacks a duplicate id")
+        if kind == "duplicate" and schema_errors:
+            errors.append(f"{name} fails schema before the duplicate-id check")
+        if kind == "duplicate" and not duplicate:
+            errors.append(f"{name} has no duplicate id")
+    evidence = schemas["evidence-envelope.schema.json"]
     if "STORAGE_PROOF" in evidence["properties"]["kind"]["enum"]:
         errors.append("evidence schema allows a storage proof kind")
     client = json.loads((ROOT / "docs/protocol/api/client-api.json").read_text(encoding="utf-8"))
@@ -353,6 +547,8 @@ def check_genesis(doc: dict, bounds: dict, valid: bool) -> list[str]:
 
 
 def python_vector_report(doc: dict) -> list[str]:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
     lines: list[str] = []
     canonical: dict[str, str] = {}
     for item in doc["valid"]:
@@ -364,7 +560,10 @@ def python_vector_report(doc: dict) -> list[str]:
         canonical[item["id"]] = got
     for item in doc["invalid"]:
         try:
-            jcs.parse_and_canonicalize(item["raw"])
+            if item.get("raw_hex"):
+                jcs.parse_bytes(bytes.fromhex(item["raw_hex"]))
+            else:
+                jcs.parse_and_canonicalize(item["raw"])
         except jcs.JCSError as exc:
             if exc.reason != item["reason"]:
                 raise AssertionError(item["id"]) from exc
@@ -390,11 +589,16 @@ def python_vector_report(doc: dict) -> list[str]:
         if result != item["result"]:
             raise AssertionError(item["id"])
         lines.append(f"ARITH {item['id']} {result}")
-    lines.append(f"RFC8032 {doc['rfc8032_empty_signature']}")
+    signer = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(doc["rfc8032_seed"]))
+    empty = signer.sign(b"").hex()
+    if empty != doc["rfc8032_empty_signature"]:
+        raise AssertionError("rfc8032")
+    lines.append(f"RFC8032 {empty}")
     for item in doc["sign"]:
         body = canonical[item["vector_id"]].encode("utf-8")
         signed = item["domain"].encode("utf-8") + b"\x00" + body
-        lines.append(f"SIGN {item['id']} {hashlib.sha256(signed).hexdigest()}")
+        signature = signer.sign(signed).hex()
+        lines.append(f"SIGN {item['id']} {hashlib.sha256(signed).hexdigest()} {signature}")
     return lines
 
 
@@ -407,31 +611,16 @@ def run_language(command: list[str]) -> tuple[int, str]:
 
 
 def compare_languages(python_lines: list[str], go_text: str, ts_text: str) -> list[str]:
-    errors: list[str] = []
+    """Require the three reports to be the same list, in both directions."""
     go_lines = [line for line in go_text.splitlines() if line]
     ts_lines = [line for line in ts_text.splitlines() if line]
+    errors: list[str] = []
+    if python_lines != go_lines:
+        errors.append("python and go vector reports differ")
+    if python_lines != ts_lines:
+        errors.append("python and typescript vector reports differ")
     if go_lines != ts_lines:
         errors.append("go and typescript vector reports differ")
-
-    def key_for(line: str) -> str:
-        if line.startswith("RFC8032 "):
-            return "RFC8032"
-        kind, name, *_rest = line.split()
-        return f"{kind} {name}"
-
-    python_by_key = {key_for(line): line for line in python_lines}
-    for line in go_lines:
-        if line.startswith("SIGN "):
-            parts = line.split()
-            python_sign = python_by_key[f"SIGN {parts[1]}"]
-            if python_sign.split()[2] != parts[2]:
-                errors.append(f"sign input mismatch {parts[1]}")
-            typescript_sign = next(row for row in ts_lines if row.startswith(f"SIGN {parts[1]} "))
-            if parts[3] != typescript_sign.split()[3]:
-                errors.append(f"signature mismatch {parts[1]}")
-            continue
-        if python_by_key.get(key_for(line)) != line:
-            errors.append(f"python mismatch {line}")
     return errors
 
 
@@ -477,18 +666,31 @@ def main() -> int:
     errors.extend(source_clock_errors())
     results = cases.cases()
     problems = [case_id for case_id, detail in results if detail]
-    ran = {case_id for case_id, _detail in results}
-    missing = REQUIRED_CASES - ran
-    if missing:
-        errors.append("missing cases " + ", ".join(sorted(missing)))
+    ran = [case_id for case_id, _detail in results]
+    ran_set = set(ran)
+    if len(ran) != len(ran_set):
+        errors.append("duplicate transition case id")
+    if ran_set != REQUIRED_CASES or len(results) != len(REQUIRED_CASES):
+        missing = REQUIRED_CASES - ran_set
+        extra = ran_set - REQUIRED_CASES
+        errors.append(f"case pin missing {sorted(missing)} extra {sorted(extra)} count {len(results)}")
     if problems:
         errors.append("failed cases " + ", ".join(problems))
     print(f"transition_cases {len(results)}")
+    print(f"transition_case_pin {len(REQUIRED_CASES)}")
     print(f"transition_failures {len(problems)}")
     doc = json.loads(VECTORS.read_text(encoding="utf-8"))
+    valid_ids = {item["id"] for item in doc["valid"]}
+    invalid_ids = {item["id"] for item in doc["invalid"]}
+    if valid_ids != REQUIRED_VALID_IDS or len(doc["valid"]) != len(REQUIRED_VALID_IDS):
+        errors.append(f"valid vector pin {len(doc['valid'])}")
+    if invalid_ids != REQUIRED_INVALID_IDS or len(doc["invalid"]) != len(REQUIRED_INVALID_IDS):
+        errors.append(f"invalid vector pin {len(doc['invalid'])}")
+    if len(doc["integers"]) != 6 or len(doc["arithmetic"]) != 5:
+        errors.append("integer or arithmetic vector count")
     try:
         python_lines = python_vector_report(doc)
-    except (AssertionError, jcs.JCSError) as exc:
+    except (AssertionError, jcs.JCSError, KeyError, ValueError) as exc:
         errors.append(f"python vectors {exc}")
         python_lines = []
     go_code, go_out = run_language(["go", "run", str(ROOT / "docs/evidence/goal-02/go/vectorcheck.go"), str(VECTORS)])
@@ -497,6 +699,7 @@ def main() -> int:
     )
     print(f"go_vectors exit:{go_code}")
     print(f"typescript_vectors exit:{ts_code}")
+    languages_match = False
     if go_code == 127:
         print("go BLOCKED")
         errors.append("go BLOCKED")
@@ -508,12 +711,13 @@ def main() -> int:
     elif ts_code != 0:
         errors.append(f"typescript exit {ts_code}")
     if go_code == 0 and ts_code == 0 and python_lines:
-        errors.extend(compare_languages(python_lines, go_out, ts_out))
-        print("languages MATCH")
-        print(f"valid_vectors {len(doc['valid'])}")
-        print(f"invalid_vectors {len(doc['invalid'])}")
-        print(f"integer_vectors {len(doc['integers'])}")
-        print(f"arithmetic_vectors {len(doc['arithmetic'])}")
+        language_errors = compare_languages(python_lines, go_out, ts_out)
+        errors.extend(language_errors)
+        languages_match = not language_errors
+    print(f"valid_vectors {len(doc['valid'])}")
+    print(f"invalid_vectors {len(doc['invalid'])}")
+    print(f"integer_vectors {len(doc['integers'])}")
+    print(f"arithmetic_vectors {len(doc['arithmetic'])}")
     print("hashes")
     for path in input_files():
         print(f"{sha256_file(path)}  {path.relative_to(ROOT).as_posix()}")
@@ -523,6 +727,8 @@ def main() -> int:
     if errors:
         print("result FAIL")
         return 1
+    if languages_match:
+        print("languages MATCH")
     print("result PASS")
     print("note schema and fixture check; protocol not approved; decisions OPEN; public launch disabled")
     return 0

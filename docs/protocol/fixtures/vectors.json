@@ -118,6 +118,26 @@
       "id": "unicode-key",
       "raw": "{\"é\":1}",
       "reason": "bad_key"
+    },
+    {
+      "id": "lone-surrogate",
+      "raw": "{\"s\":\"\\uDEAD\"}",
+      "reason": "lone_surrogate"
+    },
+    {
+      "id": "above-int64",
+      "raw": "9223372036854775808",
+      "reason": "unsafe_integer"
+    },
+    {
+      "id": "bom",
+      "raw_hex": "efbbbf7b7d",
+      "reason": "bom"
+    },
+    {
+      "id": "invalid-utf8",
+      "raw_hex": "7b2261223a22ff227d",
+      "reason": "invalid_utf8"
     }
   ],
   "integers": [

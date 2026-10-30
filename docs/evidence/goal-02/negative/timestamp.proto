@@ -1,0 +1,4 @@
+syntax = "proto3";
+package negative.time;
+import "google/protobuf/timestamp.proto";
+message BadTime { google.protobuf.Timestamp local_time = 1; }

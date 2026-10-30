@@ -44,6 +44,8 @@ message MsgRenewLease {
   svn.types.v1.Digest manifest_digest = 6;
   uint64 package_bytes = 7;
   svn.types.v1.InnerSignature provider_signature = 8;
+  // If set, the named evidence is checked and cannot extend the lease.
+  string evidence_id = 9;
 }
 
 message MsgEndLease {

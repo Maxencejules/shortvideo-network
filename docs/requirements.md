@@ -55,13 +55,13 @@ Inspected tree: companion-pack documents on the verified Goal 00 revision, plus 
 
 ### Working code
 
-There is no working application code. There is no chain binary, genesis that can start a network, web client, API service, indexer, broadcaster, provider agent, media worker, or end-to-end test suite. Goal 00's Python files are document checks for the companion pack. The Goal 01 checker is a document check. Goal 02's protocol fixtures under `docs/protocol/` and `docs/evidence/goal-02/` are specification checks. None of them is the product.
+There is no working application code. There is no chain binary, genesis that can start a network, web client, API service, indexer, broadcaster, provider agent, media worker, or end-to-end test suite. Goal 00's Python files are document checks for the companion pack. The Goal 01 checker is a document check. Neither one is the product.
 
 ### Placeholders
 
 - `docs/goals/01-*.md` through `docs/goals/30-*.md` are exact playbook prompt slices. They are instructions, not implementations.
 - Blueprint command names such as a devnet target are interfaces to build later. They do not exist in this tree.
-- Progress rows for goals that are not started stay `NOT STARTED` in `docs/progress.md`. The machine-readable tracker has a row only for a goal that has left that status.
+- Progress rows for goals 02-30 are NOT STARTED.
 - The monorepo directories named in blueprint page 27 are absent: `apps/web`, `services/api`, `services/indexer`, `services/broadcaster`, `chain/app`, `chain/x/*`, `proto`, `agents/provider`, `workers/media`, `packages/protocol`, `deployments`, and `tests`.
 
 ### Missing components
@@ -494,7 +494,7 @@ REQ-UPG-001	IN_SCOPE	12	chain/security	10	TEST: Goal 10 rehearses a migration on
 REQ-REC-001	IN_SCOPE	12	chain/security	10	TEST: Goal 10 stall runbook has no message that marks a local row as final or that resets genesis.	A stall is recovered by an operator procedure. An application does not override finality.
 REQ-REC-002	IN_SCOPE	12	chain/security	26	BLOCKER:DEC-001 Signer backup and replacement procedure waits on the custody decision.	Chain-state and signer-safety backup, and the stop-and-verify rule before a replacement signer, wait on the recovery decision.
 REQ-INT-001	IN_SCOPE	13	chain/security	11	TEST: Goal 11 is the only chain writer used by the API, and the web client does not subscribe to every block.	Chain access sits behind the broadcaster or generated client. Read models come from committed events and periodic queries.
-REQ-API-001	IN_SCOPE	13	product/application	13,19,21,22,23	TEST: Goals 13, 19, 21, 22, and 23 implement upload intents, upload status, publish, feeds, reports, removal, and exports, and contract tests cover each route.	The client API surface is upload intents, upload status, publish, feeds, reports, removal, and exports.
+REQ-API-001	IN_SCOPE	13	product/application	13,19,21,22,23	TEST: Later goals implement upload intents, upload status, publish, feeds, reports, removal, and exports, and contract tests cover each route.	The client API surface is upload intents, upload status, publish, feeds, reports, removal, and exports.
 REQ-API-002	IN_SCOPE	13	media/provider agents	16	TEST: Goal 16 implements a signed capability manifest, offer acceptance, package fetch, transfer receipt, and inventory report.	The provider API is a signed capability and endpoint manifest, offer acceptance, package fetch, transfer receipt, and inventory.
 REQ-API-003	IN_SCOPE	13	chain/security	02	TEST: Goal 02 schemas name the chain commands, queries, and events from the blueprint integration table.	Chain commands, queries, and events cover providers, content, leases, evidence, and policy changes.
 REQ-IDEM-001	IN_SCOPE	13	chain/security	11	TEST: Goal 11 retries one business id after a timeout and shows a single committed effect.	A transactional outbox records attempts, reconciles unknown submissions, and uses a stable business id.
@@ -549,7 +549,7 @@ REQ-SEC-007	IN_SCOPE	19	chain/security	29	TEST: Goal 29 partition test produces 
 REQ-SEC-008	IN_SCOPE	19	chain/security	03	TEST: Goal 03 pins dependencies, scans secrets, and isolates CI credentials from untrusted pull requests.	Supply-chain control is pinned dependencies, reviewed builds, isolated CI secrets, and an SBOM when the build exists.
 REQ-SEC-009	IN_SCOPE	19	trust/safety	23	TEST: Goal 23 and API tests show titles, comments, captions, and manifests are data, not shell commands, SQL, or model-prompt instructions.	Untrusted text is not interpolated into shell commands, SQL, or model prompts. A future moderation aid cannot change chain policy from user content.
 REQ-SEC-010	IN_SCOPE	19	deployment/on-call	25	TEST: Goal 25 rate-limits login, search, upload, report, and discovery, and the fetcher rejects private-network targets by default.	Non-media endpoints are rate-limited. Remote fetches constrain scheme, redirects, and destination. Internal ports stay private.
-REQ-SEC-011	IN_SCOPE	19	chain/security	29	TEST: Goal 29 records a review of authorization, authority updates, custody, attestations, and sandboxes, and this specification does not mark that review done.	A security review of authorization, authority updates, custody, proof claims, and sandboxes is a release gate and is unmet.
+REQ-SEC-011	IN_SCOPE	19	chain/security	29	TEST: Goal 29 records a review of authorization, authority updates, custody, attestations, and sandboxes, and Goal 01 does not mark that review done.	A security review of authorization, authority updates, custody, proof claims, and sandboxes is a release gate and is unmet.
 REQ-SEC-012	IN_SCOPE	19	chain/security	27	TEST: Goal 27 publishes a vulnerability reporting path and a dependency maintenance note.	The project keeps a vulnerability reporting channel and uses maintained dependencies. The SDK policy does not audit custom modules.
 REQ-MOD-001	IN_SCOPE	20	trust/safety	23	BLOCKER:DEC-003 Community rules, appeal authority, and the wording of decisions are unset.	Report, block, a queue, reasons, appeals, and urgent escalation are required. The rule text is not approved. Sensitive case files stay off-chain.
 REQ-MOD-003	IN_SCOPE	20	trust/safety	23	TEST: Goal 23 applies the same local decision at upload, feeds, comments, and storage admission, and validators have no legality vote.	Policy is applied at the account host, discovery, storage admission, and the client. Operators answer for what they distribute.
@@ -599,7 +599,7 @@ REQ-QA-012	IN_SCOPE	26	chain/security	29	TEST: Goal 29 inventory lists unit, pro
 REQ-QA-013	IN_SCOPE	26	chain/security	29	TEST: Goal 29 states that passing beta gates is not security against an unrestricted economically motivated network.	Permissionless adversarial coverage is additional scope. A beta pass does not claim it.
 REQ-REPO-001	IN_SCOPE	27	chain/security	03	TEST: Goal 03 creates the blueprint monorepo layout and keeps generated code apart from handwritten logic.	The monorepo layout on blueprint page 27 is the Goal 03 target. Those directories are absent today.
 REQ-REPO-002	IN_SCOPE	27	chain/security	02	TEST: Goal 02 Protobuf files replace the page 27 lease sketch with typed fields, bounds, units, digests, and domains.	The lease sketch is not a complete wire schema. Goal 02 specifies the real types.
-REQ-REPO-003	IN_SCOPE	27	deployment/on-call	03	TEST: Goal 03 adds project targets for build, generation, unit tests, devnet, smoke, fault, and release checks, and records that those targets did not exist in this specification.	Named developer commands are interfaces to create. They do not exist in this tree.
+REQ-REPO-003	IN_SCOPE	27	deployment/on-call	03	TEST: Goal 03 adds project targets for build, generation, unit tests, devnet, smoke, fault, and release checks, and records that they did not exist in Goal 01.	Named developer commands are interfaces to create. They do not exist in this tree.
 REQ-REPO-004	IN_SCOPE	27	chain/security	01	TEST: SELF-CHECK Goal 01 inventory reports no runnable genesis, production key, or chain binary.	This repository has no runnable genesis, production keys, or chain binary.
 REQ-RISK-001	IN_SCOPE	28	chain/security	01	TEST: SELF-CHECK Goal 01 keeps the application chain because the agent contract requires one, and records the value risk without dropping the chain.	The chain stays in scope as a shared-rule record. A comparison with signed records remains a risk note, not a scope cut.
 REQ-RISK-002	IN_SCOPE	28	product/application	18	TEST: Goal 18 finishes the media, hosting, and chain path before any native app, token, or heavier recommender work.	Finish the vertical slice before native apps, tokens, or advanced recommenders.
@@ -609,7 +609,7 @@ REQ-RISK-005	IN_SCOPE	28	trust/safety	25	BLOCKER:DEC-005 Hard quotas need allowa
 REQ-RISK-006	IN_SCOPE	28	trust/safety	23	BLOCKER:DEC-003 Moderation operation and the removal validation stay open with the policy decision.	Privacy and abusive-content risk stays open until policy, removal behavior, and jurisdiction-specific advice exist.
 REQ-RISK-007	IN_SCOPE	28	chain/security	03	BLOCKER:DEC-006 Licence incompatibility stays open with the project licence and with every dependency review.	Pin and review every dependency. Enterprise-only modules stay excluded unless a licence is explicitly obtained, which this beta does not do.
 REQ-RISK-008	IN_SCOPE	28	product/application	01	TEST: SELF-CHECK Goal 01 states that no creator-adoption forecast is assumed.	No creator-adoption forecast is assumed. One invited community with permitted content comes before any broader expansion.
-REQ-LAUNCH-001	IN_SCOPE	28	product/application	30	TEST: Goal 30 release decision lists each public-checklist item as met or still blocked, and this specification leaves every item unmet.	The public-release checklist is unmet. Public launch stays disabled.
+REQ-LAUNCH-001	IN_SCOPE	28	product/application	30	TEST: Goal 30 release decision lists each public-checklist item as met or still blocked, and Goal 01 leaves every item unmet.	The public-release checklist is unmet. Public launch stays disabled.
 REQ-SUCCESS-001	IN_SCOPE	28	product/application	30	TEST: Goal 30 runs the invited-creator demonstration: committed obligations, origin disconnect, survivor playback, repair, removal, and a second client.	The final success demonstration is a Goal 30 test, not a result of this document.
 ```
 

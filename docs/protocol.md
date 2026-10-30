@@ -139,7 +139,7 @@ Each open decision is a `BlockedDecisionParameter`: `decision_id`, `schema_versi
 | --- | --- | --- |
 | DEC-001 | `HostingIntent.role_name`, domain `SVN-HOSTING-INTENT-1` | `ACCOUNT_HOST_DELEGATE` is rejected. Only the labeled devnet role `DEVNET_TEST_ONLY` can pass, and only with the devnet flag. Host custody is not frozen. |
 | DEC-002 | `Provider.operator_group_id`, `AdmitProvider` | Register creates `APPLIED`. Admission requires the devnet test parameter. The group id is not evidence of an independent operator. |
-| DEC-003 | publication status and removal promise | Publication is off-chain. A moderator force-withdraw is an authority payload and does not run as an approved removal promise. |
+| DEC-003 | publication status, `MsgForceWithdraw`, and `ForceWithdrawChange` | The message can write a coordination tombstone. `removal_promise_approved` stays false. The removal promise itself is unset. |
 | DEC-004 | `Tombstone.retention_value_version` | The version stays 0. No retention duration is stored. `history_erased` must be false. |
 | DEC-005 | offer term `deadline - start`, allowance | Without the devnet test parameter the term is `ERROR_CODE_DECISION_BLOCKED`. The test number is not an allowance and not a sponsor. |
 | DEC-006 | creator upload licence id on the publish API | The publish route returns 403 while the licence text is unset. No licence file is implied. |
@@ -193,7 +193,7 @@ PROPOSED blueprint labels and v0 encodings:
 | PUBLISHED | Off-chain publication approval. Not a chain enum. |
 | WITHDRAWN | `CONTENT_STATE_WITHDRAWN` (2) plus a tombstone. |
 
-Provider states: `APPLIED` (1), `ADMITTED` (2), `DRAINING` (3), `DISABLED` (4). Draining stops new offers and keeps accepted reservations. Disablement is an authority outcome and is not executable while DEC-008 is unset.
+Provider states: `APPLIED` (1), `ADMITTED` (2), `DRAINING` (3), `DISABLED` (4). Draining stops new offers and keeps accepted reservations. `MsgDisableProvider` moves an admitted or draining provider to `DISABLED`. It is an authority message and, while DEC-008 is OPEN, it runs only when the labeled devnet test parameter is enabled. Existing reservations stay until a legal end.
 
 Authority proposal states: `OPEN` (1), `QUEUED` (2), `EXECUTED` (3), `EXPIRED` (4), `REJECTED` (5). Council voting is not CometBFT voting.
 
@@ -210,20 +210,22 @@ A live pair is one provider plus one content id plus `content_version`. A second
 | Transition | Signer | Who may relay | Replay and idempotency | Capacity |
 | --- | --- | --- | --- | --- |
 | `RegisterProvider` | Admitted provider account | Broadcaster or the signer, as the outer SDK signer | `provider_id` and business id. A second id is a duplicate. | Sets declared capacity. Reserved bytes start at 0. State is `APPLIED`. |
-| `AdmitProvider` | Authority submitter | Authority execution | Business id | Does not reserve. DEC-002 blocks admission outside the devnet test parameter. |
+| `AdmitProvider` | Authority submitter. The message is `MsgAdmitProvider`. The same effect is `AdmitProviderChange` inside a proposal payload. | Authority execution | Business id | Does not reserve. DEC-002 blocks admission outside the devnet test parameter. |
+| `DisableProvider` | Authority submitter. The message is `MsgDisableProvider`. | Authority execution | Business id | No release. New offers fail. |
 | `UpdateProvider` | Current provider account | The signer | Business id. Capacity below reserved bytes is `ERROR_CODE_CAPACITY`. | Changes declared capacity only. |
 | `RotateProviderKey` | Current provider key, domain `SVN-PROVIDER-ROTATE-1` | The signer | Expected generation must match. A stale generation is `ERROR_CODE_STALE_VERSION`. The old key is retained and cannot sign new accepts. | No capacity change. |
 | `DrainProvider` | Provider, domain `SVN-PROVIDER-DRAIN-1` | The signer | Business id | No release. New offers fail. Accepted reservations stay. |
 | `RegisterContent` | Admitted submitting host, plus inner hosting intent | Broadcaster may submit the outer transaction only | New `content_id`. Creates `PENDING` and no lease. | No reservation. DEC-001 blocks the intent role outside the devnet test role. |
-| `WithdrawContent` | Same submitting host, plus inner hosting intent | Same as register | Tombstone. A later register of the same id is a duplicate. A new business id on an already withdrawn id is `ERROR_CODE_WITHDRAWN`. | Voids open offers. Does not release an accepted reservation. |
+| `WithdrawContent` | Same submitting host, plus inner hosting intent | Same as register | Tombstone. A later register of the same id is a duplicate. A second withdraw is `ERROR_CODE_WITHDRAWN`. | Voids open offers. Does not release an accepted reservation. `reason_digest` is stored and is not the complaint text. |
+| `ForceWithdraw` | Authority submitter. The message is `MsgForceWithdraw`. The same effect is `ForceWithdrawChange`. | Authority execution | Business id | Same tombstone rules. `removal_promise_approved` stays false while DEC-003 is OPEN. |
 | `OfferLease` | Admitted scheduler service | Broadcaster | `offer_id`. Expired by committed time is `ERROR_CODE_EXPIRED`. | Checks capacity and does not reserve. DEC-005 blocks the term length outside the devnet test number. |
 | `AcceptLease` | Inner provider signature required. Outer signer may be the provider or a broadcaster. | Broadcaster relays; it does not sign acceptance | Business id. Same payload is idempotent. | Reserves `package_bytes` or returns overflow, capacity, duplicate, expired, withdrawn, unauthorized, or wrong domain. |
-| `RenewLease` | Inner provider signature, domain `SVN-PROVIDER-RENEW-1` | Broadcaster or provider | Term version must be current + 1. | Does not change reserved bytes. A changed byte count is `ERROR_CODE_CONFLICT`. |
+| `RenewLease` | Inner provider signature, domain `SVN-PROVIDER-RENEW-1` | Broadcaster or provider | Term version must be current + 1. `manifest_digest` must equal the committed digest. | Does not change reserved bytes. A changed byte count or digest is `ERROR_CODE_CONFLICT`. A non-empty `evidence_id` cannot extend the lease. |
 | `EndLease` | Provider signature, or authority when `authority_end` is true | Broadcaster for the provider path | Same business id is idempotent. A second business id after release is `ERROR_CODE_UNDERFLOW`. | Releases once. |
 | `SubmitAuditBatch` | Auditor, domain `SVN-EVIDENCE-ATTESTATION-1` | Broadcaster | Evidence id and batch id. Batch size is at most 32. | No reservation and no lease extension. |
-| `ProposeChange` | A devnet test seat while DEC-008 is unset | Any node may gossip; execution still checks the seat | Proposal id. Base policy version must match. | No capacity change. A key named like a DEC value is forbidden. |
+| `ProposeChange` | A devnet test seat while DEC-008 is unset | Any node may gossip; execution still checks the seat | Proposal id. Base policy version must match. The payload is one `ProposalPayload` alternative, and `payload_digest` is SHA-256 of its SVN-JCS-1 form. | No capacity change until `ExecuteChange`. A key named like a DEC value is forbidden. |
 | `ApproveChange` | A seat, once | Same | Same seat again is `ERROR_CODE_REPLAY`. | When approvals reach the devnet test threshold, state becomes `QUEUED` after the test delay. |
-| `ExecuteChange` | Authority submitter | Not a substitute for council signatures | Business id | Conflicting payload on the same parameter key is `ERROR_CODE_CONFLICT`. A stale base on another key is `ERROR_CODE_STALE_VERSION`. |
+| `ExecuteChange` | Authority submitter | Not a substitute for council signatures | Business id | Applies the stored payload: validator power, a governed limit at or below the safety cap, admission, disablement, or force-withdraw. A digest mismatch is `ERROR_CODE_INTEGRITY`. Removing all voting power is `ERROR_CODE_FORBIDDEN` and the proposal becomes `REJECTED`. Conflicting payloads on the same parameter key are `ERROR_CODE_CONFLICT`. A stale base is `ERROR_CODE_STALE_VERSION`. |
 | Begin-block expiry | No user signer | Not a transaction | Processes a sorted, bounded prefix of due ids | Releases a due active lease once. Deletes a due offer with no release. Marks due evidence expired without renewing a lease. |
 
 Withdrawal stops new sponsored leases and stops a silent revival of the same content id. It does not pretend the ledger row was erased.
@@ -272,7 +274,7 @@ Client routes, in `api/client-api.json`: `POST /upload-intents`, `GET /uploads/{
 
 Provider routes, in `api/provider-api.json`: `GET /capability`, `POST /offers/{offer_id}/acceptance`, `GET /packages/{content_id}/{content_version}`, `POST /transfers/{transfer_id}/receipt`, `POST /inventory`.
 
-Chain commands: `RegisterProvider`, `UpdateProvider`, `RotateProviderKey`, `DrainProvider`, `RegisterContent`, `WithdrawContent`, `OfferLease`, `AcceptLease`, `RenewLease`, `EndLease`, `SubmitAuditBatch`, `ProposeChange`, `ApproveChange`, `ExecuteChange`.
+Chain commands: `RegisterProvider`, `UpdateProvider`, `RotateProviderKey`, `DrainProvider`, `AdmitProvider`, `DisableProvider`, `RegisterContent`, `WithdrawContent`, `ForceWithdraw`, `OfferLease`, `AcceptLease`, `RenewLease`, `EndLease`, `SubmitAuditBatch`, `ProposeChange`, `ApproveChange`, `ExecuteChange`. `ProposeChange` carries a `ProposalPayload` and the digest of that payload. `ExecuteChange` applies it, including `ValidatorPowerChange`.
 
 Chain queries: provider, providers, content, active leases, deadlines, evidence, governance, policy. Queries use `PageRequest`. `limit` is at most 100. `page_key` is at most 64 bytes.
 
@@ -296,6 +298,8 @@ The blueprint's numeric gates are PROPOSED. This goal does not run them as measu
 | Duplicate reservation | `duplicate-lease` | Second accept does not reserve again. |
 | Withdrawn content | `withdrawn-blocks-offer`, `withdrawn-blocks-revival` | Tombstone blocks a new offer and a revived id. |
 | Idempotency | `idempotent-retry-no-double-reserve`, `underflow-double-end` | One reservation. Not a process restart. |
+| Equal application hashes after deterministic replay | `replay-app-hash` runs one committed sequence twice from the same genesis and compares the canonical application hash. | Contract simulation. Not Goal 05's process replay. Not passed as that measurement. |
+| Hosting resilience | `hosting-resilience` keeps three designated commitments, marks one host unreachable, leaves the origin out of the chain record, and accepts a repair lease without releasing the other reachable reservations. | Contract simulation. The byte retrieval and repair test is Goal 18. Not run as that measurement. Not passed. |
 | Playback, processing, app targets, recovery, moderation timing, operator independence | Later goals. Numbers stay PROPOSED. | Not run. Not passed. |
 
 The same simulation covers overflow, underflow, stale term versions, stale key generations, bounded expiry, and conflicting governance updates (`overflow-reserve`, `underflow-double-end`, `stale-term-version`, `rotate-key-stale-generation`, `bounded-expiry`, `conflict-governance`).

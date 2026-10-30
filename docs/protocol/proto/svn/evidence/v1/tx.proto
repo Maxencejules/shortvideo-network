@@ -21,6 +21,8 @@ message EvidenceItem {
   svn.types.v1.Digest observation_digest = 6;
   int64 expiry_unix_seconds = 7;
   bool attestation = 8;
+  // When true the recorded state is REJECTED. The item is still an attestation.
+  bool reject = 9;
 }
 
 message MsgSubmitAuditBatch {

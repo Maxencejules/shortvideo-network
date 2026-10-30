@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import hashlib
 
+from jcs import canonicalize
+
 from spec_machine import (
     AUDITOR,
     AUDITOR_KEY,
@@ -15,12 +17,13 @@ from spec_machine import (
     BROADCASTER,
     CHAIN_TIME,
     DRAIN_DOMAIN,
+    ENDPOINT,
     EVIDENCE_DOMAIN,
     HOSTING,
-    NOTE_A,
-    NOTE_B,
+    MANIFEST,
     PACKAGE_BYTES,
     PROVIDER_ACCOUNT,
+    REASON,
     RENEW_DOMAIN,
     ROTATE_DOMAIN,
     SERVICE,
@@ -28,11 +31,13 @@ from spec_machine import (
     UINT64_MAX,
     accept,
     admit_provider,
+    app_hash,
     apply,
     devnet_state,
     intent,
     offer,
     production_state,
+    pubkey_for,
     register_content,
     register_provider,
     signature,
@@ -72,15 +77,17 @@ def _active() -> dict:
     return state
 
 
-def _propose(proposal_id: str, digest: str) -> dict:
+def _propose(proposal_id: str, value: int, limit_key: str = "devnet-note", base: int = 1) -> dict:
+    payload = {"kind": "governed_limit", "limit_key": limit_key, "value": value}
     return {
         "op": "ProposeChange",
         "signer": "seat-1",
         "business_id": f"prop-{proposal_id}",
         "proposal_id": proposal_id,
-        "parameter_key": "devnet-note",
-        "base_policy_version": 1,
-        "payload_digest": digest,
+        "parameter_key": limit_key,
+        "base_policy_version": base,
+        "payload": payload,
+        "payload_digest": hashlib.sha256(canonicalize(payload).encode()).hexdigest(),
         "expiry_unix_seconds": CHAIN_TIME + 10000,
     }
 
@@ -224,6 +231,7 @@ def cases() -> list[tuple[str, str | None]]:
         "business_id": "withdraw-c1",
         "content_id": "c1",
         "content_version": 1,
+        "reason_digest": REASON,
         "hosting_intent": intent(),
     }
     check("withdrawn-blocks-offer", _play(state, [withdrawn, offer("o9") | {"expect": "ERROR_CODE_WITHDRAWN"}]))
@@ -242,6 +250,7 @@ def cases() -> list[tuple[str, str | None]]:
                     "business_id": "withdraw-c1b",
                     "content_id": "c1",
                     "content_version": 1,
+                    "reason_digest": REASON,
                     "hosting_intent": intent(),
                 },
                 revival,
@@ -314,6 +323,7 @@ def cases() -> list[tuple[str, str | None]]:
                     "term_version": 1,
                     "deadline_unix_seconds": CHAIN_TIME + TERM_SECONDS + TERM_SECONDS,
                     "package_bytes": PACKAGE_BYTES,
+                    "manifest_digest": MANIFEST,
                     "provider_signature": signature(RENEW_DOMAIN, "key-p1"),
                     "expect": "ERROR_CODE_STALE_VERSION",
                 }
@@ -327,8 +337,8 @@ def cases() -> list[tuple[str, str | None]]:
         _play(
             state,
             [
-                _propose("pa", NOTE_A),
-                _propose("pb", NOTE_B),
+                _propose("pa", 1),
+                _propose("pb", 2),
                 _approve("pa", "seat-1"),
                 _approve("pa", "seat-2"),
                 {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
@@ -373,6 +383,7 @@ def cases() -> list[tuple[str, str | None]]:
                     "term_version": 2,
                     "deadline_unix_seconds": CHAIN_TIME + TERM_SECONDS + TERM_SECONDS,
                     "package_bytes": PACKAGE_BYTES,
+                    "manifest_digest": MANIFEST,
                     "provider_signature": signature(RENEW_DOMAIN, "key-p1"),
                     "evidence_id": "ev-1",
                     "expect": "ERROR_CODE_EXPIRED",
@@ -411,6 +422,7 @@ def cases() -> list[tuple[str, str | None]]:
                     "term_version": 2,
                     "deadline_unix_seconds": deadline + TERM_SECONDS,
                     "package_bytes": PACKAGE_BYTES,
+                    "manifest_digest": MANIFEST,
                     "provider_signature": signature(RENEW_DOMAIN, "key-p1"),
                     "evidence_id": "ev-2",
                     "expect": "ERROR_CODE_FORBIDDEN",
@@ -536,6 +548,7 @@ def cases() -> list[tuple[str, str | None]]:
                     "business_id": "rot-1",
                     "provider_id": "p1",
                     "new_signing_key_id": "key-p1b",
+                    "new_signing_pubkey": pubkey_for("p1b"),
                     "expected_generation": 9,
                     "current_key_signature": signature(ROTATE_DOMAIN, "key-p1"),
                     "expect": "ERROR_CODE_STALE_VERSION",
@@ -574,6 +587,410 @@ def cases() -> list[tuple[str, str | None]]:
     hosted["hosting_intent"] = intent(role_name="ACCOUNT_HOST_DELEGATE")
     hosted["expect"] = "ERROR_CODE_FORBIDDEN"
     check("host-custody-not-assumed", _play(devnet_state(), [hosted]))
+
+    state = _active()
+    renewed_deadline = state["leases"]["l1"]["deadline_unix_seconds"] + TERM_SECONDS
+    reserved_before = state["providers"]["p1"]["reserved_bytes"]
+    check(
+        "renew-succeeds",
+        _play(
+            state,
+            [
+                {
+                    "op": "RenewLease",
+                    "signer": BROADCASTER,
+                    "business_id": "renew-ok",
+                    "lease_id": "l1",
+                    "term_version": 2,
+                    "deadline_unix_seconds": renewed_deadline,
+                    "package_bytes": PACKAGE_BYTES,
+                    "manifest_digest": MANIFEST,
+                    "provider_signature": signature(RENEW_DOMAIN, "key-p1"),
+                }
+            ],
+        ),
+    )
+    if found[-1][1] is None and (
+        state["leases"]["l1"]["state"] != "RENEWED" or state["providers"]["p1"]["reserved_bytes"] != reserved_before
+    ):
+        found[-1] = (found[-1][0], "renewal did not keep the reservation")
+
+    state = _active()
+    check(
+        "renew-changed-bytes",
+        _play(
+            state,
+            [
+                {
+                    "op": "RenewLease",
+                    "signer": BROADCASTER,
+                    "business_id": "renew-bytes",
+                    "lease_id": "l1",
+                    "term_version": 2,
+                    "deadline_unix_seconds": CHAIN_TIME + TERM_SECONDS + TERM_SECONDS,
+                    "package_bytes": PACKAGE_BYTES + 1,
+                    "manifest_digest": MANIFEST,
+                    "provider_signature": signature(RENEW_DOMAIN, "key-p1"),
+                    "expect": "ERROR_CODE_CONFLICT",
+                }
+            ],
+        ),
+    )
+
+    state = _seed()
+    check(
+        "update-provider",
+        _play(
+            state,
+            [
+                {
+                    "op": "UpdateProvider",
+                    "signer": PROVIDER_ACCOUNT,
+                    "business_id": "upd-p1",
+                    "provider_id": "p1",
+                    "declared_capacity_bytes": 2_000_000,
+                    "endpoint_manifest_digest": hashlib.sha256(b"svn-endpoint-v2").hexdigest(),
+                }
+            ],
+        ),
+    )
+    if found[-1][1] is None and state["providers"]["p1"]["admitted_capacity_bytes"] != 2_000_000:
+        found[-1] = (found[-1][0], "capacity was not updated")
+
+    state = _active()
+    check(
+        "update-provider-below-reserved",
+        _play(
+            state,
+            [
+                {
+                    "op": "UpdateProvider",
+                    "signer": PROVIDER_ACCOUNT,
+                    "business_id": "upd-low",
+                    "provider_id": "p1",
+                    "declared_capacity_bytes": 1,
+                    "endpoint_manifest_digest": ENDPOINT,
+                    "expect": "ERROR_CODE_CAPACITY",
+                }
+            ],
+        ),
+    )
+
+    check(
+        "admit-blocked-by-dec-002",
+        _play(
+            production_state(),
+            [register_provider(), admit_provider() | {"expect": "ERROR_CODE_DECISION_BLOCKED"}],
+        ),
+    )
+    state = _seed()
+    # _seed already admitted p1. Register a second id and admit with the wrong role.
+    second = register_provider(provider_id="p2")
+    bad_admit = admit_provider(provider_id="p2")
+    bad_admit["signer"] = SERVICE
+    bad_admit["expect"] = "ERROR_CODE_FORBIDDEN"
+    check("admit-non-authority", _play(devnet_state(), [second, bad_admit]))
+
+    state = _seed()
+    first_withdraw = {
+        "op": "WithdrawContent",
+        "signer": SERVICE,
+        "business_id": "withdraw-once",
+        "content_id": "c1",
+        "content_version": 1,
+        "reason_digest": REASON,
+        "hosting_intent": intent(),
+    }
+    second_withdraw = dict(first_withdraw)
+    second_withdraw["business_id"] = "withdraw-twice"
+    second_withdraw["expect"] = "ERROR_CODE_WITHDRAWN"
+    check("second-withdraw", _play(state, [first_withdraw, second_withdraw]))
+
+    state = devnet_state()
+    check(
+        "approve-same-seat-replay",
+        _play(
+            state,
+            [
+                _propose("ps", 3),
+                _approve("ps", "seat-1"),
+                _approve("ps", "seat-1") | {"business_id": "yes-ps-seat-1-again", "expect": "ERROR_CODE_REPLAY"},
+            ],
+        ),
+    )
+
+    state = devnet_state()
+    stale = _propose("stale", 4, base=9)
+    stale["expect"] = "ERROR_CODE_STALE_VERSION"
+    named = _propose("named", 4, limit_key="dec-008")
+    named["expect"] = "ERROR_CODE_FORBIDDEN"
+    check("propose-stale-base", _play(state, [stale]))
+    check("propose-dec-named-key", _play(devnet_state(), [named]))
+
+    state = devnet_state()
+    check(
+        "execute-before-delay",
+        _play(
+            state,
+            [
+                _propose("early", 5),
+                _approve("early", "seat-1"),
+                _approve("early", "seat-2"),
+                _execute("early") | {"expect": "ERROR_CODE_OUT_OF_RANGE"},
+            ],
+        ),
+    )
+
+    state = _active()
+    check(
+        "authority-end-lease",
+        _play(
+            state,
+            [
+                {
+                    "op": "EndLease",
+                    "signer": AUTHORITY,
+                    "business_id": "end-auth",
+                    "lease_id": "l1",
+                    "authority_end": True,
+                }
+            ],
+        ),
+    )
+    if found[-1][1] is None and state["providers"]["p1"]["reserved_bytes"] != 0:
+        found[-1] = (found[-1][0], "authority end did not release")
+
+    state = _seed()
+    check(
+        "rotate-then-old-key-fails",
+        _play(
+            state,
+            [
+                {
+                    "op": "RotateProviderKey",
+                    "signer": PROVIDER_ACCOUNT,
+                    "business_id": "rot-ok",
+                    "provider_id": "p1",
+                    "new_signing_key_id": "key-p1b",
+                    "new_signing_pubkey": pubkey_for("p1b"),
+                    "expected_generation": 1,
+                    "current_key_signature": signature(ROTATE_DOMAIN, "key-p1"),
+                },
+                offer(),
+                accept(key_id="key-p1") | {"expect": "ERROR_CODE_UNAUTHORIZED"},
+                accept(lease_id="l2", business_id="accept-l2", key_id="key-p1b"),
+            ],
+        ),
+    )
+    if found[-1][1] is None and state["providers"]["p1"]["signing_pubkey"] != pubkey_for("p1b"):
+        found[-1] = (found[-1][0], "pubkey was not rotated")
+
+    state = _active()
+    check(
+        "provider-disabled",
+        _play(
+            state,
+            [
+                {"op": "DisableProvider", "signer": AUTHORITY, "business_id": "dis-p1", "provider_id": "p1"},
+                offer("o-disabled") | {"expect": "ERROR_CODE_FORBIDDEN"},
+            ],
+        ),
+    )
+    if found[-1][1] is None and (
+        state["providers"]["p1"]["state"] != "DISABLED" or state["leases"]["l1"]["reservation_held"] is not True
+    ):
+        found[-1] = (found[-1][0], "disablement changed the accepted reservation")
+
+    state = devnet_state()
+    expiring = _propose("exp", 6)
+    expiring["expiry_unix_seconds"] = CHAIN_TIME + 20
+    check(
+        "proposal-expired",
+        _play(
+            state,
+            [
+                expiring,
+                {"op": "CommitBlock", "header_time": CHAIN_TIME + 20},
+                _execute("exp") | {"expect": "ERROR_CODE_EXPIRED"},
+            ],
+        ),
+    )
+    if found[-1][1] is None and state["proposals"]["exp"]["state"] != "EXPIRED":
+        found[-1] = (found[-1][0], "proposal was not marked expired")
+
+    state = devnet_state()
+    state["validators"] = {"v1": 1}
+    zero = {
+        "kind": "validator_power",
+        "consensus_pubkey": pubkey_for("v1"),
+        "power": 0,
+        "node_id": "v1",
+    }
+    zero_step = {
+        "op": "ProposeChange",
+        "signer": "seat-1",
+        "business_id": "prop-zero",
+        "proposal_id": "zero",
+        "parameter_key": "validator-v1",
+        "base_policy_version": 1,
+        "payload": zero,
+        "payload_digest": hashlib.sha256(canonicalize(zero).encode()).hexdigest(),
+        "expiry_unix_seconds": CHAIN_TIME + 10000,
+    }
+    check(
+        "proposal-rejected",
+        _play(
+            state,
+            [
+                zero_step,
+                _approve("zero", "seat-1"),
+                _approve("zero", "seat-2"),
+                {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
+                _execute("zero") | {"expect": "ERROR_CODE_FORBIDDEN"},
+            ],
+        ),
+    )
+    if found[-1][1] is None and (state["proposals"]["zero"]["state"] != "REJECTED" or state["validators"] != {"v1": 1}):
+        found[-1] = (found[-1][0], "zero-power change was applied")
+
+    state = devnet_state()
+    added = {
+        "kind": "validator_power",
+        "consensus_pubkey": pubkey_for("v5"),
+        "power": 1,
+        "node_id": "v5",
+    }
+    add_step = {
+        "op": "ProposeChange",
+        "signer": "seat-1",
+        "business_id": "prop-v5",
+        "proposal_id": "addv5",
+        "parameter_key": "validator-v5",
+        "base_policy_version": 1,
+        "payload": added,
+        "payload_digest": hashlib.sha256(canonicalize(added).encode()).hexdigest(),
+        "expiry_unix_seconds": CHAIN_TIME + 10000,
+    }
+    check(
+        "validator-power-applied",
+        _play(
+            state,
+            [
+                add_step,
+                _approve("addv5", "seat-1"),
+                _approve("addv5", "seat-2"),
+                {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
+                _execute("addv5"),
+            ],
+        ),
+    )
+    if found[-1][1] is None and state["validators"].get("v5") != 1:
+        found[-1] = (found[-1][0], "validator power was not written")
+
+    state = _active()
+    check(
+        "evidence-rejected",
+        _play(
+            state,
+            [
+                {
+                    "op": "SubmitAuditBatch",
+                    "signer": AUDITOR,
+                    "business_id": "audit-rej",
+                    "batch_id": "batch-rej",
+                    "epoch": 1,
+                    "evidence_id": "ev-rej",
+                    "kind": "AUDITOR_ATTESTATION",
+                    "lease_id": "l1",
+                    "content_id": "c1",
+                    "content_version": 1,
+                    "expiry_unix_seconds": CHAIN_TIME + 100,
+                    "attestation": True,
+                    "reject": True,
+                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+                }
+            ],
+        ),
+    )
+    if found[-1][1] is None and state["evidence"]["ev-rej"]["state"] != "REJECTED":
+        found[-1] = (found[-1][0], "evidence was not rejected")
+    if found[-1][1] is None and state["leases"]["l1"]["state"] != "ACTIVE":
+        found[-1] = (found[-1][0], "rejected evidence changed the lease")
+
+    check(
+        "force-withdraw",
+        _play(
+            _seed(),
+            [
+                {
+                    "op": "ForceWithdraw",
+                    "signer": AUTHORITY,
+                    "business_id": "force-c1",
+                    "content_id": "c1",
+                    "content_version": 1,
+                    "reason_digest": REASON,
+                }
+            ],
+        ),
+    )
+    # The play above discards state. Repeat into a named state.
+    forced = _seed()
+    problem = _play(
+        forced,
+        [
+            {
+                "op": "ForceWithdraw",
+                "signer": AUTHORITY,
+                "business_id": "force-c1b",
+                "content_id": "c1",
+                "content_version": 1,
+                "reason_digest": REASON,
+            }
+        ],
+    )
+    if problem:
+        found[-1] = ("force-withdraw", problem)
+    elif forced["contents"]["c1"]["tombstone"]["history_erased"] or forced["contents"]["c1"]["removal_promise_approved"]:
+        found[-1] = ("force-withdraw", "force withdraw approved a removal promise or erased history")
+
+    bad_force = {
+        "op": "ForceWithdraw",
+        "signer": SERVICE,
+        "business_id": "force-nope",
+        "content_id": "c1",
+        "content_version": 1,
+        "reason_digest": REASON,
+        "expect": "ERROR_CODE_FORBIDDEN",
+    }
+    check("force-withdraw-non-authority", _play(_seed(), [bad_force]))
+
+    left = devnet_state()
+    right = devnet_state()
+    steps = [register_provider(), admit_provider(), register_content(), offer(), accept()]
+    check("replay-app-hash", None if _play(left, steps) is None and _play(right, steps) is None and app_hash(left) == app_hash(right) else "hashes diverged")
+
+    hosts = devnet_state()
+    resilience_steps = []
+    for name in ("p1", "p2", "p3", "p4"):
+        resilience_steps.append(register_provider(provider_id=name))
+        resilience_steps.append(admit_provider(provider_id=name))
+    resilience_steps.append(register_content())
+    for name, offer_id, lease_id in (("p1", "o1", "l1"), ("p2", "o2", "l2"), ("p3", "o3", "l3")):
+        resilience_steps.append(offer(offer_id, provider_id=name))
+        resilience_steps.append(accept(offer_id, lease_id, business_id=f"accept-{lease_id}", key_id=f"key-{name}"))
+    resilience_steps.append(
+        {"op": "SetReachability", "provider_id": "p1", "lease_id": "l1", "status": "REACHABILITY_UNREACHABLE"}
+    )
+    resilience_steps.append(offer("o4", provider_id="p4"))
+    resilience_steps.append(accept("o4", "l4", business_id="accept-l4", key_id="key-p4"))
+    check("hosting-resilience", _play(hosts, resilience_steps))
+    if found[-1][1] is None and not (
+        hosts["leases"]["l2"]["reservation_held"]
+        and hosts["leases"]["l3"]["reservation_held"]
+        and hosts["leases"]["l4"]["state"] == "ACTIVE"
+        and hosts["reachability"]["p1"] == "REACHABILITY_UNREACHABLE"
+    ):
+        found[-1] = (found[-1][0], "repair dropped a reachable lease")
     return found
 
 

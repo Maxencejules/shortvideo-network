@@ -16,7 +16,7 @@
     "lease_id": {"type": "string", "minLength": 1, "maxLength": 64},
     "content_id": {"type": "string", "minLength": 1, "maxLength": 64},
     "content_version": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
-    "observation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "observation_sha256": {"type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-f]{64}$"},
     "epoch": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
     "expiry_unix_seconds": {"type": "integer", "minimum": 1, "maximum": 253402300799},
     "signer_key_id": {"type": "string", "minLength": 1, "maxLength": 64}

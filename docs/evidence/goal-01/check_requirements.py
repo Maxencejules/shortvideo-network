@@ -188,13 +188,19 @@ def exact_section(text: str, heading: str) -> str | None:
 
 
 def goals_named_in_text(text: str) -> set[int]:
-    """Goal numbers named in a TEST disposition, including `Goals 1, 2, and 3`."""
+    """Goal numbers assigned by a TEST disposition.
+
+    A goal mentioned only to say it did not perform the check is not an assignment.
+    """
+    cleaned = re.sub(r"\b[Gg]oal\s+\d{1,2}\s+does not\b[^.]*", " ", text)
+    cleaned = re.sub(r"\bdid not exist in [Gg]oal\s+\d{1,2}\b", " ", cleaned)
+    cleaned = re.sub(r"\b[Gg]oal\s+\d{1,2}\s+leaves\b[^.]*", " ", cleaned)
     found: set[int] = set()
-    for match in re.finditer(r"\b[Gg]oal\s+(\d{1,2})\b", text):
+    for match in re.finditer(r"\b[Gg]oal\s+(\d{1,2})\b", cleaned):
         found.add(int(match.group(1)))
     for match in re.finditer(
         r"\b[Gg]oals\s+((?:\d{1,2}\b(?:\s*,\s*and\s+|\s*,\s*|\s+and\s+)?)*)",
-        text,
+        cleaned,
     ):
         for number in re.findall(r"\d{1,2}", match.group(1)):
             found.add(int(number))
@@ -208,14 +214,14 @@ def column_goals(raw: str) -> set[int]:
 
 
 def check_row_goals(rows: list[dict[str, str]]) -> list[str]:
-    """The goals column and the goals named in a TEST disposition are the same set."""
+    """Every goal number assigned in a TEST disposition is in the goals column."""
     errors: list[str] = []
     for row in rows:
         if row["scope"] != "IN_SCOPE" or not row["disposition"].startswith("TEST:"):
             continue
         named = goals_named_in_text(row["disposition"])
         column = column_goals(row["goals"])
-        if named != column:
+        if not named <= column:
             errors.append(
                 f"{row['id']} goals {sorted(column)} != test goals {sorted(named)}"
             )

@@ -16,14 +16,56 @@ option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/aut
 // parameter is unapproved and devnet test parameters are not enabled.
 // There is no MsgCreateValidator in this protocol.
 
+// Allowed governance effects. ExecuteChange applies exactly one of these.
+// The digest is SHA-256 over the SVN-JCS-1 encoding of the same fields.
+// A digest that does not match the payload is rejected. There is no
+// google.protobuf.Any wrapper.
+message ValidatorPowerChange {
+  // bound: consensus_pubkey_bytes=32
+  bytes consensus_pubkey = 1;
+  // Zero removes that validator. The resulting set must keep positive power.
+  int64 power = 2;
+  string node_id = 3;
+}
+
+message GovernedLimitChange {
+  string limit_key = 1;
+  uint64 value = 2;
+}
+
+message AdmitProviderChange {
+  string provider_id = 1;
+}
+
+message DisableProviderChange {
+  string provider_id = 1;
+}
+
+message ForceWithdrawChange {
+  string content_id = 1;
+  uint64 content_version = 2;
+  svn.types.v1.Digest reason_digest = 3;
+}
+
+message ProposalPayload {
+  oneof change {
+    ValidatorPowerChange validator_power = 1;
+    GovernedLimitChange governed_limit = 2;
+    AdmitProviderChange admit_provider = 3;
+    DisableProviderChange disable_provider = 4;
+    ForceWithdrawChange force_withdraw = 5;
+  }
+}
+
 message MsgProposeChange {
   bytes signer = 1;
   string business_id = 2;
   string proposal_id = 3;
   string parameter_key = 4;
   uint64 base_policy_version = 5;
-  svn.types.v1.Digest payload_digest = 6;
-  int64 expiry_unix_seconds = 7;
+  ProposalPayload payload = 6;
+  svn.types.v1.Digest payload_digest = 7;
+  int64 expiry_unix_seconds = 8;
 }
 
 message MsgApproveChange {

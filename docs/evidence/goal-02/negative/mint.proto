@@ -1,0 +1,3 @@
+syntax = "proto3";
+package negative.mint;
+message MsgMint { string denom = 1; uint64 amount = 2; }

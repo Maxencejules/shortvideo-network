@@ -26,7 +26,8 @@ interface ValidVec {
 }
 interface InvalidVec {
   id: string;
-  raw: string;
+  raw?: string;
+  raw_hex?: string;
   reason: string;
 }
 interface IntVec {
@@ -331,9 +332,22 @@ function parseArray(raw: string, index: number, depth: number): [Json, number] {
 }
 
 function parseAndCanonicalize(raw: string): string {
-  const [value, index] = parseValue(raw, 0, 0);
-  const end = skip(raw, index);
-  if (end !== raw.length) {
+  return parseBytes(Buffer.from(raw, "utf8"));
+}
+
+function parseBytes(raw: Buffer): string {
+  if (raw.length >= 3 && raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf) {
+    throw new JCSError("bom");
+  }
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(raw);
+  } catch {
+    throw new JCSError("invalid_utf8");
+  }
+  const [value, index] = parseValue(text, 0, 0);
+  const end = skip(text, index);
+  if (end !== text.length) {
     throw new JCSError("trailing");
   }
   return canonicalize(value);
@@ -397,7 +411,11 @@ function main(): void {
   }
   for (const item of doc.invalid) {
     try {
-      parseAndCanonicalize(item.raw);
+      if (item.raw_hex) {
+        parseBytes(Buffer.from(item.raw_hex, "hex"));
+      } else {
+        parseAndCanonicalize(item.raw ?? "");
+      }
       throw new Error(`INVALID ${item.id} MISSED`);
     } catch (error) {
       if (!(error instanceof JCSError) || error.reason !== item.reason) {

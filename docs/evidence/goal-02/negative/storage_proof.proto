@@ -1,0 +1,7 @@
+syntax = "proto3";
+package negative.proof;
+enum EvidenceKind {
+  EVIDENCE_KIND_UNSPECIFIED = 0;
+  EVIDENCE_KIND_STORAGE_PROOF = 3;
+}
+message Holder { EvidenceKind kind = 1; }

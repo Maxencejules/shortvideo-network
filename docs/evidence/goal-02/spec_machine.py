@@ -152,6 +152,23 @@ def check_digest(value: object) -> str | None:
     return None
 
 
+def check_pubkey(value: object) -> str | None:
+    width = BOUNDS["ed25519_public_bytes"] * 2
+    if not isinstance(value, str) or len(value) != width:
+        return "ERROR_CODE_BOUNDS"
+    if any(char not in "0123456789abcdef" for char in value):
+        return "ERROR_CODE_BOUNDS"
+    return None
+
+
+def pubkey_for(label: str) -> str:
+    return hashlib.sha256(f"pubkey:{label}".encode("utf-8")).hexdigest()
+
+
+ENDPOINT = hashlib.sha256(b"svn-endpoint-v1").hexdigest()
+REASON = hashlib.sha256(b"svn-reason-v1").hexdigest()
+
+
 def check_time(value: object) -> str | None:
     number = as_int(value)
     if number is None:
@@ -326,6 +343,8 @@ def op_register_provider(state: dict, step: dict) -> dict[str, object]:
         "business_id",
         "provider_id",
         "signing_key_id",
+        "signing_pubkey",
+        "endpoint_manifest_digest",
         "declared_capacity_bytes",
         "operator_group_id",
     }
@@ -339,6 +358,12 @@ def op_register_provider(state: dict, step: dict) -> dict[str, object]:
         id_error = check_id(step[name])
         if id_error:
             return err(id_error)
+    pubkey_error = check_pubkey(step["signing_pubkey"])
+    if pubkey_error:
+        return err(pubkey_error)
+    digest_error = check_digest(step["endpoint_manifest_digest"])
+    if digest_error:
+        return err(digest_error)
     capacity = as_int(step["declared_capacity_bytes"])
     if capacity is None:
         return err("ERROR_CODE_MALFORMED")
@@ -352,12 +377,15 @@ def op_register_provider(state: dict, step: dict) -> dict[str, object]:
     state["providers"][step["provider_id"]] = {
         "account": step["signer"],
         "signing_key_id": step["signing_key_id"],
+        "signing_pubkey": step["signing_pubkey"],
+        "endpoint_manifest_digest": step["endpoint_manifest_digest"],
         "key_generation": 1,
         "state": "APPLIED",
         "admitted_capacity_bytes": capacity,
         "reserved_bytes": 0,
         "operator_group_id": step["operator_group_id"],
         "previous_keys": [],
+        "previous_pubkeys": [],
     }
     return finish(state, {"type": "ProviderRegistered", "provider_id": step["provider_id"], "state": "APPLIED"})
 
@@ -451,39 +479,51 @@ def op_register_content(state: dict, step: dict) -> dict[str, object]:
     )
 
 
+def withdraw_content(state: dict, signer: str, content_id: str, version: object, reason_digest: str, authority: bool) -> dict[str, object]:
+    content = state["contents"].get(content_id)
+    if content is None:
+        return err("ERROR_CODE_NOT_FOUND")
+    if not authority and content["submitting_host"] != signer:
+        return err("ERROR_CODE_FORBIDDEN")
+    if content["state"] == "WITHDRAWN":
+        return err("ERROR_CODE_WITHDRAWN")
+    number = as_int(version)
+    if number is None:
+        return err("ERROR_CODE_MALFORMED")
+    if number != content["content_version"]:
+        return err("ERROR_CODE_STALE_VERSION")
+    content["state"] = "WITHDRAWN"
+    content["removal_promise_approved"] = False
+    content["tombstone"] = {
+        "history_erased": False,
+        "retention_decision_id": "DEC-004",
+        "retention_value_version": 0,
+        "committed_unix_seconds": state["chain_time"],
+        "reason_digest": reason_digest,
+    }
+    for offer_id in [offer_id for offer_id, offer in state["offers"].items() if offer["content_id"] == content_id]:
+        del state["offers"][offer_id]
+    return finish(state, {"type": "ContentWithdrawn", "content_id": content_id, "history_erased": False})
+
+
 def op_withdraw_content(state: dict, step: dict) -> dict[str, object]:
-    allowed = {"signer", "business_id", "content_id", "content_version", "hosting_intent"}
+    allowed = {"signer", "business_id", "content_id", "content_version", "hosting_intent", "reason_digest"}
     bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
     if bad:
         return bad
     role_error = check_role(state, step["signer"], "ADMITTED_SERVICE")
     if role_error:
         return err(role_error)
+    digest_error = check_digest(step["reason_digest"])
+    if digest_error:
+        return err(digest_error)
     intent_error = intent_ok(state, step["hosting_intent"])
     if intent_error:
         return err(intent_error)
-    gate = business_gate(state, step, ("content_id", "content_version", "hosting_intent"))
+    gate = business_gate(state, step, ("content_id", "content_version", "hosting_intent", "reason_digest"))
     if gate:
         return gate
-    content = state["contents"].get(step["content_id"])
-    if content is None:
-        return err("ERROR_CODE_NOT_FOUND")
-    if content["submitting_host"] != step["signer"]:
-        return err("ERROR_CODE_FORBIDDEN")
-    if content["state"] == "WITHDRAWN":
-        return err("ERROR_CODE_WITHDRAWN")
-    if step["content_version"] != content["content_version"]:
-        return err("ERROR_CODE_STALE_VERSION")
-    content["state"] = "WITHDRAWN"
-    content["tombstone"] = {
-        "history_erased": False,
-        "retention_decision_id": "DEC-004",
-        "retention_value_version": 0,
-        "committed_unix_seconds": state["chain_time"],
-    }
-    for offer_id in [offer_id for offer_id, offer in state["offers"].items() if offer["content_id"] == step["content_id"]]:
-        del state["offers"][offer_id]
-    return finish(state, {"type": "ContentWithdrawn", "content_id": step["content_id"], "history_erased": False})
+    return withdraw_content(state, step["signer"], step["content_id"], step["content_version"], step["reason_digest"], authority=False)
 
 
 def op_offer(state: dict, step: dict) -> dict[str, object]:
@@ -676,12 +716,22 @@ def op_renew(state: dict, step: dict) -> dict[str, object]:
         "term_version",
         "deadline_unix_seconds",
         "package_bytes",
+        "manifest_digest",
         "provider_signature",
         "evidence_id",
     }
     bad = unknown(step, allowed) or require_fields(
         step,
-        ("signer", "business_id", "lease_id", "term_version", "deadline_unix_seconds", "package_bytes", "provider_signature"),
+        (
+            "signer",
+            "business_id",
+            "lease_id",
+            "term_version",
+            "deadline_unix_seconds",
+            "package_bytes",
+            "manifest_digest",
+            "provider_signature",
+        ),
     )
     if bad:
         return bad
@@ -698,10 +748,21 @@ def op_renew(state: dict, step: dict) -> dict[str, object]:
         return err(role_error or provider_role)
     if provider_role is None and step["signer"] != provider["account"]:
         return err("ERROR_CODE_FORBIDDEN")
+    digest_error = check_digest(step["manifest_digest"])
+    if digest_error:
+        return err(digest_error)
     gate = business_gate(
         state,
         step,
-        ("deadline_unix_seconds", "evidence_id", "lease_id", "package_bytes", "provider_signature", "term_version"),
+        (
+            "deadline_unix_seconds",
+            "evidence_id",
+            "lease_id",
+            "manifest_digest",
+            "package_bytes",
+            "provider_signature",
+            "term_version",
+        ),
     )
     if gate:
         return gate
@@ -715,7 +776,7 @@ def op_renew(state: dict, step: dict) -> dict[str, object]:
         return err("ERROR_CODE_MALFORMED")
     if term_version != lease["term_version"] + 1:
         return err("ERROR_CODE_STALE_VERSION")
-    if step["package_bytes"] != lease["package_bytes"]:
+    if step["package_bytes"] != lease["package_bytes"] or step["manifest_digest"] != lease["manifest_digest"]:
         return err("ERROR_CODE_CONFLICT")
     time_error = check_time(step["deadline_unix_seconds"])
     if time_error:
@@ -724,7 +785,7 @@ def op_renew(state: dict, step: dict) -> dict[str, object]:
     term_error = sponsorship_seconds(state, extension)
     if term_error:
         return err(term_error)
-    if "evidence_id" in step:
+    if step.get("evidence_id"):
         evidence = state["evidence"].get(step["evidence_id"])
         if evidence is None:
             return err("ERROR_CODE_NOT_FOUND")
@@ -804,8 +865,9 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
         "expiry_unix_seconds",
         "attestation",
         "auditor_signature",
+        "reject",
     }
-    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
+    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed - {"reject"})))
     if bad:
         return bad
     role_error = check_role(state, step["signer"], "AUDITOR")
@@ -840,10 +902,16 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
     lease = state["leases"][step["lease_id"]]
     deadline_before = lease["deadline_unix_seconds"]
     state_before = lease["state"]
+    if step.get("reject") is True:
+        recorded = "REJECTED"
+    elif step.get("reject") not in (None, False):
+        return err("ERROR_CODE_MALFORMED")
+    else:
+        recorded = "RECORDED"
     state["evidence"][step["evidence_id"]] = {
         "batch_id": step["batch_id"],
         "kind": step["kind"],
-        "state": "RECORDED",
+        "state": recorded,
         "lease_id": step["lease_id"],
         "content_id": step["content_id"],
         "expiry_unix_seconds": step["expiry_unix_seconds"],
@@ -858,8 +926,144 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
     )
 
 
+def payload_digest(payload: dict) -> str:
+    return hashlib.sha256(canonicalize(payload).encode("utf-8")).hexdigest()
+
+
+def validated_payload(step: dict) -> dict[str, object] | dict:
+    payload = step.get("payload")
+    if not isinstance(payload, dict):
+        return err("ERROR_CODE_MALFORMED")
+    kind = payload.get("kind")
+    fields = {
+        "validator_power": {"kind", "consensus_pubkey", "power", "node_id"},
+        "governed_limit": {"kind", "limit_key", "value"},
+        "admit_provider": {"kind", "provider_id"},
+        "disable_provider": {"kind", "provider_id"},
+        "force_withdraw": {"kind", "content_id", "content_version", "reason_digest"},
+    }.get(kind)
+    if fields is None or set(payload) != fields:
+        return err("ERROR_CODE_MALFORMED")
+    try:
+        digest = payload_digest(payload)
+    except ValueError:
+        return err("ERROR_CODE_MALFORMED")
+    if digest != step.get("payload_digest"):
+        return err("ERROR_CODE_INTEGRITY")
+    parameter_key = step.get("parameter_key")
+    if kind == "validator_power":
+        if check_pubkey(payload["consensus_pubkey"]) or check_id(payload["node_id"]):
+            return err("ERROR_CODE_BOUNDS")
+        power = as_int(payload["power"])
+        if power is None or power < 0:
+            return err("ERROR_CODE_MALFORMED" if power is None else "ERROR_CODE_BOUNDS")
+        if parameter_key != f"validator-{payload['node_id']}":
+            return err("ERROR_CODE_MALFORMED")
+    elif kind == "governed_limit":
+        if check_id(payload["limit_key"]):
+            return err("ERROR_CODE_BOUNDS")
+        value = as_int(payload["value"])
+        if value is None or value < 1 or value > SAFE_MAX:
+            return err("ERROR_CODE_BOUNDS")
+        if parameter_key != payload["limit_key"]:
+            return err("ERROR_CODE_MALFORMED")
+    elif kind in {"admit_provider", "disable_provider"}:
+        if check_id(payload["provider_id"]):
+            return err("ERROR_CODE_BOUNDS")
+        prefix = "admit" if kind == "admit_provider" else "disable"
+        if parameter_key != f"{prefix}-{payload['provider_id']}":
+            return err("ERROR_CODE_MALFORMED")
+    else:
+        if check_id(payload["content_id"]) or check_digest(payload["reason_digest"]):
+            return err("ERROR_CODE_BOUNDS")
+        version = as_int(payload["content_version"])
+        if version is None:
+            return err("ERROR_CODE_MALFORMED")
+        if parameter_key != f"withdraw-{payload['content_id']}":
+            return err("ERROR_CODE_MALFORMED")
+    return payload
+
+
+def keep_error(state: dict, code: str) -> dict[str, object]:
+    state.pop("_pending_business", None)
+    return err(code, keep=True)
+
+
+def apply_proposal_payload(state: dict, proposal: dict) -> str | None:
+    payload = proposal["payload"]
+    kind = payload["kind"]
+    if kind == "governed_limit":
+        if payload["value"] > state["safety"]["safety_max_package_bytes"]:
+            return "ERROR_CODE_BOUNDS"
+        state["governed_limits"][payload["limit_key"]] = payload["value"]
+        return None
+    if kind == "validator_power":
+        node_id = payload["node_id"]
+        pubkey = payload["consensus_pubkey"]
+        power = payload["power"]
+        for other_id, other_pub in state["validator_pubkeys"].items():
+            if other_pub == pubkey and other_id != node_id:
+                return "ERROR_CODE_DUPLICATE_ID"
+        updated = dict(state["validators"])
+        pubs = dict(state["validator_pubkeys"])
+        if power == 0:
+            if node_id not in updated:
+                return "ERROR_CODE_NOT_FOUND"
+            del updated[node_id]
+            pubs.pop(node_id, None)
+        else:
+            updated[node_id] = power
+            pubs[node_id] = pubkey
+        if not updated or sum(updated.values()) <= 0:
+            return "ERROR_CODE_FORBIDDEN"
+        state["validators"] = updated
+        state["validator_pubkeys"] = pubs
+        return None
+    if kind == "admit_provider":
+        provider = state["providers"].get(payload["provider_id"])
+        if provider is None:
+            return "ERROR_CODE_NOT_FOUND"
+        param = devnet_param(state, "DEC-002")
+        if param is None or param.get("role_name") != "DEVNET_TEST_ONLY":
+            return "ERROR_CODE_DECISION_BLOCKED"
+        if provider["operator_group_id"] != "devnet-test-only" or provider["state"] != "APPLIED":
+            return "ERROR_CODE_FORBIDDEN"
+        provider["state"] = "ADMITTED"
+        return None
+    if kind == "disable_provider":
+        provider = state["providers"].get(payload["provider_id"])
+        if provider is None:
+            return "ERROR_CODE_NOT_FOUND"
+        if provider["state"] not in {"ADMITTED", "DRAINING"}:
+            return "ERROR_CODE_CONFLICT"
+        provider["state"] = "DISABLED"
+        return None
+    content = state["contents"].get(payload["content_id"])
+    if content is None:
+        return "ERROR_CODE_NOT_FOUND"
+    param = devnet_param(state, "DEC-003")
+    if param is None or param.get("role_name") != "DEVNET_TEST_ONLY":
+        return "ERROR_CODE_DECISION_BLOCKED"
+    if content["state"] == "WITHDRAWN":
+        return "ERROR_CODE_WITHDRAWN"
+    if payload["content_version"] != content["content_version"]:
+        return "ERROR_CODE_STALE_VERSION"
+    content["state"] = "WITHDRAWN"
+    content["removal_promise_approved"] = False
+    content["tombstone"] = {
+        "history_erased": False,
+        "retention_decision_id": "DEC-004",
+        "retention_value_version": 0,
+        "committed_unix_seconds": state["chain_time"],
+        "reason_digest": payload["reason_digest"],
+    }
+    for offer_id in [offer_id for offer_id, offer in state["offers"].items() if offer["content_id"] == payload["content_id"]]:
+        del state["offers"][offer_id]
+    return None
+
+
 def op_propose(state: dict, step: dict) -> dict[str, object]:
-    allowed = {"signer", "business_id", "proposal_id", "parameter_key", "base_policy_version", "payload_digest", "expiry_unix_seconds"}
+    allowed = {"signer", "business_id", "proposal_id", "parameter_key", "base_policy_version", "payload", "payload_digest", "expiry_unix_seconds"}
     bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
     if bad:
         return bad
@@ -874,9 +1078,10 @@ def op_propose(state: dict, step: dict) -> dict[str, object]:
             return err(id_error)
     if str(step["parameter_key"]).startswith("dec-"):
         return err("ERROR_CODE_FORBIDDEN")
-    digest_error = check_digest(step["payload_digest"])
-    if digest_error:
-        return err(digest_error)
+    checked = validated_payload(step)
+    if "ok" in checked:
+        return checked
+    payload = checked
     time_error = check_time(step["expiry_unix_seconds"])
     if time_error:
         return err(time_error)
@@ -896,6 +1101,7 @@ def op_propose(state: dict, step: dict) -> dict[str, object]:
         "proposal_id": step["proposal_id"],
         "parameter_key": step["parameter_key"],
         "base_policy_version": base,
+        "payload": payload,
         "payload_digest": step["payload_digest"],
         "state": "OPEN",
         "expiry_unix_seconds": step["expiry_unix_seconds"],
@@ -924,7 +1130,8 @@ def op_approve(state: dict, step: dict) -> dict[str, object]:
     if proposal["state"] != "OPEN":
         return err("ERROR_CODE_CONFLICT")
     if state["chain_time"] >= proposal["expiry_unix_seconds"]:
-        return err("ERROR_CODE_EXPIRED")
+        proposal["state"] = "EXPIRED"
+        return keep_error(state, "ERROR_CODE_EXPIRED")
     if step["signer"] in proposal["approvers"]:
         return err("ERROR_CODE_REPLAY")
     proposal["approvers"].append(step["signer"])
@@ -955,7 +1162,8 @@ def op_execute(state: dict, step: dict) -> dict[str, object]:
     if proposal is None:
         return err("ERROR_CODE_NOT_FOUND")
     if state["chain_time"] >= proposal["expiry_unix_seconds"]:
-        return err("ERROR_CODE_EXPIRED")
+        proposal["state"] = "EXPIRED"
+        return keep_error(state, "ERROR_CODE_EXPIRED")
     if proposal["state"] != "QUEUED":
         return err("ERROR_CODE_CONFLICT")
     if state["chain_time"] < proposal["execute_after_unix_seconds"]:
@@ -965,6 +1173,12 @@ def op_execute(state: dict, step: dict) -> dict[str, object]:
         if previous is not None and previous != proposal["payload_digest"]:
             return err("ERROR_CODE_CONFLICT")
         return err("ERROR_CODE_STALE_VERSION")
+    applied = apply_proposal_payload(state, proposal)
+    if applied:
+        if applied == "ERROR_CODE_FORBIDDEN":
+            proposal["state"] = "REJECTED"
+            return keep_error(state, applied)
+        return err(applied)
     state["executed_params"][proposal["parameter_key"]] = proposal["payload_digest"]
     state["policy_notes"][proposal["parameter_key"]] = proposal["payload_digest"]
     state["policy_version"] += 1
@@ -1212,7 +1426,15 @@ def op_drain(state: dict, step: dict) -> dict[str, object]:
 
 
 def op_rotate(state: dict, step: dict) -> dict[str, object]:
-    allowed = {"signer", "business_id", "provider_id", "new_signing_key_id", "expected_generation", "current_key_signature"}
+    allowed = {
+        "signer",
+        "business_id",
+        "provider_id",
+        "new_signing_key_id",
+        "new_signing_pubkey",
+        "expected_generation",
+        "current_key_signature",
+    }
     bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
     if bad:
         return bad
@@ -1230,21 +1452,26 @@ def op_rotate(state: dict, step: dict) -> dict[str, object]:
     id_error = check_id(step["new_signing_key_id"])
     if id_error:
         return err(id_error)
-    gate = business_gate(state, step, ("expected_generation", "new_signing_key_id", "provider_id", "current_key_signature"))
+    pubkey_error = check_pubkey(step["new_signing_pubkey"])
+    if pubkey_error:
+        return err(pubkey_error)
+    gate = business_gate(state, step, tuple(sorted(allowed - {"signer"})))
     if gate:
         return gate
     if generation != provider["key_generation"]:
         return err("ERROR_CODE_STALE_VERSION")
-    if step["new_signing_key_id"] == provider["signing_key_id"]:
+    if step["new_signing_key_id"] == provider["signing_key_id"] or step["new_signing_pubkey"] == provider["signing_pubkey"]:
         return err("ERROR_CODE_CONFLICT")
     provider["previous_keys"].append(provider["signing_key_id"])
+    provider["previous_pubkeys"].append(provider["signing_pubkey"])
     provider["signing_key_id"] = step["new_signing_key_id"]
+    provider["signing_pubkey"] = step["new_signing_pubkey"]
     provider["key_generation"] += 1
     return finish(state, {"type": "ProviderStateChanged", "provider_id": step["provider_id"], "state": provider["state"]})
 
 
 def op_update_capacity(state: dict, step: dict) -> dict[str, object]:
-    allowed = {"signer", "business_id", "provider_id", "declared_capacity_bytes"}
+    allowed = {"signer", "business_id", "provider_id", "declared_capacity_bytes", "endpoint_manifest_digest"}
     bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
     if bad:
         return bad
@@ -1258,13 +1485,66 @@ def op_update_capacity(state: dict, step: dict) -> dict[str, object]:
         return err("ERROR_CODE_MALFORMED")
     if capacity < 1 or capacity > UINT64_MAX:
         return err("ERROR_CODE_BOUNDS")
-    gate = business_gate(state, step, ("declared_capacity_bytes", "provider_id"))
+    digest_error = check_digest(step["endpoint_manifest_digest"])
+    if digest_error:
+        return err(digest_error)
+    gate = business_gate(state, step, ("declared_capacity_bytes", "endpoint_manifest_digest", "provider_id"))
     if gate:
         return gate
     if capacity < provider["reserved_bytes"]:
         return err("ERROR_CODE_CAPACITY")
     provider["admitted_capacity_bytes"] = capacity
+    provider["endpoint_manifest_digest"] = step["endpoint_manifest_digest"]
     return finish(state)
+
+
+def op_disable_provider(state: dict, step: dict) -> dict[str, object]:
+    allowed = {"signer", "business_id", "provider_id"}
+    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
+    if bad:
+        return bad
+    role_error = check_role(state, step["signer"], "AUTHORITY")
+    if role_error:
+        return err(role_error)
+    ready = council_ready(state)
+    if ready:
+        return err(ready)
+    id_error = check_id(step["provider_id"])
+    if id_error:
+        return err(id_error)
+    gate = business_gate(state, step, ("provider_id",))
+    if gate:
+        return gate
+    provider = state["providers"].get(step["provider_id"])
+    if provider is None:
+        return err("ERROR_CODE_NOT_FOUND")
+    if provider["state"] not in {"ADMITTED", "DRAINING"}:
+        return err("ERROR_CODE_CONFLICT")
+    provider["state"] = "DISABLED"
+    return finish(state, {"type": "ProviderStateChanged", "provider_id": step["provider_id"], "state": "DISABLED"})
+
+
+def op_force_withdraw(state: dict, step: dict) -> dict[str, object]:
+    allowed = {"signer", "business_id", "content_id", "content_version", "reason_digest"}
+    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
+    if bad:
+        return bad
+    role_error = check_role(state, step["signer"], "AUTHORITY")
+    if role_error:
+        return err(role_error)
+    digest_error = check_digest(step["reason_digest"])
+    if digest_error:
+        return err(digest_error)
+    param = devnet_param(state, "DEC-003")
+    if param is None or param.get("role_name") != "DEVNET_TEST_ONLY":
+        return err("ERROR_CODE_DECISION_BLOCKED")
+    gate = business_gate(state, step, ("content_id", "content_version", "reason_digest"))
+    if gate:
+        return gate
+    result = withdraw_content(state, step["signer"], step["content_id"], step["content_version"], step["reason_digest"], authority=True)
+    if result["ok"] and step["content_id"] in state["contents"]:
+        state["contents"][step["content_id"]]["removal_promise_approved"] = False
+    return result
 
 
 HANDLERS = {
@@ -1296,6 +1576,8 @@ HANDLERS = {
     "DrainProvider": op_drain,
     "RotateProviderKey": op_rotate,
     "UpdateProvider": op_update_capacity,
+    "DisableProvider": op_disable_provider,
+    "ForceWithdraw": op_force_withdraw,
 }
 
 
@@ -1334,6 +1616,7 @@ def devnet_state() -> dict:
         "devnet_tests": {
             "DEC-001": {"label": BOUNDS["devnet_test_label"], "approved_policy": False, "role_name": "DEVNET_TEST_ONLY"},
             "DEC-002": {"label": BOUNDS["devnet_test_label"], "approved_policy": False, "role_name": "DEVNET_TEST_ONLY"},
+            "DEC-003": {"label": BOUNDS["devnet_test_label"], "approved_policy": False, "role_name": "DEVNET_TEST_ONLY"},
             "DEC-005": {
                 "label": BOUNDS["devnet_test_label"],
                 "approved_policy": False,
@@ -1357,6 +1640,8 @@ def devnet_state() -> dict:
         },
         "seats": ["seat-1", "seat-2", "seat-3"],
         "approved_council": [],
+        "validator_pubkeys": {},
+        "governed_limits": {},
         "providers": {},
         "contents": {},
         "offers": {},
@@ -1430,6 +1715,38 @@ def signature(domain: str, key_id: str, valid: bool = True) -> dict:
     return {"domain": domain, "key_id": key_id, "valid": valid}
 
 
+def app_hash(state: dict) -> str:
+    view = {
+        "chain_time": state["chain_time"],
+        "governed_limits": {key: state["governed_limits"][key] for key in sorted(state["governed_limits"])},
+        "height": state["height"],
+        "leases": [
+            {
+                "id": lease_id,
+                "package_bytes": state["leases"][lease_id]["package_bytes"],
+                "provider_id": state["leases"][lease_id]["provider_id"],
+                "state": state["leases"][lease_id]["state"],
+            }
+            for lease_id in sorted(state["leases"])
+        ],
+        "policy_version": state["policy_version"],
+        "providers": [
+            {
+                "id": provider_id,
+                "reserved_bytes": state["providers"][provider_id]["reserved_bytes"],
+                "signing_key_id": state["providers"][provider_id]["signing_key_id"],
+                "state": state["providers"][provider_id]["state"],
+            }
+            for provider_id in sorted(state["providers"])
+        ],
+        "validators": [
+            {"id": validator_id, "power": state["validators"][validator_id]}
+            for validator_id in sorted(state["validators"])
+        ],
+    }
+    return hashlib.sha256(canonicalize(view).encode("utf-8")).hexdigest()
+
+
 def register_provider(provider_id: str = "p1", capacity: int = 1_000_000, group: str = "devnet-test-only") -> dict:
     return {
         "op": "RegisterProvider",
@@ -1437,6 +1754,8 @@ def register_provider(provider_id: str = "p1", capacity: int = 1_000_000, group:
         "business_id": f"reg-{provider_id}",
         "provider_id": provider_id,
         "signing_key_id": f"key-{provider_id}",
+        "signing_pubkey": pubkey_for(provider_id),
+        "endpoint_manifest_digest": ENDPOINT,
         "declared_capacity_bytes": capacity,
         "operator_group_id": group,
     }

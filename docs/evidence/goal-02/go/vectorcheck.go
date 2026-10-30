@@ -41,6 +41,7 @@ type validVec struct {
 type invalid struct {
 	ID     string `json:"id"`
 	Raw    string `json:"raw"`
+	RawHex string `json:"raw_hex"`
 	Reason string `json:"reason"`
 }
 type intVec struct {
@@ -99,7 +100,17 @@ func main() {
 		canonicalByID[item.ID] = got
 	}
 	for _, item := range doc.Invalid {
-		_, err := parseAndCanonicalize(item.Raw)
+		var err error
+		if item.RawHex != "" {
+			decoded, decErr := hex.DecodeString(item.RawHex)
+			if decErr != nil {
+				fmt.Printf("INVALID %s HEX\n", item.ID)
+				os.Exit(1)
+			}
+			_, err = parseBytes(decoded)
+		} else {
+			_, err = parseAndCanonicalize(item.Raw)
+		}
 		if err == nil {
 			fmt.Printf("INVALID %s MISSED\n", item.ID)
 			os.Exit(1)
@@ -198,11 +209,21 @@ func applyArith(op, a, b string) string {
 }
 
 func parseAndCanonicalize(raw string) (string, error) {
-	value, index, err := parseValue(raw, 0, 0)
+	return parseBytes([]byte(raw))
+}
+
+func parseBytes(raw []byte) (string, error) {
+	if len(raw) >= 3 && raw[0] == 0xEF && raw[1] == 0xBB && raw[2] == 0xBF {
+		return "", fail("bom")
+	}
+	if !utf8.Valid(raw) {
+		return "", fail("invalid_utf8")
+	}
+	value, index, err := parseValue(string(raw), 0, 0)
 	if err != nil {
 		return "", err
 	}
-	index = skip(raw, index)
+	index = skip(string(raw), index)
 	if index != len(raw) {
 		return "", fail("trailing")
 	}
