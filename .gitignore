@@ -1,0 +1,28 @@
+# Secrets
+.env
+.env.*
+!.env.example
+secrets/
+
+# Key files
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+
+# Media uploads
+/uploads/
+**/media-uploads/
+**/user-uploads/
+
+# Database dumps
+*.dump
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
