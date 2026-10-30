@@ -6,6 +6,8 @@ The verification is the schema and fixture check for this goal. It is not a devn
 
 DEC-001 through DEC-008 stay OPEN. That record is required. It is not a failed check. Page 26 playback, processing, load, recovery, moderation-timing, and operator-independence measurements were not run and are not passes. The contract fixtures below express the page 26 failure predicates that this goal can execute without a chain.
 
+Pull request: https://github.com/Maxencejules/shortvideo-network/pull/5
+
 ## Model and effort
 
 - Playbook assignment for goal 02: GPT-6 Astra, effort EXTRA HIGH.
@@ -134,8 +136,8 @@ e0b344008a1ebdec3fba9b1cb22a74d4f251c23cac23d5092c67fda5387bd6ef  docs/evidence/
 47808fdca46918e249da1636f0ee3b9c87785480705e29c994d16c7d1d5ea193  docs/evidence/goal-02/jcs.py
 e5ed3598ae7cbdb0a14ade8b2a8bb9681bcf30d80bb347446b0d5de3b94a264c  docs/evidence/goal-02/spec_machine.py
 b652e17ef9c6fc230ed3d6fff98e6deecdac2d5db04baedba5d3b818fec67713  docs/evidence/goal-02/ts/vectorcheck.ts
-e7aadc04b3feee577232fce23981263cbab75a19e34c68be336f0eefbc08d683  docs/progress.md
-8e5ece5a1ff4fc6e4b1d95af332213d0d199603149a55b24a9e3a2bb8e6ff73f  docs/progress.tsv
+96da5ace644810f760ecdb74d1735eb383c017b3f695995208610c5710b3574a  docs/progress.md
+21fdad601742688dfdf073b608d422738ad5922dac3d5c6a1198784152409947  docs/progress.tsv
 d52993f4fd2368c2bf25a9e5131b7dd4b4b2622f9c62cc6e090a5d925e34e25f  docs/protocol/api/client-api.json
 94a2f35aaf83f234a3fb84e344cf562d6c3c391e0467ff77c7a5590f16324c9f  docs/protocol/api/provider-api.json
 586a211cd073d29f30a9bcb8620de58117cb9e73ae25f36482af22aa93ec0917  docs/protocol/bounds.json

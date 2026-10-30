@@ -1,4 +1,4 @@
 goal	status	branch	pr_url	cloud_agent	review	merged_at	notes
 00	VERIFIED	goal-00-companion-pack-v3	https://github.com/Maxencejules/shortvideo-network/pull/3	bc-1596bc25-19f9-57b8-bf0a-2fb414e326d7			model=grok-4.7-high-fast; effort_setting=unknown; word-list range includes blueprint.txt 416-433
 01	VERIFIED	goal-01	https://github.com/Maxencejules/shortvideo-network/pull/4	bc-95d6fe3d-22bc-5dbe-a7bb-287237e044cb			specification checks only; protocol not approved; public launch disabled; model=grok-4.7; reasoning_effort=xhigh; fast=false; context=500k; playbook=GPT-6 Astra EXTRA HIGH; Astra was not used
-02	VERIFIED	goal-02		bc-763364ae-2b17-5737-aa7d-39bb2a64a0c0			protocol v0 frozen-pending-Gate-A; DEC-001..008 OPEN; model=grok-4.7; reasoning_effort=xhigh; fast=false; context=500k; playbook=GPT-6 Astra EXTRA HIGH; Astra was not used
+02	VERIFIED	goal-02	https://github.com/Maxencejules/shortvideo-network/pull/5	bc-763364ae-2b17-5737-aa7d-39bb2a64a0c0			protocol v0 frozen-pending-Gate-A; DEC-001..008 OPEN; model=grok-4.7; reasoning_effort=xhigh; fast=false; context=500k; playbook=GPT-6 Astra EXTRA HIGH; Astra was not used
