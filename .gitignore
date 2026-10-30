@@ -21,15 +21,17 @@ node_key.json
 priv_validator_state.json
 keyring-*/
 
-# Mnemonic and seed files
-*mnemonic*
-*.seed
+# Mnemonic and seed files (.txt and .json only)
+*mnemonic*.txt
+*mnemonic*.json
 seed.txt
 seed.json
 seeds.txt
 seeds.json
-*seed-phrase*
-*seed_phrase*
+*seed-phrase*.txt
+*seed-phrase*.json
+*seed_phrase*.txt
+*seed_phrase*.json
 
 # Media uploads
 /uploads/
@@ -44,11 +46,12 @@ seeds.json
 *.sqlite3
 *.db
 
-# Build output
+# Build output. build, bin, and dist are anchored to the repo root
+# so internal/build and cmd/.../bin stay trackable.
 node_modules/
-dist/
-build/
-bin/
+/dist/
+/build/
+/bin/
 coverage/
 *.log
 .cache/

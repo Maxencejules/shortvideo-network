@@ -1,10 +1,14 @@
 # Goal 00 evidence
 
-Status: VERIFIED
+Status: IMPLEMENTED
 
-The commands below ran on `fb7b94aae559631690105777af97c95a87243be8`. Slice, contract, gitignore, and scan assertions exited 0. `diff -u` on the normalized blueprint exited 1. That is a difference report, not an identity match and not a token-count pass. The full diff is `docs/evidence/goal-00/blueprint-normalized.diff`.
+An earlier entry on this page called goal 00 VERIFIED. That status is withdrawn. The normalized `diff -u` exits 1, and the word-list fidelity check below does not exit 0, so VERIFIED is not available.
 
-This file is a later commit. It records that revision and sets goal 00 to VERIFIED in docs/progress.md and docs/progress.tsv. It does not change the goal pages, blueprint, scripts, or gitignore.
+Word lists use the tokenizer `[A-Za-z0-9]+(?:['’./:+#_-][A-Za-z0-9]+)*`, lowercased, with running headers and the transcription note removed. Newline-only line numbers are used, so a form feed does not increment the line. Under that definition the two sides have the same multiset. Order changes are the cover title (line 1) and wrapped cells inside the seven reviewed tables, plus line 433 (`configuration changes.`), the wrapped second line of the `x/policy` row. That line sits outside the allowed span 416-429. The fidelity check exits 0 only when the multisets match and every reordered source line is in lines 1-10 or in 196-209, 416-429, 470-485, 740-749, 932-950, 1094-1103, and 1242-1260. Line 433 fails that test. Goal 00 stays IMPLEMENTED.
+
+The commands further down ran on `fb7b94aae559631690105777af97c95a87243be8`. Slice, contract, gitignore, and scan assertions exited 0. `diff -u` on the normalized blueprint exited 1. That is a difference report, not an identity match and not a token-count pass. The full diff is `docs/evidence/goal-00/blueprint-normalized.diff`.
+
+The commit that first recorded that run set goal 00 to VERIFIED. That status is withdrawn at the top of this file. The run itself did not change the goal pages, blueprint, scripts, or gitignore.
 
 ## Model and effort
 

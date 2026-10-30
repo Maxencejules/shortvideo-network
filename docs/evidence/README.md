@@ -17,7 +17,7 @@ Record all of the following:
 
 Do not invent logs, exit codes or test counts. A command that was not run is a blocker, not a pass. `IMPLEMENTED`, `VERIFIED`, `BLOCKED` and `DEFERRED` are distinct. A missing test environment is `BLOCKED`, never a pass.
 
-Record the model that actually ran the goal, and the effort or reasoning setting it actually ran with. If the setting was not reported, write unknown. The playbook names Codex models (Astra and GPT-6.1 Sol) as a suggested allocation. Do not claim one of those models was used unless it was. Extra effort does not certify correctness.
+Record the model that actually ran the goal, and the effort or reasoning setting it actually ran with. Unknown is allowed for the effort setting only when the playbook assigns no setting for that goal, as with goal 00. Goals 01-30 have assigned settings. For those goals, record the setting that was actually used. If it was not reported or could not be selected, log the goal as BLOCKED on model allocation. Do not mark it VERIFIED. The playbook names Codex models (Astra and GPT-6.1 Sol) as a suggested allocation. Do not claim one of those models was used unless it was. Extra effort does not certify correctness.
 
 Do not put secrets, private keys, personal data or live credentials in an evidence file.
 

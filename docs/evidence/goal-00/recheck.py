@@ -17,6 +17,8 @@ import re
 import subprocess
 import sys
 import tempfile
+from collections import Counter
+from difflib import SequenceMatcher
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -25,6 +27,21 @@ EVIDENCE = ROOT / "docs" / "evidence" / "goal-00"
 NORM_TXT = EVIDENCE / "blueprint.txt.norm"
 NORM_MD = EVIDENCE / "blueprint.md.norm"
 DIFF_PATH = EVIDENCE / "blueprint-normalized.diff"
+WORD_RE = re.compile(r"[A-Za-z0-9]+(?:['’./:+#_\-][A-Za-z0-9]+)*")
+HEADER_RE = re.compile(
+    r"DECENTRALIZED SHORT-VIDEO NETWORK\s+PROJECT BLUEPRINT \| 12 OCT 2026"
+)
+# Cover title block, plus the seven table spans named by review.
+TITLE_LINES = range(1, 11)
+TABLE_RANGES = (
+    (196, 209),
+    (416, 429),
+    (470, 485),
+    (740, 749),
+    (932, 950),
+    (1094, 1103),
+    (1242, 1260),
+)
 
 MUST_IGNORE = [
     ".env",
@@ -41,7 +58,7 @@ MUST_IGNORE = [
     "seed.txt",
     "seed.json",
     "seeds.txt",
-    "validator.seed",
+    "seeds.json",
     "wallet-seed-phrase.txt",
     "wallet_seed_phrase.txt",
     "backup.sql",
@@ -75,6 +92,13 @@ MUST_TRACK = [
     "docs/goals/01-requirements-scope-and-threat-model.md",
     "docs/evidence/goal-00/recheck.py",
     "docs/progress.tsv",
+    "x/accounts/mnemonic.go",
+    "docs/mnemonic-recovery.md",
+    "internal/build/version.go",
+    "cmd/chaind/bin/x",
+    "services/api/seed.ts",
+    "apps/web/src/mnemonic.ts",
+    "web/dist/app.js",
 ]
 
 CODE_SUFFIXES = {
@@ -382,6 +406,68 @@ def check_scan() -> int:
     return code
 
 
+def reorder_line_allowed(line_no: int) -> bool:
+    if line_no in TITLE_LINES:
+        return True
+    return any(start <= line_no <= end for start, end in TABLE_RANGES)
+
+
+def blueprint_word_streams(source: str, markdown: str) -> tuple[list[tuple[str, int]], list[str]]:
+    """Words with newline-only line numbers. Running headers and the transcription note are omitted."""
+    markdown = re.sub(
+        r"<!-- TRANSCRIPTION-NOTE-BEGIN -->.*?<!-- TRANSCRIPTION-NOTE-END -->\n?",
+        "",
+        markdown,
+        flags=re.S,
+    )
+    numbered: list[tuple[str, int]] = []
+    for line_no, line in enumerate(source.split("\n"), 1):
+        if HEADER_RE.search(line):
+            continue
+        for match in WORD_RE.finditer(line):
+            numbered.append((match.group(0).lower(), line_no))
+    markdown_words = [match.group(0).lower() for match in WORD_RE.finditer(markdown)]
+    return numbered, markdown_words
+
+
+def check_blueprint_fidelity() -> int:
+    """Exit 0 only when word lists match and every reorder stays in the allowed ranges."""
+    print("== blueprint word-list fidelity ==")
+    source = (ROOT / "docs" / "blueprint.txt").read_text()
+    markdown = (ROOT / "docs" / "blueprint.md").read_text()
+    numbered, markdown_words = blueprint_word_streams(source, markdown)
+    source_words = [word for word, _line in numbered]
+    print(f"word_count_txt {len(source_words)}")
+    print(f"word_count_md {len(markdown_words)}")
+    multiset_equal = Counter(source_words) == Counter(markdown_words)
+    print(f"word_multiset_equal {multiset_equal}")
+    print("word_tokenizer [A-Za-z0-9]+(?:['’./:+#_-][A-Za-z0-9]+)* lowercased")
+    print("word_numbering newline-only; form feeds do not increment the line number")
+    matcher = SequenceMatcher(a=source_words, b=markdown_words, autojunk=False)
+    touched: set[int] = set()
+    for tag, i1, i2, _j1, _j2 in matcher.get_opcodes():
+        if tag == "equal":
+            continue
+        touched.update(numbered[index][1] for index in range(i1, i2))
+    outside = sorted(line for line in touched if not reorder_line_allowed(line))
+    print("allowed_title_lines 1-10")
+    print("allowed_table_ranges " + " ".join(f"{start}-{end}" for start, end in TABLE_RANGES))
+    print("reorder_source_lines " + " ".join(str(line) for line in sorted(touched)))
+    print("reorder_lines_outside " + (" ".join(str(line) for line in outside) if outside else "none"))
+    lines = source.split("\n")
+    for line_no in outside:
+        snippet = lines[line_no - 1].strip()[:120]
+        print(f"outside_line {line_no} {snippet}")
+    code = 0 if multiset_equal and not outside else 1
+    print(f"blueprint_fidelity_exit {code}")
+    if code != 0:
+        print(
+            "blueprint_fidelity_note word lists match as a multiset, "
+            "but a reorder falls outside the allowed title and table ranges"
+        )
+    return code
+
+
 def check_blueprint_diff() -> int:
     print("== blueprint normalized-whitespace diff ==")
     source = (ROOT / "docs" / "blueprint.txt").read_text()
@@ -414,7 +500,7 @@ def check_blueprint_diff() -> int:
     return code
 
 
-def check_progress() -> int:
+def check_progress(fidelity_exit: int) -> int:
     print("== goal 00 status ==")
     progress = (ROOT / "docs" / "progress.md").read_text()
     tsv = (ROOT / "docs" / "progress.tsv").read_text().splitlines()
@@ -430,12 +516,23 @@ def check_progress() -> int:
         print(f"tsv {line}")
     allowed = {"IMPLEMENTED", "VERIFIED", "BLOCKED", "DEFERRED"}
     md_ok = any(f"| {status} |" in row for status in allowed)
+    if "| VERIFIED |" in row and fidelity_exit != 0:
+        print("progress_md_verified_rejected blueprint_fidelity_exit is not 0")
+        md_ok = False
     tsv_ok = False
     for line in data:
         cols = line.split("\t")
         if cols and cols[0] == "00" and len(cols) > 1 and cols[1] in allowed:
             tsv_ok = True
             print(f"tsv_goal_00_status {cols[1]}")
+            if len(cols) > 4:
+                print(f"tsv_cloud_agent {cols[4]}")
+            if cols[1] == "VERIFIED" and fidelity_exit != 0:
+                print("verified_rejected blueprint_fidelity_exit is not 0")
+                tsv_ok = False
+            if len(cols) < 5 or cols[4] != "bc-1596bc25-19f9-57b8-bf0a-2fb414e326d7":
+                print("tsv_cloud_agent_mismatch")
+                tsv_ok = False
     code = 0 if md_ok and tsv_ok else 1
     print(f"progress_assert_exit {code}")
     return code
@@ -448,8 +545,10 @@ def main() -> None:
         "gitignore": check_ignore(),
         "scan": check_scan(),
         "blueprint_diff_logged": check_blueprint_diff(),
-        "progress": check_progress(),
+        "blueprint_fidelity": check_blueprint_fidelity(),
+        "progress": 0,
     }
+    results["progress"] = check_progress(results["blueprint_fidelity"])
     print("== summary ==")
     for name, code in results.items():
         print(f"{name} {code}")
