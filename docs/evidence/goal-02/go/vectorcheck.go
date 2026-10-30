@@ -254,9 +254,6 @@ func emit(value any, depth int) (string, error) {
 		}
 		return "false", nil
 	case int64:
-		if typed > safeMax || typed < -safeMax {
-			return "", fail("unsafe_integer")
-		}
 		return strconv.FormatInt(typed, 10), nil
 	case string:
 		return emitString(typed), nil

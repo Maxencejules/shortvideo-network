@@ -1,0 +1,3 @@
+syntax = "proto3";
+package negative.email;
+message BadEmail { string email = 1; }

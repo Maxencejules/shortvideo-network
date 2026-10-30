@@ -15,8 +15,10 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -32,6 +34,73 @@ VECTORS = ROOT / "docs" / "protocol" / "fixtures" / "vectors.json"
 DECISIONS = ROOT / "docs" / "decision-register.md"
 PROGRESS = ROOT / "docs" / "progress.md"
 PROGRESS_TSV = ROOT / "docs" / "progress.tsv"
+PAYLOAD_DIGEST = "be9df594c416ecbaf50512e298a73fecf9f7a56e7ac83a0cf4edf87a6b522c48"
+PINNED_FORBIDDEN_PATTERNS = (
+    "mint",
+    "reward",
+    "slash",
+    "token",
+    "balance",
+    "stake",
+    "ip",
+    "video_data",
+    "video_payload",
+    "video_bytes",
+    "media_bytes",
+    "email",
+    "username",
+    "watch_event",
+    "complaint",
+    "mnemonic",
+    "private_key",
+    "secret",
+    "password",
+    "phone",
+    "uploader_ip",
+    "storage_proof",
+)
+PINNED_NAME_EXEMPTIONS = (
+    "mint_module_enabled",
+    "distribution_module_enabled",
+    "slashing_module_enabled",
+    "staking_module_enabled",
+    "permissionless_validator_creation",
+    "PRIVACY_CLASS_SECRET",
+)
+PINNED_ONEOF_MEMBERS = (
+    "validator_power",
+    "governed_limit",
+    "admit_provider",
+    "disable_provider",
+    "force_withdraw",
+)
+PINNED_RPCS = (
+    "RegisterProvider",
+    "UpdateProvider",
+    "RotateProviderKey",
+    "DrainProvider",
+    "AdmitProvider",
+    "DisableProvider",
+    "RegisterContent",
+    "WithdrawContent",
+    "ForceWithdraw",
+    "OfferLease",
+    "AcceptLease",
+    "RenewLease",
+    "EndLease",
+    "SubmitAuditBatch",
+    "ProposeChange",
+    "ApproveChange",
+    "ExecuteChange",
+)
+PINNED_GOVERNED_CAPS = {
+    "max_evidence_batch": 32,
+    "max_page_limit": 100,
+    "max_open_offers": 1024,
+    "max_expiry_steps": 128,
+    "max_package_bytes": 268435456,
+}
+DESCRIPTOR_NAME_RE = re.compile(r'(?:^|[^\w])name: "([^"]*)"')
 
 REQUIRED_HEADINGS = [
     "## Freeze",
@@ -138,6 +207,18 @@ REQUIRED_CASES = {
     "force-withdraw-non-authority",
     "replay-app-hash",
     "hosting-resilience",
+    "renew-manifest-mismatch",
+    "governed-limit-over-key-cap",
+    "governed-limit-read",
+    "duplicate-validator-pubkey",
+    "admit-payload-blocked-by-dec-002",
+    "execute-admit-provider",
+    "execute-disable-provider",
+    "execute-force-withdraw",
+    "lease-expired",
+    "validator-power-time-applied",
+    "validator-activation-not-immediate",
+    "validator-power-missing-reason",
 }
 REQUIRED_VALID_IDS = {
     "empty-object",
@@ -153,6 +234,7 @@ REQUIRED_VALID_IDS = {
     "safe-min",
     "letter-escape",
     "zero",
+    "proposal-payload-validator-power",
 }
 REQUIRED_INVALID_IDS = {
     "null",
@@ -194,8 +276,6 @@ REQUIRED_EVENTS = [
     "EvidenceAccepted",
     "PolicyChanged",
 ]
-FIELD_RE = re.compile(r"^\s*(?:repeated\s+)?(?:map<\s*)?[\w.]+\s+(\w+)\s*=\s*\d+\s*;", re.M)
-
 
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -268,14 +348,27 @@ def check_text(protocol: str, decisions: str) -> list[str]:
     for decision_id in [f"DEC-{i:03d}" for i in range(1, 9)]:
         if decision_id not in protocol:
             errors.append(f"protocol missing {decision_id}")
-        if f"## {decision_id}" not in decisions:
-            errors.append(f"register missing {decision_id}")
-            continue
-        section = decisions.split(f"## {decision_id}", 1)[1].split("\n## ", 1)[0]
-        if "Status: OPEN" not in section:
-            errors.append(f"{decision_id} is not OPEN")
-        if re.search(r"^Status: APPROVED\s*$", section, re.M):
-            errors.append(f"{decision_id} is APPROVED")
+        errors.extend(open_decision(decisions, decision_id))
+    for decision_id in ("DEC-009", "DEC-010"):
+        if decision_id not in protocol:
+            errors.append(f"protocol missing {decision_id}")
+        errors.extend(open_decision(decisions, decision_id))
+    if cases.REPLAY_GOLDEN not in protocol:
+        errors.append("protocol missing replay golden")
+    if PAYLOAD_DIGEST not in protocol:
+        errors.append("protocol missing payload digest")
+    return errors
+
+
+def open_decision(decisions: str, decision_id: str) -> list[str]:
+    if f"## {decision_id}" not in decisions:
+        return [f"register missing {decision_id}"]
+    section = decisions.split(f"## {decision_id}", 1)[1].split("\n## ", 1)[0]
+    errors: list[str] = []
+    if "Status: OPEN" not in section:
+        errors.append(f"{decision_id} is not OPEN")
+    if re.search(r"^Status: APPROVED\s*$", section, re.M):
+        errors.append(f"{decision_id} is APPROVED")
     return errors
 
 
@@ -292,45 +385,68 @@ def check_protos(bounds: dict) -> list[str]:
     for name in REQUIRED_EVENTS + ["AppGenesis", "BlockedDecisionParameter", "Tombstone", "MsgAcceptLease"]:
         if f"message {name} " not in text and f"message {name}{{" not in text:
             errors.append(f"proto missing {name}")
-    for name in bounds["forbidden_chain_fields"]:
-        for path in protos:
-            if "offchain" in path.as_posix():
-                continue
-            for match in FIELD_RE.finditer(path.read_text(encoding="utf-8")):
-                if match.group(1) == name:
-                    errors.append(f"{path.name} field {name}")
     for domain in bounds["domains"].values():
         if domain not in (ROOT / "docs" / "protocol.md").read_text(encoding="utf-8"):
             errors.append(f"protocol missing domain {domain}")
+    if tuple(bounds.get("forbidden_name_patterns", ())) != PINNED_FORBIDDEN_PATTERNS:
+        errors.append("forbidden pattern pin")
+    if tuple(bounds.get("forbidden_name_exemptions", ())) != PINNED_NAME_EXEMPTIONS:
+        errors.append("forbidden exemption pin")
+    if bounds.get("governed_limit_caps") != PINNED_GOVERNED_CAPS:
+        errors.append("governed limit cap pin")
+    include = protobuf_include_dir()
+    if include is None:
+        print("protobuf include BLOCKED")
+        errors.append("protobuf include BLOCKED")
+        return errors
     try:
-        completed = subprocess.run(
-            ["protoc", f"--proto_path={PROTO_ROOT}", "--descriptor_set_out=/tmp/svn-protocol.pb", *[str(path) for path in protos]],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        with tempfile.TemporaryDirectory(prefix="svn-protocol-") as tmp:
+            descriptor_set = Path(tmp) / "protocol.pb"
+            completed = subprocess.run(
+                [
+                    "protoc",
+                    f"--proto_path={PROTO_ROOT}",
+                    f"--descriptor_set_out={descriptor_set}",
+                    *[str(path) for path in protos],
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            print(f"protoc exit:{completed.returncode}")
+            if completed.returncode != 0:
+                errors.append(f"protoc failed {completed.stderr.strip()}")
+            elif completed.stderr.strip():
+                errors.append(f"protoc warning {completed.stderr.strip()}")
+            else:
+                errors.extend(scan_real_descriptor(decode_descriptor(descriptor_set, include)))
+                errors.extend(scan_negative_descriptors(include, Path(tmp)))
     except FileNotFoundError:
         print("protoc BLOCKED")
         errors.append("protoc BLOCKED")
-        return errors
-    print(f"protoc exit:{completed.returncode}")
-    if completed.returncode != 0:
-        errors.append(f"protoc failed {completed.stderr.strip()}")
-    elif completed.stderr.strip():
-        errors.append(f"protoc warning {completed.stderr.strip()}")
-    else:
-        errors.extend(scan_real_descriptor(Path("/tmp/svn-protocol.pb")))
-        errors.extend(scan_negative_descriptors())
     return errors
 
 
-def decode_descriptor(pb_path: Path) -> str:
+def protobuf_include_dir() -> Path | None:
+    """Find descriptor.proto by walking up from the protoc binary."""
+    protoc = shutil.which("protoc")
+    if not protoc:
+        return None
+    binary = Path(protoc).resolve()
+    for parent in (binary.parent, *binary.parents):
+        include = parent / "include"
+        if (include / "google" / "protobuf" / "descriptor.proto").is_file():
+            return include
+    return None
+
+
+def decode_descriptor(pb_path: Path, include: Path) -> str:
     completed = subprocess.run(
         [
             "protoc",
             "--decode=google.protobuf.FileDescriptorSet",
-            "--proto_path=/usr/include",
+            f"--proto_path={include}",
             "google/protobuf/descriptor.proto",
         ],
         input=pb_path.read_bytes(),
@@ -342,56 +458,80 @@ def decode_descriptor(pb_path: Path) -> str:
     return completed.stdout.decode()
 
 
-def descriptor_hits(text: str) -> set[str]:
+def pattern_matches(name: str, pattern: str) -> bool:
+    folded = name.casefold()
+    if pattern == "ip":
+        return re.search(r"(?:^|_)ip(?:_|$)", folded) is not None
+    return pattern.casefold() in folded
+
+
+def name_hits(text: str, patterns: tuple[str, ...], exemptions: tuple[str, ...]) -> set[str]:
+    if not patterns:
+        return {"empty-pattern-list"}
     hits: set[str] = set()
+    exempt = set(exemptions)
+    for name in DESCRIPTOR_NAME_RE.findall(text):
+        if name in exempt:
+            continue
+        for pattern in patterns:
+            if pattern_matches(name, pattern):
+                hits.add(pattern)
     if re.search(r"type: TYPE_(DOUBLE|FLOAT)\b", text):
         hits.add("float")
     if "google.protobuf.Timestamp" in text:
         hits.add("timestamp")
-    for name, label in (
-        ("MsgMint", "mint"),
-        ("MsgSlashValidator", "slash"),
-        ("MsgCreateValidator", "create-validator"),
-        ("video_data", "video_data"),
-        ("uploader_ip", "uploader_ip"),
-        ("reward_amount", "reward_amount"),
-        ("video_bytes", "video_bytes"),
-    ):
-        if re.search(rf'name: "{name}"', text):
-            hits.add(label)
-    if re.search(r'(?:^|[^\w])name: "[^"]*STORAGE_PROOF[^"]*"', text):
-        hits.add("storage-proof")
     return hits
 
 
-def scan_real_descriptor(pb_path: Path) -> list[str]:
-    text = decode_descriptor(pb_path)
-    hits = descriptor_hits(text)
+def missing_declared_names(text: str, required: tuple[str, ...]) -> list[str]:
+    return [name for name in required if f'name: "{name}"' not in text]
+
+
+def scan_real_descriptor(text: str) -> list[str]:
+    hits = name_hits(text, PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
     errors = [f"descriptor hit {hit}" for hit in sorted(hits)]
-    for name in ("MsgAdmitProvider", "MsgForceWithdraw", "MsgDisableProvider", "ProposalPayload", "ValidatorPowerChange"):
+    for name in missing_declared_names(text, PINNED_ONEOF_MEMBERS):
+        errors.append(f"oneof member missing {name}")
+    for name in missing_declared_names(text, PINNED_RPCS):
+        errors.append(f"rpc missing {name}")
+    for name in (
+        "MsgAdmitProvider",
+        "MsgForceWithdraw",
+        "MsgDisableProvider",
+        "ProposalPayload",
+        "ValidatorPowerChange",
+        "ActivationPoint",
+    ):
         if f'name: "{name}"' not in text:
             errors.append(f"descriptor missing {name}")
     return errors
 
 
-def scan_negative_descriptors() -> list[str]:
+def scan_negative_descriptors(include: Path, tmp: Path) -> list[str]:
     errors: list[str] = []
     expected = {
         "timestamp.proto": "timestamp",
         "mint.proto": "mint",
         "slash.proto": "slash",
         "media.proto": "video_data",
-        "storage_proof.proto": "storage-proof",
+        "storage_proof.proto": "storage_proof",
+        "mint_tokens.proto": "mint",
+        "reward.proto": "reward",
+        "ip_address.proto": "ip",
+        "video_payload.proto": "video_payload",
+        "penalize.proto": "slash",
+        "token_balance.proto": "token",
+        "email.proto": "email",
     }
     negative = Path(__file__).resolve().parent / "negative"
     for name, needle in expected.items():
         proto = negative / name
-        out = Path("/tmp") / f"negative-{name}.pb"
+        out = tmp / f"negative-{name}.pb"
         completed = subprocess.run(
             [
                 "protoc",
                 f"--proto_path={proto.parent}",
-                "--proto_path=/usr/include",
+                f"--proto_path={include}",
                 f"--descriptor_set_out={out}",
                 str(proto),
             ],
@@ -402,11 +542,58 @@ def scan_negative_descriptors() -> list[str]:
         if completed.returncode != 0:
             errors.append(f"negative proto {name} did not compile")
             continue
-        hits = descriptor_hits(decode_descriptor(out))
+        hits = name_hits(decode_descriptor(out, include), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
         if needle not in hits:
             errors.append(f"negative {name} missed {needle}")
-        if name == "media.proto" and not {"float", "uploader_ip", "reward_amount"} <= hits:
+        if name == "media.proto" and not {"float", "ip", "reward", "video_data"} <= hits:
             errors.append(f"negative media hits {sorted(hits)}")
+        if name == "token_balance.proto" and "balance" not in hits:
+            errors.append("negative token_balance missed balance")
+    return errors
+
+
+def pin_self_test() -> list[str]:
+    """Fail if the pin lists or the pattern matcher are emptied or narrowed."""
+    errors: list[str] = []
+    if not PINNED_FORBIDDEN_PATTERNS:
+        errors.append("forbidden pattern pin is empty")
+    for needle in ("mint", "reward", "slash", "token", "balance", "stake", "ip", "video_data", "video_payload", "email"):
+        if needle not in PINNED_FORBIDDEN_PATTERNS:
+            errors.append(f"pattern pin missing {needle}")
+    if "validator_power" not in PINNED_ONEOF_MEMBERS:
+        errors.append("oneof pin dropped validator_power")
+    if "AdmitProvider" not in PINNED_RPCS:
+        errors.append("rpc pin dropped AdmitProvider")
+    if "empty-pattern-list" not in name_hits('name: "email"\n', (), PINNED_NAME_EXEMPTIONS):
+        errors.append("empty pattern list passed")
+    samples = {
+        "MsgMintTokens": "mint",
+        "reward": "reward",
+        "ip_address": "ip",
+        "video_payload": "video_payload",
+        "slash_fraction": "slash",
+        "token_balance": "token",
+        "email": "email",
+    }
+    for name, label in samples.items():
+        hits = name_hits(f'name: "{name}"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
+        if label not in hits:
+            errors.append(f"pattern missed {name}")
+    if "balance" not in name_hits('name: "token_balance"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+        errors.append("pattern missed balance")
+    for name in PINNED_NAME_EXEMPTIONS:
+        if name_hits(f'name: "{name}"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+            errors.append(f"exemption hit {name}")
+    if "validator_power" not in missing_declared_names('name: "governed_limit"\n', PINNED_ONEOF_MEMBERS):
+        errors.append("dropped oneof member passed")
+    if "AdmitProvider" not in missing_declared_names('name: "RegisterProvider"\n', PINNED_RPCS):
+        errors.append("dropped rpc passed")
+    if name_hits('name: "endpoint_digest"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+        errors.append("endpoint matched a forbidden pattern")
+    if "secret" not in name_hits('name: "secret"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+        errors.append("pattern missed secret field")
+    if name_hits('name: "PRIVACY_CLASS_SECRET"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+        errors.append("privacy class matched secret")
     return errors
 
 
@@ -657,6 +844,7 @@ def input_files() -> list[Path]:
 
 def main() -> int:
     errors: list[str] = []
+    errors.extend(pin_self_test())
     bounds = json.loads(BOUNDS_PATH.read_text(encoding="utf-8"))
     protocol = PROTOCOL.read_text(encoding="utf-8")
     decisions = DECISIONS.read_text(encoding="utf-8")

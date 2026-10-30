@@ -1,0 +1,3 @@
+syntax = "proto3";
+package negative.reward;
+message BadReward { uint64 reward = 1; }

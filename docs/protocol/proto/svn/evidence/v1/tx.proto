@@ -22,6 +22,8 @@ message EvidenceItem {
   int64 expiry_unix_seconds = 7;
   bool attestation = 8;
   // When true the recorded state is REJECTED. The item is still an attestation.
+  // DEC-010 is OPEN: this bool is the auditor's submitted verdict. The chain
+  // does not derive REJECTED from a media check.
   bool reject = 9;
 }
 

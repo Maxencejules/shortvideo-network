@@ -204,6 +204,54 @@ Status: OPEN
 
 Production council parameters and any genesis that names real council keys. Goal 06 and Goal 10 must not treat 3-of-4 as an approved policy. A devnet may use disposable test keys and may store a threshold field. The number 3-of-4 remains a labeled PROPOSED test parameter until this decision is answered.
 
+A validator power change in the v0 draft names its own activation point: a committed height or a committed chain time strictly after the block that executes the proposal. That is the "not immediate" rule. No minimum delay beyond that rule is chosen. Any longer mandatory delay stays inside this decision.
+
+## DEC-009
+
+### Question
+
+Should `MsgAdmitProvider`, `MsgDisableProvider`, and `MsgForceWithdraw` be removed, or should they stay as a bounded emergency path beside the council proposal?
+
+### Why this needs the owner
+
+Blueprint page 12 describes operator and validator changes as council actions with a 3-of-4 threshold, an expiry, and a delay. This draft has two paths. `AdmitProviderChange`, `DisableProviderChange`, and `ForceWithdrawChange` go through `ProposeChange`, `ApproveChange`, and `ExecuteChange`. The direct messages are single-signature authority paths. They do not collect council approvals.
+
+At reviewed revision `3984ec8dda10940ff94ced88668e86bb04f897e6`, `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:393`) and `op_force_withdraw` (`spec_machine.py:1527`) check the authority role and the relevant open decision. `op_disable_provider` (`spec_machine.py:1501`) also calls `council_ready` (`spec_machine.py:318`). `council_ready` only checks that a DEC-008 test parameter exists: the numeric value is positive, the delay is not negative, and the required count does not exceed the seat list. It does not count approvals and it does not wait for the delay.
+
+### PROPOSED default
+
+No default is selected. The alternatives are to remove the three direct messages, or to keep them as a bounded emergency path whose scope, expiry, and delay are named by the owner. This draft keeps both the direct messages and the proposal payload path. Keeping the direct messages is not approval of an emergency policy.
+
+### Status
+
+Status: OPEN
+
+### Blocks
+
+Goal 06 and Goal 10 must not treat the direct messages as the approved way to admit, disable, or force-withdraw. Goal 02 does not choose a threshold or an emergency scope.
+
+## DEC-010
+
+### Question
+
+Should evidence state `REJECTED` be derived from verification of the attestation, or is the submitter's `reject` flag an auditor verdict?
+
+### Why this needs the owner
+
+`EvidenceItem.reject` is a bool the auditor submits. The state machine records `REJECTED` when that bool is true and `RECORDED` otherwise. It does not recompute the verdict from hosted bytes or from a second check.
+
+### PROPOSED default
+
+No default is selected. The alternatives are to derive `REJECTED` from a verification rule, or to treat the flag as the auditor's verdict. This draft keeps the flag. Keeping it is not an approval.
+
+### Status
+
+Status: OPEN
+
+### Blocks
+
+Later evidence and moderation work must not describe `reject` as proof that the chain verified the media. A verification rule needs a recorded answer to this question.
+
 ## Open product note
 
 The product name is unset. Choosing a name does not by itself change a security boundary, so this register does not request approval of a name and does not block Goal 02 on it. Exact dependency versions are Goal 03 work. They are not approved in this goal. The research-date note that Cosmos SDK 0.55.x was listed with CometBFT 0.40.x, and that CometBFT v1.x was unsupported, is a reminder to recheck. It is not a pin.

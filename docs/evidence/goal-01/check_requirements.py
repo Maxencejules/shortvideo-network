@@ -188,19 +188,17 @@ def exact_section(text: str, heading: str) -> str | None:
 
 
 def goals_named_in_text(text: str) -> set[int]:
-    """Goal numbers assigned by a TEST disposition.
+    """Goal numbers named in a TEST disposition, including `Goals 1, 2, and 3`.
 
-    A goal mentioned only to say it did not perform the check is not an assignment.
+    Every `Goal N` token counts, including a negation. The goals column must
+    be that same set. A mention is not stripped.
     """
-    cleaned = re.sub(r"\b[Gg]oal\s+\d{1,2}\s+does not\b[^.]*", " ", text)
-    cleaned = re.sub(r"\bdid not exist in [Gg]oal\s+\d{1,2}\b", " ", cleaned)
-    cleaned = re.sub(r"\b[Gg]oal\s+\d{1,2}\s+leaves\b[^.]*", " ", cleaned)
     found: set[int] = set()
-    for match in re.finditer(r"\b[Gg]oal\s+(\d{1,2})\b", cleaned):
+    for match in re.finditer(r"\b[Gg]oal\s+(\d{1,2})\b", text):
         found.add(int(match.group(1)))
     for match in re.finditer(
         r"\b[Gg]oals\s+((?:\d{1,2}\b(?:\s*,\s*and\s+|\s*,\s*|\s+and\s+)?)*)",
-        cleaned,
+        text,
     ):
         for number in re.findall(r"\d{1,2}", match.group(1)):
             found.add(int(number))
@@ -214,14 +212,14 @@ def column_goals(raw: str) -> set[int]:
 
 
 def check_row_goals(rows: list[dict[str, str]]) -> list[str]:
-    """Every goal number assigned in a TEST disposition is in the goals column."""
+    """The goals column and the goals named in a TEST disposition are the same set."""
     errors: list[str] = []
     for row in rows:
         if row["scope"] != "IN_SCOPE" or not row["disposition"].startswith("TEST:"):
             continue
         named = goals_named_in_text(row["disposition"])
         column = column_goals(row["goals"])
-        if not named <= column:
+        if named != column:
             errors.append(
                 f"{row['id']} goals {sorted(column)} != test goals {sorted(named)}"
             )
@@ -692,6 +690,29 @@ def self_test() -> tuple[list[str], int]:
         }
     ])
     expect("row goals", goal_errors, "!= test goals")
+
+    extra_column = check_row_goals([
+        {
+            "id": "REQ-SCOPE-002",
+            "scope": "IN_SCOPE",
+            "goals": "01,07",
+            "disposition": (
+                "TEST: SELF-CHECK Goal 01 checker requires the phrase Public launch: "
+                "DISABLED in the specification, the register, the threat model, and the progress tracker."
+            ),
+        }
+    ])
+    expect("extra column goal", extra_column, "!= test goals")
+
+    negation = check_row_goals([
+        {
+            "id": "REQ-SEC-011",
+            "scope": "IN_SCOPE",
+            "goals": "29",
+            "disposition": "TEST: Goal 29 records the review, and Goal 01 does not mark that review done.",
+        }
+    ])
+    expect("negation still names a goal", negation, "!= test goals")
     return problems, cases
 
 

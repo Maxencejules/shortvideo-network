@@ -6,11 +6,11 @@ and they do not approve DEC-001 through DEC-008.
 
 from __future__ import annotations
 
+import copy
 import hashlib
 
-from jcs import canonicalize
-
 from spec_machine import (
+    APP_HASH_EXCLUDED,
     AUDITOR,
     AUDITOR_KEY,
     AUTHORITY,
@@ -30,18 +30,28 @@ from spec_machine import (
     TERM_SECONDS,
     UINT64_MAX,
     accept,
+    admit_change_payload,
     admit_provider,
     app_hash,
     apply,
     devnet_state,
+    disable_change_payload,
+    force_withdraw_payload,
+    governed_limit_payload,
     intent,
     offer,
     production_state,
+    proposal_step,
     pubkey_for,
     register_content,
     register_provider,
     signature,
+    validator_power_payload,
 )
+
+
+# Pinned after the replay sequence below. Replaced once the tree is stable.
+REPLAY_GOLDEN = "ffee724a8b7944512db064250664d46b7a519d2062134b5cdda9a03ca202437d"
 
 
 def _play(state: dict, steps: list[dict]) -> str | None:
@@ -77,19 +87,18 @@ def _active() -> dict:
     return state
 
 
-def _propose(proposal_id: str, value: int, limit_key: str = "devnet-note", base: int = 1) -> dict:
-    payload = {"kind": "governed_limit", "limit_key": limit_key, "value": value}
-    return {
-        "op": "ProposeChange",
-        "signer": "seat-1",
-        "business_id": f"prop-{proposal_id}",
-        "proposal_id": proposal_id,
-        "parameter_key": limit_key,
-        "base_policy_version": base,
-        "payload": payload,
-        "payload_digest": hashlib.sha256(canonicalize(payload).encode()).hexdigest(),
-        "expiry_unix_seconds": CHAIN_TIME + 10000,
-    }
+def _propose(proposal_id: str, value: int, limit_key: str = "max_evidence_batch", base: int = 1) -> dict:
+    return proposal_step(proposal_id, limit_key, governed_limit_payload(limit_key, value), base=base)
+
+
+def _council(proposal_id: str, parameter_key: str, payload: dict, execute_at: int = CHAIN_TIME + 10) -> list[dict]:
+    return [
+        proposal_step(proposal_id, parameter_key, payload),
+        _approve(proposal_id, "seat-1"),
+        _approve(proposal_id, "seat-2"),
+        {"op": "CommitBlock", "header_time": execute_at},
+        _execute(proposal_id),
+    ]
 
 
 def _approve(proposal_id: str, seat: str) -> dict:
@@ -637,6 +646,30 @@ def cases() -> list[tuple[str, str | None]]:
         ),
     )
 
+    state = _active()
+    check(
+        "renew-manifest-mismatch",
+        _play(
+            state,
+            [
+                {
+                    "op": "RenewLease",
+                    "signer": BROADCASTER,
+                    "business_id": "renew-digest",
+                    "lease_id": "l1",
+                    "term_version": 2,
+                    "deadline_unix_seconds": CHAIN_TIME + TERM_SECONDS + TERM_SECONDS,
+                    "package_bytes": PACKAGE_BYTES,
+                    "manifest_digest": hashlib.sha256(b"svn-manifest-v2").hexdigest(),
+                    "provider_signature": signature(RENEW_DOMAIN, "key-p1"),
+                    "expect": "ERROR_CODE_CONFLICT",
+                }
+            ],
+        ),
+    )
+    if found[-1][1] is None and state["leases"]["l1"]["state"] == "RENEWED":
+        found[-1] = (found[-1][0], "digest mismatch renewed the lease")
+
     state = _seed()
     check(
         "update-provider",
@@ -654,8 +687,11 @@ def cases() -> list[tuple[str, str | None]]:
             ],
         ),
     )
+    updated_digest = hashlib.sha256(b"svn-endpoint-v2").hexdigest()
     if found[-1][1] is None and state["providers"]["p1"]["admitted_capacity_bytes"] != 2_000_000:
         found[-1] = (found[-1][0], "capacity was not updated")
+    if found[-1][1] is None and state["providers"]["p1"]["endpoint_manifest_digest"] != updated_digest:
+        found[-1] = (found[-1][0], "endpoint digest was not stored")
 
     state = _active()
     check(
@@ -820,72 +856,82 @@ def cases() -> list[tuple[str, str | None]]:
 
     state = devnet_state()
     state["validators"] = {"v1": 1}
-    zero = {
-        "kind": "validator_power",
-        "consensus_pubkey": pubkey_for("v1"),
-        "power": 0,
-        "node_id": "v1",
-    }
-    zero_step = {
-        "op": "ProposeChange",
-        "signer": "seat-1",
-        "business_id": "prop-zero",
-        "proposal_id": "zero",
-        "parameter_key": "validator-v1",
-        "base_policy_version": 1,
-        "payload": zero,
-        "payload_digest": hashlib.sha256(canonicalize(zero).encode()).hexdigest(),
-        "expiry_unix_seconds": CHAIN_TIME + 10000,
-    }
+    zero = validator_power_payload("v1", 0, {"height": "9"})
     check(
         "proposal-rejected",
         _play(
             state,
-            [
-                zero_step,
-                _approve("zero", "seat-1"),
-                _approve("zero", "seat-2"),
-                {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
-                _execute("zero") | {"expect": "ERROR_CODE_FORBIDDEN"},
-            ],
+            _council("zero", "validator-v1", zero)[:-1]
+            + [_execute("zero") | {"expect": "ERROR_CODE_FORBIDDEN"}],
         ),
     )
     if found[-1][1] is None and (state["proposals"]["zero"]["state"] != "REJECTED" or state["validators"] != {"v1": 1}):
         found[-1] = (found[-1][0], "zero-power change was applied")
 
     state = devnet_state()
-    added = {
-        "kind": "validator_power",
-        "consensus_pubkey": pubkey_for("v5"),
-        "power": 1,
-        "node_id": "v5",
-    }
-    add_step = {
-        "op": "ProposeChange",
-        "signer": "seat-1",
-        "business_id": "prop-v5",
-        "proposal_id": "addv5",
-        "parameter_key": "validator-v5",
-        "base_policy_version": 1,
-        "payload": added,
-        "payload_digest": hashlib.sha256(canonicalize(added).encode()).hexdigest(),
-        "expiry_unix_seconds": CHAIN_TIME + 10000,
-    }
+    added = validator_power_payload("v5", 1, {"height": "3"})
     check(
         "validator-power-applied",
+        _play(state, _council("addv5", "validator-v5", added)),
+    )
+    if found[-1][1] is None and (state["validators"].get("v5") is not None or len(state["pending_power"]) != 1):
+        found[-1] = (found[-1][0], "validator power was applied inside ExecuteChange")
+    if found[-1][1] is None:
+        activated = _play(state, [{"op": "CommitBlock", "header_time": CHAIN_TIME + 11}])
+        if activated:
+            found[-1] = (found[-1][0], activated)
+        elif state["validators"].get("v5") != 1 or state["pending_power"] or state["validator_reasons"].get("v5") != REASON:
+            found[-1] = (found[-1][0], "validator power was not applied at the activation height")
+
+    state = devnet_state()
+    timed = validator_power_payload("v6", 1, {"unixSeconds": str(CHAIN_TIME + 50)})
+    check(
+        "validator-power-time-applied",
+        _play(state, _council("addv6", "validator-v6", timed)),
+    )
+    if found[-1][1] is None and state["validators"].get("v6") is not None:
+        found[-1] = (found[-1][0], "time activation was applied immediately")
+    if found[-1][1] is None:
+        activated = _play(state, [{"op": "CommitBlock", "header_time": CHAIN_TIME + 50}])
+        if activated:
+            found[-1] = (found[-1][0], activated)
+        elif state["validators"].get("v6") != 1 or state["pending_power"]:
+            found[-1] = (found[-1][0], "validator power was not applied at the activation time")
+
+    immediate = validator_power_payload("v5", 1, {"height": "2"})
+    check(
+        "validator-activation-not-immediate",
         _play(
-            state,
-            [
-                add_step,
-                _approve("addv5", "seat-1"),
-                _approve("addv5", "seat-2"),
-                {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
-                _execute("addv5"),
-            ],
+            devnet_state(),
+            _council("now", "validator-v5", immediate)[:-1]
+            + [_execute("now") | {"expect": "ERROR_CODE_OUT_OF_RANGE"}],
         ),
     )
-    if found[-1][1] is None and state["validators"].get("v5") != 1:
-        found[-1] = (found[-1][0], "validator power was not written")
+
+    missing_reason = {
+        "validatorPower": {
+            "activation": {"height": "9"},
+            "consensusPubkey": validator_power_payload("v5", 1, {"height": "9"})["validatorPower"]["consensusPubkey"],
+            "nodeId": "v5",
+            "power": "1",
+        }
+    }
+    missing_step = proposal_step("noreason", "validator-v5", missing_reason)
+    missing_step["expect"] = "ERROR_CODE_MALFORMED"
+    check("validator-power-missing-reason", _play(devnet_state(), [missing_step]))
+
+    duplicate = validator_power_payload("v5", 1, {"height": "9"}, pubkey_hex=pubkey_for("v1"))
+    duplicate_state = devnet_state()
+    check(
+        "duplicate-validator-pubkey",
+        _play(
+            duplicate_state,
+            _council("dup", "validator-v5", duplicate)[:-1]
+            + [_execute("dup") | {"expect": "ERROR_CODE_DUPLICATE_ID"}],
+        ),
+    )
+    if found[-1][1] is None and (duplicate_state["validators"].get("v5") is not None or duplicate_state["pending_power"]):
+        found[-1] = (found[-1][0], "duplicate validator key was scheduled")
 
     state = _active()
     check(
@@ -964,10 +1010,153 @@ def cases() -> list[tuple[str, str | None]]:
     }
     check("force-withdraw-non-authority", _play(_seed(), [bad_force]))
 
+    over_cap = devnet_state()
+    check(
+        "governed-limit-over-key-cap",
+        _play(
+            over_cap,
+            _council("over", "max_evidence_batch", governed_limit_payload("max_evidence_batch", 33))[:-1]
+            + [_execute("over") | {"expect": "ERROR_CODE_BOUNDS"}],
+        ),
+    )
+    if found[-1][1] is None and over_cap["governed_limits"]:
+        found[-1] = (found[-1][0], "over-cap evidence batch was stored")
+
+    limited = devnet_state()
+    check(
+        "governed-limit-read",
+        _play(limited, _council("cap", "max_evidence_batch", governed_limit_payload("max_evidence_batch", 2))),
+    )
+    if found[-1][1] is None and limited["governed_limits"].get("max_evidence_batch") != 2:
+        found[-1] = (found[-1][0], "governed evidence cap was not stored")
+    if found[-1][1] is None:
+        too_many = _play(
+            limited,
+            [
+                {
+                    "op": "SubmitAuditBatch",
+                    "signer": AUDITOR,
+                    "business_id": "audit-cap",
+                    "batch_id": "batch-cap",
+                    "epoch": 1,
+                    "evidence_id": "ev-cap",
+                    "kind": "AUDITOR_ATTESTATION",
+                    "lease_id": "l1",
+                    "content_id": "c1",
+                    "content_version": 1,
+                    "expiry_unix_seconds": CHAIN_TIME + 100,
+                    "attestation": True,
+                    "item_count": 3,
+                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+                    "expect": "ERROR_CODE_BOUNDS",
+                }
+            ],
+        )
+        if too_many:
+            found[-1] = (found[-1][0], too_many)
+
+    blocked_admit = devnet_state()
+    del blocked_admit["devnet_tests"]["DEC-002"]
+    check(
+        "admit-payload-blocked-by-dec-002",
+        _play(
+            blocked_admit,
+            [register_provider()]
+            + _council("padmit", "admit-p1", admit_change_payload("p1"))[:-1]
+            + [_execute("padmit") | {"expect": "ERROR_CODE_DECISION_BLOCKED"}],
+        ),
+    )
+    if found[-1][1] is None and blocked_admit["providers"]["p1"]["state"] != "APPLIED":
+        found[-1] = (found[-1][0], "admit payload skipped DEC-002")
+
+    admitted = devnet_state()
+    check(
+        "execute-admit-provider",
+        _play(admitted, [register_provider(), *_council("eadmit", "admit-p1", admit_change_payload("p1"))]),
+    )
+    if found[-1][1] is None and admitted["providers"]["p1"]["state"] != "ADMITTED":
+        found[-1] = (found[-1][0], "ExecuteChange did not admit the provider")
+
+    disabled = _active()
+    check(
+        "execute-disable-provider",
+        _play(disabled, _council("edisable", "disable-p1", disable_change_payload("p1"))),
+    )
+    if found[-1][1] is None and (
+        disabled["providers"]["p1"]["state"] != "DISABLED" or disabled["leases"]["l1"]["reservation_held"] is not True
+    ):
+        found[-1] = (found[-1][0], "ExecuteChange did not disable the provider")
+
+    withdrawn = _seed()
+    check(
+        "execute-force-withdraw",
+        _play(withdrawn, _council("eforce", "withdraw-c1", force_withdraw_payload("c1"))),
+    )
+    if found[-1][1] is None and (
+        withdrawn["contents"]["c1"]["state"] != "WITHDRAWN"
+        or withdrawn["contents"]["c1"]["tombstone"]["history_erased"]
+        or withdrawn["contents"]["c1"]["removal_promise_approved"]
+    ):
+        found[-1] = (found[-1][0], "ExecuteChange force-withdraw did not keep the tombstone rules")
+
+    expiring_lease = _active()
+    deadline = expiring_lease["leases"]["l1"]["deadline_unix_seconds"]
+    check(
+        "lease-expired",
+        _play(
+            expiring_lease,
+            [
+                {"op": "CommitBlock", "header_time": deadline},
+                {"op": "ExpireDue", "limit": 8},
+            ],
+        ),
+    )
+    if found[-1][1] is None and (
+        expiring_lease["leases"]["l1"]["state"] != "EXPIRED"
+        or expiring_lease["leases"]["l1"]["reservation_held"]
+        or expiring_lease["providers"]["p1"]["reserved_bytes"] != 0
+    ):
+        found[-1] = (found[-1][0], "expiry did not release the reservation")
+
     left = devnet_state()
     right = devnet_state()
     steps = [register_provider(), admit_provider(), register_content(), offer(), accept()]
-    check("replay-app-hash", None if _play(left, steps) is None and _play(right, steps) is None and app_hash(left) == app_hash(right) else "hashes diverged")
+    left_problem = _play(left, steps)
+    right_problem = _play(right, steps)
+    replay_hash = app_hash(left) if left_problem is None else ""
+    replay_problem = left_problem or right_problem
+    if replay_problem is None and replay_hash != app_hash(right):
+        replay_problem = "hashes diverged"
+    if replay_problem is None and replay_hash != REPLAY_GOLDEN:
+        replay_problem = f"golden mismatch {replay_hash}"
+    if replay_problem is None:
+        leaked = copy.deepcopy(left)
+        leaked["publication"]["c1"] = "PUBLICATION_STATUS_APPROVED"
+        leaked["reachability"]["p1"] = "REACHABILITY_UNREACHABLE"
+        if app_hash(leaked) != replay_hash:
+            replay_problem = "off-chain records are inside the app hash"
+        probes = {
+            "leases": lambda clone: clone["leases"].clear(),
+            "contents": lambda clone: clone["contents"].clear(),
+            "offers": lambda clone: clone["offers"].__setitem__("probe", {"offer_id": "probe"}),
+            "evidence": lambda clone: clone["evidence"].__setitem__("probe", {"state": "RECORDED"}),
+            "proposals": lambda clone: clone["proposals"].__setitem__("probe", {"state": "OPEN"}),
+            "tombstone": lambda clone: clone["contents"]["c1"].__setitem__("tombstone", {"history_erased": False}),
+            "validator_pubkeys": lambda clone: clone["validator_pubkeys"].__setitem__("v1", "ab" * 32),
+            "signing_pubkey": lambda clone: clone["providers"]["p1"].__setitem__("signing_pubkey", "cd" * 32),
+            "pending_power": lambda clone: clone["pending_power"].append({"proposal_id": "probe"}),
+            "governed_limits": lambda clone: clone["governed_limits"].__setitem__("max_page_limit", 1),
+            "pair_index": lambda clone: clone["pair_index"].clear(),
+        }
+        for label, mutate in probes.items():
+            clone = copy.deepcopy(left)
+            mutate(clone)
+            if app_hash(clone) == replay_hash:
+                replay_problem = f"{label} is outside the app hash"
+                break
+        if "leases" in APP_HASH_EXCLUDED or "publication" not in APP_HASH_EXCLUDED:
+            replay_problem = "app hash exclusion list is wrong"
+    check("replay-app-hash", replay_problem)
 
     hosts = devnet_state()
     resilience_steps = []

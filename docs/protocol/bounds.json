@@ -62,7 +62,25 @@
   "devnet_chain_id_prefix": "shortvideo-dev-",
   "example_chain_id": "shortvideo-dev-1",
   "example_chain_id_label": "PROPOSED_EXAMPLE",
-  "forbidden_chain_fields": [
+  "governed_limit_caps": {
+    "max_evidence_batch": 32,
+    "max_page_limit": 100,
+    "max_open_offers": 1024,
+    "max_expiry_steps": 128,
+    "max_package_bytes": 268435456
+  },
+  "forbidden_name_patterns": [
+    "mint",
+    "reward",
+    "slash",
+    "token",
+    "balance",
+    "stake",
+    "ip",
+    "video_data",
+    "video_payload",
+    "video_bytes",
+    "media_bytes",
     "email",
     "username",
     "watch_event",
@@ -72,7 +90,15 @@
     "secret",
     "password",
     "phone",
-    "video_bytes",
-    "media_bytes"
+    "uploader_ip",
+    "storage_proof"
+  ],
+  "forbidden_name_exemptions": [
+    "mint_module_enabled",
+    "distribution_module_enabled",
+    "slashing_module_enabled",
+    "staking_module_enabled",
+    "permissionless_validator_creation",
+    "PRIVACY_CLASS_SECRET"
   ]
 }

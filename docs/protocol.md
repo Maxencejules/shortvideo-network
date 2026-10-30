@@ -6,7 +6,7 @@ Public launch: DISABLED
 
 No tradable token, coin, sale, or mining. No inflation. No automatic financial slashing.
 
-DEC-001 through DEC-008 remain OPEN. Nothing in this file approves them. A PROPOSED test parameter is a labeled fixture value, not a policy.
+DEC-001 through DEC-008 remain OPEN. DEC-009 and DEC-010 are also OPEN. Nothing in this file approves them. A PROPOSED test parameter is a labeled fixture value, not a policy.
 
 The interfaces in this document are frozen-pending-Gate-A for Goals 03 through 18. An incompatible change requires a recorded decision before the schema version changes. This freeze is not Gate A and it does not approve the open decisions.
 
@@ -144,7 +144,9 @@ Each open decision is a `BlockedDecisionParameter`: `decision_id`, `schema_versi
 | DEC-005 | offer term `deadline - start`, allowance | Without the devnet test parameter the term is `ERROR_CODE_DECISION_BLOCKED`. The test number is not an allowance and not a sponsor. |
 | DEC-006 | creator upload licence id on the publish API | The publish route returns 403 while the licence text is unset. No licence file is implied. |
 | DEC-007 | audience and age fields | There is no public sign-up route and no age-gate value. Invitation policy stays unset. |
-| DEC-008 | `CouncilPolicyParameter` seats, threshold, delay, expiry, `QuorumLossBehavior` | `QuorumLossBehavior` is `UNSET`. Execute fails closed unless the devnet test parameter is enabled. The test threshold is not 3-of-4 and is not an approved council. `approved_council` is empty. |
+| DEC-008 | `CouncilPolicyParameter` seats, threshold, delay, expiry, `QuorumLossBehavior` | `QuorumLossBehavior` is `UNSET`. Execute fails closed unless the devnet test parameter is enabled. The test threshold is not 3-of-4 and is not an approved council. `approved_council` is empty. A validator power change names its own activation point. No minimum delay beyond "strictly after the execution context" is chosen. |
+| DEC-009 | `MsgAdmitProvider`, `MsgDisableProvider`, `MsgForceWithdraw` | The direct messages stay single-signature authority paths. The same effects also exist as proposal payloads. DEC-009 asks whether to remove the direct paths or keep them as a bounded emergency path. Neither answer is selected. |
+| DEC-010 | `EvidenceItem.reject` | `REJECTED` is the auditor's submitted bool. The chain does not derive it. DEC-010 asks whether to derive it from verification or keep it as an auditor verdict. |
 
 ## Canonicalization
 
@@ -160,6 +162,17 @@ The profile:
 - Canonical output has no insignificant whitespace.
 
 `uint64` fields are JSON strings, which is how this profile keeps values that do not fit in an IEEE-754 exact integer. Cross-language vectors live in `docs/protocol/fixtures/vectors.json`. Go, Python, and TypeScript each parse those vectors with their own implementation.
+
+`payload_digest` is SHA-256 over the UTF-8 SVN-JCS-1 encoding of the proto3 JSON object for `ProposalPayload`. The mapping is the proto3 JSON mapping, then SVN-JCS-1:
+
+- Exactly one alternative is present. Its name is the lowerCamelCase JSON name: `validatorPower`, `governedLimit`, `admitProvider`, `disableProvider`, or `forceWithdraw`. The oneof name is not a JSON field.
+- Nested fields use lowerCamelCase. Absent fields are omitted. Unknown fields are rejected.
+- `bytes` are standard base64 with padding. Digests and public keys are not hex inside this object.
+- `int64` and `uint64` are decimal strings with no leading zeros. `power` `0` is the string `0`.
+- A `Digest` is `{ "algorithm": "DIGEST_ALGORITHM_SHA256", "value": "<standard base64>" }`. The enum is the full name.
+- `ActivationPoint` is either `{ "unixSeconds": "<decimal>" }` or `{ "height": "<decimal>" }`.
+
+The vector `proposal-payload-validator-power` is that object for node `v5`, power `1`, activation height `3`, and the public test reason digest. Its payload digest is `be9df594c416ecbaf50512e298a73fecf9f7a56e7ac83a0cf4edf87a6b522c48`.
 
 ## Chain transaction envelope
 
@@ -193,11 +206,11 @@ PROPOSED blueprint labels and v0 encodings:
 | PUBLISHED | Off-chain publication approval. Not a chain enum. |
 | WITHDRAWN | `CONTENT_STATE_WITHDRAWN` (2) plus a tombstone. |
 
-Provider states: `APPLIED` (1), `ADMITTED` (2), `DRAINING` (3), `DISABLED` (4). Draining stops new offers and keeps accepted reservations. `MsgDisableProvider` moves an admitted or draining provider to `DISABLED`. It is an authority message and, while DEC-008 is OPEN, it runs only when the labeled devnet test parameter is enabled. Existing reservations stay until a legal end.
+Provider states: `APPLIED` (1), `ADMITTED` (2), `DRAINING` (3), `DISABLED` (4). Draining stops new offers and keeps accepted reservations. `MsgDisableProvider` moves an admitted or draining provider to `DISABLED`. It is a single-signature authority message. DEC-009 is OPEN on whether that direct path stays. While DEC-008 is OPEN, the direct disable path runs only when the labeled devnet test parameter exists. `council_ready` checks that the parameter exists. It does not count approvals and it does not wait. Existing reservations stay until a legal end.
 
 Authority proposal states: `OPEN` (1), `QUEUED` (2), `EXECUTED` (3), `EXPIRED` (4), `REJECTED` (5). Council voting is not CometBFT voting.
 
-Evidence states: `RECORDED` (1), `EXPIRED` (2), `REJECTED` (3). `attestation` must be true. Recorded evidence does not change a lease deadline.
+Evidence states: `RECORDED` (1), `EXPIRED` (2), `REJECTED` (3). `attestation` must be true. Recorded evidence does not change a lease deadline. `REJECTED` is the submitter's `reject` bool. DEC-010 is OPEN on whether that state should instead be derived from verification. The bool stays until that decision.
 
 Operation states for the client, which are not chain states: requested, submitted, committed, failed, and pending while the chain is stalled.
 
@@ -210,14 +223,14 @@ A live pair is one provider plus one content id plus `content_version`. A second
 | Transition | Signer | Who may relay | Replay and idempotency | Capacity |
 | --- | --- | --- | --- | --- |
 | `RegisterProvider` | Admitted provider account | Broadcaster or the signer, as the outer SDK signer | `provider_id` and business id. A second id is a duplicate. | Sets declared capacity. Reserved bytes start at 0. State is `APPLIED`. |
-| `AdmitProvider` | Authority submitter. The message is `MsgAdmitProvider`. The same effect is `AdmitProviderChange` inside a proposal payload. | Authority execution | Business id | Does not reserve. DEC-002 blocks admission outside the devnet test parameter. |
-| `DisableProvider` | Authority submitter. The message is `MsgDisableProvider`. | Authority execution | Business id | No release. New offers fail. |
-| `UpdateProvider` | Current provider account | The signer | Business id. Capacity below reserved bytes is `ERROR_CODE_CAPACITY`. | Changes declared capacity only. |
+| `AdmitProvider` | Authority submitter. The message is `MsgAdmitProvider`. The same effect is `AdmitProviderChange` inside a proposal payload, and that path is what `ExecuteChange` runs. DEC-009 is OPEN on the direct message. | Authority execution | Business id | Does not reserve. DEC-002 blocks admission outside the devnet test parameter, including the proposal payload. |
+| `DisableProvider` | Authority submitter. The message is `MsgDisableProvider`. The same effect is `DisableProviderChange` through `ExecuteChange`. DEC-009 is OPEN on the direct message. | Authority execution | Business id | No release. New offers fail. |
+| `UpdateProvider` | Current provider account | The signer | Business id. Capacity below reserved bytes is `ERROR_CODE_CAPACITY`. | Changes declared capacity and stores the new endpoint manifest digest. |
 | `RotateProviderKey` | Current provider key, domain `SVN-PROVIDER-ROTATE-1` | The signer | Expected generation must match. A stale generation is `ERROR_CODE_STALE_VERSION`. The old key is retained and cannot sign new accepts. | No capacity change. |
 | `DrainProvider` | Provider, domain `SVN-PROVIDER-DRAIN-1` | The signer | Business id | No release. New offers fail. Accepted reservations stay. |
 | `RegisterContent` | Admitted submitting host, plus inner hosting intent | Broadcaster may submit the outer transaction only | New `content_id`. Creates `PENDING` and no lease. | No reservation. DEC-001 blocks the intent role outside the devnet test role. |
 | `WithdrawContent` | Same submitting host, plus inner hosting intent | Same as register | Tombstone. A later register of the same id is a duplicate. A second withdraw is `ERROR_CODE_WITHDRAWN`. | Voids open offers. Does not release an accepted reservation. `reason_digest` is stored and is not the complaint text. |
-| `ForceWithdraw` | Authority submitter. The message is `MsgForceWithdraw`. The same effect is `ForceWithdrawChange`. | Authority execution | Business id | Same tombstone rules. `removal_promise_approved` stays false while DEC-003 is OPEN. |
+| `ForceWithdraw` | Authority submitter. The message is `MsgForceWithdraw`. The same effect is `ForceWithdrawChange` through `ExecuteChange`. DEC-009 is OPEN on the direct message. | Authority execution | Business id | Same tombstone rules. `removal_promise_approved` stays false while DEC-003 is OPEN. DEC-003 is checked on the payload path. |
 | `OfferLease` | Admitted scheduler service | Broadcaster | `offer_id`. Expired by committed time is `ERROR_CODE_EXPIRED`. | Checks capacity and does not reserve. DEC-005 blocks the term length outside the devnet test number. |
 | `AcceptLease` | Inner provider signature required. Outer signer may be the provider or a broadcaster. | Broadcaster relays; it does not sign acceptance | Business id. Same payload is idempotent. | Reserves `package_bytes` or returns overflow, capacity, duplicate, expired, withdrawn, unauthorized, or wrong domain. |
 | `RenewLease` | Inner provider signature, domain `SVN-PROVIDER-RENEW-1` | Broadcaster or provider | Term version must be current + 1. `manifest_digest` must equal the committed digest. | Does not change reserved bytes. A changed byte count or digest is `ERROR_CODE_CONFLICT`. A non-empty `evidence_id` cannot extend the lease. |
@@ -225,7 +238,7 @@ A live pair is one provider plus one content id plus `content_version`. A second
 | `SubmitAuditBatch` | Auditor, domain `SVN-EVIDENCE-ATTESTATION-1` | Broadcaster | Evidence id and batch id. Batch size is at most 32. | No reservation and no lease extension. |
 | `ProposeChange` | A devnet test seat while DEC-008 is unset | Any node may gossip; execution still checks the seat | Proposal id. Base policy version must match. The payload is one `ProposalPayload` alternative, and `payload_digest` is SHA-256 of its SVN-JCS-1 form. | No capacity change until `ExecuteChange`. A key named like a DEC value is forbidden. |
 | `ApproveChange` | A seat, once | Same | Same seat again is `ERROR_CODE_REPLAY`. | When approvals reach the devnet test threshold, state becomes `QUEUED` after the test delay. |
-| `ExecuteChange` | Authority submitter | Not a substitute for council signatures | Business id | Applies the stored payload: validator power, a governed limit at or below the safety cap, admission, disablement, or force-withdraw. A digest mismatch is `ERROR_CODE_INTEGRITY`. Removing all voting power is `ERROR_CODE_FORBIDDEN` and the proposal becomes `REJECTED`. Conflicting payloads on the same parameter key are `ERROR_CODE_CONFLICT`. A stale base is `ERROR_CODE_STALE_VERSION`. |
+| `ExecuteChange` | Authority submitter | Not a substitute for council signatures | Business id | Applies the stored payload: admission, disablement, force-withdraw, or a governed limit at or below that key's own ceiling in `governed_limit_caps`. A validator power change is scheduled, not applied. Its activation point is a committed height or chain time strictly after this execution. A later committed block applies it. A digest mismatch is `ERROR_CODE_INTEGRITY`. Removing all voting power is `ERROR_CODE_FORBIDDEN` and the proposal becomes `REJECTED`. A duplicate consensus key is `ERROR_CODE_DUPLICATE_ID`. An activation point that is not strictly after the execution context is `ERROR_CODE_OUT_OF_RANGE`. Conflicting payloads on the same parameter key are `ERROR_CODE_CONFLICT`. A stale base is `ERROR_CODE_STALE_VERSION`. |
 | Begin-block expiry | No user signer | Not a transaction | Processes a sorted, bounded prefix of due ids | Releases a due active lease once. Deletes a due offer with no release. Marks due evidence expired without renewing a lease. |
 
 Withdrawal stops new sponsored leases and stops a silent revival of the same content id. It does not pretend the ledger row was erased.
@@ -248,7 +261,7 @@ No handler fetches video, calls an external API, runs a transcoder, reads the wa
 
 ## Privacy, tombstones, and reconciliation
 
-Privacy classes: `PUBLIC_COORDINATION`, `PUBLIC_RECORD`, `PRIVATE`, `SECRET`, `RESTRICTED_CASE`.
+Privacy classes: `PUBLIC_COORDINATION`, `PUBLIC_RECORD`, `PRIVATE`, `SECRET`, `RESTRICTED_CASE`. The enum name `PRIVACY_CLASS_SECRET` is a class label. It is the one pinned exemption from the `secret` name pattern. A field named `secret` is still rejected.
 
 Chain state is public coordination. It is linkable. Public-record envelopes are the only social records with a signature domain, and their `privacy_class` must be `PUBLIC_RECORD`. Private preferences, saved videos, raw viewing telemetry, complaint text, and secrets are rejected on that envelope and on chain transactions.
 
@@ -274,7 +287,7 @@ Client routes, in `api/client-api.json`: `POST /upload-intents`, `GET /uploads/{
 
 Provider routes, in `api/provider-api.json`: `GET /capability`, `POST /offers/{offer_id}/acceptance`, `GET /packages/{content_id}/{content_version}`, `POST /transfers/{transfer_id}/receipt`, `POST /inventory`.
 
-Chain commands: `RegisterProvider`, `UpdateProvider`, `RotateProviderKey`, `DrainProvider`, `AdmitProvider`, `DisableProvider`, `RegisterContent`, `WithdrawContent`, `ForceWithdraw`, `OfferLease`, `AcceptLease`, `RenewLease`, `EndLease`, `SubmitAuditBatch`, `ProposeChange`, `ApproveChange`, `ExecuteChange`. `ProposeChange` carries a `ProposalPayload` and the digest of that payload. `ExecuteChange` applies it, including `ValidatorPowerChange`.
+Chain commands: `RegisterProvider`, `UpdateProvider`, `RotateProviderKey`, `DrainProvider`, `AdmitProvider`, `DisableProvider`, `RegisterContent`, `WithdrawContent`, `ForceWithdraw`, `OfferLease`, `AcceptLease`, `RenewLease`, `EndLease`, `SubmitAuditBatch`, `ProposeChange`, `ApproveChange`, `ExecuteChange`. `ProposeChange` carries a `ProposalPayload` and the digest of that payload. `ExecuteChange` applies admission, disablement, force-withdraw, and governed limits. It schedules `ValidatorPowerChange` until the activation point.
 
 Chain queries: provider, providers, content, active leases, deadlines, evidence, governance, policy. Queries use `PageRequest`. `limit` is at most 100. `page_key` is at most 64 bytes.
 
@@ -298,7 +311,7 @@ The blueprint's numeric gates are PROPOSED. This goal does not run them as measu
 | Duplicate reservation | `duplicate-lease` | Second accept does not reserve again. |
 | Withdrawn content | `withdrawn-blocks-offer`, `withdrawn-blocks-revival` | Tombstone blocks a new offer and a revived id. |
 | Idempotency | `idempotent-retry-no-double-reserve`, `underflow-double-end` | One reservation. Not a process restart. |
-| Equal application hashes after deterministic replay | `replay-app-hash` runs one committed sequence twice from the same genesis and compares the canonical application hash. | Contract simulation. Not Goal 05's process replay. Not passed as that measurement. |
+| Equal application hashes after deterministic replay | `replay-app-hash` runs one committed sequence twice from the same genesis. The application hash is SHA-256 of the SVN-JCS-1 chain-state projection: every machine field except publication, reachability, the stall outbox, derived events, the fixture `down` set, and the transient business slot. `pair_index` is stored as a sorted list because its raw key contains `|`. The pinned hash of register, admit, register-content, offer, and accept is `ffee724a8b7944512db064250664d46b7a519d2062134b5cdda9a03ca202437d`. | Contract simulation of the chain-state projection. Not Goal 05's process replay. Not passed as that measurement. |
 | Hosting resilience | `hosting-resilience` keeps three designated commitments, marks one host unreachable, leaves the origin out of the chain record, and accepts a repair lease without releasing the other reachable reservations. | Contract simulation. The byte retrieval and repair test is Goal 18. Not run as that measurement. Not passed. |
 | Playback, processing, app targets, recovery, moderation timing, operator independence | Later goals. Numbers stay PROPOSED. | Not run. Not passed. |
 
@@ -318,6 +331,7 @@ These are protocol invariants. They are not library choices:
 - Consensus code does not fetch external data and does not read a local clock.
 - Fees, mint, distribution, slashing, staking, and `MsgCreateValidator` stay disabled.
 - Open decisions stay unapproved until a recorded decision changes the parameter.
+- A governed limit is stored only when it is at or below that key's ceiling in `governed_limit_caps`. Package bytes, open offers, expiry steps, and evidence batch size then read the stored value for that key.
 
 The executable checks are `docs/evidence/goal-02/check_protocol.py`, `spec_machine.py`, `cases.py`, `jcs.py`, and the Go and TypeScript vector programs. They are specification checks. They are not the chain and they are not a devnet.
 
@@ -325,6 +339,6 @@ The executable checks are `docs/evidence/goal-02/check_protocol.py`, `spec_machi
 
 Goals 03 through 18 use this v0 contract as frozen-pending-Gate-A. An incompatible change needs a recorded decision. Compatible work is implementing the contract, not editing it in place.
 
-Unresolved decisions, and the fields that depend on them, are the table in "Open decision parameters". DEC-001 through DEC-008 are OPEN. The devnet test values are labeled `PROPOSED_TEST_PARAMETER`. They are not approvals.
+Unresolved decisions, and the fields that depend on them, are the table in "Open decision parameters". DEC-001 through DEC-008 are OPEN. DEC-009 and DEC-010 are OPEN. The devnet test values are labeled `PROPOSED_TEST_PARAMETER`. They are not approvals. No activation delay beyond "strictly after the execution context" was chosen.
 
 Goal 03 may generate code from `docs/protocol/proto` into the monorepo `proto/` tree. That generation is not a license decision (DEC-006) and not a dependency pin. Goal 05 must reject genesis that enables mint, distribution, slashing, staking, or `MsgCreateValidator`. Goal 07 and Goal 08 implement the registries and the lease machine. Goal 09 must keep the attestation label. Goal 10 must not treat the devnet threshold as the council policy.

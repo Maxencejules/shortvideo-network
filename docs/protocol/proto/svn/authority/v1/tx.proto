@@ -16,16 +16,30 @@ option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/aut
 // parameter is unapproved and devnet test parameters are not enabled.
 // There is no MsgCreateValidator in this protocol.
 
-// Allowed governance effects. ExecuteChange applies exactly one of these.
-// The digest is SHA-256 over the SVN-JCS-1 encoding of the same fields.
+// Allowed governance effects. ExecuteChange applies exactly one of these,
+// except ValidatorPowerChange, which it schedules. The digest is SHA-256
+// over SVN-JCS-1 of the proto3 JSON object defined in docs/protocol.md.
 // A digest that does not match the payload is rejected. There is no
 // google.protobuf.Any wrapper.
+
+// ActivationPoint is a committed height or a committed chain time.
+// ExecuteChange requires it to be strictly after the execution context.
+// No council delay number is chosen here. DEC-008 stays open.
+message ActivationPoint {
+  oneof point {
+    int64 unix_seconds = 1;
+    uint64 height = 2;
+  }
+}
+
 message ValidatorPowerChange {
   // bound: consensus_pubkey_bytes=32
   bytes consensus_pubkey = 1;
   // Zero removes that validator. The resulting set must keep positive power.
   int64 power = 2;
   string node_id = 3;
+  svn.types.v1.Digest reason_digest = 4;
+  ActivationPoint activation = 5;
 }
 
 message GovernedLimitChange {

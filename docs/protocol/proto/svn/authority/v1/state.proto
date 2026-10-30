@@ -8,6 +8,7 @@ syntax = "proto3";
 package svn.authority.v1;
 
 import "svn/types/v1/types.proto";
+import "svn/authority/v1/tx.proto";
 
 option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1;authorityv1";
 
@@ -34,6 +35,18 @@ message ValidatorPower {
   bytes consensus_pubkey = 1;
   int64 power = 2;
   string node_id = 3;
+  svn.types.v1.Digest reason_digest = 4;
+}
+
+// Scheduled by ExecuteChange. Applied by a later committed block when the
+// activation point has been reached. Not applied inside ExecuteChange.
+message PendingValidatorPower {
+  string proposal_id = 1;
+  bytes consensus_pubkey = 2;
+  int64 power = 3;
+  string node_id = 4;
+  svn.types.v1.Digest reason_digest = 5;
+  ActivationPoint activation = 6;
 }
 
 message DevnetTestSeat {
@@ -62,4 +75,5 @@ message AuthorityState {
   repeated DevnetTestSeat approved_council = 4;
   repeated DevnetTestSeat devnet_test_seats = 5;
   QuorumLossBehavior quorum_loss = 6;
+  repeated PendingValidatorPower pending_validator_power = 7;
 }

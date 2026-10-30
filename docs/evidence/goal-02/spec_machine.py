@@ -8,6 +8,8 @@ DEC-001 through DEC-008 cannot be marked approved by any transition.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import copy
 import hashlib
 import json
@@ -187,11 +189,20 @@ def check_address(value: object) -> str | None:
     return None
 
 
+def effective_limit(state: dict, key: str) -> int:
+    """The live governed value for one key, or that key's own ceiling."""
+    ceiling = int(BOUNDS["governed_limit_caps"][key])
+    current = state["governed_limits"].get(key)
+    if isinstance(current, int) and not isinstance(current, bool) and 1 <= current <= ceiling:
+        return current
+    return ceiling
+
+
 def check_package(value: object, state: dict) -> str | None:
     number = as_int(value)
     if number is None:
         return "ERROR_CODE_MALFORMED"
-    if number < 1 or number > state["safety"]["safety_max_package_bytes"]:
+    if number < 1 or number > effective_limit(state, "max_package_bytes"):
         return "ERROR_CODE_BOUNDS"
     return None
 
@@ -598,7 +609,7 @@ def op_offer(state: dict, step: dict) -> dict[str, object]:
     if pair_key(step["provider_id"], step["content_id"], version) in state["pair_index"]:
         return err("ERROR_CODE_DUPLICATE_ID")
     open_offers = sum(1 for offer in state["offers"].values() if offer["provider_id"] == step["provider_id"])
-    if open_offers >= state["safety"]["safety_max_open_offers_per_provider"]:
+    if open_offers >= effective_limit(state, "max_open_offers"):
         return err("ERROR_CODE_BOUNDS")
     projected = reserve_probe(provider, step["package_bytes"])
     if projected:
@@ -866,8 +877,9 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
         "attestation",
         "auditor_signature",
         "reject",
+        "item_count",
     }
-    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed - {"reject"})))
+    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed - {"reject", "item_count"})))
     if bad:
         return bad
     role_error = check_role(state, step["signer"], "AUDITOR")
@@ -882,6 +894,14 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
             return err(id_error)
     if step["kind"] not in {"PROVIDER_RECEIPT", "AUDITOR_ATTESTATION"}:
         return err("ERROR_CODE_MALFORMED")
+    if "item_count" in step:
+        item_count = as_int(step["item_count"])
+        if item_count is None:
+            return err("ERROR_CODE_MALFORMED")
+    else:
+        item_count = 1
+    if item_count < 1 or item_count > effective_limit(state, "max_evidence_batch"):
+        return err("ERROR_CODE_BOUNDS")
     if step["attestation"] is not True:
         return err("ERROR_CODE_MALFORMED")
     epoch = as_int(step["epoch"])
@@ -926,62 +946,212 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
     )
 
 
+DECIMAL_RE = re.compile(r"0|[1-9][0-9]*")
+INT64_MAX = 9223372036854775807
+PAYLOAD_FIELDS = {
+    "validatorPower": "validator_power",
+    "governedLimit": "governed_limit",
+    "admitProvider": "admit_provider",
+    "disableProvider": "disable_provider",
+    "forceWithdraw": "force_withdraw",
+}
+
+
 def payload_digest(payload: dict) -> str:
     return hashlib.sha256(canonicalize(payload).encode("utf-8")).hexdigest()
 
 
-def validated_payload(step: dict) -> dict[str, object] | dict:
-    payload = step.get("payload")
-    if not isinstance(payload, dict):
-        return err("ERROR_CODE_MALFORMED")
-    kind = payload.get("kind")
-    fields = {
-        "validator_power": {"kind", "consensus_pubkey", "power", "node_id"},
-        "governed_limit": {"kind", "limit_key", "value"},
-        "admit_provider": {"kind", "provider_id"},
-        "disable_provider": {"kind", "provider_id"},
-        "force_withdraw": {"kind", "content_id", "content_version", "reason_digest"},
-    }.get(kind)
-    if fields is None or set(payload) != fields:
-        return err("ERROR_CODE_MALFORMED")
+def decimal_uint(value: object) -> int | None:
+    if not isinstance(value, str) or DECIMAL_RE.fullmatch(value) is None:
+        return None
+    number = int(value)
+    if number > UINT64_MAX:
+        return None
+    return number
+
+
+def standard_b64(raw: bytes) -> str:
+    return base64.b64encode(raw).decode("ascii")
+
+
+def b64_fixed(value: object, size: int) -> bytes | None:
+    if not isinstance(value, str):
+        return None
     try:
-        digest = payload_digest(payload)
+        raw = base64.b64decode(value, validate=True)
+    except (binascii.Error, ValueError):
+        return None
+    if len(raw) != size:
+        return None
+    return raw
+
+
+def digest_message(value: object) -> str | None:
+    if not isinstance(value, dict) or set(value) != {"algorithm", "value"}:
+        return None
+    if value["algorithm"] != "DIGEST_ALGORITHM_SHA256":
+        return None
+    raw = b64_fixed(value["value"], BOUNDS["digest_bytes"])
+    if raw is None or standard_b64(raw) != value["value"]:
+        return None
+    return raw.hex()
+
+
+def digest_json(hex_text: str) -> dict[str, str]:
+    return {"algorithm": "DIGEST_ALGORITHM_SHA256", "value": standard_b64(bytes.fromhex(hex_text))}
+
+
+def parse_activation(value: object) -> dict | None:
+    if not isinstance(value, dict) or len(value) != 1:
+        return None
+    if set(value) == {"unixSeconds"}:
+        number = decimal_uint(value["unixSeconds"])
+        if number is None or number > SAFE_MAX or check_time(number):
+            return None
+        return {"kind": "time", "unix_seconds": number}
+    if set(value) == {"height"}:
+        number = decimal_uint(value["height"])
+        if number is None or number < 1 or number > SAFE_MAX:
+            return None
+        return {"kind": "height", "height": number}
+    return None
+
+
+def activation_json(activation: dict) -> dict[str, str]:
+    if activation["kind"] == "time":
+        return {"unixSeconds": str(activation["unix_seconds"])}
+    return {"height": str(activation["height"])}
+
+
+def activation_is_future(activation: dict, state: dict) -> bool:
+    if activation["kind"] == "time":
+        return activation["unix_seconds"] > state["chain_time"]
+    return activation["height"] > state["height"]
+
+
+def activation_is_due(activation: dict, state: dict) -> bool:
+    if activation["kind"] == "time":
+        return state["chain_time"] >= activation["unix_seconds"]
+    return state["height"] >= activation["height"]
+
+
+def activation_sort_key(item: dict) -> tuple:
+    activation = item["activation"]
+    if activation["kind"] == "height":
+        return (0, activation["height"], item["proposal_id"])
+    return (1, activation["unix_seconds"], item["proposal_id"])
+
+
+def parse_proposal_payload(payload: object) -> tuple[dict, dict] | str:
+    """Parse proto3 JSON for ProposalPayload.
+
+    Returns the normalized record and the rebuilt proto3 JSON object.
+    The payload digest is SHA-256 of SVN-JCS-1 of that rebuilt object.
+    """
+    if not isinstance(payload, dict) or len(payload) != 1:
+        return "ERROR_CODE_MALFORMED"
+    field = next(iter(payload))
+    kind = PAYLOAD_FIELDS.get(field)
+    body = payload[field]
+    if kind is None or not isinstance(body, dict):
+        return "ERROR_CODE_MALFORMED"
+    if kind == "validator_power":
+        if set(body) != {"consensusPubkey", "power", "nodeId", "reasonDigest", "activation"}:
+            return "ERROR_CODE_MALFORMED"
+        raw_key = b64_fixed(body["consensusPubkey"], BOUNDS["consensus_pubkey_bytes"])
+        power = decimal_uint(body["power"])
+        reason = digest_message(body["reasonDigest"])
+        activation = parse_activation(body["activation"])
+        if raw_key is None or standard_b64(raw_key) != body["consensusPubkey"]:
+            return "ERROR_CODE_BOUNDS"
+        if power is None or power > INT64_MAX or reason is None or activation is None or check_id(body["nodeId"]):
+            return "ERROR_CODE_MALFORMED" if power is None or activation is None or reason is None else "ERROR_CODE_BOUNDS"
+        normalized = {
+            "kind": kind,
+            "consensus_pubkey": raw_key.hex(),
+            "power": power,
+            "node_id": body["nodeId"],
+            "reason_digest": reason,
+            "activation": activation,
+        }
+        rebuilt = {
+            "validatorPower": {
+                "activation": activation_json(activation),
+                "consensusPubkey": standard_b64(raw_key),
+                "nodeId": body["nodeId"],
+                "power": str(power),
+                "reasonDigest": digest_json(reason),
+            }
+        }
+        return normalized, rebuilt
+    if kind == "governed_limit":
+        if set(body) != {"limitKey", "value"}:
+            return "ERROR_CODE_MALFORMED"
+        value = decimal_uint(body["value"])
+        if check_id(body["limitKey"]) or value is None or value < 1:
+            return "ERROR_CODE_BOUNDS" if value is not None else "ERROR_CODE_MALFORMED"
+        normalized = {"kind": kind, "limit_key": body["limitKey"], "value": value}
+        rebuilt = {"governedLimit": {"limitKey": body["limitKey"], "value": str(value)}}
+        return normalized, rebuilt
+    if kind in {"admit_provider", "disable_provider"}:
+        if set(body) != {"providerId"} or check_id(body["providerId"]):
+            return "ERROR_CODE_BOUNDS" if isinstance(body.get("providerId"), str) else "ERROR_CODE_MALFORMED"
+        json_name = "admitProvider" if kind == "admit_provider" else "disableProvider"
+        normalized = {"kind": kind, "provider_id": body["providerId"]}
+        rebuilt = {json_name: {"providerId": body["providerId"]}}
+        return normalized, rebuilt
+    if set(body) != {"contentId", "contentVersion", "reasonDigest"}:
+        return "ERROR_CODE_MALFORMED"
+    version = decimal_uint(body["contentVersion"])
+    reason = digest_message(body["reasonDigest"])
+    if check_id(body["contentId"]) or version is None or reason is None:
+        return "ERROR_CODE_MALFORMED" if version is None or reason is None else "ERROR_CODE_BOUNDS"
+    normalized = {
+        "kind": kind,
+        "content_id": body["contentId"],
+        "content_version": version,
+        "reason_digest": reason,
+    }
+    rebuilt = {
+        "forceWithdraw": {
+            "contentId": body["contentId"],
+            "contentVersion": str(version),
+            "reasonDigest": digest_json(reason),
+        }
+    }
+    return normalized, rebuilt
+
+
+def validated_payload(state: dict, step: dict) -> dict[str, object] | dict:
+    parsed = parse_proposal_payload(step.get("payload"))
+    if isinstance(parsed, str):
+        return err(parsed)
+    normalized, rebuilt = parsed
+    try:
+        if canonicalize(step["payload"]) != canonicalize(rebuilt):
+            return err("ERROR_CODE_MALFORMED")
+        digest = payload_digest(rebuilt)
     except ValueError:
         return err("ERROR_CODE_MALFORMED")
     if digest != step.get("payload_digest"):
         return err("ERROR_CODE_INTEGRITY")
     parameter_key = step.get("parameter_key")
+    kind = normalized["kind"]
     if kind == "validator_power":
-        if check_pubkey(payload["consensus_pubkey"]) or check_id(payload["node_id"]):
-            return err("ERROR_CODE_BOUNDS")
-        power = as_int(payload["power"])
-        if power is None or power < 0:
-            return err("ERROR_CODE_MALFORMED" if power is None else "ERROR_CODE_BOUNDS")
-        if parameter_key != f"validator-{payload['node_id']}":
+        if parameter_key != f"validator-{normalized['node_id']}":
             return err("ERROR_CODE_MALFORMED")
+        if not activation_is_future(normalized["activation"], state):
+            return err("ERROR_CODE_OUT_OF_RANGE")
     elif kind == "governed_limit":
-        if check_id(payload["limit_key"]):
-            return err("ERROR_CODE_BOUNDS")
-        value = as_int(payload["value"])
-        if value is None or value < 1 or value > SAFE_MAX:
-            return err("ERROR_CODE_BOUNDS")
-        if parameter_key != payload["limit_key"]:
+        if parameter_key != normalized["limit_key"]:
             return err("ERROR_CODE_MALFORMED")
     elif kind in {"admit_provider", "disable_provider"}:
-        if check_id(payload["provider_id"]):
-            return err("ERROR_CODE_BOUNDS")
         prefix = "admit" if kind == "admit_provider" else "disable"
-        if parameter_key != f"{prefix}-{payload['provider_id']}":
+        if parameter_key != f"{prefix}-{normalized['provider_id']}":
             return err("ERROR_CODE_MALFORMED")
-    else:
-        if check_id(payload["content_id"]) or check_digest(payload["reason_digest"]):
-            return err("ERROR_CODE_BOUNDS")
-        version = as_int(payload["content_version"])
-        if version is None:
-            return err("ERROR_CODE_MALFORMED")
-        if parameter_key != f"withdraw-{payload['content_id']}":
-            return err("ERROR_CODE_MALFORMED")
-    return payload
+    elif parameter_key != f"withdraw-{normalized['content_id']}":
+        return err("ERROR_CODE_MALFORMED")
+    return normalized
 
 
 def keep_error(state: dict, code: str) -> dict[str, object]:
@@ -989,35 +1159,84 @@ def keep_error(state: dict, code: str) -> dict[str, object]:
     return err(code, keep=True)
 
 
+def projected_validators(state: dict, change: dict) -> dict | str:
+    pubkey = change["consensus_pubkey"]
+    node_id = change["node_id"]
+    power = change["power"]
+    proposal_id = change.get("proposal_id")
+    if power > 0:
+        for other_id, other_pub in state["validator_pubkeys"].items():
+            if other_pub == pubkey and other_id != node_id:
+                return "ERROR_CODE_DUPLICATE_ID"
+        for pending in state["pending_power"]:
+            if pending.get("proposal_id") == proposal_id:
+                continue
+            if pending["power"] > 0 and pending["consensus_pubkey"] == pubkey and pending["node_id"] != node_id:
+                return "ERROR_CODE_DUPLICATE_ID"
+    updated = dict(state["validators"])
+    if power == 0:
+        if node_id not in updated:
+            return "ERROR_CODE_NOT_FOUND"
+        del updated[node_id]
+    else:
+        updated[node_id] = power
+    if not updated or sum(updated.values()) <= 0:
+        return "ERROR_CODE_FORBIDDEN"
+    return updated
+
+
+def commit_validator_power(state: dict, change: dict) -> str | None:
+    projected = projected_validators(state, change)
+    if isinstance(projected, str):
+        return projected
+    node_id = change["node_id"]
+    if change["power"] == 0:
+        state["validators"].pop(node_id, None)
+        state["validator_pubkeys"].pop(node_id, None)
+        state["validator_reasons"].pop(node_id, None)
+        return None
+    state["validators"][node_id] = change["power"]
+    state["validator_pubkeys"][node_id] = change["consensus_pubkey"]
+    state["validator_reasons"][node_id] = change["reason_digest"]
+    return None
+
+
+def apply_due_validator_power(state: dict) -> str | None:
+    due = [item for item in state["pending_power"] if activation_is_due(item["activation"], state)]
+    waiting = [item for item in state["pending_power"] if item not in due]
+    due.sort(key=activation_sort_key)
+    state["pending_power"] = waiting
+    for item in due:
+        problem = commit_validator_power(state, item)
+        if problem:
+            return problem
+    return None
+
+
 def apply_proposal_payload(state: dict, proposal: dict) -> str | None:
     payload = proposal["payload"]
     kind = payload["kind"]
     if kind == "governed_limit":
-        if payload["value"] > state["safety"]["safety_max_package_bytes"]:
+        ceiling = BOUNDS["governed_limit_caps"].get(payload["limit_key"])
+        if ceiling is None or payload["value"] > int(ceiling):
             return "ERROR_CODE_BOUNDS"
         state["governed_limits"][payload["limit_key"]] = payload["value"]
         return None
     if kind == "validator_power":
-        node_id = payload["node_id"]
-        pubkey = payload["consensus_pubkey"]
-        power = payload["power"]
-        for other_id, other_pub in state["validator_pubkeys"].items():
-            if other_pub == pubkey and other_id != node_id:
-                return "ERROR_CODE_DUPLICATE_ID"
-        updated = dict(state["validators"])
-        pubs = dict(state["validator_pubkeys"])
-        if power == 0:
-            if node_id not in updated:
-                return "ERROR_CODE_NOT_FOUND"
-            del updated[node_id]
-            pubs.pop(node_id, None)
-        else:
-            updated[node_id] = power
-            pubs[node_id] = pubkey
-        if not updated or sum(updated.values()) <= 0:
-            return "ERROR_CODE_FORBIDDEN"
-        state["validators"] = updated
-        state["validator_pubkeys"] = pubs
+        if not activation_is_future(payload["activation"], state):
+            return "ERROR_CODE_OUT_OF_RANGE"
+        scheduled = {
+            "proposal_id": proposal["proposal_id"],
+            "node_id": payload["node_id"],
+            "consensus_pubkey": payload["consensus_pubkey"],
+            "power": payload["power"],
+            "reason_digest": payload["reason_digest"],
+            "activation": payload["activation"],
+        }
+        projected = projected_validators(state, scheduled)
+        if isinstance(projected, str):
+            return projected
+        state["pending_power"].append(scheduled)
         return None
     if kind == "admit_provider":
         provider = state["providers"].get(payload["provider_id"])
@@ -1078,7 +1297,7 @@ def op_propose(state: dict, step: dict) -> dict[str, object]:
             return err(id_error)
     if str(step["parameter_key"]).startswith("dec-"):
         return err("ERROR_CODE_FORBIDDEN")
-    checked = validated_payload(step)
+    checked = validated_payload(state, step)
     if "ok" in checked:
         return checked
     payload = checked
@@ -1196,7 +1415,7 @@ def op_expire(state: dict, step: dict) -> dict[str, object]:
     limit = as_int(step["limit"])
     if limit is None or limit < 1:
         return err("ERROR_CODE_BOUNDS")
-    cap = min(limit, state["safety"]["safety_max_expiry_steps_per_block"])
+    cap = min(limit, effective_limit(state, "max_expiry_steps"))
     due: list[tuple[int, str, str]] = []
     for offer_id, offer in state["offers"].items():
         if offer["expiry_unix_seconds"] <= state["chain_time"]:
@@ -1239,6 +1458,9 @@ def op_commit(state: dict, step: dict) -> dict[str, object]:
         return err("ERROR_CODE_OUT_OF_RANGE")
     state["chain_time"] = step["header_time"]
     state["height"] += 1
+    due_error = apply_due_validator_power(state)
+    if due_error:
+        return err(due_error)
     return ok()
 
 
@@ -1640,7 +1862,9 @@ def devnet_state() -> dict:
         },
         "seats": ["seat-1", "seat-2", "seat-3"],
         "approved_council": [],
-        "validator_pubkeys": {},
+        "validator_pubkeys": {f"v{index}": pubkey_for(f"v{index}") for index in range(1, 5)},
+        "validator_reasons": {},
+        "pending_power": [],
         "governed_limits": {},
         "providers": {},
         "contents": {},
@@ -1715,36 +1939,63 @@ def signature(domain: str, key_id: str, valid: bool = True) -> dict:
     return {"domain": domain, "key_id": key_id, "valid": valid}
 
 
+# Off-chain or transient. Reachability and publication are not chain state.
+# `down` is a fixture hook for the quorum predicate. `pending` is the stall
+# outbox. `events` are derived. `_pending_business` is discarded on failure.
+APP_HASH_EXCLUDED = (
+    "_pending_business",
+    "down",
+    "events",
+    "pending",
+    "publication",
+    "reachability",
+)
+
+
+def json_ready(value: object) -> object:
+    if isinstance(value, dict):
+        ready: dict[str, object] = {}
+        for key in sorted(value):
+            item = value[key]
+            if item is None:
+                continue
+            ready[str(key)] = json_ready(item)
+        return ready
+    if isinstance(value, set):
+        items = [json_ready(item) for item in value]
+        return sorted(items, key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")))
+    if isinstance(value, (list, tuple)):
+        return [json_ready(item) for item in value]
+    return value
+
+
+def chain_view(state: dict) -> dict:
+    """Canonical chain-state projection. Off-chain records are omitted.
+
+    `pair_index` keys use `|`, which SVN-JCS-1 rejects, so the projection
+    stores that index as a sorted list of records.
+    """
+    view = {key: state[key] for key in state if key not in APP_HASH_EXCLUDED}
+    pairs = []
+    for key, lease_id in sorted(state["pair_index"].items()):
+        provider_id, content_id, version = key.split("|")
+        pairs.append(
+            {
+                "content_id": content_id,
+                "content_version": int(version),
+                "lease_id": lease_id,
+                "provider_id": provider_id,
+            }
+        )
+    view["pair_index"] = pairs
+    ready = json_ready(view)
+    if not isinstance(ready, dict):
+        raise ValueError("chain view")
+    return ready
+
+
 def app_hash(state: dict) -> str:
-    view = {
-        "chain_time": state["chain_time"],
-        "governed_limits": {key: state["governed_limits"][key] for key in sorted(state["governed_limits"])},
-        "height": state["height"],
-        "leases": [
-            {
-                "id": lease_id,
-                "package_bytes": state["leases"][lease_id]["package_bytes"],
-                "provider_id": state["leases"][lease_id]["provider_id"],
-                "state": state["leases"][lease_id]["state"],
-            }
-            for lease_id in sorted(state["leases"])
-        ],
-        "policy_version": state["policy_version"],
-        "providers": [
-            {
-                "id": provider_id,
-                "reserved_bytes": state["providers"][provider_id]["reserved_bytes"],
-                "signing_key_id": state["providers"][provider_id]["signing_key_id"],
-                "state": state["providers"][provider_id]["state"],
-            }
-            for provider_id in sorted(state["providers"])
-        ],
-        "validators": [
-            {"id": validator_id, "power": state["validators"][validator_id]}
-            for validator_id in sorted(state["validators"])
-        ],
-    }
-    return hashlib.sha256(canonicalize(view).encode("utf-8")).hexdigest()
+    return hashlib.sha256(canonicalize(chain_view(state)).encode("utf-8")).hexdigest()
 
 
 def register_provider(provider_id: str = "p1", capacity: int = 1_000_000, group: str = "devnet-test-only") -> dict:
@@ -1806,6 +2057,54 @@ def offer(
         "deadline_unix_seconds": start + TERM_SECONDS,
         "expiry_unix_seconds": CHAIN_TIME + 500 if expiry is None else expiry,
         "term_version": 1,
+    }
+
+
+def governed_limit_payload(limit_key: str, value: int) -> dict:
+    return {"governedLimit": {"limitKey": limit_key, "value": str(value)}}
+
+
+def validator_power_payload(node_id: str, power: int, activation: dict[str, str], pubkey_hex: str | None = None) -> dict:
+    return {
+        "validatorPower": {
+            "activation": activation,
+            "consensusPubkey": standard_b64(bytes.fromhex(pubkey_hex or pubkey_for(node_id))),
+            "nodeId": node_id,
+            "power": str(power),
+            "reasonDigest": digest_json(REASON),
+        }
+    }
+
+
+def admit_change_payload(provider_id: str) -> dict:
+    return {"admitProvider": {"providerId": provider_id}}
+
+
+def disable_change_payload(provider_id: str) -> dict:
+    return {"disableProvider": {"providerId": provider_id}}
+
+
+def force_withdraw_payload(content_id: str, version: int = 1, reason_hex: str = REASON) -> dict:
+    return {
+        "forceWithdraw": {
+            "contentId": content_id,
+            "contentVersion": str(version),
+            "reasonDigest": digest_json(reason_hex),
+        }
+    }
+
+
+def proposal_step(proposal_id: str, parameter_key: str, payload: dict, base: int = 1, signer: str = "seat-1") -> dict:
+    return {
+        "op": "ProposeChange",
+        "signer": signer,
+        "business_id": f"prop-{proposal_id}",
+        "proposal_id": proposal_id,
+        "parameter_key": parameter_key,
+        "base_policy_version": base,
+        "payload": payload,
+        "payload_digest": payload_digest(payload),
+        "expiry_unix_seconds": CHAIN_TIME + 10000,
     }
 
 
