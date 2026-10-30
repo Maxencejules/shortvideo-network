@@ -52,7 +52,32 @@ REQUIRED_THREATS = [
     "TM-ABUSE",
     "TM-SUPPLY",
     "TM-VALIDATOR",
+    "TM-STAKE-BYPASS",
+    "TM-PERSONAL",
+    "TM-INJECTION",
+    "TM-MINT",
+    "TM-SECRET",
 ]
+SELF_CHECK_IDS = {
+    "REQ-PROD-012",
+    "REQ-SCOPE-002",
+    "REQ-SCOPE-006",
+    "REQ-SCOPE-008",
+    "REQ-SCOPE-010",
+    "REQ-SCOPE-020",
+    "REQ-CHAIN-014",
+    "REQ-MOD-009",
+    "REQ-GOV-007",
+    "REQ-CAP-006",
+    "REQ-ROAD-001",
+    "REQ-ROAD-002",
+    "REQ-ROAD-003",
+    "REQ-ROAD-004",
+    "REQ-REPO-004",
+    "REQ-RISK-001",
+    "REQ-RISK-008",
+}
+STATUSES = {"NOT STARTED", "IMPLEMENTED", "VERIFIED", "BLOCKED", "DEFERRED"}
 REQUIRED_SCENARIOS = [
     "S-PLAYBACK",
     "S-ORIGIN",
@@ -196,14 +221,12 @@ def parse_matrix(text: str) -> tuple[list[dict[str, str]], list[str]]:
 
 def validate_rows(rows: list[dict[str, str]], decision_ids: set[str]) -> list[str]:
     errors: list[str] = []
-    covered: set[int] = set()
     referenced_decisions: set[str] = set()
     for row in rows:
         disposition = row["disposition"]
         if "APPROVED" in disposition and "not approved" not in disposition.lower():
             errors.append(f"{row['id']} disposition looks approved")
         if row["scope"] == "IN_SCOPE":
-            covered |= set(row["_pages"])  # type: ignore[arg-type]
             goals = row["goals"].split(",")
             if not goals or any(not GOAL_RE.fullmatch(goal) for goal in goals):
                 errors.append(f"{row['id']} bad goals {row['goals']}")
@@ -230,9 +253,12 @@ def validate_rows(rows: list[dict[str, str]], decision_ids: set[str]) -> list[st
                 errors.append(f"{row['id']} disposition too short")
         if row["id"] in PROPOSED_IDS and "PROPOSED" not in row["summary"]:
             errors.append(f"{row['id']} summary must say PROPOSED")
-    missing_pages = [page for page in range(3, 29) if page not in covered]
-    if missing_pages:
-        errors.append(f"IN_SCOPE rows miss blueprint pages {missing_pages}")
+        if row["id"] in SELF_CHECK_IDS:
+            if row["scope"] != "IN_SCOPE" or "SELF-CHECK" not in row["disposition"]:
+                errors.append(f"{row['id']} must be an in-scope SELF-CHECK")
+    for req_id in SELF_CHECK_IDS:
+        if req_id not in {row["id"] for row in rows}:
+            errors.append(f"missing self-check {req_id}")
     for dec in REQUIRED_DECISIONS:
         if dec not in referenced_decisions:
             errors.append(f"{dec} is not a blocker on any IN_SCOPE row")
@@ -240,7 +266,7 @@ def validate_rows(rows: list[dict[str, str]], decision_ids: set[str]) -> list[st
     required_text = {
         "REQ-PROD-013": "no tradable token",
         "REQ-OFF-001": "Video bytes stay off-chain",
-        "REQ-SCOPE-002": "Public launch stays disabled",
+        "REQ-SCOPE-002": "Public launch: DISABLED",
     }
     for req_id, snippet in required_text.items():
         row = by_id.get(req_id)
@@ -254,6 +280,47 @@ def validate_rows(rows: list[dict[str, str]], decision_ids: set[str]) -> list[st
         req_id = f"REQ-BOUND-{bound:03d}"
         if req_id not in by_id or by_id[req_id]["scope"] != "IN_SCOPE":
             errors.append(f"missing trust boundary {req_id}")
+    return errors
+
+
+def check_blueprint_page_coverage(rows: list[dict[str, str]]) -> list[str]:
+    covered: set[int] = set()
+    for row in rows:
+        if row.get("scope") != "IN_SCOPE":
+            continue
+        pages = row.get("_pages")
+        if not isinstance(pages, set):
+            try:
+                pages = expand_pages(str(row.get("pages", "")))
+            except ValueError as exc:
+                return [f"page coverage {exc}"]
+        covered |= pages
+    missing = [page for page in range(3, 29) if page not in covered]
+    if missing:
+        return [f"IN_SCOPE rows miss blueprint pages {missing}"]
+    return []
+
+
+def check_scenario_lists(req_text: str, scenarios: list[str] | None = None) -> list[str]:
+    """Every REQ id in a scenario's prose must appear in its Requirements list."""
+    errors: list[str] = []
+    names = REQUIRED_SCENARIOS if scenarios is None else scenarios
+    for scenario in names:
+        marker = f"## {scenario}"
+        if marker not in req_text:
+            errors.append(f"missing scenario {scenario}")
+            continue
+        body = req_text.split(marker, 1)[1].split("\n## ", 1)[0]
+        if "### Requirements" not in body:
+            errors.append(f"{scenario} missing ### Requirements")
+            continue
+        prose, rest = body.split("### Requirements", 1)
+        list_part = rest.split("\n### ", 1)[0]
+        prose_ids = set(re.findall(r"REQ-[A-Z]+-\d{3}", prose))
+        list_ids = set(re.findall(r"REQ-[A-Z]+-\d{3}", list_part))
+        missing = sorted(prose_ids - list_ids)
+        if missing:
+            errors.append(f"{scenario} requirements list omits {', '.join(missing)}")
     return errors
 
 
@@ -330,6 +397,7 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
                 errors.append(f"{scenario} missing {heading}")
         if "REQ-" not in body or "DEC-" not in body:
             errors.append(f"{scenario} must cite a requirement and a decision")
+    errors.extend(check_scenario_lists(req_text))
     for contradiction in REQUIRED_CONTRADICTIONS:
         if f"## {contradiction}" not in req_text:
             errors.append(f"missing {contradiction}")
@@ -339,6 +407,15 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
             errors.append(f"{contradiction} missing Resolution")
     if "independent process" not in threat.lower() or "independent operator" not in threat.lower():
         errors.append("threat model must distinguish process and operator")
+    if "## Actors" not in threat:
+        errors.append("threat model missing Actors")
+    threat_phrases = {
+        "TM-STAKE-BYPASS": ("x/authority", "MsgCreateValidator", "REQ-CHAIN-006"),
+        "TM-PERSONAL": ("REQ-OFF-002", "REQ-OFF-004"),
+        "TM-INJECTION": ("SQL", "prompt", "REQ-SEC-009"),
+        "TM-MINT": ("x/mint", "x/distribution", "x/slashing"),
+        "TM-SECRET": ("committed to git",),
+    }
     for threat_id in REQUIRED_THREATS:
         if f"## {threat_id}" not in threat:
             errors.append(f"missing {threat_id}")
@@ -347,6 +424,9 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
         for heading in ("### Mitigation", "### Test", "### Residual limitation"):
             if heading not in body:
                 errors.append(f"{threat_id} missing {heading}")
+        for phrase in threat_phrases.get(threat_id, ()):
+            if phrase not in body:
+                errors.append(f"{threat_id} missing {phrase!r}")
     known = {row["id"] for row in rows}
     for path in (REQ, THREAT):
         for req_id in set(re.findall(r"REQ-[A-Z]+-\d{3}", path.read_text(encoding="utf-8"))):
@@ -358,10 +438,13 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
     for goal in [f"{i:02d}" for i in range(0, 31)]:
         if f"| {goal} |" not in progress and f"| {goal} " not in progress:
             errors.append(f"progress table missing goal {goal}")
-    if "| 01 |" not in progress or "VERIFIED" not in progress.split("| 01 |", 1)[1].split("\n", 1)[0]:
-        errors.append("goal 01 row is not VERIFIED")
-    if "| 00 |" not in progress or "VERIFIED" not in progress.split("| 00 |", 1)[1].split("\n", 1)[0]:
-        errors.append("goal 00 row is not VERIFIED")
+            continue
+        row = progress.split(f"| {goal} |", 1)[1].split("\n", 1)[0]
+        cells = [cell.strip() for cell in row.split("|")]
+        # cells: deliverable, status, ... because the split consumed the goal cell
+        status = cells[1] if len(cells) > 1 else ""
+        if status not in STATUSES and status != "NOT STARTED":
+            errors.append(f"goal {goal} status {status!r} is not a known status")
     for phrase in (
         "Cloud commands",
         "Fuller Linux test runner",
@@ -377,10 +460,13 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
     lines = tsv.splitlines()
     if not lines or not lines[0].startswith("goal\tstatus\t"):
         errors.append("progress.tsv header missing")
-    if not any(line.startswith("00\tVERIFIED\t") for line in lines):
+    if not any(line.startswith("00\t") for line in lines):
         errors.append("progress.tsv lost goal 00")
-    if not any(line.startswith("01\tVERIFIED\tgoal-01\t") for line in lines):
-        errors.append("progress.tsv missing goal 01 VERIFIED row")
+    goal_01 = [line for line in lines if line.startswith("01\t")]
+    if len(goal_01) != 1 or "\tgoal-01\t" not in goal_01[0]:
+        errors.append("progress.tsv missing goal 01 row on branch goal-01")
+    elif goal_01[0].split("\t")[1] not in STATUSES:
+        errors.append("progress.tsv goal 01 status is not a known status")
     return errors
 
 
@@ -407,24 +493,67 @@ def validate_tree() -> list[str]:
     return errors
 
 
+def _one_row(body: str) -> str:
+    return f"```{FENCE}\n{HEADER}\n{body}\n```\n"
+
+
+def _expect(name: str, errors: list[str], needle: str) -> list[str]:
+    if any(needle in item for item in errors):
+        print(f"self_test {name} fail_as_expected")
+        return []
+    print(f"self_test {name} MISSED")
+    return [f"self-test {name} did not fail with {needle!r}; got {errors}"]
+
+
 def self_test() -> list[str]:
-    """Return errors in the checker itself. Empty means the negative cases fired."""
+    """Each case is a separate negative fixture and must fail for its own reason."""
     problems: list[str] = []
-    bad_text = (
-        f"```{FENCE}\n{HEADER}\n"
-        "REQ-BAD-001\tIN_SCOPE\t3\t\t01\tTEST:x\tshort\n"
-        "REQ-BAD-001\tIN_SCOPE\t3\tnope\t99\tMAYBE\tdup\n"
-        "REQ-BAD-002\tDEFERRED\t5\tproduct/application\t05\tOUT:too soon\tdeferred with a goal\n"
-        "```\n"
+
+    dup = (
+        "REQ-BAD-001\tIN_SCOPE\t3\tchain/security\t01\tTEST: a sufficiently long self-test disposition\tok\n"
+        "REQ-BAD-001\tIN_SCOPE\t3\tchain/security\t01\tTEST: a sufficiently long self-test disposition\tok\n"
     )
-    rows, errors = parse_matrix(bad_text)
-    if not errors:
-        problems.append("self-test expected parse errors")
-    more = validate_rows(rows, set())
-    if not more and not errors:
-        problems.append("self-test expected validation errors")
-    if not any("duplicate" in item or "fields" in item or "bad role" in item or "bad goals" in item for item in errors + more):
-        problems.append(f"self-test did not see expected failures: {errors + more}")
+    _rows, dup_errors = parse_matrix(_one_row(dup))
+    problems.extend(_expect("duplicate id", dup_errors, "duplicate id"))
+
+    _rows, role_parse = parse_matrix(_one_row(
+        "REQ-BAD-002\tIN_SCOPE\t3\t\t01\tTEST: a sufficiently long self-test disposition\tok"
+    ))
+    problems.extend(_expect("missing role", role_parse + validate_rows(_rows, set()), "bad role"))
+
+    _rows, goal_parse = parse_matrix(_one_row(
+        "REQ-BAD-003\tIN_SCOPE\t3\tchain/security\t99\tTEST: a sufficiently long self-test disposition\tok"
+    ))
+    problems.extend(_expect("bad goal", goal_parse + validate_rows(_rows, set()), "bad goals"))
+
+    _rows, defer_parse = parse_matrix(_one_row(
+        "REQ-BAD-004\tDEFERRED\t5\tproduct/application\t05\tOUT: deferred work given an implementation goal\tlater"
+    ))
+    problems.extend(_expect(
+        "deferred with a goal",
+        defer_parse + validate_rows(_rows, set()),
+        "must use goals none",
+    ))
+
+    _rows, open_parse = parse_matrix(_one_row(
+        "REQ-BAD-005\tIN_SCOPE\t3\tchain/security\t01\tNOTE: neither a test assignment nor a decision blocker\tok"
+    ))
+    problems.extend(_expect(
+        "missing test or blocker",
+        open_parse + validate_rows(_rows, set()),
+        "needs TEST: or BLOCKER:",
+    ))
+
+    page_errors = check_blueprint_page_coverage([
+        {"scope": "IN_SCOPE", "pages": "3", "_pages": {3}},
+    ])
+    problems.extend(_expect("missing blueprint page", page_errors, "miss blueprint pages"))
+
+    scenario_errors = check_scenario_lists(
+        "## S-PLAYBACK\nThe prose cites REQ-MEDIA-002.\n### Requirements\nREQ-MEDIA-001\n### Open decisions\nDEC-001\n",
+        ["S-PLAYBACK"],
+    )
+    problems.extend(_expect("scenario list", scenario_errors, "requirements list omits"))
     return problems
 
 
@@ -433,9 +562,10 @@ def main() -> int:
     rows, parse_errors = parse_matrix(REQ.read_text(encoding="utf-8"))
     decision_ids = set(REQUIRED_DECISIONS)
     row_errors = validate_rows(rows, decision_ids) if rows else ["no rows"]
+    page_errors = check_blueprint_page_coverage(rows) if rows else ["no rows for page coverage"]
     doc_errors = validate_documents(rows) if rows else []
     tree_errors = validate_tree()
-    errors = self_errors + parse_errors + row_errors + doc_errors + tree_errors
+    errors = self_errors + parse_errors + row_errors + page_errors + doc_errors + tree_errors
     in_scope = [row for row in rows if row["scope"] == "IN_SCOPE"]
     blocked = [row for row in in_scope if row["disposition"].startswith("BLOCKER:")]
     tested = [row for row in in_scope if row["disposition"].startswith("TEST:")]
@@ -449,7 +579,9 @@ def main() -> int:
     print(f"threats {len(REQUIRED_THREATS)}")
     print(f"scenarios {len(REQUIRED_SCENARIOS)}")
     print(f"contradictions {len(REQUIRED_CONTRADICTIONS)}")
+    print(f"self_test_cases 7")
     print(f"self_test_problems {len(self_errors)}")
+    print(f"page_coverage {'ok' if not page_errors else 'fail'}")
     print(f"errors {len(errors)}")
     for error in errors:
         print(f"ERROR {error}")

@@ -10,7 +10,22 @@ The beta is a permissioned network with invited accounts, four equal-power devel
 
 Assets in scope: account sessions; media in quarantine and after processing; manifest digests; hosting commitments; validator and governance keys; service broadcaster keys; provider keys; the application database; operator machines; and the software supply chain.
 
-Assets that must not be created: a tradable token, a coin, a sale, a mining reward, or an automatic financial slash.
+Assets that must not be created: a tradable token, a coin, a sale, a mining reward, inflation, or an automatic financial slash, including any of those introduced by a default SDK module.
+
+## Actors
+
+- Invited viewer and invited creator. They authenticate to the account service and do not hold chain-submission keys.
+- Account-host operator. Holds sessions. A host-held signing key exists only if DEC-001 is later accepted, and it would have to be disclosed.
+- Storage provider. Signs its own lease acceptance and controls its own machine.
+- Auditor. Signs attestations. An auditor process run by the provider's operator is not an independent auditor.
+- Validator operator. Signs consensus messages. Does not own videos and does not decide each community's editorial rules.
+- Council member. Would change the validator set and protocol parameters. DEC-008 names no seats yet.
+- Gateway and index operator. Serves reads that, in this beta, are trusted only when that trust is disclosed.
+- Broadcaster service. Submits admitted transactions and cannot sign a provider acceptance.
+- Developer and CI. Can add a dependency, leave a scaffold module wired in, or commit a secret.
+- Outsider. Can submit a hostile upload, a forged transaction, or a substituted dependency to any reachable endpoint.
+
+These are roles. No person is assigned.
 
 ## Trust boundaries
 
@@ -43,7 +58,7 @@ An invited creator, or any client that reaches an upload endpoint, submits a fil
 
 ### Mitigation
 
-Authorize the upload before accepting bytes. Enforce quotas, duration, dimensions, and a processing budget. Store untrusted input in quarantine under a generated name. Check structure rather than the extension or declared MIME type. Run FFmpeg in an isolated unprivileged process with CPU, memory, disk, and wall-time limits, a disposable workspace, no unnecessary outbound network, and a read-only runtime where the toolchain allows it. Keep untrusted transcodes off hosts that hold validator signing keys. Do not interpolate titles, captions, or manifests into shell commands. Requirements: REQ-MEDIA-001, REQ-MEDIA-002, REQ-MEDIA-003, REQ-SEC-001, REQ-SEC-009, REQ-OPS-001.
+Authorize the upload before accepting bytes. Enforce quotas, duration, dimensions, and a processing budget. Store untrusted input in quarantine under a generated name. Check structure rather than the extension or declared MIME type. Run FFmpeg in an isolated unprivileged process with CPU, memory, disk, and wall-time limits, a disposable workspace, no unnecessary outbound network, and a read-only runtime where the toolchain allows it. Keep untrusted transcodes off hosts that hold validator signing keys. Shell, SQL, and prompt injection of titles, captions, and manifests are handled in TM-INJECTION. Requirements: REQ-MEDIA-001, REQ-MEDIA-002, REQ-MEDIA-003, REQ-SEC-001, REQ-SEC-009, REQ-OPS-001.
 
 ### Test
 
@@ -187,11 +202,11 @@ A dependency, container base, CI script, or generated stub is substituted. Secre
 
 ### Mitigation
 
-Pin versions and digests, generate an SBOM, and record each dependency licence when those tools exist. Isolate CI secrets and do not give untrusted pull requests privileged credentials. Exclude Cosmos Enterprise PoA and Groups. Do not vendor Loops, PeerTube, or Livepeer as drop-in components. Do not copy proprietary code. The project licence split stays blocked by DEC-006, so this goal adds no licence file that pretends the split is chosen. Requirements: REQ-TECH-010, REQ-TECH-013, REQ-TECH-014, REQ-SEC-008, REQ-SEC-012, REQ-GOV-005, REQ-NG-001.
+Pin versions and digests, generate an SBOM, and record each dependency licence when those tools exist. Isolate CI secrets and do not give untrusted pull requests privileged credentials. Exclude Cosmos Enterprise PoA and Groups. Do not vendor Loops, PeerTube, or Livepeer as drop-in components. Do not copy proprietary code. A secret committed to git is TM-SECRET, not only a CI concern. The project licence split stays blocked by DEC-006, so this goal adds no licence file that pretends the split is chosen. Requirements: REQ-TECH-010, REQ-TECH-013, REQ-TECH-014, REQ-SEC-008, REQ-SEC-012, REQ-GOV-005, REQ-NG-001, REQ-GEN-002.
 
 ### Test
 
-Goal 03 secret scanning, pin review, and CI permission tests. Goal 27 signed-build and notice checks after DEC-006. Goal 29 reviews the pins against the candidate revision. Goal 01 adds no application dependency and has no SBOM to publish. The absence of application code is the inventory in `docs/requirements.md`, checked by the Goal 01 script.
+Goal 03 secret scanning covers both CI exposure and files committed to git, plus pin review and CI permission tests. Goal 27 signed-build and notice checks after DEC-006. Goal 29 reviews the pins against the candidate revision. Goal 01 adds no application dependency and has no SBOM to publish. The absence of application code is the inventory in `docs/requirements.md`, checked by the Goal 01 script. TM-SECRET is the committed-secret case.
 
 ### Residual limitation
 
@@ -213,7 +228,97 @@ Goal 05 fault tests on a fuller Linux runner. Goal 29 partition tests on owned s
 
 ### Residual limitation
 
-Process separation is not operator diversity. A partition can halt the chain. Safety claims stay inside the stated CometBFT assumptions for an admitted set. They say nothing about a permissionless validator set, which is outside this beta.
+Process separation is not operator diversity. A partition can halt the chain. Safety claims stay inside the stated CometBFT assumptions for an admitted set. They say nothing about a permissionless validator set, which is outside this beta. A staking or MsgCreateValidator bypass is TM-STAKE-BYPASS, not this partition case.
+
+## TM-STAKE-BYPASS
+
+Validator-set bypass via staking or MsgCreateValidator.
+
+A tutorial scaffold, a staking module, or a Cosmos `MsgCreateValidator` path admits a validator or changes voting power without x/authority. The mempool may look closed while execution still accepts the bypass.
+
+### Mitigation
+
+x/authority is the only writer of validator membership and scheduled power. Remove staking and any `MsgCreateValidator` handler that can set the same set. Do not run a staking module beside x/authority. Requirement: REQ-CHAIN-006.
+
+### Test
+
+Goal 06 submits a staking-style power change and a `MsgCreateValidator` transaction and expects rejection, then shows that only an x/authority change alters the committed validator set. Goal 01 does not run a chain and does not treat this paragraph as a pass.
+
+### Residual limitation
+
+Removing a module from the planned wiring is not the same as a later patch reintroducing it. A custom message that writes the validator set under another name is the same bypass. DEC-008 still leaves the council membership that is allowed to use x/authority unset.
+
+## TM-PERSONAL
+
+Personal data on-chain and linkability.
+
+A transaction or state entry carries an email address, a recovery secret, a watch event, a complaint narrative, a private message, or a legal file. An opaque identifier or a hash of a personal value is published in the belief that hashing made it anonymous.
+
+### Mitigation
+
+Those values stay off-chain. Endpoint details prefer a signed off-chain manifest. Treat an opaque id or a hash as still linkable. Requirements: REQ-OFF-002, REQ-OFF-004, REQ-OFF-001, REQ-OFF-005.
+
+### Test
+
+Goal 02 and Goal 19 schema tests reject email, recovery secrets, watch events, complaint text, private messages, and legal files on chain, and the privacy note states that hashing is not anonymization. Goal 01 does not run those tests.
+
+### Residual limitation
+
+A coordination id can still be joined with off-chain data by someone who sees both. Hashing does not remove that. Retention of the off-chain copies is DEC-004 and is unset. This beta does not claim anonymity.
+
+## TM-INJECTION
+
+SQL injection and prompt injection.
+
+Titles, comments, captions, and remote manifests are placed into a shell command, a SQL query, or a model prompt that can change policy or call a tool. Shell injection is the same class of mistake and is included here.
+
+### Mitigation
+
+Treat that text as data. Do not interpolate it into shell commands, SQL, or model prompts. A future moderation or support aid must not gain authority to change chain policy or execute tools from user content. Requirement: REQ-SEC-009.
+
+### Test
+
+Goal 23 and the API tests feed quote marks, SQL metacharacters, and instruction-shaped captions through upload, comment, and manifest fields and expect no second statement, no shell execution, and no policy change. Goal 01 does not run those tests.
+
+### Residual limitation
+
+A new query, template, or model integration can miss the same rule. Parameterized queries and a prompt boundary reduce the chance and do not prove every future caller is safe. No model tool-use is in this beta, so there is no runtime demonstration of a blocked prompt yet.
+
+## TM-MINT
+
+Token, inflation, and slashing through default modules.
+
+The SDK tutorial app wires `x/mint`, `x/distribution`, and `x/slashing`. Leaving them in creates a token, inflation, or an automatic financial slash even when the beta's own modules say they have none.
+
+### Mitigation
+
+Remove `x/mint`, `x/distribution`, and `x/slashing` when the tutorial scaffold is trimmed. Do not add a tradable token, inflation, or automatic financial slashing under another module name. Requirements: REQ-GEN-001, REQ-PROD-013, REQ-CHAIN-015, REQ-NG-003.
+
+### Test
+
+Goal 05 app wiring and genesis show those three modules absent, and a search of the beta module set finds no mint, distribution, or slashing keeper. Goal 01 has no chain binary and does not treat this paragraph as a pass.
+
+### Residual limitation
+
+A later dependency bump can reintroduce a module if the wiring review is skipped. Zero fees are not the same control as the absence of these modules. No audit of the custom modules is claimed.
+
+## TM-SECRET
+
+A secret committed to git.
+
+A validator key, mnemonic, API token, or `.env` file is committed, even when CI would have refused to print it. TM-SUPPLY's CI isolation does not cover this case by itself.
+
+### Mitigation
+
+Keep the repository gitignore rules for keys, mnemonics, env files, and database dumps. Genesis carries no private keys. CI secret scanning is an additional gate, not the only one. Requirements: REQ-GEN-002, REQ-SEC-008, REQ-REPO-004.
+
+### Test
+
+Goal 03 runs secret scanning on the tree and on pull requests, and the gitignore fixtures reject a sample key file. Goal 05 genesis validation rejects a private key. Goal 01 does not claim a historical secret scan of every past commit.
+
+### Residual limitation
+
+Gitignore does not remove a secret that was already pushed. Scanning can miss a novel filename. A leaked key stays valid until it is rotated, and rotation of live keys waits on DEC-001 where the key is a custody key.
 
 ## What this threat model refuses to claim
 
