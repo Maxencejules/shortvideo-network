@@ -35,7 +35,7 @@ HEADER_RE = re.compile(
 TITLE_LINES = range(1, 11)
 TABLE_RANGES = (
     (196, 209),
-    (416, 429),
+    (416, 433),
     (470, 485),
     (740, 749),
     (932, 950),
@@ -59,6 +59,7 @@ MUST_IGNORE = [
     "seed.json",
     "seeds.txt",
     "seeds.json",
+    "validator.seed",
     "wallet-seed-phrase.txt",
     "wallet_seed_phrase.txt",
     "backup.sql",

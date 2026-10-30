@@ -21,7 +21,7 @@ A goal is verified only when its required checks actually ran against the report
 
 | Goal | Deliverable | Status | Evidence |
 | --- | --- | --- | --- |
-| 00 | Companion pack | IMPLEMENTED | [goal-00.md](evidence/goal-00.md) |
+| 00 | Companion pack | VERIFIED | [goal-00.md](evidence/goal-00.md) |
 | 01 | [Requirements, scope and threat model](goals/01-requirements-scope-and-threat-model.md) | NOT STARTED | |
 | 02 | [Protocol schemas and invariants](goals/02-protocol-schemas-and-invariants.md) | NOT STARTED | |
 | 03 | [Monorepo, toolchains and CI](goals/03-monorepo-toolchains-and-ci.md) | NOT STARTED | |

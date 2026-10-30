@@ -28,6 +28,7 @@ seed.txt
 seed.json
 seeds.txt
 seeds.json
+*.seed
 *seed-phrase*.txt
 *seed-phrase*.json
 *seed_phrase*.txt
