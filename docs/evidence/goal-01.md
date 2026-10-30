@@ -193,7 +193,7 @@ Tested commit: `ad9f054205469e061b2dbb42a6d834ec11edd45b`
 
 Tested tree: `bca0404952eeaae9fd9aa5055930aac9323ecb44`
 
-That commit's message trailer `Tested-tree` matches the tree. The command log higher up is the pre-commit capture. The commands below ran on the clean commit, before this paragraph was added. Specification file hashes matched the values quoted above. This paragraph is the only evidence change in the following commit.
+That commit's message trailer `Tested-tree` matches the tree. The command log higher up is the pre-commit capture. The commands below ran on the clean commit, before this paragraph was added. Specification file hashes matched the values quoted above at that time. A later tracker edit records the pull request URL and does not change `docs/requirements.md`, `docs/threat-model.md`, or `docs/decision-register.md`. This paragraph is an evidence update on top of the tested commit.
 
 ```
 COMMAND git rev-parse HEAD

@@ -28,7 +28,7 @@ Open decisions in `docs/decision-register.md` are explicit blockers on the requi
 | Goal | Deliverable | Status | Evidence | Depends on |
 | --- | --- | --- | --- | --- |
 | 00 | Companion pack | VERIFIED | [goal-00.md](evidence/goal-00.md) | None. Base for later goals. |
-| 01 | [Requirements, scope and threat model](goals/01-requirements-scope-and-threat-model.md) | VERIFIED | [goal-01.md](evidence/goal-01.md) | Blueprint in the repository. Goal 00 merged at `a821cc520060513c7a00f773e6cff28a1b83a92d`. |
+| 01 | [Requirements, scope and threat model](goals/01-requirements-scope-and-threat-model.md) | VERIFIED | [goal-01.md](evidence/goal-01.md), [PR 4](https://github.com/Maxencejules/shortvideo-network/pull/4) | Blueprint in the repository. Goal 00 merged at `a821cc520060513c7a00f773e6cff28a1b83a92d`. |
 | 02 | [Protocol schemas and invariants](goals/02-protocol-schemas-and-invariants.md) | NOT STARTED | | Goal 01. DEC-001 through DEC-008 explicitly blocked, not approved. |
 | 03 | [Monorepo, toolchains and CI](goals/03-monorepo-toolchains-and-ci.md) | NOT STARTED | | Goals 01-02. Dependency pins are still unselected. DEC-006 blocks the project licence. |
 | 04 | [Codex Cloud development environment](goals/04-codex-cloud-development-environment.md) | NOT STARTED | | Goal 03. Cloud environment access. |
