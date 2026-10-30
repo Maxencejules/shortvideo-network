@@ -1,6 +1,6 @@
 # Progress
 
-Tracker for goals 01-30. Goal 00 is this companion pack. It is not one of the thirty implementation goals.
+Tracker for goal 00 and goals 01-30. Goal 00 is this companion pack. It is not one of the thirty implementation goals.
 
 ## Status values
 
@@ -15,12 +15,13 @@ Tracker for goals 01-30. Goal 00 is this companion pack. It is not one of the th
 
 A goal is verified only when its required checks actually ran against the reported revision. Never convert a missing test environment into a pass.
 
-`docs/progress.tsv` is the machine-readable tracker. It currently contains the header row only.
+`docs/progress.tsv` is the machine-readable tracker. It has a row for goal 00. Goals 01-30 are in the table below and are not rows in the TSV yet.
 
 ## Goals
 
 | Goal | Deliverable | Status | Evidence |
 | --- | --- | --- | --- |
+| 00 | Companion pack | IMPLEMENTED | [goal-00.md](evidence/goal-00.md) |
 | 01 | [Requirements, scope and threat model](goals/01-requirements-scope-and-threat-model.md) | NOT STARTED | |
 | 02 | [Protocol schemas and invariants](goals/02-protocol-schemas-and-invariants.md) | NOT STARTED | |
 | 03 | [Monorepo, toolchains and CI](goals/03-monorepo-toolchains-and-ci.md) | NOT STARTED | |

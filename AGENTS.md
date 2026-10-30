@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Copy this contract into the root AGENTS.md before running the goals. Preserve stricter existing project instructions. Each goal relies on this contract rather than repeating it in full.
+Preserve stricter existing project instructions. Each goal relies on this contract rather than repeating it in full.
 
 ## Scope and authority
 
@@ -30,4 +30,6 @@ Project commands and schemas referenced in the goals are interfaces to implement
 
 ## Model substitution
 
-The playbook names Codex models (Astra and GPT-6.1 Sol). This repository is built by Cursor cloud agents instead. Extra High goals (01-02 and 29-30) use the highest reasoning setting available. Every docs/evidence/goal-NN.md must record the model actually used. Never claim a model was used that was not.
+The playbook names Codex models (Astra and GPT-6.1 Sol) and effort levels. This repository is built by Cursor cloud agents instead. Extra High goals (01-02 and 29-30) use the highest reasoning setting available.
+
+Every docs/evidence/goal-NN.md must record the model actually used, the effort or reasoning setting actually used, and the playbook's assigned model and effort for that goal. Never claim a model or an effort setting was used that was not. Extra effort does not certify correctness.

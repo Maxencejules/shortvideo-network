@@ -1,1 +1,2 @@
 goal	status	branch	pr_url	cloud_agent	review	merged_at	notes
+00	IMPLEMENTED	goal-00-companion-pack	https://github.com/Maxencejules/shortvideo-network/pull/1	grok-4.7-high-fast		checks not yet recorded against this revision

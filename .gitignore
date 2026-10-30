@@ -15,6 +15,22 @@ id_rsa.*
 id_ed25519
 id_ed25519.*
 
+# Chain key files
+priv_validator_key.json
+node_key.json
+priv_validator_state.json
+keyring-*/
+
+# Mnemonic and seed files
+*mnemonic*
+*.seed
+seed.txt
+seed.json
+seeds.txt
+seeds.json
+*seed-phrase*
+*seed_phrase*
+
 # Media uploads
 /uploads/
 **/media-uploads/
@@ -22,7 +38,18 @@ id_ed25519.*
 
 # Database dumps
 *.dump
+*.sql
 *.sql.gz
 *.sqlite
 *.sqlite3
 *.db
+
+# Build output
+node_modules/
+dist/
+build/
+bin/
+coverage/
+*.log
+.cache/
+__pycache__/
