@@ -6,7 +6,7 @@ The schema and fixture checks below passed on this tree. The goal is not VERIFIE
 
 The checks are not a devnet, a four-validator process test, a media test, a security audit, or an approval of the protocol. The protocol is not approved. Public launch: DISABLED. No tradable token, coin, sale, or mining.
 
-DEC-001 through DEC-008 stay OPEN. DEC-009 and DEC-010 are OPEN and are not approvals. Page 26 playback, processing, load, recovery, moderation-timing, and operator-independence measurements were not run and are not passes. `replay-app-hash` pins a golden hash of the chain-state projection described below. It is not Goal 05's process replay. `hosting-resilience` is a contract simulation. Neither one is passed as the later measurement.
+DEC-001 through DEC-010 stay OPEN. Page 26 playback, processing, load, recovery, moderation-timing, and operator-independence measurements were not run and are not passes. `replay-app-hash` pins a golden hash of the chain-state projection. It is not Goal 05's process replay.
 
 Pull request: https://github.com/Maxencejules/shortvideo-network/pull/5
 
@@ -16,68 +16,78 @@ Pull request: https://github.com/Maxencejules/shortvideo-network/pull/5
 - Launch parameter, not an observation: the task that started this run requested model `grok-4.7` with `reasoning_effort=xhigh`.
 - What this VM can see: cursor-cloud `run-info` reports `originalModelName=grok-4.7` and `bcId=bc-763364ae-2b17-5737-aa7d-39bb2a64a0c0`. That payload has no effort, reasoning, fast, or context field. The effort setting cannot be independently verified from inside the VM.
 - Ruling: this point is awaiting Max at Gate A. Until that ruling, goal 02 stays IMPLEMENTED and is not marked VERIFIED.
-- Goal 01's status and `docs/evidence/goal-01.md` are unchanged.
+- `docs/evidence/goal-01.md` was not edited. Goal 01's status in `docs/progress.md` and `docs/progress.tsv` stays VERIFIED.
 - Extra effort would not certify correctness.
+
+## Goal 01 files that differ from main
+
+`docs/evidence/goal-01.md` and goal 01's status are unchanged. Two other goal 01 files differ from `783e159` (`main` at the goal 02 base). `git diff 783e159 --numstat` reports `186` insertions and `27` deletions in `docs/evidence/goal-01/check_requirements.py`, and `13` insertions and `13` deletions in `docs/requirements.md` (13 matrix rows).
+
+Checker changes, and why:
+
+- Approved nit: threat headings match the full heading line, so `## TM-SECRETS` does not match `## TM-SECRET`.
+- Approved nit: `docs/progress.md` and `docs/progress.tsv` must carry the same status for every started goal.
+- Approved nit: `self_test_cases` is the number of negative fixtures executed, not a hardcoded 7.
+- Approved nit, then restored after round 2: a `TEST:` disposition and its goals column are the same set of goal numbers. The check is two-way. Negation text is not stripped. Self-tests fail an extra column goal (`01,07` on a Goal 01 sentence) and fail a sentence that says `Goal 01 does not`.
+- The checker allows `docs/protocol/` and `docs/evidence/goal-02/` as specification artifacts. Without that, the goal 01 checker would report the protocol drafts as application source.
+
+Requirement rows, and why:
+
+- `REQ-SCOPE-002`: blueprint cite is pages 20 and 28, not 20 and 29. That was the approved nit.
+- `REQ-PROD-013`, `REQ-UX-013`, `REQ-SCOPE-009`, `REQ-OFF-002`, `REQ-INV-003`, `REQ-GEN-004`, `REQ-GOV-002`, `REQ-CAP-005`: the goals column was updated to the goals the existing TEST sentence already names, so the two-way check can pass.
+- `REQ-API-001`: the TEST sentence now names goals 13, 19, 21, 22, and 23. The column already listed those goals. "Later goals" named none.
+- `REQ-SEC-011`, `REQ-REPO-003`, `REQ-LAUNCH-001`: the TEST sentence names only the goal in the column. The statements that goal 01 does not do that later work are in the summary, because the exact checker counts every `Goal N` token in the TEST cell, including a negation.
+
+## Round 4 review fixes
+
+Scheduling a validator power change folds every change already waiting. The projected set must stay non-empty and must still meet the two-thirds voting-power predicate. `stacked-validator-removal` schedules removals of v1, v2, and v3 at height 30, rejects removal of v4 with `ERROR_CODE_FORBIDDEN`, then commits through height 30 and one block after that. `validator-removal-breaks-quorum` rejects a removal that would drop the available power to two thirds or below while one validator is down.
+
+`wrong-payload-digest` expects `ERROR_CODE_INTEGRITY`. `duplicate-scheduled-validator-key` expects `ERROR_CODE_DUPLICATE_ID` for a key shared by two scheduled changes, not only a key already in the active set.
+
+Proto3 JSON omits default values. `power` 0 is omitted from the canonical payload. A present `"power": "0"` is `ERROR_CODE_MALFORMED`. Vector `proposal-payload-validator-power-zero` is the omitted form. Its digest is `7eeb7c6d8fadfb2b28fea5d2cd42f1a85eaf2b773e79b24399d350b9b9be675a`.
+
+The descriptor allowlist is the set of message, field, enum, enum value, oneof, service, rpc, and json names in the compiled protocol. It has 524 entries. A new or renamed name fails until it is added to that set. The pattern blocklist still applies, including `ipv4`, `ipv6`, `ipAddress`, `remote_addr`, `device_id`, `geo_location`, `viewer_history`, `payout_amount`, `bond_amount`, `fee_amount`, `coin_denom`, `inflation_rate`, `issuance`, `media_blob`, and `chunk_data`. Negative `leaks.proto` requires a hit on each of those fields. A file name or package line is not a hit. `ERROR_CODE_FEE_REJECTED`, `SIGNATURE_DOMAIN_MEDIA_MANIFEST`, `mintModuleEnabled`, and `slashingModuleEnabled` are pinned exemptions so the fee-rejection code and the media-manifest domain stay legal.
+
+`hosting-resilience` checks l1, l2, l3, and l4 separately. The checker requires the l2 reservation assertion in `cases.py`. Deleting that line fails the checker even if l3 and l4 are still checked.
+
+Well-known protobuf files are resolved by `protoc` itself (`protoc --descriptor_set_out=/dev/null google/protobuf/descriptor.proto`). This checker does not pass an include directory.
+
+DEC-009 cites `council_ready` at `spec_machine.py:334`, `op_admit_provider` at `:409`, `op_disable_provider` at `:1751`, and `op_force_withdraw` at `:1777`.
+
+## Mutation self-check
+
+These runs were in-process patches of the final functions. The tree on disk was not edited for them.
+
+- Ignore pending changes and project only the change being scheduled: `stacked-validator-removal` returned `ExecuteChange expected ERROR_CODE_FORBIDDEN got ok`. `duplicate-scheduled-validator-key` returned `ExecuteChange expected ERROR_CODE_DUPLICATE_ID got ok`.
+- `quorum_holds` always true: `validator-removal-breaks-quorum` returned `ExecuteChange expected ERROR_CODE_QUORUM got ok`. `stacked-validator-removal` still passed.
+- Delete the scheduled duplicate-key comparison: `duplicate-scheduled-validator-key` returned `ExecuteChange expected ERROR_CODE_DUPLICATE_ID got ok`.
+- Replace the payload-digest comparison with `if False`: `wrong-payload-digest` returned `ProposeChange expected ERROR_CODE_INTEGRITY got ok`.
+- A descriptor that is only `file { name: "negative/mint.proto" package: "negative.mint" }` produces no pattern hit. The same parser on `message_type { name: "MsgMint" }` hits `mint`.
+- Allowlist: `field:ipv4_address` is reported as an extra name. An empty pin returns `descriptor allowlist is empty`.
+- The l2 assertion string is present in `cases.py`. Removing it makes the pin fail.
 
 ## Runtime
 
-Linux 6.12.94+ x86_64. Python 3.12.3. Go go1.22.2 linux/amd64. Node v22.23.4. libprotoc 3.21.12. Python package `cryptography` 43.0.3 signed the Ed25519 comparison. OpenSSL 3.0.13. No chain, database, browser, FFmpeg worker, container devnet, or second machine was started.
-
-## Base
-
-Branch `goal-02` was created from `783e15911b3ea35eefd060932e5a6a317b0f9402`. Goal 01 evidence is `docs/evidence/goal-01.md`. DEC-001 through DEC-008 were OPEN in that revision and are still OPEN.
+Linux 6.12.94+ x86_64. Python 3.12.3. Go go1.22.2 linux/amd64. Node v22.23.4. libprotoc 3.21.12. Python package `cryptography` 43.0.3. OpenSSL 3.0.13. No chain, database, browser, FFmpeg worker, container devnet, or second machine was started.
 
 ## Tested revision
 
-This evidence file is part of the head commit. The checkers do not read this file. They do read `docs/progress.md` and `docs/progress.tsv`, so those hashes below are the bytes in this commit.
+This evidence file is part of the head commit. The checkers do not read this file. They do read `docs/progress.md` and `docs/progress.tsv`.
 
-The head sha cannot be written into this file without changing the commit. The tested tree is this commit's tree. It is the `Tested-tree` trailer. Confirm with `git rev-parse 'HEAD^{tree}'`.
-
-## Round 3 review fixes
-
-The row-goal check in `docs/evidence/goal-01/check_requirements.py` is two-way again: the goals named in a `TEST:` disposition and the goals column are the same set. Negation text is not stripped. A self-test puts goal 07 on a Goal 01 disposition and requires `!= test goals`. Another self-test requires `Goal 01 does not` to count as naming goal 01.
-
-That exact rule fails four rows if their `TEST:` cells name a different set from the column. `REQ-API-001` now names goals 13, 19, 21, 22, and 23. `REQ-SEC-011`, `REQ-REPO-003`, and `REQ-LAUNCH-001` name only the goal in the column. The sentences that goal 01 does not do that later work stay in the summary cells. `docs/evidence/goal-01.md` was not edited. Goal 01 status stays VERIFIED in the tracker.
-
-`ValidatorPowerChange` has a reason digest and an `ActivationPoint`: a committed height or a committed chain time, exactly one. `ExecuteChange` schedules it. A later committed block applies it when the point has been reached. The point must be strictly after the execution context. No council threshold and no extra delay number were chosen. Any longer mandatory delay stays inside DEC-008, which stays OPEN. There is no new decision for that.
-
-`payload_digest` is SHA-256 of SVN-JCS-1 over the proto3 JSON object: lowerCamelCase, standard base64 bytes, int64 and uint64 as decimal strings, enum names, one present oneof field. Vector `proposal-payload-validator-power` is the cross-language example. Its digest is `be9df594c416ecbaf50512e298a73fecf9f7a56e7ac83a0cf4edf87a6b522c48`.
-
-Forbidden names are pinned patterns, matched without case, plus a pinned exemption list. `ip` is a token (`ip_address`, `uploader_ip`), so `endpoint` does not match. `PRIVACY_CLASS_SECRET` is the pinned exemption for the privacy-class enum. A field named `secret` still matches. Emptying the pattern list, dropping `validator_power` from the oneof pin, or dropping the `AdmitProvider` rpc pin fails `pin_self_test`. Dropping those names from the compiled descriptor fails the descriptor scan. Negative descriptors cover `MsgMintTokens`, `reward`, `ip_address`, `video_payload`, `slash_fraction`, `token_balance`, and `email`.
-
-New fixtures, all pinned: renew manifest mismatch with the same byte count, update stores the endpoint digest, governed limit 33 on `max_evidence_batch` (under 256 MiB, over that key's ceiling 32), a later evidence batch reads the stored cap of 2, duplicate validator pubkey, DEC-002 on the admit payload, and `ExecuteChange` paths for admit, disable, and force-withdraw. The direct single-signature messages are unchanged.
-
-`lease-expired` reaches `EXPIRED` and requires reserved bytes to fall to 0. Replacing `release` with a no-op makes that fixture fail.
-
-`app_hash` is SHA-256 of SVN-JCS-1 over every machine field except publication, reachability, the stall outbox, derived events, the fixture `down` set, and the transient business slot. `pair_index` is a sorted list of records because its raw key contains `|`. The golden hash of register, admit, register-content, offer, and accept is `ffee724a8b7944512db064250664d46b7a519d2062134b5cdda9a03ca202437d`. The fixture checks that omitting leases, contents, offers, evidence, proposals, a tombstone, validator pubkeys, a signing pubkey, pending power, governed limits, or the pair index changes the hash, and that publication and reachability do not.
-
-Governed limits use `governed_limit_caps` per key. The stored `governed_limits` value is what later checks read.
-
-The unreachable `unsafe_integer` branch in `emit` in `docs/evidence/goal-02/go/vectorcheck.go` is gone. `parseNumber` still rejects unsafe integers.
-
-`check_protocol.py` finds `descriptor.proto` by walking up from the `protoc` binary. Descriptor outputs use `tempfile.TemporaryDirectory`.
-
-## Open decisions added
-
-- DEC-009, OPEN. Remove `MsgAdmitProvider`, `MsgDisableProvider`, and `MsgForceWithdraw`, or keep them as a bounded emergency path. The direct paths stay. At reviewed revision `3984ec8dda10940ff94ced88668e86bb04f897e6` the handlers were `op_admit_provider` (`spec_machine.py:393`), `op_disable_provider` (`spec_machine.py:1501`), and `op_force_withdraw` (`spec_machine.py:1527`). `council_ready` only checks that a DEC-008 test parameter exists.
-- DEC-010, OPEN. Derive evidence `REJECTED` from verification, or treat `reject` as an auditor verdict. The bool stays.
-- DEC-001 through DEC-008 stay OPEN. No activation delay beyond "not immediate" was chosen, so no further decision id was added.
+The head sha cannot be written into this file without changing the commit. The tested tree is this commit's tree and the `Tested-tree` trailer. Confirm with `git rev-parse 'HEAD^{tree}'`.
 
 ## Counts
 
-- Transition fixtures: 73, pinned, 0 failures.
-- Valid canonical vectors: 14. Invalid: 14. Integers: 6. Arithmetic: 5.
-- Go vectors exit 0. TypeScript vectors exit 0. Reports match Python, including Ed25519 signatures. `languages MATCH` is printed only after that.
+- Transition fixtures: 78, pinned, 0 failures.
+- Valid canonical vectors: 15. Invalid: 14. Integers: 6. Arithmetic: 5.
+- Descriptor allowlist entries: 524.
+- Go exit 0. TypeScript exit 0. Reports match Python, including Ed25519 signatures. `languages MATCH` is printed only after that.
 - Goal 01 checker: 265 requirements, 12 self-test cases, 0 errors, exit 0.
 - protoc exit 0.
 
-## Checker-input sha256
-
-The protocol checker prints these hashes. They include the progress files. This evidence file is not an input.
-
 ## Commands and output
 
-Run 1, on this tree before this evidence file contained these logs:
+Run 1, before this evidence file contained these logs:
 
 ```
 COMMAND python3 docs/evidence/goal-01/check_requirements.py
@@ -146,25 +156,26 @@ exit:0
 
 COMMAND python3 docs/evidence/goal-02/check_protocol.py
 protoc exit:0
-transition_cases 73
-transition_case_pin 73
+transition_cases 78
+transition_case_pin 78
 transition_failures 0
 go_vectors exit:0
 typescript_vectors exit:0
-valid_vectors 14
+valid_vectors 15
 invalid_vectors 14
 integer_vectors 6
 arithmetic_vectors 5
 hashes
-28ee376324bc1f536f42ac92ecf3619517f3b8e913b0904f5b1ec6a506195c4f  docs/decision-register.md
+907da1f7c835652cf870c1d48c6ae55637d15a5378a608d0a8f7eb3912d50692  docs/decision-register.md
 e8d7ab87e25f4b770f9fcae641cc1bfe8663d0dce042bd818e65c26998ad7359  docs/evidence/goal-01/check_requirements.py
-fdda57302fb2ffd513267555897721d0db9c8455632bbf948955b8c259d955b1  docs/evidence/goal-02/cases.py
-58b971093e97615e7b859a88a48ff5fff5b4d5bbc935a09dab47a0f70399c7f5  docs/evidence/goal-02/check_protocol.py
+37db5db4ba60c241cab9eb48b668ed4d0f7afdcc678ced06c886e6ace0eded77  docs/evidence/goal-02/cases.py
+ded724880d232a3d4f508de42a43ad1661720cc5425b3c2cfbd5c10033250ebf  docs/evidence/goal-02/check_protocol.py
 e0b344008a1ebdec3fba9b1cb22a74d4f251c23cac23d5092c67fda5387bd6ef  docs/evidence/goal-02/go/go.mod
 0167772bf599c2779e16a708c6e7cb1e4f0dcacc9eedf1195cae60cf4c679c9b  docs/evidence/goal-02/go/vectorcheck.go
 44c72f0c839896bd9b559f33851a512e0a8db9cbc087df2a745aefd909a765b0  docs/evidence/goal-02/jcs.py
 7caaa3bf47979383afac9c8468fa65cc63ee2ebe2fe67b8e8bec218bd3a0d3a7  docs/evidence/goal-02/negative/email.proto
 6afb552fd968083003159a79cf12846a3480e34063ddda78ad2730ce75fce46c  docs/evidence/goal-02/negative/ip_address.proto
+d5938cbd382771a2bb0384b74ddb6425251b8ad97331df01cb1f6e264a599f77  docs/evidence/goal-02/negative/leaks.proto
 ed959570306e4cadeb744a37299add6d64351aab476fd88a550039a795bac1dd  docs/evidence/goal-02/negative/media.proto
 0a1da67c3881ae73b1924a5120cd088eefce711c2a79354bbc8cd5a7f7e6851e  docs/evidence/goal-02/negative/mint.proto
 961101c3d3ab2aca71dc00ffc4ad980366a225d4970a87f934e1fdbfc6818500  docs/evidence/goal-02/negative/mint_tokens.proto
@@ -175,20 +186,20 @@ e1b1e71b30fc6a4098e3152f25a6830cfa4a52aa7ec5f3ea16ec989f6adcf2fc  docs/evidence/
 502e774d6bd2ba90752f8ca39d8fa10259b595f97e7978f91a1e01a193858309  docs/evidence/goal-02/negative/timestamp.proto
 92c9bcb8172148f4ea65802def2a54c69d280e2c4a8b21a66a6472910f83c98c  docs/evidence/goal-02/negative/token_balance.proto
 6d2816506bad14e04b00348f0a395f39968832450bca1253492792e5ed788b4e  docs/evidence/goal-02/negative/video_payload.proto
-b6ef0944618502b883d0f6773edcd3decd810524f0e7e8abda50dd0831d2b292  docs/evidence/goal-02/spec_machine.py
+2a5a1459b33a883604bd0606cdb662b8ce52037b131dc8583aec1978f8ff6b6a  docs/evidence/goal-02/spec_machine.py
 8cbf1ddd451d6738dc34d06133151415295626ee70b8bdd9b69cfda056f8d8b9  docs/evidence/goal-02/ts/vectorcheck.ts
 78261299f04647a8bb1da6a34eef7cc7260a3867fc0fc7ca136e42abe6298896  docs/progress.md
 16bce2d3e9e9ab93b84999d59e6de98a3a050ca64c5025fdea73dc30b6c49828  docs/progress.tsv
 d52993f4fd2368c2bf25a9e5131b7dd4b4b2622f9c62cc6e090a5d925e34e25f  docs/protocol/api/client-api.json
 94a2f35aaf83f234a3fb84e344cf562d6c3c391e0467ff77c7a5590f16324c9f  docs/protocol/api/provider-api.json
-d0431bddc77e7f193f96bb17d4a54d4783281eaf010bec737e602baf0557615e  docs/protocol/bounds.json
+15fc8fa73ef39a5b867e74e6ca1d3f41d9e1eb82a3364903ad40d2849648c81b  docs/protocol/bounds.json
 eec164c9beb92a879de4b885eeceed4069c7991896097a1864c0b437026996bc  docs/protocol/fixtures/genesis-valid.json
 de0735b82b34a84e7d95d8e8bc720f346d1a705582ab6fc0a222324f0794539d  docs/protocol/fixtures/manifest-invalid-boundary.json
 f4b0a345b494f00b4a9bab599be25d80d9ff31bf28b017979f28c91beafb512b  docs/protocol/fixtures/manifest-invalid-duplicate-id.json
 be1b53f8674503c5086af4a23468cd4fb205cf296faf7845c4d383c3a3a9f2a9  docs/protocol/fixtures/manifest-invalid-unknown.json
 c6e8246ddb86788efa30f6e36eb887bc2e286fd7e2226baa5522a13790bef238  docs/protocol/fixtures/manifest-invalid-wrong-domain.json
 703a4abce900576fbd08f21fd3d1a611fb49eb01fc7882d694ddd8106f4477f1  docs/protocol/fixtures/manifest-valid.json
-ec862010e2c468d153cfd7a7670cf7706d7948601fe9c0f02d485321d6bd26e3  docs/protocol/fixtures/vectors.json
+8729de9714a97462e151a2fd50ead9f5074536117581219036bd08cdd0724477  docs/protocol/fixtures/vectors.json
 39f250f2338b12284fa76d427ee7294f00f4412d77e6fb9d83ac517f11ac9e23  docs/protocol/proto/svn/app/v1/genesis.proto
 1f1bdc75b15f0634c704ecb930d7df09df8aaeadde8a2082fc7436c827d57274  docs/protocol/proto/svn/authority/v1/genesis.proto
 826d47717c514115a706000d35f3cc6a53ea1ebec48e8e3c8f1cc241218c5299  docs/protocol/proto/svn/authority/v1/query.proto
@@ -221,7 +232,7 @@ e54a4045b05602d94fe0aea456a314f4e6db0390fe45b93dd10a04ca5c97a507  docs/protocol/
 0093a1de6721fc8275bfb48821839606a8baa83accb9f0c5e34e9aafe2f74e4e  docs/protocol/schemas/media-manifest.schema.json
 d679f577326d4f796b2d74a6df7ad5b0d2d61bc573aecfdd55af1112aa1770ea  docs/protocol/schemas/provider-capability.schema.json
 cb33617cc2a2c0f55da607817826f22d2c9e32ce699d69805f11dc02dcb3304e  docs/protocol/schemas/public-record.schema.json
-6aedcefbba237dd752f95162251b2cc4179b890ea4fca6a1e1b372cc4776868a  docs/protocol.md
+bae60cfc97922eefbde42daf818c427e81bf6cf04f6c03a2f51d4e90669be31e  docs/protocol.md
 197fded5c09c712f10ebf74459e46868ab570afb44895c1ea582b5b64a527318  docs/requirements.md
 errors 0
 languages MATCH
@@ -232,10 +243,10 @@ exit:0
 
 ## Repeat run
 
-Run 2 used the same two commands after this evidence file existed, before this paragraph was filled in. The checkers do not read this file. Their stdout was byte-identical to run 1, including the hash list and both exit codes. The logged stdout is:
+Run 2 used the same two commands after this evidence file existed, before this paragraph was filled in. The checkers do not read this file. Their stdout was byte-identical to run 1. The logged stdout is:
 
 ```
-===== GOAL01 =====
+COMMAND python3 docs/evidence/goal-01/check_requirements.py
 self_test duplicate id fail_as_expected
 self_test missing role fail_as_expected
 self_test bad goal fail_as_expected
@@ -298,27 +309,29 @@ threat TM-SECRET recorded
 result PASS
 note document check only; protocol not approved; public launch disabled
 exit:0
-===== GOAL02 =====
+
+COMMAND python3 docs/evidence/goal-02/check_protocol.py
 protoc exit:0
-transition_cases 73
-transition_case_pin 73
+transition_cases 78
+transition_case_pin 78
 transition_failures 0
 go_vectors exit:0
 typescript_vectors exit:0
-valid_vectors 14
+valid_vectors 15
 invalid_vectors 14
 integer_vectors 6
 arithmetic_vectors 5
 hashes
-28ee376324bc1f536f42ac92ecf3619517f3b8e913b0904f5b1ec6a506195c4f  docs/decision-register.md
+907da1f7c835652cf870c1d48c6ae55637d15a5378a608d0a8f7eb3912d50692  docs/decision-register.md
 e8d7ab87e25f4b770f9fcae641cc1bfe8663d0dce042bd818e65c26998ad7359  docs/evidence/goal-01/check_requirements.py
-fdda57302fb2ffd513267555897721d0db9c8455632bbf948955b8c259d955b1  docs/evidence/goal-02/cases.py
-58b971093e97615e7b859a88a48ff5fff5b4d5bbc935a09dab47a0f70399c7f5  docs/evidence/goal-02/check_protocol.py
+37db5db4ba60c241cab9eb48b668ed4d0f7afdcc678ced06c886e6ace0eded77  docs/evidence/goal-02/cases.py
+ded724880d232a3d4f508de42a43ad1661720cc5425b3c2cfbd5c10033250ebf  docs/evidence/goal-02/check_protocol.py
 e0b344008a1ebdec3fba9b1cb22a74d4f251c23cac23d5092c67fda5387bd6ef  docs/evidence/goal-02/go/go.mod
 0167772bf599c2779e16a708c6e7cb1e4f0dcacc9eedf1195cae60cf4c679c9b  docs/evidence/goal-02/go/vectorcheck.go
 44c72f0c839896bd9b559f33851a512e0a8db9cbc087df2a745aefd909a765b0  docs/evidence/goal-02/jcs.py
 7caaa3bf47979383afac9c8468fa65cc63ee2ebe2fe67b8e8bec218bd3a0d3a7  docs/evidence/goal-02/negative/email.proto
 6afb552fd968083003159a79cf12846a3480e34063ddda78ad2730ce75fce46c  docs/evidence/goal-02/negative/ip_address.proto
+d5938cbd382771a2bb0384b74ddb6425251b8ad97331df01cb1f6e264a599f77  docs/evidence/goal-02/negative/leaks.proto
 ed959570306e4cadeb744a37299add6d64351aab476fd88a550039a795bac1dd  docs/evidence/goal-02/negative/media.proto
 0a1da67c3881ae73b1924a5120cd088eefce711c2a79354bbc8cd5a7f7e6851e  docs/evidence/goal-02/negative/mint.proto
 961101c3d3ab2aca71dc00ffc4ad980366a225d4970a87f934e1fdbfc6818500  docs/evidence/goal-02/negative/mint_tokens.proto
@@ -329,20 +342,20 @@ e1b1e71b30fc6a4098e3152f25a6830cfa4a52aa7ec5f3ea16ec989f6adcf2fc  docs/evidence/
 502e774d6bd2ba90752f8ca39d8fa10259b595f97e7978f91a1e01a193858309  docs/evidence/goal-02/negative/timestamp.proto
 92c9bcb8172148f4ea65802def2a54c69d280e2c4a8b21a66a6472910f83c98c  docs/evidence/goal-02/negative/token_balance.proto
 6d2816506bad14e04b00348f0a395f39968832450bca1253492792e5ed788b4e  docs/evidence/goal-02/negative/video_payload.proto
-b6ef0944618502b883d0f6773edcd3decd810524f0e7e8abda50dd0831d2b292  docs/evidence/goal-02/spec_machine.py
+2a5a1459b33a883604bd0606cdb662b8ce52037b131dc8583aec1978f8ff6b6a  docs/evidence/goal-02/spec_machine.py
 8cbf1ddd451d6738dc34d06133151415295626ee70b8bdd9b69cfda056f8d8b9  docs/evidence/goal-02/ts/vectorcheck.ts
 78261299f04647a8bb1da6a34eef7cc7260a3867fc0fc7ca136e42abe6298896  docs/progress.md
 16bce2d3e9e9ab93b84999d59e6de98a3a050ca64c5025fdea73dc30b6c49828  docs/progress.tsv
 d52993f4fd2368c2bf25a9e5131b7dd4b4b2622f9c62cc6e090a5d925e34e25f  docs/protocol/api/client-api.json
 94a2f35aaf83f234a3fb84e344cf562d6c3c391e0467ff77c7a5590f16324c9f  docs/protocol/api/provider-api.json
-d0431bddc77e7f193f96bb17d4a54d4783281eaf010bec737e602baf0557615e  docs/protocol/bounds.json
+15fc8fa73ef39a5b867e74e6ca1d3f41d9e1eb82a3364903ad40d2849648c81b  docs/protocol/bounds.json
 eec164c9beb92a879de4b885eeceed4069c7991896097a1864c0b437026996bc  docs/protocol/fixtures/genesis-valid.json
 de0735b82b34a84e7d95d8e8bc720f346d1a705582ab6fc0a222324f0794539d  docs/protocol/fixtures/manifest-invalid-boundary.json
 f4b0a345b494f00b4a9bab599be25d80d9ff31bf28b017979f28c91beafb512b  docs/protocol/fixtures/manifest-invalid-duplicate-id.json
 be1b53f8674503c5086af4a23468cd4fb205cf296faf7845c4d383c3a3a9f2a9  docs/protocol/fixtures/manifest-invalid-unknown.json
 c6e8246ddb86788efa30f6e36eb887bc2e286fd7e2226baa5522a13790bef238  docs/protocol/fixtures/manifest-invalid-wrong-domain.json
 703a4abce900576fbd08f21fd3d1a611fb49eb01fc7882d694ddd8106f4477f1  docs/protocol/fixtures/manifest-valid.json
-ec862010e2c468d153cfd7a7670cf7706d7948601fe9c0f02d485321d6bd26e3  docs/protocol/fixtures/vectors.json
+8729de9714a97462e151a2fd50ead9f5074536117581219036bd08cdd0724477  docs/protocol/fixtures/vectors.json
 39f250f2338b12284fa76d427ee7294f00f4412d77e6fb9d83ac517f11ac9e23  docs/protocol/proto/svn/app/v1/genesis.proto
 1f1bdc75b15f0634c704ecb930d7df09df8aaeadde8a2082fc7436c827d57274  docs/protocol/proto/svn/authority/v1/genesis.proto
 826d47717c514115a706000d35f3cc6a53ea1ebec48e8e3c8f1cc241218c5299  docs/protocol/proto/svn/authority/v1/query.proto
@@ -375,7 +388,7 @@ e54a4045b05602d94fe0aea456a314f4e6db0390fe45b93dd10a04ca5c97a507  docs/protocol/
 0093a1de6721fc8275bfb48821839606a8baa83accb9f0c5e34e9aafe2f74e4e  docs/protocol/schemas/media-manifest.schema.json
 d679f577326d4f796b2d74a6df7ad5b0d2d61bc573aecfdd55af1112aa1770ea  docs/protocol/schemas/provider-capability.schema.json
 cb33617cc2a2c0f55da607817826f22d2c9e32ce699d69805f11dc02dcb3304e  docs/protocol/schemas/public-record.schema.json
-6aedcefbba237dd752f95162251b2cc4179b890ea4fca6a1e1b372cc4776868a  docs/protocol.md
+bae60cfc97922eefbde42daf818c427e81bf6cf04f6c03a2f51d4e90669be31e  docs/protocol.md
 197fded5c09c712f10ebf74459e46868ab570afb44895c1ea582b5b64a527318  docs/requirements.md
 errors 0
 languages MATCH

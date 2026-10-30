@@ -280,18 +280,23 @@ def release(provider: dict, amount: int) -> str | None:
     return None
 
 
-def commit_possible(state: dict) -> bool:
+def quorum_holds(validators: dict, down: list) -> bool:
+    """More than two thirds of the projected voting power must be available."""
     total = 0
     available = 0
-    for validator, power in sorted(state["validators"].items()):
+    for validator, power in sorted(validators.items()):
         if not isinstance(power, int) or isinstance(power, bool) or power <= 0:
             return False
         total += power
-        if validator not in state["down"]:
+        if validator not in down:
             available += power
     if total <= 0 or total > SAFE_MAX:
         return False
     return available * 3 > total * 2
+
+
+def commit_possible(state: dict) -> bool:
+    return quorum_holds(state["validators"], state["down"])
 
 
 def intent_ok(state: dict, sig: object) -> str | None:
@@ -1056,10 +1061,18 @@ def parse_proposal_payload(payload: object) -> tuple[dict, dict] | str:
     if kind is None or not isinstance(body, dict):
         return "ERROR_CODE_MALFORMED"
     if kind == "validator_power":
-        if set(body) != {"consensusPubkey", "power", "nodeId", "reasonDigest", "activation"}:
+        # Proto3 JSON omits the default. power 0 is that default, so a removal
+        # has no power field. A present "0" is not the canonical preimage.
+        required = {"consensusPubkey", "nodeId", "reasonDigest", "activation"}
+        if set(body) == required:
+            power = 0
+        elif set(body) == required | {"power"}:
+            power = decimal_uint(body["power"])
+            if power == 0:
+                return "ERROR_CODE_MALFORMED"
+        else:
             return "ERROR_CODE_MALFORMED"
         raw_key = b64_fixed(body["consensusPubkey"], BOUNDS["consensus_pubkey_bytes"])
-        power = decimal_uint(body["power"])
         reason = digest_message(body["reasonDigest"])
         activation = parse_activation(body["activation"])
         if raw_key is None or standard_b64(raw_key) != body["consensusPubkey"]:
@@ -1074,15 +1087,15 @@ def parse_proposal_payload(payload: object) -> tuple[dict, dict] | str:
             "reason_digest": reason,
             "activation": activation,
         }
-        rebuilt = {
-            "validatorPower": {
-                "activation": activation_json(activation),
-                "consensusPubkey": standard_b64(raw_key),
-                "nodeId": body["nodeId"],
-                "power": str(power),
-                "reasonDigest": digest_json(reason),
-            }
+        rebuilt_body = {
+            "activation": activation_json(activation),
+            "consensusPubkey": standard_b64(raw_key),
+            "nodeId": body["nodeId"],
+            "reasonDigest": digest_json(reason),
         }
+        if power != 0:
+            rebuilt_body["power"] = str(power)
+        rebuilt = {"validatorPower": rebuilt_body}
         return normalized, rebuilt
     if kind == "governed_limit":
         if set(body) != {"limitKey", "value"}:
@@ -1159,42 +1172,57 @@ def keep_error(state: dict, code: str) -> dict[str, object]:
     return err(code, keep=True)
 
 
-def projected_validators(state: dict, change: dict) -> dict | str:
-    pubkey = change["consensus_pubkey"]
-    node_id = change["node_id"]
-    power = change["power"]
-    proposal_id = change.get("proposal_id")
-    if power > 0:
-        for other_id, other_pub in state["validator_pubkeys"].items():
-            if other_pub == pubkey and other_id != node_id:
-                return "ERROR_CODE_DUPLICATE_ID"
-        for pending in state["pending_power"]:
-            if pending.get("proposal_id") == proposal_id:
-                continue
-            if pending["power"] > 0 and pending["consensus_pubkey"] == pubkey and pending["node_id"] != node_id:
-                return "ERROR_CODE_DUPLICATE_ID"
-    updated = dict(state["validators"])
-    if power == 0:
-        if node_id not in updated:
-            return "ERROR_CODE_NOT_FOUND"
-        del updated[node_id]
-    else:
-        updated[node_id] = power
-    if not updated or sum(updated.values()) <= 0:
+def project_power_changes(state: dict, extra: dict | None = None) -> str | None:
+    """Fold every pending power change, plus `extra`, into one projected set.
+
+    Scheduling checks this projection. A removal that is safe alone and fatal
+    together with changes already scheduled is rejected here, so CommitBlock
+    is not left holding a set it cannot apply.
+    """
+    validators = dict(state["validators"])
+    pubkeys = dict(state["validator_pubkeys"])
+    changes = [
+        item
+        for item in state["pending_power"]
+        if extra is None or item.get("proposal_id") != extra.get("proposal_id")
+    ]
+    if extra is not None:
+        changes.append(extra)
+    changes.sort(key=activation_sort_key)
+    for change in changes:
+        node_id = change["node_id"]
+        power = change["power"]
+        pubkey = change["consensus_pubkey"]
+        if power > 0:
+            for other_id, other_pub in pubkeys.items():
+                if other_pub == pubkey and other_id != node_id:
+                    return "ERROR_CODE_DUPLICATE_ID"
+            validators[node_id] = power
+            pubkeys[node_id] = pubkey
+        else:
+            if node_id not in validators:
+                return "ERROR_CODE_NOT_FOUND"
+            del validators[node_id]
+            pubkeys.pop(node_id, None)
+    if not validators or sum(validators.values()) <= 0:
         return "ERROR_CODE_FORBIDDEN"
-    return updated
+    if not quorum_holds(validators, state["down"]):
+        return "ERROR_CODE_QUORUM"
+    return None
 
 
 def commit_validator_power(state: dict, change: dict) -> str | None:
-    projected = projected_validators(state, change)
-    if isinstance(projected, str):
-        return projected
     node_id = change["node_id"]
     if change["power"] == 0:
+        if node_id not in state["validators"]:
+            return "ERROR_CODE_NOT_FOUND"
         state["validators"].pop(node_id, None)
         state["validator_pubkeys"].pop(node_id, None)
         state["validator_reasons"].pop(node_id, None)
         return None
+    for other_id, other_pub in state["validator_pubkeys"].items():
+        if other_pub == change["consensus_pubkey"] and other_id != node_id:
+            return "ERROR_CODE_DUPLICATE_ID"
     state["validators"][node_id] = change["power"]
     state["validator_pubkeys"][node_id] = change["consensus_pubkey"]
     state["validator_reasons"][node_id] = change["reason_digest"]
@@ -1233,8 +1261,8 @@ def apply_proposal_payload(state: dict, proposal: dict) -> str | None:
             "reason_digest": payload["reason_digest"],
             "activation": payload["activation"],
         }
-        projected = projected_validators(state, scheduled)
-        if isinstance(projected, str):
+        projected = project_power_changes(state, scheduled)
+        if projected:
             return projected
         state["pending_power"].append(scheduled)
         return None
@@ -2065,15 +2093,15 @@ def governed_limit_payload(limit_key: str, value: int) -> dict:
 
 
 def validator_power_payload(node_id: str, power: int, activation: dict[str, str], pubkey_hex: str | None = None) -> dict:
-    return {
-        "validatorPower": {
-            "activation": activation,
-            "consensusPubkey": standard_b64(bytes.fromhex(pubkey_hex or pubkey_for(node_id))),
-            "nodeId": node_id,
-            "power": str(power),
-            "reasonDigest": digest_json(REASON),
-        }
+    body = {
+        "activation": activation,
+        "consensusPubkey": standard_b64(bytes.fromhex(pubkey_hex or pubkey_for(node_id))),
+        "nodeId": node_id,
+        "reasonDigest": digest_json(REASON),
     }
+    if power != 0:
+        body["power"] = str(power)
+    return {"validatorPower": body}
 
 
 def admit_change_payload(provider_id: str) -> dict:

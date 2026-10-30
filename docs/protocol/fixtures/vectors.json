@@ -71,6 +71,11 @@
       "id": "proposal-payload-validator-power",
       "input_raw": "{\"validatorPower\":{\"power\":\"1\",\"nodeId\":\"v5\",\"reasonDigest\":{\"value\":\"CX2wA0prEclni4NHxA3ZzCI+No6UaDVlor0CjMc0+FA=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"consensusPubkey\":\"6KCHbf6Mj7qib+NE/UMKju7jD63veJqJ+OatCH9lUKs=\",\"activation\":{\"height\":\"3\"}}}",
       "canonical": "{\"validatorPower\":{\"activation\":{\"height\":\"3\"},\"consensusPubkey\":\"6KCHbf6Mj7qib+NE/UMKju7jD63veJqJ+OatCH9lUKs=\",\"nodeId\":\"v5\",\"power\":\"1\",\"reasonDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"CX2wA0prEclni4NHxA3ZzCI+No6UaDVlor0CjMc0+FA=\"}}}"
+    },
+    {
+      "id": "proposal-payload-validator-power-zero",
+      "input_raw": "{\"validatorPower\":{\"nodeId\":\"v5\",\"activation\":{\"height\":\"30\"},\"reasonDigest\":{\"value\":\"CX2wA0prEclni4NHxA3ZzCI+No6UaDVlor0CjMc0+FA=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"consensusPubkey\":\"6KCHbf6Mj7qib+NE/UMKju7jD63veJqJ+OatCH9lUKs=\"}}",
+      "canonical": "{\"validatorPower\":{\"activation\":{\"height\":\"30\"},\"consensusPubkey\":\"6KCHbf6Mj7qib+NE/UMKju7jD63veJqJ+OatCH9lUKs=\",\"nodeId\":\"v5\",\"reasonDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"CX2wA0prEclni4NHxA3ZzCI+No6UaDVlor0CjMc0+FA=\"}}}"
     }
   ],
   "invalid": [

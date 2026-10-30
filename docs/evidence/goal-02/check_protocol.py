@@ -35,6 +35,7 @@ DECISIONS = ROOT / "docs" / "decision-register.md"
 PROGRESS = ROOT / "docs" / "progress.md"
 PROGRESS_TSV = ROOT / "docs" / "progress.tsv"
 PAYLOAD_DIGEST = "be9df594c416ecbaf50512e298a73fecf9f7a56e7ac83a0cf4edf87a6b522c48"
+PAYLOAD_ZERO_DIGEST = "7eeb7c6d8fadfb2b28fea5d2cd42f1a85eaf2b773e79b24399d350b9b9be675a"
 PINNED_FORBIDDEN_PATTERNS = (
     "mint",
     "reward",
@@ -58,6 +59,20 @@ PINNED_FORBIDDEN_PATTERNS = (
     "phone",
     "uploader_ip",
     "storage_proof",
+    "addr",
+    "device",
+    "geo",
+    "viewer",
+    "payout",
+    "bond",
+    "fee",
+    "coin",
+    "denom",
+    "inflation",
+    "issuance",
+    "media",
+    "chunk",
+    "blob",
 )
 PINNED_NAME_EXEMPTIONS = (
     "mint_module_enabled",
@@ -66,6 +81,10 @@ PINNED_NAME_EXEMPTIONS = (
     "staking_module_enabled",
     "permissionless_validator_creation",
     "PRIVACY_CLASS_SECRET",
+    "mintModuleEnabled",
+    "slashingModuleEnabled",
+    "ERROR_CODE_FEE_REJECTED",
+    "SIGNATURE_DOMAIN_MEDIA_MANIFEST",
 )
 PINNED_ONEOF_MEMBERS = (
     "validator_power",
@@ -101,6 +120,534 @@ PINNED_GOVERNED_CAPS = {
     "max_package_bytes": 268435456,
 }
 DESCRIPTOR_NAME_RE = re.compile(r'(?:^|[^\w])name: "([^"]*)"')
+NAME_KINDS = {"message", "field", "enum", "enum_value", "oneof", "rpc", "json_name", "service"}
+# Filled after the descriptor parser can list the real protocol. Empty fails the allowlist check.
+PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+    'enum:ContentState',
+    'enum:DigestAlgorithm',
+    'enum:ErrorCode',
+    'enum:EvidenceKind',
+    'enum:EvidenceState',
+    'enum:LeaseState',
+    'enum:OperationStatus',
+    'enum:PrivacyClass',
+    'enum:ProposalState',
+    'enum:ProviderState',
+    'enum:PublicationStatus',
+    'enum:QuorumLossBehavior',
+    'enum:Reachability',
+    'enum:SignatureDomain',
+    'enum:SubmitterRole',
+    'enum_value:CONTENT_STATE_PENDING',
+    'enum_value:CONTENT_STATE_UNSPECIFIED',
+    'enum_value:CONTENT_STATE_WITHDRAWN',
+    'enum_value:DIGEST_ALGORITHM_SHA256',
+    'enum_value:DIGEST_ALGORITHM_UNSPECIFIED',
+    'enum_value:ERROR_CODE_BOUNDS',
+    'enum_value:ERROR_CODE_CAPACITY',
+    'enum_value:ERROR_CODE_CONFLICT',
+    'enum_value:ERROR_CODE_DECISION_BLOCKED',
+    'enum_value:ERROR_CODE_DUPLICATE_ID',
+    'enum_value:ERROR_CODE_EXPIRED',
+    'enum_value:ERROR_CODE_FEE_REJECTED',
+    'enum_value:ERROR_CODE_FORBIDDEN',
+    'enum_value:ERROR_CODE_INTEGRITY',
+    'enum_value:ERROR_CODE_MALFORMED',
+    'enum_value:ERROR_CODE_NOT_FOUND',
+    'enum_value:ERROR_CODE_OUT_OF_RANGE',
+    'enum_value:ERROR_CODE_OVERFLOW',
+    'enum_value:ERROR_CODE_QUORUM',
+    'enum_value:ERROR_CODE_REPLAY',
+    'enum_value:ERROR_CODE_STALE_VERSION',
+    'enum_value:ERROR_CODE_UNAUTHORIZED',
+    'enum_value:ERROR_CODE_UNDERFLOW',
+    'enum_value:ERROR_CODE_UNKNOWN_FIELD',
+    'enum_value:ERROR_CODE_UNSPECIFIED',
+    'enum_value:ERROR_CODE_WITHDRAWN',
+    'enum_value:ERROR_CODE_WRONG_DOMAIN',
+    'enum_value:EVIDENCE_KIND_AUDITOR_ATTESTATION',
+    'enum_value:EVIDENCE_KIND_PROVIDER_RECEIPT',
+    'enum_value:EVIDENCE_KIND_UNSPECIFIED',
+    'enum_value:EVIDENCE_STATE_EXPIRED',
+    'enum_value:EVIDENCE_STATE_RECORDED',
+    'enum_value:EVIDENCE_STATE_REJECTED',
+    'enum_value:EVIDENCE_STATE_UNSPECIFIED',
+    'enum_value:LEASE_STATE_ACTIVE',
+    'enum_value:LEASE_STATE_ENDED',
+    'enum_value:LEASE_STATE_EXPIRED',
+    'enum_value:LEASE_STATE_OFFERED',
+    'enum_value:LEASE_STATE_RENEWED',
+    'enum_value:LEASE_STATE_UNSPECIFIED',
+    'enum_value:OPERATION_STATUS_COMMITTED',
+    'enum_value:OPERATION_STATUS_FAILED',
+    'enum_value:OPERATION_STATUS_PENDING_STALL',
+    'enum_value:OPERATION_STATUS_REQUESTED',
+    'enum_value:OPERATION_STATUS_SUBMITTED',
+    'enum_value:OPERATION_STATUS_UNSPECIFIED',
+    'enum_value:PRIVACY_CLASS_PRIVATE',
+    'enum_value:PRIVACY_CLASS_PUBLIC_COORDINATION',
+    'enum_value:PRIVACY_CLASS_PUBLIC_RECORD',
+    'enum_value:PRIVACY_CLASS_RESTRICTED_CASE',
+    'enum_value:PRIVACY_CLASS_SECRET',
+    'enum_value:PRIVACY_CLASS_UNSPECIFIED',
+    'enum_value:PROPOSAL_STATE_EXECUTED',
+    'enum_value:PROPOSAL_STATE_EXPIRED',
+    'enum_value:PROPOSAL_STATE_OPEN',
+    'enum_value:PROPOSAL_STATE_QUEUED',
+    'enum_value:PROPOSAL_STATE_REJECTED',
+    'enum_value:PROPOSAL_STATE_UNSPECIFIED',
+    'enum_value:PROVIDER_STATE_ADMITTED',
+    'enum_value:PROVIDER_STATE_APPLIED',
+    'enum_value:PROVIDER_STATE_DISABLED',
+    'enum_value:PROVIDER_STATE_DRAINING',
+    'enum_value:PROVIDER_STATE_UNSPECIFIED',
+    'enum_value:PUBLICATION_STATUS_APPROVED',
+    'enum_value:PUBLICATION_STATUS_DELISTED',
+    'enum_value:PUBLICATION_STATUS_NOT_REQUESTED',
+    'enum_value:PUBLICATION_STATUS_REJECTED',
+    'enum_value:PUBLICATION_STATUS_REVIEW_PENDING',
+    'enum_value:PUBLICATION_STATUS_UNSPECIFIED',
+    'enum_value:QUORUM_LOSS_BEHAVIOR_UNSET',
+    'enum_value:QUORUM_LOSS_BEHAVIOR_UNSPECIFIED',
+    'enum_value:REACHABILITY_DEGRADED',
+    'enum_value:REACHABILITY_REACHABLE',
+    'enum_value:REACHABILITY_UNKNOWN',
+    'enum_value:REACHABILITY_UNREACHABLE',
+    'enum_value:REACHABILITY_UNSPECIFIED',
+    'enum_value:SIGNATURE_DOMAIN_CAPABILITY',
+    'enum_value:SIGNATURE_DOMAIN_EVIDENCE_ATTESTATION',
+    'enum_value:SIGNATURE_DOMAIN_HOSTING_INTENT',
+    'enum_value:SIGNATURE_DOMAIN_INVENTORY',
+    'enum_value:SIGNATURE_DOMAIN_MEDIA_MANIFEST',
+    'enum_value:SIGNATURE_DOMAIN_PROVIDER_ACCEPT',
+    'enum_value:SIGNATURE_DOMAIN_PROVIDER_DRAIN',
+    'enum_value:SIGNATURE_DOMAIN_PROVIDER_END',
+    'enum_value:SIGNATURE_DOMAIN_PROVIDER_RENEW',
+    'enum_value:SIGNATURE_DOMAIN_PROVIDER_ROTATE',
+    'enum_value:SIGNATURE_DOMAIN_PUBLIC_RECORD',
+    'enum_value:SIGNATURE_DOMAIN_TRANSFER_RECEIPT',
+    'enum_value:SIGNATURE_DOMAIN_UNSPECIFIED',
+    'enum_value:SUBMITTER_ROLE_ADMITTED_PROVIDER',
+    'enum_value:SUBMITTER_ROLE_ADMITTED_SERVICE',
+    'enum_value:SUBMITTER_ROLE_AUDITOR',
+    'enum_value:SUBMITTER_ROLE_AUTHORITY',
+    'enum_value:SUBMITTER_ROLE_BROADCASTER',
+    'enum_value:SUBMITTER_ROLE_UNSPECIFIED',
+    'field:account',
+    'field:activation',
+    'field:address',
+    'field:admit_provider',
+    'field:admitted_capacity_bytes',
+    'field:algorithm',
+    'field:allow_devnet_test_parameters',
+    'field:approved',
+    'field:approved_council',
+    'field:approved_policy',
+    'field:approver_keys',
+    'field:attestation',
+    'field:auditor_signature',
+    'field:authority',
+    'field:authority_end',
+    'field:base_policy_version',
+    'field:batch_id',
+    'field:blocked_decisions',
+    'field:business_id',
+    'field:byte_count',
+    'field:canonical_profile_version',
+    'field:chain_id',
+    'field:committed_unix_seconds',
+    'field:consensus_pubkey',
+    'field:content',
+    'field:content_id',
+    'field:content_version',
+    'field:contents',
+    'field:current_epoch',
+    'field:current_key_signature',
+    'field:deadline_unix_seconds',
+    'field:decision_id',
+    'field:declared_capacity_bytes',
+    'field:delay_seconds',
+    'field:devnet_test_parameters',
+    'field:devnet_test_seats',
+    'field:digest',
+    'field:disable_provider',
+    'field:distribution_module_enabled',
+    'field:domain',
+    'field:endpoint_manifest_digest',
+    'field:epoch',
+    'field:evidence',
+    'field:evidence_id',
+    'field:execute_after_unix_seconds',
+    'field:expected_generation',
+    'field:expiry_unix_seconds',
+    'field:force_withdraw',
+    'field:generation',
+    'field:genesis_unix_seconds',
+    'field:governed_limit',
+    'field:height',
+    'field:history_erased',
+    'field:hosting_intent',
+    'field:idempotent',
+    'field:items',
+    'field:key_generation',
+    'field:key_id',
+    'field:kind',
+    'field:label',
+    'field:lease_id',
+    'field:leases',
+    'field:limit',
+    'field:limit_key',
+    'field:manifest_digest',
+    'field:manifest_sha256',
+    'field:message_type',
+    'field:mint_module_enabled',
+    'field:new_signing_key_id',
+    'field:new_signing_pubkey',
+    'field:next_page_key',
+    'field:node_id',
+    'field:not_after_unix_seconds',
+    'field:numeric_value',
+    'field:object_id',
+    'field:observation_digest',
+    'field:offer_id',
+    'field:offers',
+    'field:operator_group_id',
+    'field:package_bytes',
+    'field:page',
+    'field:page_key',
+    'field:parameter_key',
+    'field:payload',
+    'field:payload_digest',
+    'field:pending_validator_power',
+    'field:permissionless_validator_creation',
+    'field:policy',
+    'field:policy_version',
+    'field:power',
+    'field:previous_signing_keys',
+    'field:proposal_id',
+    'field:proposals',
+    'field:protocol_version',
+    'field:provider',
+    'field:provider_acceptance',
+    'field:provider_id',
+    'field:provider_signature',
+    'field:providers',
+    'field:public_key',
+    'field:quorum_loss',
+    'field:reason_digest',
+    'field:records',
+    'field:reject',
+    'field:released_bytes',
+    'field:reservation_delta',
+    'field:reservation_held',
+    'field:reserved_bytes',
+    'field:result',
+    'field:retention_decision_id',
+    'field:retention_value_version',
+    'field:retired_unix_seconds',
+    'field:role',
+    'field:role_name',
+    'field:safety_caps',
+    'field:safety_max_evidence_batch',
+    'field:safety_max_expiry_steps_per_block',
+    'field:safety_max_gas_per_tx',
+    'field:safety_max_open_offers_per_provider',
+    'field:safety_max_package_bytes',
+    'field:safety_max_page_limit',
+    'field:safety_max_tx_bytes',
+    'field:scheduler',
+    'field:schema_version',
+    'field:seat_id',
+    'field:signature',
+    'field:signer',
+    'field:signer_pubkey',
+    'field:signing_key_id',
+    'field:signing_pubkey',
+    'field:slashing_module_enabled',
+    'field:staking_module_enabled',
+    'field:start_unix_seconds',
+    'field:state',
+    'field:submitters',
+    'field:submitting_host',
+    'field:term_version',
+    'field:terms_digest',
+    'field:tombstone',
+    'field:tombstones',
+    'field:tx_hash',
+    'field:unix_seconds',
+    'field:validator_power',
+    'field:validators',
+    'field:value',
+    'field:value_version',
+    'json_name:account',
+    'json_name:activation',
+    'json_name:address',
+    'json_name:admitProvider',
+    'json_name:admittedCapacityBytes',
+    'json_name:algorithm',
+    'json_name:allowDevnetTestParameters',
+    'json_name:approved',
+    'json_name:approvedCouncil',
+    'json_name:approvedPolicy',
+    'json_name:approverKeys',
+    'json_name:attestation',
+    'json_name:auditorSignature',
+    'json_name:authority',
+    'json_name:authorityEnd',
+    'json_name:basePolicyVersion',
+    'json_name:batchId',
+    'json_name:blockedDecisions',
+    'json_name:businessId',
+    'json_name:byteCount',
+    'json_name:canonicalProfileVersion',
+    'json_name:chainId',
+    'json_name:committedUnixSeconds',
+    'json_name:consensusPubkey',
+    'json_name:content',
+    'json_name:contentId',
+    'json_name:contentVersion',
+    'json_name:contents',
+    'json_name:currentEpoch',
+    'json_name:currentKeySignature',
+    'json_name:deadlineUnixSeconds',
+    'json_name:decisionId',
+    'json_name:declaredCapacityBytes',
+    'json_name:delaySeconds',
+    'json_name:devnetTestParameters',
+    'json_name:devnetTestSeats',
+    'json_name:digest',
+    'json_name:disableProvider',
+    'json_name:distributionModuleEnabled',
+    'json_name:domain',
+    'json_name:endpointManifestDigest',
+    'json_name:epoch',
+    'json_name:evidence',
+    'json_name:evidenceId',
+    'json_name:executeAfterUnixSeconds',
+    'json_name:expectedGeneration',
+    'json_name:expiryUnixSeconds',
+    'json_name:forceWithdraw',
+    'json_name:generation',
+    'json_name:genesisUnixSeconds',
+    'json_name:governedLimit',
+    'json_name:height',
+    'json_name:historyErased',
+    'json_name:hostingIntent',
+    'json_name:idempotent',
+    'json_name:items',
+    'json_name:keyGeneration',
+    'json_name:keyId',
+    'json_name:kind',
+    'json_name:label',
+    'json_name:leaseId',
+    'json_name:leases',
+    'json_name:limit',
+    'json_name:limitKey',
+    'json_name:manifestDigest',
+    'json_name:manifestSha256',
+    'json_name:messageType',
+    'json_name:mintModuleEnabled',
+    'json_name:newSigningKeyId',
+    'json_name:newSigningPubkey',
+    'json_name:nextPageKey',
+    'json_name:nodeId',
+    'json_name:notAfterUnixSeconds',
+    'json_name:numericValue',
+    'json_name:objectId',
+    'json_name:observationDigest',
+    'json_name:offerId',
+    'json_name:offers',
+    'json_name:operatorGroupId',
+    'json_name:packageBytes',
+    'json_name:page',
+    'json_name:pageKey',
+    'json_name:parameterKey',
+    'json_name:payload',
+    'json_name:payloadDigest',
+    'json_name:pendingValidatorPower',
+    'json_name:permissionlessValidatorCreation',
+    'json_name:policy',
+    'json_name:policyVersion',
+    'json_name:power',
+    'json_name:previousSigningKeys',
+    'json_name:proposalId',
+    'json_name:proposals',
+    'json_name:protocolVersion',
+    'json_name:provider',
+    'json_name:providerAcceptance',
+    'json_name:providerId',
+    'json_name:providerSignature',
+    'json_name:providers',
+    'json_name:publicKey',
+    'json_name:quorumLoss',
+    'json_name:reasonDigest',
+    'json_name:records',
+    'json_name:reject',
+    'json_name:releasedBytes',
+    'json_name:reservationDelta',
+    'json_name:reservationHeld',
+    'json_name:reservedBytes',
+    'json_name:result',
+    'json_name:retentionDecisionId',
+    'json_name:retentionValueVersion',
+    'json_name:retiredUnixSeconds',
+    'json_name:role',
+    'json_name:roleName',
+    'json_name:safetyCaps',
+    'json_name:safetyMaxEvidenceBatch',
+    'json_name:safetyMaxExpiryStepsPerBlock',
+    'json_name:safetyMaxGasPerTx',
+    'json_name:safetyMaxOpenOffersPerProvider',
+    'json_name:safetyMaxPackageBytes',
+    'json_name:safetyMaxPageLimit',
+    'json_name:safetyMaxTxBytes',
+    'json_name:scheduler',
+    'json_name:schemaVersion',
+    'json_name:seatId',
+    'json_name:signature',
+    'json_name:signer',
+    'json_name:signerPubkey',
+    'json_name:signingKeyId',
+    'json_name:signingPubkey',
+    'json_name:slashingModuleEnabled',
+    'json_name:stakingModuleEnabled',
+    'json_name:startUnixSeconds',
+    'json_name:state',
+    'json_name:submitters',
+    'json_name:submittingHost',
+    'json_name:termVersion',
+    'json_name:termsDigest',
+    'json_name:tombstone',
+    'json_name:tombstones',
+    'json_name:txHash',
+    'json_name:unixSeconds',
+    'json_name:validatorPower',
+    'json_name:validators',
+    'json_name:value',
+    'json_name:valueVersion',
+    'message:ActivationPoint',
+    'message:AdmitProviderChange',
+    'message:AppGenesis',
+    'message:AuthorityState',
+    'message:BlockedDecisionParameter',
+    'message:Content',
+    'message:ContentRegistered',
+    'message:ContentWithdrawn',
+    'message:DevnetTestParameter',
+    'message:DevnetTestSeat',
+    'message:Digest',
+    'message:DisableProviderChange',
+    'message:EvidenceAccepted',
+    'message:EvidenceItem',
+    'message:EvidenceRecord',
+    'message:ForceWithdrawChange',
+    'message:GenesisState',
+    'message:GovernedLimitChange',
+    'message:InnerSignature',
+    'message:Lease',
+    'message:LeaseAccepted',
+    'message:LeaseEnded',
+    'message:LeaseOffered',
+    'message:LeaseRenewed',
+    'message:MsgAcceptLease',
+    'message:MsgAcceptLeaseResponse',
+    'message:MsgAdmitProvider',
+    'message:MsgAdmitProviderResponse',
+    'message:MsgApproveChange',
+    'message:MsgApproveChangeResponse',
+    'message:MsgDisableProvider',
+    'message:MsgDisableProviderResponse',
+    'message:MsgDrainProvider',
+    'message:MsgDrainProviderResponse',
+    'message:MsgEndLease',
+    'message:MsgEndLeaseResponse',
+    'message:MsgExecuteChange',
+    'message:MsgExecuteChangeResponse',
+    'message:MsgForceWithdraw',
+    'message:MsgForceWithdrawResponse',
+    'message:MsgOfferLease',
+    'message:MsgOfferLeaseResponse',
+    'message:MsgProposeChange',
+    'message:MsgProposeChangeResponse',
+    'message:MsgRegisterContent',
+    'message:MsgRegisterContentResponse',
+    'message:MsgRegisterProvider',
+    'message:MsgRegisterProviderResponse',
+    'message:MsgRenewLease',
+    'message:MsgRenewLeaseResponse',
+    'message:MsgRotateProviderKey',
+    'message:MsgRotateProviderKeyResponse',
+    'message:MsgSubmitAuditBatch',
+    'message:MsgSubmitAuditBatchResponse',
+    'message:MsgUpdateProvider',
+    'message:MsgUpdateProviderResponse',
+    'message:MsgWithdrawContent',
+    'message:MsgWithdrawContentResponse',
+    'message:Offer',
+    'message:PageRequest',
+    'message:PageResponse',
+    'message:PendingValidatorPower',
+    'message:PolicyChanged',
+    'message:PolicyState',
+    'message:PreviousSigningKey',
+    'message:Proposal',
+    'message:ProposalExecuted',
+    'message:ProposalPayload',
+    'message:Provider',
+    'message:ProviderRegistered',
+    'message:ProviderStateChanged',
+    'message:QueryActiveLeasesRequest',
+    'message:QueryActiveLeasesResponse',
+    'message:QueryContentRequest',
+    'message:QueryContentResponse',
+    'message:QueryDeadlinesRequest',
+    'message:QueryDeadlinesResponse',
+    'message:QueryEvidenceRequest',
+    'message:QueryEvidenceResponse',
+    'message:QueryGovernanceRequest',
+    'message:QueryGovernanceResponse',
+    'message:QueryPolicyRequest',
+    'message:QueryPolicyResponse',
+    'message:QueryProviderRequest',
+    'message:QueryProviderResponse',
+    'message:QueryProvidersRequest',
+    'message:QueryProvidersResponse',
+    'message:ReconciliationRecord',
+    'message:SafetyCaps',
+    'message:Submitter',
+    'message:Tombstone',
+    'message:ValidatorPower',
+    'message:ValidatorPowerChange',
+    'oneof:change',
+    'oneof:point',
+    'rpc:AcceptLease',
+    'rpc:ActiveLeases',
+    'rpc:AdmitProvider',
+    'rpc:ApproveChange',
+    'rpc:Content',
+    'rpc:Deadlines',
+    'rpc:DisableProvider',
+    'rpc:DrainProvider',
+    'rpc:EndLease',
+    'rpc:Evidence',
+    'rpc:ExecuteChange',
+    'rpc:ForceWithdraw',
+    'rpc:Governance',
+    'rpc:OfferLease',
+    'rpc:Policy',
+    'rpc:ProposeChange',
+    'rpc:Provider',
+    'rpc:Providers',
+    'rpc:RegisterContent',
+    'rpc:RegisterProvider',
+    'rpc:RenewLease',
+    'rpc:RotateProviderKey',
+    'rpc:SubmitAuditBatch',
+    'rpc:UpdateProvider',
+    'rpc:WithdrawContent',
+    'service:Msg',
+    'service:Query',
+)
 
 REQUIRED_HEADINGS = [
     "## Freeze",
@@ -219,6 +766,11 @@ REQUIRED_CASES = {
     "validator-power-time-applied",
     "validator-activation-not-immediate",
     "validator-power-missing-reason",
+    "wrong-payload-digest",
+    "validator-power-explicit-zero",
+    "stacked-validator-removal",
+    "validator-removal-breaks-quorum",
+    "duplicate-scheduled-validator-key",
 }
 REQUIRED_VALID_IDS = {
     "empty-object",
@@ -235,6 +787,7 @@ REQUIRED_VALID_IDS = {
     "letter-escape",
     "zero",
     "proposal-payload-validator-power",
+    "proposal-payload-validator-power-zero",
 }
 REQUIRED_INVALID_IDS = {
     "null",
@@ -357,6 +910,8 @@ def check_text(protocol: str, decisions: str) -> list[str]:
         errors.append("protocol missing replay golden")
     if PAYLOAD_DIGEST not in protocol:
         errors.append("protocol missing payload digest")
+    if PAYLOAD_ZERO_DIGEST not in protocol:
+        errors.append("protocol missing zero-power payload digest")
     return errors
 
 
@@ -394,10 +949,9 @@ def check_protos(bounds: dict) -> list[str]:
         errors.append("forbidden exemption pin")
     if bounds.get("governed_limit_caps") != PINNED_GOVERNED_CAPS:
         errors.append("governed limit cap pin")
-    include = protobuf_include_dir()
-    if include is None:
-        print("protobuf include BLOCKED")
-        errors.append("protobuf include BLOCKED")
+    if not protoc_has_well_known_types():
+        print("protoc well-known types BLOCKED")
+        errors.append("protoc well-known types BLOCKED")
         return errors
     try:
         with tempfile.TemporaryDirectory(prefix="svn-protocol-") as tmp:
@@ -420,33 +974,31 @@ def check_protos(bounds: dict) -> list[str]:
             elif completed.stderr.strip():
                 errors.append(f"protoc warning {completed.stderr.strip()}")
             else:
-                errors.extend(scan_real_descriptor(decode_descriptor(descriptor_set, include)))
-                errors.extend(scan_negative_descriptors(include, Path(tmp)))
+                errors.extend(scan_real_descriptor(decode_descriptor(descriptor_set)))
+                errors.extend(scan_negative_descriptors(Path(tmp)))
     except FileNotFoundError:
         print("protoc BLOCKED")
         errors.append("protoc BLOCKED")
     return errors
 
 
-def protobuf_include_dir() -> Path | None:
-    """Find descriptor.proto by walking up from the protoc binary."""
-    protoc = shutil.which("protoc")
-    if not protoc:
-        return None
-    binary = Path(protoc).resolve()
-    for parent in (binary.parent, *binary.parents):
-        include = parent / "include"
-        if (include / "google" / "protobuf" / "descriptor.proto").is_file():
-            return include
-    return None
+def protoc_has_well_known_types() -> bool:
+    """Ask protoc itself for google/protobuf/descriptor.proto. No include path is passed."""
+    if shutil.which("protoc") is None:
+        return False
+    completed = subprocess.run(
+        ["protoc", "--descriptor_set_out=/dev/null", "google/protobuf/descriptor.proto"],
+        capture_output=True,
+        check=False,
+    )
+    return completed.returncode == 0
 
 
-def decode_descriptor(pb_path: Path, include: Path) -> str:
+def decode_descriptor(pb_path: Path) -> str:
     completed = subprocess.run(
         [
             "protoc",
             "--decode=google.protobuf.FileDescriptorSet",
-            f"--proto_path={include}",
             "google/protobuf/descriptor.proto",
         ],
         input=pb_path.read_bytes(),
@@ -460,26 +1012,96 @@ def decode_descriptor(pb_path: Path, include: Path) -> str:
 
 def pattern_matches(name: str, pattern: str) -> bool:
     folded = name.casefold()
-    if pattern == "ip":
-        return re.search(r"(?:^|_)ip(?:_|$)", folded) is not None
-    return pattern.casefold() in folded
+    needle = pattern.casefold()
+    if needle == "ip":
+        if re.search(r"(?:^|_)ip(?:_|$)", folded):
+            return True
+        return "ipv4" in folded or "ipv6" in folded or "ipaddress" in folded
+    if needle == "addr":
+        return re.search(r"(?:^|_)addr(?:_|$)", folded) is not None
+    return needle in folded
+
+
+def descriptor_symbols(text: str) -> list[tuple[str, str]]:
+    """Message, field, enum, rpc, and json names. File paths and packages are not symbols."""
+    symbols: list[tuple[str, str]] = []
+    stack = ["root"]
+    field_name: str | None = None
+    block_kinds = {
+        "message_type": "message",
+        "enum_type": "enum",
+        "value": "enum_value",
+        "field": "field",
+        "oneof_decl": "oneof",
+        "service": "service",
+        "method": "rpc",
+    }
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.endswith("{") and ": " not in line.split("{", 1)[0]:
+            stack.append(line[:-1].strip())
+            if stack[-1] == "field":
+                field_name = None
+            continue
+        if line == "}":
+            if len(stack) > 1:
+                stack.pop()
+            continue
+        parent = stack[-1]
+        if line.startswith("name: "):
+            value = line.split(": ", 1)[1].strip().strip('"')
+            if parent == "file":
+                continue
+            kind = block_kinds.get(parent)
+            if kind is None:
+                continue
+            symbols.append((kind, value))
+            if parent == "field":
+                field_name = value
+            continue
+        if line.startswith("json_name: ") and parent == "field":
+            value = line.split(": ", 1)[1].strip().strip('"')
+            symbols.append(("json_name", value))
+            continue
+        if parent == "field" and field_name is not None:
+            if "google.protobuf.Timestamp" in line:
+                symbols.append(("timestamp", field_name))
+            if "TYPE_DOUBLE" in line or "TYPE_FLOAT" in line:
+                symbols.append(("float", field_name))
+    return symbols
+
+
+def descriptor_name_tokens(symbols: list[tuple[str, str]]) -> set[str]:
+    return {f"{kind}:{name}" for kind, name in symbols if kind in NAME_KINDS}
+
+
+def labels_by_symbol(
+    symbols: list[tuple[str, str]],
+    patterns: tuple[str, ...],
+    exemptions: tuple[str, ...],
+) -> dict[str, set[str]]:
+    """Pattern hits keyed by the field or message that matched. Packages do not count."""
+    if not patterns:
+        return {"": {"empty-pattern-list"}}
+    found: dict[str, set[str]] = {}
+    exempt = set(exemptions)
+    for kind, name in symbols:
+        if kind in {"timestamp", "float"}:
+            found.setdefault(name, set()).add(kind)
+            continue
+        if kind not in NAME_KINDS or name in exempt:
+            continue
+        labels = {pattern for pattern in patterns if pattern_matches(name, pattern)}
+        if labels:
+            found.setdefault(name, set()).update(labels)
+    return found
 
 
 def name_hits(text: str, patterns: tuple[str, ...], exemptions: tuple[str, ...]) -> set[str]:
-    if not patterns:
-        return {"empty-pattern-list"}
+    labels = labels_by_symbol(descriptor_symbols(text), patterns, exemptions)
     hits: set[str] = set()
-    exempt = set(exemptions)
-    for name in DESCRIPTOR_NAME_RE.findall(text):
-        if name in exempt:
-            continue
-        for pattern in patterns:
-            if pattern_matches(name, pattern):
-                hits.add(pattern)
-    if re.search(r"type: TYPE_(DOUBLE|FLOAT)\b", text):
-        hits.add("float")
-    if "google.protobuf.Timestamp" in text:
-        hits.add("timestamp")
+    for group in labels.values():
+        hits.update(group)
     return hits
 
 
@@ -487,13 +1109,29 @@ def missing_declared_names(text: str, required: tuple[str, ...]) -> list[str]:
     return [name for name in required if f'name: "{name}"' not in text]
 
 
+def allowlist_errors(tokens: set[str], pinned: tuple[str, ...]) -> list[str]:
+    if not pinned:
+        return ["descriptor allowlist is empty"]
+    extra = sorted(tokens - set(pinned))
+    missing = sorted(set(pinned) - tokens)
+    if extra or missing:
+        return [f"descriptor allowlist extra {extra} missing {missing}"]
+    return []
+
+
 def scan_real_descriptor(text: str) -> list[str]:
-    hits = name_hits(text, PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
-    errors = [f"descriptor hit {hit}" for hit in sorted(hits)]
-    for name in missing_declared_names(text, PINNED_ONEOF_MEMBERS):
-        errors.append(f"oneof member missing {name}")
-    for name in missing_declared_names(text, PINNED_RPCS):
-        errors.append(f"rpc missing {name}")
+    symbols = descriptor_symbols(text)
+    errors = allowlist_errors(descriptor_name_tokens(symbols), PINNED_DESCRIPTOR_NAMES)
+    labels = labels_by_symbol(symbols, PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
+    hit_names = sorted(label for group in labels.values() for label in group)
+    errors.extend(f"descriptor hit {hit}" for hit in hit_names)
+    declared = {name for _kind, name in symbols}
+    for name in PINNED_ONEOF_MEMBERS:
+        if name not in declared:
+            errors.append(f"oneof member missing {name}")
+    for name in PINNED_RPCS:
+        if name not in declared:
+            errors.append(f"rpc missing {name}")
     for name in (
         "MsgAdmitProvider",
         "MsgForceWithdraw",
@@ -502,36 +1140,61 @@ def scan_real_descriptor(text: str) -> list[str]:
         "ValidatorPowerChange",
         "ActivationPoint",
     ):
-        if f'name: "{name}"' not in text:
+        if name not in declared:
             errors.append(f"descriptor missing {name}")
     return errors
 
 
-def scan_negative_descriptors(include: Path, tmp: Path) -> list[str]:
-    errors: list[str] = []
-    expected = {
-        "timestamp.proto": "timestamp",
-        "mint.proto": "mint",
-        "slash.proto": "slash",
-        "media.proto": "video_data",
-        "storage_proof.proto": "storage_proof",
-        "mint_tokens.proto": "mint",
-        "reward.proto": "reward",
-        "ip_address.proto": "ip",
-        "video_payload.proto": "video_payload",
-        "penalize.proto": "slash",
-        "token_balance.proto": "token",
-        "email.proto": "email",
+def negative_requirements() -> dict[str, list[tuple[str, str]]]:
+    leaks = [
+        ("ipv4_address", "ip"),
+        ("ipAddress", "ip"),
+        ("remote_addr", "addr"),
+        ("client_ipv6", "ip"),
+        ("device_id", "device"),
+        ("geo_location", "geo"),
+        ("viewer_history", "viewer"),
+        ("payout_amount", "payout"),
+        ("bond_amount", "bond"),
+        ("fee_amount", "fee"),
+        ("coin_denom", "coin"),
+        ("inflation_rate", "inflation"),
+        ("issuance", "issuance"),
+        ("media_blob", "media"),
+        ("chunk_data", "chunk"),
+    ]
+    return {
+        "timestamp.proto": [("local_time", "timestamp")],
+        "mint.proto": [("MsgMint", "mint")],
+        "slash.proto": [("MsgSlashValidator", "slash")],
+        "media.proto": [
+            ("video_data", "video_data"),
+            ("uploader_ip", "ip"),
+            ("score", "float"),
+            ("reward_amount", "reward"),
+        ],
+        "storage_proof.proto": [("EVIDENCE_KIND_STORAGE_PROOF", "storage_proof")],
+        "mint_tokens.proto": [("MsgMintTokens", "mint")],
+        "reward.proto": [("reward", "reward")],
+        "ip_address.proto": [("ip_address", "ip")],
+        "video_payload.proto": [("video_payload", "video_payload")],
+        "penalize.proto": [("slash_fraction", "slash")],
+        "token_balance.proto": [("token_balance", "token"), ("token_balance", "balance")],
+        "email.proto": [("email", "email")],
+        "leaks.proto": leaks,
     }
+
+
+def scan_negative_descriptors(tmp: Path) -> list[str]:
+    errors: list[str] = []
     negative = Path(__file__).resolve().parent / "negative"
-    for name, needle in expected.items():
+    for name, pairs in negative_requirements().items():
         proto = negative / name
         out = tmp / f"negative-{name}.pb"
         completed = subprocess.run(
             [
                 "protoc",
                 f"--proto_path={proto.parent}",
-                f"--proto_path={include}",
                 f"--descriptor_set_out={out}",
                 str(proto),
             ],
@@ -542,14 +1205,23 @@ def scan_negative_descriptors(include: Path, tmp: Path) -> list[str]:
         if completed.returncode != 0:
             errors.append(f"negative proto {name} did not compile")
             continue
-        hits = name_hits(decode_descriptor(out, include), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
-        if needle not in hits:
-            errors.append(f"negative {name} missed {needle}")
-        if name == "media.proto" and not {"float", "ip", "reward", "video_data"} <= hits:
-            errors.append(f"negative media hits {sorted(hits)}")
-        if name == "token_balance.proto" and "balance" not in hits:
-            errors.append("negative token_balance missed balance")
+        labels = labels_by_symbol(
+            descriptor_symbols(decode_descriptor(out)),
+            PINNED_FORBIDDEN_PATTERNS,
+            PINNED_NAME_EXEMPTIONS,
+        )
+        for symbol, needle in pairs:
+            if needle not in labels.get(symbol, set()):
+                errors.append(f"negative {name} missed {symbol} {needle}")
     return errors
+
+
+def _descriptor_field(name: str) -> str:
+    return f'field {{\n  name: "{name}"\n}}\n'
+
+
+def _descriptor_message(name: str) -> str:
+    return f'message_type {{\n  name: "{name}"\n}}\n'
 
 
 def pin_self_test() -> list[str]:
@@ -557,43 +1229,94 @@ def pin_self_test() -> list[str]:
     errors: list[str] = []
     if not PINNED_FORBIDDEN_PATTERNS:
         errors.append("forbidden pattern pin is empty")
-    for needle in ("mint", "reward", "slash", "token", "balance", "stake", "ip", "video_data", "video_payload", "email"):
+    for needle in (
+        "mint",
+        "reward",
+        "slash",
+        "token",
+        "balance",
+        "stake",
+        "ip",
+        "video_data",
+        "video_payload",
+        "email",
+        "addr",
+        "device",
+        "geo",
+        "viewer",
+        "payout",
+        "bond",
+        "fee",
+        "coin",
+        "inflation",
+        "issuance",
+        "media",
+        "chunk",
+    ):
         if needle not in PINNED_FORBIDDEN_PATTERNS:
             errors.append(f"pattern pin missing {needle}")
     if "validator_power" not in PINNED_ONEOF_MEMBERS:
         errors.append("oneof pin dropped validator_power")
     if "AdmitProvider" not in PINNED_RPCS:
         errors.append("rpc pin dropped AdmitProvider")
-    if "empty-pattern-list" not in name_hits('name: "email"\n', (), PINNED_NAME_EXEMPTIONS):
+    if "empty-pattern-list" not in name_hits(_descriptor_field("email"), (), PINNED_NAME_EXEMPTIONS):
         errors.append("empty pattern list passed")
     samples = {
-        "MsgMintTokens": "mint",
-        "reward": "reward",
-        "ip_address": "ip",
-        "video_payload": "video_payload",
-        "slash_fraction": "slash",
-        "token_balance": "token",
-        "email": "email",
+        _descriptor_message("MsgMintTokens"): "mint",
+        _descriptor_field("reward"): "reward",
+        _descriptor_field("ip_address"): "ip",
+        _descriptor_field("ipv4_address"): "ip",
+        _descriptor_field("ipAddress"): "ip",
+        _descriptor_field("remote_addr"): "addr",
+        _descriptor_field("client_ipv6"): "ip",
+        _descriptor_field("device_id"): "device",
+        _descriptor_field("geo_location"): "geo",
+        _descriptor_field("viewer_history"): "viewer",
+        _descriptor_field("payout_amount"): "payout",
+        _descriptor_field("bond_amount"): "bond",
+        _descriptor_field("fee_amount"): "fee",
+        _descriptor_field("coin_denom"): "coin",
+        _descriptor_field("inflation_rate"): "inflation",
+        _descriptor_field("issuance"): "issuance",
+        _descriptor_field("media_blob"): "media",
+        _descriptor_field("chunk_data"): "chunk",
+        _descriptor_field("video_payload"): "video_payload",
+        _descriptor_field("slash_fraction"): "slash",
+        _descriptor_field("token_balance"): "token",
+        _descriptor_field("email"): "email",
     }
-    for name, label in samples.items():
-        hits = name_hits(f'name: "{name}"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
+    for text, label in samples.items():
+        hits = name_hits(text, PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
         if label not in hits:
-            errors.append(f"pattern missed {name}")
-    if "balance" not in name_hits('name: "token_balance"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+            errors.append(f"pattern missed {label} in {text.splitlines()[1].strip()}")
+    balance = name_hits(_descriptor_field("token_balance"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS)
+    if "balance" not in balance:
         errors.append("pattern missed balance")
     for name in PINNED_NAME_EXEMPTIONS:
-        if name_hits(f'name: "{name}"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+        block = _descriptor_field(name) if name != "PRIVACY_CLASS_SECRET" else f'value {{\n  name: "{name}"\n}}\n'
+        if name_hits(block, PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
             errors.append(f"exemption hit {name}")
     if "validator_power" not in missing_declared_names('name: "governed_limit"\n', PINNED_ONEOF_MEMBERS):
         errors.append("dropped oneof member passed")
     if "AdmitProvider" not in missing_declared_names('name: "RegisterProvider"\n', PINNED_RPCS):
         errors.append("dropped rpc passed")
-    if name_hits('name: "endpoint_digest"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+    if name_hits(_descriptor_field("endpoint_digest"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
         errors.append("endpoint matched a forbidden pattern")
-    if "secret" not in name_hits('name: "secret"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+    if name_hits(_descriptor_field("address"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+        errors.append("address matched a forbidden pattern")
+    if "secret" not in name_hits(_descriptor_field("secret"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
         errors.append("pattern missed secret field")
-    if name_hits('name: "PRIVACY_CLASS_SECRET"\n', PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
-        errors.append("privacy class matched secret")
+    package_only = 'file {\n  name: "negative/mint.proto"\n  package: "negative.mint"\n}\n'
+    if name_hits(package_only, PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
+        errors.append("package line matched a forbidden pattern")
+    if not allowlist_errors({"field:ipv4_address"}, ("field:signer",)):
+        errors.append("new name passed the allowlist")
+    if not allowlist_errors(set(), ("field:signer",)):
+        errors.append("empty descriptor matched the allowlist")
+    cases_text = (Path(__file__).resolve().parent / "cases.py").read_text(encoding="utf-8")
+    l2_assertion = 'if hosts["leases"]["l2"]["reservation_held"] is not True:'
+    if l2_assertion not in cases_text:
+        errors.append("hosting-resilience l2 assertion missing")
     return errors
 
 

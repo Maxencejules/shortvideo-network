@@ -1173,13 +1173,125 @@ def cases() -> list[tuple[str, str | None]]:
     resilience_steps.append(offer("o4", provider_id="p4"))
     resilience_steps.append(accept("o4", "l4", business_id="accept-l4", key_id="key-p4"))
     check("hosting-resilience", _play(hosts, resilience_steps))
-    if found[-1][1] is None and not (
-        hosts["leases"]["l2"]["reservation_held"]
-        and hosts["leases"]["l3"]["reservation_held"]
-        and hosts["leases"]["l4"]["state"] == "ACTIVE"
-        and hosts["reachability"]["p1"] == "REACHABILITY_UNREACHABLE"
-    ):
-        found[-1] = (found[-1][0], "repair dropped a reachable lease")
+    if found[-1][1] is None:
+        lost = []
+        if hosts["leases"]["l1"]["reservation_held"] is not True:
+            lost.append("l1")
+        if hosts["leases"]["l2"]["reservation_held"] is not True:
+            lost.append("l2")
+        if hosts["leases"]["l3"]["reservation_held"] is not True:
+            lost.append("l3")
+        if hosts["leases"]["l4"]["reservation_held"] is not True:
+            lost.append("l4")
+        if hosts["leases"]["l4"]["state"] != "ACTIVE":
+            lost.append("l4-state")
+        if hosts["reachability"]["p1"] != "REACHABILITY_UNREACHABLE":
+            lost.append("reachability")
+        if "origin" in hosts["providers"]:
+            lost.append("origin")
+        if lost:
+            found[-1] = (found[-1][0], "hosting-resilience lost " + ",".join(lost))
+
+    bad_digest = proposal_step("baddigest", "max_evidence_batch", governed_limit_payload("max_evidence_batch", 4))
+    bad_digest["payload_digest"] = "0" * 64
+    bad_digest["expect"] = "ERROR_CODE_INTEGRITY"
+    check("wrong-payload-digest", _play(devnet_state(), [bad_digest]))
+
+    explicit_zero = validator_power_payload("v5", 1, {"height": "9"})
+    explicit_zero["validatorPower"]["power"] = "0"
+    explicit_step = proposal_step("explicit0", "validator-v5", explicit_zero)
+    explicit_step["expect"] = "ERROR_CODE_MALFORMED"
+    check("validator-power-explicit-zero", _play(devnet_state(), [explicit_step]))
+
+    stacked = devnet_state()
+    stacked_problem = None
+    for node in ("v1", "v2", "v3"):
+        proposal_id = f"rm-{node}"
+        payload = validator_power_payload(node, 0, {"height": "30"})
+        stacked_problem = _play(
+            stacked,
+            [
+                proposal_step(proposal_id, f"validator-{node}", payload, base=stacked["policy_version"]),
+                _approve(proposal_id, "seat-1"),
+                _approve(proposal_id, "seat-2"),
+                {"op": "CommitBlock", "header_time": stacked["chain_time"] + 10},
+                _execute(proposal_id),
+            ],
+        )
+        if stacked_problem:
+            break
+    if stacked_problem is None:
+        proposal_id = "rm-v4"
+        payload = validator_power_payload("v4", 0, {"height": "30"})
+        stacked_problem = _play(
+            stacked,
+            [
+                proposal_step(proposal_id, "validator-v4", payload, base=stacked["policy_version"]),
+                _approve(proposal_id, "seat-1"),
+                _approve(proposal_id, "seat-2"),
+                {"op": "CommitBlock", "header_time": stacked["chain_time"] + 10},
+                _execute(proposal_id) | {"expect": "ERROR_CODE_FORBIDDEN"},
+            ],
+        )
+    if stacked_problem is None and (stacked["pending_power"] and len(stacked["pending_power"]) != 3):
+        stacked_problem = "fourth removal was scheduled"
+    while stacked_problem is None and stacked["height"] < 30:
+        stacked_problem = _play(stacked, [{"op": "CommitBlock", "header_time": stacked["chain_time"] + 1}])
+    if stacked_problem is None and (stacked["validators"] != {"v4": 1} or stacked["pending_power"]):
+        stacked_problem = "stacked removals did not leave one validator"
+    if stacked_problem is None:
+        stacked_problem = _play(stacked, [{"op": "CommitBlock", "header_time": stacked["chain_time"] + 1}])
+    check("stacked-validator-removal", stacked_problem)
+
+    quorum = devnet_state()
+    quorum_id = "rm-quorum"
+    quorum_payload = validator_power_payload("v1", 0, {"height": "30"})
+    check(
+        "validator-removal-breaks-quorum",
+        _play(
+            quorum,
+            [
+                proposal_step(quorum_id, "validator-v1", quorum_payload, base=1),
+                _approve(quorum_id, "seat-1"),
+                _approve(quorum_id, "seat-2"),
+                {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
+                {"op": "SetDown", "validators": ["v4"]},
+                _execute(quorum_id) | {"expect": "ERROR_CODE_QUORUM"},
+            ],
+        ),
+    )
+    if found[-1][1] is None and quorum["pending_power"]:
+        found[-1] = (found[-1][0], "quorum-breaking removal was scheduled")
+
+    scheduled_dup = devnet_state()
+    first_id = "add-v5"
+    first_payload = validator_power_payload("v5", 1, {"height": "20"})
+    dup_problem = _play(
+        scheduled_dup,
+        [
+            proposal_step(first_id, "validator-v5", first_payload, base=scheduled_dup["policy_version"]),
+            _approve(first_id, "seat-1"),
+            _approve(first_id, "seat-2"),
+            {"op": "CommitBlock", "header_time": scheduled_dup["chain_time"] + 10},
+            _execute(first_id),
+        ],
+    )
+    if dup_problem is None:
+        second_id = "add-v6"
+        second_payload = validator_power_payload("v6", 1, {"height": "20"}, pubkey_hex=pubkey_for("v5"))
+        dup_problem = _play(
+            scheduled_dup,
+            [
+                proposal_step(second_id, "validator-v6", second_payload, base=scheduled_dup["policy_version"]),
+                _approve(second_id, "seat-1"),
+                _approve(second_id, "seat-2"),
+                {"op": "CommitBlock", "header_time": scheduled_dup["chain_time"] + 10},
+                _execute(second_id) | {"expect": "ERROR_CODE_DUPLICATE_ID"},
+            ],
+        )
+    if dup_problem is None and len(scheduled_dup["pending_power"]) != 1:
+        dup_problem = "duplicate scheduled key was accepted"
+    check("duplicate-scheduled-validator-key", dup_problem)
     return found
 
 

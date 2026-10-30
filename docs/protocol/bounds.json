@@ -91,7 +91,21 @@
     "password",
     "phone",
     "uploader_ip",
-    "storage_proof"
+    "storage_proof",
+    "addr",
+    "device",
+    "geo",
+    "viewer",
+    "payout",
+    "bond",
+    "fee",
+    "coin",
+    "denom",
+    "inflation",
+    "issuance",
+    "media",
+    "chunk",
+    "blob"
   ],
   "forbidden_name_exemptions": [
     "mint_module_enabled",
@@ -99,6 +113,10 @@
     "slashing_module_enabled",
     "staking_module_enabled",
     "permissionless_validator_creation",
-    "PRIVACY_CLASS_SECRET"
+    "PRIVACY_CLASS_SECRET",
+    "mintModuleEnabled",
+    "slashingModuleEnabled",
+    "ERROR_CODE_FEE_REJECTED",
+    "SIGNATURE_DOMAIN_MEDIA_MANIFEST"
   ]
 }

@@ -216,7 +216,7 @@ Should `MsgAdmitProvider`, `MsgDisableProvider`, and `MsgForceWithdraw` be remov
 
 Blueprint page 12 describes operator and validator changes as council actions with a 3-of-4 threshold, an expiry, and a delay. This draft has two paths. `AdmitProviderChange`, `DisableProviderChange`, and `ForceWithdrawChange` go through `ProposeChange`, `ApproveChange`, and `ExecuteChange`. The direct messages are single-signature authority paths. They do not collect council approvals.
 
-At reviewed revision `3984ec8dda10940ff94ced88668e86bb04f897e6`, `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:393`) and `op_force_withdraw` (`spec_machine.py:1527`) check the authority role and the relevant open decision. `op_disable_provider` (`spec_machine.py:1501`) also calls `council_ready` (`spec_machine.py:318`). `council_ready` only checks that a DEC-008 test parameter exists: the numeric value is positive, the delay is not negative, and the required count does not exceed the seat list. It does not count approvals and it does not wait for the delay.
+In this tree, `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:409`) and `op_force_withdraw` (`spec_machine.py:1777`) check the authority role and the relevant open decision. `op_disable_provider` (`spec_machine.py:1751`) also calls `council_ready` (`spec_machine.py:334`). `council_ready` only checks that a DEC-008 test parameter exists: the numeric value is positive, the delay is not negative, and the required count does not exceed the seat list. It does not count approvals and it does not wait for the delay.
 
 ### PROPOSED default
 
