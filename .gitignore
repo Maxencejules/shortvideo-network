@@ -1,0 +1,58 @@
+# Secrets
+.env
+.env.*
+!.env.example
+secrets/
+
+# Key files
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+
+# Chain key files
+priv_validator_key.json
+node_key.json
+priv_validator_state.json
+keyring-*/
+
+# Mnemonic and seed files (.txt and .json only)
+*mnemonic*.txt
+*mnemonic*.json
+seed.txt
+seed.json
+seeds.txt
+seeds.json
+*seed-phrase*.txt
+*seed-phrase*.json
+*seed_phrase*.txt
+*seed_phrase*.json
+
+# Media uploads
+/uploads/
+**/media-uploads/
+**/user-uploads/
+
+# Database dumps
+*.dump
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+
+# Build output. build, bin, and dist are anchored to the repo root
+# so internal/build and cmd/.../bin stay trackable.
+node_modules/
+/dist/
+/build/
+/bin/
+coverage/
+*.log
+.cache/
+__pycache__/
