@@ -4,9 +4,9 @@ Status: IMPLEMENTED
 
 The schema and fixture checks below passed on this tree. The goal is not VERIFIED. The effort setting cannot be confirmed from inside this VM, and that point is waiting for Max's ruling at Gate A. AGENTS.md says an unreported or unverifiable effort setting for goals 01-30 is BLOCKED rather than VERIFIED. This goal is therefore IMPLEMENTED.
 
-The checks are not a devnet, a four-validator process test, a media test, a security audit, or an approval of the protocol. The protocol is not approved. Public launch: DISABLED. No tradable token, coin, sale, or mining.
+The checks are not a devnet, a security audit, or an approval of the protocol. The protocol is not approved. Public launch: DISABLED. No tradable token, coin, sale, or mining.
 
-DEC-001 through DEC-010 stay OPEN. Page 26 playback, processing, load, recovery, moderation-timing, and operator-independence measurements were not run and are not passes. `replay-app-hash` pins a golden hash of the chain-state projection. It is not Goal 05's process replay.
+DEC-001 through DEC-012 stay OPEN. Page 26 playback, processing, load, recovery, moderation-timing, and operator-independence measurements were not run and are not passes.
 
 Pull request: https://github.com/Maxencejules/shortvideo-network/pull/5
 
@@ -14,76 +14,52 @@ Pull request: https://github.com/Maxencejules/shortvideo-network/pull/5
 
 - Playbook assignment for goal 02: GPT-6 Astra, effort EXTRA HIGH. Astra was not used.
 - Launch parameter, not an observation: the task that started this run requested model `grok-4.7` with `reasoning_effort=xhigh`.
-- What this VM can see: cursor-cloud `run-info` reports `originalModelName=grok-4.7` and `bcId=bc-763364ae-2b17-5737-aa7d-39bb2a64a0c0`. That payload has no effort, reasoning, fast, or context field. The effort setting cannot be independently verified from inside the VM.
-- Ruling: this point is awaiting Max at Gate A. Until that ruling, goal 02 stays IMPLEMENTED and is not marked VERIFIED.
-- `docs/evidence/goal-01.md` was not edited. Goal 01's status in `docs/progress.md` and `docs/progress.tsv` stays VERIFIED.
+- What this VM can see: cursor-cloud `run-info` reports `originalModelName=grok-4.7` and `bcId=bc-763364ae-2b17-5737-aa7d-39bb2a64a0c0`. That payload has no effort field. The effort setting cannot be independently verified from inside the VM.
+- Until Max rules at Gate A, goal 02 stays IMPLEMENTED and is not marked VERIFIED.
+- `docs/evidence/goal-01.md` and goal 01's status are unchanged.
 - Extra effort would not certify correctness.
 
-## Goal 01 files that differ from main
+## Round 5
 
-`docs/evidence/goal-01.md` and goal 01's status are unchanged. Two other goal 01 files differ from `783e159` (`main` at the goal 02 base). `git diff 783e159 --numstat` reports `186` insertions and `27` deletions in `docs/evidence/goal-01/check_requirements.py`, and `13` insertions and `13` deletions in `docs/requirements.md` (13 matrix rows).
+Scheduling simulates every waiting power change in due order and checks the validator set after each activation point. A later add does not excuse an earlier point that would leave no commit. `activation-gap-halt` adds v5-v8 at height 60 and removes v1-v4 at height 40. The removal of v4 is `ERROR_CODE_FORBIDDEN`. Commits through height 40 and one block after that still succeed. `activation-gap-keeps-one` removes only v1-v3 at height 40 and adds v5 at height 60. Both points stay committable, and v5 is applied at height 60.
 
-Checker changes, and why:
+`down` is not read by that schedule check, and it stays outside the application hash. `down-not-consensus` runs one removal with and without `SetDown` and requires the same success, the same proposal state, and the same app hash. DEC-011 is OPEN on whether liveness belongs in consensus state.
 
-- Approved nit: threat headings match the full heading line, so `## TM-SECRETS` does not match `## TM-SECRET`.
-- Approved nit: `docs/progress.md` and `docs/progress.tsv` must carry the same status for every started goal.
-- Approved nit: `self_test_cases` is the number of negative fixtures executed, not a hardcoded 7.
-- Approved nit, then restored after round 2: a `TEST:` disposition and its goals column are the same set of goal numbers. The check is two-way. Negation text is not stripped. Self-tests fail an extra column goal (`01,07` on a Goal 01 sentence) and fail a sentence that says `Goal 01 does not`.
-- The checker allows `docs/protocol/` and `docs/evidence/goal-02/` as specification artifacts. Without that, the goal 01 checker would report the protocol drafts as application source.
+Pending power changes must share one activation kind. A height change beside a time change is `ERROR_CODE_CONFLICT`. DEC-012 is OPEN on how to order a height against a chain time. `mixed-activation-kind` is an add at a chain time followed by a removal at a height.
 
-Requirement rows, and why:
+The apply-time duplicate-key branch in `commit_validator_power` is gone. The scheduled duplicate-key case still covers the check inside the projection.
 
-- `REQ-SCOPE-002`: blueprint cite is pages 20 and 28, not 20 and 29. That was the approved nit.
-- `REQ-PROD-013`, `REQ-UX-013`, `REQ-SCOPE-009`, `REQ-OFF-002`, `REQ-INV-003`, `REQ-GEN-004`, `REQ-GOV-002`, `REQ-CAP-005`: the goals column was updated to the goals the existing TEST sentence already names, so the two-way check can pass.
-- `REQ-API-001`: the TEST sentence now names goals 13, 19, 21, 22, and 23. The column already listed those goals. "Later goals" named none.
-- `REQ-SEC-011`, `REQ-REPO-003`, `REQ-LAUNCH-001`: the TEST sentence names only the goal in the column. The statements that goal 01 does not do that later work are in the summary, because the exact checker counts every `Goal N` token in the TEST cell, including a negation.
+`hosting-resilience` asks p2 to lower capacity below the reserved lease. That step fails with `ERROR_CODE_CAPACITY` only while l2's reservation is held. The checker no longer pins the `if` line.
 
-## Round 4 review fixes
-
-Scheduling a validator power change folds every change already waiting. The projected set must stay non-empty and must still meet the two-thirds voting-power predicate. `stacked-validator-removal` schedules removals of v1, v2, and v3 at height 30, rejects removal of v4 with `ERROR_CODE_FORBIDDEN`, then commits through height 30 and one block after that. `validator-removal-breaks-quorum` rejects a removal that would drop the available power to two thirds or below while one validator is down.
-
-`wrong-payload-digest` expects `ERROR_CODE_INTEGRITY`. `duplicate-scheduled-validator-key` expects `ERROR_CODE_DUPLICATE_ID` for a key shared by two scheduled changes, not only a key already in the active set.
-
-Proto3 JSON omits default values. `power` 0 is omitted from the canonical payload. A present `"power": "0"` is `ERROR_CODE_MALFORMED`. Vector `proposal-payload-validator-power-zero` is the omitted form. Its digest is `7eeb7c6d8fadfb2b28fea5d2cd42f1a85eaf2b773e79b24399d350b9b9be675a`.
-
-The descriptor allowlist is the set of message, field, enum, enum value, oneof, service, rpc, and json names in the compiled protocol. It has 524 entries. A new or renamed name fails until it is added to that set. The pattern blocklist still applies, including `ipv4`, `ipv6`, `ipAddress`, `remote_addr`, `device_id`, `geo_location`, `viewer_history`, `payout_amount`, `bond_amount`, `fee_amount`, `coin_denom`, `inflation_rate`, `issuance`, `media_blob`, and `chunk_data`. Negative `leaks.proto` requires a hit on each of those fields. A file name or package line is not a hit. `ERROR_CODE_FEE_REJECTED`, `SIGNATURE_DOMAIN_MEDIA_MANIFEST`, `mintModuleEnabled`, and `slashingModuleEnabled` are pinned exemptions so the fee-rejection code and the media-manifest domain stay legal.
-
-`hosting-resilience` checks l1, l2, l3, and l4 separately. The checker requires the l2 reservation assertion in `cases.py`. Deleting that line fails the checker even if l3 and l4 are still checked.
-
-Well-known protobuf files are resolved by `protoc` itself (`protoc --descriptor_set_out=/dev/null google/protobuf/descriptor.proto`). This checker does not pass an include directory.
-
-DEC-009 cites `council_ready` at `spec_machine.py:334`, `op_admit_provider` at `:409`, `op_disable_provider` at `:1751`, and `op_force_withdraw` at `:1777`.
+Names that match no forbidden pattern are stopped only by the descriptor allowlist. A diff that adds or renames an entry in that pinned inventory needs a human review. The pattern list does not review it.
 
 ## Mutation self-check
 
-These runs were in-process patches of the final functions. The tree on disk was not edited for them.
+In-process patches of the final functions. The tree on disk was not edited for them.
 
-- Ignore pending changes and project only the change being scheduled: `stacked-validator-removal` returned `ExecuteChange expected ERROR_CODE_FORBIDDEN got ok`. `duplicate-scheduled-validator-key` returned `ExecuteChange expected ERROR_CODE_DUPLICATE_ID got ok`.
-- `quorum_holds` always true: `validator-removal-breaks-quorum` returned `ExecuteChange expected ERROR_CODE_QUORUM got ok`. `stacked-validator-removal` still passed.
-- Delete the scheduled duplicate-key comparison: `duplicate-scheduled-validator-key` returned `ExecuteChange expected ERROR_CODE_DUPLICATE_ID got ok`.
-- Replace the payload-digest comparison with `if False`: `wrong-payload-digest` returned `ProposeChange expected ERROR_CODE_INTEGRITY got ok`.
-- A descriptor that is only `file { name: "negative/mint.proto" package: "negative.mint" }` produces no pattern hit. The same parser on `message_type { name: "MsgMint" }` hits `mint`.
-- Allowlist: `field:ipv4_address` is reported as an extra name. An empty pin returns `descriptor allowlist is empty`.
-- The l2 assertion string is present in `cases.py`. Removing it makes the pin fail.
+- Checkpoint only the final set: `activation-gap-halt` returned `ExecuteChange expected ERROR_CODE_FORBIDDEN got ok`. `activation-gap-keeps-one` and `stacked-validator-removal` still passed.
+- Scheduling quorum reads `state["down"]`: `down-not-consensus` returned `ExecuteChange expected ok got ERROR_CODE_QUORUM`.
+- Mixed activation kinds allowed: `mixed-activation-kind` returned `ExecuteChange expected ERROR_CODE_CONFLICT got ERROR_CODE_NOT_FOUND`.
+- l2 reservation cleared before the capacity step: `UpdateProvider expected ERROR_CODE_CAPACITY got ok`.
 
 ## Runtime
 
-Linux 6.12.94+ x86_64. Python 3.12.3. Go go1.22.2 linux/amd64. Node v22.23.4. libprotoc 3.21.12. Python package `cryptography` 43.0.3. OpenSSL 3.0.13. No chain, database, browser, FFmpeg worker, container devnet, or second machine was started.
+Linux 6.12.94+ x86_64. Python 3.12.3. Go go1.22.2 linux/amd64. Node v22.23.4. libprotoc 3.21.12. Python package `cryptography` 43.0.3. OpenSSL 3.0.13.
 
 ## Tested revision
 
-This evidence file is part of the head commit. The checkers do not read this file. They do read `docs/progress.md` and `docs/progress.tsv`.
+This evidence file is part of the head commit. The checkers do not read it. They do read `docs/progress.md` and `docs/progress.tsv`.
 
-The head sha cannot be written into this file without changing the commit. The tested tree is this commit's tree and the `Tested-tree` trailer. Confirm with `git rev-parse 'HEAD^{tree}'`.
+The tested tree is this commit's tree and the `Tested-tree` trailer. Confirm with `git rev-parse 'HEAD^{tree}'`.
 
 ## Counts
 
-- Transition fixtures: 78, pinned, 0 failures.
+- Transition fixtures: 81, pinned, 0 failures.
 - Valid canonical vectors: 15. Invalid: 14. Integers: 6. Arithmetic: 5.
 - Descriptor allowlist entries: 524.
-- Go exit 0. TypeScript exit 0. Reports match Python, including Ed25519 signatures. `languages MATCH` is printed only after that.
-- Goal 01 checker: 265 requirements, 12 self-test cases, 0 errors, exit 0.
-- protoc exit 0.
+- Go exit 0. TypeScript exit 0. `languages MATCH` only after the reports match.
+- Goal 01 checker exit 0. protoc exit 0.
+- New open decisions: DEC-011, DEC-012.
 
 ## Commands and output
 
@@ -156,8 +132,8 @@ exit:0
 
 COMMAND python3 docs/evidence/goal-02/check_protocol.py
 protoc exit:0
-transition_cases 78
-transition_case_pin 78
+transition_cases 81
+transition_case_pin 81
 transition_failures 0
 go_vectors exit:0
 typescript_vectors exit:0
@@ -166,10 +142,10 @@ invalid_vectors 14
 integer_vectors 6
 arithmetic_vectors 5
 hashes
-907da1f7c835652cf870c1d48c6ae55637d15a5378a608d0a8f7eb3912d50692  docs/decision-register.md
+7a5ad93e9edea5d47a40e816b1937ef2772cb5a623225cd08543bc13758e32c9  docs/decision-register.md
 e8d7ab87e25f4b770f9fcae641cc1bfe8663d0dce042bd818e65c26998ad7359  docs/evidence/goal-01/check_requirements.py
-37db5db4ba60c241cab9eb48b668ed4d0f7afdcc678ced06c886e6ace0eded77  docs/evidence/goal-02/cases.py
-ded724880d232a3d4f508de42a43ad1661720cc5425b3c2cfbd5c10033250ebf  docs/evidence/goal-02/check_protocol.py
+c9253406a684ba0f3eb189f1bab28aa2ddfee2c2b82557d4e5b930e5caa20003  docs/evidence/goal-02/cases.py
+556863b78873fbde49f7387a2364c0a9d4ba45532a61d49acc2e56b0336a544f  docs/evidence/goal-02/check_protocol.py
 e0b344008a1ebdec3fba9b1cb22a74d4f251c23cac23d5092c67fda5387bd6ef  docs/evidence/goal-02/go/go.mod
 0167772bf599c2779e16a708c6e7cb1e4f0dcacc9eedf1195cae60cf4c679c9b  docs/evidence/goal-02/go/vectorcheck.go
 44c72f0c839896bd9b559f33851a512e0a8db9cbc087df2a745aefd909a765b0  docs/evidence/goal-02/jcs.py
@@ -186,10 +162,10 @@ e1b1e71b30fc6a4098e3152f25a6830cfa4a52aa7ec5f3ea16ec989f6adcf2fc  docs/evidence/
 502e774d6bd2ba90752f8ca39d8fa10259b595f97e7978f91a1e01a193858309  docs/evidence/goal-02/negative/timestamp.proto
 92c9bcb8172148f4ea65802def2a54c69d280e2c4a8b21a66a6472910f83c98c  docs/evidence/goal-02/negative/token_balance.proto
 6d2816506bad14e04b00348f0a395f39968832450bca1253492792e5ed788b4e  docs/evidence/goal-02/negative/video_payload.proto
-2a5a1459b33a883604bd0606cdb662b8ce52037b131dc8583aec1978f8ff6b6a  docs/evidence/goal-02/spec_machine.py
+35e8d18bb7508093524f0df8455879ac19caed006b6ace8127d2c7f83315f1ec  docs/evidence/goal-02/spec_machine.py
 8cbf1ddd451d6738dc34d06133151415295626ee70b8bdd9b69cfda056f8d8b9  docs/evidence/goal-02/ts/vectorcheck.ts
-78261299f04647a8bb1da6a34eef7cc7260a3867fc0fc7ca136e42abe6298896  docs/progress.md
-16bce2d3e9e9ab93b84999d59e6de98a3a050ca64c5025fdea73dc30b6c49828  docs/progress.tsv
+99e01ad086e6db551f342ce33f362e45616582c15a8e020fb73f6ef746368d26  docs/progress.md
+3b9371ae7b65e61648121e299967aca73de48887d6d1a4cfd5265adf21ec1e3d  docs/progress.tsv
 d52993f4fd2368c2bf25a9e5131b7dd4b4b2622f9c62cc6e090a5d925e34e25f  docs/protocol/api/client-api.json
 94a2f35aaf83f234a3fb84e344cf562d6c3c391e0467ff77c7a5590f16324c9f  docs/protocol/api/provider-api.json
 15fc8fa73ef39a5b867e74e6ca1d3f41d9e1eb82a3364903ad40d2849648c81b  docs/protocol/bounds.json
@@ -232,7 +208,7 @@ e54a4045b05602d94fe0aea456a314f4e6db0390fe45b93dd10a04ca5c97a507  docs/protocol/
 0093a1de6721fc8275bfb48821839606a8baa83accb9f0c5e34e9aafe2f74e4e  docs/protocol/schemas/media-manifest.schema.json
 d679f577326d4f796b2d74a6df7ad5b0d2d61bc573aecfdd55af1112aa1770ea  docs/protocol/schemas/provider-capability.schema.json
 cb33617cc2a2c0f55da607817826f22d2c9e32ce699d69805f11dc02dcb3304e  docs/protocol/schemas/public-record.schema.json
-bae60cfc97922eefbde42daf818c427e81bf6cf04f6c03a2f51d4e90669be31e  docs/protocol.md
+8363de52ae2a470fc908ad7c86807bb6ecdd2fb0856e51e327e8543fa54cfc29  docs/protocol.md
 197fded5c09c712f10ebf74459e46868ab570afb44895c1ea582b5b64a527318  docs/requirements.md
 errors 0
 languages MATCH
@@ -243,7 +219,7 @@ exit:0
 
 ## Repeat run
 
-Run 2 used the same two commands after this evidence file existed, before this paragraph was filled in. The checkers do not read this file. Their stdout was byte-identical to run 1. The logged stdout is:
+Run 2 used the same two commands after this file existed and before this paragraph was filled in. The checkers do not read this file. Stdout was byte-identical to run 1.
 
 ```
 COMMAND python3 docs/evidence/goal-01/check_requirements.py
@@ -312,8 +288,8 @@ exit:0
 
 COMMAND python3 docs/evidence/goal-02/check_protocol.py
 protoc exit:0
-transition_cases 78
-transition_case_pin 78
+transition_cases 81
+transition_case_pin 81
 transition_failures 0
 go_vectors exit:0
 typescript_vectors exit:0
@@ -322,10 +298,10 @@ invalid_vectors 14
 integer_vectors 6
 arithmetic_vectors 5
 hashes
-907da1f7c835652cf870c1d48c6ae55637d15a5378a608d0a8f7eb3912d50692  docs/decision-register.md
+7a5ad93e9edea5d47a40e816b1937ef2772cb5a623225cd08543bc13758e32c9  docs/decision-register.md
 e8d7ab87e25f4b770f9fcae641cc1bfe8663d0dce042bd818e65c26998ad7359  docs/evidence/goal-01/check_requirements.py
-37db5db4ba60c241cab9eb48b668ed4d0f7afdcc678ced06c886e6ace0eded77  docs/evidence/goal-02/cases.py
-ded724880d232a3d4f508de42a43ad1661720cc5425b3c2cfbd5c10033250ebf  docs/evidence/goal-02/check_protocol.py
+c9253406a684ba0f3eb189f1bab28aa2ddfee2c2b82557d4e5b930e5caa20003  docs/evidence/goal-02/cases.py
+556863b78873fbde49f7387a2364c0a9d4ba45532a61d49acc2e56b0336a544f  docs/evidence/goal-02/check_protocol.py
 e0b344008a1ebdec3fba9b1cb22a74d4f251c23cac23d5092c67fda5387bd6ef  docs/evidence/goal-02/go/go.mod
 0167772bf599c2779e16a708c6e7cb1e4f0dcacc9eedf1195cae60cf4c679c9b  docs/evidence/goal-02/go/vectorcheck.go
 44c72f0c839896bd9b559f33851a512e0a8db9cbc087df2a745aefd909a765b0  docs/evidence/goal-02/jcs.py
@@ -342,10 +318,10 @@ e1b1e71b30fc6a4098e3152f25a6830cfa4a52aa7ec5f3ea16ec989f6adcf2fc  docs/evidence/
 502e774d6bd2ba90752f8ca39d8fa10259b595f97e7978f91a1e01a193858309  docs/evidence/goal-02/negative/timestamp.proto
 92c9bcb8172148f4ea65802def2a54c69d280e2c4a8b21a66a6472910f83c98c  docs/evidence/goal-02/negative/token_balance.proto
 6d2816506bad14e04b00348f0a395f39968832450bca1253492792e5ed788b4e  docs/evidence/goal-02/negative/video_payload.proto
-2a5a1459b33a883604bd0606cdb662b8ce52037b131dc8583aec1978f8ff6b6a  docs/evidence/goal-02/spec_machine.py
+35e8d18bb7508093524f0df8455879ac19caed006b6ace8127d2c7f83315f1ec  docs/evidence/goal-02/spec_machine.py
 8cbf1ddd451d6738dc34d06133151415295626ee70b8bdd9b69cfda056f8d8b9  docs/evidence/goal-02/ts/vectorcheck.ts
-78261299f04647a8bb1da6a34eef7cc7260a3867fc0fc7ca136e42abe6298896  docs/progress.md
-16bce2d3e9e9ab93b84999d59e6de98a3a050ca64c5025fdea73dc30b6c49828  docs/progress.tsv
+99e01ad086e6db551f342ce33f362e45616582c15a8e020fb73f6ef746368d26  docs/progress.md
+3b9371ae7b65e61648121e299967aca73de48887d6d1a4cfd5265adf21ec1e3d  docs/progress.tsv
 d52993f4fd2368c2bf25a9e5131b7dd4b4b2622f9c62cc6e090a5d925e34e25f  docs/protocol/api/client-api.json
 94a2f35aaf83f234a3fb84e344cf562d6c3c391e0467ff77c7a5590f16324c9f  docs/protocol/api/provider-api.json
 15fc8fa73ef39a5b867e74e6ca1d3f41d9e1eb82a3364903ad40d2849648c81b  docs/protocol/bounds.json
@@ -388,7 +364,7 @@ e54a4045b05602d94fe0aea456a314f4e6db0390fe45b93dd10a04ca5c97a507  docs/protocol/
 0093a1de6721fc8275bfb48821839606a8baa83accb9f0c5e34e9aafe2f74e4e  docs/protocol/schemas/media-manifest.schema.json
 d679f577326d4f796b2d74a6df7ad5b0d2d61bc573aecfdd55af1112aa1770ea  docs/protocol/schemas/provider-capability.schema.json
 cb33617cc2a2c0f55da607817826f22d2c9e32ce699d69805f11dc02dcb3304e  docs/protocol/schemas/public-record.schema.json
-bae60cfc97922eefbde42daf818c427e81bf6cf04f6c03a2f51d4e90669be31e  docs/protocol.md
+8363de52ae2a470fc908ad7c86807bb6ecdd2fb0856e51e327e8543fa54cfc29  docs/protocol.md
 197fded5c09c712f10ebf74459e46868ab570afb44895c1ea582b5b64a527318  docs/requirements.md
 errors 0
 languages MATCH

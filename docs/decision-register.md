@@ -216,7 +216,7 @@ Should `MsgAdmitProvider`, `MsgDisableProvider`, and `MsgForceWithdraw` be remov
 
 Blueprint page 12 describes operator and validator changes as council actions with a 3-of-4 threshold, an expiry, and a delay. This draft has two paths. `AdmitProviderChange`, `DisableProviderChange`, and `ForceWithdrawChange` go through `ProposeChange`, `ApproveChange`, and `ExecuteChange`. The direct messages are single-signature authority paths. They do not collect council approvals.
 
-In this tree, `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:409`) and `op_force_withdraw` (`spec_machine.py:1777`) check the authority role and the relevant open decision. `op_disable_provider` (`spec_machine.py:1751`) also calls `council_ready` (`spec_machine.py:334`). `council_ready` only checks that a DEC-008 test parameter exists: the numeric value is positive, the delay is not negative, and the required count does not exceed the seat list. It does not count approvals and it does not wait for the delay.
+In this tree, `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:409`) and `op_force_withdraw` (`spec_machine.py:1808`) check the authority role and the relevant open decision. `op_disable_provider` (`spec_machine.py:1782`) also calls `council_ready` (`spec_machine.py:334`). `council_ready` only checks that a DEC-008 test parameter exists: the numeric value is positive, the delay is not negative, and the required count does not exceed the seat list. It does not count approvals and it does not wait for the delay.
 
 ### PROPOSED default
 
@@ -251,6 +251,50 @@ Status: OPEN
 ### Blocks
 
 Later evidence and moderation work must not describe `reject` as proof that the chain verified the media. A verification rule needs a recorded answer to this question.
+
+## DEC-011
+
+### Question
+
+Is validator liveness, the fixture `down` set, consensus state that belongs in the application hash, or is it only an observation about the current block?
+
+### Why this needs the owner
+
+The block-commit predicate uses `down` to decide whether the current validators can produce a block. Power-change scheduling used to read the same set. Two copies of the same transactions then finished `EXECUTED` or `QUORUM` depending on `down`, and the application hashes differed, while `down` itself was omitted from the hash. That is not a deterministic consensus input.
+
+### PROPOSED default
+
+No default is selected. The alternatives are to put liveness in consensus state and in the application hash, or to keep it as a block-local observation. This draft keeps `down` out of the hash and does not read it when scheduling a power change. Every projected validator counts as available for that check. The block-commit predicate still uses `down` as a fixture. Keeping that split is not an approval.
+
+### Status
+
+Status: OPEN
+
+### Blocks
+
+Goal 05 and Goal 06 must not treat a process failure list as an approved consensus field. A later design that stores liveness on chain needs a recorded answer to this question.
+
+## DEC-012
+
+### Question
+
+How should a validator power change that names a block height be ordered against one that names a chain time, when both are still waiting?
+
+### Why this needs the owner
+
+An activation point is either a committed height or a committed chain time. Sorting every height before every time makes a removal at a later height look earlier than an add at a chain time, and the removal is then `ERROR_CODE_NOT_FOUND` for a validator that the add would have created. Ordering the two kinds on one line would choose how many blocks fit in a stretch of chain time. That number is not decided.
+
+### PROPOSED default
+
+No default is selected. The alternatives are to define one order from committed height and chain time, or to keep the kinds separate. This draft rejects a new power change whose activation kind differs from one already pending, with `ERROR_CODE_CONFLICT`. Changes of one kind are ordered by that kind's point, then by proposal id. Rejecting the mix is not an approval of a cross-kind order.
+
+### Status
+
+Status: OPEN
+
+### Blocks
+
+Goal 06 must not treat a height and a chain time as an approved single timeline. A total order across the two kinds needs a recorded answer to this question.
 
 ## Open product note
 

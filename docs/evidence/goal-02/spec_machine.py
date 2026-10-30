@@ -1040,11 +1040,20 @@ def activation_is_due(activation: dict, state: dict) -> bool:
     return state["height"] >= activation["height"]
 
 
-def activation_sort_key(item: dict) -> tuple:
-    activation = item["activation"]
+def activation_identity(change: dict) -> tuple:
+    """The due point of one power change. Height and time are not one order.
+
+    Comparing a height with a unix time would choose a block-time policy.
+    DEC-012 is OPEN on that comparison. Until then, pending changes are one kind.
+    """
+    activation = change["activation"]
     if activation["kind"] == "height":
-        return (0, activation["height"], item["proposal_id"])
-    return (1, activation["unix_seconds"], item["proposal_id"])
+        return ("height", activation["height"])
+    return ("time", activation["unix_seconds"])
+
+
+def activation_sort_key(item: dict) -> tuple:
+    return (activation_identity(item), item["proposal_id"])
 
 
 def parse_proposal_payload(payload: object) -> tuple[dict, dict] | str:
@@ -1172,12 +1181,42 @@ def keep_error(state: dict, code: str) -> dict[str, object]:
     return err(code, keep=True)
 
 
-def project_power_changes(state: dict, extra: dict | None = None) -> str | None:
-    """Fold every pending power change, plus `extra`, into one projected set.
+def _apply_projected_change(validators: dict, pubkeys: dict, change: dict) -> str | None:
+    node_id = change["node_id"]
+    power = change["power"]
+    pubkey = change["consensus_pubkey"]
+    if power > 0:
+        for other_id, other_pub in pubkeys.items():
+            if other_pub == pubkey and other_id != node_id:
+                return "ERROR_CODE_DUPLICATE_ID"
+        validators[node_id] = power
+        pubkeys[node_id] = pubkey
+        return None
+    if node_id not in validators:
+        return "ERROR_CODE_NOT_FOUND"
+    del validators[node_id]
+    pubkeys.pop(node_id, None)
+    return None
 
-    Scheduling checks this projection. A removal that is safe alone and fatal
-    together with changes already scheduled is rejected here, so CommitBlock
-    is not left holding a set it cannot apply.
+
+def _checkpoint_projected_set(validators: dict) -> str | None:
+    """The set after one activation point must still be able to commit.
+
+    Every validator in the projection counts as available. `state["down"]` is
+    a fixture for the current block, not an input to this check.
+    """
+    if not validators or sum(validators.values()) <= 0:
+        return "ERROR_CODE_FORBIDDEN"
+    if not quorum_holds(validators, []):
+        return "ERROR_CODE_QUORUM"
+    return None
+
+
+def project_power_changes(state: dict, extra: dict | None = None) -> str | None:
+    """Simulate pending power changes in due order.
+
+    The check runs after each activation point, not only after the last one.
+    A later add does not excuse an earlier point that would leave no commit.
     """
     validators = dict(state["validators"])
     pubkeys = dict(state["validator_pubkeys"])
@@ -1188,26 +1227,21 @@ def project_power_changes(state: dict, extra: dict | None = None) -> str | None:
     ]
     if extra is not None:
         changes.append(extra)
+    kinds = {item["activation"]["kind"] for item in changes}
+    if len(kinds) > 1:
+        return "ERROR_CODE_CONFLICT"
     changes.sort(key=activation_sort_key)
-    for change in changes:
-        node_id = change["node_id"]
-        power = change["power"]
-        pubkey = change["consensus_pubkey"]
-        if power > 0:
-            for other_id, other_pub in pubkeys.items():
-                if other_pub == pubkey and other_id != node_id:
-                    return "ERROR_CODE_DUPLICATE_ID"
-            validators[node_id] = power
-            pubkeys[node_id] = pubkey
-        else:
-            if node_id not in validators:
-                return "ERROR_CODE_NOT_FOUND"
-            del validators[node_id]
-            pubkeys.pop(node_id, None)
-    if not validators or sum(validators.values()) <= 0:
-        return "ERROR_CODE_FORBIDDEN"
-    if not quorum_holds(validators, state["down"]):
-        return "ERROR_CODE_QUORUM"
+    index = 0
+    while index < len(changes):
+        point = activation_identity(changes[index])
+        while index < len(changes) and activation_identity(changes[index]) == point:
+            problem = _apply_projected_change(validators, pubkeys, changes[index])
+            if problem:
+                return problem
+            index += 1
+        problem = _checkpoint_projected_set(validators)
+        if problem:
+            return problem
     return None
 
 
@@ -1220,9 +1254,6 @@ def commit_validator_power(state: dict, change: dict) -> str | None:
         state["validator_pubkeys"].pop(node_id, None)
         state["validator_reasons"].pop(node_id, None)
         return None
-    for other_id, other_pub in state["validator_pubkeys"].items():
-        if other_pub == change["consensus_pubkey"] and other_id != node_id:
-            return "ERROR_CODE_DUPLICATE_ID"
     state["validators"][node_id] = change["power"]
     state["validator_pubkeys"][node_id] = change["consensus_pubkey"]
     state["validator_reasons"][node_id] = change["reason_digest"]
@@ -1968,8 +1999,10 @@ def signature(domain: str, key_id: str, valid: bool = True) -> dict:
 
 
 # Off-chain or transient. Reachability and publication are not chain state.
-# `down` is a fixture hook for the quorum predicate. `pending` is the stall
-# outbox. `events` are derived. `_pending_business` is discarded on failure.
+# `down` is a fixture for whether this block can commit. Power-change scheduling
+# does not read it. DEC-011 is OPEN on whether liveness belongs in consensus.
+# `pending` is the stall outbox. `events` are derived. `_pending_business` is
+# discarded on failure.
 APP_HASH_EXCLUDED = (
     "_pending_business",
     "down",

@@ -769,7 +769,10 @@ REQUIRED_CASES = {
     "wrong-payload-digest",
     "validator-power-explicit-zero",
     "stacked-validator-removal",
-    "validator-removal-breaks-quorum",
+    "activation-gap-halt",
+    "activation-gap-keeps-one",
+    "down-not-consensus",
+    "mixed-activation-kind",
     "duplicate-scheduled-validator-key",
 }
 REQUIRED_VALID_IDS = {
@@ -902,7 +905,7 @@ def check_text(protocol: str, decisions: str) -> list[str]:
         if decision_id not in protocol:
             errors.append(f"protocol missing {decision_id}")
         errors.extend(open_decision(decisions, decision_id))
-    for decision_id in ("DEC-009", "DEC-010"):
+    for decision_id in ("DEC-009", "DEC-010", "DEC-011", "DEC-012"):
         if decision_id not in protocol:
             errors.append(f"protocol missing {decision_id}")
         errors.extend(open_decision(decisions, decision_id))
@@ -1313,10 +1316,6 @@ def pin_self_test() -> list[str]:
         errors.append("new name passed the allowlist")
     if not allowlist_errors(set(), ("field:signer",)):
         errors.append("empty descriptor matched the allowlist")
-    cases_text = (Path(__file__).resolve().parent / "cases.py").read_text(encoding="utf-8")
-    l2_assertion = 'if hosts["leases"]["l2"]["reservation_held"] is not True:'
-    if l2_assertion not in cases_text:
-        errors.append("hosting-resilience l2 assertion missing")
     return errors
 
 

@@ -1172,6 +1172,18 @@ def cases() -> list[tuple[str, str | None]]:
     )
     resilience_steps.append(offer("o4", provider_id="p4"))
     resilience_steps.append(accept("o4", "l4", business_id="accept-l4", key_id="key-p4"))
+    # p2's reservation is the lease l2 bytes. A lower capacity is refused only while that reservation is held.
+    resilience_steps.append(
+        {
+            "op": "UpdateProvider",
+            "signer": PROVIDER_ACCOUNT,
+            "business_id": "upd-p2-held",
+            "provider_id": "p2",
+            "declared_capacity_bytes": PACKAGE_BYTES - 1,
+            "endpoint_manifest_digest": ENDPOINT,
+            "expect": "ERROR_CODE_CAPACITY",
+        }
+    )
     check("hosting-resilience", _play(hosts, resilience_steps))
     if found[-1][1] is None:
         lost = []
@@ -1243,25 +1255,104 @@ def cases() -> list[tuple[str, str | None]]:
         stacked_problem = _play(stacked, [{"op": "CommitBlock", "header_time": stacked["chain_time"] + 1}])
     check("stacked-validator-removal", stacked_problem)
 
-    quorum = devnet_state()
-    quorum_id = "rm-quorum"
-    quorum_payload = validator_power_payload("v1", 0, {"height": "30"})
-    check(
-        "validator-removal-breaks-quorum",
-        _play(
-            quorum,
+    def _schedule_power(state: dict, proposal_id: str, node: str, power: int, activation: dict, expect: str | None = None) -> str | None:
+        payload = validator_power_payload(node, power, activation)
+        execute = _execute(proposal_id)
+        if expect is not None:
+            execute = execute | {"expect": expect}
+        return _play(
+            state,
             [
-                proposal_step(quorum_id, "validator-v1", quorum_payload, base=1),
-                _approve(quorum_id, "seat-1"),
-                _approve(quorum_id, "seat-2"),
-                {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
-                {"op": "SetDown", "validators": ["v4"]},
-                _execute(quorum_id) | {"expect": "ERROR_CODE_QUORUM"},
+                proposal_step(proposal_id, f"validator-{node}", payload, base=state["policy_version"]),
+                _approve(proposal_id, "seat-1"),
+                _approve(proposal_id, "seat-2"),
+                {"op": "CommitBlock", "header_time": state["chain_time"] + 10},
+                execute,
             ],
-        ),
-    )
-    if found[-1][1] is None and quorum["pending_power"]:
-        found[-1] = (found[-1][0], "quorum-breaking removal was scheduled")
+        )
+
+    gap = devnet_state()
+    gap_problem = None
+    for node in ("v5", "v6", "v7", "v8"):
+        gap_problem = _schedule_power(gap, f"add-{node}", node, 1, {"height": "60"})
+        if gap_problem:
+            break
+    if gap_problem is None:
+        for node in ("v1", "v2", "v3"):
+            gap_problem = _schedule_power(gap, f"gap-rm-{node}", node, 0, {"height": "40"})
+            if gap_problem:
+                break
+    if gap_problem is None:
+        gap_problem = _schedule_power(gap, "gap-rm-v4", "v4", 0, {"height": "40"}, expect="ERROR_CODE_FORBIDDEN")
+    if gap_problem is None and len(gap["pending_power"]) != 7:
+        gap_problem = "removal that empties an earlier height was scheduled"
+    while gap_problem is None and gap["height"] < 40:
+        gap_problem = _play(gap, [{"op": "CommitBlock", "header_time": gap["chain_time"] + 1}])
+    if gap_problem is None and (
+        gap["validators"].get("v4") != 1
+        or any(node in gap["validators"] for node in ("v1", "v2", "v3", "v5"))
+        or len(gap["pending_power"]) != 4
+    ):
+        gap_problem = "height 40 did not leave v4 and the later adds"
+    if gap_problem is None:
+        gap_problem = _play(gap, [{"op": "CommitBlock", "header_time": gap["chain_time"] + 1}])
+    check("activation-gap-halt", gap_problem)
+
+    kept = devnet_state()
+    kept_problem = None
+    for node, power, activation, proposal_id in (
+        ("v5", 1, {"height": "60"}, "keep-add-v5"),
+        ("v1", 0, {"height": "40"}, "keep-rm-v1"),
+        ("v2", 0, {"height": "40"}, "keep-rm-v2"),
+        ("v3", 0, {"height": "40"}, "keep-rm-v3"),
+    ):
+        kept_problem = _schedule_power(kept, proposal_id, node, power, activation)
+        if kept_problem:
+            break
+    while kept_problem is None and kept["height"] < 60:
+        kept_problem = _play(kept, [{"op": "CommitBlock", "header_time": kept["chain_time"] + 1}])
+    if kept_problem is None and (
+        kept["validators"].get("v4") != 1
+        or kept["validators"].get("v5") != 1
+        or any(node in kept["validators"] for node in ("v1", "v2", "v3"))
+        or kept["pending_power"]
+    ):
+        kept_problem = "the later add did not land on the validator kept at height 40"
+    check("activation-gap-keeps-one", kept_problem)
+
+    def _down_run(mark_down: bool) -> tuple[str | None, str, str, int]:
+        state = devnet_state()
+        proposal_id = "rm-v1-same"
+        payload = validator_power_payload("v1", 0, {"height": "30"})
+        steps = [
+            proposal_step(proposal_id, "validator-v1", payload, base=1),
+            _approve(proposal_id, "seat-1"),
+            _approve(proposal_id, "seat-2"),
+            {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
+        ]
+        if mark_down:
+            steps.append({"op": "SetDown", "validators": ["v4"]})
+        steps.append(_execute(proposal_id))
+        problem = _play(state, steps)
+        recorded = state["proposals"][proposal_id]["state"] if proposal_id in state["proposals"] else ""
+        return problem, app_hash(state), recorded, len(state["pending_power"])
+
+    quiet = _down_run(False)
+    marked = _down_run(True)
+    down_problem = quiet[0] or marked[0]
+    if down_problem is None and not (
+        quiet[1] == marked[1] and quiet[2] == marked[2] == "EXECUTED" and quiet[3] == marked[3] == 1
+    ):
+        down_problem = f"down changed the result {quiet} vs {marked}"
+    check("down-not-consensus", down_problem)
+
+    mixed = devnet_state()
+    mixed_problem = _schedule_power(mixed, "add-v5-time", "v5", 1, {"unixSeconds": str(CHAIN_TIME + 5000)})
+    if mixed_problem is None:
+        mixed_problem = _schedule_power(mixed, "rm-v5-height", "v5", 0, {"height": "1000"}, expect="ERROR_CODE_CONFLICT")
+    if mixed_problem is None and len(mixed["pending_power"]) != 1:
+        mixed_problem = "mixed activation kind was scheduled"
+    check("mixed-activation-kind", mixed_problem)
 
     scheduled_dup = devnet_state()
     first_id = "add-v5"
