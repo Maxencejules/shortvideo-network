@@ -47,7 +47,7 @@ Provider, content, lease, evidence, and policy messages are registered and rejec
 | Harness operations out of the tx router | VERIFIED | `TX_HANDLERS` is the transaction router. `HARNESS_OPS` holds `SetDown`, `CommitBlock`, `Submit`, and the other test drivers. `dispatch_tx` cannot call them. |
 | DEC-011 liveness is not consensus | VERIFIED | The chain has no `down` field. The scan still rejects a transaction handler that reads it. |
 | DEC-009 council only | VERIFIED | There is no single-signer admit, disable, or force-withdraw message. `MsgCreateValidator` is not registered. |
-| Goal 04 compose not executed | VERIFIED here | A dockerd this VM started, on `unix:///var/run/docker.sock`, built `svn-devnet:goal05` and ran four containers. Port 2375 was not used. |
+| Goal 04 compose not executed | VERIFIED in round 2 | Round 1 ran only `deployments/chain/compose.yaml`. Round 2 ran `bash scripts/env/compose.sh`. Postgres and RabbitMQ both became healthy, then the script was stopped. Log: [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt). |
 
 ## Versions
 
@@ -78,10 +78,11 @@ At height 192 all four container RPC ports reported app hash `9242B71A92C248E317
 | Genesis validation, init order, import/export, chain-id mismatch | VERIFIED | `go test ./chain/app` |
 | Unknown message, outsider, fee amount, gas 0, no end-block power change | VERIFIED | same package, `TestMessagesAreRejected` |
 | One `abci.ValidatorUpdate` constructor, no economic imports | VERIFIED | `TestValidatorUpdatesHaveOneConstructor`, `TestChainSourcesDoNotImportEconomicModules` |
-| Four processes, same hash, restart, one stopped, two stopped, resume | VERIFIED | `go test -count=1 -timeout 180s ./chain/devnet/ -run 'TestInit\|TestFour'` exit 0. Log [devnet-process.txt](logs/goal-05/devnet-process.txt). `TestFourValidatorsCommitRestartAndQuorum` passed in 12.21s. |
+| Four processes, same hash, restart, one stopped, two stopped, resume | VERIFIED | Round 2 log [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt). Tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. Restart, one-down, and recovery each commit above the height recorded at the stop. Two-down stays at that height. No transaction was submitted, so the hash is the genesis application state. |
 | Malformed comet genesis chain id | VERIFIED | `svnd genesis validate` exit 1, `inconsistent chain id`. Log [malformed-genesis.txt](logs/goal-05/malformed-genesis.txt). |
-| Four containers, same app hash | VERIFIED | `bash scripts/devnet/compose-up.sh` on the unix-socket daemon. Host network. Height 192 hash above. |
-| Docker bridge between containers | BLOCKED | The first compose file used a bridge. Dials to `172.18.0.0/16:26656` returned `i/o timeout`. That home was left in place. A second home uses host networking. |
+| Four containers, same app hash, restart, one down, two down, recovery | VERIFIED | [devnet-containers-r2.txt](logs/goal-05/devnet-containers-r2.txt). Tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. Host network. Restart 4 to 5, one-down through 11, stall at 12, recovery at 13. The hash is the genesis application state. |
+| Docker bridge between containers | BLOCKED | The first compose file used a bridge. Dials to `172.18.0.0/16:26656` returned `i/o timeout`. Host networking is what ran. It needs Max's approval at merge. This round does not claim the bridge works. |
+| CLI genesis rejection | VERIFIED | [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt). `svnd genesis validate --file` accepts one genesis and rejects a duplicate key, a chain-id mismatch, malformed JSON, and private-key material. |
 | Protocol checker | VERIFIED | `python3 docs/evidence/goal-02/check_protocol.py` with protoc 36.2 on `PATH`. `transition_cases 97`, `transition_failures 0`, `errors 0`, `result PASS`. |
 | Requirements checker | VERIFIED | `python docs/evidence/goal-01/check_requirements.py` exit 0, `result PASS`. |
 
@@ -115,9 +116,33 @@ Unit Python, mypy, secret scan, and `gofmt` were run with the project venv and e
 
 - Application messages do not implement the protocol machine. They fail closed.
 - The validator set cannot be changed until Goal 06.
-- The container profile uses host networking on this VM because the bridge did not pass peer packets.
+- The container profile uses host networking on this VM because the bridge did not pass peer packets. Host networking needs Max's approval at merge. The bridge stays BLOCKED.
 - One workstation is one operator. Four processes are not four independent operators.
 - This is not an audit and not a production deployment.
+
+## Round 2
+
+Review [5725171267](https://github.com/Maxencejules/shortvideo-network/pull/8#pullrequestreview-5725171267) on `e699f383c83647e98c2ff86ebeb6adcf3f898d33` returned FIX. The round 1 VERIFIED status did not hold while those items stood.
+
+Proofs in this round ran on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. Each log starts with the command, `date -Is`, that tree, and ends with an exit code.
+
+| Item | Status | What changed |
+| --- | --- | --- |
+| Authority consensus bytes | VERIFIED | `chain/x/authority/keeper.go` stores `proto.MarshalOptions{Deterministic: true}`. Export stays protojson. `TestAuthorityConsensusBytesArePinned` pins the stored hex for `sampleDocument`. |
+| Liveness thresholds | VERIFIED | The process test records the height at each stop or stall and requires `WaitAbove` of that height after restart, during one-down, and after recovery. |
+| Raw phase logs | VERIFIED | Process log [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt). Container log [devnet-containers-r2.txt](logs/goal-05/devnet-containers-r2.txt). CLI log [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt). An earlier container run failed because a one-block skew was treated as disagreement: [devnet-containers-r2-skew.txt](logs/goal-05/devnet-containers-r2-skew.txt), exit 1. The rerun allows that skew when the application hash matches and requires the minimum height to advance. |
+| Goal 04 compose | VERIFIED | `scripts/env/compose.sh` ran. Both services were healthy. Log [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt). Passwords are not in the log. |
+| Empty-block hash | VERIFIED as genesis state | No application transaction was submitted. Every registered application message still fails closed. The equal hashes are the genesis application state, not a hosting transaction. Blueprint step 7's hosting transaction stays with Goals 07-08. |
+| Image digests | IMPLEMENTED | `deployments/chain/Dockerfile` pins the linux/amd64 manifests `golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949` and `debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e`. |
+| Linked binary | VERIFIED | `auth.NewAppModule` is not used. `TestLinkedBinaryOmitsEconomicModules` builds `svnd` and rejects staking, bank, mint, distribution, slashing, gov, and authz symbols. |
+| Docker context | IMPLEMENTED | `scripts/devnet/compose-up.sh` and the container proof refuse a set `DOCKER_HOST`, a non-unix endpoint, and port 2375. The container log records `DOCKER_HOST=<unset>` and `unix:///var/run/docker.sock`. |
+| Docker bridge | BLOCKED | Unchanged. Host networking needs Max's approval at merge. |
+
+Process heights on that tree: stop at 3, restart at 4, one-down through 11, two-down held at 11, recovery at 15. Shared app hash `8B4D86E7FA70D5808129193EA913B4DF9544CE83F4776AB0ADD9B6EC98B99B6E`.
+
+Container heights: start 4, restart 5, one-down through 11, stall 12, recovery 13. Shared app hash `9A8DEE600967031F7D61817CBDD8A3F46BA1805C8D308E67F48111BE844D8C68`.
+
+CI on this round adds `go vet` and `go test -race`, and a `devnet` job that runs `scripts/devnet/prove-containers.sh`. The job timeout stays at 20 minutes.
 
 ## Next safe action
 
