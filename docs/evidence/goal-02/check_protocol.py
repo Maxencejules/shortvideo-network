@@ -13,6 +13,7 @@ audit, or an approval of DEC-001 through DEC-008.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import re
 import shutil
@@ -766,6 +767,9 @@ REQUIRED_CASES = {
     "council-four-seats",
     "evidence-digest-recorded",
     "evidence-digest-malformed",
+    "evidence-digest-missing",
+    "removal-bind-apply",
+    "removal-bind-commit",
     "evidence-signature-unbound",
     "fixture-admit-not-a-message",
     "down-not-consensus",
@@ -1301,6 +1305,8 @@ def pin_self_test() -> list[str]:
         errors.append("dropped oneof member passed")
     if "SubmitAuditBatch" not in missing_declared_names('name: "RegisterProvider"\n', PINNED_RPCS):
         errors.append("dropped rpc passed")
+    if not handler_reads_down('if state["down"]:\n    return None\n'):
+        errors.append("planted down read passed")
     if name_hits(_descriptor_field("endpoint_digest"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
         errors.append("endpoint matched a forbidden pattern")
     if name_hits(_descriptor_field("address"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
@@ -1531,6 +1537,26 @@ def compare_languages(python_lines: list[str], go_text: str, ts_text: str) -> li
     return errors
 
 
+DOWN_READ = re.compile(r"""environment_withholds_block|liveness_would_halt|\[["']down["']\]""")
+
+
+def handler_reads_down(source: str) -> bool:
+    return DOWN_READ.search(source) is not None
+
+
+def handler_down_errors() -> list[str]:
+    """Chain handlers must not read the liveness fixture. SetDown only writes it."""
+    import spec_machine
+
+    errors: list[str] = []
+    for name, function in spec_machine.HANDLERS.items():
+        if name == "SetDown":
+            continue
+        if handler_reads_down(inspect.getsource(function)):
+            errors.append(f"tx handler reads down {name}")
+    return errors
+
+
 def source_clock_errors() -> list[str]:
     errors: list[str] = []
     for name in ("spec_machine.py", "jcs.py", "cases.py"):
@@ -1572,6 +1598,7 @@ def main() -> int:
     errors.extend(check_protos(bounds))
     errors.extend(check_contracts(bounds))
     errors.extend(source_clock_errors())
+    errors.extend(handler_down_errors())
     results = cases.cases()
     problems = [case_id for case_id, detail in results if detail]
     ran = [case_id for case_id, _detail in results]

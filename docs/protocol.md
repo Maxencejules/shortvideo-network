@@ -257,7 +257,7 @@ A block processes at most `safety_max_expiry_steps_per_block` due items (128). R
 
 An offer is expired when committed time is greater than or equal to `expiry_unix_seconds`. The same comparison applies to evidence and to lease deadlines. Expiry does not run while the chain is not committing new blocks.
 
-The assumption is that more than two thirds of voting power is online. One of four equal powers may be down, and the environment still produces a block. Two of four is more than one third offline, so the environment produces no block. The broadcaster outbox then records `PENDING_STALL`. That outbox is not a lease and is not in the application hash. A broadcast acknowledgement is not success. `commit_possible` does not read `down`. A `CommitBlock` that is supplied anyway still applies. The spec does not present that supplied block as the network result.
+The assumption is that more than two thirds of voting power is online. One of four equal powers may be down, and the environment still produces a block. Two of four is more than one third offline, so the environment produces no block. The broadcaster, not a chain handler, records `PENDING_STALL` in its outbox. No transaction handler reads `down`. That outbox is not a lease and is not in the application hash. A broadcast acknowledgement is not success. `commit_possible` does not read `down`. A `CommitBlock` that is supplied anyway still applies. The spec does not present that supplied block as the network result.
 
 No handler fetches video, calls an external API, runs a transcoder, reads the wall clock, uses floating-point scoring, or ranges an unordered map into consensus state. External observations arrive only as signed transaction fields.
 

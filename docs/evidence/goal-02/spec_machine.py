@@ -1269,13 +1269,13 @@ def project_power_changes(state: dict, extra: dict | None = None) -> str | None:
         # and proposal id must not choose which error comes back.
         bound_keys: list[str] = []
         for item in group:
-            if item["power"] > 0:
-                bound_keys.append(item["consensus_pubkey"])
-                continue
-            current = pubkeys.get(item["node_id"])
-            if item["node_id"] not in validators or current != item["consensus_pubkey"]:
-                return "ERROR_CODE_CONFLICT"
-            bound_keys.append(current)
+            if item["power"] == 0:
+                current = pubkeys.get(item["node_id"])
+                if item["node_id"] not in validators or current != item["consensus_pubkey"]:
+                    return "ERROR_CODE_CONFLICT"
+            # Payload key, not the current key. Rewriting a bad removal onto
+            # the current key would hide this comparison inside the duplicate check.
+            bound_keys.append(item["consensus_pubkey"])
         if len(bound_keys) != len(set(bound_keys)):
             return "ERROR_CODE_CONFLICT"
         for item in group:
@@ -1584,9 +1584,8 @@ def op_submit(state: dict, step: dict) -> dict[str, object]:
         return bad
     if check_id(step["request_id"]):
         return err("ERROR_CODE_BOUNDS")
-    # The outbox is not consensus. A withhold writes only `pending`.
-    # commit_possible and power scheduling do not read `down`.
-    if environment_withholds_block(state) or not commit_possible(state):
+    # Hashed invariant only. Liveness is the broadcaster in cases.py.
+    if not commit_possible(state):
         state["pending"][step["request_id"]] = {
             "status": "PENDING_STALL",
             "business_id": step["tx"].get("business_id") if isinstance(step["tx"], dict) else "",

@@ -33,7 +33,7 @@ Gate A on 2026-10-31 approved DEC-001 through DEC-012. That approval does not, b
 | 03 | [Monorepo, toolchains and CI](goals/03-monorepo-toolchains-and-ci.md) | NOT STARTED | | Goals 01-02. Dependency pins are still unselected. DEC-006 blocks the project licence. |
 | 04 | [Codex Cloud development environment](goals/04-codex-cloud-development-environment.md) | NOT STARTED | | Goal 03. Cloud environment access. |
 | 05 | [Chain application, genesis and devnet](goals/05-chain-application-genesis-and-devnet.md) | NOT STARTED | | Goals 02-04. A compatible SDK and CometBFT pair confirmed from current docs. |
-| 06 | [Authority and validator lifecycle](goals/06-authority-and-validator-lifecycle.md) | NOT STARTED | | Goal 05. DEC-008 blocks production council parameters. |
+| 06 | [Authority and validator lifecycle](goals/06-authority-and-validator-lifecycle.md) | NOT STARTED | | Goal 05. DEC-008 accepted four seats and three approvals. Production council keys are not named. |
 | 07 | [Provider and content registries](goals/07-provider-and-content-registries.md) | NOT STARTED | | Goals 02, 05-06. DEC-002 blocks the operator list. |
 | 08 | [Lease lifecycle and capacity accounting](goals/08-lease-lifecycle-and-capacity-accounting.md) | NOT STARTED | | Goal 07. Lease terms from Goal 02. DEC-005 blocks durations and allowances. |
 | 09 | [Beta attestations and audit evidence](goals/09-beta-attestations-and-audit-evidence.md) | NOT STARTED | | Goal 08. Evidence stays an attestation. |

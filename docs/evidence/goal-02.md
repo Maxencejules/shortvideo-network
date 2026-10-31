@@ -2,60 +2,51 @@
 
 Status: IMPLEMENTED
 
-Max approved this round at 07:35 on 2026-10-31 (America/Toronto). The schema and fixture checks below passed on this tree. Effort remains the launch allocation accepted at Gate A: grok-4.7, xhigh reasoning. This file does not mark the goal VERIFIED. Protocol v0 freezes once this goal passes review. This revision is the candidate. It does not claim that review has passed.
+The 07:35 approval cited in the previous revision was relayed from Max's chat with shortvideo-builder. It cannot be checked from this repository. This round's approval is 08:21 on 2026-10-31 (America/Toronto), relayed the same way.
+
+The schema and fixture checks below passed on this tree. Effort remains the launch allocation accepted at Gate A: grok-4.7, xhigh reasoning. This file does not mark the goal VERIFIED. Protocol v0 freezes once this goal passes review. This revision is the candidate. It does not claim that review has passed.
 
 The checks are not a devnet, a security audit, or an approval of the protocol. The protocol is not an approved protocol. Public launch: DISABLED. No tradable token, coin, sale, or mining.
 
 Pull request: https://github.com/Maxencejules/shortvideo-network/pull/5
 
-## Round 7
+## Round 8
 
-The assumption is that more than two thirds of voting power is online.
+`mixed-activation-kind` now adds v5 at a chain time and v6 at a height. Those are different nodes and different keys, so the case reaches the mixed-kind check. Deleting that check makes `ExecuteChange` return ok.
 
-One validator may be down. Losing more than one third halts the real network because the environment produces no block. The spec machine does not model that halt. `commit_possible` and power scheduling do not read `down`. A supplied `CommitBlock` still applies. `environment-withhold-two-down` is the presented result for two of four down: height stays put, the offer is not applied, and the outbox is `PENDING_STALL`. That outbox is outside the application hash.
+The broadcaster in `cases.py` parks `PENDING_STALL` when more than one third of power is down. `Submit` is a chain handler and does not read `down`. Two `Submit` calls, one with `down` set, have the same application hash. `check_protocol.py` rejects any transaction handler other than `SetDown` whose source reads `down`. A planted `state["down"]` read fails that check. Clearing the pattern makes the self-test report `planted down read passed`.
 
-This is the environment-only model, chosen because DEC-011 keeps liveness out of consensus while REQ-CHAIN-005 and S-STALL still require that two unavailable validators are not presented as a new final commit. Renaming those requirements would drop the coverage. `PENDING_STALL` is reached by that withhold.
+A missing `observation_digest` is `ERROR_CODE_MALFORMED`. Dropping it from `require_fields` raises `KeyError: 'observation_digest'` on that fixture.
 
-For a positive-power set, `max_power * 3 < total_power` already fails at three or fewer validators. The explicit minimum of four is the same bound. The power-share cap and the minimum count were approved with DEC-011.
+`EvidenceItem` reserves field 9 and the name `reject`. `EvidenceRecord` field 9 stays `observation_digest`.
 
-## What changed
+Each removal-key comparison has its own fixture. Removing the apply-site check fails `removal-bind-apply`. Removing the group-site check fails `wrong-key-removal` with `zz-rm/aa-add returned ERROR_CODE_DUPLICATE_ID`. Removing the commit-site check fails `removal-bind-commit` with `CommitBlock expected ERROR_CODE_CONFLICT got ok`.
 
-- A removal must name the validator's current key. Both proposal-id orders of "remove v1 carrying v7's key, plus add v9 with v1's key" return `ERROR_CODE_CONFLICT`.
-- Genesis runs `power_set_invariant`. `{v1,v2,v3}` and `{}` are rejected.
-- An oversized power on four validators is `ERROR_CODE_FORBIDDEN`. The equality `max_power * 3 == total_power` is rejected. A total above `SAFE_MAX` is rejected. A same-node pair with different keys at one point is `ERROR_CODE_CONFLICT`.
-- `observation_digest` is required, stored, and bound by the auditor signature. Matching, mismatched, malformed, and unbound fixtures cover it.
-- `FixtureAdmitProvider` is gone. Fixtures seed `ADMITTED` in `cases.py`. A step with that op is `ERROR_CODE_MALFORMED`.
-- The decision section no longer calls DEC-001 through DEC-008 open. DEC-003 names `ForceWithdrawChange`. `council-four-seats` needs three approvals of four seats. `devnet_state` still has three seats and a threshold of two.
-- The 06:58 reviewer's reading in the register now includes the DEC-011 power-share cap and minimum validator count.
-- `authority_end` on `EndLease` is one AUTHORITY signature and is outside DEC-009.
-- `EvidenceItem` has no field 9 and no `reject` reservation. `EvidenceRecord` field 9 stays `observation_digest`.
+`requirements.md` no longer calls the 34 BLOCKER rows open decisions. Goal 06 no longer says DEC-008 blocks production council parameters. The accepted shape is four seats and three approvals. Production council keys are not named.
 
 ## Regenerated
 
-- Replay golden hash changed from `ffee724a8b7944512db064250664d46b7a519d2062134b5cdda9a03ca202437d` to `3def4df5d8035e0963cbf798ebe373fe2ceaa35473941c6463cbd011fd2fb350` because admission in that sequence is a fixture seed and no longer a business transaction.
-- `docs/protocol/fixtures/vectors.json` did not change.
-- The descriptor allowlist stayed at 513 names. No proto symbol was added or removed.
+- `docs/protocol/fixtures/vectors.json` did not change. Its sha256 is `8729de9714a97462e151a2fd50ead9f5074536117581219036bd08cdd0724477`.
+- The replay golden hash did not change: `3def4df5d8035e0963cbf798ebe373fe2ceaa35473941c6463cbd011fd2fb350`.
+- The descriptor allowlist stayed at 513 names. `reserved 9` and `reserved "reject"` are not descriptor name tokens.
 
 ## Mutation self-check
 
 In-process patches. The tree on disk was not edited for them.
 
-- Removal key binding removed: `wrong-key-removal` returned `aa-rm/zz-add returned None`.
-- `max_power * 3 >= total` deleted: `oversized-validator-power` returned `ExecuteChange expected ERROR_CODE_FORBIDDEN got ok`.
-- `>=` changed to `>`: `oversized-validator-power` returned `max*3 == total was accepted`.
-- `SAFE_MAX` check dropped: `oversized-validator-power` returned `total above SAFE_MAX was accepted`.
-- Same-node `CONFLICT` removed: `same-point-power-change` returned `ExecuteChange expected ERROR_CODE_CONFLICT got ok`.
-- Genesis invariant removed: `genesis-power-invariant` returned `short or empty genesis was accepted`.
-- Audit always stored `REJECTED`: `evidence-digest-recorded` returned `matching observation was not stored as RECORDED`.
-- Digest format check removed: `evidence-digest-malformed` returned `SubmitAuditBatch expected ERROR_CODE_BOUNDS got ok`.
-- `l2_reservation_problems` returned `[]`: `hosting-resilience` returned `flag-only l2 flip was accepted`.
+- Mixed-kind check deleted: `mixed-activation-kind` returned `ExecuteChange expected ERROR_CODE_CONFLICT got ok`.
+- `observation_digest` dropped from `require_fields`: `evidence-digest-missing` raised `KeyError: 'observation_digest'`.
+- Apply-site removal bind removed: `removal-bind-apply` returned `apply bind returned None`.
+- Group-site removal bind removed: `wrong-key-removal` returned `zz-rm/aa-add returned ERROR_CODE_DUPLICATE_ID`.
+- Commit-site removal bind removed: `removal-bind-commit` returned `CommitBlock expected ERROR_CODE_CONFLICT got ok`.
+- Planted `state["down"]` in the `Submit` source: `handler_reads_down` returned true. The clean handler scan returned no hits. Replacing the pattern with one that matches nothing made `pin_self_test` report `planted down read passed`.
 
 ## Model and effort
 
 - Playbook assignment for goal 02: GPT-6 Astra, effort EXTRA HIGH. Astra was not used.
 - Model actually used: `grok-4.7`.
 - Effort actually used: xhigh reasoning, the launch allocation Max accepted at Gate A for goals 01 and 02.
-- `docs/evidence/goal-01.md` keeps its original record. A Gate A addendum is appended. Goal 01's status stays VERIFIED.
+- Goal 01's status stays VERIFIED. `docs/evidence/goal-01.md` was not edited in this round.
 - Extra effort does not certify correctness.
 
 ## Runtime
@@ -68,11 +59,11 @@ This evidence file is part of the head commit. The checkers do not read it. They
 
 The tested tree is this commit's tree and the `Tested-tree` trailer. Confirm with `git rev-parse 'HEAD^{tree}'`.
 
-Parent of this round: `68ad4cde5650296fceab663a5a8d3960a3cb8922`.
+Parent of this round: `15fa522bf7e32704333d68e12711a5dcccb7a045`.
 
 ## Counts
 
-- Transition fixtures: 94, pinned, 0 failures.
+- Transition fixtures: 97, pinned, 0 failures.
 - Valid canonical vectors: 15. Invalid: 14. Integers: 6. Arithmetic: 5.
 - Descriptor allowlist entries: 513.
 - Go exit 0. TypeScript exit 0. `languages MATCH`.
@@ -149,8 +140,8 @@ EXIT:0
 
 COMMAND python3 docs/evidence/goal-02/check_protocol.py
 protoc exit:0
-transition_cases 94
-transition_case_pin 94
+transition_cases 97
+transition_case_pin 97
 transition_failures 0
 go_vectors exit:0
 typescript_vectors exit:0
@@ -161,8 +152,8 @@ arithmetic_vectors 5
 hashes
 d73e9bf9603674d29a3443a869d8927cfb3a107f46367c1a743141eb7893e920  docs/decision-register.md
 77dbb119c755e847bb5a51159ae3f75edcfcc2c07b0076eabd8a0b1a2cc10249  docs/evidence/goal-01/check_requirements.py
-57a7c948b5fd10742cb47f0856da291444b32eb7b36f1737d9afddda9584711f  docs/evidence/goal-02/cases.py
-10f1be5f937f2b5f2d29adb3680ca9f14859515b39299cb1da9429f70738ca0e  docs/evidence/goal-02/check_protocol.py
+8b847bac1a3236f5eec7aa69ff09b8080c7c135b4dfab00ab9030a49ee852d09  docs/evidence/goal-02/cases.py
+6237944ef491597fc786ec9994e176e00abb918d7fe0bed8716e3c6f09063d4c  docs/evidence/goal-02/check_protocol.py
 e0b344008a1ebdec3fba9b1cb22a74d4f251c23cac23d5092c67fda5387bd6ef  docs/evidence/goal-02/go/go.mod
 0167772bf599c2779e16a708c6e7cb1e4f0dcacc9eedf1195cae60cf4c679c9b  docs/evidence/goal-02/go/vectorcheck.go
 44c72f0c839896bd9b559f33851a512e0a8db9cbc087df2a745aefd909a765b0  docs/evidence/goal-02/jcs.py
@@ -179,9 +170,9 @@ e1b1e71b30fc6a4098e3152f25a6830cfa4a52aa7ec5f3ea16ec989f6adcf2fc  docs/evidence/
 502e774d6bd2ba90752f8ca39d8fa10259b595f97e7978f91a1e01a193858309  docs/evidence/goal-02/negative/timestamp.proto
 92c9bcb8172148f4ea65802def2a54c69d280e2c4a8b21a66a6472910f83c98c  docs/evidence/goal-02/negative/token_balance.proto
 6d2816506bad14e04b00348f0a395f39968832450bca1253492792e5ed788b4e  docs/evidence/goal-02/negative/video_payload.proto
-463336f0d7b353b2004f1a61d498feb33cfb57477ef71bce557c8fe81d961b0f  docs/evidence/goal-02/spec_machine.py
+b2a9cbf2b84c0d2d4228e538f13a733e53741fa8bb09e99fb1aef53669cfc1df  docs/evidence/goal-02/spec_machine.py
 8cbf1ddd451d6738dc34d06133151415295626ee70b8bdd9b69cfda056f8d8b9  docs/evidence/goal-02/ts/vectorcheck.ts
-236d8faf8980ffabbf985dead0072092d33450d61ba8dd198e94ace6b5bfcf4d  docs/progress.md
+60cdf6b5ae78363b723e09f963e2054610ddda3e53e636f0bea1ff2136dafa39  docs/progress.md
 afdfca95fae1a23a50914131172d58d67d5dd6de706b07af9fd4cceb30b84ed4  docs/progress.tsv
 d52993f4fd2368c2bf25a9e5131b7dd4b4b2622f9c62cc6e090a5d925e34e25f  docs/protocol/api/client-api.json
 94a2f35aaf83f234a3fb84e344cf562d6c3c391e0467ff77c7a5590f16324c9f  docs/protocol/api/provider-api.json
@@ -206,7 +197,7 @@ d3f6a4491d4f0da001002ed5530d25b917bac99440deda8a78c4fdf99030c7fc  docs/protocol/
 f9c7f291e50f9224b4d152c6b5a4d8a9f6ee5f81950bbcde2c1ee0c3540fc50f  docs/protocol/proto/svn/evidence/v1/genesis.proto
 688f7d58b308ecf3417bab33e32b2594ed2c262ef78f302b32c0bb1115a73932  docs/protocol/proto/svn/evidence/v1/query.proto
 8a461e6936bdb171584a677c156e63f3b4b5329053e572cc87159d9e770957bf  docs/protocol/proto/svn/evidence/v1/state.proto
-b9405205ee7fa304b5418e0febf05886b76d22a9122292b87829cc729230a135  docs/protocol/proto/svn/evidence/v1/tx.proto
+fa55fa84f8e8311886a866e44bdbb388646100f0396ec29b04990c2072fa632b  docs/protocol/proto/svn/evidence/v1/tx.proto
 1a818e14a4094247795868d6536d110c37c5d0e63150749f12515d1c1ef94224  docs/protocol/proto/svn/leases/v1/genesis.proto
 38694e568ac9f97ef43aef94510469fc7401488047a46f0496a786d0319097aa  docs/protocol/proto/svn/leases/v1/query.proto
 0c1131c955b2bd2c7d7d1e5b36e789b3f58e313d0a413a1844bf38db30a6f8fc  docs/protocol/proto/svn/leases/v1/state.proto
@@ -225,8 +216,8 @@ e60f3b2ce334b2ab5d59e686ca78c3804509abc5b441ca089e6fba41ab847524  docs/protocol/
 0093a1de6721fc8275bfb48821839606a8baa83accb9f0c5e34e9aafe2f74e4e  docs/protocol/schemas/media-manifest.schema.json
 d679f577326d4f796b2d74a6df7ad5b0d2d61bc573aecfdd55af1112aa1770ea  docs/protocol/schemas/provider-capability.schema.json
 cb33617cc2a2c0f55da607817826f22d2c9e32ce699d69805f11dc02dcb3304e  docs/protocol/schemas/public-record.schema.json
-b3a2363031d361882a84d9384c577769d3f3f442b70acbf85c609b9de2a97c80  docs/protocol.md
-5e50de124248b97fce75d51d01b27d1375bacb5c9832ea75421a10f597bc9d96  docs/requirements.md
+7588f5e049732a75c38c8060ef8d4473413870ea6d42119e99972b937b1671a1  docs/protocol.md
+5fb93997580b7cf92f3ce46d2235f84227de0a9fc2d1770ac64aa4baa939ab38  docs/requirements.md
 errors 0
 languages MATCH
 result PASS

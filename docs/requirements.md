@@ -6,7 +6,7 @@ Public launch: DISABLED
 
 No tradable token, coin, sale, or mining.
 
-The normative matrix is the `requirements-matrix` block. A `TEST:` entry names the later check assigned to that requirement. It does not mean the check has already run. A `BLOCKER:` entry names an OPEN decision in `docs/decision-register.md`. Goal 01's own check is that every in-scope row has an accountable role, an implementation goal, and either a test assignment or a decision blocker.
+The normative matrix is the `requirements-matrix` block. A `TEST:` entry names the later check assigned to that requirement. It does not mean the check has already run. A `BLOCKER:` entry names a decision. Gate A on 2026-10-31 approved DEC-001 through DEC-008. The 34 BLOCKER rows are later goals that still have to carry out those answers. They are not open questions. Goal 01's own check is that every in-scope row has an accountable role, an implementation goal, and either a test assignment or a decision blocker.
 
 Blueprint page numbers are the footer numbers in `docs/blueprint.md`. The PDF remains the source for an ambiguous extraction. Wording here is a traceable specification, not a second copy of the blueprint.
 

@@ -37,6 +37,7 @@ from spec_machine import (
     app_hash,
     apply,
     devnet_state,
+    _apply_projected_change,
     environment_withholds_block,
     power_set_invariant,
     project_power_changes,
@@ -58,6 +59,22 @@ from spec_machine import (
 
 # Pinned after the replay sequence below. Replaced once the tree is stable.
 REPLAY_GOLDEN = "3def4df5d8035e0963cbf798ebe373fe2ceaa35473941c6463cbd011fd2fb350"
+
+
+def broadcaster_submit(state: dict, request_id: str, tx: dict) -> str | None:
+    """Broadcaster outbox. Not a chain handler and not in HANDLERS.
+
+    When more than one third of power is down, the environment produces no
+    block. The outbox parks the request. The chain handler Submit does not
+    read that observation.
+    """
+    if environment_withholds_block(state):
+        state["pending"][request_id] = {
+            "status": "PENDING_STALL",
+            "business_id": tx.get("business_id", "") if isinstance(tx, dict) else "",
+        }
+        return "ERROR_CODE_QUORUM"
+    return _play(state, [{"op": "Submit", "request_id": request_id, "tx": tx}])
 
 
 def _play(state: dict, steps: list[dict]) -> str | None:
@@ -237,22 +254,12 @@ def cases() -> list[tuple[str, str | None]]:
     state = devnet_state()
     stalled = _seed()
     before_stall = app_hash(stalled)
-    check(
-        "environment-withhold-two-down",
-        _play(
-            stalled,
-            [
-                {"op": "SetDown", "validators": ["v1", "v2"]},
-                {
-                    "op": "Submit",
-                    "request_id": "req-stall",
-                    "tx": offer(),
-                    "expect": "ERROR_CODE_QUORUM",
-                },
-            ],
-        ),
-    )
-    if found[-1][1] is None:
+    withhold_problem = _play(stalled, [{"op": "SetDown", "validators": ["v1", "v2"]}])
+    if withhold_problem is None:
+        withheld = broadcaster_submit(stalled, "req-stall", offer())
+        if withheld != "ERROR_CODE_QUORUM":
+            withhold_problem = withheld or "withhold returned ok"
+    if withhold_problem is None:
         parked = stalled["pending"].get("req-stall", {})
         if (
             stalled["height"] != 1
@@ -261,12 +268,27 @@ def cases() -> list[tuple[str, str | None]]:
             or not environment_withholds_block(stalled)
             or app_hash(stalled) != before_stall
         ):
-            found[-1] = (found[-1][0], "two-down withhold did not park the outbox")
-    if found[-1][1] is None:
+            withhold_problem = "two-down withhold did not park the outbox"
+    if withhold_problem is None:
         supplied = copy.deepcopy(stalled)
         supplied_problem = _play(supplied, [{"op": "CommitBlock", "header_time": CHAIN_TIME + 1}])
         if supplied_problem is not None or supplied["height"] != 2:
-            found[-1] = (found[-1][0], "the machine modeled the halt inside CommitBlock")
+            withhold_problem = "the machine modeled the halt inside CommitBlock"
+    if withhold_problem is None:
+        quiet = _seed()
+        marked = _seed()
+        quiet_problem = _play(quiet, [{"op": "Submit", "request_id": "req-same", "tx": offer()}])
+        marked_problem = _play(
+            marked,
+            [
+                {"op": "SetDown", "validators": ["v1", "v2"]},
+                {"op": "Submit", "request_id": "req-same", "tx": offer()},
+            ],
+        )
+        withhold_problem = quiet_problem or marked_problem
+        if withhold_problem is None and app_hash(quiet) != app_hash(marked):
+            withhold_problem = "Submit app hash depends on down"
+    check("environment-withhold-two-down", withhold_problem)
 
     good = hashlib.sha256(b"segment").hexdigest()
     check(
@@ -1451,9 +1473,11 @@ def cases() -> list[tuple[str, str | None]]:
     mixed = devnet_state()
     mixed_problem = _schedule_power(mixed, "add-v5-time", "v5", 1, {"unixSeconds": str(CHAIN_TIME + 5000)})
     if mixed_problem is None:
-        mixed_problem = _schedule_power(mixed, "rm-v5-height", "v5", 0, {"height": "1000"}, expect="ERROR_CODE_CONFLICT")
+        mixed_problem = _schedule_power(
+            mixed, "add-v6-height", "v6", 1, {"height": "1000"}, expect="ERROR_CODE_CONFLICT"
+        )
     if mixed_problem is None and (
-        len(mixed["pending_power"]) != 1 or mixed["proposals"]["rm-v5-height"]["state"] != "QUEUED"
+        len(mixed["pending_power"]) != 1 or mixed["proposals"]["add-v6-height"]["state"] != "QUEUED"
     ):
         mixed_problem = "mixed activation kind was scheduled or marked REJECTED"
     check("mixed-activation-kind", mixed_problem)
@@ -1734,6 +1758,63 @@ def cases() -> list[tuple[str, str | None]]:
     if ghost_problem is None and ghost["providers"]["p1"]["state"] != "APPLIED":
         ghost_problem = "FixtureAdmitProvider admitted a provider"
     check("fixture-admit-not-a-message", ghost_problem)
+
+    missing_digest = _active()
+    missing_problem = _play(
+        missing_digest,
+        [
+            {
+                "op": "SubmitAuditBatch",
+                "signer": AUDITOR,
+                "business_id": "audit-missing",
+                "batch_id": "batch-missing",
+                "epoch": 1,
+                "evidence_id": "ev-missing",
+                "kind": "AUDITOR_ATTESTATION",
+                "lease_id": "l1",
+                "content_id": "c1",
+                "content_version": 1,
+                "expiry_unix_seconds": CHAIN_TIME + 100,
+                "attestation": True,
+                "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+                "expect": "ERROR_CODE_MALFORMED",
+            }
+        ],
+    )
+    if missing_problem is None and "ev-missing" in missing_digest["evidence"]:
+        missing_problem = "missing observation digest was stored"
+    check("evidence-digest-missing", missing_problem)
+
+    apply_validators = {"v1": 1, "v2": 1, "v3": 1, "v4": 1}
+    apply_keys = {node: pubkey_for(node) for node in apply_validators}
+    apply_result = _apply_projected_change(
+        apply_validators,
+        apply_keys,
+        {"node_id": "v1", "power": 0, "consensus_pubkey": pubkey_for("v7")},
+    )
+    apply_problem = None
+    if apply_result != "ERROR_CODE_CONFLICT" or "v1" not in apply_validators:
+        apply_problem = f"apply bind returned {apply_result}"
+    check("removal-bind-apply", apply_problem)
+
+    committing = devnet_state()
+    committing["pending_power"] = [
+        {
+            "proposal_id": "commit-bad-key",
+            "node_id": "v1",
+            "consensus_pubkey": pubkey_for("v7"),
+            "power": 0,
+            "reason_digest": REASON,
+            "activation": {"kind": "height", "height": 1},
+        }
+    ]
+    commit_problem = _play(
+        committing,
+        [{"op": "CommitBlock", "header_time": CHAIN_TIME + 1, "expect": "ERROR_CODE_CONFLICT"}],
+    )
+    if commit_problem is None and "v1" not in committing["validators"]:
+        commit_problem = "commit applied a removal with the wrong key"
+    check("removal-bind-commit", commit_problem)
     return found
 
 
