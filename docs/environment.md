@@ -49,7 +49,7 @@ Reset deletes one workspace directory and nothing else.
 bash scripts/env/reset.sh --workspace dev --confirm dev
 ```
 
-`make env-reset WORKSPACE=dev CONFIRM=dev` is the same command. A missing `--confirm`, or a confirm value that is not the workspace name, exits non-zero and deletes nothing. The name has to match `^[a-z][a-z0-9-]{0,31}$`. The directory must contain `.svn-workspace` with the text `svn-dev-workspace`, which `start.sh` writes. A directory without that marker is not deleted. Package installs, other workspaces, and the git checkout stay. Reset removes that workspace's `storage/` directory with the rest of the workspace.
+`make env-reset WORKSPACE=dev CONFIRM=dev` is the same command. A missing `--confirm`, or a confirm value that is not the workspace name, exits non-zero and deletes nothing. The name has to match `^[a-z][a-z0-9-]{0,31}$`. The directory must contain `.svn-workspace` with the text `svn-dev-workspace`, which `start.sh` writes. A directory without that marker is not deleted, except a keys-only workspace: `devnet/validator.key`, `devnet/validator.pub`, and nothing else. That keys-only directory is removed after the same confirmation, because `devnet-keys.sh` does not write the service marker. Package installs, other workspaces, and the git checkout stay. Reset removes that workspace's `storage/` directory with the rest of the workspace.
 
 ## Devnet identities
 
@@ -91,7 +91,9 @@ FFmpeg stays the pinned host package. The compose file does not add an FFmpeg im
 - `start` to `bash scripts/env/start.sh`
 - `user` to `ubuntu`
 
-This run's environment is the personal environment `6d1d563c-d493-11f1-89ee-7aa6f0729b11`. `environmentJsonPath` is null, so the saved dashboard configuration does not read the committed file. Recording that file, snapshotting, and starting a new environment build are Max's actions. This goal does not publish or republish an environment and does not provision a machine. No snapshot and no prepared template may include `/workspace/.local`. That directory holds generated passwords, database files, queue data, and devnet private keys.
+This run's environment is the personal environment `6d1d563c-d493-11f1-89ee-7aa6f0729b11`. `environmentJsonPath` is null, so the saved dashboard configuration does not read the committed file. Recording that file, snapshotting, and starting a new environment build are Max's actions. This goal does not publish or republish an environment and does not provision a machine.
+
+No snapshot and no prepared template may include `/workspace/.local`. That directory holds generated passwords, database files, queue data, and devnet private keys.
 
 `install` does not run on an agent that already booted from a snapshot. `start` runs on a later boot and must stay free of package installs. After a dependency pin changes, Max republishes the environment from the updated file. The next goal still checks the checkout:
 

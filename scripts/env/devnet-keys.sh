@@ -9,7 +9,10 @@ workspace=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --workspace)
-      workspace="${2:-}"
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        die "--workspace requires a workspace name. Exit 2." 2
+      fi
+      workspace="$2"
       shift 2
       ;;
     --from|--clone|--clone-from)

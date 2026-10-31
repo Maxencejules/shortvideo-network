@@ -71,7 +71,19 @@ fi
 report docker docker version
 report podman podman version
 if [[ -n "${DOCKER_HOST:-}" ]]; then
-  echo "DOCKER_HOST=${DOCKER_HOST}"
+  echo "DOCKER_HOST=set"
+  python3 - <<'PY'
+import os
+from urllib.parse import urlparse
+
+raw = os.environ.get("DOCKER_HOST", "")
+parsed = urlparse(raw)
+if parsed.scheme and parsed.hostname:
+    port = f":{parsed.port}" if parsed.port else ""
+    print(f"DOCKER_HOST_TARGET={parsed.scheme}://{parsed.hostname}{port}")
+else:
+    print("DOCKER_HOST_TARGET=redacted")
+PY
 else
   echo "DOCKER_HOST=unset"
 fi

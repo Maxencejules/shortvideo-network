@@ -10,11 +10,17 @@ confirm=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --workspace)
-      workspace="${2:-}"
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        die "--workspace requires a workspace name. Exit 2." 2
+      fi
+      workspace="$2"
       shift 2
       ;;
     --confirm)
-      confirm="${2:-}"
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        die "--confirm requires the workspace name. Exit 2." 2
+      fi
+      confirm="$2"
       shift 2
       ;;
     --from|--clone|--clone-from)
@@ -48,11 +54,26 @@ if [[ ! -d "${ws}" ]]; then
   exit 0
 fi
 if [[ ! -f "${ws}/.svn-workspace" ]]; then
-  die "refusing to delete ${ws}: missing .svn-workspace. reset only removes a workspace created by start.sh" 2
-fi
-marker="$(tr -d '[:space:]' < "${ws}/.svn-workspace")"
-if [[ "${marker}" != "svn-dev-workspace" ]]; then
-  die "refusing to delete ${ws}: .svn-workspace is not the start.sh marker" 2
+  keys_only=0
+  if [[ -f "${ws}/devnet/validator.key" && -f "${ws}/devnet/validator.pub" ]]; then
+    keys_only=1
+    while IFS= read -r entry; do
+      base="$(basename "${entry}")"
+      case "${base}" in
+        devnet|validator.key|validator.pub) ;;
+        *) keys_only=0 ;;
+      esac
+    done < <(find "${ws}" -mindepth 1)
+  fi
+  if [[ "${keys_only}" -ne 1 ]]; then
+    die "refusing to delete ${ws}: missing .svn-workspace. reset removes a workspace created by start.sh, or a workspace that contains only a devnet identity." 2
+  fi
+  say "deleting a keys-only workspace. It has a devnet identity and no service state."
+else
+  marker="$(tr -d '[:space:]' < "${ws}/.svn-workspace")"
+  if [[ "${marker}" != "svn-dev-workspace" ]]; then
+    die "refusing to delete ${ws}: .svn-workspace is not the start.sh marker" 2
+  fi
 fi
 
 SVN_WORKSPACE="${workspace}" bash "${_ENV_DIR}/stop.sh"

@@ -192,6 +192,51 @@ def test_busy_port_and_missing_credentials_fail(tmp_path: Path) -> None:
     assert "refusing" in missing.stderr.lower()
 
 
+def test_devnet_keys_require_a_workspace_name(tmp_path: Path) -> None:
+    env = {"SVN_STATE_ROOT": str(tmp_path / "workspaces")}
+    missing = _run(["bash", "scripts/env/devnet-keys.sh", "--workspace"], env)
+    assert missing.returncode != 0
+    assert "requires a workspace name" in missing.stderr
+
+
+def test_reset_deletes_a_keys_only_workspace(tmp_path: Path) -> None:
+    root = tmp_path / "workspaces"
+    env = {"SVN_STATE_ROOT": str(root)}
+    created = _run(["bash", "scripts/env/devnet-keys.sh", "--workspace", "keys"], env)
+    assert created.returncode == 0, created.stderr
+    removed = _run(
+        ["bash", "scripts/env/reset.sh", "--workspace", "keys", "--confirm", "keys"],
+        env,
+    )
+    assert removed.returncode == 0, removed.stderr
+    assert "keys-only" in removed.stdout
+    assert not (root / "keys").exists()
+    mixed = root / "mixed"
+    (mixed / "devnet").mkdir(parents=True)
+    (mixed / "devnet" / "validator.key").write_text("not-a-real-key", encoding="utf-8")
+    (mixed / "devnet" / "validator.pub").write_text("public", encoding="utf-8")
+    (mixed / "notes").write_text("keep", encoding="utf-8")
+    refused = _run(
+        ["bash", "scripts/env/reset.sh", "--workspace", "mixed", "--confirm", "mixed"],
+        env,
+    )
+    assert refused.returncode != 0
+    assert (mixed / "notes").is_file()
+
+
+def test_diagnose_redacts_docker_host() -> None:
+    secret = "svn-docker-secret-token"
+    completed = _run(
+        ["bash", "scripts/env/diagnose.sh"],
+        {"DOCKER_HOST": f"tcp://user:{secret}@127.0.0.1:2375"},
+    )
+    assert completed.returncode == 0, completed.stderr
+    combined = completed.stdout + completed.stderr
+    assert secret not in combined
+    assert "DOCKER_HOST=set" in completed.stdout
+    assert "DOCKER_HOST_TARGET=tcp://127.0.0.1:2375" in completed.stdout
+
+
 def test_diagnose_reports_without_requiring_services() -> None:
     completed = _run(["bash", "scripts/env/diagnose.sh"], {})
     assert completed.returncode == 0, completed.stderr

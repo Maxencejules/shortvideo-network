@@ -11,7 +11,7 @@ The development profile's database query, AMQP round trip, FFmpeg operation, dev
 - Playbook assignment for goal 04: GPT-6.1 Sol, effort MEDIUM.
 - Model that ran: `grok-4.7-high-fast`. Source: cursor-cloud `run-info` field `originalModelName` for `bcId=bc-2b258f31-5118-5957-81dd-822132a6f5a7`. That payload has no separate reasoning-effort field. `high-fast` is the suffix of the reported model name.
 - GPT-6.1 Sol was not used. The playbook's Medium setting was not selected.
-- On 2026-10-31 at 16:21 Toronto Max ruled: "Don't mind the ai model requirement". The mismatch is recorded and is not a blocker.
+- On 2026-10-31 at 16:21 Toronto Max ruled: "Don't mind the ai model requirement". That ruling was given in the builder chat and relayed by shortvideo-builder. The mismatch is recorded and is not a blocker.
 
 ## Base and tested revision
 
@@ -19,7 +19,7 @@ Base: `ab5680b4d95da9104bd53b6c294d6eee485b1480`, tree `c00718f55f234115084c1a4d
 
 Branch: `goal-04`, cut from that commit.
 
-The service commands ran against tree `133e25e067f19ddd78440cc15515e6d0cde1c572`. The authorship paragraph does not change those scripts. The tip commit's message carries `Tested-tree` set to that commit's tree. This file does not embed the tip hash, because writing it here would change the tree. The checkers do not read this file.
+Round 1 service commands ran against tree `133e25e067f19ddd78440cc15515e6d0cde1c572`. Round 2 commands ran against the scripts in tree `ffb9654d2648bd693dc468dc905dcf9404e69212` (commit `93703d3c15031309cd6974d9b97510f3b245702e`). The round 2 blocks later in this file are shortened excerpts, not raw transcripts. Round 3 re-ran the same sequence and stored the raw logs. The tip commit's message carries `Tested-tree` set to that commit's tree. This file does not embed the tip hash, because writing it here would change the tree. The checkers do not read this file.
 
 ## Authorship
 
@@ -217,7 +217,7 @@ EXIT:2
 
 ## Hosted CI
 
-[41238027067](https://github.com/Maxencejules/shortvideo-network/actions/runs/41238027067) ran on `a160d6904b4625eb89013b815959147fb72211c3` and completed with conclusion `success`. Jobs `python`, `node`, `go`, and `contract` succeeded. The commit that records this paragraph is a later head. Its run is not this one.
+[41239714767](https://github.com/Maxencejules/shortvideo-network/actions/runs/41239714767) ran on `93703d3c15031309cd6974d9b97510f3b245702e` and completed with conclusion `success`. Jobs `python`, `node`, `go`, and `contract` succeeded. Earlier runs [41238027067](https://github.com/Maxencejules/shortvideo-network/actions/runs/41238027067) and [41238238274](https://github.com/Maxencejules/shortvideo-network/actions/runs/41238238274) also succeeded on older heads. The run for the commit that adds the round 3 logs is not one of these.
 
 ## Handoff for Max
 
@@ -242,7 +242,7 @@ git merge-base --is-ancestor ab5680b4d95da9104bd53b6c294d6eee485b1480 HEAD
 
 ## Round 2
 
-Review FIX on `993c34bbc37c7fb42132db8b578a75b6f2341f59`. The commands below ran after the script fixes, on the workspace `dev`, starting from `reset --confirm dev`.
+Review FIX on `993c34bbc37c7fb42132db8b578a75b6f2341f59`. These commands ran on tree `ffb9654d2648bd693dc468dc905dcf9404e69212`. The blocks below are shortened excerpts, not raw transcripts. They omit initdb, `pg_ctl`, and several script lines. The raw record of a complete run is round 3.
 
 ```text
 COMMAND bash scripts/env/reset.sh --workspace dev --confirm dev
@@ -283,7 +283,7 @@ EXIT:0
 
 `storage/marker` still contained `goal04-storage` after restart. `storage/smoke.txt` contained `goal04-smoke`. Listeners after the sequence were `127.0.0.1:5432`, `127.0.0.1:5672`, `127.0.0.1:4369`, and `127.0.0.1:25672`.
 
-`svn_db` is the cluster superuser created by `initdb --username`. Later goals need a separate application role.
+`svn_db` is the cluster superuser created by `initdb --username`. Goal 12 is the first goal that opens PostgreSQL for application queries, and that goal needs a separate application role.
 
 Queue and database clients read passwords from mode `0600` files (`amqp.auth`, `pgpass`). `start.sh` does not pass the queue password to `rabbitmqctl`. The broker learns it from `rabbitmq.conf` on first boot. `ps` can still show `PGPASSFILE` and `--authfile` paths. It does not show the password in those commands.
 

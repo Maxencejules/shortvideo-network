@@ -128,6 +128,7 @@ until svn_amqp amqp-declare-queue --queue=svn-auth-probe --durable >/dev/null 2>
   sleep 1
 done
 svn_with_rabbit_env "${ws}" rabbitmqctl set_permissions -p / "${SVN_QUEUE_USER}" ".*" ".*" ".*"
+svn_amqp amqp-delete-queue --queue=svn-auth-probe
 if svn_with_rabbit_env "${ws}" rabbitmqctl list_users | awk 'NR > 1 { print $1 }' | grep -qx guest; then
   svn_with_rabbit_env "${ws}" rabbitmqctl delete_user guest
   say "removed the default broker user"
