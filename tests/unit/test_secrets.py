@@ -62,6 +62,56 @@ def test_unquoted_priv_key() -> None:
     assert all("bip39" not in item for item in found)
 
 
+def test_priv_key_equals_and_uppercase_env() -> None:
+    equals = "priv_" + "key" + ' = "abc"'
+    env = "PRIV_" + "KEY=abc"
+    mixed = "Priv_" + "Key" + " = abc"
+    hyphen = "priv-" + "key=abc"
+    quoted = '"' + "PRIV_" + "KEY" + '"'
+    for name, body in (
+        ("a.txt", equals),
+        ("b.env", env),
+        ("c.txt", mixed),
+        ("d.txt", hyphen),
+        ("e.json", quoted),
+    ):
+        found = findings_in_text(name, body)
+        assert found, body
+        assert all("bip39" not in item for item in found)
+
+
+def test_mnemonic_one_word_per_line() -> None:
+    body = "\n".join(_bip_prefix(12).split())
+    assert any("bip39" in item for item in findings_in_text("note.txt", body))
+
+
+def test_fifteen_words_one_per_line() -> None:
+    body = "\n".join(_bip_prefix(15).split())
+    assert any("bip39" in item for item in findings_in_text("note.txt", body))
+
+
+def test_mnemonic_split_six_and_six() -> None:
+    words = _bip_prefix(12).split()
+    body = " ".join(words[:6]) + "\n" + " ".join(words[6:])
+    assert any("bip39" in item for item in findings_in_text("note.txt", body))
+
+
+def test_mnemonic_split_across_three_lines() -> None:
+    words = _bip_prefix(12).split()
+    body = "\n".join(" ".join(words[i : i + 4]) for i in range(0, 12, 4))
+    assert any("bip39" in item for item in findings_in_text("note.txt", body))
+
+
+def test_prefixed_mnemonic_split_across_lines() -> None:
+    words = _bip_prefix(12).split()
+    body = "MNEMONIC=" + " ".join(words[:6]) + "\n" + " ".join(words[6:])
+    assert any("bip39" in item for item in findings_in_text("wallet.env", body))
+
+
+def test_six_words_are_not_a_mnemonic() -> None:
+    assert findings_in_text("note.txt", " ".join(_bip_prefix(12).split()[:6])) == []
+
+
 def test_bip39_line_and_key_suffix() -> None:
     phrase = " ".join(
         [

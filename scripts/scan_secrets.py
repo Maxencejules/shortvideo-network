@@ -21,8 +21,11 @@ PATTERNS = (
     re.compile(r"\bghp_[A-Za-z0-9]{20,}\b"),
     re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"),
     re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"),
-    re.compile("['\"]" + "priv_" + "key" + "['\"]"),
-    re.compile(r"(?<![A-Za-z0-9_])" + "priv_" + "key" + r"\s*:"),
+    re.compile("['\"]" + "priv" + r"[-_]" + "key" + "['\"]", re.IGNORECASE),
+    re.compile(
+        r"(?<![A-Za-z0-9_])" + "priv" + r"[-_]" + "key" + r"\s*[:=]",
+        re.IGNORECASE,
+    ),
 )
 FORBIDDEN_NAMES = {
     "priv_validator_key.json",
@@ -44,20 +47,63 @@ def bip39_words() -> set[str]:
     }
 
 
-MNEMONIC_LENGTHS = (12, 15, 24)
+MNEMONIC_LENGTHS = (12, 15, 18, 21, 24)
+_TOKEN = re.compile(r"[a-z]+")
+_PHRASE_LINE = re.compile(r"^[a-z]+(?:[ \t]+[a-z]+)*$")
+_PREFIXED_PHRASE = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_]*\s*[=:]\s*['\"]?([a-z]+(?:[ \t]+[a-z]+)*)['\"]?\s*$"
+)
+
+
+def _tokens(line: str) -> list[str]:
+    return _TOKEN.findall(line.lower())
+
+
+def _window_hit(tokens: list[str], words: set[str]) -> bool:
+    for length in MNEMONIC_LENGTHS:
+        if len(tokens) < length:
+            continue
+        for start in range(len(tokens) - length + 1):
+            window = tokens[start : start + length]
+            if all(token in words for token in window):
+                return True
+    return False
+
+
+def _phrase_tokens(line: str, words: set[str]) -> list[str] | None:
+    """Words from a phrase line, or from a single KEY=phrase / KEY: phrase line."""
+    stripped = line.strip()
+    prefixed = _PREFIXED_PHRASE.fullmatch(stripped)
+    if prefixed:
+        tokens = prefixed.group(1).split()
+    elif _PHRASE_LINE.fullmatch(stripped):
+        tokens = stripped.split()
+    else:
+        return None
+    if not tokens or any(token not in words for token in tokens):
+        return None
+    return tokens
 
 
 def mnemonic_hit(text: str, words: set[str]) -> bool:
-    """12, 15, or 24 BIP39 words in a row on one line, including a JSON or env value."""
-    for line in text.splitlines():
-        tokens = re.findall(r"[a-z]+", line.lower())
-        for length in MNEMONIC_LENGTHS:
-            if len(tokens) < length:
-                continue
-            for start in range(len(tokens) - length + 1):
-                window = tokens[start : start + length]
-                if all(token in words for token in window):
-                    return True
+    """BIP39 phrase on one line, one word per line, or split across phrase lines.
+
+    A finished block of 12 to 24 phrase-line words counts. Code punctuation
+    breaks a block. The 2048-line wordlist is one longer block, so it does not.
+    """
+    lines = text.splitlines()
+    for line in lines:
+        if _window_hit(_tokens(line), words):
+            return True
+    block: list[str] = []
+    for line in [*lines, ""]:
+        tokens = _phrase_tokens(line, words)
+        if tokens:
+            block.extend(tokens)
+            continue
+        if 12 <= len(block) <= 24:
+            return True
+        block = []
     return False
 
 

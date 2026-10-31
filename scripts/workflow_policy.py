@@ -22,39 +22,59 @@ MAX_TIMEOUT = 20
 
 
 def _continue_on_error(value: object) -> bool:
-    """True for a boolean, the string true, or an expression that yields true."""
+    """True for boolean true, the string true, or any ${{ expression."""
     if value is True:
         return True
     if isinstance(value, str):
         stripped = value.strip().strip("\"'")
         if stripped.lower() == "true":
             return True
-        if "${{" in value and "true" in value.lower():
+        if "${{" in value:
             return True
     return False
 
 
+# GitHub expression names are case-insensitive. Index syntax is github['key'].
+_SECRETS_DOT = re.compile(r"\bsecrets\s*\.", re.IGNORECASE)
+_SECRETS_INDEX = re.compile(r"\bsecrets\s*\[", re.IGNORECASE)
+_TOJSON_SECRETS = re.compile(r"\btojson\s*\(\s*secrets\s*\)", re.IGNORECASE)
+_TOJSON_GITHUB = re.compile(r"\btojson\s*\(\s*github\s*\)", re.IGNORECASE)
+_RUN_CONTEXT = re.compile(
+    r"github\s*(?:\.|\[)\s*['\"]?(?:event_path|event|head_ref)\b",
+    re.IGNORECASE,
+)
+
+
+def _run_leaks_context(run: str) -> bool:
+    """True when a shell step interpolates untrusted event or branch data."""
+    return _RUN_CONTEXT.search(run) is not None
+
+
 def check_text(path: Path, text: str) -> list[str]:
     errors: list[str] = []
-    if "pull_request_target" in text:
+    if re.search(r"pull_request_target", text, re.IGNORECASE):
         errors.append(
             f"{path.name}: pull_request_target checks out untrusted code with elevated credentials"
         )
-    if re.search(r"\bsecrets\.", text):
+    if _SECRETS_DOT.search(text):
         errors.append(f"{path.name}: secrets context")
-    if re.search(r"secrets\s*\[", text):
+    if _SECRETS_INDEX.search(text):
         errors.append(f"{path.name}: secrets index")
-    if re.search(r"toJSON\s*\(\s*secrets\s*\)", text):
+    if _TOJSON_SECRETS.search(text):
         errors.append(f"{path.name}: toJSON(secrets)")
+    if _TOJSON_GITHUB.search(text):
+        errors.append(f"{path.name}: toJSON(github)")
     if re.search(r"(?i)secrets\s*:\s*inherit\b", text):
         errors.append(f"{path.name}: secrets inherit")
-    if re.search(r"continue-on-error:\s*(\$\{\{\s*true\s*\}\}|['\"]true['\"])", text):
+    if re.search(r"(?i)continue-on-error:[^\n]*\$\{\{", text):
         errors.append(f"{path.name}: continue-on-error expression")
-    if re.search(r"\bgh\s+pr\s+merge\b", text) or "auto-merge" in text:
+    if re.search(r"(?i)continue-on-error:\s*['\"]true['\"]", text):
+        errors.append(f"{path.name}: continue-on-error expression")
+    if re.search(r"\bgh\s+pr\s+merge\b", text) or re.search(r"auto-merge", text, re.IGNORECASE):
         errors.append(f"{path.name}: automatic merge")
     if re.search(r"\bproduction\b", text, re.IGNORECASE):
         errors.append(f"{path.name}: production target")
-    if re.search(r"\bworkflow_run\b", text):
+    if re.search(r"\bworkflow_run\b", text, re.IGNORECASE):
         errors.append(f"{path.name}: workflow_run trigger")
     return errors
 
@@ -74,7 +94,8 @@ def check_job(path: Path, name: str, job: object) -> list[str]:
         errors.append(f"{path.name}: job {name} environment {environment}")
     if _continue_on_error(job.get("continue-on-error")):
         errors.append(f"{path.name}: job {name} continue-on-error")
-    if job.get("secrets") == "inherit":
+    inherited = job.get("secrets")
+    if isinstance(inherited, str) and inherited.lower() == "inherit":
         errors.append(f"{path.name}: job {name} secrets inherit")
     steps = job.get("steps")
     if not isinstance(steps, list) or not steps:
@@ -87,7 +108,7 @@ def check_job(path: Path, name: str, job: object) -> list[str]:
         if _continue_on_error(step.get("continue-on-error")):
             errors.append(f"{path.name}: job {name} step continue-on-error")
         run = step.get("run")
-        if isinstance(run, str) and ("github.event" in run or "github.head_ref" in run):
+        if isinstance(run, str) and _run_leaks_context(run):
             errors.append(f"{path.name}: event data interpolated into run")
         uses = step.get("uses")
         if uses is None:

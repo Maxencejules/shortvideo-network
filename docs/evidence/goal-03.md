@@ -16,7 +16,9 @@ Public launch: DISABLED. No tradable token, coin, sale, or mining. This is not a
 
 On 2026-10-31 at 09:50 EDT Max ruled, relayed word for word by shortvideo-reviewer: "authorship: rewrite goal-03 branch commits as me, force-push ok".
 
-The branch history since `2ef8573c59645646cd13f0a49c3392095a7ad4a2` was rewritten for authorship. Every commit on `goal-03` is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>`. `Co-authored-by` and Cursor trailers were removed. `Tested-tree` trailers were kept. The rewrite does not change the file content of the earlier commits. The only content change relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6` is this note.
+The branch history since `2ef8573c59645646cd13f0a49c3392095a7ad4a2` was rewritten for authorship. Every commit on `goal-03` is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>`. `Co-authored-by` and Cursor trailers were removed. `Tested-tree` trailers were kept.
+
+The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. The commit that contains this paragraph changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, their unit tests, and this evidence file.
 
 Before the rewrite, these commits were authored and committed by `Cursor Agent <cursoragent@cursor.com>` and carried a `Co-authored-by` trailer:
 
@@ -70,7 +72,7 @@ Cosmos SDK v0.55.0 and CometBFT v0.40.0 are the 2026.1 pair from https://docs.co
 | `tests/e2e`, `tests/chaos` | READMEs. Not a passing suite. |
 | `make devnet-up`, `devnet-down`, `smoke`, `fault`, `release-check` | Exit non-zero on purpose. |
 
-Protocol files under `docs/protocol/` were not edited. `handler_down_errors` is an AST call-graph scan. It catches a module constant key, `setdefault`, `dict.get`, `state.items()`, a module alias chain, an f-string key, and `"down" in state`, plus the earlier subscript, `.get`, and helper forms. A comment or a string literal is not a read. `state["offers"].items()` is not a read of `down`. Dynamic `HANDLERS.get` dispatch stays goal 05. The liveness scan is best effort. It misses dynamic keys (getattr, itemgetter, join, values, **state). That gap is deferred.
+Protocol files under `docs/protocol/` were not edited. `handler_down_errors` is an AST call-graph scan. It catches a module constant key, `setdefault`, `dict.get`, `state.items()`, a module alias chain, an f-string key, and `"down" in state`, plus the earlier subscript, `.get`, and helper forms. A comment or a string literal is not a read. `state["offers"].items()` is not a read of `down`. Dynamic `HANDLERS.get` dispatch stays goal 05. The liveness scan is best effort. It misses dynamic keys (getattr, itemgetter, join, values, **state). That gap is deferred to goal 05, which writes the chain handlers. DEC-011 also binds goal 06: neither goal may put `down` in the application hash.
 
 ## Requirement notes
 
@@ -243,7 +245,7 @@ note schema and fixture check; protocol not approved; Gate A approved DEC-001 th
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only python
-52 passed in 1.43s
+77 passed in 1.56s
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only node
@@ -375,16 +377,20 @@ go tests failed: 1
 
 ## Hosted CI
 
-These runs were observed. A failed run is not a pass.
+These are every hosted run of `goal-03` through `82bb067214883d5970a02715a0c8ff98c357bbad`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
 
 | Run | Head | Conclusion |
 | --- | --- | --- |
-| [41203392314](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203392314) | `cf75bc8942046e59db51a1a43f0601241840d83f` | failure |
-| [41203567927](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203567927) | `b877420d372a59c3a4f77e6fb20b2943943e1998` | failure |
-| [41203691127](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203691127) | `7594ed19f9e8ff3a5d4f2d5b8437d59f889e806b` | success |
-| [41203787093](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203787093) | `15e2b48ca526726536fc144536356bcdf12e14e2` | success |
+| [41203392314](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203392314) | `cf75bc8942046e59db51a1a43f0601241840d83f`, same tree as `397f11ed993aa1e8cd7c12ed1a03ea7d33960685` | failure |
+| [41203567927](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203567927) | `b877420d372a59c3a4f77e6fb20b2943943e1998`, same tree as `db9f9b16cdfd32201b7512ec49e06136565f9116` | failure |
+| [41203691127](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203691127) | `7594ed19f9e8ff3a5d4f2d5b8437d59f889e806b`, same tree as `d48f5757773e5b0d0fc824ee43c3e2f480e00705` | success |
+| [41203787093](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203787093) | `15e2b48ca526726536fc144536356bcdf12e14e2`, same tree as `4ad8319461b1cf6b5302db276ee409d8c8a999cb` | success |
+| [41207064075](https://github.com/Maxencejules/shortvideo-network/actions/runs/41207064075) | `0dac34d8f14289de9d5cdcd82183101831cc4b47`, same tree as `f3f9841aa0ef1c393f9fe5fe48b75c513d7c8e70` | failure |
+| [41207177004](https://github.com/Maxencejules/shortvideo-network/actions/runs/41207177004) | `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, same tree as `2c40b443d7d92e45a839c4d97a7a3f7b44901af9` | success |
+| [41207468346](https://github.com/Maxencejules/shortvideo-network/actions/runs/41207468346) | `887905e176334acaa10e4239750237fdfd0c9ebc` | success |
+| [41208566946](https://github.com/Maxencejules/shortvideo-network/actions/runs/41208566946) | `82bb067214883d5970a02715a0c8ff98c357bbad` | success |
 
-`41203787093` is the hosted run for the revision the reviewer marked FIX. Jobs `python`, `node`, `go`, and `contract` completed. That run is not a run of this commit.
+`41203787093` is the hosted run for the revision the first review marked FIX. Jobs `python`, `node`, `go`, and `contract` completed. `41207064075` failed its python job. None of these runs is a run of this commit.
 
 `41203392314` was a setup failure, not a deliberate test failure. Verbatim from the failed-step log:
 
@@ -402,7 +408,7 @@ The same run also failed `pip install --require-hashes` because `setuptools` was
 - RabbitMQ, Celery, and FFmpeg are not pinned.
 - No `LICENSE` file. DEC-006 says this goal must not treat the project licence split as applied.
 - AST scan does not follow `HANDLERS.get`. Goal 05 keeps harness operations out of the transaction router.
-- The liveness scan is best effort and misses dynamic keys (getattr, itemgetter, join, values, **state). Deferred.
+- The liveness scan is best effort and misses dynamic keys (getattr, itemgetter, join, values, **state). Deferred to goal 05. DEC-011 binds goal 06 to the same rule.
 - `make devnet-up`, `smoke`, `fault`, and `release-check` exit non-zero. There is no chain binary.
 
 ## Not claimed
