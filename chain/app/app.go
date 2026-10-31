@@ -16,21 +16,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec/address"
-	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	sdkserverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	chainaddress "github.com/Maxencejules/shortvideo-network/chain/address"
+	"github.com/Maxencejules/shortvideo-network/chain/cometwrap"
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/scaffold"
@@ -133,14 +130,14 @@ func New(cfg Config) (*App, error) {
 
 	accountKeeper := authkeeper.NewAccountKeeper(
 		enc.Codec,
-		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
+		newKVStoreService(keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		map[string][]string{},
 		address.NewBech32Codec(chainaddress.Account),
 		chainaddress.Account,
 		authtypes.NewModuleAddress("svn").String(),
 	)
-	authModule := auth.NewAppModule(enc.Codec, accountKeeper, authsims.RandomGenesisAccounts)
+	authModule := newAuthModule(accountKeeper)
 	authorityKeeper := authority.NewKeeper(keys[authority.ModuleName])
 	authorityModule := authority.NewAppModule(authorityKeeper, cfg.Order)
 
@@ -256,7 +253,7 @@ func (app *App) RegisterTxService(clientCtx client.Context) {
 
 // RegisterTendermintService registers CometBFT queries.
 func (app *App) RegisterTendermintService(clientCtx client.Context) {
-	wrapped := server.NewCometABCIWrapper(app)
+	wrapped := cometwrap.New(app)
 	cmtservice.RegisterTendermintService(clientCtx, app.GRPCQueryRouter(), app.encoding.InterfaceRegistry, wrapped.Query)
 }
 
@@ -280,6 +277,13 @@ func (app *App) EncodingConfig() Encoding {
 // ServerConfig returns the service configuration. Gas has no coin price.
 func (app *App) ServerConfig() sdkserverconfig.Config {
 	return app.config
+}
+
+// AuthorityConsensusBytes is the authority module's committed state.
+// The bytes are proto.MarshalOptions{Deterministic:true}, not protojson.
+func (app *App) AuthorityConsensusBytes() ([]byte, error) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	return app.authority.ConsensusBytes(ctx)
 }
 
 func checkHeader(raw json.RawMessage) error {

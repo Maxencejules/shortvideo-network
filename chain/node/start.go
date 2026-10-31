@@ -24,10 +24,10 @@ import (
 	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/server"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 
 	"github.com/Maxencejules/shortvideo-network/chain/app"
+	"github.com/Maxencejules/shortvideo-network/chain/cometwrap"
 )
 
 // Listen is the public bind file written next to the CometBFT config.
@@ -66,7 +66,7 @@ func Start(home string) error {
 		_ = application.Close()
 		return err
 	}
-	cmtApp := server.NewCometABCIWrapper(application)
+	cmtApp := cometwrap.New(application)
 	tmNode, err := node.NewNode(
 		cfg,
 		privval.LoadFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),

@@ -57,7 +57,11 @@ func AppStateFromDocument(cdc codec.Codec, doc genesis.Document) (map[string]jso
 	if err != nil {
 		return nil, err
 	}
-	authorityRaw, err := protoJSON.Marshal(authorityState(doc))
+	authorityMsg, err := authorityState(doc)
+	if err != nil {
+		return nil, err
+	}
+	authorityRaw, err := protoJSON.Marshal(authorityMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -111,10 +115,13 @@ func headerFrom(doc genesis.Document) Header {
 	}
 }
 
-func authorityState(doc genesis.Document) *authorityv1.GenesisState {
+func authorityState(doc genesis.Document) (*authorityv1.GenesisState, error) {
 	validators := make([]*authorityv1.ValidatorPower, len(doc.Validators))
 	for i, row := range doc.Validators {
-		raw, _ := hex.DecodeString(row.ConsensusPubkeyHex)
+		raw, err := hex.DecodeString(row.ConsensusPubkeyHex)
+		if err != nil {
+			return nil, fmt.Errorf("validator %s key: %w", row.NodeID, err)
+		}
 		validators[i] = &authorityv1.ValidatorPower{
 			ConsensusPubkey: raw,
 			Power:           row.Power,
@@ -126,7 +133,10 @@ func authorityState(doc genesis.Document) *authorityv1.GenesisState {
 	})
 	submitters := make([]*typesv1.Submitter, len(doc.Submitters))
 	for i, row := range doc.Submitters {
-		raw, _ := hex.DecodeString(row.AddressHex)
+		raw, err := hex.DecodeString(row.AddressHex)
+		if err != nil {
+			return nil, fmt.Errorf("submitter %s: %w", row.AddressHex, err)
+		}
 		submitters[i] = &typesv1.Submitter{Address: raw, Role: role(row.Role)}
 	}
 	slices.SortFunc(submitters, func(a, b *typesv1.Submitter) int {
@@ -140,7 +150,7 @@ func authorityState(doc genesis.Document) *authorityv1.GenesisState {
 		},
 		BlockedDecisions:     blocked(doc.BlockedDecisions),
 		DevnetTestParameters: devnetTests(doc.DevnetTestParameters),
-	}
+	}, nil
 }
 
 func policyState(doc genesis.Document) *policyv1.GenesisState {
@@ -190,6 +200,30 @@ func devnetTests(rows []genesis.DevnetTestParameter) []*typesv1.DevnetTestParame
 			DelaySeconds:   row.DelaySeconds,
 		}
 	}
+	slices.SortFunc(out, func(a, b *typesv1.DevnetTestParameter) int {
+		if cmp := strings.Compare(a.GetDecisionId(), b.GetDecisionId()); cmp != 0 {
+			return cmp
+		}
+		if cmp := strings.Compare(a.GetLabel(), b.GetLabel()); cmp != 0 {
+			return cmp
+		}
+		if cmp := strings.Compare(a.GetRoleName(), b.GetRoleName()); cmp != 0 {
+			return cmp
+		}
+		if a.GetNumericValue() < b.GetNumericValue() {
+			return -1
+		}
+		if a.GetNumericValue() > b.GetNumericValue() {
+			return 1
+		}
+		if a.GetDelaySeconds() < b.GetDelaySeconds() {
+			return -1
+		}
+		if a.GetDelaySeconds() > b.GetDelaySeconds() {
+			return 1
+		}
+		return 0
+	})
 	return out
 }
 

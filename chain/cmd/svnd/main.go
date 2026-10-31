@@ -1,12 +1,13 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"runtime/debug"
-	"time"
 
+	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/spf13/cobra"
 
 	"github.com/Maxencejules/shortvideo-network/chain/app"
@@ -99,31 +100,40 @@ func genesisCmd() *cobra.Command {
 }
 
 func validateGenesisFile(raw []byte) error {
-	var envelope struct {
-		ChainID     string                     `json:"chain_id"`
-		GenesisTime string                     `json:"genesis_time"`
-		AppState    map[string]json.RawMessage `json:"app_state"`
-	}
-	if err := json.Unmarshal(raw, &envelope); err != nil {
+	if err := genesis.RejectPrivateMaterial(raw); err != nil {
 		return err
 	}
-	if envelope.AppState != nil {
-		doc, err := app.DocumentFromModules(envelope.AppState)
+	genDoc, cometErr := cmttypes.GenesisDocFromJSON(raw)
+	if cometErr == nil && len(genDoc.AppState) > 0 {
+		var modules map[string]json.RawMessage
+		if err := json.Unmarshal(genDoc.AppState, &modules); err != nil {
+			return err
+		}
+		doc, err := app.DocumentFromModules(modules)
 		if err != nil {
 			return err
 		}
-		identity := genesis.CometIdentity{ChainID: envelope.ChainID}
-		if envelope.GenesisTime != "" {
-			parsed, err := time.Parse(time.RFC3339Nano, envelope.GenesisTime)
-			if err != nil {
-				return fmt.Errorf("genesis_time: %w", err)
+		pubs := make([]string, len(genDoc.Validators))
+		powers := make([]int64, len(genDoc.Validators))
+		for i, validator := range genDoc.Validators {
+			if validator.PubKey == nil {
+				return fmt.Errorf("comet validator %d has no public key", i)
 			}
-			identity.GenesisUnixSeconds = parsed.Unix()
+			pubs[i] = hex.EncodeToString(validator.PubKey.Bytes())
+			powers[i] = validator.Power
 		}
-		return genesis.Validate(doc, identity)
+		return genesis.Validate(doc, genesis.CometIdentity{
+			ChainID:            genDoc.ChainID,
+			GenesisUnixSeconds: genDoc.GenesisTime.Unix(),
+			ValidatorPubkeyHex: pubs,
+			ValidatorPowers:    powers,
+		})
 	}
 	doc, err := genesis.Parse(raw)
 	if err != nil {
+		if cometErr != nil {
+			return fmt.Errorf("malformed genesis: %w", cometErr)
+		}
 		return err
 	}
 	return genesis.Validate(doc, genesis.CometIdentity{})

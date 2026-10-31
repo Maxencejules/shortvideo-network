@@ -115,16 +115,21 @@ var (
 	}
 )
 
+// RejectPrivateMaterial rejects key and mnemonic material anywhere in raw.
+func RejectPrivateMaterial(raw []byte) error {
+	lower := bytes.ToLower(raw)
+	for _, needle := range forbiddenJSON {
+		if bytes.Contains(lower, []byte(needle)) {
+			return fmt.Errorf("genesis contains %s", needle)
+		}
+	}
+	return nil
+}
+
 // Parse decodes a document and rejects unknown fields and private-key material.
 func Parse(raw []byte) (Document, error) {
-	if bytes.Contains(bytes.ToLower(raw), []byte("private_key")) {
-		return Document{}, fmt.Errorf("genesis contains private_key")
-	}
-	lower := strings.ToLower(string(raw))
-	for _, needle := range forbiddenJSON {
-		if strings.Contains(lower, needle) {
-			return Document{}, fmt.Errorf("genesis contains %s", needle)
-		}
+	if err := RejectPrivateMaterial(raw); err != nil {
+		return Document{}, err
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()

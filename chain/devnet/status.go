@@ -107,6 +107,27 @@ func equal(rpcs []string, minHeight int64) (int64, string, error) {
 	return height, strings.ToUpper(hash), nil
 }
 
+// Snapshot reads every RPC once. Heights may differ. Agreed requires one height.
+func Snapshot(rpcs []string) ([]Status, error) {
+	return readAll(rpcs)
+}
+
+// Agreed returns the shared height and application hash.
+func Agreed(rpcs []string) (Status, error) {
+	rows, err := readAll(rpcs)
+	if err != nil {
+		return Status{}, err
+	}
+	height := rows[0].Height
+	hash := rows[0].AppHash
+	for _, row := range rows[1:] {
+		if row.Height != height || !strings.EqualFold(row.AppHash, hash) {
+			return Status{}, fmt.Errorf("disagreement height %d/%d hash %s/%s", height, row.Height, hash, row.AppHash)
+		}
+	}
+	return Status{Height: height, AppHash: strings.ToUpper(hash)}, nil
+}
+
 func readAll(rpcs []string) ([]Status, error) {
 	rows := make([]Status, len(rpcs))
 	for i, rpc := range rpcs {

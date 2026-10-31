@@ -14,8 +14,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	txsigning "github.com/cosmos/cosmos-sdk/x/tx/signing"
 
 	chainaddress "github.com/Maxencejules/shortvideo-network/chain/address"
@@ -52,7 +52,7 @@ func MakeEncoding() (Encoding, error) {
 		return Encoding{}, err
 	}
 	std.RegisterInterfaces(registry)
-	auth.AppModuleBasic{}.RegisterInterfaces(registry)
+	authtypes.RegisterInterfaces(registry)
 	registry.RegisterImplementations((*sdk.Msg)(nil), gogoMessages()...)
 
 	amino := codec.NewLegacyAmino()

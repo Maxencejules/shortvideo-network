@@ -70,10 +70,16 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 		}
 	})
 	rpcs := rpcList(layout)
-	height, hash, err := devnet.WaitEqual(rpcs, 3, 45*time.Second)
+	startHeight, startHash, err := devnet.WaitEqual(rpcs, 3, 45*time.Second)
 	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
+	logPhase(t, "start", rpcs)
+	beforeStop, err := devnet.Agreed(rpcs)
+	if err != nil {
+		t.Fatal(tail(layout, err))
+	}
+	fmt.Printf("phase=stop-all threshold=%d app_hash=%s\n", beforeStop.Height, beforeStop.AppHash)
 	for _, stop := range stops {
 		if err := stop(); err != nil {
 			t.Fatal(err)
@@ -83,36 +89,126 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 	for i := range stops {
 		start(i)
 	}
-	resumed, _, err := devnet.WaitAbove(rpcs, height, 45*time.Second)
+	resumed, _, err := devnet.WaitAbove(rpcs, beforeStop.Height, 45*time.Second)
 	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
-	preserved, err := devnet.BlockHash(rpcs[0], height)
+	if resumed <= beforeStop.Height {
+		t.Fatalf("restart did not pass height %d (at %d)", beforeStop.Height, resumed)
+	}
+	logPhase(t, "restart", rpcs)
+	preserved, err := devnet.BlockHash(rpcs[0], startHeight)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if preserved != hash {
-		t.Fatalf("height %d hash changed from %s to %s", height, hash, preserved)
+	if preserved != startHash {
+		t.Fatalf("height %d hash changed from %s to %s", startHeight, startHash, preserved)
 	}
+	beforeOne, err := devnet.Agreed(rpcs)
+	if err != nil {
+		t.Fatal(tail(layout, err))
+	}
+	fmt.Printf("phase=stop-one threshold=%d app_hash=%s\n", beforeOne.Height, beforeOne.AppHash)
 	if err := stops[3](); err != nil {
 		t.Fatal(err)
 	}
 	stops[3] = nil
-	if _, _, err := devnet.WaitAbove(rpcs[:3], resumed, 30*time.Second); err != nil {
+	oneDown, _, err := devnet.WaitAbove(rpcs[:3], beforeOne.Height, 30*time.Second)
+	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
+	if oneDown <= beforeOne.Height {
+		t.Fatalf("one validator down did not pass height %d (at %d)", beforeOne.Height, oneDown)
+	}
+	observeMoving(t, "one-down", rpcs[:3], beforeOne.Height)
+	beforeTwo, err := devnet.Agreed(rpcs[:3])
+	if err != nil {
+		t.Fatal(tail(layout, err))
+	}
+	fmt.Printf("phase=stop-two threshold=%d app_hash=%s\n", beforeTwo.Height, beforeTwo.AppHash)
 	if err := stops[2](); err != nil {
 		t.Fatal(err)
 	}
 	stops[2] = nil
-	if _, err := devnet.Stable(rpcs[:2], 6*time.Second); err != nil {
-		t.Fatal(tail(layout, err))
+	stall := observeStall(t, "two-down", rpcs[:2])
+	if stall < beforeTwo.Height {
+		t.Fatalf("stall height %d is below the height at stop %d", stall, beforeTwo.Height)
 	}
 	start(2)
 	start(3)
-	if _, _, err := devnet.WaitAbove(rpcs, height, 45*time.Second); err != nil {
+	recovered, _, err := devnet.WaitAbove(rpcs, stall, 45*time.Second)
+	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
+	if recovered <= stall {
+		t.Fatalf("recovery did not pass stall height %d (at %d)", stall, recovered)
+	}
+	logPhase(t, "recovery", rpcs)
+}
+
+func logPhase(t *testing.T, phase string, rpcs []string) {
+	t.Helper()
+	rows, err := devnet.Snapshot(rpcs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, row := range rows {
+		fmt.Printf("phase=%s sample=0 node=%d height=%d app_hash=%s\n", phase, i, row.Height, row.AppHash)
+	}
+}
+
+func observeMoving(t *testing.T, phase string, rpcs []string, threshold int64) {
+	t.Helper()
+	var first int64
+	var last int64
+	for sample := 0; sample < 4; sample++ {
+		rows, err := devnet.Snapshot(rpcs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, row := range rows {
+			if row.Height != rows[0].Height || row.AppHash != rows[0].AppHash {
+				t.Fatalf("phase %s nodes disagree", phase)
+			}
+			fmt.Printf("phase=%s sample=%d node=%d height=%d app_hash=%s\n", phase, sample, i, row.Height, row.AppHash)
+		}
+		if sample == 0 {
+			first = rows[0].Height
+		}
+		last = rows[0].Height
+		if last < first {
+			t.Fatalf("phase %s height moved backward", phase)
+		}
+		time.Sleep(time.Second)
+	}
+	if last <= threshold || last <= first {
+		t.Fatalf("phase %s did not keep committing: threshold %d first %d last %d", phase, threshold, first, last)
+	}
+}
+
+func observeStall(t *testing.T, phase string, rpcs []string) int64 {
+	t.Helper()
+	var height int64
+	for sample := 0; sample < 6; sample++ {
+		rows, err := devnet.Snapshot(rpcs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, row := range rows {
+			if row.Height != rows[0].Height || row.AppHash != rows[0].AppHash {
+				t.Fatalf("phase %s nodes disagree", phase)
+			}
+			fmt.Printf("phase=%s sample=%d node=%d height=%d app_hash=%s\n", phase, sample, i, row.Height, row.AppHash)
+		}
+		if sample == 0 {
+			height = rows[0].Height
+		}
+		if rows[0].Height != height {
+			t.Fatalf("phase %s height moved from %d to %d", phase, height, rows[0].Height)
+		}
+		time.Sleep(time.Second)
+	}
+	return height
 }
 
 func launch(home string) (func() error, error) {

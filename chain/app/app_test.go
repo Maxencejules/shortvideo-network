@@ -118,6 +118,44 @@ func TestInitExportAndChainID(t *testing.T) {
 	}
 }
 
+func TestAuthorityConsensusBytesArePinned(t *testing.T) {
+	doc := sampleDocument()
+	codec := codecFromApp(t, doc.ChainID)
+	modules, err := app.AppStateFromDocument(codec, doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	chainApp := newTestApp(t, doc.ChainID, nil)
+	params := consensusParams()
+	if _, err := chainApp.InitChain(&abci.RequestInitChain{
+		ChainId:         doc.ChainID,
+		Time:            doc.Time(),
+		AppStateBytes:   mustJSON(t, modules),
+		InitialHeight:   1,
+		Validators:      validatorUpdates(t, doc),
+		ConsensusParams: &params,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := chainApp.FinalizeBlock(&abci.RequestFinalizeBlock{Height: 1, Time: doc.Time(), Hash: bytes32(1)}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := chainApp.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := chainApp.AuthorityConsensusBytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(raw) == 0 || raw[0] == '{' {
+		t.Fatalf("authority consensus bytes are not deterministic protobuf: %q", raw[:1])
+	}
+	got := hex.EncodeToString(raw)
+	if got != pinnedAuthorityBytes {
+		t.Fatalf("pin %s", got)
+	}
+}
+
 func TestMalformedGenesisRejected(t *testing.T) {
 	doc := sampleDocument()
 	doc.MintModuleEnabled = true
@@ -235,6 +273,10 @@ func bytes32(last byte) []byte {
 	out[31] = last
 	return out
 }
+
+// pinnedAuthorityBytes is the deterministic protobuf stored for sampleDocument.
+// A change here means consensus bytes moved. Do not replace it with protojson.
+const pinnedAuthorityBytes = "0ade010a280a20000000000000000000000000000000000000000000000000000000000000000110011a0276310a280a20000000000000000000000000000000000000000000000000000000000000000210011a0276320a280a20000000000000000000000000000000000000000000000000000000000000000310011a0276330a280a20000000000000000000000000000000000000000000000000000000000000000410011a02763412180a140000000000000000000000000000000000000001100112180a14000000000000000000000000000000000000000210023001120b0a074445432d3030311001120b0a074445432d3030321001120b0a074445432d3030331001120b0a074445432d3030341001120b0a074445432d3030351001120b0a074445432d3030361001120b0a074445432d3030371001120b0a074445432d30303810011a220a1750524f504f5345445f544553545f504152414d4554455212074445432d303038"
 
 func bytes20(last byte) []byte {
 	out := make([]byte, 20)
