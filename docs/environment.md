@@ -35,7 +35,9 @@ bash scripts/env/stop.sh
 
 `make env-start`, `make env-smoke`, and `make env-stop` call those scripts. The default workspace name is `dev`. Override it with `SVN_WORKSPACE`.
 
-`start.sh` binds PostgreSQL and RabbitMQ to `127.0.0.1` only. The first start creates `.local/workspaces/dev/` and a mode `0600` credentials file. A later start sees `PG_VERSION` and the queue data directory and does not run `initdb` again. If that state exists and the credentials file is gone, start exits non-zero and does not delete the data.
+`start.sh` binds PostgreSQL and RabbitMQ to `127.0.0.1` only. The first start creates `.local/workspaces/dev/`, a mode `0600` credentials file, `.svn-workspace`, and `storage/`. `svn_db` is the database superuser from `initdb`. Later goals need a separate application role. A later start sees `PG_VERSION`, the queue data directory, and `storage/marker`, and does not run `initdb` again or rewrite the storage marker. If database or queue state exists and the credentials file is gone, start exits non-zero and does not delete the data.
+
+Passwords are written to `pgpass` and `amqp.auth` (mode `0600`). Client commands use `PGPASSFILE` and `--authfile`. `start.sh` does not pass the queue password to `rabbitmqctl`. The broker reads it from `rabbitmq.conf` on first boot. `ps` can show those file paths. It does not show the password in those commands.
 
 `make smoke` is still the unimplemented product path and exits non-zero. `make env-smoke` is the development-profile check: one SQL query, one AMQP publish and consume, and one small FFmpeg operation. The tone file stays under `.local/` and is not committed.
 
@@ -47,7 +49,7 @@ Reset deletes one workspace directory and nothing else.
 bash scripts/env/reset.sh --workspace dev --confirm dev
 ```
 
-`make env-reset WORKSPACE=dev CONFIRM=dev` is the same command. A missing `--confirm`, or a confirm value that is not the workspace name, exits non-zero and deletes nothing. The name has to match `^[a-z][a-z0-9-]{0,31}$`. Package installs, other workspaces, and the git checkout stay.
+`make env-reset WORKSPACE=dev CONFIRM=dev` is the same command. A missing `--confirm`, or a confirm value that is not the workspace name, exits non-zero and deletes nothing. The name has to match `^[a-z][a-z0-9-]{0,31}$`. The directory must contain `.svn-workspace` with the text `svn-dev-workspace`, which `start.sh` writes. A directory without that marker is not deleted. Package installs, other workspaces, and the git checkout stay. Reset removes that workspace's `storage/` directory with the rest of the workspace.
 
 ## Devnet identities
 
@@ -89,7 +91,7 @@ FFmpeg stays the pinned host package. The compose file does not add an FFmpeg im
 - `start` to `bash scripts/env/start.sh`
 - `user` to `ubuntu`
 
-This run's environment is the personal environment `6d1d563c-d493-11f1-89ee-7aa6f0729b11`. `environmentJsonPath` is null, so the saved dashboard configuration does not read the committed file. Recording that file, snapshotting, and starting a new environment build are Max's actions. This goal does not publish or republish an environment and does not provision a machine.
+This run's environment is the personal environment `6d1d563c-d493-11f1-89ee-7aa6f0729b11`. `environmentJsonPath` is null, so the saved dashboard configuration does not read the committed file. Recording that file, snapshotting, and starting a new environment build are Max's actions. This goal does not publish or republish an environment and does not provision a machine. No snapshot and no prepared template may include `/workspace/.local`. That directory holds generated passwords, database files, queue data, and devnet private keys.
 
 `install` does not run on an agent that already booted from a snapshot. `start` runs on a later boot and must stay free of package installs. After a dependency pin changes, Max republishes the environment from the updated file. The next goal still checks the checkout:
 

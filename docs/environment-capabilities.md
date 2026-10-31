@@ -45,7 +45,7 @@ After start, the profile listeners were:
 | `127.0.0.1` | 4369 | `epmd` started for that node |
 | `127.0.0.1` | 25672 | RabbitMQ distribution |
 
-Other listeners were already present, including `0.0.0.0:2375`. This profile did not open them.
+Other listeners were already present, including `0.0.0.0:2375`. This profile did not open that port. A read-only probe is in the Docker section below. It did not create a container.
 
 ## Toolchains already on the image
 
@@ -71,10 +71,27 @@ Chrome starts. There is no product UI in this repository, so a browser test of t
 | amqp-tools | `0.11.0-1ubuntu0.2` | that version |
 | python3.12-venv | `3.12.3-1ubuntu0.17` | that version, after the first install exited 1 |
 | Celery | not installed | still not installed; the sdist hash is pinned |
-| docker.io | `29.1.3-0ubuntu3~24.04.2`, not installed | not installed |
+| docker.io | `29.1.3-0ubuntu3~24.04.2`, not installed | not installed. Installing it needs Max's approval |
 | podman | command not found | not installed |
 
-`/var/run/docker.sock` is absent. `docker` and `podman` are not on `PATH`. `systemctl` cannot start a service. `bash scripts/env/compose.sh` exits 2 and says the compose profile is BLOCKED. The compose file is in the repository for a host whose `docker info` succeeds. It was not run here.
+`docker` and `podman` are not on `PATH`. `/var/run/docker.sock` is absent. `DOCKER_HOST` was unset. `systemctl` cannot start a service. Something is already listening on `0.0.0.0:2375`.
+
+```text
+COMMAND curl -sS -m 5 -D - http://127.0.0.1:2375/version
+HTTP/1.1 200 OK
+Api-Version: 1.52
+Content-Type: application/json
+Docker-Experimental: false
+Ostype: linux
+Server: Docker/29.1.4 (linux)
+Date: Sat, 31 Oct 2026 20:28:48 GMT
+Content-Length: 805
+
+{"Platform":{"Name":"Docker Engine - Community"},"Version":"29.1.4","ApiVersion":"1.52","MinAPIVersion":"1.44","Os":"linux","Arch":"amd64","Components":[{"Name":"Engine","Version":"29.1.4","Details":{"ApiVersion":"1.52","Arch":"amd64","BuildTime":"2026-01-08T19:56:47.000000000+00:00","Experimental":"false","GitCommit":"08440b6","GoVersion":"go1.25.5","KernelVersion":"6.12.94+","MinAPIVersion":"1.44","Os":"linux"}},{"Name":"containerd","Version":"v2.2.5","Details":{"GitCommit":"e53c7c1516c3b2bff98eb76f1f4117477e6f4e66"}},{"Name":"runc","Version":"1.3.6","Details":{"GitCommit":"v1.3.6-0-g491b69ba"}},{"Name":"docker-init","Version":"0.19.0","Details":{"GitCommit":"de40ad0"}}],"GitCommit":"08440b6","GoVersion":"go1.25.5","KernelVersion":"6.12.94+","BuildTime":"2026-01-08T19:56:47.000000000+00:00"}
+EXIT:0
+```
+
+That is Docker Engine Community 29.1.4, which is not the apt candidate `29.1.3-0ubuntu3~24.04.2`. The probe was GET `/version` only. No image was pulled and no container was started. `bash scripts/env/compose.sh` exits 2 because the `docker` command is absent. Compose execution stays BLOCKED until Max approves using this daemon or installing a container runtime.
 
 The PostgreSQL package created cluster `18/main` at `/var/lib/postgresql/18/main` and `policy-rc.d` refused to start it. That cluster is down. The disposable workspace uses its own data directory under `.local/workspaces/dev/postgres/data`. Reset does not delete `/var/lib/postgresql`.
 

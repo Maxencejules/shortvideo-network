@@ -4,15 +4,14 @@ Status: BLOCKED
 
 Public launch: DISABLED. No tradable token, coin, sale, or mining. This is not an audit, not a production host, and not a chain binary.
 
-The development profile's database query, AMQP round trip, FFmpeg operation, restart, and failure proofs ran. The goal is not VERIFIED. The playbook's Medium effort was not the setting that ran, and compose, full-stack, browser-product, network-fault, and load checks did not run.
+The development profile's database query, AMQP round trip, FFmpeg operation, development storage, restart, and failure proofs ran. Compose was not executed. Full-stack, browser-product, network-fault, and load checks did not run. On 2026-10-31 at 16:21 Toronto Max ruled: "Don't mind the ai model requirement". The model that ran is recorded below. That mismatch is not a blocker.
 
 ## Model and effort
 
 - Playbook assignment for goal 04: GPT-6.1 Sol, effort MEDIUM.
 - Model that ran: `grok-4.7-high-fast`. Source: cursor-cloud `run-info` field `originalModelName` for `bcId=bc-2b258f31-5118-5957-81dd-822132a6f5a7`. That payload has no separate reasoning-effort field. `high-fast` is the suffix of the reported model name.
 - GPT-6.1 Sol was not used. The playbook's Medium setting was not selected.
-- On 2026-10-31 at 09:37 EDT Max ruled, for goal 03 only: "goal 03: accept the grok-4.7-high-fast substitution as reported effort". That ruling does not cover goal 04.
-- Goal status is BLOCKED on model allocation. Do not read the technical checks below as a VERIFIED goal.
+- On 2026-10-31 at 16:21 Toronto Max ruled: "Don't mind the ai model requirement". The mismatch is recorded and is not a blocker.
 
 ## Base and tested revision
 
@@ -48,7 +47,8 @@ The observations are in [docs/environment-capabilities.md](../environment-capabi
 | Install and idempotent start, state kept | VERIFIED | install exit 0 after the venv fix; second install skipped packages; restart did not run `initdb` |
 | Minimal cloud profile | VERIFIED | local PostgreSQL 18.6, RabbitMQ 4.4.0, FFmpeg 6.1.1 |
 | Compose file with upstream digests | IMPLEMENTED | `deployments/compose/docker-compose.yml` |
-| Compose execution | BLOCKED | `docker` is not installed. `compose.sh` exits 2 |
+| Development storage directory | VERIFIED | round 2 smoke and restart, below |
+| Compose execution | BLOCKED | `docker` is not on PATH. A read-only probe of `127.0.0.1:2375` returned Docker Engine 29.1.4. That daemon was not used, and docker was not installed. `compose.sh` exits 2 |
 | Loopback bindings, generated credentials, separate devnet key | VERIFIED | listeners on `127.0.0.1`; credentials mode 0600 and gitignored; key generation refuses replace and clone |
 | Database query | VERIFIED | `SELECT 1` returned 1 |
 | AMQP round trip | VERIFIED | publish and consume of `goal04-roundtrip` |
@@ -56,13 +56,12 @@ The observations are in [docs/environment-capabilities.md](../environment-capabi
 | Restart keeps state | VERIFIED | row `goal04` and durable body `goal04-persist` survived stop and start |
 | Wrong password fails clearly | VERIFIED | psql exit 2, `password authentication failed` |
 | Missing credentials with existing state fail clearly | VERIFIED | start exit 2, refuses to reset |
-| Busy port fails clearly | VERIFIED | `require-port.sh` exit 1, `not available` |
+| Busy port fails clearly | VERIFIED | `require-port.sh` exit 1. `start.sh` exits 1 when 5432 is taken and when 5672 is taken |
 | `make devnet-up`, `make smoke`, `make fault`, `make release-check` | VERIFIED as still failed | each exits 2. They are not this goal's success path |
 | Full-stack upload-to-playback | BLOCKED | no chain binary. Goal 18 |
 | Browser test of the product | BLOCKED | Chrome 156 is installed. No product UI |
 | Network-fault injection | BLOCKED | `tc` is absent. Goal 29 |
 | Load test | BLOCKED | Goal 28. No load runner |
-| Playbook effort Medium | BLOCKED | the run used `grok-4.7-high-fast` |
 
 ## Commands and output
 
@@ -232,10 +231,77 @@ git rev-parse HEAD
 git merge-base --is-ancestor ab5680b4d95da9104bd53b6c294d6eee485b1480 HEAD
 ```
 
-- Compose execution needs a Linux host where `docker info` succeeds. The pinned digests are in `deployments/compose/docker-compose.yml`. Do not treat this VM's exit 2 as a successful compose run.
+- Compose execution needs a Linux host where `docker info` succeeds, and Max's approval before anyone installs a container runtime or uses the daemon already listening on `127.0.0.1:2375`. The pinned digests are linux/amd64 only. Do not treat this VM's exit 2 as a successful compose run.
+- No snapshot and no prepared template may include `/workspace/.local`. That directory holds generated passwords, the queue cookie, database files, and the devnet private key.
 - Celery 5.6.3 is pinned by sdist hash and is not installed. Goal 14 imports it.
 - The FFmpeg that ran is Ubuntu's GPL `7:6.1.1-3ubuntu5` build. Goal 14 records the isolated worker build. DEC-006 still blocks a project `LICENSE` file.
 - Devnet keys exist only under `.local/workspaces/dev/devnet/` on this VM. Do not copy that directory into another agent. Goal 05 generates or uses a fresh identity per workspace.
 - `make devnet-up` stays failed until Goal 05. There is no chain binary.
 - Full-stack, browser-product, network-fault, and load checks stay BLOCKED for the runners named in `docs/progress.md`.
-- The playbook Medium effort was not selected. Goal 03's acceptance of `grok-4.7-high-fast` does not apply here.
+- The model that ran is `grok-4.7-high-fast`. Max ruled that the playbook model requirement is not a blocker.
+
+## Round 2
+
+Review FIX on `993c34bbc37c7fb42132db8b578a75b6f2341f59`. The commands below ran after the script fixes, on the workspace `dev`, starting from `reset --confirm dev`.
+
+```text
+COMMAND bash scripts/env/reset.sh --workspace dev --confirm dev
+env-reset: deleted disposable workspace dev at /workspace/.local/workspaces/dev
+EXIT:0
+
+COMMAND bash scripts/env/start.sh
+env-start: wrote new credentials at /workspace/.local/workspaces/dev/credentials.env (mode 0600). The password is not printed.
+env-start: initialising a new postgres data directory
+env-start: postgres is ready on 127.0.0.1:5432
+env-start: created database svn_dev
+env-start: rabbitmq is ready on 127.0.0.1:5672
+env-start: workspace /workspace/.local/workspaces/dev is ready. svn_db is the database superuser. Chain files were not changed.
+EXIT:0
+
+COMMAND bash scripts/env/smoke.sh
+env-smoke: postgres query
+SELECT 1 returned 1
+env-smoke: amqp round trip matched
+env-smoke: ffmpeg wrote /workspace/.local/workspaces/dev/ffmpeg/tone.wav
+env-smoke: development storage is present at /workspace/.local/workspaces/dev/storage
+env-smoke: smoke passed
+EXIT:0
+
+COMMAND bash scripts/env/prove-restart.sh
+env-prove-restart: restart kept the database marker, the durable message, and the storage directory
+EXIT:0
+
+COMMAND bash scripts/env/prove-failures.sh
+env-prove-failures: busy port failed clearly (exit 1)
+env-prove-failures: wrong password failed clearly (exit 2)
+env-prove-failures: missing credentials failed clearly (exit 2)
+env-prove-failures: taken postgres port failed clearly (exit 1)
+env-prove-failures: taken rabbitmq port failed clearly (exit 1)
+env-prove-failures: failure proofs passed
+EXIT:0
+```
+
+`storage/marker` still contained `goal04-storage` after restart. `storage/smoke.txt` contained `goal04-smoke`. Listeners after the sequence were `127.0.0.1:5432`, `127.0.0.1:5672`, `127.0.0.1:4369`, and `127.0.0.1:25672`.
+
+`svn_db` is the cluster superuser created by `initdb --username`. Later goals need a separate application role.
+
+Queue and database clients read passwords from mode `0600` files (`amqp.auth`, `pgpass`). `start.sh` does not pass the queue password to `rabbitmqctl`. The broker learns it from `rabbitmq.conf` on first boot. `ps` can still show `PGPASSFILE` and `--authfile` paths. It does not show the password in those commands.
+
+```text
+COMMAND curl -sS -m 5 -D - http://127.0.0.1:2375/version
+HTTP/1.1 200 OK
+Api-Version: 1.52
+Content-Type: application/json
+Docker-Experimental: false
+Ostype: linux
+Server: Docker/29.1.4 (linux)
+Date: Sat, 31 Oct 2026 20:28:48 GMT
+Content-Length: 805
+
+{"Platform":{"Name":"Docker Engine - Community"},"Version":"29.1.4","ApiVersion":"1.52","MinAPIVersion":"1.44","Os":"linux","Arch":"amd64","Components":[{"Name":"Engine","Version":"29.1.4","Details":{"ApiVersion":"1.52","Arch":"amd64","BuildTime":"2026-01-08T19:56:47.000000000+00:00","Experimental":"false","GitCommit":"08440b6","GoVersion":"go1.25.5","KernelVersion":"6.12.94+","MinAPIVersion":"1.44","Os":"linux"}},{"Name":"containerd","Version":"v2.2.5","Details":{"GitCommit":"e53c7c1516c3b2bff98eb76f1f4117477e6f4e66"}},{"Name":"runc","Version":"1.3.6","Details":{"GitCommit":"v1.3.6-0-g491b69ba"}},{"Name":"docker-init","Version":"0.19.0","Details":{"GitCommit":"de40ad0"}}],"GitCommit":"08440b6","GoVersion":"go1.25.5","KernelVersion":"6.12.94+","BuildTime":"2026-01-08T19:56:47.000000000+00:00"}
+EXIT:0
+```
+
+`DOCKER_HOST` was unset. The body names Engine 29.1.4, containerd v2.2.5, runc 1.3.6. This probe only sent GET `/version`. No container was created. `docker` and `podman` are still not on `PATH`. `docker.io` `29.1.3-0ubuntu3~24.04.2` is the apt candidate and was not installed. Installing it, or driving the daemon on port 2375, needs Max's approval. Compose execution stays BLOCKED.
+
+The compose volume is `/var/lib/postgresql`, because the pinned PostgreSQL 18.6 image uses `PGDATA=/var/lib/postgresql/18/docker` and exits 1 if `/var/lib/postgresql/data` is the mount. The image digests are linux/amd64 manifests. The ffmpeg and amqp-tools sha256 lines in `deployments/pins/checksums.txt` are hashes of the downloaded debs. They were not compared to a signed Ubuntu Release file. apt checked those packages when it installed them.

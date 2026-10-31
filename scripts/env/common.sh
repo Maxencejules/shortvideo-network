@@ -111,27 +111,80 @@ svn_credential_file() {
 
 svn_load_credentials() {
   local file="$1"
+  local line key value
   if [[ ! -f "${file}" ]]; then
     echo "env: credentials file is missing: ${file}" >&2
     echo "env: refusing to use a default or shared password" >&2
     return 2
   fi
-  set -a
-  # shellcheck disable=SC1090
-  source "${file}"
-  set +a
-  : "${SVN_DB_USER:?credentials file has no SVN_DB_USER}"
-  : "${SVN_DB_PASSWORD:?credentials file has no SVN_DB_PASSWORD}"
-  : "${SVN_DB_NAME:?credentials file has no SVN_DB_NAME}"
-  : "${SVN_QUEUE_USER:?credentials file has no SVN_QUEUE_USER}"
-  : "${SVN_QUEUE_PASSWORD:?credentials file has no SVN_QUEUE_PASSWORD}"
-  : "${SVN_POSTGRES_PORT:?credentials file has no SVN_POSTGRES_PORT}"
-  : "${SVN_RABBITMQ_PORT:?credentials file has no SVN_RABBITMQ_PORT}"
+  # Parse KEY=VALUE. Do not source the file, so a value cannot run a command.
+  SVN_DB_USER=""
+  SVN_DB_PASSWORD=""
+  SVN_DB_NAME=""
+  SVN_QUEUE_USER=""
+  SVN_QUEUE_PASSWORD=""
+  SVN_POSTGRES_PORT=""
+  SVN_RABBITMQ_PORT=""
+  SVN_RABBITMQ_DIST_PORT=""
+  SVN_EPMD_PORT=""
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    [[ -z "${line}" || "${line}" == \#* ]] && continue
+    if [[ ! "${line}" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+      echo "env: credentials line is not KEY=VALUE" >&2
+      return 2
+    fi
+    key="${BASH_REMATCH[1]}"
+    value="${BASH_REMATCH[2]}"
+    case "${key}" in
+      SVN_DB_USER|SVN_DB_PASSWORD|SVN_DB_NAME|SVN_QUEUE_USER|SVN_QUEUE_PASSWORD|SVN_POSTGRES_PORT|SVN_RABBITMQ_PORT|SVN_RABBITMQ_DIST_PORT|SVN_EPMD_PORT)
+        printf -v "${key}" '%s' "${value}"
+        export "${key}"
+        ;;
+      *)
+        echo "env: unexpected credentials key ${key}" >&2
+        return 2
+        ;;
+    esac
+  done < "${file}"
+  [[ -n "${SVN_DB_USER}" ]] || die "credentials file has no SVN_DB_USER" 2
+  [[ -n "${SVN_DB_PASSWORD}" ]] || die "credentials file has no SVN_DB_PASSWORD" 2
+  [[ -n "${SVN_DB_NAME}" ]] || die "credentials file has no SVN_DB_NAME" 2
+  [[ -n "${SVN_QUEUE_USER}" ]] || die "credentials file has no SVN_QUEUE_USER" 2
+  [[ -n "${SVN_QUEUE_PASSWORD}" ]] || die "credentials file has no SVN_QUEUE_PASSWORD" 2
+  [[ -n "${SVN_POSTGRES_PORT}" ]] || die "credentials file has no SVN_POSTGRES_PORT" 2
+  [[ -n "${SVN_RABBITMQ_PORT}" ]] || die "credentials file has no SVN_RABBITMQ_PORT" 2
   [[ "${SVN_DB_USER}" =~ ^[a-z][a-z0-9_]{0,30}$ ]] || die "database user is not a safe identifier" 2
   [[ "${SVN_DB_NAME}" =~ ^[a-z][a-z0-9_]{0,30}$ ]] || die "database name is not a safe identifier" 2
   [[ "${SVN_QUEUE_USER}" =~ ^[a-z][a-z0-9_]{0,30}$ ]] || die "queue user is not a safe identifier" 2
   [[ "${SVN_POSTGRES_PORT}" =~ ^[0-9]+$ ]] || die "postgres port is not numeric" 2
   [[ "${SVN_RABBITMQ_PORT}" =~ ^[0-9]+$ ]] || die "rabbitmq port is not numeric" 2
+}
+
+# svn_db is the database superuser created by initdb. Later goals need a
+# separate application role. Generated passwords are hex, so they contain
+# no colon or backslash and need no pgpass escaping.
+svn_prepare_client_files() {
+  local ws="$1"
+  local pgpass="${ws}/pgpass"
+  local auth="${ws}/amqp.auth"
+  umask 077
+  printf '%s\n' "127.0.0.1:${SVN_POSTGRES_PORT}:*:${SVN_DB_USER}:${SVN_DB_PASSWORD}" > "${pgpass}"
+  printf 'username:%s\npassword:%s\n' "${SVN_QUEUE_USER}" "${SVN_QUEUE_PASSWORD}" > "${auth}"
+  chmod 600 "${pgpass}" "${auth}"
+  export PGPASSFILE="${pgpass}"
+  export SVN_AUTHFILE="${auth}"
+  unset PGPASSWORD
+}
+
+svn_ensure_storage() {
+  local ws="$1"
+  mkdir -p "${ws}/storage"
+  if [[ ! -f "${ws}/.svn-workspace" ]]; then
+    printf 'svn-dev-workspace\n' > "${ws}/.svn-workspace"
+  fi
+  if [[ ! -f "${ws}/storage/marker" ]]; then
+    printf 'goal04-storage\n' > "${ws}/storage/marker"
+  fi
 }
 
 svn_generate_credentials() {
@@ -203,7 +256,7 @@ svn_rabbit_running() {
 svn_psql() {
   local ws="$1"
   shift
-  PGPASSWORD="${SVN_DB_PASSWORD}" "${SVN_PG_BIN}/psql" \
+  "${SVN_PG_BIN}/psql" \
     -h 127.0.0.1 \
     -p "${SVN_POSTGRES_PORT}" \
     -U "${SVN_DB_USER}" \
@@ -213,8 +266,13 @@ svn_psql() {
     "$@"
 }
 
-svn_amqp_url() {
-  # Passwords from this profile are hex, so they need no URL encoding.
-  printf 'amqp://%s:%s@127.0.0.1:%s/%%2F\n' \
-    "${SVN_QUEUE_USER}" "${SVN_QUEUE_PASSWORD}" "${SVN_RABBITMQ_PORT}"
+svn_amqp() {
+  local tool="$1"
+  shift
+  "${tool}" \
+    --server=127.0.0.1 \
+    --port="${SVN_RABBITMQ_PORT}" \
+    --vhost=/ \
+    --authfile="${SVN_AUTHFILE}" \
+    "$@"
 }

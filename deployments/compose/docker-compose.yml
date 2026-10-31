@@ -1,6 +1,7 @@
 # Full Linux profile for a host that has a container runtime.
 # Image digests were read from registry-1.docker.io on 2026-10-31.
-# linux/amd64 manifest digests, not the multi-arch index.
+# linux/amd64 manifest digests only. They are not the multi-arch index.
+# A host of another architecture cannot use these digests as-is.
 # This file has no passwords. scripts/env/compose.sh supplies them from the
 # disposable workspace and refuses to start when docker is unavailable.
 services:
@@ -13,7 +14,9 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - svn_dev_postgres:/var/lib/postgresql/data
+      # PG 18 keeps PGDATA at /var/lib/postgresql/18/docker. Mounting
+      # /var/lib/postgresql/data makes the entrypoint exit 1.
+      - svn_dev_postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s

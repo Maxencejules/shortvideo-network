@@ -10,7 +10,7 @@ ifeq ($(wildcard $(PY)),)
 PY := python3
 endif
 
-.PHONY: install fmt lint typecheck proto proto-check test unit-python unit-node unit-go contract sbom secrets policy build devnet-up devnet-down smoke fault release-check check env-diagnose env-install env-start env-stop env-reset env-smoke env-devnet-keys env-compose
+.PHONY: install fmt lint typecheck proto proto-check test unit-python unit-node unit-go contract sbom secrets policy build devnet-up devnet-down smoke fault release-check check env-diagnose env-install env-start env-stop env-reset env-smoke env-devnet-keys env-compose env-prove-restart env-prove-failures
 
 install:
 	python3 -m venv $(ROOT)/.venv
@@ -108,6 +108,12 @@ env-devnet-keys:
 
 env-compose:
 	bash scripts/env/compose.sh
+
+env-prove-restart:
+	bash scripts/env/prove-restart.sh
+
+env-prove-failures:
+	bash scripts/env/prove-failures.sh
 
 check: fmt lint typecheck proto-check sbom test contract build
 	@echo "unimplemented targets stay failed on purpose"

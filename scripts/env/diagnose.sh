@@ -70,6 +70,19 @@ else
 fi
 report docker docker version
 report podman podman version
+if [[ -n "${DOCKER_HOST:-}" ]]; then
+  echo "DOCKER_HOST=${DOCKER_HOST}"
+else
+  echo "DOCKER_HOST=unset"
+fi
+echo "probe http://127.0.0.1:2375/version"
+set +e
+probe_out="$(curl -sS -m 5 -D - http://127.0.0.1:2375/version 2>&1)"
+probe_status=$?
+set -e
+printf '%s\n' "${probe_out}"
+echo "curl_exit:${probe_status}"
+echo "read-only probe. diagnose does not run containers and does not install docker."
 if command -v ss >/dev/null 2>&1; then
   echo "ss: present"
 else

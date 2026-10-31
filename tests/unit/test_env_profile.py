@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import socket
 import stat
 import subprocess
@@ -108,6 +109,21 @@ def test_reset_requires_the_workspace_name(tmp_path: Path) -> None:
     )
     assert mismatch.returncode != 0
     assert (workspace / "marker").is_file()
+    unmarked = _run(
+        [
+            "bash",
+            "scripts/env/reset.sh",
+            "--workspace",
+            "disposable",
+            "--confirm",
+            "disposable",
+        ],
+        env,
+    )
+    assert unmarked.returncode != 0
+    assert "missing .svn-workspace" in unmarked.stderr
+    assert (workspace / "marker").is_file()
+    (workspace / ".svn-workspace").write_text("svn-dev-workspace\n", encoding="utf-8")
     escaped = _run(
         ["bash", "scripts/env/reset.sh", "--workspace", "..", "--confirm", ".."],
         env,
@@ -183,9 +199,42 @@ def test_diagnose_reports_without_requiring_services() -> None:
     assert "Linux" in completed.stdout
 
 
-def test_compose_is_blocked_when_docker_is_absent() -> None:
-    if subprocess.run(["bash", "-lc", "command -v docker"], check=False).returncode == 0:
-        return
-    completed = _run(["bash", "scripts/env/compose.sh"], {})
-    assert completed.returncode == 2
+def test_compose_is_blocked_when_docker_is_absent(tmp_path: Path) -> None:
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    dirname = shutil.which("dirname")
+    assert dirname is not None
+    os.symlink(dirname, bindir / "dirname")
+    completed = subprocess.run(
+        ["/bin/bash", "scripts/env/compose.sh"],
+        cwd=ROOT,
+        env={"PATH": str(bindir), "HOME": str(tmp_path)},
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 2, completed.stderr
     assert "BLOCKED" in completed.stderr
+
+
+def test_credentials_parser_does_not_execute_shell(tmp_path: Path) -> None:
+    side = tmp_path / "pwned"
+    cred = tmp_path / "credentials.env"
+    cred.write_text(
+        "\n".join(
+            [
+                "SVN_DB_USER=svn_db",
+                f"SVN_DB_PASSWORD=$(touch {side})",
+                "SVN_DB_NAME=svn_dev",
+                "SVN_QUEUE_USER=svn_queue",
+                "SVN_QUEUE_PASSWORD=abc",
+                "SVN_POSTGRES_PORT=5432",
+                "SVN_RABBITMQ_PORT=5672",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    completed = _run(["bash", "scripts/env/require-credentials.sh", str(cred)], {})
+    assert completed.returncode == 0, completed.stderr
+    assert not side.exists()

@@ -6,7 +6,7 @@ source "$(dirname "$0")/common.sh"
 SVN_LOG_PREFIX="env-compose"
 
 if ! command -v docker >/dev/null 2>&1; then
-  die "docker is not installed. The compose profile is BLOCKED on this machine. Use scripts/env/start.sh for local PostgreSQL and RabbitMQ. Do not substitute another database." 2
+  die "docker is not on PATH. The compose profile is BLOCKED. This script does not install docker and does not talk to a daemon on 127.0.0.1:2375. Installing a container runtime needs Max's approval. Use scripts/env/start.sh for local PostgreSQL and RabbitMQ." 2
 fi
 if ! docker info >/dev/null 2>&1; then
   die "docker is installed but the daemon is not usable. The compose profile is BLOCKED on this machine." 2

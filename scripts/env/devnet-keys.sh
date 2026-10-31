@@ -13,7 +13,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --from|--clone|--clone-from)
-      die "refusing to clone a validator identity into this workspace" 2
+      die "refusing to clone a validator identity into this workspace. Exit 2. Pass only --workspace. --from and --clone are rejected so one task cannot copy another task's key." 2
       ;;
     *)
       die "unknown argument: $1" 2
@@ -29,9 +29,9 @@ mkdir -p "${ws}/devnet"
 key="${ws}/devnet/validator.key"
 pub="${ws}/devnet/validator.pub"
 if [[ -e "${key}" || -e "${pub}" ]]; then
-  die "refusing to replace the devnet identity at ${ws}/devnet" 2
+  die "refusing to replace the devnet identity at ${ws}/devnet. Exit 2. An existing identity is kept and is not regenerated." 2
 fi
-command -v openssl >/dev/null || die "openssl is not installed" 2
+command -v openssl >/dev/null || die "openssl is not installed, so an ed25519 identity cannot be generated. Exit 2." 2
 umask 077
 openssl genpkey -algorithm ED25519 -out "${key}"
 chmod 600 "${key}"

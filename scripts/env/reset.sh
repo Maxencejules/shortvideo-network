@@ -47,6 +47,13 @@ if [[ ! -d "${ws}" ]]; then
   say "workspace ${ws} is already absent"
   exit 0
 fi
+if [[ ! -f "${ws}/.svn-workspace" ]]; then
+  die "refusing to delete ${ws}: missing .svn-workspace. reset only removes a workspace created by start.sh" 2
+fi
+marker="$(tr -d '[:space:]' < "${ws}/.svn-workspace")"
+if [[ "${marker}" != "svn-dev-workspace" ]]; then
+  die "refusing to delete ${ws}: .svn-workspace is not the start.sh marker" 2
+fi
 
 SVN_WORKSPACE="${workspace}" bash "${_ENV_DIR}/stop.sh"
 rm -rf "${ws}"

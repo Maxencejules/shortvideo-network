@@ -5,6 +5,9 @@
 # celery 5.6.3 sdist from PyPI. Goal 04 records the pin and does not install the package.
 177006bd2054b882e9f01be59abd8529e88879ef50d7918a7050c5a9f4e12912  celery-5.6.3.tar.gz
 # Ubuntu 24.04 noble ffmpeg deb, version 7:6.1.1-3ubuntu5.
+# This sha256 is the hash of the bytes downloaded here. It was not compared
+# to a signed Ubuntu Release file. apt checked the package when it installed it.
 1a23baace5f2688a47e28119aedae6993cd638e6279a7227dfc52d9a337a1c17  ffmpeg_7:6.1.1-3ubuntu5_amd64.deb
 # Ubuntu 24.04 noble amqp-tools deb, version 0.11.0-1ubuntu0.2.
+# Same limit as the ffmpeg line: a local hash, not a signed Ubuntu checksum.
 0915bbfc3998bec2986d254555c3eb644eb96fc814d710cdb8314e5be49093f0  amqp-tools_0.11.0-1ubuntu0.2_amd64.deb

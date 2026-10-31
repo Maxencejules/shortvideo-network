@@ -11,7 +11,7 @@ if [[ $# -ne 0 ]]; then
 fi
 
 ws="$(svn_workspace_path)" || exit $?
-mkdir -p "${ws}/postgres/run" "${ws}/rabbitmq" "${ws}/home" "${ws}/ffmpeg"
+mkdir -p "${ws}/postgres/run" "${ws}/rabbitmq" "${ws}/home" "${ws}/ffmpeg" "${ws}/storage"
 cred="$(svn_credential_file "${ws}")"
 
 if [[ -f "${ws}/postgres/data/PG_VERSION" && ! -f "${cred}" ]]; then
@@ -25,6 +25,8 @@ if [[ ! -f "${cred}" ]]; then
   say "wrote new credentials at ${cred} (mode 0600). The password is not printed."
 fi
 svn_load_credentials "${cred}"
+svn_prepare_client_files "${ws}"
+svn_ensure_storage "${ws}"
 
 if svn_postgres_running "${ws}" && svn_rabbit_running "${ws}"; then
   say "postgres and rabbitmq are already running for ${ws}. State was not regenerated."
@@ -56,7 +58,7 @@ if ! svn_postgres_running "${ws}"; then
     say "postgres data directory already exists; not running initdb"
   fi
   "${SVN_PG_BIN}/pg_ctl" -D "${ws}/postgres/data" -l "${ws}/postgres/postgres.log" -w -t 60 start \
-    -o "-c listen_addresses=127.0.0.1 -c port=${SVN_POSTGRES_PORT} -c unix_socket_directories=${ws}/postgres/run"
+    -o "-c listen_addresses=127.0.0.1 -c port=${SVN_POSTGRES_PORT} -c unix_socket_directories='${ws}/postgres/run'"
   tries=0
   until "${SVN_PG_BIN}/pg_isready" -h 127.0.0.1 -p "${SVN_POSTGRES_PORT}" -q; do
     tries=$((tries + 1))
@@ -69,11 +71,11 @@ if ! svn_postgres_running "${ws}"; then
   say "postgres is ready on 127.0.0.1:${SVN_POSTGRES_PORT}"
 fi
 
-exists="$(PGPASSWORD="${SVN_DB_PASSWORD}" "${SVN_PG_BIN}/psql" \
+exists="$("${SVN_PG_BIN}/psql" \
   -h 127.0.0.1 -p "${SVN_POSTGRES_PORT}" -U "${SVN_DB_USER}" -d postgres \
   -v ON_ERROR_STOP=1 -X -tAc "SELECT 1 FROM pg_database WHERE datname='${SVN_DB_NAME}'")"
 if [[ "$(echo "${exists}" | tr -d '[:space:]')" != "1" ]]; then
-  PGPASSWORD="${SVN_DB_PASSWORD}" "${SVN_PG_BIN}/createdb" \
+  "${SVN_PG_BIN}/createdb" \
     -h 127.0.0.1 -p "${SVN_POSTGRES_PORT}" -U "${SVN_DB_USER}" "${SVN_DB_NAME}"
   say "created database ${SVN_DB_NAME}"
 else
@@ -102,7 +104,7 @@ EOF
   say "starting rabbitmq"
   svn_with_rabbit_env "${ws}" rabbitmq-server -detached
   tries=0
-  until svn_rabbit_running "${ws}"; do
+  until svn_rabbit_running "${ws}" && python3 -c 'import socket,sys; s=socket.create_connection(("127.0.0.1", int(sys.argv[1])), 1); s.close()' "${SVN_RABBITMQ_PORT}"; do
     tries=$((tries + 1))
     if [[ "${tries}" -ge 90 ]]; then
       log_file="$(ls -1 "${ws}/rabbitmq/log"/*.log 2>/dev/null | head -n 1 || true)"
@@ -116,14 +118,18 @@ EOF
   say "rabbitmq is ready on 127.0.0.1:${SVN_RABBITMQ_PORT}"
 fi
 
-if svn_with_rabbit_env "${ws}" rabbitmqctl list_users | awk 'NR > 1 { print $1 }' | grep -qx "${SVN_QUEUE_USER}"; then
-  svn_with_rabbit_env "${ws}" rabbitmqctl change_password "${SVN_QUEUE_USER}" "${SVN_QUEUE_PASSWORD}"
-else
-  svn_with_rabbit_env "${ws}" rabbitmqctl add_user "${SVN_QUEUE_USER}" "${SVN_QUEUE_PASSWORD}"
-fi
+tries=0
+until svn_amqp amqp-declare-queue --queue=svn-auth-probe --durable >/dev/null 2>&1; do
+  tries=$((tries + 1))
+  if [[ "${tries}" -ge 20 ]]; then
+    svn_amqp amqp-declare-queue --queue=svn-auth-probe --durable >&2 || true
+    die "queue login failed. Refusing to pass the password on the rabbitmqctl command line. Reset this workspace if its queue user was created with a different password."
+  fi
+  sleep 1
+done
 svn_with_rabbit_env "${ws}" rabbitmqctl set_permissions -p / "${SVN_QUEUE_USER}" ".*" ".*" ".*"
 if svn_with_rabbit_env "${ws}" rabbitmqctl list_users | awk 'NR > 1 { print $1 }' | grep -qx guest; then
   svn_with_rabbit_env "${ws}" rabbitmqctl delete_user guest
   say "removed the default broker user"
 fi
-say "workspace ${ws} is ready. Chain files were not changed."
+say "workspace ${ws} is ready. svn_db is the database superuser. Chain files were not changed."
