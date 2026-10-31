@@ -138,7 +138,9 @@ Proofs in this round ran on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. Eac
 | Docker context | IMPLEMENTED | `scripts/devnet/compose-up.sh` and the container proof refuse a set `DOCKER_HOST`, a non-unix endpoint, and port 2375. The container log records `DOCKER_HOST=<unset>` and `unix:///var/run/docker.sock`. |
 | Docker bridge | BLOCKED | Unchanged. Host networking needs Max's approval at merge. |
 
-Process heights on that tree: stop at 3, restart at 4, one-down through 11, two-down held at 11, recovery at 15. Shared app hash `8B4D86E7FA70D5808129193EA913B4DF9544CE83F4776AB0ADD9B6EC98B99B6E`.
+Process heights on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`: stop at 3, restart at 4, one-down through 11, two-down held at 11, recovery at 15. Shared app hash `8B4D86E7FA70D5808129193EA913B4DF9544CE83F4776AB0ADD9B6EC98B99B6E`.
+
+Actions run `41249097464` passed the devnet job and failed the go job: `Agreed` rejected height 4 against 5 when the app hash matched. The stop threshold is now the greatest of those heights. [devnet-process-r2c.txt](logs/goal-05/devnet-process-r2c.txt) on tree `5131629633ec1c5b86dd7243754020e5829bdd33` exited 0. Restart reached 4 from a stop at 3, and recovery reached 15. App hash `5CBE3D352BF07AAA9CB1D28F68D6FBC9F45159290308B0A520AE15121C3CAE8F`.
 
 Container heights: start 4, restart 5, one-down through 11, stall 12, recovery 13. Shared app hash `9A8DEE600967031F7D61817CBDD8A3F46BA1805C8D308E67F48111BE844D8C68`.
 
