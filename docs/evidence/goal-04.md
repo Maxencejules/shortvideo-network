@@ -24,13 +24,15 @@ This file is part of the commit that contains it. The checkers do not read this 
 
 ## Authorship
 
-`git config user.name` is `Maxence Jules`. `git config user.email` is `Maxencejules@users.noreply.github.com`. The log command required before push is:
+`git config user.name` is `Maxence Jules`. `git config user.email` is `Maxencejules@users.noreply.github.com`.
 
 ```text
-git log --format='%an <%ae> | %cn <%ce> | %(trailers)'
+COMMAND git log --format='%an <%ae> | %cn <%ce> | %(trailers)'
+Maxence Jules <Maxencejules@users.noreply.github.com> | Maxence Jules <Maxencejules@users.noreply.github.com> | Tested-tree: 133e25e067f19ddd78440cc15515e6d0cde1c572
+
 ```
 
-The output for the commits on this branch is appended in the commit that records it. The only trailer used is `Tested-tree`.
+That line is `058f50333d5d9bf3ae5365faac66718654d634e4`, tree `133e25e067f19ddd78440cc15515e6d0cde1c572`. A platform hook appended `Co-authored-by` on the first commit attempt. That commit was replaced before any push. The published commit does not carry `Co-authored-by`. The only trailer is `Tested-tree`. The commit that inserts this paragraph uses the same author and committer.
 
 ## Runtime
 
