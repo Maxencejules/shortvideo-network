@@ -19,7 +19,7 @@ No container image is built. No image digest is recorded because inventing one w
 | Go | 1.26.10, language 1.26.5 | https://go.dev/dl/go1.26.10.linux-amd64.tar.gz sha256 `ccfe7ae822d2c2f41f4fe7c956199967a4dac22d0ee0d2b2bfdb440aab3b20c5` | BSD-3-Clause, https://go.dev/LICENSE | Cosmos SDK v0.55.0 `go.mod` says `go 1.26.5`. 1.26.10 is the newest stable 1.26 patch on the go.dev JSON feed checked the same day. The chain is not built with the system Go 1.22.2. |
 | Cosmos SDK | v0.55.0 | https://github.com/cosmos/cosmos-sdk/releases/tag/v0.55.0 and https://docs.cosmos.network/sdk/latest/release-family | Apache-2.0, https://github.com/cosmos/cosmos-sdk/blob/v0.55.0/LICENSE | 2026.1 family on the current release-family page is SDK 0.55.x. v0.55.0 was the only `v0.55` tag on 2026-10-31. |
 | CometBFT | v0.40.0 | https://github.com/cometbft/cometbft/releases/tag/v0.40.0 | Apache-2.0, https://github.com/cometbft/cometbft/blob/v0.40.0/LICENSE | The same family lists CometBFT 0.40.x. SDK v0.55.0 `go.mod` requires `github.com/cometbft/cometbft v0.40.0`. v0.40.0 was the only `v0.40` tag. CometBFT v1.x is retracted and is not selected. |
-| Python | 3.12.3 | The interpreter used in this workspace, Ubuntu package. CI asks `actions/setup-python` for 3.12.3. | PSF licence, https://docs.python.org/3/license.html | Matches the Goal 02 checker runtime. |
+| Python | 3.12.3 | https://www.python.org/downloads/release/python-3123/ | PSF licence, https://docs.python.org/3/license.html | CPython 3.12.3. CI installs that release with `actions/setup-python`, not the image's distro package. The workspace observed 3.12.3. |
 | Node.js | 22.23.4 | https://nodejs.org/dist/index.json (LTS line Jod, 2026-10-20) | MIT, https://github.com/nodejs/node/blob/main/LICENSE | Current Node 22 release on that index the day of the pin. |
 | npm | 10.9.9 | Ships with Node.js 22.23.4 | Artistic License 2.0, https://github.com/npm/cli | One package manager. pnpm and yarn are installed on the workstation and are not used. |
 | protoc | 36.2 | https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-x86_64.zip sha256 `121f6c7afe1d4d0e3ea6aab9432038599250134cbf4474cb1167d2c7decd4278` | BSD-3-Clause, https://github.com/protocolbuffers/protobuf/blob/v36.2/LICENSE | Latest stable protobuf release that was not a release candidate on 2026-10-31. |
@@ -72,7 +72,7 @@ Checked with `gh api repos/<action>/commits/<tag>` on 2026-10-31. Each tag resol
 
 | Action | Tag | Commit |
 | --- | --- | --- |
-| actions/checkout | v4.4.0 | `11d5960a326750d5838078e36cf38b85af677262` |
+| actions/checkout | v5.1.0 | `fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09` |
 | actions/setup-go | v6.5.0 | `924ae3a1cded613372ab5595356fb5720e22ba16` |
 | actions/setup-node | v6.5.0 | `249970729cb0ef3589644e2896645e5dc5ba9c38` |
 | actions/setup-python | v6.3.0 | `ece7cb06caefa5fff74198d8649806c4678c61a1` |

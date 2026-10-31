@@ -47,26 +47,54 @@ def run_python() -> int:
     return 0
 
 
+NODE_FILE_SUFFIXES = (".mjs", ".cjs", ".js", ".mts", ".cts", ".ts")
+
+
+def node_test_files() -> list[Path]:
+    directory = ROOT / "apps" / "web" / "test"
+    files = [
+        path for path in directory.glob("*") if path.is_file() and path.name.endswith(".test.mjs")
+    ]
+    return sorted(files)
+
+
+def real_node_subtests(tap: str) -> list[str]:
+    """Return test() names. A file with no tests is reported as one passing file."""
+    names = re.findall(r"^# Subtest: (.+)$", tap, re.MULTILINE)
+    real: list[str] = []
+    for name in names:
+        if name.endswith(NODE_FILE_SUFFIXES) or Path(name).name.endswith(NODE_FILE_SUFFIXES):
+            continue
+        real.append(name)
+    return real
+
+
 def run_node() -> int:
-    completed = subprocess.run(
-        ["npm", "test", "--workspace", "apps/web"],
-        cwd=ROOT,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    sys.stdout.write(completed.stdout)
-    sys.stderr.write(completed.stderr)
-    output = completed.stdout + completed.stderr
-    if completed.returncode != 0:
-        return completed.returncode
-    counts = re.findall(r"^# tests (\d+)$", output, re.MULTILINE)
-    if not counts or int(counts[-1]) < 1:
-        print("node test reported no tests; an empty suite is not verification")
+    files = node_test_files()
+    if not files:
+        print("node test files missing; an empty suite is not verification")
         return 1
-    if re.search(r"^# fail 0$", output, re.MULTILINE) is None:
-        print("node test did not report zero failures")
-        return 1
+    for path in files:
+        completed = subprocess.run(
+            ["node", "--test", "--test-reporter", "tap", str(path)],
+            cwd=ROOT,
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+        sys.stdout.write(completed.stdout)
+        sys.stderr.write(completed.stderr)
+        output = completed.stdout + completed.stderr
+        real = real_node_subtests(output)
+        if completed.returncode != 0:
+            print(f"{path.relative_to(ROOT)}: node tests failed")
+            return completed.returncode
+        if not real:
+            print(f"{path.relative_to(ROOT)}: zero tests; an empty file is not verification")
+            return 1
+        if re.search(r"^# fail 0$", output, re.MULTILINE) is None:
+            print(f"{path.relative_to(ROOT)}: node test did not report zero failures")
+            return 1
     return 0
 
 

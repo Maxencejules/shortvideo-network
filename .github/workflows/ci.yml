@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
       - name: Set up Python
@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
       - name: Set up Node
@@ -66,7 +66,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
       - name: Set up Go
@@ -79,11 +79,7 @@ jobs:
       - name: Format, generate, and test
         run: |
           export PATH="${GITHUB_WORKSPACE}/.toolchains/bin:${PATH}"
-          dirty="$(gofmt -l chain/app chain/tools agents/provider proto/check proto/tools)"
-          if [ -n "${dirty}" ]; then
-            echo "${dirty}"
-            exit 1
-          fi
+          bash scripts/gofmt_check.sh
           bash scripts/gen_proto.sh
           untracked="$(git ls-files --others --exclude-standard -- proto/svn proto/gen/python)"
           if [ -n "${untracked}" ]; then
@@ -98,7 +94,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
       - name: Set up Python

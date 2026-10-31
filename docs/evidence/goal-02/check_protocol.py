@@ -1354,6 +1354,34 @@ def pin_self_test() -> list[str]:
         entry="op_audit",
     ):
         errors.append("comment flagged as down read")
+    planted_forms = {
+        "const key": 'DOWN_FIELD = "down"\n\ndef op_audit(state, step):\n    return state[DOWN_FIELD]\n',
+        "setdefault": 'def op_audit(state, step):\n    return state.setdefault("down", [])\n',
+        "dict get": 'def op_audit(state, step):\n    return dict.get(state, "down")\n',
+        "items": "def op_audit(state, step):\n    for key, value in state.items():\n        return key\n",
+        "module alias": (
+            "def helper(state):\n"
+            '    return state.get("down")\n'
+            "_alias = helper\n"
+            "def op_audit(state, step):\n"
+            "    return _alias(state)\n"
+        ),
+        "f-string": 'def op_audit(state, step):\n    return state[f"down"]\n',
+        "membership": 'def op_audit(state, step):\n    return "down" in state\n',
+    }
+    for label, source in planted_forms.items():
+        if not handler_reads_down(source, entry="op_audit"):
+            errors.append(f"planted {label} passed")
+    if handler_reads_down(
+        'def op_audit(state, step):\n    return state["offers"].items()\n',
+        entry="op_audit",
+    ):
+        errors.append("nested items flagged")
+    if handler_reads_down(
+        'def op_audit(state, step):\n    return "up" in state\n',
+        entry="op_audit",
+    ):
+        errors.append("other membership flagged")
     if handler_down_errors():
         errors.append("live handlers read down")
     if name_hits(_descriptor_field("endpoint_digest"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
@@ -1592,21 +1620,38 @@ LIVENESS_CALLS = frozenset({"environment_withholds_block", "liveness_would_halt"
 DOWN_KEY = "down"
 
 
-def _string_values(tree: ast.AST) -> dict[str, set[str]]:
-    """Names assigned a string constant in this tree, including 'd'+'own'."""
-    values: dict[str, set[str]] = {}
-
-    def constant(node: ast.AST) -> str | None:
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            return node.value
-        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-            left = constant(node.left)
-            right = constant(node.right)
-            if left is None or right is None:
-                return None
-            return left + right
+def _const_str(node: ast.AST | None) -> str | None:
+    """Fold a string constant, including concatenation and f-strings."""
+    if node is None:
         return None
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = _const_str(node.left)
+        right = _const_str(node.right)
+        if left is None or right is None:
+            return None
+        return left + right
+    if isinstance(node, ast.JoinedStr):
+        parts: list[str] = []
+        for value in node.values:
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                parts.append(value.value)
+                continue
+            if isinstance(value, ast.FormattedValue):
+                inner = _const_str(value.value)
+                if inner is None:
+                    return None
+                parts.append(inner)
+                continue
+            return None
+        return "".join(parts)
+    return None
 
+
+def _assigned_strings(tree: ast.AST) -> dict[str, set[str]]:
+    """Names assigned a string constant in this tree."""
+    values: dict[str, set[str]] = {}
     for node in ast.walk(tree):
         target: ast.AST | None = None
         value: ast.AST | None = None
@@ -1617,65 +1662,156 @@ def _string_values(tree: ast.AST) -> dict[str, set[str]]:
             target = node.target
             value = node.value
         if isinstance(target, ast.Name) and value is not None:
-            text = constant(value)
+            text = _const_str(value)
             if text is not None:
                 values.setdefault(target.id, set()).add(text)
     return values
 
 
-def _is_down_key(node: ast.AST, values: dict[str, set[str]]) -> bool:
-    if isinstance(node, ast.Constant):
-        return node.value == DOWN_KEY
+def _module_strings(tree: ast.AST) -> dict[str, set[str]]:
+    values: dict[str, set[str]] = {}
+    for stmt in getattr(tree, "body", []):
+        target: ast.AST | None = None
+        value: ast.AST | None = None
+        if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1:
+            target = stmt.targets[0]
+            value = stmt.value
+        elif isinstance(stmt, ast.AnnAssign):
+            target = stmt.target
+            value = stmt.value
+        if isinstance(target, ast.Name):
+            text = _const_str(value)
+            if text is not None:
+                values.setdefault(target.id, set()).add(text)
+    return values
+
+
+def _is_down_key(
+    node: ast.AST,
+    local: dict[str, set[str]],
+    module: dict[str, set[str]],
+) -> bool:
+    text = _const_str(node)
+    if text == DOWN_KEY:
+        return True
     if isinstance(node, ast.Name):
-        return DOWN_KEY in values.get(node.id, set())
-    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-        left = node.left
-        right = node.right
-        if isinstance(left, ast.Constant) and isinstance(right, ast.Constant):
-            return f"{left.value}{right.value}" == DOWN_KEY
+        if node.id in local:
+            return DOWN_KEY in local[node.id]
+        return DOWN_KEY in module.get(node.id, set())
     return False
 
 
-def _function_aliases(tree: ast.AST, functions: dict[str, ast.AST]) -> dict[str, str]:
+def _name_aliases(tree: ast.AST, seeds: set[str]) -> dict[str, str]:
+    """Map a local or module name to a seed name, following assignment chains."""
     aliases: dict[str, str] = {}
-    for node in ast.walk(tree):
+    pending: list[tuple[str, str]] = []
+    nodes = list(getattr(tree, "body", []))
+    nodes.extend(ast.walk(tree))
+    for node in nodes:
         if not isinstance(node, ast.Assign) or len(node.targets) != 1:
             continue
         target = node.targets[0]
         if isinstance(target, ast.Name) and isinstance(node.value, ast.Name):
-            if node.value.id in functions or node.value.id in LIVENESS_CALLS:
-                aliases[target.id] = node.value.id
+            pending.append((target.id, node.value.id))
+    changed = True
+    while changed:
+        changed = False
+        for target, source in pending:
+            resolved = source
+            if source in aliases:
+                resolved = aliases[source]
+            if resolved in seeds or resolved in aliases.values():
+                if aliases.get(target) != resolved and (resolved in seeds or resolved in LIVENESS_CALLS):
+                    aliases[target] = resolved
+                    changed = True
+            elif source in seeds:
+                aliases[target] = source
+                changed = True
     return aliases
 
 
-def _direct_down_read(tree: ast.AST, functions: dict[str, ast.AST]) -> bool:
-    values = _string_values(tree)
-    aliases = _function_aliases(tree, functions)
+def _resolve_name(name: str, local: dict[str, str], module: dict[str, str]) -> str:
+    if name in local:
+        return local[name]
+    return module.get(name, name)
+
+
+def _state_names(tree: ast.AST) -> set[str]:
+    names = {"state"}
+    changed = True
+    while changed:
+        changed = False
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+                continue
+            target = node.targets[0]
+            if (
+                isinstance(target, ast.Name)
+                and isinstance(node.value, ast.Name)
+                and node.value.id in names
+                and target.id not in names
+            ):
+                names.add(target.id)
+                changed = True
+    return names
+
+
+def _direct_down_read(
+    tree: ast.AST,
+    functions: dict[str, ast.AST],
+    module_strings: dict[str, set[str]],
+    module_aliases: dict[str, str],
+    module_dicts: set[str],
+) -> bool:
+    local_strings = _assigned_strings(tree)
+    local_aliases = _name_aliases(tree, set(functions) | set(LIVENESS_CALLS) | module_dicts | {"dict"})
+    states = _state_names(tree)
     for node in ast.walk(tree):
-        if isinstance(node, ast.Subscript) and _is_down_key(node.slice, values):
+        if isinstance(node, ast.Subscript) and _is_down_key(node.slice, local_strings, module_strings):
             return True
+        if isinstance(node, ast.Compare):
+            left = node.left
+            for op, comp in zip(node.ops, node.comparators, strict=True):
+                if isinstance(op, ast.In) and _is_down_key(left, local_strings, module_strings):
+                    return True
+                left = comp
         if isinstance(node, ast.Call):
             func = node.func
-            if isinstance(func, ast.Attribute) and func.attr in {"get", "__getitem__"}:
-                if node.args and _is_down_key(node.args[0], values):
+            if isinstance(func, ast.Attribute) and func.attr in {"get", "__getitem__", "setdefault"}:
+                if node.args and _is_down_key(node.args[0], local_strings, module_strings):
+                    return True
+                receiver = func.value
+                receiver_name = receiver.id if isinstance(receiver, ast.Name) else ""
+                resolved = _resolve_name(receiver_name, local_aliases, {})
+                if resolved in module_dicts or receiver_name == "dict":
+                    if len(node.args) >= 2 and _is_down_key(
+                        node.args[1], local_strings, module_strings
+                    ):
+                        return True
+            if isinstance(func, ast.Attribute) and func.attr == "items":
+                if isinstance(func.value, ast.Name) and func.value.id in states:
                     return True
             if isinstance(func, ast.Name) and func.id == "getattr":
-                if len(node.args) >= 2 and _is_down_key(node.args[1], values):
+                if len(node.args) >= 2 and _is_down_key(node.args[1], local_strings, module_strings):
                     return True
             if isinstance(func, ast.Name):
-                called = aliases.get(func.id, func.id)
+                called = _resolve_name(func.id, local_aliases, module_aliases)
                 if called in LIVENESS_CALLS:
                     return True
     return False
 
 
-def _static_callees(tree: ast.AST, functions: dict[str, ast.AST]) -> list[str]:
-    aliases = _function_aliases(tree, functions)
+def _static_callees(
+    tree: ast.AST,
+    functions: dict[str, ast.AST],
+    module_aliases: dict[str, str],
+) -> list[str]:
+    local_aliases = _name_aliases(tree, set(functions) | set(LIVENESS_CALLS))
     found: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
             continue
-        called = aliases.get(node.func.id, node.func.id)
+        called = _resolve_name(node.func.id, local_aliases, module_aliases)
         if called in functions and called not in found:
             found.append(called)
     return found
@@ -1685,6 +1821,9 @@ def _function_reads_down(
     name: str,
     functions: dict[str, ast.AST],
     stack: set[str],
+    module_strings: dict[str, set[str]],
+    module_aliases: dict[str, str],
+    module_dicts: set[str],
 ) -> bool:
     if name in LIVENESS_CALLS:
         return True
@@ -1693,12 +1832,14 @@ def _function_reads_down(
     func = functions.get(name)
     if func is None:
         return False
-    if _direct_down_read(func, functions):
+    if _direct_down_read(func, functions, module_strings, module_aliases, module_dicts):
         return True
     stack.add(name)
     try:
-        for callee in _static_callees(func, functions):
-            if _function_reads_down(callee, functions, stack):
+        for callee in _static_callees(func, functions, module_aliases):
+            if _function_reads_down(
+                callee, functions, stack, module_strings, module_aliases, module_dicts
+            ):
                 return True
     finally:
         stack.remove(name)
@@ -1713,25 +1854,77 @@ def _module_functions(tree: ast.AST) -> dict[str, ast.AST]:
     }
 
 
+def _module_function_aliases(tree: ast.AST, functions: dict[str, ast.AST]) -> dict[str, str]:
+    """Assignment chains at module scope only. `_alias = _real` follows to a function."""
+    seeds = set(functions) | set(LIVENESS_CALLS)
+    pending: list[tuple[str, str]] = []
+    for stmt in getattr(tree, "body", []):
+        if not isinstance(stmt, ast.Assign) or len(stmt.targets) != 1:
+            continue
+        target = stmt.targets[0]
+        if isinstance(target, ast.Name) and isinstance(stmt.value, ast.Name):
+            pending.append((target.id, stmt.value.id))
+    aliases: dict[str, str] = {}
+    changed = True
+    while changed:
+        changed = False
+        for target, source in pending:
+            resolved = aliases.get(source, source)
+            if resolved in seeds and aliases.get(target) != resolved:
+                aliases[target] = resolved
+                changed = True
+    return aliases
+
+
+def _module_dict_names(tree: ast.AST) -> set[str]:
+    names = {"dict"}
+    changed = True
+    body = getattr(tree, "body", [])
+    while changed:
+        changed = False
+        for stmt in body:
+            if not isinstance(stmt, ast.Assign) or len(stmt.targets) != 1:
+                continue
+            target = stmt.targets[0]
+            if (
+                isinstance(target, ast.Name)
+                and isinstance(stmt.value, ast.Name)
+                and stmt.value.id in names
+                and target.id not in names
+            ):
+                names.add(target.id)
+                changed = True
+    return names
+
+
 def handler_reads_down(source: str, entry: str | None = None) -> bool:
     """True when source reads the liveness key `down`.
 
     The scan is the AST of the entry function plus static callees. A string
     or comment that merely contains the characters state["down"] is not a read.
-    `entry` limits the walk to that function's call graph.
+    `entry` limits the walk to that function's call graph. Module-level
+    constants and aliases are visible to that function.
     """
     tree = ast.parse(source)
     functions = _module_functions(tree)
+    module_strings = _module_strings(tree)
+    module_aliases = _module_function_aliases(tree, functions)
+    module_dicts = _module_dict_names(tree)
     if entry is not None:
         if entry not in functions:
             raise ValueError(entry)
-        return _function_reads_down(entry, functions, set())
+        return _function_reads_down(
+            entry, functions, set(), module_strings, module_aliases, module_dicts
+        )
     for stmt in tree.body:
         if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        if _direct_down_read(stmt, functions):
+        if _direct_down_read(stmt, functions, module_strings, module_aliases, module_dicts):
             return True
-    return any(_function_reads_down(name, functions, set()) for name in functions)
+    return any(
+        _function_reads_down(name, functions, set(), module_strings, module_aliases, module_dicts)
+        for name in functions
+    )
 
 
 def handler_down_errors() -> list[str]:
@@ -1743,7 +1936,11 @@ def handler_down_errors() -> list[str]:
     import spec_machine
 
     source_path = Path(__file__).resolve().parent / "spec_machine.py"
-    functions = _module_functions(ast.parse(source_path.read_text(encoding="utf-8")))
+    tree = ast.parse(source_path.read_text(encoding="utf-8"))
+    functions = _module_functions(tree)
+    module_strings = _module_strings(tree)
+    module_aliases = _module_function_aliases(tree, functions)
+    module_dicts = _module_dict_names(tree)
     errors: list[str] = []
     for name, function in spec_machine.HANDLERS.items():
         if name == "SetDown":
@@ -1752,7 +1949,9 @@ def handler_down_errors() -> list[str]:
         if impl not in functions:
             errors.append(f"tx handler missing from ast {name}")
             continue
-        if _function_reads_down(impl, functions, set()):
+        if _function_reads_down(
+            impl, functions, set(), module_strings, module_aliases, module_dicts
+        ):
             errors.append(f"tx handler reads down {name}")
     return errors
 

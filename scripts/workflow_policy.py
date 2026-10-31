@@ -12,7 +12,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 ACTION_PINS = {
-    "actions/checkout": "11d5960a326750d5838078e36cf38b85af677262",
+    "actions/checkout": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
     "actions/setup-go": "924ae3a1cded613372ab5595356fb5720e22ba16",
     "actions/setup-node": "249970729cb0ef3589644e2896645e5dc5ba9c38",
     "actions/setup-python": "ece7cb06caefa5fff74198d8649806c4678c61a1",
@@ -33,6 +33,8 @@ def check_text(path: Path, text: str) -> list[str]:
         errors.append(f"{path.name}: automatic merge")
     if re.search(r"\bproduction\b", text, re.IGNORECASE):
         errors.append(f"{path.name}: production target")
+    if re.search(r"\bworkflow_run\b", text):
+        errors.append(f"{path.name}: workflow_run trigger")
     return errors
 
 
@@ -49,6 +51,8 @@ def check_job(path: Path, name: str, job: object) -> list[str]:
     environment = job.get("environment")
     if environment not in (None, ""):
         errors.append(f"{path.name}: job {name} environment {environment}")
+    if job.get("continue-on-error") is True:
+        errors.append(f"{path.name}: job {name} continue-on-error")
     steps = job.get("steps")
     if not isinstance(steps, list) or not steps:
         errors.append(f"{path.name}: job {name} has no steps")
@@ -57,6 +61,11 @@ def check_job(path: Path, name: str, job: object) -> list[str]:
         if not isinstance(step, dict):
             errors.append(f"{path.name}: job {name} step is not a mapping")
             continue
+        if step.get("continue-on-error") is True:
+            errors.append(f"{path.name}: job {name} step continue-on-error")
+        run = step.get("run")
+        if isinstance(run, str) and "github.event" in run:
+            errors.append(f"{path.name}: event data interpolated into run")
         uses = step.get("uses")
         if uses is None:
             continue
@@ -91,8 +100,9 @@ def check_job(path: Path, name: str, job: object) -> list[str]:
     return errors
 
 
-def check_workflow(path: Path) -> list[str]:
-    text = path.read_text(encoding="utf-8")
+def check_workflow_text(name: str, text: str) -> list[str]:
+    """Policy errors for one workflow document. `name` is the file name."""
+    path = Path(name)
     errors = check_text(path, text)
     data = yaml.safe_load(text)
     if not isinstance(data, dict):
@@ -105,6 +115,10 @@ def check_workflow(path: Path) -> list[str]:
     for name, job in jobs.items():
         errors.extend(check_job(path, str(name), job))
     return errors
+
+
+def check_workflow(path: Path) -> list[str]:
+    return check_workflow_text(path.name, path.read_text(encoding="utf-8"))
 
 
 def main() -> int:
