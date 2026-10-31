@@ -349,7 +349,7 @@ def test_literals_inside_calls_are_private_keys() -> None:
         "SigningKey(bytes.from" + 'hex("' + secret + '"))',
         "priv_" + "key = bytes([" + "1, 2, 3, 4, 5, 6, 7, 8])",
         'os.getenv("' + "PRIV_" + 'KEY", "' + secret + '")',
-        'Buffer.from("' + secret + '", "hex")',
+        "const " + "priv" + "Key = " + 'Buffer.from("' + secret + '", "hex")',
     ]
     for body in bodies:
         assert _has_key("note.py", body), body
@@ -389,8 +389,8 @@ def test_more_mnemonic_and_key_shapes() -> None:
     assert _has_key("note.txt", "--" + "priv" + "key " + "deadbeef")
     assert _has_key("note.txt", "--" + "priv_" + "key=" + "deadbeef")
     assert _has_key("note.ts", "node" + "Priv" + "Key" + 'Base64 = "' + ("QQ" * 16) + '"')
-    assert _has_key("note.ts", 'hexToBytes("' + secret + '")')
-    assert _has_key("note.go", 'hex.DecodeString("' + secret + '")')
+    assert _has_key("note.ts", "const " + "priv" + 'Key = hexToBytes("' + secret + '")')
+    assert _has_key("note.go", 'seed := hex.DecodeString("' + secret + '")')
 
 
 def test_cli_flags_git_added_mnemonic_files() -> None:

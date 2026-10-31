@@ -57,12 +57,18 @@ _HEX_CALL = re.compile(
 )
 _GETENV_HEX = re.compile(r"(?i)(?:getenv|environ)\s*[\[(][^)\n]*,\s*[\"'][0-9a-f]{48,}[\"']")
 _CODE_SUFFIXES = {".py", ".pyi", ".ts", ".tsx", ".js", ".jsx", ".go"}
+# Bare assignment values in this set are identifiers, not secrets.
+# `abc` and `str` are not in it: older fixtures use them as literal values.
+# A token that contains a digit, such as ed25519, is also a literal value.
 _NON_SECRET_NAMES = {
     "k",
     "key",
     "priv_key",
     "privkey",
     "private_key",
+    "priv_key_default",
+    "signing_key",
+    "raw",
     "seed",
     "path",
     "msg",
@@ -73,9 +79,13 @@ _NON_SECRET_NAMES = {
     "true",
     "false",
 }
-EXCLUDED_DIR_NAMES = frozenset(
-    {"node_modules", ".venv", "site-packages", "vendor", "__pycache__", "dist"}
+_LITERAL_BARE = {"abc", "str"}
+# Mnemonic hits inside these directory names are ignored. The names must be a
+# whole path component. `vendor` and `dist` are not in this set.
+_MNEMONIC_SKIP_DIRS = frozenset(
+    {"node_modules", ".venv", "site-packages", "__pycache__", ".toolchains"}
 )
+_KEYISH = re.compile(r"(?i)priv|private|secret|seed|mnemonic|signing|signer")
 FORBIDDEN_NAMES = {
     "priv_validator_key.json",
     "node_key.json",
@@ -190,22 +200,99 @@ def _bare_quoted_name(text: str) -> bool:
     return _KEY_QUOTED.fullmatch(text.strip()) is not None
 
 
-def _key_hit(text: str, name: str) -> bool:
-    """Literal secret on a key name, inside a decode call, or as a bare quoted name."""
-    if (
-        _bare_quoted_name(text)
-        or _HEX_CALL.search(text)
-        or _GETENV_HEX.search(text)
-        or _has_byte_list(text)
-    ):
+def _call_window_is_keyish(text: str, start: int, end: int) -> bool:
+    window = text[max(0, start - 80) : min(len(text), end + 40)]
+    return _KEYISH.search(window) is not None
+
+
+def _value_suppressed(value: str) -> bool:
+    """True when a base hit should be dropped. Literals are never dropped."""
+    text = value.strip().strip("`")
+    text = re.sub(r"\s+#.*$", "", text).strip()
+    text = text.rstrip(",;)]}:.`")
+    text = text.strip().strip("`")
+    if text == "":
+        return False
+    if _is_dollar_ref(text):
         return True
-    code = _is_code(name)
-    for match in _KEY_CLI.finditer(text):
-        if _value_is_secret(match.group("value")):
+    if re.fullmatch(r"(?i)none|null|nil|undefined", text):
+        return True
+    if re.fullmatch(r"0x[0-9a-fA-F]{8,}", text):
+        return False
+    if re.fullmatch(r"[0-9a-fA-F]{8,}", text):
+        return False
+    if len(text) >= 16 and re.fullmatch(r"[A-Za-z0-9+/]+=*", text) and re.search(r"\d", text):
+        return False
+    if "(" in text or "[" in text:
+        inners = [inner for inner in _quote_inners(text) if not _is_dollar_ref(inner)]
+        if any(_hex_or_base64(inner) for inner in inners) or _has_byte_list(text):
+            return False
+        return True
+    inners = _quote_inners(text)
+    if inners:
+        if all(_is_dollar_ref(inner) or _is_type_name(inner) for inner in inners):
             return True
-    for pattern in (_KEY_ASSIGN, _KEY_CAMEL):
+        return False
+    if re.fullmatch(r"[A-Za-z_][\w.]*", text):
+        base = text.split(".")[-1]
+        if base.lower() in _LITERAL_BARE or re.search(r"\d", base):
+            return False
+        return True
+    return False
+
+
+def _is_type_name(inner: str) -> bool:
+    return (
+        re.fullmatch(r"[A-Z][A-Za-z0-9]*", inner) is not None
+        and re.search(r"[a-z]", inner) is not None
+    )
+
+
+def _assignment_suppressed(text: str, match: re.Match[str], name: str) -> bool:
+    line = text[match.end() :].split("\n", 1)[0].strip()
+    sep = match.group("sep")
+    if sep == ":" and line.startswith("="):
+        line = line[1:].strip()
+        sep = "="
+    if _is_code(name) and sep == ":" and "=" not in line:
+        return (
+            _value_suppressed(line)
+            or not _quote_inners(line)
+            and not re.fullmatch(r"0x[0-9a-fA-F]{8,}|[0-9a-fA-F]{8,}", line.strip())
+        )
+    if sep == ":" and "=" in line:
+        return _value_suppressed(line.split("=", 1)[1])
+    return _value_suppressed(line)
+
+
+def _quoted_kept(text: str, match: re.Match[str]) -> bool:
+    return text.strip() == match.group(0)
+
+
+def _key_hit(text: str, name: str) -> bool:
+    """Base c187f64 hits, plus later patterns, minus narrow suppressions."""
+    for match in _KEY_QUOTED.finditer(text):
+        if _quoted_kept(text, match):
+            return True
+    for match in _KEY_ASSIGN.finditer(text):
+        if (
+            _is_code(name)
+            and match.group("sep") == ":"
+            and _TYPE_AFTER.match(text[match.end() :])
+            and "=" not in text[match.end() :].split("\n", 1)[0]
+        ):
+            continue
+        if not _assignment_suppressed(text, match, name):
+            return True
+    for match in _KEY_CAMEL.finditer(text):
+        if not _assignment_suppressed(text, match, name):
+            return True
+    for match in _KEY_CLI.finditer(text):
+        if not _value_suppressed(match.group("value")):
+            return True
+    for pattern in (_HEX_CALL, _GETENV_HEX, _BYTE_LIST):
         for match in pattern.finditer(text):
-            if _literal_secret(text[match.end() :], match.group("sep"), code):
+            if _call_window_is_keyish(text, match.start(), match.end()):
                 return True
     return False
 
@@ -234,12 +321,45 @@ def _add_words(fragment: str, block: list[str], words: set[str]) -> bool:
     return False
 
 
-def _excluded_path(name: str) -> bool:
-    parts = set(name.replace("\\", "/").split("/"))
-    return bool(parts & set(EXCLUDED_DIR_NAMES)) or _is_wordlist(name)
+def _mnemonic_skip(name: str) -> bool:
+    """Skip mnemonic hits only inside real third-party roots, or the wordlist."""
+    parts = name.replace("\\", "/").split("/")
+    return _is_wordlist(name) or any(part in _MNEMONIC_SKIP_DIRS for part in parts)
 
 
-def mnemonic_hit(text: str, words: set[str]) -> bool:
+def _base_mnemonic_hit(text: str, words: set[str]) -> bool:
+    """c187f64 mnemonic detector. The text is not rewritten and no line is dropped."""
+    block: list[str] = []
+
+    def finish() -> bool:
+        count = len(block)
+        if count in (13, 14) or count < 12:
+            return False
+        if count in MNEMONIC_LENGTHS:
+            return True
+        return any(length <= count for length in MNEMONIC_LENGTHS)
+
+    for line in text.splitlines():
+        lowered = line.lower()
+        if _TOKEN.search(lowered) is None:
+            continue
+        parts = re.split(r"[:=]", lowered)
+        for index, part in enumerate(parts):
+            if index and finish():
+                return True
+            if index:
+                block = []
+            for token in _TOKEN.findall(part):
+                if token in words:
+                    block.append(token)
+                    continue
+                if finish():
+                    return True
+                block = []
+    return finish()
+
+
+def _extra_mnemonic_hit(text: str, words: set[str]) -> bool:
     """12, 15, 18, 21, or 24 BIP39 words, including a window inside a longer run.
 
     Lines are lowercased. Numbered markers (`1.`, `1:`, `1)`, `(1)`) are
@@ -289,6 +409,11 @@ def mnemonic_hit(text: str, words: set[str]) -> bool:
     return hit()
 
 
+def mnemonic_hit(text: str, words: set[str]) -> bool:
+    """Union of the c187f64 detector and later detectors. The base sees `text` raw."""
+    return _base_mnemonic_hit(text, words) or _extra_mnemonic_hit(text, words)
+
+
 def tracked_files() -> list[Path]:
     completed = subprocess.run(
         ["git", "ls-files", "-z"],
@@ -313,7 +438,7 @@ def findings_in_text(name: str, text: str, words: set[str] | None = None) -> lis
             found.append(f"{name}: {pattern.pattern}")
     if _key_hit(text, name):
         found.append(f"{name}: private key name")
-    if not _excluded_path(name) and mnemonic_hit(
+    if not _mnemonic_skip(name) and mnemonic_hit(
         text, words if words is not None else bip39_words()
     ):
         found.append(f"{name}: bip39 mnemonic")
@@ -328,8 +453,6 @@ def scan_repo() -> list[str]:
             continue
         data = path.read_bytes()
         relative = path.relative_to(ROOT).as_posix()
-        if _excluded_path(relative):
-            continue
         if b"\0" in data:
             if path.suffix.lower() not in DOCUMENT_SUFFIXES:
                 found.append(f"{relative}: tracked binary")

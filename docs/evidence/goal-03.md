@@ -18,7 +18,7 @@ On 2026-10-31 at 09:50 EDT Max ruled, relayed word for word by shortvideo-review
 
 The branch history since `2ef8573c59645646cd13f0a49c3392095a7ad4a2` was rewritten for authorship. Every commit on `goal-03` is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>`. `Co-authored-by` and Cursor trailers were removed. `Tested-tree` trailers were kept.
 
-The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `c187f644e0ce0b6ca1e594d037356d8999baf61f` changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `775586d78b1893b8cdb1295a4f07a1ca56334f89` changes those same three files. The commit that contains this paragraph changes them again.
+The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `c187f644e0ce0b6ca1e594d037356d8999baf61f` changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `775586d78b1893b8cdb1295a4f07a1ca56334f89` changes those same three files. `645beadc7cdabd0596f9ad5fcb8f2a6c6c4cd901` changes them again. The commit that contains this paragraph changes the scanner, adds `tests/secret_scanner_corpus.py` and `tests/unit/test_secret_corpus.py`, and changes this evidence file.
 
 Before the rewrite, these commits were authored and committed by `Cursor Agent <cursoragent@cursor.com>` and carried a `Co-authored-by` trailer:
 
@@ -245,7 +245,7 @@ note schema and fixture check; protocol not approved; Gate A approved DEC-001 th
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only python
-102 passed in 3.34s
+105 passed in 4.61s
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only node
@@ -427,14 +427,16 @@ The scan covers these shapes:
 - PEM, encrypted PKCS8, and PGP private-key blocks.
 - AKIA, `ghp_`, `github_pat_`, and Slack `xox` tokens.
 - Forbidden filenames such as a `.key` or `.pem` suffix, `node_key.json`, and `priv_validator_key.json`.
-- BIP39 runs of 12, 15, 18, 21, or 24 words, and a window of one of those lengths inside a longer run. Text is lowercased. Blank lines do not reset a run. Numbered markers (`1.`, `1:`, `1)`, `(1)`) are stripped. A `word1:` label does not reset the run. Quotes, brackets, and table pipes are not letters. A heading of two or more hashes, an ini section, and a config key before `:` or `=` do reset it. A line with parentheses does not add its code tokens, but a quoted string on that line is still scanned. `scripts/bip39_english.txt` is excluded by path, as are `node_modules`, `.venv`, `site-packages`, `vendor`, `__pycache__`, and `dist`.
-- A literal secret on a private-key name: a quoted string, an unquoted hex or bare token such as `deadbeef` or `ed25519`, a `bytes([` list of at least four integers, or a quoted hex or base64 value inside `fromhex`, `DecodeString`, `hexToBytes`, `Buffer.from`, or `getenv`. Names include snake case, camel case, a validator or node prefix, a hex or base64 suffix, a dot, a hyphen, and a double-dash flag (`--priv-key`, `--privkey`, `--priv_key`). An empty `KEY=` env line is a hit. A quoted short name with no surrounding code is a hit. In Python, TypeScript, JavaScript, and Go, a colon with no equals sign is a type or a parameter. In YAML it is a value. A typed parameter with `=` and a literal is a hit.
+- BIP39 runs of 12, 15, 18, 21, or 24 words, and a window of one of those lengths inside a longer run. The c187f64 detector sees the original text: it does not drop a line and it does not rewrite it. Parentheses, backticks, and comment markers are not letters, so a quoted or backticked phrase and an unquoted value with a parenthesis comment are still read. Numbered lists and a `word1:` label are covered by the added detector. A config key before `:` or `=` resets that added detector so the key is not glued to the value. `scripts/bip39_english.txt` is excluded from the mnemonic check only. The same mnemonic check skips a path whose component is `node_modules`, `.venv`, `site-packages`, `__pycache__`, or `.toolchains`. It does not skip `vendor` or `dist`. PEM, AKIA, and private-key checks run on every path.
+- A literal on a private-key name. A literal is a quoted string other than a type name or a `$` reference, an unquoted hex token, a `0x` hex token, a base64 token that contains a digit (including one that starts with a capital), `deadbeef`, or `ed25519`. `ed25519` is a hit because it contains a digit. It is not in `_NON_SECRET_NAMES`. Names include snake case, camel case, a validator or node prefix, a hex or base64 suffix, a dot, a hyphen, and a double-dash flag. An empty `KEY=` line is a hit. A quoted short name with no surrounding code is a hit. In Python, TypeScript, JavaScript, and Go, a colon with no equals sign is a type or a parameter, including a quoted type name. In YAML the same colon is a value, so `str` is a hit there. A typed parameter with `=` and a literal is a hit. `fromhex`, `DecodeString`, `hexToBytes`, `Buffer.from`, `getenv` with a hex default, and a `bytes([` list are hits only when a key-like name (`priv`, `private`, `secret`, `seed`, `mnemonic`, `signing`, or `signer`) is in the same window.
 
-The scan does not cover these shapes:
+The scan does not cover these shapes. `_NON_SECRET_NAMES` is the explicit identifier set: `k`, `key`, `priv_key`, `privkey`, `private_key`, `priv_key_default`, `signing_key`, `raw`, `seed`, `path`, `msg`, `none`, `null`, `nil`, `undefined`, `true`, and `false`. Any other bare identifier is also ignored, except `abc`, `str`, and a token that contains a digit.
 
-- An identifier, an attribute, `None` or `null`, or a `$` / `${}` reference, including a quoted `"$PRIV"` flag value and `os.getenv` or `os.environ` when the only quote is the variable name.
+- `priv_key = signing_key`, `priv_key = raw`, `PRIV_KEY = PRIV_KEY_DEFAULT`, `priv_key = key`, `priv_key = None`, `self.priv_key = priv_key`, and `sign(msg, priv_key=k)`.
+- A parameter or field whose value is a type, including `def f(priv_key: "PrivateKey")` and `priv_key: PrivateKey`.
+- A `$` or `${}` reference, including `--private-key "$PRIV"` and a YAML value that is only `${PRIV_KEY}`.
+- `digest = bytes.fromhex(...)`, `iv = bytes([0, ...])`, and `want, _ := hex.DecodeString(...)`, because the name is not key-like.
 - A phrase shorter than 12 words, or a phrase broken by a word that is not on the BIP39 list.
-- Unquoted code tokens on a line that contains parentheses. The quoted string on that line is still scanned.
 - A decode call whose quoted hex is shorter than 48 characters.
 - Unknown encodings and formats this file does not name.
 
@@ -518,3 +520,32 @@ EXIT:0
 ```
 
 `devnet-up` inside that target exits 2 on purpose. The target requires that non-zero status.
+
+## Round 8
+
+On 2026-10-31 at 12:54 America/Toronto, Max answered in the widget: "run round 8 on goal 03: put every case the reviewer listed into a fixed regression test file that CI enforces, restore the c187f64 detection and only add filters on top, and fix all 5 items".
+
+The corpus is `tests/secret_scanner_corpus.py`. It has 110 entries: 82 positives and 28 negatives. `tests/unit/test_secret_corpus.py` runs the scanner on every entry and git-adds the CLI paths. A positive is counted when `findings_in_text` returns any hit.
+
+| Head | Positives caught | Negatives flagged |
+| --- | --- | --- |
+| `c187f64` | 61 of 82 | 20 of 28 |
+| `775586d` | 61 of 82 | 20 of 28 |
+| `645bead` | 72 of 82 | 7 of 28 |
+| this tree | 82 of 82 | 0 of 28 |
+
+The c187f64 mnemonic and key detectors run on the original text. Filters only suppress a hit. They do not drop lines and they do not rewrite the text those detectors scan. The added detector covers `word1:` labels, headings, and a 12-word value that would otherwise be glued to a following BIP39 key.
+
+Vendored mnemonic hits, counted with `mnemonic_hit` on 4131 UTF-8 files under `node_modules` and `.venv`: 6 at `c187f64`, 10 at `775586d` and at this scanner. The reviewer's earlier 34 and 41 included `.toolchains` by mistake; the corrected comparison is 6 to 10. The mnemonic check skips `node_modules`, `.venv`, `site-packages`, `__pycache__`, and `.toolchains`. After that skip those 10 are not reported. PEM, AKIA, and private-key checks still run under `vendor` and `dist`.
+
+```
+.venv/bin/python -m pytest tests/unit/test_secret_corpus.py tests/unit/test_secrets.py -q
+EXIT:0
+
+.venv/bin/python scripts/scan_secrets.py
+secret scan ok
+EXIT:0
+
+make check
+EXIT:0
+```
