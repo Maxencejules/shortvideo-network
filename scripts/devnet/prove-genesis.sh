@@ -48,6 +48,7 @@ work = pathlib.Path(sys.argv[2])
 doc = json.loads(source.read_text())
 dup = json.loads(source.read_text())
 dup["validators"][1]["pub_key"] = dup["validators"][0]["pub_key"]
+dup["validators"][1]["address"] = dup["validators"][0]["address"]
 authority = dup["app_state"]["authority"]
 validators = authority["authority"]["validators"]
 validators[1]["consensus_pubkey"] = validators[0]["consensus_pubkey"]
