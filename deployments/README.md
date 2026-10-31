@@ -1,3 +1,3 @@
 # deployments
 
-Reference deployment profiles are not written yet. Goal 04 adds the cloud profile and the fuller Linux profile. No image is built here, and no image digest is invented.
+Goal 04 adds the cloud profile under `scripts/env/` and the compose profile in `deployments/compose/`. Checksums are in `deployments/pins/`. This repository does not build or publish an image. The compose file pins upstream image digests. `deployments/devnet/` is still Goal 05.

@@ -10,7 +10,7 @@ ifeq ($(wildcard $(PY)),)
 PY := python3
 endif
 
-.PHONY: install fmt lint typecheck proto proto-check test unit-python unit-node unit-go contract sbom secrets policy build devnet-up devnet-down smoke fault release-check check
+.PHONY: install fmt lint typecheck proto proto-check test unit-python unit-node unit-go contract sbom secrets policy build devnet-up devnet-down smoke fault release-check check env-diagnose env-install env-start env-stop env-reset env-smoke env-devnet-keys env-compose
 
 install:
 	python3 -m venv $(ROOT)/.venv
@@ -84,6 +84,30 @@ fault:
 release-check:
 	@echo "release-check is not implemented. Goal 27 prepares a release. Public launch is disabled." >&2
 	@exit 2
+
+env-diagnose:
+	bash scripts/env/diagnose.sh
+
+env-install:
+	bash scripts/env/install.sh
+
+env-start:
+	bash scripts/env/start.sh
+
+env-stop:
+	bash scripts/env/stop.sh
+
+env-reset:
+	bash scripts/env/reset.sh --workspace "$(WORKSPACE)" --confirm "$(CONFIRM)"
+
+env-smoke:
+	bash scripts/env/smoke.sh
+
+env-devnet-keys:
+	bash scripts/env/devnet-keys.sh --workspace "$(or $(WORKSPACE),dev)"
+
+env-compose:
+	bash scripts/env/compose.sh
 
 check: fmt lint typecheck proto-check sbom test contract build
 	@echo "unimplemented targets stay failed on purpose"

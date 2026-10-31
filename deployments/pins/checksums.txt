@@ -1,0 +1,10 @@
+# sha256 of artifacts downloaded on 2026-10-31. These are not secrets.
+# rabbitmq-server-generic-unix-4.4.0.tar.xz from the v4.4.0 GitHub release.
+# The signature matched RabbitMQ Release Signing Key 0A9AF2115F4687BD29803A206B73A36E6026DFCA.
+68c22d5dafa15c0911463aeca73c362d638cd6fb8e407ad39512959c6cc37f0f  rabbitmq-server-generic-unix-4.4.0.tar.xz
+# celery 5.6.3 sdist from PyPI. Goal 04 records the pin and does not install the package.
+177006bd2054b882e9f01be59abd8529e88879ef50d7918a7050c5a9f4e12912  celery-5.6.3.tar.gz
+# Ubuntu 24.04 noble ffmpeg deb, version 7:6.1.1-3ubuntu5.
+1a23baace5f2688a47e28119aedae6993cd638e6279a7227dfc52d9a337a1c17  ffmpeg_7:6.1.1-3ubuntu5_amd64.deb
+# Ubuntu 24.04 noble amqp-tools deb, version 0.11.0-1ubuntu0.2.
+0915bbfc3998bec2986d254555c3eb644eb96fc814d710cdb8314e5be49093f0  amqp-tools_0.11.0-1ubuntu0.2_amd64.deb

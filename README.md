@@ -15,9 +15,9 @@ Protocol v0 is frozen for goals 03-18. Schema files under `docs/protocol/` are t
 | `chain` | SDK and CometBFT module pins. No chain binary. |
 | `proto` | Generated Go and Python stubs. Sources stay in `docs/protocol/proto`. |
 | `agents/provider` | Provider-agent slot. No process. |
-| `workers/media` | Media-worker slot. FFmpeg is not pinned and is not run. |
+| `workers/media` | Media-worker slot. It does not run FFmpeg. The development-profile package pin is in `docs/dependencies.md`. |
 | `packages/protocol` | Loader for the frozen JSON schemas. |
-| `deployments` | Notes only. No image and no compose file. |
+| `deployments` | Compose profile and checksum pins. No project image is published. |
 | `tests` | Unit tests. Contract entry point is `make contract`. End-to-end and fault targets fail closed. |
 | `docs` | Specification, protocol, dependencies, ownership, evidence. |
 
@@ -35,7 +35,7 @@ make proto-check
 make check
 ```
 
-`make check` formats, lints, type-checks, regenerates contracts, runs unit tests, and runs the Goal 01 and Goal 02 checkers. `make devnet-up`, `make smoke`, `make fault`, and `make release-check` exit non-zero. Those commands are not implemented.
+`make check` formats, lints, type-checks, regenerates contracts, runs unit tests, and runs the Goal 01 and Goal 02 checkers. `make devnet-up`, `make smoke`, `make fault`, and `make release-check` exit non-zero. Those commands are not implemented. Development services are separate: [docs/environment.md](docs/environment.md). `make env-start` and `make env-smoke` are the local PostgreSQL, RabbitMQ, and FFmpeg profile.
 
 Copy `.env.example` to `.env` if a later goal needs local placeholders. `.env` is gitignored. The example file contains `REPLACE_ME` and no live credential.
 

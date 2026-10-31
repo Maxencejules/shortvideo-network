@@ -1,3 +1,3 @@
 # Operations notes
 
-No runbook is implemented. Goal 04 records the development environment. Goal 25 and Goal 26 cover observability and backups. Public launch stays disabled.
+Development setup and service commands are in [docs/environment.md](../environment.md). Goal 25 and Goal 26 cover observability and backups. Public launch stays disabled.
