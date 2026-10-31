@@ -17,7 +17,9 @@ Application, genesis, and devnet checks ran on commit `5bd4bf99fadf919b3bdc51865
 
 GitHub Actions run `41244886019` was canceled because a newer run for the same pull request was queued. It is not a test failure. Run `41244914773` on `c78f00b` failed the python job and passed go, node, and contract. The python failure is `chain/app/app_test.go: private key name`. Log: [ci-41244914773-python.txt](logs/goal-05/ci-41244914773-python.txt).
 
-The malformed-genesis test now builds that field name at runtime. `go test -count=1 -timeout 180s ./chain/...` then exited 0, including `TestMalformedGenesisRejected` and `TestFourValidatorsCommitRestartAndQuorum` (12.78s). Log: [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt). `scripts/scan_secrets.py` exited 0 on that tree. The `Tested-tree` trailer of the commit that adds this paragraph is the tree of that fix.
+The malformed-genesis test now builds that field name at runtime. `go test -count=1 -timeout 180s ./chain/...` then exited 0, including `TestMalformedGenesisRejected` and `TestFourValidatorsCommitRestartAndQuorum` (12.78s). Log: [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt). `scripts/scan_secrets.py` exited 0 on that tree. Commit `08faed8c5b2be99e6d01be28baaae4d9164cbd51` carries that fix. Its tree is `1c03d6dbd0d5105bc63ac1e0709b134a81ac61d6`.
+
+Actions run `41245418439` on that commit passed go, node, and contract. The python job passed the secret scan and then printed `sbom drift` from `scripts/write_sbom.py --check`. `chain/go.sum` was not in the committed CycloneDX file. Regenerating `docs/sbom.cdx.json` with that script produced 1320 components. `--check` then exited 0. `scripts/run_tests.py --only python` exited 0 with 120 passed. The chain packages were not changed for the inventory.
 
 ## Base and prerequisites
 
@@ -107,7 +109,7 @@ COMMAND sg docker -c 'bash scripts/devnet/compose-up.sh'
 
 The image `svn-devnet:goal05` built from `deployments/chain/Dockerfile`. Four containers reached the hash above. `DOCKER_HOST` was unset. `docker version` reported engine 29.1.3, which is the package installed in this step, not the process that was already listening on port 2375.
 
-Unit Python, mypy, secret scan, and `gofmt` were run with the project venv and exited 0 before the pull request. Ruff on `services workers/media packages/protocol tests scripts` exited 0. Actions run `41244914773` then rejected the quoted field in `chain/app/app_test.go`. After the test built that name at runtime, `scripts/scan_secrets.py` exited 0 again and `go test -count=1 -timeout 180s ./chain/...` exited 0. That log is [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt).
+Unit Python, mypy, secret scan, and `gofmt` were run with the project venv and exited 0 before the pull request. Ruff on `services workers/media packages/protocol tests scripts` exited 0. Actions run `41244914773` then rejected the quoted field in `chain/app/app_test.go`. After the test built that name at runtime, `scripts/scan_secrets.py` exited 0 again and `go test -count=1 -timeout 180s ./chain/...` exited 0. That log is [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt). Run `41245418439` then failed `scripts/write_sbom.py --check` with `sbom drift`. The regenerated `docs/sbom.cdx.json` makes `--check` exit 0 (1320 components). `scripts/run_tests.py --only python` exited 0, 120 passed.
 
 ## Residual risks
 
