@@ -17,14 +17,14 @@ Round 3 corrects the citations. It does not change chain code, `prove_test.go`, 
 
 The proofs that support the code at that head are not one tree:
 
-| Proof | Log | Tree the command recorded | Why this is the current proof |
+| Proof | Log | Tree the command recorded | Files with an empty diff to `406bb2e` |
 | --- | --- | --- | --- |
-| Four processes | [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt) | `1c48fc02d3a4004c98cdc53f1dd8251da1b3753b` | Last change to `prove_test.go` and `status.go`. Later commits are documentation. |
-| Four containers | [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt) | `f9ad8430a3372d1d3de7608cc201587dc63adf4b` | Last change to `scripts/devnet/prove-containers.sh`. |
-| CLI genesis rejection | [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt) | `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5` | `prove-genesis.sh` and `validateGenesisFile` are unchanged since this tree. |
-| Goal 04 compose | [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) | `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5` | `scripts/env/compose.sh` is unchanged since this tree. |
+| Four processes | [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt) | `1c48fc02d3a4004c98cdc53f1dd8251da1b3753b` | `chain/devnet/prove_test.go`, `chain/devnet/status.go` |
+| Four containers | [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt) | `f9ad8430a3372d1d3de7608cc201587dc63adf4b` | `scripts/devnet/prove-containers.sh`. The image's `svnd` was built from `chain/` before `HighWater`. The reviewer compared that binary with one built from the later chain: identical symbol tables, and an 8-byte line-table delta. |
+| CLI genesis rejection | [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt) | `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5` | `scripts/devnet/prove-genesis.sh`, `chain/cmd/svnd/main.go` (`validateGenesisFile` is in that file) |
+| Goal 04 compose | [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) | `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5` | `scripts/env/compose.sh` |
 
-`git diff` from each of those trees to `406bb2e` is empty for the files named in that row.
+`git diff` from each proof tree to `406bb2e` is empty for the files named in its row of this table. It is not empty for every proof file on every tree. `f9ad843` differs from `406bb2e` in `chain/devnet/prove_test.go` and `chain/devnet/status.go`. `9bdf99e` differs in those two files and in `scripts/devnet/prove-containers.sh`. Only `1c48fc0` is empty for `prove_test.go` and `status.go`.
 
 Round 1 commit `5bd4bf99fadf919b3bdc51865c7a16d4e265d241`, tree `89aa295fe4bbe58778ff45e8f2fe033ff800b649`, is not the tested revision for this head. The round 1 history is in the superseded section below.
 
@@ -159,18 +159,22 @@ CI on this round adds `go vet` and `go test -race`, and a `devnet` job that runs
 
 ## Round 3
 
-Review [5725373923](https://github.com/Maxencejules/shortvideo-network/pull/8#pullrequestreview-5725373923) on `406bb2e25a3d1c30d81ad033530efc4f9c945cbc` returned FIX. The code was accepted. This section corrects the evidence. No chain file and no prove script changed, so the proofs were not rerun. `git diff` from the proof trees to `406bb2e` is empty for `prove_test.go`, `status.go`, `prove-containers.sh`, `prove-genesis.sh`, and `validateGenesisFile`.
+Review [5725373923](https://github.com/Maxencejules/shortvideo-network/pull/8#pullrequestreview-5725373923) on `406bb2e25a3d1c30d81ad033530efc4f9c945cbc` returned FIX. The code was accepted. This section corrects the evidence. No chain file and no prove script changed, so the proofs were not rerun. `git diff` from each proof tree to `406bb2e` is empty for the files named in its row of the Tested revision table.
 
 ### Follow-ups
 
 These are not fixed in this round. They are not VERIFIED claims.
 
-1. Recovery still passes at one block above the stall ceiling (`prove_test.go` waits with `WaitAbove` of that ceiling). A head CI run reached 13 against a stall of 12. A later change should require two blocks, or one block interval after the restarted validators are up, and then rerun the process and container proofs on that tree.
+1. Recovery still passes at one block above the stall ceiling (`prove_test.go` waits with `WaitAbove` of that ceiling). The restart threshold is taken before the sequential stops, so a block already in flight can satisfy recovery at threshold+1. A head CI run reached 13 against a stall of 12. A later change should require two blocks, or one block interval after the restarted validators are up, and then rerun the process and container proofs on that tree.
 2. `chain/app/authmodule.go` registers the auth query and message servers and sets consensus version 7. It does not register the x/auth migrations from version 5 to 6 and from 6 to 7. A fresh chain starts at 7. Goal 10 has to register those migrations before an upgrade from an older auth version.
 3. `scripts/devnet/prove-process.sh`, `prove-containers.sh`, and `prove-genesis.sh` print `TREE` from `git rev-parse HEAD^{tree}`. They do not print whether the worktree was dirty. A dirty flag belongs in those scripts, followed by a rerun.
 4. [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) records `COMMAND bash scripts/env/compose.sh` and, later, `COMMAND docker compose -f deployments/compose/docker-compose.yml stop`. The healthy `ps` table has no COMMAND line of its own. The stop command is the line above the container shutdown. A rerun should print COMMAND before `ps`.
 5. The Dockerfile digests are linux/amd64 manifests. Another architecture cannot use them as written. That limit is already in the Dockerfile comment.
 6. Exact-height checks can still flake when empty blocks leave validators one height apart. Runs `41248540896`, `41249097464`, and `41249637172` failed that way and were fixed in the sampler, the high-water height, and the per-node stall. `WaitEqual` at the start of the process test still requires one shared height. Keep watching it.
+
+## Round 4
+
+Review [5725410146](https://github.com/Maxencejules/shortvideo-network/pull/8#pullrequestreview-5725410146) on `b6398b9c7301716f5043c3a6a2809032ca3ec168` returned FIX. The false sentence in Round 3 is replaced. The empty-diff claim is only the files named in each row of the Tested revision table. This commit does not change chain code or prove scripts.
 
 ## Next safe action
 
