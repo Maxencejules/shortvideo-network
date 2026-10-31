@@ -14,14 +14,16 @@ Public launch: DISABLED. No tradable token, coin, sale, or mining. This is not a
 
 ## Authorship
 
-The first four commits on `goal-03` are authored and committed by `Cursor Agent <cursoragent@cursor.com>` and carry a `Co-authored-by` trailer:
+On 2026-10-31 at 09:50 EDT Max ruled, relayed word for word by shortvideo-reviewer: "authorship: rewrite goal-03 branch commits as me, force-push ok".
+
+The branch history since `2ef8573c59645646cd13f0a49c3392095a7ad4a2` was rewritten for authorship. Every commit on `goal-03` is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>`. `Co-authored-by` and Cursor trailers were removed. `Tested-tree` trailers were kept. The rewrite does not change the file content of the earlier commits. The only content change relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6` is this note.
+
+Before the rewrite, these commits were authored and committed by `Cursor Agent <cursoragent@cursor.com>` and carried a `Co-authored-by` trailer:
 
 - `cf75bc8942046e59db51a1a43f0601241840d83f`
 - `b877420d372a59c3a4f77e6fb20b2943943e1998`
 - `7594ed19f9e8ff3a5d4f2d5b8437d59f889e806b`
 - `15e2b48ca526726536fc144536356bcdf12e14e2`
-
-Those commits had the wrong author. They are not rewritten here. The pull request is squash-merged with a message authored by Max. This commit is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>` and has no `Co-authored-by` trailer.
 
 ## Base and tested revision
 
