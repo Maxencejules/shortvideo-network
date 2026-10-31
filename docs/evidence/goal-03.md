@@ -18,7 +18,7 @@ On 2026-10-31 at 09:50 EDT Max ruled, relayed word for word by shortvideo-review
 
 The branch history since `2ef8573c59645646cd13f0a49c3392095a7ad4a2` was rewritten for authorship. Every commit on `goal-03` is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>`. `Co-authored-by` and Cursor trailers were removed. `Tested-tree` trailers were kept.
 
-The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `c187f644e0ce0b6ca1e594d037356d8999baf61f` changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `775586d78b1893b8cdb1295a4f07a1ca56334f89` changes those same three files. `645beadc7cdabd0596f9ad5fcb8f2a6c6c4cd901` changes them again. `7d8d73a4b0ce993447615d4b35166b86ed5e304b` adds `tests/secret_scanner_corpus.py` and `tests/unit/test_secret_corpus.py` and changes the scanner, the secrets tests, and this evidence file. The commit that contains this paragraph changes the scanner, the corpus, the corpus test, and this evidence file.
+The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `c187f644e0ce0b6ca1e594d037356d8999baf61f` changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `775586d78b1893b8cdb1295a4f07a1ca56334f89` changes those same three files. `645beadc7cdabd0596f9ad5fcb8f2a6c6c4cd901` changes them again. `7d8d73a4b0ce993447615d4b35166b86ed5e304b` adds `tests/secret_scanner_corpus.py` and `tests/unit/test_secret_corpus.py` and changes the scanner, the secrets tests, and this evidence file. `3cde2d99530d277b8517b9a0c7ba56f8d3d029cf` changes the scanner, the corpus, the corpus test, and this evidence file. The commit that contains this paragraph changes those same four files again.
 
 Before the rewrite, these commits were authored and committed by `Cursor Agent <cursoragent@cursor.com>` and carried a `Co-authored-by` trailer:
 
@@ -377,7 +377,7 @@ go tests failed: 1
 
 ## Hosted CI
 
-These are every hosted run of `goal-03` through `7d8d73a4b0ce993447615d4b35166b86ed5e304b`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
+These are every hosted run of `goal-03` through `3cde2d99530d277b8517b9a0c7ba56f8d3d029cf`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
 
 | Run | Head | Conclusion |
 | --- | --- | --- |
@@ -394,6 +394,7 @@ These are every hosted run of `goal-03` through `7d8d73a4b0ce993447615d4b35166b8
 | [41219844698](https://github.com/Maxencejules/shortvideo-network/actions/runs/41219844698) | `775586d78b1893b8cdb1295a4f07a1ca56334f89` | success |
 | [41221250789](https://github.com/Maxencejules/shortvideo-network/actions/runs/41221250789) | `645beadc7cdabd0596f9ad5fcb8f2a6c6c4cd901` | success |
 | [41222721010](https://github.com/Maxencejules/shortvideo-network/actions/runs/41222721010) | `7d8d73a4b0ce993447615d4b35166b86ed5e304b` | success |
+| [41229070740](https://github.com/Maxencejules/shortvideo-network/actions/runs/41229070740) | `3cde2d99530d277b8517b9a0c7ba56f8d3d029cf` | success |
 
 `41203787093` is the hosted run for the revision the first review marked FIX. Jobs `python`, `node`, `go`, and `contract` completed. `41207064075` failed its python job. None of these runs is a run of this commit.
 
@@ -422,7 +423,7 @@ No devnet, no chain binary, and no production deployment. The secret scan is a b
 
 ## Round 6
 
-On 2026-10-31 at 12:21 America/Toronto, Max answered in the widget: "run round 6 on goal 03 and fix all 7 scanner items". The scanner changes are in `scripts/scan_secrets.py` and `tests/unit/test_secrets.py`. Workflow policy, the test runner, and `check_protocol.py` were not edited. The coverage bullets below describe the scanner after round 9, not the round 6 tree.
+On 2026-10-31 at 12:21 America/Toronto, Max answered in the widget: "run round 6 on goal 03 and fix all 7 scanner items". The scanner changes are in `scripts/scan_secrets.py` and `tests/unit/test_secrets.py`. Workflow policy, the test runner, and `check_protocol.py` were not edited. The coverage bullets below describe the scanner after round 10, not the round 6 tree.
 
 The scan covers these shapes:
 
@@ -430,13 +431,13 @@ The scan covers these shapes:
 - AKIA, `ghp_`, `github_pat_`, and Slack `xox` tokens.
 - Forbidden filenames such as a `.key` or `.pem` suffix, `node_key.json`, and `priv_validator_key.json`.
 - BIP39 runs of 12, 15, 18, 21, or 24 words, and a window of one of those lengths inside a longer run. The c187f64 detector sees the original text: it does not drop a line and it does not rewrite it. Parentheses, backticks, and comment markers are not letters, so a quoted or backticked phrase and an unquoted value with a parenthesis comment are still read. Numbered lists and a `word1:` label are covered by the added detector. A config key before `:` or `=` resets that added detector so the key is not glued to the value. `scripts/bip39_english.txt` is excluded from the mnemonic check only. The same mnemonic check skips a path whose component is `node_modules`, `.venv`, `site-packages`, `__pycache__`, or `.toolchains`. It does not skip `vendor` or `dist`. PEM, AKIA, and private-key checks run on every path.
-- A literal on a private-key name. A literal is a quoted string, an unquoted pure hex token of 7 or more characters (`deadbeef`, `ed25519`), a `0x` hex token of 8 or more hex characters, a base64 token of 16 or more characters that contains a digit, or the fixture token `abc`. A quoted string is a literal and is not a type name. A mixed-case quoted token that contains a digit, including a WIF-shaped token and `Hunter2Secret`, is a literal. A quoted string is not a literal when it is a `$` or `${}` reference, a Helm template `{{ ... }}`, or an angle-bracket placeholder such as `<your key here>`. In Python, TypeScript, JavaScript, and Go, a colon with no equals sign is a type or a parameter. In that position only, a CamelCase word with a lowercase letter and no digit, including a quoted one such as `PrivateKey`, is a type name and is not a literal. `str` is not a literal. A comparison (`==`, `!=`, `<=`, `>=`) is not an assignment. Names include snake case, camel case, a validator or node prefix, a suffix `Hex`, `Bytes`, `B64`, or `Base64` with or without an underscore, a dot, a hyphen, and a double-dash flag. An empty assignment is a hit. A quoted short name with no surrounding code is a hit. A typed parameter with an equals sign and a literal is a hit. An assignment may use `=`, `+=`, or a subscript on the left of `=`. `fromhex`, `DecodeString`, `hexToBytes`, `Buffer.from`, a `getenv` or `environ` default, and a `bytes([` list are hits only when a key-like name is in the same statement. Key-like names are `priv`, `private`, `secret`, `seed`, `mnemonic`, `signing`, `signer`, and `key`, including a `_key` suffix such as a validator key or `NODE_KEY`. A previous line is not part of the statement. A `bytes([` list needs at least four integers. Three integers are not a hit. A `getenv` or `environ` default is a hit at 8 or more hex characters. A shorter default is not a hit. `fromhex`, `DecodeString`, `hexToBytes`, and `Buffer.from` still need 48 hex characters.
+- A literal on a private-key name. A literal is a quoted string, an unquoted pure hex token of 7 or more characters (`deadbeef`, `ed25519`), a `0x` hex token of 8 or more hex characters, a base64 token of 16 or more characters that contains a digit, or the fixture token `abc`. A quoted string is a literal and is not a type name. A mixed-case quoted token that contains a digit, including a WIF-shaped token and `Hunter2Secret`, is a literal. A quoted string is not a literal when it is a `$` or `${}` reference, a Helm template `{{ ... }}`, or an angle-bracket placeholder such as `<your key here>`. In Python, TypeScript, JavaScript, and Go, a colon with no equals sign is a type or a parameter. In that position only, a CamelCase word with a lowercase letter and no digit, including a quoted one such as `PrivateKey`, is a type name and is not a literal. `str` is not a literal. A comparison (`==`, `!=`, `<=`, `>=`), a fat arrow (`=>`), and a return arrow (`->`) are not assignments. In code, a 7-letter hex word with no digit, such as defaced, is an identifier, not a literal. `ed25519` stays a literal because it contains a digit. Outside code, in `.env`, `.env.example`, yaml, toml, and ini, an unquoted token is a literal. That does not include an empty assignment, a `$` or `${}` reference, a Helm template, an angle-bracket placeholder, `null`, `None`, `~`, or the type word `str`. Names include snake case, camel case, a validator or node prefix, a suffix `Hex`, `Bytes`, `B64`, or `Base64` with or without an underscore, a dot, a hyphen, and a double-dash flag. An empty assignment is a hit. A quoted short name with no surrounding code is a hit. A typed parameter with an equals sign and a literal is a hit. Assignment separators are `=`, `+=`, `:=`, `:`, and a subscript on the left of `=`. `fromhex`, `unhexlify`, `DecodeString`, `hexToBytes`, `Buffer.from`, a `getenv` or `environ` default, and a `bytes([` list are hits only when a key-like name is in the same statement. A `getenv` default may be plain hex, `0x` hex, or a WIF-shaped token. A fallback after `??`, `||`, or `or` is a hit when the environment name is key-like and the fallback is a quoted literal. Key-like names are `priv`, `private`, `secret`, `seed`, `mnemonic`, `signing`, `signer`, and `key`, including a `_key` suffix such as a validator key or `NODE_KEY`. A previous line is not part of the statement. A `bytes([` list needs at least four integers. Three integers are not a hit. A plain or `0x` hex default is a hit at 8 or more hex characters. A shorter default is not a hit. `fromhex`, `unhexlify`, `DecodeString`, `hexToBytes`, and `Buffer.from` still need 48 hex characters.
 
 The scan does not cover these shapes. `_NON_SECRET_NAMES` is the explicit identifier set: `k`, `key`, `priv_key`, `privkey`, `private_key`, `priv_key_default`, `signing_key`, `raw`, `seed`, `path`, `msg`, `none`, `null`, `nil`, `undefined`, `true`, and `false`. Any other bare identifier is also ignored, except `abc`, a pure hex token of 7 or more characters, and a base64 token of 16 or more characters that contains a digit. `ed25519` is a literal because it is 7 hex characters. `key2` and `ed25519_key` are not literals. `str` is not a literal.
 
-- `priv_key = signing_key`, `priv_key = raw`, `PRIV_KEY = PRIV_KEY_DEFAULT`, `priv_key = key`, `priv_key = key2`, `priv_key = ed25519_key`, `priv_key = str`, `priv_key = None`, `self.priv_key = priv_key`, and `sign(msg, priv_key=k)`.
+- In code, a bare identifier value: signing_key, raw, priv_key_default, key, key2, ed25519_key, str, None, a self attribute, or a keyword whose value is an identifier. defaced is not a literal in code.
 - A parameter or field whose value is a type. A quoted CamelCase type with a lowercase letter and no digit is a type name only on a colon annotation with no equals sign (corpus id `r8-string-annotation`).
-- A comparison, including `if priv_key == other` and `assert priv_key == other`, and `const privKey = key!`.
+- A comparison (`==`, `!=`, `<=`, `>=`), a fat arrow (`=>`), a return arrow (`->`), and a non-null assertion on an identifier.
 - A Helm value `{{ .Values.key }}` and a placeholder `<your key here>`, including that placeholder with surrounding prose.
 - A `$` or `${}` reference, including `--private-key "$PRIV"` and a YAML value that is only `${PRIV_KEY}`.
 - `digest = bytes.fromhex(...)`, `iv = bytes([0, ...])`, and `want, _ := hex.DecodeString(...)`, because the name is not key-like. `random.seed(1)` on the previous line does not make the next line key-like.
@@ -576,7 +577,7 @@ At `645bead`, `scan_repo` still skipped `vendor` and `dist` before every check, 
 
 A quoted value is a literal and is not a type name. The type-name exception is only a CamelCase word with a lowercase letter and no digit, and only on a colon annotation in Python, TypeScript, JavaScript, or Go. The literal definition in the coverage list above is the definition in the pull request.
 
-Self-mutation after those ten items added real misses to the corpus and fixed them: `os.environ.get` with a hex default, a multiline `getenv`, a `default=` keyword, `+=`, a subscript assignment of a literal, and a parenthesized quoted literal. A placeholder with surrounding prose was a false positive and is now a negative. A keyword argument that passes a quoted literal stayed a hit and is pinned. Mutations of case, quotes, spacing, comments, `==` / `!=` / `<=` / `>=`, Helm quotes, and a key-like name on the previous line did not add another miss.
+Self-mutation after those ten items added real misses to the corpus and fixed them: `os.environ.get` with a hex default, a multiline `getenv`, a `default=` keyword, `+=`, a subscript assignment of a literal, and a parenthesized quoted literal. A placeholder with surrounding prose was a false positive and is now a negative. A keyword argument that passes a quoted literal stayed a hit and is pinned. The shapes that did not add another miss in that pass were case, quotes, spacing, comments, `==` / `!=` / `<=` / `>=`, Helm quotes, and a key-like name on the previous line. That pass did not include `:=`, unquoted config values, `??`, `||`, or `or`. It was not a completeness claim.
 
 Vendored mnemonic hits were counted with each head's `mnemonic_hit` on UTF-8 files under `node_modules` and `.venv`, skipping binaries and files over 2 MB. This walk saw 4313 files.
 
@@ -599,6 +600,43 @@ EXIT:0
 
 .venv/bin/python scripts/scan_secrets.py
 secret scan ok
+EXIT:0
+
+make check
+EXIT:0
+```
+
+## Round 10
+
+On 2026-10-31 at 14:37 America/Toronto, Max answered in the widget: "run round 10 on goal 03 and fix all 6 items".
+
+The corpus grew. No entry was deleted, renamed, or flipped. `tests/unit/test_secret_corpus.py` pins `(id, expect)` tuples. The count is 171: 121 positives and 50 negatives.
+
+`findings_in_text` on that corpus:
+
+| Head | Positives caught | Negatives flagged |
+| --- | --- | --- |
+| `c187f64` | 86 of 121 | 35 of 50 |
+| `7d8d73a` | 91 of 121 | 17 of 50 |
+| `3cde2d9` | 107 of 121 | 2 of 50 |
+| this tree | 121 of 121 | 0 of 50 |
+
+Every corpus positive that `c187f64` caught is still caught on this tree.
+
+Assignment separators covered here are `=`, `+=`, `:=`, `:`, and a subscript on the left of `=`. `==`, `!=`, `<=`, `>=`, `=>`, and `->` are not assignments. The literal definition in the coverage list above is the definition in the pull request.
+
+Self-mutation on this tree tried these families: separators `=`, `+=`, `:=`, `:`, `->`, and `=>`; quoting with no quotes, single quotes, double quotes, backticks, and triple quotes; code files against `.env`, `.env.example`, yaml, toml, and ini; and fallbacks (`getenv` default, `??`, `||`, and `or`). The fat arrow `=>` was a false positive and is now a negative. Python `or` after `getenv` was added as a positive. The other tried shapes in those families were already caught or already clean. This is not a claim that every possible shape was tested.
+
+```
+.venv/bin/python -m pytest tests/unit/test_secret_corpus.py tests/unit/test_secrets.py -q
+EXIT:0
+
+.venv/bin/python scripts/scan_secrets.py
+secret scan ok
+EXIT:0
+
+.venv/bin/python scripts/run_tests.py --only python
+105 passed
 EXIT:0
 
 make check

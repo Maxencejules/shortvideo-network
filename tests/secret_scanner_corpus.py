@@ -486,4 +486,96 @@ def cases() -> list[Case]:
         False,
     )
     add("r9-kw-literal", "note.py", "sign(" + "priv_" + 'key="abc")', True)
+    # Round 10. No earlier entry is flipped.
+    add(
+        "r10-go-byte-walrus",
+        "examples/r10-byte.go",
+        "priv" + 'Key := []byte("' + _hex() + '")',
+        True,
+        True,
+    )
+    add(
+        "r10-go-0x-walrus",
+        "examples/r10-ox.go",
+        "private" + 'Key := "0x' + _hex() + '"',
+        True,
+        True,
+    )
+    add(
+        "r10-go-hex-walrus",
+        "note.go",
+        "priv" + 'Key := "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r10-py-walrus",
+        "note.py",
+        "priv_" + 'key := "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r10-py-walrus-if",
+        "note.py",
+        "if (" + "priv_" + 'key := "' + _hex() + '"):',
+        True,
+    )
+    add(
+        "r10-env-hunter",
+        "examples/r10.env.example",
+        "PRIVATE_" + "KEY=Hunter2Secret\n",
+        True,
+        True,
+    )
+    add(
+        "r10-yaml-unquoted",
+        "examples/r10.yaml",
+        "private_" + "key: str0ngvalue\n",
+        True,
+        True,
+    )
+    add(
+        "r10-ini-unquoted",
+        "examples/r10.ini",
+        "private_" + "key = s3cretPass\n",
+        True,
+        True,
+    )
+    add(
+        "r10-getenv-0x",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY","0x' + _hex() + '")',
+        True,
+    )
+    add(
+        "r10-getenv-wif",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY","' + _wif() + '")',
+        True,
+    )
+    add(
+        "r10-unhexlify",
+        "note.py",
+        "key = binascii.un" + 'hexlify("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r10-nullish",
+        "note.ts",
+        "const k = process.env.PRIV_" + 'KEY ?? "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r10-or-bar",
+        "note.ts",
+        "const k = process.env.PRIV_" + 'KEY || "' + _hex() + '"',
+        True,
+    )
+    add("r10-defaced", "note.py", "priv_" + "key = defaced", False)
+    add("r10-fat-arrow", "note.py", "priv_" + 'key => "' + _hex() + '"', False)
+    add(
+        "r10-py-or",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY") or "' + _hex() + '"',
+        True,
+    )
     return out

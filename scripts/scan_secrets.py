@@ -30,12 +30,12 @@ _KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key" + _KEY_SUFFIX
 _KEY_ASSIGN = re.compile(
     r"(?<![A-Za-z0-9])['\"]?(?:[A-Za-z0-9]+_)?"
     + _KEY_BODY
-    + r"(?![A-Za-z0-9])['\"]?\s*(?<![!=<>])(?P<sep>\+?=|:)(?!=)",
+    + r"(?![A-Za-z0-9])['\"]?\s*(?<![!=<>])(?P<sep>:=|\+=|=(?![=>])|:)",
     re.IGNORECASE,
 )
 _KEY_CAMEL = re.compile(
     r"(?<=[a-z])(?:Priv(?:ate)?Key(?:Base64|Bytes|Hex|B64)?)"
-    + r"(?![A-Za-z0-9])['\"]?\s*(?<![!=<>])(?P<sep>\+?=|:)(?!=)"
+    + r"(?![A-Za-z0-9])['\"]?\s*(?<![!=<>])(?P<sep>:=|\+=|=(?![=>])|:)"
 )
 _KEY_INDEX = re.compile(
     r"(?i)\[\s*['\"](?:[A-Za-z0-9]+_)?"
@@ -44,7 +44,7 @@ _KEY_INDEX = re.compile(
     + r"[._-]?"
     + "key"
     + _KEY_SUFFIX
-    + r"['\"]\s*\]\s*(?<![!=<>])\+?=(?!=)"
+    + r"['\"]\s*\]\s*(?<![!=<>])\+?=(?![=>])"
 )
 _KEY_QUOTED = re.compile(
     "['\"]" + r"(?:[A-Za-z0-9]+_)?" + "priv" + r"[._-]?" + "key" + "['\"]",
@@ -65,11 +65,30 @@ _QUOTED = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
 _DOLLAR = re.compile(r"\$\{?[A-Za-z_][\w]*\}?")
 _BYTE_LIST = re.compile(r"bytes\s*\(\s*\[(?:\s*\d+\s*,){3,}\s*\d+")
 _HEX_CALL = re.compile(
-    r"(?i)(?:fromhex|DecodeString|hexToBytes|Buffer\.from)\s*\(\s*[\"'][0-9a-f]{48,}"
+    r"(?i)(?:fromhex|unhexlify|DecodeString|hexToBytes|Buffer\.from)"
+    r"\s*\(\s*[\"'][0-9a-f]{48,}"
+)
+# A getenv default may be plain hex, 0x-hex, or a WIF-shaped token.
+# The fake WIF is not strict base58: it contains 0 and l. The first letter
+# stays case-sensitive so a long lowercase word is not a WIF.
+_GETENV_VALUE = (
+    r"(?:0x[0-9a-f]{8,}|[0-9a-f]{8,}"
+    r"|(?-i:[5KL](?=[A-Za-z0-9]*\d)[A-Za-z0-9]{20,}))"
 )
 _GETENV_HEX = re.compile(
     r"(?i)(?:getenv|environ(?:\s*\.\s*get)?)\s*[\[(][^)]*"
-    r",\s*(?:default\s*=\s*)?[\"'][0-9a-f]{8,}[\"']"
+    r",\s*(?:default\s*=\s*)?[\"'](?:" + _GETENV_VALUE + r")[\"']"
+)
+_ENV_FALLBACK = re.compile(
+    r"(?i)(?:process\.env\s*(?:\[\s*)?\.?|getenv\s*\(\s*|environ(?:\s*\.\s*get)?\s*[\[(]\s*)"
+    r"['\"]?(?:[A-Za-z0-9]+_)?"
+    + "priv"
+    + r"(?:ate)?"
+    + r"[._-]?"
+    + "key"
+    + _KEY_SUFFIX
+    + r"['\"]?\s*(?:\]|\))?\s*(?:\?\?|\|\||\bor\b)\s*"
+    r"(?P<value>[\"'`][^\"'`\n]+[\"'`])"
 )
 _CODE_SUFFIXES = {".py", ".pyi", ".ts", ".tsx", ".js", ".jsx", ".go"}
 # Bare assignment values in this set are identifiers, not secrets.
@@ -297,10 +316,20 @@ def _quote_is_ignorable(inner: str, *, annotation: bool) -> bool:
     return annotation and _is_type_name(inner)
 
 
-def _bare_literal(token: str) -> bool:
-    """``abc``, pure hex of 7 or more characters, or base64 that contains a digit."""
+def _letter_hex_word(token: str) -> bool:
+    """Seven hex letters and no digit. ``defaced`` is one. ``ed25519`` is not."""
+    return re.fullmatch(r"[A-Fa-f]{7}", token) is not None
+
+
+def _bare_literal(token: str, *, code: bool) -> bool:
+    """``abc``, pure hex of 7 or more characters, or base64 that contains a digit.
+
+    In code, a 7-letter hex word is an identifier, not a literal.
+    """
     if token.lower() in _LITERAL_BARE:
         return True
+    if code and _letter_hex_word(token):
+        return False
     if re.fullmatch(r"[0-9a-fA-F]{7,}", token):
         return True
     return (
@@ -310,19 +339,23 @@ def _bare_literal(token: str) -> bool:
     )
 
 
-def _value_suppressed(value: str, *, annotation: bool = False) -> bool:
+def _value_suppressed(value: str, *, annotation: bool = False, code: bool = True) -> bool:
     """True when a matched value is not a literal secret.
 
     A quoted value is a literal and is not a type name. A ``$`` reference, a
     Helm ``{{ }}`` template, and an angle-bracket placeholder are not literals.
     A colon annotation with no equals sign may name a CamelCase type that has
-    a lowercase letter and no digit, including a quoted one. Other identifiers
-    are not literals. ``abc``, a pure hex token of 7 or more characters, and a
-    base64 token of 16 or more characters that contains a digit are literals.
+    a lowercase letter and no digit, including a quoted one. In code, other
+    identifiers are not literals, except ``abc``, pure hex of 7 or more
+    characters (not a 7-letter word such as ``defaced``), and base64 of 16 or
+    more characters that contains a digit. Outside code, an unquoted token is
+    a literal. ``str``, ``null``, ``None``, and ``~`` are not.
     """
     text = _trim_assigned(value)
     if text == "":
         return False
+    if text == "~":
+        return True
     if _is_dollar_ref(text) or _is_helm(text) or _is_placeholder(text):
         return True
     if (
@@ -334,9 +367,13 @@ def _value_suppressed(value: str, *, annotation: bool = False) -> bool:
         return True
     if re.fullmatch(r"(?i)none|null|nil|undefined", text):
         return True
+    if not code and text.lower() == "str":
+        return True
     if re.fullmatch(r"0x[0-9a-fA-F]{8,}", text):
         return False
     if re.fullmatch(r"[0-9a-fA-F]{7,}", text):
+        if code and _letter_hex_word(text):
+            return True
         return False
     if len(text) >= 16 and re.fullmatch(r"[A-Za-z0-9+/]+=*", text) and re.search(r"\d", text):
         return False
@@ -357,9 +394,11 @@ def _value_suppressed(value: str, *, annotation: bool = False) -> bool:
             return True
         return False
     if re.fullmatch(r"[A-Za-z_][\w.]*", text):
+        if not code:
+            return False
         if "." in text:
             return True
-        return not _bare_literal(text.split(".")[-1])
+        return not _bare_literal(text.split(".")[-1], code=True)
     return False
 
 
@@ -401,13 +440,17 @@ def _assignment_suppressed(text: str, match: re.Match[str], name: str) -> bool:
         rest = rest.split("=", 1)[1]
     if _is_code(name) and sep == ":" and "=" not in line:
         return (
-            _value_suppressed(line, annotation=True)
+            _value_suppressed(line, annotation=True, code=True)
             or not _quote_inners(line)
-            and not re.fullmatch(r"0x[0-9a-fA-F]{8,}|[0-9a-fA-F]{7,}", line.strip())
+            and not re.fullmatch(r"0x[0-9a-fA-F]{8,}|[0-9a-fA-F]{8,}", line.strip())
+            and not (
+                re.fullmatch(r"[0-9a-fA-F]{7,}", line.strip()) is not None
+                and not _letter_hex_word(line.strip())
+            )
         )
     if sep == ":" and "=" in line:
-        return _value_suppressed(line.split("=", 1)[1])
-    return _value_suppressed(rest)
+        return _value_suppressed(line.split("=", 1)[1], code=_is_code(name))
+    return _value_suppressed(rest, code=_is_code(name))
 
 
 def _quoted_kept(text: str, match: re.Match[str]) -> bool:
@@ -433,10 +476,13 @@ def _key_hit(text: str, name: str) -> bool:
         if not _assignment_suppressed(text, match, name):
             return True
     for match in _KEY_CLI.finditer(text):
-        if not _value_suppressed(match.group("value")):
+        if not _value_suppressed(match.group("value"), code=False):
             return True
     for match in _KEY_INDEX.finditer(text):
-        if not _value_suppressed(_rest_of_statement(text, match.end())):
+        if not _value_suppressed(_rest_of_statement(text, match.end()), code=True):
+            return True
+    for match in _ENV_FALLBACK.finditer(text):
+        if not _value_suppressed(match.group("value"), code=False):
             return True
     for pattern in (_HEX_CALL, _GETENV_HEX, _BYTE_LIST):
         for match in pattern.finditer(text):
