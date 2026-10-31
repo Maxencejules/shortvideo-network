@@ -1,0 +1,20 @@
+{
+  "name": "@svn/web",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Viewer and operator UI slot. Goal 20 implements the product. This package does not render it.",
+  "type": "module",
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "7.0.2"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test --test-reporter tap test/react-pin.test.mjs"
+  }
+}

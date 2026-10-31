@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	safeMax int64 = 9007199254740991
-	maxDepth      = 8
+	safeMax  int64 = 9007199254740991
+	maxDepth       = 8
 )
 
 type vectors struct {

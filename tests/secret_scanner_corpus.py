@@ -1,0 +1,807 @@
+"""Table of secret-scanner cases from PR 6 reviews, rounds 2 through 8.
+
+Content is built at runtime from fragments so this source file does not itself
+contain a contiguous secret or a 12-word phrase. ``expect`` is whether the
+scanner should flag the text.
+"""
+
+from __future__ import annotations
+
+from typing import TypedDict
+
+
+class Case(TypedDict):
+    id: str
+    name: str
+    text: str
+    expect: bool
+    cli: bool
+
+
+def _words(count: int) -> list[str]:
+    raw = [
+        "aban" + "don",
+        "abil" + "ity",
+        "ab" + "le",
+        "ab" + "out",
+        "ab" + "ove",
+        "ab" + "sent",
+        "ab" + "sorb",
+        "abs" + "tract",
+        "abs" + "urd",
+        "ab" + "use",
+        "acc" + "ess",
+        "acci" + "dent",
+        "acc" + "ount",
+        "acc" + "use",
+        "ach" + "ieve",
+        "ac" + "id",
+        "acou" + "stic",
+        "acqu" + "ire",
+        "acr" + "oss",
+        "a" + "ct",
+        "act" + "ion",
+        "act" + "or",
+        "actr" + "ess",
+        "actu" + "al",
+        "ad" + "apt",
+    ]
+    return raw[:count]
+
+
+def _phrase(count: int) -> str:
+    return " ".join(_words(count))
+
+
+def _hex(count: int = 64) -> str:
+    return "ab" * (count // 2)
+
+
+def _b64() -> str:
+    return "MC4CAQ" + ("A" * 24)
+
+
+def _openssh() -> str:
+    return (
+        "-----BEGIN "
+        + "OPENSSH PRIVATE KEY-----\n"
+        + "ZmFrZS1rZXk=\n"
+        + "-----END OPENSSH PRIVATE KEY-----\n"
+    )
+
+
+def _akia() -> str:
+    return "AKIA" + "0000000000000000"
+
+
+def _wif() -> str:
+    """Fake WIF-shaped token: mixed case and digits, not a real key."""
+    return "KwDiBf89" + "FakeNotARealWifKey" + "000000000000"
+
+
+def cases() -> list[Case]:
+    """Every review case. ``cli`` entries are also git-added in the corpus test."""
+    phrase = _phrase(12)
+    long = _phrase(24)
+    words = _words(12)
+    out: list[Case] = []
+
+    def add(case_id: str, name: str, text: str, expect: bool, cli: bool = False) -> None:
+        out.append({"id": case_id, "name": name, "text": text, "expect": expect, "cli": cli})
+
+    add("r2-json-mnemonic", "wallet.json", '{"mnemonic": "' + phrase + '"}', True)
+    add("r2-env-seed", "wallet.env", 'SEED="' + phrase + '"\n', True)
+    add("r2-fifteen", "note.txt", _phrase(15), True)
+    add("r2-unquoted-colon", "note.txt", "priv_" + "key: ed25519", True)
+    add("r3-equals-quoted", "note.txt", "priv_" + 'key = "abc"', True)
+    add("r3-env-upper", "wallet.env", "PRIV_" + "KEY=abc\n", True)
+    add("r3-one-per-line", "note.txt", "\n".join(words), True)
+    add("r3-split-6-6", "note.txt", " ".join(words[:6]) + "\n" + " ".join(words[6:]), True)
+    add("r4-blank-lines", "note.txt", "\n\n".join(words), True)
+    add("r4-dash-list", "note.md", "\n".join("- " + word for word in words), True)
+    add("r4-star-list", "note.md", "\n".join("* " + word for word in words), True)
+    add("r4-dot-list", "note.md", "\n".join(f"{i}. {w}" for i, w in enumerate(words, 1)), True)
+    add("r4-yaml-list", "note.yaml", "\n".join("  - " + word for word in words), True)
+    add(
+        "r4-json-array",
+        "note.json",
+        "[\n" + ",\n".join(f'  "{word}"' for word in words) + "\n]",
+        True,
+    )
+    add(
+        "r4-table",
+        "note.md",
+        "\n".join(f"| {words[i]} | {words[i + 1]} |" for i in range(0, 12, 2)),
+        True,
+    )
+    add("r4-hash-comments", "note.txt", "\n".join("# " + word for word in words), True)
+    add("r4-upper", "note.txt", "\n".join(word.upper() for word in words), True)
+    add("r4-title", "note.txt", "\n".join(word.title() for word in words), True)
+    add("r4-padded-25", "note.txt", " ".join(_words(25)), True)
+    add("r4-validator-prefix", "note.txt", "validator_" + "priv_" + "key: abc", True)
+    add("r4-validator-env", "note.env", "VALIDATOR_" + "PRIV_" + "KEY=\n", False)
+    add("r4-camel-json", "note.json", '{"' + "priv" + 'Key": "x"}', True)
+    add("r4-joined", "note.txt", "priv" + "key: abc", True)
+    add("r4-dotted", "note.txt", "priv" + ".key: abc", True)
+    add("r4-private", "note.txt", "private_" + "key: abc", True)
+    add("r4-annotation-bytes", "note.py", "def load(" + "priv_" + "key: bytes) -> None:", False)
+    add("r5-toml", "wallet.toml", 'seed = "' + phrase + '"\n', True)
+    add("r5-ini", "wallet.ini", "seed=" + phrase + "\n", True)
+    add("r5-yaml", "wallet.yaml", "seed: " + phrase + "\n", True)
+    add("r5-json", "wallet.json", '{"seed": "' + phrase + '"}\n', True)
+    add("r5-dotenv", "wallet.env", "SEED=" + phrase + "\n", True)
+    add("r5-prose", "note.txt", phrase + "\n", True)
+    add("r5-24", "note.txt", long + "\n", True)
+    add(
+        "r5-toml-account",
+        "wallet.toml",
+        '[wallet]\nmnemonic = "' + phrase + '"\naccount = 0\n',
+        True,
+    )
+    add("r5-ini-name", "wallet.ini", "mnemonic=" + phrase + "\nname=alice\n", True)
+    add(
+        "r5-yaml-index",
+        "wallet.yaml",
+        "wallet:\n  mnemonic: " + phrase + "\n  index: 0\n",
+        True,
+    )
+    add(
+        "r5-json-index",
+        "wallet.json",
+        '{"mnemonic": "' + phrase + '", "index": 0}\n',
+        True,
+    )
+    add("r5-env-account", "wallet.env", 'MNEMONIC="' + phrase + '"\nACCOUNT=alice\n', True)
+    add("r5-phrase-again", "note.txt", phrase + " again\n", True)
+    add("r5-colon-list", "note.md", "\n".join(f"{i}: {w}" for i, w in enumerate(words, 1)), True)
+    add(
+        "r5-heading-list",
+        "note.md",
+        "## Seed\n" + "\n".join("- " + word for word in words),
+        True,
+    )
+    add(
+        "r5-annotation-value",
+        "note.py",
+        "def load(" + "priv_" + 'key: str = "deadbeef") -> None:',
+        True,
+    )
+    add("r5-yaml-str", "config.yaml", "priv_" + "key: str\n", False)
+    add("r5-validator-camel", "note.txt", "validator" + "Priv" + 'Key: "deadbeef"', True)
+    add("r5-node-private", "note.json", '{"node' + "Private" + 'Key": "cafebabe"}', True)
+    add("r5-hex-suffix-env", "note.env", "PRIV_" + "KEY_" + "HEX=deadbeef\n", True)
+    add("r5-hex-suffix-colon", "note.txt", "private_" + "key_" + "hex: deadbeef", True)
+    add("r5-flag", "note.txt", "--" + "private-" + "key deadbeef", True)
+    add(
+        "r5-ordinary-prose",
+        "note.txt",
+        "The viewer uploads a video through the https api.\n",
+        False,
+    )
+    add("r6-paren-list", "seed.md", "\n".join(f"{i}) {w}" for i, w in enumerate(words, 1)), True)
+    add(
+        "r6-paren-num-list",
+        "seed.md",
+        "\n".join(f"({i}) {w}" for i, w in enumerate(words, 1)),
+        True,
+    )
+    add("r6-mnemonic-call", "w.py", 'Mnemonic("' + phrase + '")\n', True)
+    add("r6-from-mnemonic", "w.py", 'Account.from_mnemonic("' + phrase + '")\n', True)
+    add("r6-from-phrase", "w.ts", 'ethers.Wallet.fromPhrase("' + phrase + '")\n', True)
+    add("r6-newkey", "w.go", 'hd.NewKey("' + phrase + '")\n', True)
+    add("r6-env-paren-comment", "a.env", 'MNEMONIC="' + phrase + '"  # (devnet)\n', True)
+    add(
+        "r6-fromhex",
+        "note.py",
+        "PRIV_" + "KEY = bytes.from" + 'hex("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r6-signingkey",
+        "note.py",
+        "SigningKey(bytes.from" + 'hex("' + _hex() + '"))',
+        True,
+    )
+    add(
+        "r6-byte-list",
+        "note.py",
+        "priv_" + "key = bytes([" + "1, 2, 3, 4, 5, 6, 7, 8])",
+        True,
+    )
+    add("r6-getenv-hex", "note.py", 'os.getenv("PRIV_KEY", "' + _hex() + '")', True)
+    add(
+        "r6-buffer",
+        "note.ts",
+        'const privKey = Buffer.from("' + _hex() + '", "hex")',
+        True,
+    )
+    add("r6-def-type", "note.py", "def sign(" + "priv_" + "key: PrivateKey):", False)
+    add("r6-dataclass", "note.py", "class C:\n    " + "priv_" + "key: PrivateKey", False)
+    add("r6-docstring", "note.py", '"""\n' + "priv_" + 'key: the signing material\n"""', False)
+    add("r6-self", "note.py", "self." + "priv_" + "key = " + "priv_" + "key", False)
+    add("r6-kw", "note.py", "sign(msg, " + "priv_" + "key=k)", False)
+    add("r6-subscript", "note.py", 'cfg["' + "priv_" + 'key"]', False)
+    add("r6-map-ident", "note.py", '{"' + "priv_" + 'key": k}', False)
+    add("r6-none", "note.py", "priv_" + "key = None", False)
+    add("r6-ident", "note.py", "priv_" + "key = key", False)
+    add("r6-ts-param", "wallet.ts", "function sign(" + "priv_" + "key: Uint8Array) {}", False)
+    add("r6-ts-iface", "wallet.ts", "interface W { " + "priv_" + "key: string }", False)
+    add("r6-go-tag", "wallet.go", 'Field string `json:"' + "priv_" + 'key"`', False)
+    add("r6-go-seed", "wallet.go", "privKey := ed25519.NewKeyFromSeed(seed)", False)
+    add("r6-yaml-dollar", "config.yaml", "priv_" + "key: ${PRIV_KEY}\n", False)
+    add("r6-optional-none", "note.py", "def f(" + "priv_" + "key: Optional[bytes] = None):", False)
+    add("r6-flag-dollar", "note.txt", "--" + "private-" + 'key "$PRIV"', False)
+    add("r6-load-call", "note.py", "priv_" + "key = load_key(path)", False)
+    add("r6-def-bare", "note.py", "def sign(" + "priv_" + "key):", False)
+    add("r6-getenv-name", "note.py", 'priv_key = os.getenv("PRIV_KEY")', False)
+    add(
+        "r7-word-label",
+        "note.md",
+        "\n".join(f"word{i}: {w}" for i, w in enumerate(words, 1)),
+        True,
+    )
+    add("r7-toml-paren", "wallet.toml", 'seed = "' + phrase + '" # backup (devnet)\n', True)
+    add("r7-flag-joined", "note.txt", "--" + "priv" + "key deadbeef", True)
+    add("r7-flag-underscore", "note.txt", "--" + "priv_" + "key=deadbeef", True)
+    add(
+        "r7-base64-name",
+        "note.ts",
+        "node" + "Priv" + "Key" + 'Base64 = "' + ("QQ" * 16) + '"',
+        True,
+    )
+    add("r8-env-0x", "wallet.env", "PRIVATE_" + "KEY=0x" + _hex() + "\n", True, True)
+    add("r8-yaml-0x", "wallet.yaml", "priv_" + "key: 0x" + _hex() + "\n", True, True)
+    add("r8-py-0x", "wallet.py", "PRIV_" + "KEY = 0x" + _hex() + "\n", True, True)
+    add("r8-env-b64", "wallet.env", "PRIV_" + "KEY=" + _b64() + "\n", True, True)
+    add("r8-flag-0x", "note.txt", "--" + "private-" + "key 0x" + _hex() + "\n", True, True)
+    add("r8-go-backtick", "bt.go", "hd.NewKey(`" + phrase + "`)\n", True)
+    add("r8-js-template", "bt.js", "fromPhrase(`" + phrase + "`)\n", True)
+    add("r8-yaml-unquoted-paren", "m.yaml", "mnemonic: " + phrase + "  # (devnet)\n", True)
+    add("r8-ini-semi-paren", "m.ini", "mnemonic = " + phrase + " ; (devnet)\n", True)
+    add("r8-signing-key", "note.py", "priv_" + "key = signing_key", False)
+    add("r8-raw", "note.py", "priv_" + "key = raw", False)
+    add("r8-default-name", "note.py", "PRIV_" + "KEY = PRIV_" + "KEY_DEFAULT", False)
+    add("r8-string-annotation", "note.py", "def f(" + "priv_" + 'key: "PrivateKey"):', False)
+    add(
+        "r8-digest-fromhex",
+        "note.py",
+        "digest = bytes.from" + 'hex("' + _hex() + '")',
+        False,
+    )
+    add("r8-iv-bytes", "note.py", "iv = bytes([" + "0, 0, 0, 0, 1, 2, 3, 4])", False)
+    add("r8-want-decode", "note.go", 'want, _ := hex.DecodeString("' + _hex() + '")', False)
+    add(
+        "r8-named-fromhex",
+        "note.py",
+        "seed = bytes.from" + 'hex("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r8-openssh-vendor",
+        "chain/vendor/keys/deploy_key.txt",
+        _openssh(),
+        True,
+        True,
+    )
+    add("r8-dist-js", "apps/web/dist/app.js", "const s = '" + phrase + "'\n", True, True)
+    add(
+        "r8-dist-py",
+        "services/api/dist/settings.py",
+        _akia() + "\n" + phrase + "\n",
+        True,
+        True,
+    )
+    add("r1-pkcs8", "note.txt", "-----BEGIN " + "ENCRYPTED PRIVATE KEY-----\n", True)
+    add("r1-pgp", "note.txt", "-----BEGIN " + "PGP PRIVATE KEY BLOCK-----\n", True)
+    add("r1-slack", "note.txt", "xox" + "b-0000000000-FAKE", True)
+    add("r1-key-suffix", "forced.key", "not-a-key-body", True)
+    add("r2-quoted-name", "note.txt", '"' + "PRIV_" + 'KEY"', True)
+    # Round 9. r5-yaml-str above is the only flip (positive to negative).
+    add(
+        "r9-env-wif",
+        "examples/app.env.example",
+        "PRIVATE_" + 'KEY="' + _wif() + '"\n',
+        True,
+        True,
+    )
+    add(
+        "r9-toml-wif",
+        "examples/wallet.toml",
+        "PRIVATE_" + 'KEY = "' + _wif() + '"\n',
+        True,
+        True,
+    )
+    add("r9-py-wif", "examples/wif.py", "priv_" + 'key = "' + _wif() + '"\n', True, True)
+    add(
+        "r9-hunter",
+        "examples/hunter.env",
+        "PRIVATE_" + 'KEY="Hunter2Secret"\n',
+        True,
+        True,
+    )
+    add(
+        "r9-yaml-b64",
+        "examples/wif.yaml",
+        "priv_" + 'key: "MC4CAQAwBQYDK2VwBCIEIGq3a1b2c3d4e5f6"\n',
+        True,
+        True,
+    )
+    add(
+        "r9-optional-arrow",
+        "note.py",
+        "def f(" + "priv_" + "key: Optional[bytes] = None) -> None: ...",
+        False,
+    )
+    add(
+        "r9-none-ellipsis",
+        "note.py",
+        "def f(" + "priv_" + "key: bytes = None): ...",
+        False,
+    )
+    add(
+        "r9-union-none-arrow",
+        "note.py",
+        "def f(" + "priv_" + "key: bytes | None = None) -> bytes:",
+        False,
+    )
+    add(
+        "r9-none-comma-param",
+        "note.py",
+        "def f(" + "priv_" + "key: bytes = None, n: int = 0):",
+        False,
+    )
+    add(
+        "r9-key-fromhex",
+        "note.py",
+        "key = bytes.from" + 'hex("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r9-validator-key",
+        "note.py",
+        "validator_key = bytes.from" + 'hex("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r9-node-key",
+        "note.py",
+        "NODE_KEY = bytes.from" + 'hex("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r9-go-key-decode",
+        "note.go",
+        "key, _ := hex.Decode" + 'String("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r9-key-bytes-list",
+        "note.py",
+        "key = bytes([" + "1, 2, 3, 4])",
+        True,
+    )
+    add(
+        "r9-seed-next-line",
+        "note.py",
+        "random.seed(1)\ndigest = bytes.from" + 'hex("' + _hex() + '")',
+        False,
+    )
+    add("r9-if-eq", "note.py", "if " + "priv_" + "key == other:", False)
+    add("r9-assert-eq", "note.py", "assert " + "priv_" + "key == other", False)
+    add("r9-ts-bang", "wallet.ts", "const priv" + "Key = key!", False)
+    add(
+        "r9-getenv-deadbeef",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY","dead' + 'beef")',
+        True,
+    )
+    add(
+        "r9-private-key-hex",
+        "wallet.ts",
+        "const " + "private" + 'KeyHex = "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r9-private-key-bytes",
+        "wallet.ts",
+        "const " + "private" + 'KeyBytes = "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r9-private-key-b64",
+        "wallet.ts",
+        "const " + "private" + 'KeyB64 = "' + _b64() + '"',
+        True,
+    )
+    add(
+        "r9-snake-key-bytes",
+        "note.env",
+        "PRIVATE_" + "KEY_" + "BYTES=" + _hex() + "\n",
+        True,
+    )
+    add(
+        "r9-snake-key-b64",
+        "note.env",
+        "priv_" + "key_" + "b64=" + _b64() + "\n",
+        True,
+    )
+    add(
+        "r9-camel-my-hex",
+        "wallet.ts",
+        "const my" + "Private" + 'KeyHex = "' + _hex() + '"',
+        True,
+    )
+    add("r9-key2", "note.py", "priv_" + "key = key2", False)
+    add("r9-ed25519-key", "note.py", "priv_" + "key = ed25519_key", False)
+    add("r9-eq-str", "note.py", "priv_" + "key = str", False)
+    add("r9-helm", "chart.yaml", "priv_" + 'key: "{{ .Values.key }}"\n', False)
+    add("r9-placeholder-yaml", "chart.yaml", "priv" + "key: <your key here>\n", False)
+    add("r9-placeholder-md", "note.md", "priv" + "key: <your key here>\n", False)
+    add("r9-bytes-three", "note.py", "priv_" + "key = bytes([" + "1, 2, 3])", False)
+    add(
+        "r9-getenv-short",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY","dead' + 'be")',
+        False,
+    )
+    add(
+        "r9-environ-get",
+        "note.py",
+        'os.environ.get("PRIV_' + 'KEY", "dead' + 'beef")',
+        True,
+    )
+    add(
+        "r9-environ-get-sq",
+        "note.py",
+        "os.environ.get('PRIV_" + "KEY', 'dead" + "beef')",
+        True,
+    )
+    add(
+        "r9-getenv-multiline",
+        "note.py",
+        "os.get" + 'env(\n    "PRIV_' + 'KEY", "dead' + 'beef")',
+        True,
+    )
+    add(
+        "r9-getenv-kw",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY", default="dead' + 'beef")',
+        True,
+    )
+    add("r9-plus-eq", "note.py", "priv_" + 'key += "abc"', True)
+    add("r9-plus-eq-ident", "note.py", "priv_" + "key += key", False)
+    add("r9-subscript-assign", "note.py", 'cfg["' + "priv_" + 'key"] = "abc"', True)
+    add(
+        "r9-environ-assign",
+        "note.py",
+        'os.environ["PRIV_' + 'KEY"] = "dead' + 'beef"',
+        True,
+    )
+    add("r9-subscript-ident", "note.py", 'cfg["' + "priv_" + 'key"] = key', False)
+    add("r9-paren-literal", "note.py", "priv_" + 'key = (\n    "abc"\n)', True)
+    add(
+        "r9-placeholder-prose",
+        "note.md",
+        "Use " + "priv_" + "key: <your key here> in the chart.\n",
+        False,
+    )
+    add("r9-kw-literal", "note.py", "sign(" + "priv_" + 'key="abc")', True)
+    # Round 10. No earlier entry is flipped.
+    add(
+        "r10-go-byte-walrus",
+        "examples/r10-byte.go",
+        "priv" + 'Key := []byte("' + _hex() + '")',
+        True,
+        True,
+    )
+    add(
+        "r10-go-0x-walrus",
+        "examples/r10-ox.go",
+        "private" + 'Key := "0x' + _hex() + '"',
+        True,
+        True,
+    )
+    add(
+        "r10-go-hex-walrus",
+        "note.go",
+        "priv" + 'Key := "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r10-py-walrus",
+        "note.py",
+        "priv_" + 'key := "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r10-py-walrus-if",
+        "note.py",
+        "if (" + "priv_" + 'key := "' + _hex() + '"):',
+        True,
+    )
+    add(
+        "r10-env-hunter",
+        "examples/r10.env.example",
+        "PRIVATE_" + "KEY=Hunter2Secret\n",
+        True,
+        True,
+    )
+    add(
+        "r10-yaml-unquoted",
+        "examples/r10.yaml",
+        "private_" + "key: str0ngvalue\n",
+        True,
+        True,
+    )
+    add(
+        "r10-ini-unquoted",
+        "examples/r10.ini",
+        "private_" + "key = s3cretPass\n",
+        True,
+        True,
+    )
+    add(
+        "r10-getenv-0x",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY","0x' + _hex() + '")',
+        True,
+    )
+    add(
+        "r10-getenv-wif",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY","' + _wif() + '")',
+        True,
+    )
+    add(
+        "r10-unhexlify",
+        "note.py",
+        "key = binascii.un" + 'hexlify("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r10-nullish",
+        "note.ts",
+        "const k = process.env.PRIV_" + 'KEY ?? "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r10-or-bar",
+        "note.ts",
+        "const k = process.env.PRIV_" + 'KEY || "' + _hex() + '"',
+        True,
+    )
+    add("r10-defaced", "note.py", "priv_" + "key = defaced", False)
+    add("r10-fat-arrow", "note.py", "priv_" + 'key => "' + _hex() + '"', False)
+    add(
+        "r10-py-or",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY") or "' + _hex() + '"',
+        True,
+    )
+    # Round 11. r4-validator-env above is the empty-assignment expect change.
+    add(
+        "r11-cjs-env",
+        "examples/hardhat.config.cjs",
+        "const private" + "Key = process.env.PRIVATE_" + "KEY;",
+        False,
+        True,
+    )
+    add("r11-cjs-ident", "examples/r11.cjs", "const priv" + "Key = key;", False)
+    add("r11-mjs-ident", "examples/r11.mjs", "const priv" + "Key = key;", False)
+    add("r11-mts-ident", "examples/r11.mts", "const priv" + "Key = key;", False)
+    add("r11-cts-ident", "examples/r11.cts", "const priv" + "Key = key;", False)
+    add("r11-rs-ident", "examples/r11.rs", "let private_" + "key = key;", False)
+    add("r11-sh-ident", "examples/r11.sh", "private_" + "key=key\n", False)
+    add(
+        "r11-sh-quoted",
+        "examples/r11-hex.sh",
+        "private_" + 'key="' + _hex() + '"\n',
+        True,
+    )
+    add(
+        "r11-go-range-blank",
+        "examples/r11-range.go",
+        "for _, priv" + "Key := range keys {",
+        False,
+        True,
+    )
+    add("r11-go-range", "note.go", "for priv" + "Key := range ch {", False)
+    add("r11-go-addr", "note.go", "priv" + "Key := &ecdsa.PrivateKey{}", False)
+    add(
+        "r11-go-addr-field",
+        "note.go",
+        "priv" + "Key := &ecdsa.PrivateKey{D: d}",
+        False,
+    )
+    add("r11-go-chan", "note.go", "priv" + "Key := <-ch", False)
+    add("r11-go-deref", "note.go", "priv" + "Key := *pk", False)
+    add("r11-go-deref-eq", "note.go", "priv" + "Key = *pk", False)
+    add("r11-go-addr-eq", "note.go", "priv" + "Key = &ecdsa.PrivateKey{}", False)
+    add(
+        "r11-go-tuple-err",
+        "note.go",
+        "priv" + 'Key, err := crypto.HexToECDSA("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r11-go-tuple-blank",
+        "note.go",
+        "priv" + 'Key, _ := crypto.HexToECDSA("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r11-py-tuple",
+        "note.py",
+        "priv_" + 'key, other = "' + _hex() + '"',
+        True,
+    )
+    add("r11-env-empty", "examples/r11.env", "PRIVATE_" + "KEY=\n", False)
+    add("r11-env-empty-quotes", "examples/r11b.env", "PRIVATE_" + 'KEY=""\n', False)
+    add("r11-env-empty-sq", "examples/r11e.env", "PRIVATE_" + "KEY=''\n", False)
+    add("r11-toml-empty-quotes", "examples/r11b.toml", "private_" + 'key = ""\n', False)
+    add(
+        "r11-env-comment",
+        "examples/r11c.env",
+        "PRIVATE_" + "KEY= # set me\n",
+        False,
+    )
+    add("r11-yaml-empty", "examples/r11.yaml", "private_" + "key:\n", False)
+    add("r11-yaml-empty-quotes", "examples/r11b.yaml", "private_" + 'key: ""\n', False)
+    add(
+        "r11-yaml-nested",
+        "examples/r11c.yaml",
+        "private_" + "key:\n  name: one\n",
+        False,
+    )
+    add("r11-ini-empty", "examples/r11.ini", "private_" + "key=\n", False)
+    add("r11-toml-empty", "examples/r11.toml", "private_" + "key = \n", False)
+    add("r11-json-empty", "examples/r11.json", '{"private' + 'Key": ""}', False)
+    add("r11-docker-empty", "Dockerfile", "ENV PRIVATE_" + "KEY=\n", False)
+    add("r11-sh-dollar1", "examples/r11b.sh", "PRIVATE_" + "KEY=$1\n", False)
+    add(
+        "r11-sh-export-missing",
+        "examples/r11c.sh",
+        "export PRIVATE_" + 'KEY="${PRIVATE_KEY:?missing}"\n',
+        False,
+    )
+    add(
+        "r11-yaml-path",
+        "examples/r11d.yaml",
+        "private_" + "key: /run/secrets/key\n",
+        False,
+    )
+    add("r11-yaml-alias", "examples/r11e.yaml", "private_" + "key: *alias\n", False)
+    add("r11-yaml-false", "examples/r11f.yaml", "private_" + "key: false\n", False)
+    add("r11-yaml-true", "examples/r11g.yaml", "private_" + "key: true\n", False)
+    add("r11-yaml-yes", "examples/r11h.yaml", "private_" + "key: yes\n", False)
+    add("r11-yaml-no", "examples/r11i.yaml", "private_" + "key: no\n", False)
+    add("r11-yaml-on", "examples/r11j.yaml", "private_" + "key: on\n", False)
+    add("r11-yaml-off", "examples/r11k.yaml", "private_" + "key: off\n", False)
+    add(
+        "r11-md-prose",
+        "examples/r11.md",
+        "private_" + "key: the hex key is not stored in this sentence.\n",
+        False,
+    )
+    add(
+        "r11-fullwidth",
+        "examples/r11d.env",
+        "PRIVATE_" + "KEY" + "\uff1d" + "Hunter2Secret\n",
+        True,
+    )
+    # Round 12. Existing expects are unchanged.
+    add(
+        "r12-ts-multiline",
+        "examples/r12.ts",
+        "const private" + 'Key =\n  "0x' + _hex() + '";',
+        True,
+        True,
+    )
+    add(
+        "r12-ts-typed-multiline",
+        "examples/r12b.ts",
+        "let private" + 'Key: string =\n  "0x' + _hex() + '";',
+        True,
+    )
+    add(
+        "r12-json-multiline",
+        "examples/r12.json",
+        '"private' + 'Key":\n  "0x' + _hex() + '"',
+        True,
+    )
+    add(
+        "r12-yaml-quoted-multiline",
+        "examples/r12.yaml",
+        "private_" + 'key:\n  "' + _hex() + '"\n',
+        True,
+    )
+    add(
+        "r12-yaml-0x-multiline",
+        "examples/r12b.yaml",
+        "private_" + "key:\n  0x" + _hex() + "\n",
+        True,
+    )
+    add(
+        "r12-py-backslash",
+        "examples/r12.py",
+        "priv_" + 'key = \\\n  "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r12-toml-triple",
+        "examples/r12.toml",
+        "priv_" + 'key = """\n' + _hex() + '\n"""\n',
+        True,
+    )
+    add(
+        "r12-go-multiline",
+        "examples/r12.go",
+        "priv" + 'Key :=\n\t"' + _hex() + '"',
+        True,
+    )
+    add(
+        "r12-sh-hunter",
+        "examples/run.sh",
+        "PRIVATE_" + "KEY=Hunter2Secret\n",
+        True,
+        True,
+    )
+    add(
+        "r12-envrc-hunter",
+        "examples/r12.envrc",
+        "export PRIVATE_" + "KEY=Hunter2Secret\n",
+        True,
+        True,
+    )
+    add(
+        "r12-docker-hunter",
+        "deploy/Dockerfile",
+        "ENV PRIVATE_" + "KEY=Hunter2Secret\n",
+        True,
+        True,
+    )
+    add(
+        "r12-sh-default-0x",
+        "examples/r12b.sh",
+        "export PRIVATE_" + 'KEY="${PRIVATE_KEY:-0x' + _hex() + '}"\n',
+        True,
+        True,
+    )
+    add(
+        "r12-sh-default-wif",
+        "examples/r12c.sh",
+        "PRIVATE_" + "KEY=${PRIVATE_KEY:-" + _wif() + "}\n",
+        True,
+        True,
+    )
+    add(
+        "r12-go-byte-dec",
+        "examples/r12b.go",
+        "var priv" + "Key = []byte{" + "1, 2, 3, 4, 5, 6, 7, 8}",
+        True,
+    )
+    add(
+        "r12-go-byte-0x",
+        "examples/r12c.go",
+        "priv" + "Key := []byte{" + "0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}",
+        True,
+    )
+    add(
+        "r12-go-array32",
+        "examples/r12d.go",
+        "priv" + "Key := [32]byte{" + "1, 2, 3, 4, 5, 6, 7, 8}",
+        True,
+    )
+    add(
+        "r12-ts-uint8",
+        "examples/r12c.ts",
+        "const private" + "Key = new Uint8Array([" + "1, 2, 3, 4, 5, 6, 7, 8])",
+        True,
+    )
+    add(
+        "r12-ts-uint8-from",
+        "examples/r12d.ts",
+        "const private" + "Key = Uint8Array.from([" + "1, 2, 3, 4, 5, 6, 7, 8])",
+        True,
+    )
+    return out

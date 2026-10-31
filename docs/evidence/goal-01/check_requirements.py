@@ -145,7 +145,10 @@ GOAL_FILE_SHA256 = {
     "29-adversarial-review-and-fault-testing.md": "011cf9fbadb66e5f11cd20b17940bd0bb76cf0bdbcebdf83ff87d50878a06db9",
     "30-final-acceptance-and-independent-installation.md": "e30ea2e467cc478f4c2e1773dcd1c6b36f550674c269df3c55489ab260255d6d",
 }
-ABSENT_ROOTS = [
+# Goal 01 recorded these directories as absent. Goal 03 is required to create
+# them as scaffolding. The checker now requires the directories and still
+# rejects Rust, Solidity, and a chain main package.
+REQUIRED_ROOTS = [
     "apps",
     "services",
     "chain",
@@ -156,18 +159,38 @@ ABSENT_ROOTS = [
     "deployments",
     "tests",
 ]
-SOURCE_SUFFIXES = {".go", ".ts", ".tsx", ".jsx", ".rs", ".sol", ".proto"}
+SOURCE_SUFFIXES = {".go", ".ts", ".tsx", ".jsx", ".proto"}
 PY_ALLOW = (
     "docs/evidence/goal-00/",
     "docs/evidence/goal-01/",
     "docs/evidence/goal-02/",
+    "scripts/",
+    "tests/",
+    "services/",
+    "workers/",
+    "packages/",
+    "proto/gen/python/",
 )
-# Goal 02 protocol drafts and fixture runners are specification artifacts.
-# They are not the chain, the client, or a service implementation.
+# Frozen protos stay under docs/protocol. Generated Go lives under proto/.
+# Scaffold Go lives under chain/ and agents/. The goal 02 vector runner stays.
 SOURCE_ALLOW = (
     "docs/protocol/",
     "docs/evidence/goal-02/",
+    "apps/web/",
+    "chain/",
+    "proto/",
+    "agents/",
 )
+WALK_SKIP = {
+    ".git",
+    ".venv",
+    "node_modules",
+    ".toolchains",
+    "__pycache__",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+}
 
 
 def exact_section(text: str, heading: str) -> str | None:
@@ -584,15 +607,20 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
 
 def validate_tree() -> list[str]:
     errors: list[str] = []
-    for name in ABSENT_ROOTS:
-        if (ROOT / name).exists():
-            errors.append(f"application path exists: {name}")
+    for name in REQUIRED_ROOTS:
+        if not (ROOT / name).exists():
+            errors.append(f"application path missing: {name}")
+    for path in (ROOT / "chain").rglob("main.go"):
+        errors.append(f"chain main package: {path.relative_to(ROOT).as_posix()}")
     for path in ROOT.rglob("*"):
         if not path.is_file():
             continue
-        if ".git" in path.parts:
+        if WALK_SKIP.intersection(path.parts):
             continue
         rel = path.relative_to(ROOT).as_posix()
+        if path.suffix in {".rs", ".sol"}:
+            errors.append(f"unexpected language: {rel}")
+            continue
         if path.suffix in SOURCE_SUFFIXES and not rel.startswith(SOURCE_ALLOW):
             errors.append(f"application source present: {rel}")
         if path.suffix == ".py" and not rel.startswith(PY_ALLOW):
