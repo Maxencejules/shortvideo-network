@@ -2,64 +2,61 @@
 
 Status: IMPLEMENTED
 
-The schema and fixture checks below passed on this tree. Max accepted the launch allocation as reported effort for goals 01 and 02 at Gate A on 2026-10-31 (America/Toronto): grok-4.7, xhigh reasoning. This file does not mark the goal VERIFIED. Protocol v0 freezes once this goal passes review. This revision is the candidate. It does not claim that review has passed.
+Max approved this round at 07:35 on 2026-10-31 (America/Toronto). The schema and fixture checks below passed on this tree. Effort remains the launch allocation accepted at Gate A: grok-4.7, xhigh reasoning. This file does not mark the goal VERIFIED. Protocol v0 freezes once this goal passes review. This revision is the candidate. It does not claim that review has passed.
 
 The checks are not a devnet, a security audit, or an approval of the protocol. The protocol is not an approved protocol. Public launch: DISABLED. No tradable token, coin, sale, or mining.
 
 Pull request: https://github.com/Maxencejules/shortvideo-network/pull/5
 
-## Gate A
+## Round 7
 
-Date: 2026-10-31 (America/Toronto).
+The assumption is that more than two thirds of voting power is online.
 
-At 06:58 Max said "I take all your recommendations".
+One validator may be down. Losing more than one third halts the real network because the environment produces no block. The spec machine does not model that halt. `commit_possible` and power scheduling do not read `down`. A supplied `CommitBlock` still applies. `environment-withhold-two-down` is the presented result for two of four down: height stays put, the offer is not applied, and the outbox is `PENDING_STALL`. That outbox is outside the application hash.
 
-Reviewer's reading: this approves DEC-009, DEC-010, DEC-011, and DEC-012.
+This is the environment-only model, chosen because DEC-011 keeps liveness out of consensus while REQ-CHAIN-005 and S-STALL still require that two unavailable validators are not presented as a new final commit. Renaming those requirements would drop the coverage. `PENDING_STALL` is reached by that withhold.
 
-At 06:59 Max said "Yes let's do it", in reply to the reviewer's 4-question card.
+For a positive-power set, `max_power * 3 < total_power` already fails at three or fewer validators. The explicit minimum of four is the same bound. The power-share cap and the minimum count were approved with DEC-011.
 
-Reviewer's reading: this accepts the recommended option on every question. DEC-009 is council-only for admit, disable, and force-withdraw, with no single-signature path. DEC-001 through DEC-008 accept every PROPOSED default. The launch allocation (grok-4.7, xhigh reasoning) counts as reported effort for goals 01 and 02. SVN-JCS-1, SHA-256, Ed25519, the proposed signing domains, the safety and governed caps, and the shortvideo-dev- prefix are accepted. Protocol v0 freezes once goal 02 passes review.
+## What changed
 
-## Liveness
-Liveness can still halt an accepted schedule. With v4 down, removing v1 at height 30 halts the chain.
+- A removal must name the validator's current key. Both proposal-id orders of "remove v1 carrying v7's key, plus add v9 with v1's key" return `ERROR_CODE_CONFLICT`.
+- Genesis runs `power_set_invariant`. `{v1,v2,v3}` and `{}` are rejected.
+- An oversized power on four validators is `ERROR_CODE_FORBIDDEN`. The equality `max_power * 3 == total_power` is rejected. A total above `SAFE_MAX` is rejected. A same-node pair with different keys at one point is `ERROR_CODE_CONFLICT`.
+- `observation_digest` is required, stored, and bound by the auditor signature. Matching, mismatched, malformed, and unbound fixtures cover it.
+- `FixtureAdmitProvider` is gone. Fixtures seed `ADMITTED` in `cases.py`. A step with that op is `ERROR_CODE_MALFORMED`.
+- The decision section no longer calls DEC-001 through DEC-008 open. DEC-003 names `ForceWithdrawChange`. `council-four-seats` needs three approvals of four seats. `devnet_state` still has three seats and a threshold of two.
+- The 06:58 reviewer's reading in the register now includes the DEC-011 power-share cap and minimum validator count.
+- `authority_end` on `EndLease` is one AUTHORITY signature and is outside DEC-009.
+- `EvidenceItem` has no field 9 and no `reject` reservation. `EvidenceRecord` field 9 stays `observation_digest`.
 
-The hashed check refuses that removal, so it is not scheduled. The remaining set would be v2, v3, and v4, with v4 down, and live power would not commit. `liveness-halt-example` records that operator fact, records that the removal is `ERROR_CODE_FORBIDDEN` and the proposal is `REJECTED`, and records that `CommitBlock` with v4 down on the original four validators still succeeds. `down` is not an application-hash input. `commit_possible` does not read it.
+## Regenerated
 
-## Model and effort
-
-- Playbook assignment for goal 02: GPT-6 Astra, effort EXTRA HIGH. Astra was not used.
-- Model actually used: `grok-4.7`.
-- Effort actually used: xhigh reasoning. Max accepted the launch allocation as the reported effort for goals 01 and 02. cursor-cloud `run-info` reports `originalModelName=grok-4.7` and `bcId=bc-763364ae-2b17-5737-aa7d-39bb2a64a0c0`. That payload has no effort field.
-- `docs/evidence/goal-01.md` and goal 01's status are unchanged.
-- Extra effort does not certify correctness.
-
-## Approved decisions in this tree
-
-- DEC-009: admit, disable, and force-withdraw are council-only. The proto service no longer has `MsgAdmitProvider`, `MsgDisableProvider`, or `MsgForceWithdraw`. The direct ops return `ERROR_CODE_FORBIDDEN`. `single-sig-authority-rejected` covers all three. Test setup uses `FixtureAdmitProvider`, which is not a chain message.
-- DEC-010: `REJECTED` is derived. `observation_digest` present and different from the lease manifest records `REJECTED`. There is no submitter `reject` field. `evidence-reject-flag-unknown` rejects a leftover `reject` flag as `ERROR_CODE_UNKNOWN_FIELD`.
-- DEC-011: liveness stays out of the hash. Every activation point keeps at least four validators and `max_power * 3 < total_power`. `power_set_invariant` replaced the empty `quorum_holds(validators, [])` check. `validator-power-invariant` fails if that check is neutered.
-- DEC-012: a height change beside a time change is `ERROR_CODE_CONFLICT`. CONFLICT leaves the proposal `QUEUED`. `ERROR_CODE_FORBIDDEN` marks it `REJECTED`. `mixed-activation-kind` and `proposal-rejected` cover those two outcomes.
-- Two changes to the same node or the same consensus key at one activation point are `ERROR_CODE_CONFLICT` before either is applied. `same-point-power-change` includes a removal whose proposal id sorts first and an add of that same key. A duplicate key at a different activation point stays `ERROR_CODE_DUPLICATE_ID` and the proposal stays `QUEUED`.
-
-Names that match no forbidden pattern are stopped only by the descriptor allowlist. A diff that adds or renames an entry in that pinned inventory needs a human review. The pattern list does not review it.
-
-The devnet council fixture is still two approvals of three seats and a delay of 10 seconds, labeled `PROPOSED_TEST_PARAMETER`. DEC-008's accepted default is four seats and three approvals. The fixture is not that policy.
-
-## What was regenerated
-
-- Descriptor allowlist: 524 names to 513. Removed `field:reject`, `json_name:reject`, `message:MsgAdmitProvider`, `message:MsgAdmitProviderResponse`, `message:MsgDisableProvider`, `message:MsgDisableProviderResponse`, `message:MsgForceWithdraw`, `message:MsgForceWithdrawResponse`, `rpc:AdmitProvider`, `rpc:DisableProvider`, and `rpc:ForceWithdraw`. No names were added.
-- `docs/protocol/fixtures/vectors.json` did not change. Its sha256 is `8729de9714a97462e151a2fd50ead9f5074536117581219036bd08cdd0724477`.
-- The replay golden hash did not change: `ffee724a8b7944512db064250664d46b7a519d2062134b5cdda9a03ca202437d`.
+- Replay golden hash changed from `ffee724a8b7944512db064250664d46b7a519d2062134b5cdda9a03ca202437d` to `3def4df5d8035e0963cbf798ebe373fe2ceaa35473941c6463cbd011fd2fb350` because admission in that sequence is a fixture seed and no longer a business transaction.
+- `docs/protocol/fixtures/vectors.json` did not change.
+- The descriptor allowlist stayed at 513 names. No proto symbol was added or removed.
 
 ## Mutation self-check
 
 In-process patches. The tree on disk was not edited for them.
 
-- `power_set_invariant` returned `None`: `proposal-rejected`, `stacked-validator-removal`, `validator-power-invariant`, `activation-gap-halt`, and `liveness-halt-example` each returned `ExecuteChange expected ERROR_CODE_FORBIDDEN got ok`.
-- `commit_possible` read `down` through `quorum_holds`: `stall-two-validators` returned `CommitBlock expected ok got ERROR_CODE_QUORUM`.
-- The same-point node and key check was removed: `same-point-power-change` returned `ExecuteChange expected ERROR_CODE_CONFLICT got ok`.
+- Removal key binding removed: `wrong-key-removal` returned `aa-rm/zz-add returned None`.
+- `max_power * 3 >= total` deleted: `oversized-validator-power` returned `ExecuteChange expected ERROR_CODE_FORBIDDEN got ok`.
+- `>=` changed to `>`: `oversized-validator-power` returned `max*3 == total was accepted`.
+- `SAFE_MAX` check dropped: `oversized-validator-power` returned `total above SAFE_MAX was accepted`.
+- Same-node `CONFLICT` removed: `same-point-power-change` returned `ExecuteChange expected ERROR_CODE_CONFLICT got ok`.
+- Genesis invariant removed: `genesis-power-invariant` returned `short or empty genesis was accepted`.
+- Audit always stored `REJECTED`: `evidence-digest-recorded` returned `matching observation was not stored as RECORDED`.
+- Digest format check removed: `evidence-digest-malformed` returned `SubmitAuditBatch expected ERROR_CODE_BOUNDS got ok`.
 - `l2_reservation_problems` returned `[]`: `hosting-resilience` returned `flag-only l2 flip was accepted`.
-- On the real helper, a flag-only `reservation_held` flip returned `['l2 flag']`. Clearing `reserved_bytes` returned `['l2 bytes']`. The untouched l2 state returned `[]`.
+
+## Model and effort
+
+- Playbook assignment for goal 02: GPT-6 Astra, effort EXTRA HIGH. Astra was not used.
+- Model actually used: `grok-4.7`.
+- Effort actually used: xhigh reasoning, the launch allocation Max accepted at Gate A for goals 01 and 02.
+- `docs/evidence/goal-01.md` keeps its original record. A Gate A addendum is appended. Goal 01's status stays VERIFIED.
+- Extra effort does not certify correctness.
 
 ## Runtime
 
@@ -71,16 +68,15 @@ This evidence file is part of the head commit. The checkers do not read it. They
 
 The tested tree is this commit's tree and the `Tested-tree` trailer. Confirm with `git rev-parse 'HEAD^{tree}'`.
 
-Parent of this round: `e59f699b5b294e3d0efdc713d94424323995eed5`.
+Parent of this round: `68ad4cde5650296fceab663a5a8d3960a3cb8922`.
 
 ## Counts
 
-- Transition fixtures: 86, pinned, 0 failures.
+- Transition fixtures: 94, pinned, 0 failures.
 - Valid canonical vectors: 15. Invalid: 14. Integers: 6. Arithmetic: 5.
 - Descriptor allowlist entries: 513.
 - Go exit 0. TypeScript exit 0. `languages MATCH`.
 - Goal 01 checker exit 0. protoc exit 0.
-- `docs/evidence/goal-01.md` is unchanged. Versus `783e159`, `docs/evidence/goal-01/check_requirements.py` is 190 insertions and 31 deletions, and `docs/requirements.md` is 15 insertions and 15 deletions. The goal 01 checker now requires `Status: APPROVED` for DEC-001 through DEC-008 and fails if `Status: OPEN` remains. Requirements do not cite DEC-009 through DEC-012.
 
 ## Commands and output
 
@@ -153,8 +149,8 @@ EXIT:0
 
 COMMAND python3 docs/evidence/goal-02/check_protocol.py
 protoc exit:0
-transition_cases 86
-transition_case_pin 86
+transition_cases 94
+transition_case_pin 94
 transition_failures 0
 go_vectors exit:0
 typescript_vectors exit:0
@@ -163,10 +159,10 @@ invalid_vectors 14
 integer_vectors 6
 arithmetic_vectors 5
 hashes
-4ab75dcca4553166dbd2bad2227e4f66308d676fe8090557f3ca440213184004  docs/decision-register.md
+d73e9bf9603674d29a3443a869d8927cfb3a107f46367c1a743141eb7893e920  docs/decision-register.md
 77dbb119c755e847bb5a51159ae3f75edcfcc2c07b0076eabd8a0b1a2cc10249  docs/evidence/goal-01/check_requirements.py
-213c09f82c6c60aa696ed4f273503fcc8a1067c9066d5cb87cbeca2be524c3c5  docs/evidence/goal-02/cases.py
-43c2d0f9622332cbf5227c9a593002ed441e5c83800ba73d4fe91a6a75f41592  docs/evidence/goal-02/check_protocol.py
+57a7c948b5fd10742cb47f0856da291444b32eb7b36f1737d9afddda9584711f  docs/evidence/goal-02/cases.py
+10f1be5f937f2b5f2d29adb3680ca9f14859515b39299cb1da9429f70738ca0e  docs/evidence/goal-02/check_protocol.py
 e0b344008a1ebdec3fba9b1cb22a74d4f251c23cac23d5092c67fda5387bd6ef  docs/evidence/goal-02/go/go.mod
 0167772bf599c2779e16a708c6e7cb1e4f0dcacc9eedf1195cae60cf4c679c9b  docs/evidence/goal-02/go/vectorcheck.go
 44c72f0c839896bd9b559f33851a512e0a8db9cbc087df2a745aefd909a765b0  docs/evidence/goal-02/jcs.py
@@ -183,7 +179,7 @@ e1b1e71b30fc6a4098e3152f25a6830cfa4a52aa7ec5f3ea16ec989f6adcf2fc  docs/evidence/
 502e774d6bd2ba90752f8ca39d8fa10259b595f97e7978f91a1e01a193858309  docs/evidence/goal-02/negative/timestamp.proto
 92c9bcb8172148f4ea65802def2a54c69d280e2c4a8b21a66a6472910f83c98c  docs/evidence/goal-02/negative/token_balance.proto
 6d2816506bad14e04b00348f0a395f39968832450bca1253492792e5ed788b4e  docs/evidence/goal-02/negative/video_payload.proto
-af8e5c589f926d9b9c49b51ecec24c0c62c88ca8e49b8305fa16fe4eab3071b4  docs/evidence/goal-02/spec_machine.py
+463336f0d7b353b2004f1a61d498feb33cfb57477ef71bce557c8fe81d961b0f  docs/evidence/goal-02/spec_machine.py
 8cbf1ddd451d6738dc34d06133151415295626ee70b8bdd9b69cfda056f8d8b9  docs/evidence/goal-02/ts/vectorcheck.ts
 236d8faf8980ffabbf985dead0072092d33450d61ba8dd198e94ace6b5bfcf4d  docs/progress.md
 afdfca95fae1a23a50914131172d58d67d5dd6de706b07af9fd4cceb30b84ed4  docs/progress.tsv
@@ -229,7 +225,7 @@ e60f3b2ce334b2ab5d59e686ca78c3804509abc5b441ca089e6fba41ab847524  docs/protocol/
 0093a1de6721fc8275bfb48821839606a8baa83accb9f0c5e34e9aafe2f74e4e  docs/protocol/schemas/media-manifest.schema.json
 d679f577326d4f796b2d74a6df7ad5b0d2d61bc573aecfdd55af1112aa1770ea  docs/protocol/schemas/provider-capability.schema.json
 cb33617cc2a2c0f55da607817826f22d2c9e32ce699d69805f11dc02dcb3304e  docs/protocol/schemas/public-record.schema.json
-7e23ecc9346c8f8135c5d74c3af2eae5dfab1db4439fcf9a69c7e7b3b86b4dfb  docs/protocol.md
+b3a2363031d361882a84d9384c577769d3f3f442b70acbf85c609b9de2a97c80  docs/protocol.md
 5e50de124248b97fce75d51d01b27d1375bacb5c9832ea75421a10f597bc9d96  docs/requirements.md
 errors 0
 languages MATCH
@@ -239,7 +235,3 @@ EXIT:0
 ```
 
 Page 26 playback, processing, load, recovery, moderation-timing, and operator-independence measurements were not run and are not passes.
-
-## Residual
-
-The requirements matrix still describes several later-goal rows as waiting on an answer. Those rows were not rewritten in this round. The decision register is the Gate A record. Production council keys are not named. The on-chain `approved` flag of a blocked-decision parameter stays false.

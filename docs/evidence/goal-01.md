@@ -143,3 +143,77 @@ Specification walks only. The requirements lists now include every requirement i
 ## Blockers
 
 DEC-001 custody and recovery, DEC-002 operator admission, DEC-003 moderation and removal, DEC-004 retention, DEC-005 sponsorship, DEC-006 licensing, DEC-007 audience policy, and DEC-008 council quorum remain OPEN. No page 26 measurement was run.
+
+
+## Gate A addendum (2026-10-31)
+
+The record above is the pre-Gate-A evidence, including the statements that DEC-001 through DEC-008 remain OPEN. Gate A on 2026-10-31 (America/Toronto) approved DEC-001 through DEC-008. This addendum does not rewrite that history.
+
+Max approved the goal 02 fix round at 07:35 on 2026-10-31 (America/Toronto).
+
+Checker command on this revision: `python3 docs/evidence/goal-01/check_requirements.py`. Exit 0. The repeat run was byte-identical.
+
+```
+self_test duplicate id fail_as_expected
+self_test missing role fail_as_expected
+self_test bad goal fail_as_expected
+self_test deferred with a goal fail_as_expected
+self_test missing test or blocker fail_as_expected
+self_test missing blueprint page fail_as_expected
+self_test scenario list fail_as_expected
+self_test threat heading exact fail_as_expected
+self_test progress mismatch fail_as_expected
+self_test row goals fail_as_expected
+self_test extra column goal fail_as_expected
+self_test negation still names a goal fail_as_expected
+requirements 265
+in_scope 250
+with_test 216
+with_blocker 34
+deferred 9
+non_goal 6
+decisions 8
+threats 15
+scenarios 5
+contradictions 13
+self_test_cases 12
+self_test_problems 0
+page_coverage ok
+errors 0
+scenario S-PLAYBACK recorded
+scenario S-ORIGIN recorded
+scenario S-DEPART recorded
+scenario S-STALL recorded
+scenario S-REMOVE recorded
+contradiction CR-001 recorded
+contradiction CR-002 recorded
+contradiction CR-003 recorded
+contradiction CR-004 recorded
+contradiction CR-005 recorded
+contradiction CR-006 recorded
+contradiction CR-007 recorded
+contradiction CR-008 recorded
+contradiction CR-009 recorded
+contradiction CR-010 recorded
+contradiction CR-011 recorded
+contradiction CR-012 recorded
+contradiction CR-013 recorded
+threat TM-UPLOAD recorded
+threat TM-UNAUTH-TX recorded
+threat TM-KEYS recorded
+threat TM-DISHONEST recorded
+threat TM-REPLICAS recorded
+threat TM-STALL recorded
+threat TM-STALE-GW recorded
+threat TM-ABUSE recorded
+threat TM-SUPPLY recorded
+threat TM-VALIDATOR recorded
+threat TM-STAKE-BYPASS recorded
+threat TM-PERSONAL recorded
+threat TM-INJECTION recorded
+threat TM-MINT recorded
+threat TM-SECRET recorded
+result PASS
+note document check only; protocol not approved; public launch disabled
+EXIT:0
+```

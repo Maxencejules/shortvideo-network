@@ -31,12 +31,16 @@ from spec_machine import (
     UINT64_MAX,
     accept,
     admit_change_payload,
+    SAFE_MAX,
     admit_provider,
-    fixture_admit,
     liveness_would_halt,
     app_hash,
     apply,
     devnet_state,
+    environment_withholds_block,
+    power_set_invariant,
+    project_power_changes,
+    validate_genesis_view,
     disable_change_payload,
     force_withdraw_payload,
     governed_limit_payload,
@@ -53,7 +57,7 @@ from spec_machine import (
 
 
 # Pinned after the replay sequence below. Replaced once the tree is stable.
-REPLAY_GOLDEN = "ffee724a8b7944512db064250664d46b7a519d2062134b5cdda9a03ca202437d"
+REPLAY_GOLDEN = "3def4df5d8035e0963cbf798ebe373fe2ceaa35473941c6463cbd011fd2fb350"
 
 
 def _play(state: dict, steps: list[dict]) -> str | None:
@@ -66,16 +70,21 @@ def _play(state: dict, steps: list[dict]) -> str | None:
     return None
 
 
+def seed_admitted(state: dict, provider_id: str = "p1") -> None:
+    """Test setup. Not a chain message and not a single-signature admit."""
+    provider = state["providers"].get(provider_id)
+    if provider is None or provider["state"] != "APPLIED":
+        raise RuntimeError(f"cannot seed {provider_id}")
+    provider["state"] = "ADMITTED"
+
+
 def _seed(capacity: int = 1_000_000, package_bytes: int = PACKAGE_BYTES) -> dict:
     state = devnet_state()
-    problem = _play(
-        state,
-        [
-            register_provider(capacity=capacity),
-            fixture_admit(),
-            register_content(package_bytes=package_bytes),
-        ],
-    )
+    problem = _play(state, [register_provider(capacity=capacity)])
+    if problem:
+        raise RuntimeError(problem)
+    seed_admitted(state)
+    problem = _play(state, [register_content(package_bytes=package_bytes)])
     if problem:
         raise RuntimeError(problem)
     return state
@@ -148,9 +157,12 @@ def cases() -> list[tuple[str, str | None]]:
     registered = register_provider(provider_id=long_id)
     registered["business_id"] = "reg-long"
     registered["signing_key_id"] = "key-long"
-    admitted = fixture_admit(provider_id=long_id)
-    admitted["business_id"] = "admit-long"
-    check("boundary-id-64", _play(state, [registered, admitted]))
+    boundary = _play(state, [registered])
+    if boundary is None:
+        seed_admitted(state, long_id)
+    if boundary is None and state["providers"][long_id]["state"] != "ADMITTED":
+        boundary = "seed did not mark the provider admitted"
+    check("boundary-id-64", boundary)
     state = devnet_state()
     bad = register_provider(provider_id=longer_id)
     bad["expect"] = "ERROR_CODE_BOUNDS"
@@ -224,20 +236,37 @@ def cases() -> list[tuple[str, str | None]]:
 
     state = devnet_state()
     stalled = _seed()
+    before_stall = app_hash(stalled)
     check(
-        "stall-two-validators",
+        "environment-withhold-two-down",
         _play(
             stalled,
             [
-                offer(),
                 {"op": "SetDown", "validators": ["v1", "v2"]},
-                {"op": "CommitBlock", "header_time": CHAIN_TIME + 1},
+                {
+                    "op": "Submit",
+                    "request_id": "req-stall",
+                    "tx": offer(),
+                    "expect": "ERROR_CODE_QUORUM",
+                },
             ],
         ),
     )
     if found[-1][1] is None:
-        if stalled["height"] != 2 or not liveness_would_halt(stalled["validators"], stalled["down"]):
-            found[-1] = (found[-1][0], "down was treated as consensus or liveness did not halt")
+        parked = stalled["pending"].get("req-stall", {})
+        if (
+            stalled["height"] != 1
+            or parked.get("status") != "PENDING_STALL"
+            or "o1" in stalled["offers"]
+            or not environment_withholds_block(stalled)
+            or app_hash(stalled) != before_stall
+        ):
+            found[-1] = (found[-1][0], "two-down withhold did not park the outbox")
+    if found[-1][1] is None:
+        supplied = copy.deepcopy(stalled)
+        supplied_problem = _play(supplied, [{"op": "CommitBlock", "header_time": CHAIN_TIME + 1}])
+        if supplied_problem is not None or supplied["height"] != 2:
+            found[-1] = (found[-1][0], "the machine modeled the halt inside CommitBlock")
 
     good = hashlib.sha256(b"segment").hexdigest()
     check(
@@ -396,7 +425,8 @@ def cases() -> list[tuple[str, str | None]]:
                     "content_version": 1,
                     "expiry_unix_seconds": CHAIN_TIME + 10,
                     "attestation": True,
-                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+                    "observation_digest": MANIFEST,
+                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY, observation_digest=MANIFEST),
                 },
                 {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
                 {"op": "ExpireDue", "limit": 8},
@@ -437,7 +467,8 @@ def cases() -> list[tuple[str, str | None]]:
                     "content_version": 1,
                     "expiry_unix_seconds": CHAIN_TIME + 1000,
                     "attestation": True,
-                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+                    "observation_digest": MANIFEST,
+                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY, observation_digest=MANIFEST),
                 },
                 {
                     "op": "RenewLease",
@@ -600,7 +631,8 @@ def cases() -> list[tuple[str, str | None]]:
                     "content_version": 1,
                     "expiry_unix_seconds": CHAIN_TIME + 100,
                     "attestation": True,
-                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+                    "observation_digest": MANIFEST,
+                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY, observation_digest=MANIFEST),
                     "expect": "ERROR_CODE_MALFORMED",
                 }
             ],
@@ -729,7 +761,7 @@ def cases() -> list[tuple[str, str | None]]:
     )
 
     check(
-        "admit-blocked-by-dec-002",
+        "direct-admit-forbidden",
         _play(
             production_state(),
             [register_provider(), admit_provider() | {"expect": "ERROR_CODE_FORBIDDEN"}],
@@ -970,12 +1002,19 @@ def cases() -> list[tuple[str, str | None]]:
                     "expiry_unix_seconds": CHAIN_TIME + 100,
                     "attestation": True,
                     "observation_digest": hashlib.sha256(b"not-the-manifest").hexdigest(),
-                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+                    "auditor_signature": signature(
+                        EVIDENCE_DOMAIN,
+                        AUDITOR_KEY,
+                        observation_digest=hashlib.sha256(b"not-the-manifest").hexdigest(),
+                    ),
                 }
             ],
         ),
     )
-    if found[-1][1] is None and state["evidence"]["ev-rej"]["state"] != "REJECTED":
+    if found[-1][1] is None and (
+        state["evidence"]["ev-rej"]["state"] != "REJECTED"
+        or state["evidence"]["ev-rej"]["observation_digest"] != hashlib.sha256(b"not-the-manifest").hexdigest()
+    ):
         found[-1] = (found[-1][0], "evidence was not rejected")
     if found[-1][1] is None and state["leases"]["l1"]["state"] != "ACTIVE":
         found[-1] = (found[-1][0], "rejected evidence changed the lease")
@@ -994,8 +1033,9 @@ def cases() -> list[tuple[str, str | None]]:
         "content_version": 1,
         "expiry_unix_seconds": CHAIN_TIME + 100,
         "attestation": True,
+        "observation_digest": MANIFEST,
         "reject": True,
-        "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+        "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY, observation_digest=MANIFEST),
         "expect": "ERROR_CODE_UNKNOWN_FIELD",
     }
     check("evidence-reject-flag-unknown", _play(flagged, [flagged_step]))
@@ -1101,7 +1141,8 @@ def cases() -> list[tuple[str, str | None]]:
                     "expiry_unix_seconds": CHAIN_TIME + 100,
                     "attestation": True,
                     "item_count": 3,
-                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+                    "observation_digest": MANIFEST,
+                    "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY, observation_digest=MANIFEST),
                     "expect": "ERROR_CODE_BOUNDS",
                 }
             ],
@@ -1174,9 +1215,15 @@ def cases() -> list[tuple[str, str | None]]:
 
     left = devnet_state()
     right = devnet_state()
-    steps = [register_provider(), fixture_admit(), register_content(), offer(), accept()]
-    left_problem = _play(left, steps)
-    right_problem = _play(right, steps)
+    steps = [register_provider(), register_content(), offer(), accept()]
+    left_problem = _play(left, [register_provider()])
+    if left_problem is None:
+        seed_admitted(left)
+        left_problem = _play(left, steps[1:])
+    right_problem = _play(right, [register_provider()])
+    if right_problem is None:
+        seed_admitted(right)
+        right_problem = _play(right, steps[1:])
     replay_hash = app_hash(left) if left_problem is None else ""
     replay_problem = left_problem or right_problem
     if replay_problem is None and replay_hash != app_hash(right):
@@ -1216,7 +1263,6 @@ def cases() -> list[tuple[str, str | None]]:
     resilience_steps = []
     for name in ("p1", "p2", "p3", "p4"):
         resilience_steps.append(register_provider(provider_id=name))
-        resilience_steps.append(fixture_admit(provider_id=name))
     resilience_steps.append(register_content())
     for name, offer_id, lease_id in (("p1", "o1", "l1"), ("p2", "o2", "l2"), ("p3", "o3", "l3")):
         resilience_steps.append(offer(offer_id, provider_id=name))
@@ -1238,7 +1284,12 @@ def cases() -> list[tuple[str, str | None]]:
             "expect": "ERROR_CODE_CAPACITY",
         }
     )
-    check("hosting-resilience", _play(hosts, resilience_steps))
+    resilience_problem = _play(hosts, resilience_steps[:4])
+    if resilience_problem is None:
+        for name in ("p1", "p2", "p3", "p4"):
+            seed_admitted(hosts, name)
+        resilience_problem = _play(hosts, resilience_steps[4:])
+    check("hosting-resilience", resilience_problem)
     if found[-1][1] is None:
         l2_problems = l2_reservation_problems(hosts)
         if l2_problems:
@@ -1354,7 +1405,7 @@ def cases() -> list[tuple[str, str | None]]:
         set(kept["validators"]) != {"v2", "v3", "v4", "v5"} or kept["pending_power"]
     ):
         kept_problem = "add-then-remove did not keep four validators"
-    check("activation-gap-keeps-one", kept_problem)
+    check("activation-gap-keeps-four", kept_problem)
 
     def _down_run(mark_down: bool) -> tuple[str | None, str, str, int]:
         state = devnet_state()
@@ -1410,7 +1461,15 @@ def cases() -> list[tuple[str, str | None]]:
     same_point = devnet_state()
     same_problem = _schedule_power(same_point, "same-a", "v5", 1, {"height": "20"})
     if same_problem is None:
-        same_problem = _schedule_power(same_point, "same-b", "v5", 1, {"height": "20"}, expect="ERROR_CODE_CONFLICT")
+        same_problem = _schedule_power(
+            same_point,
+            "same-b",
+            "v5",
+            1,
+            {"height": "20"},
+            expect="ERROR_CODE_CONFLICT",
+            pubkey_hex=pubkey_for("v5-other"),
+        )
     if same_problem is None and same_point["proposals"]["same-b"]["state"] != "QUEUED":
         same_problem = "same-point node change was not left QUEUED"
     if same_problem is None:
@@ -1478,6 +1537,203 @@ def cases() -> list[tuple[str, str | None]]:
     ):
         dup_problem = "duplicate scheduled key was accepted or marked REJECTED"
     check("duplicate-scheduled-validator-key", dup_problem)
+
+    def _normalized_power(proposal_id: str, node: str, power: int, pubkey: str, height: int = 40) -> dict:
+        return {
+            "proposal_id": proposal_id,
+            "node_id": node,
+            "consensus_pubkey": pubkey,
+            "power": power,
+            "reason_digest": REASON,
+            "activation": {"kind": "height", "height": height},
+        }
+
+    wrong_key = None
+    for removal_id, add_id in (("aa-rm", "zz-add"), ("zz-rm", "aa-add")):
+        paired = devnet_state()
+        paired["pending_power"] = [
+            _normalized_power(removal_id, "v1", 0, pubkey_for("v7")),
+            _normalized_power(add_id, "v9", 1, pubkey_for("v1")),
+        ]
+        projected = project_power_changes(paired)
+        if projected != "ERROR_CODE_CONFLICT" or set(paired["validators"]) != {"v1", "v2", "v3", "v4"}:
+            wrong_key = f"{removal_id}/{add_id} returned {projected}"
+            break
+    lone = devnet_state()
+    if wrong_key is None:
+        wrong_key = _schedule_power(
+            lone,
+            "bad-key-rm",
+            "v1",
+            0,
+            {"height": "40"},
+            expect="ERROR_CODE_CONFLICT",
+            pubkey_hex=pubkey_for("v7"),
+        )
+    if wrong_key is None and lone["proposals"]["bad-key-rm"]["state"] != "QUEUED":
+        wrong_key = "wrong-key removal was not left QUEUED"
+    check("wrong-key-removal", wrong_key)
+
+    oversized = devnet_state()
+    oversized_problem = _schedule_power(
+        oversized, "big-v1", "v1", 3, {"height": "20"}, expect="ERROR_CODE_FORBIDDEN"
+    )
+    if oversized_problem is None and (
+        oversized["proposals"]["big-v1"]["state"] != "REJECTED" or set(oversized["validators"]) != {"v1", "v2", "v3", "v4"}
+    ):
+        oversized_problem = "oversized power was scheduled"
+    share = {"v1": 2, "v2": 2, "v3": 1, "v4": 1}
+    if oversized_problem is None and power_set_invariant(share) != "ERROR_CODE_FORBIDDEN":
+        oversized_problem = "max*3 == total was accepted"
+    big = SAFE_MAX // 4 + 1
+    above = {f"v{index}": big for index in range(1, 5)}
+    if oversized_problem is None and power_set_invariant(above) != "ERROR_CODE_FORBIDDEN":
+        oversized_problem = "total above SAFE_MAX was accepted"
+    check("oversized-validator-power", oversized_problem)
+
+    short = devnet_state()
+    short["validators"] = {"v1": 1, "v2": 1, "v3": 1}
+    short["validator_pubkeys"] = {node: pubkey_for(node) for node in short["validators"]}
+    empty = devnet_state()
+    empty["validators"] = {}
+    empty["validator_pubkeys"] = {}
+    genesis_problem = None
+    if not validate_genesis_view(short) or not validate_genesis_view(empty):
+        genesis_problem = "short or empty genesis was accepted"
+    if genesis_problem is None and validate_genesis_view(devnet_state()):
+        genesis_problem = "four equal powers failed genesis"
+    check("genesis-power-invariant", genesis_problem)
+
+    council = devnet_state()
+    council["seats"] = ["seat-1", "seat-2", "seat-3", "seat-4"]
+    council["devnet_tests"]["DEC-008"]["numeric_value"] = 3
+    four_payload = governed_limit_payload("max_evidence_batch", 4)
+    four_problem = _play(
+        council,
+        [
+            proposal_step("c4", "max_evidence_batch", four_payload),
+            _approve("c4", "seat-1"),
+            _approve("c4", "seat-2"),
+            _execute("c4") | {"expect": "ERROR_CODE_CONFLICT"},
+        ],
+    )
+    if four_problem is None and council["proposals"]["c4"]["state"] != "OPEN":
+        four_problem = "two approvals queued a three-of-four proposal"
+    if four_problem is None:
+        four_problem = _play(
+            council,
+            [
+                _approve("c4", "seat-3"),
+                {"op": "CommitBlock", "header_time": council["chain_time"] + 10},
+                _execute("c4"),
+            ],
+        )
+    if four_problem is None and council["governed_limits"].get("max_evidence_batch") != 4:
+        four_problem = "three of four did not execute"
+    check("council-four-seats", four_problem)
+
+    matched = _active()
+    match_problem = _play(
+        matched,
+        [
+            {
+                "op": "SubmitAuditBatch",
+                "signer": AUDITOR,
+                "business_id": "audit-match",
+                "batch_id": "batch-match",
+                "epoch": 1,
+                "evidence_id": "ev-match",
+                "kind": "AUDITOR_ATTESTATION",
+                "lease_id": "l1",
+                "content_id": "c1",
+                "content_version": 1,
+                "expiry_unix_seconds": CHAIN_TIME + 100,
+                "attestation": True,
+                "observation_digest": MANIFEST,
+                "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY, observation_digest=MANIFEST),
+            }
+        ],
+    )
+    if match_problem is None and (
+        matched["evidence"]["ev-match"]["state"] != "RECORDED"
+        or matched["evidence"]["ev-match"]["observation_digest"] != MANIFEST
+    ):
+        match_problem = "matching observation was not stored as RECORDED"
+    check("evidence-digest-recorded", match_problem)
+
+    malformed = _active()
+    malformed_digest = "zz"
+    malformed_problem = _play(
+        malformed,
+        [
+            {
+                "op": "SubmitAuditBatch",
+                "signer": AUDITOR,
+                "business_id": "audit-bad",
+                "batch_id": "batch-bad",
+                "epoch": 1,
+                "evidence_id": "ev-bad",
+                "kind": "AUDITOR_ATTESTATION",
+                "lease_id": "l1",
+                "content_id": "c1",
+                "content_version": 1,
+                "expiry_unix_seconds": CHAIN_TIME + 100,
+                "attestation": True,
+                "observation_digest": malformed_digest,
+                "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY, observation_digest=malformed_digest),
+                "expect": "ERROR_CODE_BOUNDS",
+            }
+        ],
+    )
+    if malformed_problem is None and "ev-bad" in malformed["evidence"]:
+        malformed_problem = "malformed observation was stored"
+    check("evidence-digest-malformed", malformed_problem)
+
+    unbound = _active()
+    other_digest = hashlib.sha256(b"other-observation").hexdigest()
+    unbound_problem = _play(
+        unbound,
+        [
+            {
+                "op": "SubmitAuditBatch",
+                "signer": AUDITOR,
+                "business_id": "audit-unbound",
+                "batch_id": "batch-unbound",
+                "epoch": 1,
+                "evidence_id": "ev-unbound",
+                "kind": "AUDITOR_ATTESTATION",
+                "lease_id": "l1",
+                "content_id": "c1",
+                "content_version": 1,
+                "expiry_unix_seconds": CHAIN_TIME + 100,
+                "attestation": True,
+                "observation_digest": MANIFEST,
+                "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY, observation_digest=other_digest),
+                "expect": "ERROR_CODE_INTEGRITY",
+            }
+        ],
+    )
+    if unbound_problem is None and "ev-unbound" in unbound["evidence"]:
+        unbound_problem = "unbound observation was stored"
+    check("evidence-signature-unbound", unbound_problem)
+
+    ghost = devnet_state()
+    ghost_problem = _play(
+        ghost,
+        [
+            register_provider(),
+            {
+                "op": "FixtureAdmitProvider",
+                "signer": AUTHORITY,
+                "business_id": "fix-admit",
+                "provider_id": "p1",
+                "expect": "ERROR_CODE_MALFORMED",
+            },
+        ],
+    )
+    if ghost_problem is None and ghost["providers"]["p1"]["state"] != "APPLIED":
+        ghost_problem = "FixtureAdmitProvider admitted a provider"
+    check("fixture-admit-not-a-message", ghost_problem)
     return found
 
 

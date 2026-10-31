@@ -219,10 +219,13 @@ def check_role(state: dict, signer: object, role: str) -> str | None:
     return None
 
 
-def check_signature(sig: object, domain: str, key_id: str) -> str | None:
+def check_signature(sig: object, domain: str, key_id: str, bound_digest: str | None = None) -> str | None:
     if not isinstance(sig, dict):
         return "ERROR_CODE_MALFORMED"
-    extra = set(sig) - {"domain", "key_id", "valid", "role_name"}
+    allowed = {"domain", "key_id", "valid", "role_name"}
+    if bound_digest is not None:
+        allowed.add("observation_digest")
+    extra = set(sig) - allowed
     if extra:
         return "ERROR_CODE_UNKNOWN_FIELD"
     if sig.get("domain") != domain:
@@ -231,6 +234,8 @@ def check_signature(sig: object, domain: str, key_id: str) -> str | None:
         return "ERROR_CODE_UNAUTHORIZED"
     if sig.get("key_id") != key_id:
         return "ERROR_CODE_UNAUTHORIZED"
+    if bound_digest is not None and sig.get("observation_digest") != bound_digest:
+        return "ERROR_CODE_INTEGRITY"
     return None
 
 
@@ -322,13 +327,19 @@ def power_set_invariant(validators: dict) -> str | None:
 
 
 def liveness_would_halt(validators: dict, down: list) -> bool:
-    """Operator liveness, not a consensus transition and not an app-hash input.
+    """More than one third of power is offline.
 
-    With v4 down, a removal of v1 leaves v2, v3, and v4. Live power is then
-    two of three, which does not satisfy two thirds. That halt is real for
-    operators and is not what commit_possible decides.
+    The assumption for a real network is that more than two thirds of voting
+    power is online. One validator may be down. Losing more than one third
+    means the environment produces no block. This predicate is not
+    commit_possible and scheduling does not call it.
     """
     return not quorum_holds(validators, down)
+
+
+def environment_withholds_block(state: dict) -> bool:
+    """Environment-only. Not a consensus transition and not an app-hash input."""
+    return liveness_would_halt(state["validators"], state["down"])
 
 
 def commit_possible(state: dict) -> bool:
@@ -444,34 +455,6 @@ def op_register_provider(state: dict, step: dict) -> dict[str, object]:
 
 def op_admit_provider(state: dict, step: dict) -> dict[str, object]:
     return err("ERROR_CODE_FORBIDDEN")
-
-
-def op_fixture_admit(state: dict, step: dict) -> dict[str, object]:
-    allowed = {"signer", "business_id", "provider_id"}
-    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
-    if bad:
-        return bad
-    role_error = check_role(state, step["signer"], "AUTHORITY")
-    if role_error:
-        return err(role_error)
-    id_error = check_id(step["provider_id"])
-    if id_error:
-        return err(id_error)
-    gate = business_gate(state, step, ("provider_id",))
-    if gate:
-        return gate
-    provider = state["providers"].get(step["provider_id"])
-    if provider is None:
-        return err("ERROR_CODE_NOT_FOUND")
-    param = devnet_param(state, "DEC-002")
-    if param is None or param.get("role_name") != "DEVNET_TEST_ONLY":
-        return err("ERROR_CODE_DECISION_BLOCKED")
-    if provider["operator_group_id"] != "devnet-test-only":
-        return err("ERROR_CODE_FORBIDDEN")
-    if provider["state"] != "APPLIED":
-        return err("ERROR_CODE_CONFLICT")
-    provider["state"] = "ADMITTED"
-    return finish(state, {"type": "ProviderStateChanged", "provider_id": step["provider_id"], "state": "ADMITTED"})
 
 
 def op_register_content(state: dict, step: dict) -> dict[str, object]:
@@ -924,13 +907,21 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
         "observation_digest",
         "item_count",
     }
-    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed - {"observation_digest", "item_count"})))
+    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed - {"item_count"})))
     if bad:
         return bad
     role_error = check_role(state, step["signer"], "AUDITOR")
     if role_error:
         return err(role_error)
-    signature_error = check_signature(step["auditor_signature"], EVIDENCE_DOMAIN, AUDITOR_KEY)
+    digest_error = check_digest(step["observation_digest"])
+    if digest_error:
+        return err(digest_error)
+    signature_error = check_signature(
+        step["auditor_signature"],
+        EVIDENCE_DOMAIN,
+        AUDITOR_KEY,
+        bound_digest=step["observation_digest"],
+    )
     if signature_error:
         return err(signature_error)
     for name in ("batch_id", "evidence_id", "lease_id", "content_id"):
@@ -968,12 +959,8 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
     deadline_before = lease["deadline_unix_seconds"]
     state_before = lease["state"]
     recorded = "RECORDED"
-    if "observation_digest" in step:
-        digest_error = check_digest(step["observation_digest"])
-        if digest_error:
-            return err(digest_error)
-        if step["observation_digest"] != lease["manifest_digest"]:
-            recorded = "REJECTED"
+    if step["observation_digest"] != lease["manifest_digest"]:
+        recorded = "REJECTED"
     state["evidence"][step["evidence_id"]] = {
         "batch_id": step["batch_id"],
         "kind": step["kind"],
@@ -981,6 +968,7 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
         "lease_id": step["lease_id"],
         "content_id": step["content_id"],
         "expiry_unix_seconds": step["expiry_unix_seconds"],
+        "observation_digest": step["observation_digest"],
         "attestation": True,
     }
     state["batches"].add(step["batch_id"])
@@ -1235,6 +1223,8 @@ def _apply_projected_change(validators: dict, pubkeys: dict, change: dict) -> st
         return None
     if node_id not in validators:
         return "ERROR_CODE_NOT_FOUND"
+    if pubkeys.get(node_id) != pubkey:
+        return "ERROR_CODE_CONFLICT"
     del validators[node_id]
     pubkeys.pop(node_id, None)
     return None
@@ -1274,11 +1264,19 @@ def project_power_changes(state: dict, extra: dict | None = None) -> str | None:
         node_ids = [item["node_id"] for item in group]
         if len(node_ids) != len(set(node_ids)):
             return "ERROR_CODE_CONFLICT"
-        # Every named key, including a removal. A removal that sorts first would
-        # otherwise free the key for a later add in the same group, and the
-        # proposer-chosen id would decide which one wins.
-        keys = [item["consensus_pubkey"] for item in group]
-        if len(keys) != len(set(keys)):
+        # Bind a removal to the key the validator holds now. A payload that
+        # names some other key must not free the real key for a later add,
+        # and proposal id must not choose which error comes back.
+        bound_keys: list[str] = []
+        for item in group:
+            if item["power"] > 0:
+                bound_keys.append(item["consensus_pubkey"])
+                continue
+            current = pubkeys.get(item["node_id"])
+            if item["node_id"] not in validators or current != item["consensus_pubkey"]:
+                return "ERROR_CODE_CONFLICT"
+            bound_keys.append(current)
+        if len(bound_keys) != len(set(bound_keys)):
             return "ERROR_CODE_CONFLICT"
         for item in group:
             problem = _apply_projected_change(validators, pubkeys, item)
@@ -1295,6 +1293,8 @@ def commit_validator_power(state: dict, change: dict) -> str | None:
     if change["power"] == 0:
         if node_id not in state["validators"]:
             return "ERROR_CODE_NOT_FOUND"
+        if state["validator_pubkeys"].get(node_id) != change["consensus_pubkey"]:
+            return "ERROR_CODE_CONFLICT"
         state["validators"].pop(node_id, None)
         state["validator_pubkeys"].pop(node_id, None)
         state["validator_reasons"].pop(node_id, None)
@@ -1584,7 +1584,9 @@ def op_submit(state: dict, step: dict) -> dict[str, object]:
         return bad
     if check_id(step["request_id"]):
         return err("ERROR_CODE_BOUNDS")
-    if not commit_possible(state):
+    # The outbox is not consensus. A withhold writes only `pending`.
+    # commit_possible and power scheduling do not read `down`.
+    if environment_withholds_block(state) or not commit_possible(state):
         state["pending"][step["request_id"]] = {
             "status": "PENDING_STALL",
             "business_id": step["tx"].get("business_id") if isinstance(step["tx"], dict) else "",
@@ -1835,7 +1837,6 @@ def op_force_withdraw(state: dict, step: dict) -> dict[str, object]:
 HANDLERS = {
     "RegisterProvider": op_register_provider,
     "AdmitProvider": op_admit_provider,
-    "FixtureAdmitProvider": op_fixture_admit,
     "RegisterContent": op_register_content,
     "WithdrawContent": op_withdraw_content,
     "OfferLease": op_offer,
@@ -1992,6 +1993,8 @@ def validate_genesis_view(state: dict) -> list[str]:
     powers = list(state["validators"].values())
     if powers and (len(set(powers)) != 1 or powers[0] <= 0):
         problems.append("validator powers")
+    if power_set_invariant(state["validators"]):
+        problems.append("validator set invariant")
     return problems
 
 
@@ -1999,15 +2002,18 @@ def intent(valid: bool = True, role_name: str = "DEVNET_TEST_ONLY", domain: str 
     return {"domain": domain, "key_id": key_id, "valid": valid, "role_name": role_name}
 
 
-def signature(domain: str, key_id: str, valid: bool = True) -> dict:
-    return {"domain": domain, "key_id": key_id, "valid": valid}
+def signature(domain: str, key_id: str, valid: bool = True, observation_digest: str | None = None) -> dict:
+    signed = {"domain": domain, "key_id": key_id, "valid": valid}
+    if observation_digest is not None:
+        signed["observation_digest"] = observation_digest
+    return signed
 
 
 # Off-chain or transient. Reachability and publication are not chain state.
-# `down` is an operator liveness fixture. DEC-011 keeps it out of the application
+# `down` is an environment observation. DEC-011 keeps it out of the application
 # hash. commit_possible and power-change scheduling do not read it.
-# `pending` is the stall outbox. `events` are derived. `_pending_business` is
-# discarded on failure.
+# The outbox reads it only to withhold a block. `pending` is that outbox.
+# `events` are derived. `_pending_business` is discarded on failure.
 APP_HASH_EXCLUDED = (
     "_pending_business",
     "down",
@@ -2085,13 +2091,6 @@ def admit_provider(provider_id: str = "p1") -> dict:
         "business_id": f"admit-{provider_id}",
         "provider_id": provider_id,
     }
-
-
-def fixture_admit(provider_id: str = "p1") -> dict:
-    """Test setup only. Not a chain message. DEC-009 removed the single-sig path."""
-    step = admit_provider(provider_id)
-    step["op"] = "FixtureAdmitProvider"
-    return step
 
 
 def register_content(content_id: str = "c1", package_bytes: int = PACKAGE_BYTES) -> dict:

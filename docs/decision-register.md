@@ -16,7 +16,7 @@ Date: 2026-10-31 (America/Toronto).
 
 At 06:58 Max said "I take all your recommendations".
 
-Reviewer's reading: this approves DEC-009, DEC-010, DEC-011, and DEC-012.
+Reviewer's reading: the 06:58 reply approves DEC-009, DEC-010, DEC-011, and DEC-012. DEC-009 is council only, or a narrow emergency path that was not selected. DEC-010 derives REJECTED. DEC-011 keeps down out of consensus and approves the power-share cap and the minimum validator count. DEC-012 keeps CONFLICT.
 
 At 06:59 Max said "Yes let's do it", in reply to the reviewer's 4-question card.
 
@@ -274,7 +274,7 @@ Should `MsgAdmitProvider`, `MsgDisableProvider`, and `MsgForceWithdraw` be remov
 
 Blueprint page 12 describes operator and validator changes as council actions with a 3-of-4 threshold, an expiry, and a delay. The payload path is `AdmitProviderChange`, `DisableProviderChange`, and `ForceWithdrawChange` through `ProposeChange`, `ApproveChange`, and `ExecuteChange`.
 
-The direct messages are not in the proto service. `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:445`), `op_disable_provider` (`spec_machine.py:1827`), and `op_force_withdraw` (`spec_machine.py:1831`) return `ERROR_CODE_FORBIDDEN`. `council_ready` (`spec_machine.py:370`) is the council gate for the payload path. Test setup uses `FixtureAdmitProvider` (`spec_machine.py:449`), which is not a chain message.
+The direct messages are not in the proto service. `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:456`), `op_disable_provider` (`spec_machine.py:1829`), and `op_force_withdraw` (`spec_machine.py:1833`) return `ERROR_CODE_FORBIDDEN`. `council_ready` (`spec_machine.py:381`) is the council gate for the payload path. Fixture setup writes `ADMITTED` from `cases.py`. There is no `FixtureAdmitProvider` handler.
 
 ### PROPOSED default
 
@@ -302,7 +302,7 @@ Should evidence state `REJECTED` be derived from verification of the attestation
 
 ### Why this needs the owner
 
-There is no submitter `reject` field. `op_audit` (`docs/evidence/goal-02/spec_machine.py:910`) records `REJECTED` when `observation_digest` is present and does not equal the lease manifest digest, and `RECORDED` otherwise. A step that still carries `reject` is `ERROR_CODE_UNKNOWN_FIELD`. The check compares digests. It does not fetch hosted bytes.
+There is no submitter `reject` field. `op_audit` (`docs/evidence/goal-02/spec_machine.py:893`) requires `observation_digest`, stores it, and binds it in the auditor signature. The state is `REJECTED` when that digest does not equal the lease manifest, and `RECORDED` when it does. A step that still carries `reject` is `ERROR_CODE_UNKNOWN_FIELD`. The check compares digests. It does not fetch hosted bytes.
 
 ### PROPOSED default
 
@@ -334,7 +334,7 @@ Is validator liveness, the fixture `down` set, consensus state that belongs in t
 
 ### PROPOSED default
 
-The approved choice keeps liveness out of consensus state and out of the application hash. `commit_possible` (`docs/evidence/goal-02/spec_machine.py:334`) calls `power_set_invariant` (`spec_machine.py:301`) and does not read `down`. Every activation point must keep at least four validators and `max_power * 3 < total_power`. Liveness can still halt an accepted schedule. With v4 down, removing v1 at height 30 would leave three validators and one of them down, so live power would not commit. The hashed check refuses that removal, so it is not scheduled. The halt is an operator fact, not an app-hash input.
+The approved choice keeps liveness out of consensus state and out of the application hash, and it approves the power-share cap `max_power * 3 < total_power` and the minimum validator count of four. For a positive-power set of three or fewer, the share cap already fails, so the minimum count is the same bound. `commit_possible` calls `power_set_invariant` and does not read `down`. The assumption is that more than two thirds of voting power is online. One validator may be down. Losing more than one third halts the real network because the environment produces no block and the outbox records `PENDING_STALL`. The spec machine does not model that halt. A supplied `CommitBlock` still applies. Scheduling does not read `down`.
 
 ### Status
 
@@ -344,11 +344,11 @@ Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommend
 
 Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
 
-Reviewer's reading: the 06:58 reply approves this decision, and the 06:59 reply keeps liveness out of consensus state and out of the application hash. Liveness can still halt an accepted schedule. With v4 down, removing v1 at height 30 leaves three validators and one of them down, so live power does not commit. The hashed power check refuses that removal, so it is not scheduled. The halt is an operator fact, not an app-hash input.
+Reviewer's reading: the 06:58 reply approves this decision, including the power-share cap and the minimum validator count, and keeps down out of consensus. The 06:59 reply accepts that reading. The assumption is that more than two thirds of voting power is online. Losing more than one third is an environment withhold, not a hashed transition.
 
 ### Blocks
 
-Goal 05 and Goal 06 must not put the process failure list in the application hash. Liveness can still halt an accepted schedule, as in the v4-down example above. A later design that stores liveness on chain needs a new recorded decision.
+Goal 05 and Goal 06 must not put the process failure list in the application hash. The environment withholds a block when more than one third of power is offline. A later design that stores liveness on chain needs a new recorded decision.
 
 ## DEC-012
 
