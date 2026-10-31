@@ -142,7 +142,7 @@ Process heights on that tree: stop at 3, restart at 4, one-down through 11, two-
 
 Container heights: start 4, restart 5, one-down through 11, stall 12, recovery 13. Shared app hash `9A8DEE600967031F7D61817CBDD8A3F46BA1805C8D308E67F48111BE844D8C68`.
 
-CI on this round adds `go vet` and `go test -race`, and a `devnet` job that runs `scripts/devnet/prove-containers.sh`. The job timeout stays at 20 minutes.
+CI on this round adds `go vet` and `go test -race`, and a `devnet` job that runs `scripts/devnet/prove-containers.sh`. The job timeout stays at 20 minutes. Actions run `41248540896` on `931216d140a68838327494c241078680f579244d` passed python, contract, node, and go, including `go test -race`. The devnet job reached recovery and then failed one snapshot while one validator was a block behind. The sampler now waits until the heights match. The rerun is [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt) on tree `f9ad8430a3372d1d3de7608cc201587dc63adf4b`: start 3, restart 6, one-down through 12, stall 14, recovery 16. App hash `D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F`. Exit 0.
 
 ## Next safe action
 
