@@ -1,0 +1,29 @@
+env-start: postgres and rabbitmq are already running for /workspace/.local/workspaces/dev. State was not regenerated.
+CREATE TABLE
+INSERT 0 1
+env-prove-restart: stored the marker, a durable message, and the storage directory
+waiting for server to shut down.... done
+server stopped
+env-stop: postgres stopped
+Shutting down RabbitMQ node svnqueue@localhost running at PID 23803
+Waiting for PID 23803 to terminate
+RabbitMQ node svnqueue@localhost running at PID 23803 successfully shut down
+env-stop: rabbitmq stopped
+env-start: postgres data directory already exists; not running initdb
+waiting for server to start.... done
+server started
+env-start: postgres is ready on 127.0.0.1:5432
+env-start: database svn_dev already exists
+env-start: starting rabbitmq
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.12/socket.py", line 852, in create_connection
+    raise exceptions[0]
+  File "/usr/lib/python3.12/socket.py", line 837, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused
+env-start: rabbitmq is ready on 127.0.0.1:5672
+Setting permissions for user "svn_queue" in vhost "/" ...
+0
+env-start: workspace /workspace/.local/workspaces/dev is ready. svn_db is the database superuser. Chain files were not changed.
+env-prove-restart: restart kept the database marker, the durable message, and the storage directory

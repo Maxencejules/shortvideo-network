@@ -1,0 +1,32 @@
+env-prove-failures: busy port
+env-prove-failures: busy port failed clearly (exit 1)
+env-prove-failures: wrong database password
+env-prove-failures: wrong password failed clearly (exit 2)
+env-prove-failures: missing credentials with existing state
+env-prove-failures: missing credentials failed clearly (exit 2)
+env-prove-failures: start refuses a taken postgres port
+waiting for server to shut down.... done
+server stopped
+env-stop: postgres stopped
+Shutting down RabbitMQ node svnqueue@localhost running at PID 24309
+Waiting for PID 24309 to terminate
+RabbitMQ node svnqueue@localhost running at PID 24309 successfully shut down
+env-stop: rabbitmq stopped
+env-prove-failures: taken postgres port failed clearly (exit 1)
+env-prove-failures: start refuses a taken rabbitmq port
+waiting for server to shut down.... done
+server stopped
+env-stop: postgres stopped
+env-stop: rabbitmq is not running
+env-prove-failures: taken rabbitmq port failed clearly (exit 1)
+env-start: postgres data directory already exists; not running initdb
+waiting for server to start.... done
+server started
+env-start: postgres is ready on 127.0.0.1:5432
+env-start: database svn_dev already exists
+env-start: starting rabbitmq
+env-start: rabbitmq is ready on 127.0.0.1:5672
+Setting permissions for user "svn_queue" in vhost "/" ...
+0
+env-start: workspace /workspace/.local/workspaces/dev is ready. svn_db is the database superuser. Chain files were not changed.
+env-prove-failures: failure proofs passed

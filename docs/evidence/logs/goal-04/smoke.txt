@@ -1,0 +1,12 @@
+env-smoke: postgres query
+ env_smoke_ok 
+--------------
+            1
+(1 row)
+
+env-smoke: amqp round trip
+env-smoke: amqp round trip matched
+env-smoke: ffmpeg lavfi
+env-smoke: ffmpeg wrote /workspace/.local/workspaces/dev/ffmpeg/tone.wav
+env-smoke: development storage is present at /workspace/.local/workspaces/dev/storage
+env-smoke: smoke passed

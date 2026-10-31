@@ -305,3 +305,21 @@ EXIT:0
 `DOCKER_HOST` was unset. The body names Engine 29.1.4, containerd v2.2.5, runc 1.3.6. This probe only sent GET `/version`. No container was created. `docker` and `podman` are still not on `PATH`. `docker.io` `29.1.3-0ubuntu3~24.04.2` is the apt candidate and was not installed. Installing it, or driving the daemon on port 2375, needs Max's approval. Compose execution stays BLOCKED.
 
 The compose volume is `/var/lib/postgresql`, because the pinned PostgreSQL 18.6 image uses `PGDATA=/var/lib/postgresql/18/docker` and exits 1 if `/var/lib/postgresql/data` is the mount. The image digests are linux/amd64 manifests. The ffmpeg and amqp-tools sha256 lines in `deployments/pins/checksums.txt` are hashes of the downloaded debs. They were not compared to a signed Ubuntu Release file. apt checked those packages when it installed them.
+
+## Round 3
+
+Review FIX on `93703d3c15031309cd6974d9b97510f3b245702e`. The script edits in `238d98c0f52644bd71a69e17c79c8075bb94af26` were committed first. These commands then ran on that commit's tree, `53e652ae5f8806cede7f4933eec80b08b27cb78e`. The log files were copied afterwards and do not change the scripts. Each file is the unmodified stdout and stderr of one command. Exit codes are in [exit-codes.txt](logs/goal-04/exit-codes.txt).
+
+| Command | Exit | Raw output |
+| --- | --- | --- |
+| `bash scripts/env/reset.sh --workspace dev --confirm dev` | 0 | [reset.txt](logs/goal-04/reset.txt) |
+| `bash scripts/env/start.sh` | 0 | [start.txt](logs/goal-04/start.txt) |
+| `bash scripts/env/smoke.sh` | 0 | [smoke.txt](logs/goal-04/smoke.txt) |
+| `bash scripts/env/prove-restart.sh` | 0 | [prove-restart.txt](logs/goal-04/prove-restart.txt) |
+| `bash scripts/env/prove-failures.sh` | 0 | [prove-failures.txt](logs/goal-04/prove-failures.txt) |
+
+`start.txt` includes the initdb transcript, `waiting for server to start.... done`, `env-start: starting rabbitmq`, and the final ready line. It does not contain `removed the default broker user`. On this fresh node `list_users` had no `guest` user, so that line was not printed. `smoke.txt` includes `env-smoke: postgres query`, the `env_smoke_ok` table, `env-smoke: amqp round trip`, and `env-smoke: ffmpeg lavfi`. `prove-restart.txt` includes one `ConnectionRefusedError` from the readiness wait before the listener accepted a connection. The command still exited 0.
+
+After those five commands, `rabbitmqctl list_queues name --quiet` exited 0. The raw names are [queues.txt](logs/goal-04/queues.txt): `svn-persist` and `svn-smoke`. `svn-auth-probe` is not in that list. `start.sh` deletes it after the login check.
+
+The password values from `.local/workspaces/dev/credentials.env` were compared with these files and were not present.
