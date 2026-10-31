@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 # Frozen here, not derived from cases(). Deleting, renaming, or flipping
 # an expected result fails this test.
-PINNED_CORPUS_COUNT = 214
+PINNED_CORPUS_COUNT = 232
 PINNED_CORPUS = (
     ("r2-json-mnemonic", True),
     ("r2-env-seed", True),
@@ -229,6 +229,24 @@ PINNED_CORPUS = (
     ("r11-yaml-off", False),
     ("r11-md-prose", False),
     ("r11-fullwidth", True),
+    ("r12-ts-multiline", True),
+    ("r12-ts-typed-multiline", True),
+    ("r12-json-multiline", True),
+    ("r12-yaml-quoted-multiline", True),
+    ("r12-yaml-0x-multiline", True),
+    ("r12-py-backslash", True),
+    ("r12-toml-triple", True),
+    ("r12-go-multiline", True),
+    ("r12-sh-hunter", True),
+    ("r12-envrc-hunter", True),
+    ("r12-docker-hunter", True),
+    ("r12-sh-default-0x", True),
+    ("r12-sh-default-wif", True),
+    ("r12-go-byte-dec", True),
+    ("r12-go-byte-0x", True),
+    ("r12-go-array32", True),
+    ("r12-ts-uint8", True),
+    ("r12-ts-uint8-from", True),
 )
 
 

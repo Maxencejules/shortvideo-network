@@ -18,7 +18,7 @@ On 2026-10-31 at 09:50 EDT Max ruled, relayed word for word by shortvideo-review
 
 The branch history since `2ef8573c59645646cd13f0a49c3392095a7ad4a2` was rewritten for authorship. Every commit on `goal-03` is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>`. `Co-authored-by` and Cursor trailers were removed. `Tested-tree` trailers were kept.
 
-The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `c187f644e0ce0b6ca1e594d037356d8999baf61f` changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `775586d78b1893b8cdb1295a4f07a1ca56334f89` changes those same three files. `645beadc7cdabd0596f9ad5fcb8f2a6c6c4cd901` changes them again. `7d8d73a4b0ce993447615d4b35166b86ed5e304b` adds `tests/secret_scanner_corpus.py` and `tests/unit/test_secret_corpus.py` and changes the scanner, the secrets tests, and this evidence file. `3cde2d99530d277b8517b9a0c7ba56f8d3d029cf` changes the scanner, the corpus, the corpus test, and this evidence file. `880d3759a294377ae60b0bf948316ba6ae4991ff` changes those same four files. The commit that contains this paragraph changes them again.
+The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `c187f644e0ce0b6ca1e594d037356d8999baf61f` changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `775586d78b1893b8cdb1295a4f07a1ca56334f89` changes those same three files. `645beadc7cdabd0596f9ad5fcb8f2a6c6c4cd901` changes them again. `7d8d73a4b0ce993447615d4b35166b86ed5e304b` adds `tests/secret_scanner_corpus.py` and `tests/unit/test_secret_corpus.py` and changes the scanner, the secrets tests, and this evidence file. `3cde2d99530d277b8517b9a0c7ba56f8d3d029cf` changes the scanner, the corpus, the corpus test, and this evidence file. `880d3759a294377ae60b0bf948316ba6ae4991ff` changes those same four files. `bee7963a31021202b1f3605f7ffaf7b1012ec534` changes them again. The commit that contains this paragraph changes them again.
 
 Before the rewrite, these commits were authored and committed by `Cursor Agent <cursoragent@cursor.com>` and carried a `Co-authored-by` trailer:
 
@@ -377,7 +377,7 @@ go tests failed: 1
 
 ## Hosted CI
 
-These are every hosted run of `goal-03` through `880d3759a294377ae60b0bf948316ba6ae4991ff`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
+These are every hosted run of `goal-03` through `bee7963a31021202b1f3605f7ffaf7b1012ec534`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
 
 | Run | Head | Conclusion |
 | --- | --- | --- |
@@ -396,6 +396,7 @@ These are every hosted run of `goal-03` through `880d3759a294377ae60b0bf948316ba
 | [41222721010](https://github.com/Maxencejules/shortvideo-network/actions/runs/41222721010) | `7d8d73a4b0ce993447615d4b35166b86ed5e304b` | success |
 | [41229070740](https://github.com/Maxencejules/shortvideo-network/actions/runs/41229070740) | `3cde2d99530d277b8517b9a0c7ba56f8d3d029cf` | success |
 | [41230855342](https://github.com/Maxencejules/shortvideo-network/actions/runs/41230855342) | `880d3759a294377ae60b0bf948316ba6ae4991ff` | success |
+| [41233023238](https://github.com/Maxencejules/shortvideo-network/actions/runs/41233023238) | `bee7963a31021202b1f3605f7ffaf7b1012ec534` | success |
 
 `41203787093` is the hosted run for the revision the first review marked FIX. Jobs `python`, `node`, `go`, and `contract` completed. `41207064075` failed its python job. None of these runs is a run of this commit.
 
@@ -424,7 +425,7 @@ No devnet, no chain binary, and no production deployment. The secret scan is a b
 
 ## Round 6
 
-On 2026-10-31 at 12:21 America/Toronto, Max answered in the widget: "run round 6 on goal 03 and fix all 7 scanner items". The scanner changes are in `scripts/scan_secrets.py` and `tests/unit/test_secrets.py`. Workflow policy, the test runner, and `check_protocol.py` were not edited. The coverage bullets below describe the scanner after round 11, not the round 6 tree.
+On 2026-10-31 at 12:21 America/Toronto, Max answered in the widget: "run round 6 on goal 03 and fix all 7 scanner items". The scanner changes are in `scripts/scan_secrets.py` and `tests/unit/test_secrets.py`. Workflow policy, the test runner, and `check_protocol.py` were not edited. The coverage bullets below describe the scanner after round 12, not the round 6 tree.
 
 The scan covers these shapes:
 
@@ -432,7 +433,7 @@ The scan covers these shapes:
 - AKIA, `ghp_`, `github_pat_`, and Slack `xox` tokens.
 - Forbidden filenames such as a `.key` or `.pem` suffix, `node_key.json`, and `priv_validator_key.json`.
 - BIP39 runs of 12, 15, 18, 21, or 24 words, and a window of one of those lengths inside a longer run. The c187f64 detector sees the original text: it does not drop a line and it does not rewrite it. Parentheses, backticks, and comment markers are not letters, so a quoted or backticked phrase and an unquoted value with a parenthesis comment are still read. Numbered lists and a `word1:` label are covered by the added detector. A config key before `:` or `=` resets that added detector so the key is not glued to the value. `scripts/bip39_english.txt` is excluded from the mnemonic check only. The same mnemonic check skips a path whose component is `node_modules`, `.venv`, `site-packages`, `__pycache__`, or `.toolchains`. It does not skip `vendor` or `dist`. PEM, AKIA, and private-key checks run on every path.
-- A literal on a private-key name. A literal is a quoted string, an unquoted pure hex token of 7 or more characters (`deadbeef`, `ed25519`), a `0x` hex token of 8 or more hex characters, a base64 token of 16 or more characters that contains a digit, or the fixture token `abc`. A quoted string is a literal and is not a type name. A mixed-case quoted token that contains a digit, including a WIF-shaped token and `Hunter2Secret`, is a literal. A quoted string is not a literal when it is a `$` or `${}` reference, a Helm template `{{ ... }}`, or an angle-bracket placeholder such as `<your key here>`. In Python, TypeScript, JavaScript, and Go, a colon with no equals sign is a type or a parameter. In that position only, a CamelCase word with a lowercase letter and no digit, including a quoted one such as `PrivateKey`, is a type name and is not a literal. `str` is not a literal. A comparison (`==`, `!=`, `<=`, `>=`), a fat arrow (`=>`), and a return arrow (`->`) are not assignments. In code, a 7-letter hex word with no digit, such as defaced, is an identifier, not a literal. `ed25519` stays a literal because it contains a digit. The config literal rule is an allowlist: `.env`, a name containing `.env.`, yaml, yml, toml, ini, and cfg. In those files an unquoted token is a literal. Shell (`.sh` and `.bash`) is code, so an identifier or a `$` reference is clean and a quoted or long hex value is a hit. Other files are not config. A config literal does not include an empty value, empty quotes, a comment-only value, a `$` or `${}` reference, a Helm template, an angle-bracket placeholder, `null`, `None`, `~`, `str`, `true`, `false`, `yes`, `no`, `on`, `off`, a file path, or a YAML alias. In code, a value that starts with `&`, `*`, `<-`, or `range`, or a composite brace with no quoted secret inside, is not a literal. Names include snake case, camel case, a validator or node prefix, a suffix `Hex`, `Bytes`, `B64`, or `Base64` with or without an underscore, a dot, a hyphen, and a double-dash flag. An empty assignment, empty quotes, and a comment-only value are not hits. A fullwidth equals sign is folded to `=` before the key check only. This is not a general NFKC pass. A quoted short name with no surrounding code is a hit. A typed parameter with an equals sign and a literal is a hit. Assignment separators are `=`, `+=`, `:=`, `:`, and a subscript on the left of `=`. `fromhex`, `unhexlify`, `DecodeString`, `hexToBytes`, `Buffer.from`, `HexToECDSA`, a `getenv` or `environ` default, and a `bytes([` list are hits only when a key-like name is in the same statement. A tuple on the left of the separator is still an assignment. A `getenv` default may be plain hex, `0x` hex, or a WIF-shaped token. A fallback after `??`, `||`, or `or` is a hit when the environment name is key-like and the fallback is a quoted literal. Key-like names are `priv`, `private`, `secret`, `seed`, `mnemonic`, `signing`, `signer`, and `key`, including a `_key` suffix such as a validator key or `NODE_KEY`. A previous line is not part of the statement. A `bytes([` list needs at least four integers. Three integers are not a hit. A plain or `0x` hex default is a hit at 8 or more hex characters. A shorter default is not a hit. `fromhex`, `unhexlify`, `DecodeString`, `hexToBytes`, `Buffer.from`, and `HexToECDSA` still need 48 hex characters.
+- A literal on a private-key name. A literal is a quoted string, an unquoted pure hex token of 7 or more characters (`deadbeef`, `ed25519`), a `0x` hex token of 8 or more hex characters, a base64 token of 16 or more characters that contains a digit, or the fixture token `abc`. A quoted string is a literal and is not a type name. A mixed-case quoted token that contains a digit, including a WIF-shaped token and `Hunter2Secret`, is a literal. A quoted string is not a literal when it is a `$` or `${}` reference, a Helm template `{{ ... }}`, or an angle-bracket placeholder such as `<your key here>`. In Python, TypeScript, JavaScript, and Go, a colon with no equals sign is a type or a parameter. In that position only, a CamelCase word with a lowercase letter and no digit, including a quoted one such as `PrivateKey`, is a type name and is not a literal. `str` is not a literal. A comparison (`==`, `!=`, `<=`, `>=`), a fat arrow (`=>`), and a return arrow (`->`) are not assignments. In code, a 7-letter hex word with no digit, such as defaced, is an identifier, not a literal. `ed25519` stays a literal because it contains a digit. The config literal rule is an allowlist: `.env`, a name containing `.env.`, yaml, yml, toml, ini, and cfg. In those files an unquoted token is a literal. Shell (`.sh` and `.bash`), `.envrc`, and a Dockerfile are checked like shell: an identifier or a pure `$` reference is clean, a quoted or long hex value is a hit, and an unquoted mixed-case token with a digit and 8 or more characters is a literal. A blank assignment or a backslash continuation uses the next non-blank line, unless that line is a nested key. `${name}` and `${name:?message}` are references. `${name:-default}`, `${name-default}`, `${name:=default}`, and `${name=default}` are scanned for that default. Four or more integer literals under a key-like name are a hit. Other files are not config. A config literal does not include an empty value, empty quotes, a comment-only value, a `$` or `${}` reference, a Helm template, an angle-bracket placeholder, `null`, `None`, `~`, `str`, `true`, `false`, `yes`, `no`, `on`, `off`, a file path, or a YAML alias. In code, a value that starts with `&`, `*`, `<-`, or `range`, or a composite brace with no quoted secret inside, is not a literal. Names include snake case, camel case, a validator or node prefix, a suffix `Hex`, `Bytes`, `B64`, or `Base64` with or without an underscore, a dot, a hyphen, and a double-dash flag. An empty assignment, empty quotes, and a comment-only value are not hits. A fullwidth equals sign is folded to `=` before the key check only. This is not a general NFKC pass. A quoted short name with no surrounding code is a hit. A typed parameter with an equals sign and a literal is a hit. Assignment separators are `=`, `+=`, `:=`, `:`, and a subscript on the left of `=`. `fromhex`, `unhexlify`, `DecodeString`, `hexToBytes`, `Buffer.from`, `HexToECDSA`, a `getenv` or `environ` default, and a `bytes([` list are hits only when a key-like name is in the same statement. A tuple on the left of the separator is still an assignment. A `getenv` default may be plain hex, `0x` hex, or a WIF-shaped token. A fallback after `??`, `||`, or `or` is a hit when the environment name is key-like and the fallback is a quoted literal. Key-like names are `priv`, `private`, `secret`, `seed`, `mnemonic`, `signing`, `signer`, and `key`, including a `_key` suffix such as a validator key or `NODE_KEY`. A previous line is not part of the statement. A `bytes([` list needs at least four integers. Three integers are not a hit. A plain or `0x` hex default is a hit at 8 or more hex characters. A shorter default is not a hit. `fromhex`, `unhexlify`, `DecodeString`, `hexToBytes`, `Buffer.from`, and `HexToECDSA` still need 48 hex characters.
 
 The scan does not cover these shapes. `_NON_SECRET_NAMES` is the explicit identifier set: `k`, `key`, `priv_key`, `privkey`, `private_key`, `priv_key_default`, `signing_key`, `raw`, `seed`, `path`, `msg`, `none`, `null`, `nil`, `undefined`, `true`, and `false`. Any other bare identifier is also ignored, except `abc`, a pure hex token of 7 or more characters, and a base64 token of 16 or more characters that contains a digit. `ed25519` is a literal because it is 7 hex characters. `key2` and `ed25519_key` are not literals. `str` is not a literal.
 
@@ -663,7 +664,7 @@ Every corpus positive that `c187f64` or `3cde2d9` caught is still caught. The li
 
 Shell (`.sh` and `.bash`) is code. The config literal rule is only the allowlist named above. A fullwidth equals sign is folded to `=` before the key check. The mnemonic scan is not NFKC-normalized.
 
-Self-mutation tried file-type routing for every code suffix, every config suffix, `.sh`, `.rs`, `.go`, `Dockerfile`, and markdown; Go shapes (`range`, `&`, `*`, `<-`, composite literals, tuple left-hand sides); and empty or boolean values. No further miss turned up. A composite that contains a quoted hex value stayed a hit. This is not a claim that every possible shape was tested.
+Self-mutation tried file-type routing for every code suffix, every config suffix, `.sh`, `.rs`, `.go`, `Dockerfile`, and markdown; Go shapes (`range`, `&`, `*`, `<-`, composite literals, tuple left-hand sides); and empty or boolean values. A composite that contains a quoted hex value stayed a hit. That pass did not include a value on the following line, an unquoted mixed-case shell token, a `${name:-default}` default, or a Go or TypeScript byte array. Round 12 records those misses. This is not a claim that every possible shape was tested.
 
 ```
 .venv/bin/python -m pytest tests/unit/test_secret_corpus.py tests/unit/test_secrets.py -q
@@ -680,3 +681,46 @@ EXIT:0
 make check
 EXIT:0
 ```
+
+## Round 12
+
+On 2026-10-31, Max decided: "run round 12 on goal 03: fix the 4 blocking regressions and add them to the corpus, defer items 5-6 to goal 06. after this the reviewer blocks only on regressions against the pinned corpus; new edge cases go to goal 06".
+
+The corpus grew by 18 positives. No entry was deleted, renamed, or had its expected result flipped. `tests/unit/test_secret_corpus.py` pins the new count and the `(id, expect)` tuples. The count is 232: 143 positives and 89 negatives.
+
+`findings_in_text` on that corpus, positives caught and negatives flagged:
+
+| Head | Positives caught | Negatives flagged |
+| --- | --- | --- |
+| `c187f64` | 104 of 143 | 74 of 89 |
+| `3cde2d9` | 116 of 143 | 22 of 89 |
+| `880d375` | 134 of 143 | 39 of 89 |
+| `bee7963` | 125 of 143 | 0 of 89 |
+| this tree | 143 of 143 | 0 of 89 |
+
+Every corpus positive caught at `c187f64`, `3cde2d9`, `880d375`, or `bee7963` is still caught. The literal definition in the coverage list above is the definition in the pull request.
+
+Self-mutation also tried a blank line before a continued value, single quotes, `${name:=default}`, `${name=default}`, `${name-default}`, a byte list of exactly four integers, and a byte list of three. The three-integer list stays clean. The other probes were already caught. This is not a claim that every possible shape was tested.
+
+```
+.venv/bin/python -m pytest tests/unit/test_secret_corpus.py tests/unit/test_secrets.py -q
+EXIT:0
+
+.venv/bin/python scripts/scan_secrets.py
+secret scan ok
+EXIT:0
+
+.venv/bin/python scripts/run_tests.py --only python
+105 passed
+EXIT:0
+
+make check
+EXIT:0
+```
+
+## Deferred to goal 06
+
+These two scanner edges are not fixed here. After this round, a review of goal 03 blocks only on a regression against the pinned corpus. New edge cases belong to goal 06.
+
+- A dotenv value that begins with `#` and no space, such as a private-key name immediately followed by `#` and hex. The scanner still treats that `#` as a comment.
+- A Makefile `?=` assignment. It is missed at every head so far, including `c187f64`.

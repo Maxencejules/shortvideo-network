@@ -689,4 +689,119 @@ def cases() -> list[Case]:
         "PRIVATE_" + "KEY" + "\uff1d" + "Hunter2Secret\n",
         True,
     )
+    # Round 12. Existing expects are unchanged.
+    add(
+        "r12-ts-multiline",
+        "examples/r12.ts",
+        "const private" + 'Key =\n  "0x' + _hex() + '";',
+        True,
+        True,
+    )
+    add(
+        "r12-ts-typed-multiline",
+        "examples/r12b.ts",
+        "let private" + 'Key: string =\n  "0x' + _hex() + '";',
+        True,
+    )
+    add(
+        "r12-json-multiline",
+        "examples/r12.json",
+        '"private' + 'Key":\n  "0x' + _hex() + '"',
+        True,
+    )
+    add(
+        "r12-yaml-quoted-multiline",
+        "examples/r12.yaml",
+        "private_" + 'key:\n  "' + _hex() + '"\n',
+        True,
+    )
+    add(
+        "r12-yaml-0x-multiline",
+        "examples/r12b.yaml",
+        "private_" + "key:\n  0x" + _hex() + "\n",
+        True,
+    )
+    add(
+        "r12-py-backslash",
+        "examples/r12.py",
+        "priv_" + 'key = \\\n  "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r12-toml-triple",
+        "examples/r12.toml",
+        "priv_" + 'key = """\n' + _hex() + '\n"""\n',
+        True,
+    )
+    add(
+        "r12-go-multiline",
+        "examples/r12.go",
+        "priv" + 'Key :=\n\t"' + _hex() + '"',
+        True,
+    )
+    add(
+        "r12-sh-hunter",
+        "examples/run.sh",
+        "PRIVATE_" + "KEY=Hunter2Secret\n",
+        True,
+        True,
+    )
+    add(
+        "r12-envrc-hunter",
+        "examples/r12.envrc",
+        "export PRIVATE_" + "KEY=Hunter2Secret\n",
+        True,
+        True,
+    )
+    add(
+        "r12-docker-hunter",
+        "deploy/Dockerfile",
+        "ENV PRIVATE_" + "KEY=Hunter2Secret\n",
+        True,
+        True,
+    )
+    add(
+        "r12-sh-default-0x",
+        "examples/r12b.sh",
+        "export PRIVATE_" + 'KEY="${PRIVATE_KEY:-0x' + _hex() + '}"\n',
+        True,
+        True,
+    )
+    add(
+        "r12-sh-default-wif",
+        "examples/r12c.sh",
+        "PRIVATE_" + "KEY=${PRIVATE_KEY:-" + _wif() + "}\n",
+        True,
+        True,
+    )
+    add(
+        "r12-go-byte-dec",
+        "examples/r12b.go",
+        "var priv" + "Key = []byte{" + "1, 2, 3, 4, 5, 6, 7, 8}",
+        True,
+    )
+    add(
+        "r12-go-byte-0x",
+        "examples/r12c.go",
+        "priv" + "Key := []byte{" + "0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}",
+        True,
+    )
+    add(
+        "r12-go-array32",
+        "examples/r12d.go",
+        "priv" + "Key := [32]byte{" + "1, 2, 3, 4, 5, 6, 7, 8}",
+        True,
+    )
+    add(
+        "r12-ts-uint8",
+        "examples/r12c.ts",
+        "const private" + "Key = new Uint8Array([" + "1, 2, 3, 4, 5, 6, 7, 8])",
+        True,
+    )
+    add(
+        "r12-ts-uint8-from",
+        "examples/r12d.ts",
+        "const private" + "Key = Uint8Array.from([" + "1, 2, 3, 4, 5, 6, 7, 8])",
+        True,
+    )
     return out

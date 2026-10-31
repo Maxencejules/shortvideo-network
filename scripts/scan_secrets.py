@@ -66,7 +66,10 @@ _TYPE_AFTER = re.compile(
     r")"
 )
 _QUOTED = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
-_DOLLAR = re.compile(r"\$(?:\{[A-Za-z_][\w]*(?::[^}]*)?\}|[A-Za-z_][\w]*|[0-9]+)")
+# `${name}` and `${name:?msg}` / `${name?msg}` are references. `:-`, `-`,
+# `:=`, and `=` carry a default that is scanned separately.
+_DOLLAR = re.compile(r"\$(?:\{[A-Za-z_][\w]*(?::\?[^}]*|\?[^}]*)?\}|[A-Za-z_][\w]*|[0-9]+)")
+_DOLLAR_DEFAULT = re.compile(r"\$\{[A-Za-z_][\w]*(?::[-=]|[-=])(?P<default>.*)\}")
 _BYTE_LIST = re.compile(r"bytes\s*\(\s*\[(?:\s*\d+\s*,){3,}\s*\d+")
 _HEX_CALL = re.compile(
     r"(?i)(?:fromhex|unhexlify|DecodeString|hexToBytes|Buffer\.from|HexToECDSA)"
@@ -199,11 +202,41 @@ def _quote_inners(value: str) -> list[str]:
     return [match.group(0)[1:-1] for match in _QUOTED.finditer(value)]
 
 
-def _is_dollar_ref(value: str) -> bool:
+def _strip_wrapping_quotes(value: str) -> str:
     text = value.strip()
     if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
-        text = text[1:-1]
-    return _DOLLAR.fullmatch(text) is not None
+        return text[1:-1]
+    return text
+
+
+def _is_dollar_ref(value: str) -> bool:
+    return _DOLLAR.fullmatch(_strip_wrapping_quotes(value)) is not None
+
+
+def _dollar_default(value: str) -> str | None:
+    """Literal default from `${name:-default}` and the other assignment forms."""
+    match = _DOLLAR_DEFAULT.fullmatch(_strip_wrapping_quotes(value))
+    if match is None:
+        return None
+    return match.group("default")
+
+
+def _is_shellish(name: str) -> bool:
+    """Shell, direnv, and Dockerfile. Mixed-case tokens there can be literals."""
+    path = Path(name)
+    base = path.name.lower()
+    return path.suffix.lower() in {".sh", ".bash", ".envrc"} or base in {"dockerfile", ".envrc"}
+
+
+def _shell_literal(token: str) -> bool:
+    """Unquoted shell token: mixed case, a digit, and at least 8 characters."""
+    if len(token) < 8 or re.search(r"\d", token) is None:
+        return False
+    return re.search(r"[a-z]", token) is not None and re.search(r"[A-Z]", token) is not None
+
+
+def _has_four_ints(text: str) -> bool:
+    return len(re.findall(r"\b(?:0x[0-9a-fA-F]+|\d+)\b", text)) >= 4
 
 
 def _hex_or_base64(inner: str) -> bool:
@@ -384,7 +417,12 @@ def _contains_secret_literal(text: str) -> bool:
 
 
 def _value_suppressed(
-    value: str, *, annotation: bool = False, code: bool = True, config: bool = False
+    value: str,
+    *,
+    annotation: bool = False,
+    code: bool = True,
+    config: bool = False,
+    shell: bool = False,
 ) -> bool:
     """True when a matched value is not a literal secret.
 
@@ -399,6 +437,11 @@ def _value_suppressed(
     is a literal. ``str``, booleans, ``null``, ``None``, ``~``, a path, and a
     YAML alias are not.
     """
+    default = _dollar_default(value)
+    if default is not None:
+        return _value_suppressed(
+            default, annotation=annotation, code=code, config=config, shell=shell
+        )
     if _is_dollar_ref(value):
         return True
     text = _trim_assigned(value)
@@ -431,6 +474,8 @@ def _value_suppressed(
         inners = [inner for inner in _quote_inners(text) if not _is_dollar_ref(inner)]
         if any(_hex_or_base64(inner) for inner in inners) or _has_byte_list(text):
             return False
+        if _has_four_ints(text):
+            return False
         # A parenthesized quote is a literal. A call such as getenv("NAME") is not.
         if re.match(r"^\(\s*[\"']", text) and any(
             inner.strip() != "" and not _quote_is_ignorable(inner, annotation=annotation)
@@ -448,17 +493,22 @@ def _value_suppressed(
         or re.match(r"&?[A-Za-z_][\w.]*\{", text) is not None
         or text.startswith("{")
     ):
-        return not _contains_secret_literal(text)
+        if _has_four_ints(text) or _contains_secret_literal(text):
+            return False
+        return True
     if config and (
         "/" in text and " " not in text or re.fullmatch(r"\*[A-Za-z_][\w]*", text) is not None
     ):
         return True
     if re.fullmatch(r"[A-Za-z_][\w.]*", text):
+        token = text.split(".")[-1]
+        if shell and _shell_literal(token):
+            return False
         if config:
             return False
         if "." in text:
             return True
-        return not _bare_literal(text.split(".")[-1], code=code)
+        return not _bare_literal(token, code=code)
     if config:
         return False
     return True
@@ -492,15 +542,72 @@ def _rest_of_statement(text: str, start: int) -> str:
     return text[start:index]
 
 
+def _nested_key(line: str) -> bool:
+    """A following `name:` line is a nested map, not a continued literal."""
+    stripped = line.strip()
+    if stripped.startswith(("'", '"', "0x", "0X")):
+        return False
+    return re.match(r"[A-Za-z_][\w-]*\s*:", stripped) is not None
+
+
+def _next_nonblank(text: str, index: int) -> str:
+    for line in text[index:].splitlines():
+        if line.strip():
+            return line.strip()
+    return ""
+
+
+def _triple_body(text: str, index: int, quote: str) -> str:
+    body: list[str] = []
+    for line in text[index:].splitlines():
+        if line.strip() == quote:
+            break
+        body.append(line.strip())
+    return "\n".join(part for part in body if part)
+
+
+def _logical_value(text: str, start: int) -> str:
+    """Assignment value, including one continued line when this line is empty.
+
+    A line that is blank, a backslash continuation, an opening triple quote,
+    or a type ending in `=` uses the next non-blank line. A nested `name:`
+    line stays empty. An unclosed `(` still keeps the whole statement.
+    """
+    statement = _rest_of_statement(text, start)
+    first = statement.split("\n", 1)[0]
+    if "\n" in statement and "(" in first:
+        return statement
+    stripped = first.strip()
+    next_at = start + len(first)
+    if next_at < len(text) and text[next_at] == "\n":
+        next_at += 1
+    if stripped.endswith("\\"):
+        nxt = _next_nonblank(text, next_at)
+        if _nested_key(nxt):
+            return stripped[:-1].strip()
+        return (stripped[:-1] + " " + nxt).strip()
+    if stripped in {'"""', "'''"}:
+        return _triple_body(text, next_at, stripped)
+    if stripped == "" or re.fullmatch(r".*=\s*", stripped) is not None:
+        nxt = _next_nonblank(text, next_at)
+        if _nested_key(nxt):
+            return ""
+        return nxt
+    return first
+
+
 def _assignment_suppressed(text: str, match: re.Match[str], name: str) -> bool:
-    rest = _rest_of_statement(text, match.end())
-    line = rest.split("\n", 1)[0].strip()
     sep = match.group("sep")
+    code = _is_code(name)
+    config = _is_config(name)
+    shell = _is_shellish(name)
+    value = _logical_value(text, match.end())
+    line = value.split("\n", 1)[0].strip()
     if sep == ":" and line.startswith("="):
         line = line[1:].strip()
         sep = "="
-        rest = rest.split("=", 1)[1]
-    if _is_code(name) and sep == ":" and "=" not in line:
+        value = line
+    if code and sep == ":" and "=" not in line and line != "":
         return (
             _value_suppressed(line, annotation=True, code=True)
             or not _quote_inners(line)
@@ -510,11 +617,9 @@ def _assignment_suppressed(text: str, match: re.Match[str], name: str) -> bool:
                 and not _letter_hex_word(line.strip())
             )
         )
-    code = _is_code(name)
-    config = _is_config(name)
     if sep == ":" and "=" in line:
-        return _value_suppressed(line.split("=", 1)[1], code=code, config=config)
-    return _value_suppressed(rest, code=code, config=config)
+        value = line.split("=", 1)[1]
+    return _value_suppressed(value, code=code, config=config, shell=shell)
 
 
 def _quoted_kept(text: str, match: re.Match[str]) -> bool:
