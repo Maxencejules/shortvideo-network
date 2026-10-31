@@ -295,8 +295,44 @@ def quorum_holds(validators: dict, down: list) -> bool:
     return available * 3 > total * 2
 
 
+MIN_VALIDATOR_COUNT = 4
+
+
+def power_set_invariant(validators: dict) -> str | None:
+    """Hashed safety bound. It does not read liveness.
+
+    Every activation point must keep at least MIN_VALIDATOR_COUNT validators
+    and max_power * 3 < total_power. A set that fails is not scheduled.
+    """
+    if not validators:
+        return "ERROR_CODE_FORBIDDEN"
+    total = 0
+    max_power = 0
+    for power in validators.values():
+        if not isinstance(power, int) or isinstance(power, bool) or power <= 0:
+            return "ERROR_CODE_FORBIDDEN"
+        total += power
+        if power > max_power:
+            max_power = power
+    if len(validators) < MIN_VALIDATOR_COUNT or total > SAFE_MAX:
+        return "ERROR_CODE_FORBIDDEN"
+    if max_power * 3 >= total:
+        return "ERROR_CODE_FORBIDDEN"
+    return None
+
+
+def liveness_would_halt(validators: dict, down: list) -> bool:
+    """Operator liveness, not a consensus transition and not an app-hash input.
+
+    With v4 down, a removal of v1 leaves v2, v3, and v4. Live power is then
+    two of three, which does not satisfy two thirds. That halt is real for
+    operators and is not what commit_possible decides.
+    """
+    return not quorum_holds(validators, down)
+
+
 def commit_possible(state: dict) -> bool:
-    return quorum_holds(state["validators"], state["down"])
+    return power_set_invariant(state["validators"]) is None
 
 
 def intent_ok(state: dict, sig: object) -> str | None:
@@ -407,6 +443,10 @@ def op_register_provider(state: dict, step: dict) -> dict[str, object]:
 
 
 def op_admit_provider(state: dict, step: dict) -> dict[str, object]:
+    return err("ERROR_CODE_FORBIDDEN")
+
+
+def op_fixture_admit(state: dict, step: dict) -> dict[str, object]:
     allowed = {"signer", "business_id", "provider_id"}
     bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
     if bad:
@@ -881,10 +921,10 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
         "expiry_unix_seconds",
         "attestation",
         "auditor_signature",
-        "reject",
+        "observation_digest",
         "item_count",
     }
-    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed - {"reject", "item_count"})))
+    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed - {"observation_digest", "item_count"})))
     if bad:
         return bad
     role_error = check_role(state, step["signer"], "AUDITOR")
@@ -927,12 +967,13 @@ def op_audit(state: dict, step: dict) -> dict[str, object]:
     lease = state["leases"][step["lease_id"]]
     deadline_before = lease["deadline_unix_seconds"]
     state_before = lease["state"]
-    if step.get("reject") is True:
-        recorded = "REJECTED"
-    elif step.get("reject") not in (None, False):
-        return err("ERROR_CODE_MALFORMED")
-    else:
-        recorded = "RECORDED"
+    recorded = "RECORDED"
+    if "observation_digest" in step:
+        digest_error = check_digest(step["observation_digest"])
+        if digest_error:
+            return err(digest_error)
+        if step["observation_digest"] != lease["manifest_digest"]:
+            recorded = "REJECTED"
     state["evidence"][step["evidence_id"]] = {
         "batch_id": step["batch_id"],
         "kind": step["kind"],
@@ -1044,7 +1085,7 @@ def activation_identity(change: dict) -> tuple:
     """The due point of one power change. Height and time are not one order.
 
     Comparing a height with a unix time would choose a block-time policy.
-    DEC-012 is OPEN on that comparison. Until then, pending changes are one kind.
+    DEC-012 keeps the kinds separate: a mix is ERROR_CODE_CONFLICT.
     """
     activation = change["activation"]
     if activation["kind"] == "height":
@@ -1200,16 +1241,8 @@ def _apply_projected_change(validators: dict, pubkeys: dict, change: dict) -> st
 
 
 def _checkpoint_projected_set(validators: dict) -> str | None:
-    """The set after one activation point must still be able to commit.
-
-    Every validator in the projection counts as available. `state["down"]` is
-    a fixture for the current block, not an input to this check.
-    """
-    if not validators or sum(validators.values()) <= 0:
-        return "ERROR_CODE_FORBIDDEN"
-    if not quorum_holds(validators, []):
-        return "ERROR_CODE_QUORUM"
-    return None
+    """Hashed power bound after one activation point. Does not read liveness."""
+    return power_set_invariant(validators)
 
 
 def project_power_changes(state: dict, extra: dict | None = None) -> str | None:
@@ -1234,11 +1267,23 @@ def project_power_changes(state: dict, extra: dict | None = None) -> str | None:
     index = 0
     while index < len(changes):
         point = activation_identity(changes[index])
+        group = []
         while index < len(changes) and activation_identity(changes[index]) == point:
-            problem = _apply_projected_change(validators, pubkeys, changes[index])
+            group.append(changes[index])
+            index += 1
+        node_ids = [item["node_id"] for item in group]
+        if len(node_ids) != len(set(node_ids)):
+            return "ERROR_CODE_CONFLICT"
+        # Every named key, including a removal. A removal that sorts first would
+        # otherwise free the key for a later add in the same group, and the
+        # proposer-chosen id would decide which one wins.
+        keys = [item["consensus_pubkey"] for item in group]
+        if len(keys) != len(set(keys)):
+            return "ERROR_CODE_CONFLICT"
+        for item in group:
+            problem = _apply_projected_change(validators, pubkeys, item)
             if problem:
                 return problem
-            index += 1
         problem = _checkpoint_projected_set(validators)
         if problem:
             return problem
@@ -1780,57 +1825,17 @@ def op_update_capacity(state: dict, step: dict) -> dict[str, object]:
 
 
 def op_disable_provider(state: dict, step: dict) -> dict[str, object]:
-    allowed = {"signer", "business_id", "provider_id"}
-    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
-    if bad:
-        return bad
-    role_error = check_role(state, step["signer"], "AUTHORITY")
-    if role_error:
-        return err(role_error)
-    ready = council_ready(state)
-    if ready:
-        return err(ready)
-    id_error = check_id(step["provider_id"])
-    if id_error:
-        return err(id_error)
-    gate = business_gate(state, step, ("provider_id",))
-    if gate:
-        return gate
-    provider = state["providers"].get(step["provider_id"])
-    if provider is None:
-        return err("ERROR_CODE_NOT_FOUND")
-    if provider["state"] not in {"ADMITTED", "DRAINING"}:
-        return err("ERROR_CODE_CONFLICT")
-    provider["state"] = "DISABLED"
-    return finish(state, {"type": "ProviderStateChanged", "provider_id": step["provider_id"], "state": "DISABLED"})
+    return err("ERROR_CODE_FORBIDDEN")
 
 
 def op_force_withdraw(state: dict, step: dict) -> dict[str, object]:
-    allowed = {"signer", "business_id", "content_id", "content_version", "reason_digest"}
-    bad = unknown(step, allowed) or require_fields(step, tuple(sorted(allowed)))
-    if bad:
-        return bad
-    role_error = check_role(state, step["signer"], "AUTHORITY")
-    if role_error:
-        return err(role_error)
-    digest_error = check_digest(step["reason_digest"])
-    if digest_error:
-        return err(digest_error)
-    param = devnet_param(state, "DEC-003")
-    if param is None or param.get("role_name") != "DEVNET_TEST_ONLY":
-        return err("ERROR_CODE_DECISION_BLOCKED")
-    gate = business_gate(state, step, ("content_id", "content_version", "reason_digest"))
-    if gate:
-        return gate
-    result = withdraw_content(state, step["signer"], step["content_id"], step["content_version"], step["reason_digest"], authority=True)
-    if result["ok"] and step["content_id"] in state["contents"]:
-        state["contents"][step["content_id"]]["removal_promise_approved"] = False
-    return result
+    return err("ERROR_CODE_FORBIDDEN")
 
 
 HANDLERS = {
     "RegisterProvider": op_register_provider,
     "AdmitProvider": op_admit_provider,
+    "FixtureAdmitProvider": op_fixture_admit,
     "RegisterContent": op_register_content,
     "WithdrawContent": op_withdraw_content,
     "OfferLease": op_offer,
@@ -1999,8 +2004,8 @@ def signature(domain: str, key_id: str, valid: bool = True) -> dict:
 
 
 # Off-chain or transient. Reachability and publication are not chain state.
-# `down` is a fixture for whether this block can commit. Power-change scheduling
-# does not read it. DEC-011 is OPEN on whether liveness belongs in consensus.
+# `down` is an operator liveness fixture. DEC-011 keeps it out of the application
+# hash. commit_possible and power-change scheduling do not read it.
 # `pending` is the stall outbox. `events` are derived. `_pending_business` is
 # discarded on failure.
 APP_HASH_EXCLUDED = (
@@ -2080,6 +2085,13 @@ def admit_provider(provider_id: str = "p1") -> dict:
         "business_id": f"admit-{provider_id}",
         "provider_id": provider_id,
     }
+
+
+def fixture_admit(provider_id: str = "p1") -> dict:
+    """Test setup only. Not a chain message. DEC-009 removed the single-sig path."""
+    step = admit_provider(provider_id)
+    step["op"] = "FixtureAdmitProvider"
+    return step
 
 
 def register_content(content_id: str = "c1", package_bytes: int = PACKAGE_BYTES) -> dict:

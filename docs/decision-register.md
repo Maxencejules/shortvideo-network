@@ -1,16 +1,26 @@
 # Decision register
 
-Status of this register: OPEN questions for the owner. Nothing in this file is approved.
+Status of this register: Gate A on 2026-10-31 (America/Toronto) approved DEC-001 through DEC-012. The protocol specification is not an approved protocol. Protocol v0 freezes once goal 02 passes review. This revision is the candidate. It does not by itself claim that review has passed.
 
 Public launch: DISABLED
 
 No tradable token, coin, sale, or mining.
 
-This register records decisions whose answers change security or public-operation commitments. A PROPOSED default is a suggestion so implementation can see a candidate. It is not permission to ship that candidate, and it is not a user approval. Reversible documentation choices made while writing Goal 01 are listed at the end and are not requests for approval.
-
-Goal 02 may proceed only by treating the decisions below as explicitly blocked. It must not treat them as approved.
+This register records decisions whose answers change security or public-operation commitments. A PROPOSED default was a suggestion. Gate A accepted every PROPOSED default for DEC-001 through DEC-008. The quotes and the reviewer's reading are in the Gate A record below. Reversible documentation choices made while writing Goal 01 are listed at the end and are not requests for approval.
 
 The protocol specification is not an approved protocol.
+
+## Gate A record
+
+Date: 2026-10-31 (America/Toronto).
+
+At 06:58 Max said "I take all your recommendations".
+
+Reviewer's reading: this approves DEC-009, DEC-010, DEC-011, and DEC-012.
+
+At 06:59 Max said "Yes let's do it", in reply to the reviewer's 4-question card.
+
+Reviewer's reading: this accepts the recommended option on every question. DEC-009 is council-only for admit, disable, and force-withdraw, with no single-signature path. DEC-001 through DEC-008 accept every PROPOSED default. The launch allocation (grok-4.7, xhigh reasoning) counts as reported effort for goals 01 and 02. SVN-JCS-1, SHA-256, Ed25519, the proposed signing domains, the safety and governed caps, and the shortvideo-dev- prefix are accepted. Protocol v0 freezes once goal 02 passes review.
 
 ## DEC-001
 
@@ -26,11 +36,17 @@ The answer decides who can publish, migrate, or take over an account, and whethe
 
 The account host holds a delegated signing key for beta public records, and the product discloses that custody. A web passkey is a login authenticator and is not a Cosmos transaction key. Email, recovery material, and sessions stay off-chain. Operators, not viewers, hold chain-submission credentials. A later user-controlled root identity stays deferred. Recovery-key changes, session revocation, and host migration require a strong confirmation, and the key history must not expose secrets.
 
-This default is PROPOSED. It is not approved.
+This was the PROPOSED default. Gate A accepted it on 2026-10-31.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:59 reply accepts the PROPOSED default for who holds hosting-intent keys.
 
 ### Blocks
 
@@ -50,11 +66,17 @@ Admission is the boundary against Sybil identities and undisclosed control. Call
 
 Admission stays permissioned. A reviewed operator registry is the beta mechanism. Four equal-power development validators are development processes, and the spec describes them as that. A storage operator is not required to become a validator. No permissionless validator or provider admission is included. Multiple node identities are not treated as proof of independent operators or independent copies.
 
-This default is PROPOSED. It is not approved.
+This was the PROPOSED default. Gate A accepted it on 2026-10-31.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:59 reply accepts the PROPOSED default for permissioned admission.
 
 ### Blocks
 
@@ -74,11 +96,17 @@ The answer is the public-operation commitment about other people's speech and ab
 
 The product provides report, block, an administrator queue, decisions with reasons, appeals, and an urgent escalation path. Sensitive case material stays off-chain and access-controlled. A signed public label can state a community outcome without naming the complainant. Removal delists the item, ends or cancels participating hosting commitments, purges caches the operators control, and revokes relevant credentials. Independently retained copies and historical public-ledger records remain. Validators do not decide the legality of each video. Published means the moderation and hosting conditions in force are satisfied. It does not mean the chain certified the content as lawful or truthful. The five-minute delisting figure in the blueprint is a PROPOSED gate, not a promise.
 
-This default is PROPOSED. It is not approved.
+This was the PROPOSED default. Gate A accepted it on 2026-10-31.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:59 reply accepts the PROPOSED default for community rules and removal.
 
 ### Blocks
 
@@ -98,11 +126,17 @@ Retention is the privacy and deletion commitment. It also decides whether a live
 
 No retention duration is set. The beta does not promise universal deletion. Raw watch histories stay out of public protocols. Complaint narratives, private messages, and legal evidence files stay off-chain. Chain coordination records are not rewritten to imitate erasure. Backups, availability, and integrity are separate. An origin or creator backup policy is unset. IPFS pinning is not the retention mechanism of this beta.
 
-This default is PROPOSED. It is not approved.
+This was the PROPOSED default. Gate A accepted it on 2026-10-31.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:59 reply accepts the PROPOSED default for retention.
 
 ### Blocks
 
@@ -122,11 +156,17 @@ Sponsorship decides who is responsible for storage cost and what users are told 
 
 No monetary rewards, no tradable token, no coin, no sale, no mining, no automatic financial slashing, and no contribution-credit system. Hosts are not promised payment by this specification. A future community sponsor would name an allowance and a lease term. Unfunded or expired leases are not presented as permanent availability. Quota mechanisms exist as engineering scope. The per-account number and the lease length are unset. Blueprint arithmetic (100 daily viewers, 25 MB packages, three copies, and similar figures) is planning illustration, not a budget or a measured demand.
 
-This default is PROPOSED. It is not approved.
+This was the PROPOSED default. Gate A accepted it on 2026-10-31.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:59 reply accepts the PROPOSED default for sponsorship terms.
 
 ### Blocks
 
@@ -146,11 +186,17 @@ Software licensing and the creator's rights grant are public-operation commitmen
 
 Consider AGPLv3 for original server and application code and Apache-2.0 for original protocol client libraries. Confirm compatibility before applying either. Keep third-party notices. Do not relicense code beyond the rights granted. Do not include Cosmos Enterprise PoA or Groups modules. Record FFmpeg build flags, codecs, and licence obligations when a build exists. The creator upload licence would cover hosting, replication, transcoding, and playback of material the creator has permission to publish. Commercial music, payments, and native-store distribution stay deferred.
 
-This default is PROPOSED. It is not approved. No licence file in this goal applies those terms.
+This was the PROPOSED default. Gate A accepted it on 2026-10-31. No licence file in this goal applies those terms.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:59 reply accepts the PROPOSED default for the project licence split.
 
 ### Blocks
 
@@ -170,11 +216,17 @@ Audience policy decides whether minors are in scope and what safety claim the pr
 
 Accounts are invited. Public sign-up stays off. Public launch stays disabled. A developer or learning community is an example, not a chosen market. The product name is unset and is not a security blocker by itself. The beta makes no minor-safety claim. A privacy assessment and jurisdiction-specific advice, including any Canadian or Quebec review, remain unmet gates for public launch. The 2018 OPC overview cited by the blueprint is not used here as a current-law checklist.
 
-This default is PROPOSED. It is not approved.
+This was the PROPOSED default. Gate A accepted it on 2026-10-31.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:59 reply accepts the PROPOSED default for audience and age policy.
 
 ### Blocks
 
@@ -194,15 +246,21 @@ This is who can change the consensus set. The blueprint lists initial council me
 
 Four named seats, three approvals for an ordinary change, one approval per seat, an expiry, and a published delay. Council voting is application governance and is a different process from CometBFT consensus voting. Emergency local disablement of a compromised endpoint is not a committed chain decision. Quorum-loss behavior is unspecified. No person is named. Cosmos Enterprise Groups is not the implementation. A chain stall can prevent on-chain governance from executing.
 
-This default is PROPOSED. It is not approved.
+This was the PROPOSED default. Gate A accepted it on 2026-10-31.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:59 reply accepts the PROPOSED default of four seats and three approvals. The devnet fixture's smaller numbers are not a second policy.
 
 ### Blocks
 
-Production council parameters and any genesis that names real council keys. Goal 06 and Goal 10 must not treat 3-of-4 as an approved policy. A devnet may use disposable test keys and may store a threshold field. The number 3-of-4 remains a labeled PROPOSED test parameter until this decision is answered.
+Production council parameters and any genesis that names real council keys. Gate A accepted four seats and three approvals. Goal 06 and Goal 10 must not treat the devnet fixture's smaller numbers as that policy. A devnet may use disposable test keys and may store a threshold field.
 
 A validator power change in the v0 draft names its own activation point: a committed height or a committed chain time strictly after the block that executes the proposal. That is the "not immediate" rule. No minimum delay beyond that rule is chosen. Any longer mandatory delay stays inside this decision.
 
@@ -214,21 +272,27 @@ Should `MsgAdmitProvider`, `MsgDisableProvider`, and `MsgForceWithdraw` be remov
 
 ### Why this needs the owner
 
-Blueprint page 12 describes operator and validator changes as council actions with a 3-of-4 threshold, an expiry, and a delay. This draft has two paths. `AdmitProviderChange`, `DisableProviderChange`, and `ForceWithdrawChange` go through `ProposeChange`, `ApproveChange`, and `ExecuteChange`. The direct messages are single-signature authority paths. They do not collect council approvals.
+Blueprint page 12 describes operator and validator changes as council actions with a 3-of-4 threshold, an expiry, and a delay. The payload path is `AdmitProviderChange`, `DisableProviderChange`, and `ForceWithdrawChange` through `ProposeChange`, `ApproveChange`, and `ExecuteChange`.
 
-In this tree, `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:409`) and `op_force_withdraw` (`spec_machine.py:1808`) check the authority role and the relevant open decision. `op_disable_provider` (`spec_machine.py:1782`) also calls `council_ready` (`spec_machine.py:334`). `council_ready` only checks that a DEC-008 test parameter exists: the numeric value is positive, the delay is not negative, and the required count does not exceed the seat list. It does not count approvals and it does not wait for the delay.
+The direct messages are not in the proto service. `op_admit_provider` (`docs/evidence/goal-02/spec_machine.py:445`), `op_disable_provider` (`spec_machine.py:1827`), and `op_force_withdraw` (`spec_machine.py:1831`) return `ERROR_CODE_FORBIDDEN`. `council_ready` (`spec_machine.py:370`) is the council gate for the payload path. Test setup uses `FixtureAdmitProvider` (`spec_machine.py:449`), which is not a chain message.
 
 ### PROPOSED default
 
-No default is selected. The alternatives are to remove the three direct messages, or to keep them as a bounded emergency path whose scope, expiry, and delay are named by the owner. This draft keeps both the direct messages and the proposal payload path. Keeping the direct messages is not approval of an emergency policy.
+The approved choice is council only. The alternatives were to remove the three direct messages, or to keep them as a bounded emergency path. The emergency path was not selected.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:58 reply approves this decision, and the 06:59 reply selects council-only admit, disable, and force-withdraw, with no single-signature path.
 
 ### Blocks
 
-Goal 06 and Goal 10 must not treat the direct messages as the approved way to admit, disable, or force-withdraw. Goal 02 does not choose a threshold or an emergency scope.
+Goal 06 and Goal 10 must use the council payload path. The direct messages are not an emergency path. Goal 02 does not choose a threshold beyond DEC-008.
 
 ## DEC-010
 
@@ -238,19 +302,25 @@ Should evidence state `REJECTED` be derived from verification of the attestation
 
 ### Why this needs the owner
 
-`EvidenceItem.reject` is a bool the auditor submits. The state machine records `REJECTED` when that bool is true and `RECORDED` otherwise. It does not recompute the verdict from hosted bytes or from a second check.
+There is no submitter `reject` field. `op_audit` (`docs/evidence/goal-02/spec_machine.py:910`) records `REJECTED` when `observation_digest` is present and does not equal the lease manifest digest, and `RECORDED` otherwise. A step that still carries `reject` is `ERROR_CODE_UNKNOWN_FIELD`. The check compares digests. It does not fetch hosted bytes.
 
 ### PROPOSED default
 
-No default is selected. The alternatives are to derive `REJECTED` from a verification rule, or to treat the flag as the auditor's verdict. This draft keeps the flag. Keeping it is not an approval.
+The approved choice derives `REJECTED` from that digest comparison. The alternative was a submitter `reject` flag. That flag is not in the proto.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:58 reply approves this decision, and the 06:59 reply selects REJECTED derived from verification, not a submitter flag.
 
 ### Blocks
 
-Later evidence and moderation work must not describe `reject` as proof that the chain verified the media. A verification rule needs a recorded answer to this question.
+Later evidence and moderation work must not describe a missing `reject` flag as proof that the chain fetched the media. The recorded rule is the digest comparison above.
 
 ## DEC-011
 
@@ -260,19 +330,25 @@ Is validator liveness, the fixture `down` set, consensus state that belongs in t
 
 ### Why this needs the owner
 
-The block-commit predicate uses `down` to decide whether the current validators can produce a block. Power-change scheduling used to read the same set. Two copies of the same transactions then finished `EXECUTED` or `QUORUM` depending on `down`, and the application hashes differed, while `down` itself was omitted from the hash. That is not a deterministic consensus input.
+`down` used to decide both block commit and power-change scheduling while staying outside the application hash. Two copies of the same transactions could then diverge. That is not a deterministic consensus input.
 
 ### PROPOSED default
 
-No default is selected. The alternatives are to put liveness in consensus state and in the application hash, or to keep it as a block-local observation. This draft keeps `down` out of the hash and does not read it when scheduling a power change. Every projected validator counts as available for that check. The block-commit predicate still uses `down` as a fixture. Keeping that split is not an approval.
+The approved choice keeps liveness out of consensus state and out of the application hash. `commit_possible` (`docs/evidence/goal-02/spec_machine.py:334`) calls `power_set_invariant` (`spec_machine.py:301`) and does not read `down`. Every activation point must keep at least four validators and `max_power * 3 < total_power`. Liveness can still halt an accepted schedule. With v4 down, removing v1 at height 30 would leave three validators and one of them down, so live power would not commit. The hashed check refuses that removal, so it is not scheduled. The halt is an operator fact, not an app-hash input.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:58 reply approves this decision, and the 06:59 reply keeps liveness out of consensus state and out of the application hash. Liveness can still halt an accepted schedule. With v4 down, removing v1 at height 30 leaves three validators and one of them down, so live power does not commit. The hashed power check refuses that removal, so it is not scheduled. The halt is an operator fact, not an app-hash input.
 
 ### Blocks
 
-Goal 05 and Goal 06 must not treat a process failure list as an approved consensus field. A later design that stores liveness on chain needs a recorded answer to this question.
+Goal 05 and Goal 06 must not put the process failure list in the application hash. Liveness can still halt an accepted schedule, as in the v4-down example above. A later design that stores liveness on chain needs a new recorded decision.
 
 ## DEC-012
 
@@ -286,11 +362,17 @@ An activation point is either a committed height or a committed chain time. Sort
 
 ### PROPOSED default
 
-No default is selected. The alternatives are to define one order from committed height and chain time, or to keep the kinds separate. This draft rejects a new power change whose activation kind differs from one already pending, with `ERROR_CODE_CONFLICT`. Changes of one kind are ordered by that kind's point, then by proposal id. Rejecting the mix is not an approval of a cross-kind order.
+The approved choice keeps mixed height and time activations as `ERROR_CODE_CONFLICT`. CONFLICT leaves the proposal `QUEUED`. `ERROR_CODE_FORBIDDEN` marks the proposal `REJECTED`. Changes of one kind are ordered by that kind's point, then by proposal id. A total order across the two kinds was not selected.
 
 ### Status
 
-Status: OPEN
+Status: APPROVED
+
+Gate A, 2026-10-31 (America/Toronto), 06:58. Max said "I take all your recommendations".
+
+Gate A, 2026-10-31 (America/Toronto), 06:59. Max said "Yes let's do it".
+
+Reviewer's reading: the 06:58 reply approves this decision, and the 06:59 reply keeps mixed height and time activations as CONFLICT. CONFLICT leaves the proposal QUEUED. FORBIDDEN marks it REJECTED.
 
 ### Blocks
 

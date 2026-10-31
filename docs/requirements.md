@@ -615,10 +615,10 @@ REQ-SUCCESS-001	IN_SCOPE	28	product/application	30	TEST: Goal 30 runs the invite
 
 ## Proposed Goal 02 input checklist
 
-Goal 02 can start from Goal 01 because DEC-001 through DEC-008 are explicitly blocked. They are not approved. This checklist is PROPOSED input for that goal.
+Goal 02 started from Goal 01 while DEC-001 through DEC-008 were explicitly blocked. Gate A on 2026-10-31 (America/Toronto) approved those decisions. The decision register quotes Max and records the reviewer's reading. This checklist is the input that started the goal. The protocol specification is not an approved protocol.
 
 1. Read `AGENTS.md`, `docs/progress.md`, this file, `docs/threat-model.md`, `docs/decision-register.md`, and `docs/evidence/goal-01.md`. Verify the parent revision and the Goal 01 evidence before editing schemas.
-2. Treat DEC-001, DEC-002, DEC-003, DEC-004, DEC-005, DEC-006, DEC-007, and DEC-008 as explicitly blocked. Do not mark any of them approved inside a schema comment, a default, or a fixture label.
+2. Goal 02 began by treating DEC-001, DEC-002, DEC-003, DEC-004, DEC-005, DEC-006, DEC-007, and DEC-008 as explicitly blocked. Gate A approved them. Schema comments may record that approval. They must not set an on-chain approved flag.
 3. Keep public launch disabled. Do not add a token, a coin, a sale, mining, or financial slashing.
 4. Keep video bytes and the personal-data list off-chain (REQ-OFF-001, REQ-OFF-002, REQ-OFF-005). A hash is not anonymization (REQ-OFF-004).
 5. Preserve the six trust boundaries: user login, social records, media transport, storage commitments, governance, and consensus (REQ-BOUND-001 through REQ-BOUND-006).

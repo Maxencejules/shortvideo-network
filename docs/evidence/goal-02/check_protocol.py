@@ -98,11 +98,8 @@ PINNED_RPCS = (
     "UpdateProvider",
     "RotateProviderKey",
     "DrainProvider",
-    "AdmitProvider",
-    "DisableProvider",
     "RegisterContent",
     "WithdrawContent",
-    "ForceWithdraw",
     "OfferLease",
     "AcceptLease",
     "RenewLease",
@@ -336,7 +333,6 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
     'field:quorum_loss',
     'field:reason_digest',
     'field:records',
-    'field:reject',
     'field:released_bytes',
     'field:reservation_delta',
     'field:reservation_held',
@@ -482,7 +478,6 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
     'json_name:quorumLoss',
     'json_name:reasonDigest',
     'json_name:records',
-    'json_name:reject',
     'json_name:releasedBytes',
     'json_name:reservationDelta',
     'json_name:reservationHeld',
@@ -551,20 +546,14 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
     'message:LeaseRenewed',
     'message:MsgAcceptLease',
     'message:MsgAcceptLeaseResponse',
-    'message:MsgAdmitProvider',
-    'message:MsgAdmitProviderResponse',
     'message:MsgApproveChange',
     'message:MsgApproveChangeResponse',
-    'message:MsgDisableProvider',
-    'message:MsgDisableProviderResponse',
     'message:MsgDrainProvider',
     'message:MsgDrainProviderResponse',
     'message:MsgEndLease',
     'message:MsgEndLeaseResponse',
     'message:MsgExecuteChange',
     'message:MsgExecuteChangeResponse',
-    'message:MsgForceWithdraw',
-    'message:MsgForceWithdrawResponse',
     'message:MsgOfferLease',
     'message:MsgOfferLeaseResponse',
     'message:MsgProposeChange',
@@ -622,16 +611,13 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
     'oneof:point',
     'rpc:AcceptLease',
     'rpc:ActiveLeases',
-    'rpc:AdmitProvider',
     'rpc:ApproveChange',
     'rpc:Content',
     'rpc:Deadlines',
-    'rpc:DisableProvider',
     'rpc:DrainProvider',
     'rpc:EndLease',
     'rpc:Evidence',
     'rpc:ExecuteChange',
-    'rpc:ForceWithdraw',
     'rpc:Governance',
     'rpc:OfferLease',
     'rpc:Policy',
@@ -750,6 +736,8 @@ REQUIRED_CASES = {
     "proposal-rejected",
     "validator-power-applied",
     "evidence-rejected",
+    "evidence-reject-flag-unknown",
+    "single-sig-authority-rejected",
     "force-withdraw",
     "force-withdraw-non-authority",
     "replay-app-hash",
@@ -769,10 +757,13 @@ REQUIRED_CASES = {
     "wrong-payload-digest",
     "validator-power-explicit-zero",
     "stacked-validator-removal",
+    "validator-power-invariant",
     "activation-gap-halt",
     "activation-gap-keeps-one",
     "down-not-consensus",
+    "liveness-halt-example",
     "mixed-activation-kind",
+    "same-point-power-change",
     "duplicate-scheduled-validator-key",
 }
 REQUIRED_VALID_IDS = {
@@ -923,10 +914,10 @@ def open_decision(decisions: str, decision_id: str) -> list[str]:
         return [f"register missing {decision_id}"]
     section = decisions.split(f"## {decision_id}", 1)[1].split("\n## ", 1)[0]
     errors: list[str] = []
-    if "Status: OPEN" not in section:
-        errors.append(f"{decision_id} is not OPEN")
-    if re.search(r"^Status: APPROVED\s*$", section, re.M):
-        errors.append(f"{decision_id} is APPROVED")
+    if not re.search(r"^Status: APPROVED\s*$", section, re.M):
+        errors.append(f"{decision_id} is not APPROVED")
+    if re.search(r"^Status: OPEN\s*$", section, re.M):
+        errors.append(f"{decision_id} is still OPEN")
     return errors
 
 
@@ -1136,9 +1127,6 @@ def scan_real_descriptor(text: str) -> list[str]:
         if name not in declared:
             errors.append(f"rpc missing {name}")
     for name in (
-        "MsgAdmitProvider",
-        "MsgForceWithdraw",
-        "MsgDisableProvider",
         "ProposalPayload",
         "ValidatorPowerChange",
         "ActivationPoint",
@@ -1260,8 +1248,10 @@ def pin_self_test() -> list[str]:
             errors.append(f"pattern pin missing {needle}")
     if "validator_power" not in PINNED_ONEOF_MEMBERS:
         errors.append("oneof pin dropped validator_power")
-    if "AdmitProvider" not in PINNED_RPCS:
-        errors.append("rpc pin dropped AdmitProvider")
+    if "AdmitProvider" in PINNED_RPCS or "DisableProvider" in PINNED_RPCS or "ForceWithdraw" in PINNED_RPCS:
+        errors.append("single-sig authority rpc is still pinned")
+    if "RegisterProvider" not in PINNED_RPCS:
+        errors.append("rpc pin dropped RegisterProvider")
     if "empty-pattern-list" not in name_hits(_descriptor_field("email"), (), PINNED_NAME_EXEMPTIONS):
         errors.append("empty pattern list passed")
     samples = {
@@ -1301,7 +1291,7 @@ def pin_self_test() -> list[str]:
             errors.append(f"exemption hit {name}")
     if "validator_power" not in missing_declared_names('name: "governed_limit"\n', PINNED_ONEOF_MEMBERS):
         errors.append("dropped oneof member passed")
-    if "AdmitProvider" not in missing_declared_names('name: "RegisterProvider"\n', PINNED_RPCS):
+    if "SubmitAuditBatch" not in missing_declared_names('name: "RegisterProvider"\n', PINNED_RPCS):
         errors.append("dropped rpc passed")
     if name_hits(_descriptor_field("endpoint_digest"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
         errors.append("endpoint matched a forbidden pattern")
@@ -1640,7 +1630,7 @@ def main() -> int:
     if languages_match:
         print("languages MATCH")
     print("result PASS")
-    print("note schema and fixture check; protocol not approved; decisions OPEN; public launch disabled")
+    print("note schema and fixture check; protocol not approved; Gate A approved DEC-001 through DEC-012; v0 freezes once review passes; public launch disabled")
     return 0
 
 

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 // Draft protocol v0 types for the permissioned beta.
 // Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
-// DEC-001 through DEC-008 are OPEN. No field below approves them.
+// Gate A approved DEC-001 through DEC-012. No field below sets an on-chain approved flag.
 // No video bytes, personal data, token, mint, distribution, or slashing.
 
 package svn.offchain.v1;

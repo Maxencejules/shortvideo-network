@@ -479,10 +479,10 @@ def validate_documents(rows: list[dict[str, str]]) -> list[str]:
             section = decisions.split(f"## {dec}", 1)[1].split("\n## ", 1)[0]
             if "### Question" not in section or "### PROPOSED default" not in section or "### Blocks" not in section:
                 errors.append(f"{dec} missing required subsections")
-            if "Status: OPEN" not in section:
-                errors.append(f"{dec} is not OPEN")
-            if re.search(r"^Status: APPROVED\s*$", section, re.M):
-                errors.append(f"{dec} is marked APPROVED")
+            if not re.search(r"^Status: APPROVED\s*$", section, re.M):
+                errors.append(f"{dec} is not APPROVED")
+            if re.search(r"^Status: OPEN\s*$", section, re.M):
+                errors.append(f"{dec} is still OPEN")
     topics = (
         "custody",
         "recovery",

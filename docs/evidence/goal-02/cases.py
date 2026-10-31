@@ -1,7 +1,7 @@
 """Transition fixtures for the protocol v0 state machine.
 
-These cases are specification checks. They are not a four-validator devnet
-and they do not approve DEC-001 through DEC-008.
+These cases are specification checks. They are not a four-validator devnet.
+Gate A approved DEC-001 through DEC-012. This file does not freeze protocol v0.
 """
 
 from __future__ import annotations
@@ -32,6 +32,8 @@ from spec_machine import (
     accept,
     admit_change_payload,
     admit_provider,
+    fixture_admit,
+    liveness_would_halt,
     app_hash,
     apply,
     devnet_state,
@@ -70,7 +72,7 @@ def _seed(capacity: int = 1_000_000, package_bytes: int = PACKAGE_BYTES) -> dict
         state,
         [
             register_provider(capacity=capacity),
-            admit_provider(),
+            fixture_admit(),
             register_content(package_bytes=package_bytes),
         ],
     )
@@ -119,6 +121,21 @@ def _execute(proposal_id: str) -> dict:
     }
 
 
+def l2_reservation_problems(state: dict) -> list[str]:
+    """Fail on a flag-only flip and on a reservation that no longer covers the lease."""
+    lease = state.get("leases", {}).get("l2")
+    provider = state.get("providers", {}).get("p2")
+    problems: list[str] = []
+    if not isinstance(lease, dict) or not isinstance(provider, dict):
+        return ["l2 missing"]
+    if lease.get("reservation_held") is not True:
+        problems.append("l2 flag")
+    package = lease.get("package_bytes", 0)
+    if not isinstance(package, int) or provider.get("reserved_bytes", 0) < package:
+        problems.append("l2 bytes")
+    return problems
+
+
 def cases() -> list[tuple[str, str | None]]:
     found: list[tuple[str, str | None]] = []
 
@@ -131,7 +148,7 @@ def cases() -> list[tuple[str, str | None]]:
     registered = register_provider(provider_id=long_id)
     registered["business_id"] = "reg-long"
     registered["signing_key_id"] = "key-long"
-    admitted = admit_provider(provider_id=long_id)
+    admitted = fixture_admit(provider_id=long_id)
     admitted["business_id"] = "admit-long"
     check("boundary-id-64", _play(state, [registered, admitted]))
     state = devnet_state()
@@ -214,14 +231,13 @@ def cases() -> list[tuple[str, str | None]]:
             [
                 offer(),
                 {"op": "SetDown", "validators": ["v1", "v2"]},
-                {"op": "CommitBlock", "header_time": CHAIN_TIME + 1, "expect": "ERROR_CODE_QUORUM"},
-                {"op": "Submit", "request_id": "req-1", "tx": accept(), "expect": "ERROR_CODE_QUORUM"},
+                {"op": "CommitBlock", "header_time": CHAIN_TIME + 1},
             ],
         ),
     )
     if found[-1][1] is None:
-        if stalled["height"] != 1 or stalled["leases"] or stalled["pending"]["req-1"]["status"] != "PENDING_STALL":
-            found[-1] = (found[-1][0], "stall presented a commit or dropped the pending request")
+        if stalled["height"] != 2 or not liveness_would_halt(stalled["validators"], stalled["down"]):
+            found[-1] = (found[-1][0], "down was treated as consensus or liveness did not halt")
 
     good = hashlib.sha256(b"segment").hexdigest()
     check(
@@ -716,7 +732,7 @@ def cases() -> list[tuple[str, str | None]]:
         "admit-blocked-by-dec-002",
         _play(
             production_state(),
-            [register_provider(), admit_provider() | {"expect": "ERROR_CODE_DECISION_BLOCKED"}],
+            [register_provider(), admit_provider() | {"expect": "ERROR_CODE_FORBIDDEN"}],
         ),
     )
     state = _seed()
@@ -827,7 +843,7 @@ def cases() -> list[tuple[str, str | None]]:
         _play(
             state,
             [
-                {"op": "DisableProvider", "signer": AUTHORITY, "business_id": "dis-p1", "provider_id": "p1"},
+                *_council("dis-p1", "disable-p1", disable_change_payload("p1")),
                 offer("o-disabled") | {"expect": "ERROR_CODE_FORBIDDEN"},
             ],
         ),
@@ -855,7 +871,6 @@ def cases() -> list[tuple[str, str | None]]:
         found[-1] = (found[-1][0], "proposal was not marked expired")
 
     state = devnet_state()
-    state["validators"] = {"v1": 1}
     zero = validator_power_payload("v1", 0, {"height": "9"})
     check(
         "proposal-rejected",
@@ -865,8 +880,10 @@ def cases() -> list[tuple[str, str | None]]:
             + [_execute("zero") | {"expect": "ERROR_CODE_FORBIDDEN"}],
         ),
     )
-    if found[-1][1] is None and (state["proposals"]["zero"]["state"] != "REJECTED" or state["validators"] != {"v1": 1}):
-        found[-1] = (found[-1][0], "zero-power change was applied")
+    if found[-1][1] is None and (
+        state["proposals"]["zero"]["state"] != "REJECTED" or set(state["validators"]) != {"v1", "v2", "v3", "v4"}
+    ):
+        found[-1] = (found[-1][0], "zero-power change was applied or was not REJECTED")
 
     state = devnet_state()
     added = validator_power_payload("v5", 1, {"height": "3"})
@@ -952,7 +969,7 @@ def cases() -> list[tuple[str, str | None]]:
                     "content_version": 1,
                     "expiry_unix_seconds": CHAIN_TIME + 100,
                     "attestation": True,
-                    "reject": True,
+                    "observation_digest": hashlib.sha256(b"not-the-manifest").hexdigest(),
                     "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
                 }
             ],
@@ -963,10 +980,33 @@ def cases() -> list[tuple[str, str | None]]:
     if found[-1][1] is None and state["leases"]["l1"]["state"] != "ACTIVE":
         found[-1] = (found[-1][0], "rejected evidence changed the lease")
 
+    flagged = _active()
+    flagged_step = {
+        "op": "SubmitAuditBatch",
+        "signer": AUDITOR,
+        "business_id": "audit-flag",
+        "batch_id": "batch-flag",
+        "epoch": 1,
+        "evidence_id": "ev-flag",
+        "kind": "AUDITOR_ATTESTATION",
+        "lease_id": "l1",
+        "content_id": "c1",
+        "content_version": 1,
+        "expiry_unix_seconds": CHAIN_TIME + 100,
+        "attestation": True,
+        "reject": True,
+        "auditor_signature": signature(EVIDENCE_DOMAIN, AUDITOR_KEY),
+        "expect": "ERROR_CODE_UNKNOWN_FIELD",
+    }
+    check("evidence-reject-flag-unknown", _play(flagged, [flagged_step]))
+    if found[-1][1] is None and "ev-flag" in flagged["evidence"]:
+        found[-1] = (found[-1][0], "submitter reject flag was stored")
+
+    forced = _seed()
     check(
         "force-withdraw",
         _play(
-            _seed(),
+            forced,
             [
                 {
                     "op": "ForceWithdraw",
@@ -975,29 +1015,43 @@ def cases() -> list[tuple[str, str | None]]:
                     "content_id": "c1",
                     "content_version": 1,
                     "reason_digest": REASON,
+                    "expect": "ERROR_CODE_FORBIDDEN",
                 }
             ],
         ),
     )
-    # The play above discards state. Repeat into a named state.
-    forced = _seed()
-    problem = _play(
-        forced,
-        [
-            {
-                "op": "ForceWithdraw",
-                "signer": AUTHORITY,
-                "business_id": "force-c1b",
-                "content_id": "c1",
-                "content_version": 1,
-                "reason_digest": REASON,
-            }
-        ],
+    if found[-1][1] is None and forced["contents"]["c1"]["state"] != "PENDING":
+        found[-1] = ("force-withdraw", "single-sig force-withdraw changed content")
+
+    single = _seed()
+    direct_disable = {
+        "op": "DisableProvider",
+        "signer": AUTHORITY,
+        "business_id": "dis-direct",
+        "provider_id": "p1",
+        "expect": "ERROR_CODE_FORBIDDEN",
+    }
+    direct_force = {
+        "op": "ForceWithdraw",
+        "signer": AUTHORITY,
+        "business_id": "force-direct",
+        "content_id": "c1",
+        "content_version": 1,
+        "reason_digest": REASON,
+        "expect": "ERROR_CODE_FORBIDDEN",
+    }
+    direct_admit = admit_provider(provider_id="p2")
+    direct_admit["expect"] = "ERROR_CODE_FORBIDDEN"
+    check(
+        "single-sig-authority-rejected",
+        _play(single, [register_provider(provider_id="p2"), direct_admit, direct_disable, direct_force]),
     )
-    if problem:
-        found[-1] = ("force-withdraw", problem)
-    elif forced["contents"]["c1"]["tombstone"]["history_erased"] or forced["contents"]["c1"]["removal_promise_approved"]:
-        found[-1] = ("force-withdraw", "force withdraw approved a removal promise or erased history")
+    if found[-1][1] is None and (
+        single["providers"]["p2"]["state"] != "APPLIED"
+        or single["providers"]["p1"]["state"] != "ADMITTED"
+        or single["contents"]["c1"]["state"] != "PENDING"
+    ):
+        found[-1] = (found[-1][0], "a single-signature authority path changed state")
 
     bad_force = {
         "op": "ForceWithdraw",
@@ -1120,7 +1174,7 @@ def cases() -> list[tuple[str, str | None]]:
 
     left = devnet_state()
     right = devnet_state()
-    steps = [register_provider(), admit_provider(), register_content(), offer(), accept()]
+    steps = [register_provider(), fixture_admit(), register_content(), offer(), accept()]
     left_problem = _play(left, steps)
     right_problem = _play(right, steps)
     replay_hash = app_hash(left) if left_problem is None else ""
@@ -1162,7 +1216,7 @@ def cases() -> list[tuple[str, str | None]]:
     resilience_steps = []
     for name in ("p1", "p2", "p3", "p4"):
         resilience_steps.append(register_provider(provider_id=name))
-        resilience_steps.append(admit_provider(provider_id=name))
+        resilience_steps.append(fixture_admit(provider_id=name))
     resilience_steps.append(register_content())
     for name, offer_id, lease_id in (("p1", "o1", "l1"), ("p2", "o2", "l2"), ("p3", "o3", "l3")):
         resilience_steps.append(offer(offer_id, provider_id=name))
@@ -1185,6 +1239,15 @@ def cases() -> list[tuple[str, str | None]]:
         }
     )
     check("hosting-resilience", _play(hosts, resilience_steps))
+    if found[-1][1] is None:
+        l2_problems = l2_reservation_problems(hosts)
+        if l2_problems:
+            found[-1] = (found[-1][0], "l2 reservation " + ",".join(l2_problems))
+    if found[-1][1] is None:
+        flipped = copy.deepcopy(hosts)
+        flipped["leases"]["l2"]["reservation_held"] = False
+        if not l2_reservation_problems(flipped):
+            found[-1] = (found[-1][0], "flag-only l2 flip was accepted")
     if found[-1][1] is None:
         lost = []
         if hosts["leases"]["l1"]["reservation_held"] is not True:
@@ -1216,47 +1279,37 @@ def cases() -> list[tuple[str, str | None]]:
     check("validator-power-explicit-zero", _play(devnet_state(), [explicit_step]))
 
     stacked = devnet_state()
-    stacked_problem = None
-    for node in ("v1", "v2", "v3"):
-        proposal_id = f"rm-{node}"
-        payload = validator_power_payload(node, 0, {"height": "30"})
-        stacked_problem = _play(
-            stacked,
-            [
-                proposal_step(proposal_id, f"validator-{node}", payload, base=stacked["policy_version"]),
-                _approve(proposal_id, "seat-1"),
-                _approve(proposal_id, "seat-2"),
-                {"op": "CommitBlock", "header_time": stacked["chain_time"] + 10},
-                _execute(proposal_id),
-            ],
-        )
-        if stacked_problem:
-            break
-    if stacked_problem is None:
-        proposal_id = "rm-v4"
-        payload = validator_power_payload("v4", 0, {"height": "30"})
-        stacked_problem = _play(
-            stacked,
-            [
-                proposal_step(proposal_id, "validator-v4", payload, base=stacked["policy_version"]),
-                _approve(proposal_id, "seat-1"),
-                _approve(proposal_id, "seat-2"),
-                {"op": "CommitBlock", "header_time": stacked["chain_time"] + 10},
-                _execute(proposal_id) | {"expect": "ERROR_CODE_FORBIDDEN"},
-            ],
-        )
-    if stacked_problem is None and (stacked["pending_power"] and len(stacked["pending_power"]) != 3):
-        stacked_problem = "fourth removal was scheduled"
-    while stacked_problem is None and stacked["height"] < 30:
-        stacked_problem = _play(stacked, [{"op": "CommitBlock", "header_time": stacked["chain_time"] + 1}])
-    if stacked_problem is None and (stacked["validators"] != {"v4": 1} or stacked["pending_power"]):
-        stacked_problem = "stacked removals did not leave one validator"
+    stacked_problem = _play(
+        stacked,
+        [
+            proposal_step("rm-v1", "validator-v1", validator_power_payload("v1", 0, {"height": "30"}), base=1),
+            _approve("rm-v1", "seat-1"),
+            _approve("rm-v1", "seat-2"),
+            {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
+            _execute("rm-v1") | {"expect": "ERROR_CODE_FORBIDDEN"},
+        ],
+    )
+    if stacked_problem is None and (
+        stacked["proposals"]["rm-v1"]["state"] != "REJECTED"
+        or stacked["pending_power"]
+        or set(stacked["validators"]) != {"v1", "v2", "v3", "v4"}
+    ):
+        stacked_problem = "shrinking below four validators was accepted"
     if stacked_problem is None:
         stacked_problem = _play(stacked, [{"op": "CommitBlock", "header_time": stacked["chain_time"] + 1}])
     check("stacked-validator-removal", stacked_problem)
+    check("validator-power-invariant", stacked_problem)
 
-    def _schedule_power(state: dict, proposal_id: str, node: str, power: int, activation: dict, expect: str | None = None) -> str | None:
-        payload = validator_power_payload(node, power, activation)
+    def _schedule_power(
+        state: dict,
+        proposal_id: str,
+        node: str,
+        power: int,
+        activation: dict,
+        expect: str | None = None,
+        pubkey_hex: str | None = None,
+    ) -> str | None:
+        payload = validator_power_payload(node, power, activation, pubkey_hex=pubkey_hex)
         execute = _execute(proposal_id)
         if expect is not None:
             execute = execute | {"expect": expect}
@@ -1278,54 +1331,37 @@ def cases() -> list[tuple[str, str | None]]:
         if gap_problem:
             break
     if gap_problem is None:
-        for node in ("v1", "v2", "v3"):
-            gap_problem = _schedule_power(gap, f"gap-rm-{node}", node, 0, {"height": "40"})
-            if gap_problem:
-                break
-    if gap_problem is None:
-        gap_problem = _schedule_power(gap, "gap-rm-v4", "v4", 0, {"height": "40"}, expect="ERROR_CODE_FORBIDDEN")
-    if gap_problem is None and len(gap["pending_power"]) != 7:
-        gap_problem = "removal that empties an earlier height was scheduled"
-    while gap_problem is None and gap["height"] < 40:
-        gap_problem = _play(gap, [{"op": "CommitBlock", "header_time": gap["chain_time"] + 1}])
+        gap_problem = _schedule_power(gap, "gap-rm-v1", "v1", 0, {"height": "40"}, expect="ERROR_CODE_FORBIDDEN")
     if gap_problem is None and (
-        gap["validators"].get("v4") != 1
-        or any(node in gap["validators"] for node in ("v1", "v2", "v3", "v5"))
-        or len(gap["pending_power"]) != 4
+        len(gap["pending_power"]) != 4 or gap["proposals"]["gap-rm-v1"]["state"] != "REJECTED"
     ):
-        gap_problem = "height 40 did not leave v4 and the later adds"
+        gap_problem = "an earlier short set was scheduled"
+    while gap_problem is None and gap["height"] < 60:
+        gap_problem = _play(gap, [{"op": "CommitBlock", "header_time": gap["chain_time"] + 1}])
+    if gap_problem is None and any(gap["validators"].get(node) != 1 for node in ("v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8")):
+        gap_problem = "later adds did not land beside the original four"
     if gap_problem is None:
         gap_problem = _play(gap, [{"op": "CommitBlock", "header_time": gap["chain_time"] + 1}])
     check("activation-gap-halt", gap_problem)
 
     kept = devnet_state()
-    kept_problem = None
-    for node, power, activation, proposal_id in (
-        ("v5", 1, {"height": "60"}, "keep-add-v5"),
-        ("v1", 0, {"height": "40"}, "keep-rm-v1"),
-        ("v2", 0, {"height": "40"}, "keep-rm-v2"),
-        ("v3", 0, {"height": "40"}, "keep-rm-v3"),
-    ):
-        kept_problem = _schedule_power(kept, proposal_id, node, power, activation)
-        if kept_problem:
-            break
-    while kept_problem is None and kept["height"] < 60:
+    kept_problem = _schedule_power(kept, "keep-add-v5", "v5", 1, {"height": "30"})
+    if kept_problem is None:
+        kept_problem = _schedule_power(kept, "keep-rm-v1", "v1", 0, {"height": "40"})
+    while kept_problem is None and kept["height"] < 40:
         kept_problem = _play(kept, [{"op": "CommitBlock", "header_time": kept["chain_time"] + 1}])
     if kept_problem is None and (
-        kept["validators"].get("v4") != 1
-        or kept["validators"].get("v5") != 1
-        or any(node in kept["validators"] for node in ("v1", "v2", "v3"))
-        or kept["pending_power"]
+        set(kept["validators"]) != {"v2", "v3", "v4", "v5"} or kept["pending_power"]
     ):
-        kept_problem = "the later add did not land on the validator kept at height 40"
+        kept_problem = "add-then-remove did not keep four validators"
     check("activation-gap-keeps-one", kept_problem)
 
     def _down_run(mark_down: bool) -> tuple[str | None, str, str, int]:
         state = devnet_state()
-        proposal_id = "rm-v1-same"
-        payload = validator_power_payload("v1", 0, {"height": "30"})
+        proposal_id = "add-v5-same"
+        payload = validator_power_payload("v5", 1, {"height": "30"})
         steps = [
-            proposal_step(proposal_id, "validator-v1", payload, base=1),
+            proposal_step(proposal_id, "validator-v5", payload, base=1),
             _approve(proposal_id, "seat-1"),
             _approve(proposal_id, "seat-2"),
             {"op": "CommitBlock", "header_time": CHAIN_TIME + 10},
@@ -1346,13 +1382,70 @@ def cases() -> list[tuple[str, str | None]]:
         down_problem = f"down changed the result {quiet} vs {marked}"
     check("down-not-consensus", down_problem)
 
+    halted = liveness_would_halt({"v2": 1, "v3": 1, "v4": 1}, ["v4"])
+    live = devnet_state()
+    live_problem = _play(
+        live,
+        [{"op": "SetDown", "validators": ["v4"]}, {"op": "CommitBlock", "header_time": CHAIN_TIME + 1}],
+    )
+    if live_problem is None and (not halted or live["height"] != 2):
+        live_problem = "liveness halt was consensus, or the example did not halt"
+    if live_problem is None:
+        refused = devnet_state()
+        live_problem = _schedule_power(refused, "halt-rm-v1", "v1", 0, {"height": "30"}, expect="ERROR_CODE_FORBIDDEN")
+        if live_problem is None and (refused["pending_power"] or refused["proposals"]["halt-rm-v1"]["state"] != "REJECTED"):
+            live_problem = "the halting removal was scheduled"
+    check("liveness-halt-example", live_problem)
+
     mixed = devnet_state()
     mixed_problem = _schedule_power(mixed, "add-v5-time", "v5", 1, {"unixSeconds": str(CHAIN_TIME + 5000)})
     if mixed_problem is None:
         mixed_problem = _schedule_power(mixed, "rm-v5-height", "v5", 0, {"height": "1000"}, expect="ERROR_CODE_CONFLICT")
-    if mixed_problem is None and len(mixed["pending_power"]) != 1:
-        mixed_problem = "mixed activation kind was scheduled"
+    if mixed_problem is None and (
+        len(mixed["pending_power"]) != 1 or mixed["proposals"]["rm-v5-height"]["state"] != "QUEUED"
+    ):
+        mixed_problem = "mixed activation kind was scheduled or marked REJECTED"
     check("mixed-activation-kind", mixed_problem)
+
+    same_point = devnet_state()
+    same_problem = _schedule_power(same_point, "same-a", "v5", 1, {"height": "20"})
+    if same_problem is None:
+        same_problem = _schedule_power(same_point, "same-b", "v5", 1, {"height": "20"}, expect="ERROR_CODE_CONFLICT")
+    if same_problem is None and same_point["proposals"]["same-b"]["state"] != "QUEUED":
+        same_problem = "same-point node change was not left QUEUED"
+    if same_problem is None:
+        same_problem = _schedule_power(
+            same_point,
+            "same-key",
+            "v6",
+            1,
+            {"height": "20"},
+            expect="ERROR_CODE_CONFLICT",
+            pubkey_hex=pubkey_for("v5"),
+        )
+    if same_problem is None and same_point["proposals"]["same-key"]["state"] != "QUEUED":
+        same_problem = "same-point key change was not left QUEUED"
+    # Removal sorts first by proposal id. Without a same-key check it would free
+    # v1's key for zz-add-v9. The check must reject that pair either way.
+    if same_problem is None:
+        same_problem = _schedule_power(same_point, "pad-v5", "v5", 1, {"height": "30"})
+    if same_problem is None:
+        same_problem = _schedule_power(same_point, "aa-rm-v1", "v1", 0, {"height": "40"})
+    if same_problem is None:
+        same_problem = _schedule_power(
+            same_point,
+            "zz-add-v9",
+            "v9",
+            1,
+            {"height": "40"},
+            expect="ERROR_CODE_CONFLICT",
+            pubkey_hex=pubkey_for("v1"),
+        )
+    if same_problem is None and (
+        same_point["proposals"]["zz-add-v9"]["state"] != "QUEUED" or len(same_point["pending_power"]) != 3
+    ):
+        same_problem = "same-point key reuse after a removal was scheduled"
+    check("same-point-power-change", same_problem)
 
     scheduled_dup = devnet_state()
     first_id = "add-v5"
@@ -1369,7 +1462,7 @@ def cases() -> list[tuple[str, str | None]]:
     )
     if dup_problem is None:
         second_id = "add-v6"
-        second_payload = validator_power_payload("v6", 1, {"height": "20"}, pubkey_hex=pubkey_for("v5"))
+        second_payload = validator_power_payload("v6", 1, {"height": "30"}, pubkey_hex=pubkey_for("v5"))
         dup_problem = _play(
             scheduled_dup,
             [
@@ -1380,8 +1473,10 @@ def cases() -> list[tuple[str, str | None]]:
                 _execute(second_id) | {"expect": "ERROR_CODE_DUPLICATE_ID"},
             ],
         )
-    if dup_problem is None and len(scheduled_dup["pending_power"]) != 1:
-        dup_problem = "duplicate scheduled key was accepted"
+    if dup_problem is None and (
+        len(scheduled_dup["pending_power"]) != 1 or scheduled_dup["proposals"]["add-v6"]["state"] != "QUEUED"
+    ):
+        dup_problem = "duplicate scheduled key was accepted or marked REJECTED"
     check("duplicate-scheduled-validator-key", dup_problem)
     return found
 
