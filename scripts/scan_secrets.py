@@ -24,7 +24,7 @@ PATTERNS = (
     re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"),
 )
 # Names are built from pieces so this file does not contain a contiguous marker.
-_KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key" + r"(?:_hex)?"
+_KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key" + r"(?:_hex|_base64)?"
 _KEY_ASSIGN = re.compile(
     r"(?<![A-Za-z0-9])['\"]?(?:[A-Za-z0-9]+_)?"
     + _KEY_BODY
@@ -32,13 +32,15 @@ _KEY_ASSIGN = re.compile(
     re.IGNORECASE,
 )
 _KEY_CAMEL = re.compile(
-    r"(?<=[a-z])(?:Priv(?:ate)?Key(?:Hex)?)" + r"(?![A-Za-z0-9])['\"]?\s*(?P<sep>[:=])"
+    r"(?<=[a-z])(?:Priv(?:ate)?Key(?:Hex|Base64)?)" + r"(?![A-Za-z0-9])['\"]?\s*(?P<sep>[:=])"
 )
 _KEY_QUOTED = re.compile(
     "['\"]" + r"(?:[A-Za-z0-9]+_)?" + "priv" + r"[._-]?" + "key" + "['\"]",
     re.IGNORECASE,
 )
-_KEY_CLI = re.compile(r"(?i)--" + "priv" + r"(?:ate)?-" + "key" + r"(?:=|\s+)(?P<value>[^\s$]\S*)")
+_KEY_CLI = re.compile(
+    r"(?i)(?<![A-Za-z0-9])--" + "priv" + r"(?:ate)?[-_]?" + "key" + r"(?:=|\s+)(?P<value>\S+)"
+)
 _TYPE_AFTER = re.compile(
     r"(?ix)^\s*(?:"
     r"(?:bytes|str|int|float|bool|object|any|none|path|bytearray)"
@@ -47,7 +49,33 @@ _TYPE_AFTER = re.compile(
     r"|(?:optional|union|list|dict|tuple|sequence|mapping)\s*\[[^\]]*\]"
     r")"
 )
-_CALL_OR_ENV = re.compile(r"(?i)^(?:os\.)?(?:environ|getenv)\b|^[A-Za-z_][\w.]*\s*\(")
+_QUOTED = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
+_DOLLAR = re.compile(r"\$\{?[A-Za-z_][\w]*\}?")
+_BYTE_LIST = re.compile(r"bytes\s*\(\s*\[(?:\s*\d+\s*,){3,}\s*\d+")
+_HEX_CALL = re.compile(
+    r"(?i)(?:fromhex|DecodeString|hexToBytes|Buffer\.from)\s*\(\s*[\"'][0-9a-f]{48,}"
+)
+_GETENV_HEX = re.compile(r"(?i)(?:getenv|environ)\s*[\[(][^)\n]*,\s*[\"'][0-9a-f]{48,}[\"']")
+_CODE_SUFFIXES = {".py", ".pyi", ".ts", ".tsx", ".js", ".jsx", ".go"}
+_NON_SECRET_NAMES = {
+    "k",
+    "key",
+    "priv_key",
+    "privkey",
+    "private_key",
+    "seed",
+    "path",
+    "msg",
+    "none",
+    "null",
+    "nil",
+    "undefined",
+    "true",
+    "false",
+}
+EXCLUDED_DIR_NAMES = frozenset(
+    {"node_modules", ".venv", "site-packages", "vendor", "__pycache__", "dist"}
+)
 FORBIDDEN_NAMES = {
     "priv_validator_key.json",
     "node_key.json",
@@ -80,48 +108,104 @@ def _block_hit(count: int) -> bool:
     return any(length <= count for length in MNEMONIC_LENGTHS)
 
 
-def _is_python(name: str) -> bool:
-    return Path(name).suffix.lower() == ".py"
+def _is_code(name: str) -> bool:
+    return Path(name).suffix.lower() in _CODE_SUFFIXES
 
 
-def _literal_secret(rest: str, sep: str, python: bool) -> bool:
-    """True when the text after the key is a literal, not code or an env lookup.
+def _quote_inners(value: str) -> list[str]:
+    return [match.group(0)[1:-1] for match in _QUOTED.finditer(value)]
 
-    A bare Python annotation (`name: str`) has no equals sign. The same spelling
-    in YAML is a value. `name: str = "..."` is an assignment and is checked
-    after the equals sign.
-    """
-    line = rest.split("\n", 1)[0]
-    stripped = line.strip()
-    if python and sep == ":" and "=" not in stripped:
-        if stripped == "" or stripped.startswith((")", ",", ":")) or _TYPE_AFTER.match(rest):
-            return False
-    if python and sep == ":" and "=" in stripped and _TYPE_AFTER.match(rest):
-        return _literal_secret(stripped.split("=", 1)[1], "=", False)
-    if stripped == "":
-        return sep == "="
-    if _CALL_OR_ENV.match(stripped):
+
+def _is_dollar_ref(value: str) -> bool:
+    text = value.strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
+        text = text[1:-1]
+    return _DOLLAR.fullmatch(text) is not None
+
+
+def _hex_or_base64(inner: str) -> bool:
+    if re.fullmatch(r"[0-9a-fA-F]{16,}", inner):
+        return True
+    return len(inner) >= 24 and re.fullmatch(r"[A-Za-z0-9+/=]+", inner) is not None
+
+
+def _has_byte_list(value: str) -> bool:
+    return _BYTE_LIST.search(value) is not None
+
+
+def _value_is_secret(value: str) -> bool:
+    """True for a literal secret. Identifiers, None, attributes, and $ refs are not."""
+    text = value.strip().rstrip(",;")
+    text = re.sub(r"\s+#.*$", "", text).strip()
+    text = text.rstrip(")}]")
+    text = text.strip()
+    if text == "" or _is_dollar_ref(text):
         return False
-    return True
+    if re.fullmatch(r"(?i)none|null|nil|undefined", text):
+        return False
+    if _has_byte_list(text):
+        return True
+    inners = _quote_inners(text)
+    if "(" in text or "[" in text:
+        return any(_hex_or_base64(inner) for inner in inners if not _is_dollar_ref(inner))
+    if inners:
+        return any(inner.strip() != "" and not _is_dollar_ref(inner) for inner in inners)
+    if re.fullmatch(r"[0-9a-fA-F]{8,}", text):
+        return True
+    if re.fullmatch(r"[A-Za-z_][\w.]*", text):
+        if "." in text:
+            return False
+        if text.lower() in _NON_SECRET_NAMES:
+            return False
+        if re.fullmatch(r"[A-Z][A-Za-z0-9]*", text):
+            return False
+        return True
+    return False
 
 
-def _quoted_env_argument(text: str, start: int) -> bool:
-    before = text[max(0, start - 48) : start]
-    return re.search(r"(?i)(?:environ\s*\[\s*|getenv\s*\(\s*)$", before) is not None
+def _literal_secret(rest: str, sep: str, code: bool) -> bool:
+    """True when this assignment carries a literal secret.
+
+    In Python, TypeScript, JavaScript, and Go, a colon with no equals sign is a
+    type or a parameter, not a value. YAML and env files use that same spelling
+    for a value. `name: str = "<literal>"` is still an assignment.
+    """
+    line = rest.split("\n", 1)[0].strip()
+    if sep == ":" and line.startswith("="):
+        return _literal_secret(line[1:], "=", code)
+    if code and sep == ":" and "=" not in line:
+        return _value_is_secret(line) and (
+            bool(_quote_inners(line))
+            or _has_byte_list(line)
+            or re.search(r"[0-9a-fA-F]{16,}", line) is not None
+        )
+    if "=" in line and sep == ":":
+        return _value_is_secret(line.split("=", 1)[1])
+    if line == "":
+        return sep == "="
+    return _value_is_secret(line)
+
+
+def _bare_quoted_name(text: str) -> bool:
+    return _KEY_QUOTED.fullmatch(text.strip()) is not None
 
 
 def _key_hit(text: str, name: str) -> bool:
-    """Literal assignment, quoted short name, or CLI flag. Not a code use."""
-    for match in _KEY_QUOTED.finditer(text):
-        if _quoted_env_argument(text, match.start()):
-            continue
+    """Literal secret on a key name, inside a decode call, or as a bare quoted name."""
+    if (
+        _bare_quoted_name(text)
+        or _HEX_CALL.search(text)
+        or _GETENV_HEX.search(text)
+        or _has_byte_list(text)
+    ):
         return True
-    if _KEY_CLI.search(text):
-        return True
-    python = _is_python(name)
+    code = _is_code(name)
+    for match in _KEY_CLI.finditer(text):
+        if _value_is_secret(match.group("value")):
+            return True
     for pattern in (_KEY_ASSIGN, _KEY_CAMEL):
         for match in pattern.finditer(text):
-            if _literal_secret(text[match.end() :], match.group("sep"), python):
+            if _literal_secret(text[match.end() :], match.group("sep"), code):
                 return True
     return False
 
@@ -134,6 +218,8 @@ def _is_wordlist(name: str) -> bool:
 _HEADING = re.compile(r"^\s*#{2,6}\s+\S")
 _SECTION = re.compile(r"^\s*\[[^\]]+\]\s*$")
 _KEY_BOUNDARY = re.compile(r"""["']?(?P<key>[A-Za-z_][\w.-]*)["']?\s*[:=]""")
+_LIST_MARKER = re.compile(r"^\s*(?:\(\d+\)|\d+\)|\d+\.|\d+:)\s+")
+_LIST_KEY = re.compile(r"(?i)^[a-z]+\d+$")
 
 
 def _add_words(fragment: str, block: list[str], words: set[str]) -> bool:
@@ -148,41 +234,59 @@ def _add_words(fragment: str, block: list[str], words: set[str]) -> bool:
     return False
 
 
+def _excluded_path(name: str) -> bool:
+    parts = set(name.replace("\\", "/").split("/"))
+    return bool(parts & set(EXCLUDED_DIR_NAMES)) or _is_wordlist(name)
+
+
 def mnemonic_hit(text: str, words: set[str]) -> bool:
     """12, 15, 18, 21, or 24 BIP39 words, including a window inside a longer run.
 
-    Lines are lowercased. List, comment, quote, bracket, and table markers are
-    not letters, so they fall away. A blank line does not reset the run. A word
-    that is not on the BIP39 list does. A key or field name before `:` or `=`
-    resets the run so the name is not glued to the value. A numeric `1: word`
-    item is a list entry, not a key. A markdown heading of two or more hashes
-    resets the run and is not itself a phrase. `scripts/bip39_english.txt` is
-    excluded by path in `findings_in_text`.
+    Lines are lowercased. Numbered markers (`1.`, `1:`, `1)`, `(1)`) are
+    stripped. Quotes, brackets, and table pipes are not letters. A blank line
+    does not reset the run. A non-BIP39 word does. A config key before `:` or
+    `=` resets the run. A `word1:` label does not. A heading of two or more
+    hashes resets the run. A line with parentheses does not contribute its
+    code tokens, but quoted strings on that line are still scanned.
+    `scripts/bip39_english.txt` and vendored directories are excluded by path.
     """
     block: list[str] = []
-    for line in text.splitlines():
-        if _HEADING.match(line) or _SECTION.match(line) or "(" in line or ")" in line:
-            # Headings and section labels are boundaries. A parenthesis is code,
-            # not a phrase, so its identifiers do not extend a mnemonic run.
-            if _block_hit(len(block)):
+
+    def hit() -> bool:
+        return _block_hit(len(block))
+
+    for raw in text.splitlines():
+        if _HEADING.match(raw) or _SECTION.match(raw):
+            if hit():
                 return True
             block = []
             continue
+        line = _LIST_MARKER.sub("", raw)
         if "://" in line:
-            line = re.sub(r"://", " ", line)
+            line = line.replace("://", " ")
+        if "(" in line or ")" in line:
+            if hit():
+                return True
+            block = []
+            for quoted in _QUOTED.findall(line):
+                if _add_words(quoted, block, words):
+                    return True
+            if hit():
+                return True
+            block = []
+            continue
         cursor = 0
         for match in _KEY_BOUNDARY.finditer(line):
             if _add_words(line[cursor : match.start()], block, words):
                 return True
-            if _block_hit(len(block)):
-                return True
-            block = []
+            if not _LIST_KEY.match(match.group("key")):
+                if hit():
+                    return True
+                block = []
             cursor = match.end()
         if _add_words(line[cursor:], block, words):
             return True
-        if _TOKEN.search(line.lower()) is None:
-            continue
-    return _block_hit(len(block))
+    return hit()
 
 
 def tracked_files() -> list[Path]:
@@ -209,7 +313,9 @@ def findings_in_text(name: str, text: str, words: set[str] | None = None) -> lis
             found.append(f"{name}: {pattern.pattern}")
     if _key_hit(text, name):
         found.append(f"{name}: private key name")
-    if not _is_wordlist(name) and mnemonic_hit(text, words if words is not None else bip39_words()):
+    if not _excluded_path(name) and mnemonic_hit(
+        text, words if words is not None else bip39_words()
+    ):
         found.append(f"{name}: bip39 mnemonic")
     return found
 
@@ -222,6 +328,8 @@ def scan_repo() -> list[str]:
             continue
         data = path.read_bytes()
         relative = path.relative_to(ROOT).as_posix()
+        if _excluded_path(relative):
+            continue
         if b"\0" in data:
             if path.suffix.lower() not in DOCUMENT_SUFFIXES:
                 found.append(f"{relative}: tracked binary")

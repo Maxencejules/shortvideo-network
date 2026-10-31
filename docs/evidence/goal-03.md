@@ -18,7 +18,7 @@ On 2026-10-31 at 09:50 EDT Max ruled, relayed word for word by shortvideo-review
 
 The branch history since `2ef8573c59645646cd13f0a49c3392095a7ad4a2` was rewritten for authorship. Every commit on `goal-03` is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>`. `Co-authored-by` and Cursor trailers were removed. `Tested-tree` trailers were kept.
 
-The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `c187f644e0ce0b6ca1e594d037356d8999baf61f` changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. The commit that contains this paragraph changes those same three files again.
+The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `c187f644e0ce0b6ca1e594d037356d8999baf61f` changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. `775586d78b1893b8cdb1295a4f07a1ca56334f89` changes those same three files. The commit that contains this paragraph changes them again.
 
 Before the rewrite, these commits were authored and committed by `Cursor Agent <cursoragent@cursor.com>` and carried a `Co-authored-by` trailer:
 
@@ -245,7 +245,7 @@ note schema and fixture check; protocol not approved; Gate A approved DEC-001 th
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only python
-97 passed in 2.27s
+102 passed in 3.34s
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only node
@@ -377,7 +377,7 @@ go tests failed: 1
 
 ## Hosted CI
 
-These are every hosted run of `goal-03` through `c187f644e0ce0b6ca1e594d037356d8999baf61f`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
+These are every hosted run of `goal-03` through `775586d78b1893b8cdb1295a4f07a1ca56334f89`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
 
 | Run | Head | Conclusion |
 | --- | --- | --- |
@@ -391,6 +391,7 @@ These are every hosted run of `goal-03` through `c187f644e0ce0b6ca1e594d037356d8
 | [41208566946](https://github.com/Maxencejules/shortvideo-network/actions/runs/41208566946) | `82bb067214883d5970a02715a0c8ff98c357bbad` | success |
 | [41210751631](https://github.com/Maxencejules/shortvideo-network/actions/runs/41210751631) | `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` | success |
 | [41212718720](https://github.com/Maxencejules/shortvideo-network/actions/runs/41212718720) | `c187f644e0ce0b6ca1e594d037356d8999baf61f` | success |
+| [41219844698](https://github.com/Maxencejules/shortvideo-network/actions/runs/41219844698) | `775586d78b1893b8cdb1295a4f07a1ca56334f89` | success |
 
 `41203787093` is the hosted run for the revision the first review marked FIX. Jobs `python`, `node`, `go`, and `contract` completed. `41207064075` failed its python job. None of these runs is a run of this commit.
 
@@ -419,23 +420,23 @@ No devnet, no chain binary, and no production deployment. The secret scan is a b
 
 ## Round 6
 
-On 2026-10-31 Max ruled, relayed word for word: "run round 6 on goal 03 and fix all 7 scanner items". The scanner changes are in `scripts/scan_secrets.py` and `tests/unit/test_secrets.py`. Workflow policy, the test runner, and `check_protocol.py` were not edited.
+On 2026-10-31 at 12:21 America/Toronto, Max answered in the widget: "run round 6 on goal 03 and fix all 7 scanner items". The scanner changes are in `scripts/scan_secrets.py` and `tests/unit/test_secrets.py`. Workflow policy, the test runner, and `check_protocol.py` were not edited. The coverage bullets below describe the scanner after round 7, not the round 6 tree.
 
 The scan covers these shapes:
 
 - PEM, encrypted PKCS8, and PGP private-key blocks.
 - AKIA, `ghp_`, `github_pat_`, and Slack `xox` tokens.
 - Forbidden filenames such as a `.key` or `.pem` suffix, `node_key.json`, and `priv_validator_key.json`.
-- BIP39 runs of 12, 15, 18, 21, or 24 words, and a window of one of those lengths inside a longer run. Text is lowercased. Blank lines do not reset a run. List markers, quotes, brackets, table pipes, and a single hash comment are not letters, so they fall away. A `1.` list and a `1:` list both count. A heading of two or more hashes, an ini section, a key before `:` or `=`, and a line with parentheses reset the run. `scripts/bip39_english.txt` is excluded by path.
-- A literal value on a private-key name: snake case, camel case, a validator or node prefix, a hex suffix, a dot, a hyphen, a quoted short name, an empty `KEY=` env line, and a `--priv-key` flag whose next token is not a `$` variable. A Python annotation with a type and no equals sign is skipped. The same spelling in YAML is a value. A typed parameter with `=` and a literal is a hit.
+- BIP39 runs of 12, 15, 18, 21, or 24 words, and a window of one of those lengths inside a longer run. Text is lowercased. Blank lines do not reset a run. Numbered markers (`1.`, `1:`, `1)`, `(1)`) are stripped. A `word1:` label does not reset the run. Quotes, brackets, and table pipes are not letters. A heading of two or more hashes, an ini section, and a config key before `:` or `=` do reset it. A line with parentheses does not add its code tokens, but a quoted string on that line is still scanned. `scripts/bip39_english.txt` is excluded by path, as are `node_modules`, `.venv`, `site-packages`, `vendor`, `__pycache__`, and `dist`.
+- A literal secret on a private-key name: a quoted string, an unquoted hex or bare token such as `deadbeef` or `ed25519`, a `bytes([` list of at least four integers, or a quoted hex or base64 value inside `fromhex`, `DecodeString`, `hexToBytes`, `Buffer.from`, or `getenv`. Names include snake case, camel case, a validator or node prefix, a hex or base64 suffix, a dot, a hyphen, and a double-dash flag (`--priv-key`, `--privkey`, `--priv_key`). An empty `KEY=` env line is a hit. A quoted short name with no surrounding code is a hit. In Python, TypeScript, JavaScript, and Go, a colon with no equals sign is a type or a parameter. In YAML it is a value. A typed parameter with `=` and a literal is a hit.
 
 The scan does not cover these shapes:
 
-- An identifier, a function parameter, or an env lookup (`load_key(path)`, a `def` parameter, `os.environ`, `os.getenv`, or `--priv-key` followed by a `$` variable).
+- An identifier, an attribute, `None` or `null`, or a `$` / `${}` reference, including a quoted `"$PRIV"` flag value and `os.getenv` or `os.environ` when the only quote is the variable name.
 - A phrase shorter than 12 words, or a phrase broken by a word that is not on the BIP39 list.
-- A phrase that appears only inside a parenthesized call.
-- A value that is not a literal.
-- Unknown encodings, split tokens, and formats this file does not name.
+- Unquoted code tokens on a line that contains parentheses. The quoted string on that line is still scanned.
+- A decode call whose quoted hex is shorter than 48 characters.
+- Unknown encodings and formats this file does not name.
 
 Commands run on this tree, and their results:
 
@@ -484,3 +485,36 @@ EXIT:0
 both PASS; stdout still matches the verbatim logs above
 EXIT:0
 ```
+
+## Round 7
+
+On 2026-10-31 at 12:36 America/Toronto, Max answered in the widget: "run round 7 on goal 03 and fix all 6 scanner items". The 09:50 authorship approval remains the one relayed verbatim by the reviewer. Widget answers the same day, America/Toronto, were 10:27 for round 4, 10:54 for round 5, and 12:21 for round 6.
+
+A regression corpus of the positive cases from this review and the earlier scanner reviews was run with `findings_in_text` from `c187f64`, from `775586d`, and from this tree. Every positive case is caught here. Cases `775586d` had dropped, including parenthesis lists, quoted phrases inside calls, `bytes.fromhex`, and a paren comment on a toml value, are caught again. `word1:` lists are caught here; they were not caught at either older head. New negatives (a custom annotation, `None`, an identifier, a `$` reference, a struct tag, a subscript) are not flagged here. Ordinary prose in the corpus is not flagged.
+
+Vendored mnemonic hits were counted with `mnemonic_hit` on UTF-8 files under `node_modules` and `.venv`, skipping binaries and files over 2 MB (4131 files). `c187f64` flagged 6. `775586d` and this scanner flag 10: two `csstype` files, four `react-dom` builds, and four `pygments` lexers. The review's 34 and 41 were not reproduced on this tree. `scan_repo` skips `node_modules`, `.venv`, `site-packages`, `vendor`, `__pycache__`, and `dist`, so those 10 are not reported. The tracked-tree scan stays empty.
+
+Commands run on this tree:
+
+```
+.venv/bin/python -m pytest tests/unit/test_secrets.py tests/unit/test_repo_policy.py -q
+52 passed
+EXIT:0
+
+.venv/bin/python scripts/scan_secrets.py
+secret scan ok
+EXIT:0
+
+.venv/bin/python scripts/run_tests.py --only python
+102 passed in 3.34s
+EXIT:0
+```
+
+The regression corpus and the vendored count were the Python comparisons described above.
+
+```
+make check
+EXIT:0
+```
+
+`devnet-up` inside that target exits 2 on purpose. The target requires that non-zero status.

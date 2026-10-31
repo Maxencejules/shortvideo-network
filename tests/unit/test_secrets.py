@@ -319,5 +319,123 @@ def test_bip39_line_and_key_suffix() -> None:
     assert findings_in_text("forced.key", "not-a-key-body")
 
 
+def _hex(count: int = 64) -> str:
+    return "ab" * (count // 2)
+
+
+def _has_key(name: str, body: str) -> bool:
+    return any("private key" in item for item in findings_in_text(name, body))
+
+
+def test_parenthesis_lists_and_quoted_calls_are_mnemonics() -> None:
+    phrase = _phrase(12)
+    words = _words(12)
+    assert _has_mnemonic("\n".join(f"{index}) {word}" for index, word in enumerate(words, start=1)))
+    assert _has_mnemonic(
+        "\n".join(f"({index}) {word}" for index, word in enumerate(words, start=1))
+    )
+    assert _has_mnemonic('Mnemonic("' + phrase + '")')
+    assert _has_mnemonic('Account.from_mnemonic("' + phrase + '")')
+    assert _has_mnemonic('ethers.Wallet.fromPhrase("' + phrase + '")')
+    assert _has_mnemonic('hd.NewKey("' + phrase + '")')
+    env = 'MNEMONIC="' + phrase + '"  # (devnet)\n'
+    assert any("bip39" in item for item in findings_in_text("wallet.env", env))
+
+
+def test_literals_inside_calls_are_private_keys() -> None:
+    secret = _hex()
+    bodies = [
+        "PRIV_" + "KEY = bytes.from" + 'hex("' + secret + '")',
+        "SigningKey(bytes.from" + 'hex("' + secret + '"))',
+        "priv_" + "key = bytes([" + "1, 2, 3, 4, 5, 6, 7, 8])",
+        'os.getenv("' + "PRIV_" + 'KEY", "' + secret + '")',
+        'Buffer.from("' + secret + '", "hex")',
+    ]
+    for body in bodies:
+        assert _has_key("note.py", body), body
+
+
+def test_code_shapes_without_a_literal_are_not_flagged() -> None:
+    samples = (
+        ("note.py", "def sign(" + "priv_" + "key: PrivateKey):"),
+        ("note.py", "@dataclass\nclass C:\n    " + "priv_" + "key: PrivateKey"),
+        ("note.py", '"""\n' + "priv_" + 'key: the signing material\n"""'),
+        ("note.py", "self." + "priv_" + "key = " + "priv_" + "key"),
+        ("note.py", "sign(msg, " + "priv_" + "key=k)"),
+        ("note.py", 'cfg["' + "priv_" + 'key"]'),
+        ("note.py", '{"' + "priv_" + 'key": k}'),
+        ("note.py", "priv_" + "key = None"),
+        ("note.py", "priv_" + "key = key"),
+        ("wallet.ts", "function sign(" + "priv_" + "key: Uint8Array) {}"),
+        ("wallet.ts", "interface W { " + "priv_" + "key: string }"),
+        ("wallet.go", 'Field string `json:"' + "priv_" + 'key"`'),
+        ("wallet.go", "privKey := ed25519.NewKeyFromSeed(seed)"),
+        ("config.yaml", "priv_" + "key: ${" + "PRIV_" + "KEY}"),
+        ("note.py", "def f(" + "priv_" + "key: Optional[bytes] = None):"),
+        ("note.txt", "--" + "private-" + 'key "$PRIV"'),
+    )
+    for name, body in samples:
+        assert findings_in_text(name, body) == [], (name, body)
+
+
+def test_more_mnemonic_and_key_shapes() -> None:
+    words = _words(12)
+    phrase = " ".join(words)
+    labeled = "\n".join(f"word{index}: {word}" for index, word in enumerate(words, start=1))
+    assert _has_mnemonic(labeled)
+    toml = 'seed = "' + phrase + '" # backup (devnet)\n'
+    assert any("bip39" in item for item in findings_in_text("wallet.toml", toml))
+    secret = _hex()
+    assert _has_key("note.txt", "--" + "priv" + "key " + "deadbeef")
+    assert _has_key("note.txt", "--" + "priv_" + "key=" + "deadbeef")
+    assert _has_key("note.ts", "node" + "Priv" + "Key" + 'Base64 = "' + ("QQ" * 16) + '"')
+    assert _has_key("note.ts", 'hexToBytes("' + secret + '")')
+    assert _has_key("note.go", 'hex.DecodeString("' + secret + '")')
+
+
+def test_cli_flags_git_added_mnemonic_files() -> None:
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    phrase = _phrase(12)
+    words = _words(12)
+    py = root / "w.py"
+    md = root / "seed.md"
+    try:
+        py.write_text('Mnemonic("' + phrase + '")\n', encoding="utf-8")
+        md.write_text(
+            "\n".join(f"{index}) {word}" for index, word in enumerate(words, start=1)) + "\n",
+            encoding="utf-8",
+        )
+        added = subprocess.run(
+            ["git", "add", "--", "w.py", "seed.md"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert added.returncode == 0, added.stderr
+        scanned = subprocess.run(
+            [sys.executable, "scripts/scan_secrets.py"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert scanned.returncode != 0
+        assert "w.py" in scanned.stdout
+        assert "seed.md" in scanned.stdout
+    finally:
+        subprocess.run(
+            ["git", "reset", "-q", "HEAD", "--", "w.py", "seed.md"],
+            cwd=root,
+            check=False,
+        )
+        py.unlink(missing_ok=True)
+        md.unlink(missing_ok=True)
+
+
 def test_repo_scan_stays_clean() -> None:
     assert scan_repo() == []
