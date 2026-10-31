@@ -166,11 +166,12 @@ Review [5725373923](https://github.com/Maxencejules/shortvideo-network/pull/8#pu
 These are not fixed in this round. They are not VERIFIED claims.
 
 1. Restart also passes at threshold+1: the threshold is recorded before the sequential stops, so a block committed during shutdown can satisfy the restart check. Liveness after restart is shown indirectly by one-down progress.
-2. `chain/app/authmodule.go` registers the auth query and message servers and sets consensus version 7. It does not register the x/auth migrations from version 5 to 6 and from 6 to 7. A fresh chain starts at 7. Goal 10 has to register those migrations before an upgrade from an older auth version.
-3. `scripts/devnet/prove-process.sh`, `prove-containers.sh`, and `prove-genesis.sh` print `TREE` from `git rev-parse HEAD^{tree}`. They do not print whether the worktree was dirty. A dirty flag belongs in those scripts, followed by a rerun.
-4. [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) records `COMMAND bash scripts/env/compose.sh` and, later, `COMMAND docker compose -f deployments/compose/docker-compose.yml stop`. The healthy `ps` table has no COMMAND line of its own. The stop command is the line above the container shutdown. A rerun should print COMMAND before `ps`.
-5. The Dockerfile digests are linux/amd64 manifests. Another architecture cannot use them as written. That limit is already in the Dockerfile comment.
-6. Exact-height checks can still flake when empty blocks leave validators one height apart. Runs `41248540896`, `41249097464`, and `41249637172` failed that way and were fixed in the sampler, the high-water height, and the per-node stall. `WaitEqual` at the start of the process test still requires one shared height. Keep watching it.
+2. Recovery passes at stall+1. A head CI run reached 13 against a stall of 12. The fix is to wait for two blocks, or one block interval, after the restarted validators are up, then rerun both proofs.
+3. `chain/app/authmodule.go` registers the auth query and message servers and sets consensus version 7. It does not register the x/auth migrations from version 5 to 6 and from 6 to 7. A fresh chain starts at 7. Goal 10 has to register those migrations before an upgrade from an older auth version.
+4. `scripts/devnet/prove-process.sh`, `prove-containers.sh`, and `prove-genesis.sh` print `TREE` from `git rev-parse HEAD^{tree}`. They do not print whether the worktree was dirty. A dirty flag belongs in those scripts, followed by a rerun.
+5. [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) records `COMMAND bash scripts/env/compose.sh` and, later, `COMMAND docker compose -f deployments/compose/docker-compose.yml stop`. The healthy `ps` table has no COMMAND line of its own. The stop command is the line above the container shutdown. A rerun should print COMMAND before `ps`.
+6. The Dockerfile digests are linux/amd64 manifests. Another architecture cannot use them as written. That limit is already in the Dockerfile comment.
+7. Exact-height checks can still flake when empty blocks leave validators one height apart. Runs `41248540896`, `41249097464`, and `41249637172` failed that way and were fixed in the sampler, the high-water height, and the per-node stall. `WaitEqual` at the start of the process test still requires one shared height. Keep watching it.
 
 ## Round 4
 
