@@ -2109,6 +2109,13 @@
       "version": "7.6.2"
     },
     {
+      "name": "pip",
+      "purl": "pkg:pypi/pip@26.2.2",
+      "scope": "required",
+      "type": "library",
+      "version": "26.2.2"
+    },
+    {
       "name": "pluggy",
       "purl": "pkg:pypi/pluggy@1.7.0",
       "scope": "required",
@@ -2191,6 +2198,13 @@
       "scope": "required",
       "type": "library",
       "version": "0.17.3"
+    },
+    {
+      "name": "setuptools",
+      "purl": "pkg:pypi/setuptools@84.2.1",
+      "scope": "required",
+      "type": "library",
+      "version": "84.2.1"
     },
     {
       "name": "starlette",

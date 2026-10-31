@@ -42,7 +42,7 @@ Celery, RabbitMQ, and FFmpeg are blueprint proposals for later goals. They are n
 
 ## Python, npm, and Go lockfiles
 
-- `requirements.lock` is `pip-compile --generate-hashes` output. Install with `pip install --require-hashes -r requirements.lock`.
+- `requirements.lock` is `pip-compile --generate-hashes --allow-unsafe` output. `--allow-unsafe` keeps `setuptools` hashed. Install with `pip install --require-hashes -r requirements.lock`.
 - `package-lock.json` is the npm lock for the workspace.
 - `chain/go.sum`, `proto/go.sum`, and `go.work.sum` are the Go locks.
 - `docs/sbom.cdx.json` is a CycloneDX 1.6 inventory generated from those lockfiles by `scripts/write_sbom.py`. It does not copy licences into every transitive row. Direct licences are the table above plus the package metadata recorded when the lockfiles were produced.
@@ -60,6 +60,7 @@ Direct Python packages in `pyproject.toml`:
 | pytest | 9.2.0 | MIT |
 | pyyaml | 6.0.3 | MIT |
 | ruff | 0.17.3 | MIT |
+| setuptools | 84.2.1 | MIT |
 | types-PyYAML | 6.0.12.20261030 | Apache-2.0 |
 | types-jsonschema | 4.26.0.20261006 | Apache-2.0 |
 

@@ -74,7 +74,7 @@ Protocol files under `docs/protocol/` were not edited. `handler_down_errors` in 
 | REQ-TECH-001 | React 19.3.1 and TypeScript 7.0.2. |
 | REQ-TECH-002 | FastAPI 0.162.0. |
 | REQ-TECH-003 | PostgreSQL 18.6 recorded from https://www.postgresql.org/support/versioning/. Not installed. |
-| REQ-TECH-010 | Lockfiles and `docs/sbom.cdx.json` (319 components). No image, so no image digest. |
+| REQ-TECH-010 | Lockfiles and `docs/sbom.cdx.json` (321 components after setuptools was added). No image, so no image digest. |
 | REQ-TECH-012 | SDK v0.55.0 / CometBFT v0.40.0. Not CometBFT v1.x. |
 | REQ-TECH-014 | Loops, PeerTube, and Livepeer are not dependencies. |
 | REQ-SEC-008 | Pinned locks, `scripts/scan_secrets.py`, workflow permissions `contents: read`, checkout `persist-credentials: false`, no `secrets.` context. |
@@ -145,7 +145,7 @@ secret scan ok
 EXIT:0
 
 COMMAND .venv/bin/python scripts/write_sbom.py --check
-sbom ok components 319
+sbom ok components 321
 EXIT:0
 
 COMMAND bash scripts/gen_proto.sh
@@ -180,7 +180,13 @@ The file was deleted. The same command then exited 0 with `24 passed in 0.55s`.
 
 `.github/workflows/ci.yml` is the only workflow. `scripts/workflow_policy.py` checks it: top-level `permissions: contents: read`, no job widens that, `timeout-minutes` is 15 or 20, actions are the four verified SHAs, checkout sets `persist-credentials: false`, setup-go and setup-node set `cache: false`, no `pull_request_target`, no `secrets.` context, no credential `with` input, no environment, no merge step. The workflow does not deploy.
 
-Hosted execution of that file was not seen. Do not read a local policy pass as a green GitHub Actions run.
+Hosted run [41203392314](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203392314) on pull request 6 was observed and failed. That is not a pass. The three failures were:
+
+- `actions/setup-node` rejected `cache: false` with `Caching for 'false' is not supported`. That input was removed. `actions/setup-go` accepted `cache: false` and is still set that way.
+- `pip install --require-hashes` refused `setuptools` because `pip-compile` omits it unless `--allow-unsafe`. `setuptools==84.2.1` is now in `requirements.lock`.
+- `gofmt` from Go 1.26.10 wanted to reformat `docs/evidence/goal-02/go/vectorcheck.go`. The format check no longer includes that file. The Goal 02 source was not reformatted.
+
+The hosted run of the commit that contains these fixes was not observed when this paragraph was written.
 
 ## Blockers and handoff to goal 04
 

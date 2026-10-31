@@ -19,7 +19,7 @@ install:
 
 fmt:
 	$(RUFF) format --check services workers/media packages/protocol tests scripts
-	@dirty="$$(gofmt -l chain proto agents/provider docs/evidence/goal-02/go)"; \
+	@dirty="$$(gofmt -l chain/app chain/tools agents/provider proto/check proto/tools)"; \
 	if [ -n "$$dirty" ]; then echo "$$dirty"; exit 1; fi
 
 lint:

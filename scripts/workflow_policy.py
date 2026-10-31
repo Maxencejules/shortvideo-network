@@ -84,9 +84,10 @@ def check_job(path: Path, name: str, job: object) -> list[str]:
             errors.append(f"{path.name}: {action} receives a credential input")
         if action == "actions/checkout" and options.get("persist-credentials") is not False:
             errors.append(f"{path.name}: checkout persists credentials")
-        cache_disabled = options.get("cache") is False
-        if action in {"actions/setup-go", "actions/setup-node"} and not cache_disabled:
-            errors.append(f"{path.name}: {action} cache is not disabled")
+        if action == "actions/setup-go" and options.get("cache") is not False:
+            errors.append(f"{path.name}: setup-go cache is not disabled")
+        if action == "actions/setup-node" and "cache" in options:
+            errors.append(f"{path.name}: setup-node rejects a false cache value")
     return errors
 
 

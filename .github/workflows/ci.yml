@@ -55,7 +55,6 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: "22.23.4"
-          cache: false
       - name: Install, type-check, and test
         run: |
           npm ci
@@ -80,7 +79,7 @@ jobs:
       - name: Format, generate, and test
         run: |
           export PATH="${GITHUB_WORKSPACE}/.toolchains/bin:${PATH}"
-          dirty="$(gofmt -l chain proto agents/provider docs/evidence/goal-02/go)"
+          dirty="$(gofmt -l chain/app chain/tools agents/provider proto/check proto/tools)"
           if [ -n "${dirty}" ]; then
             echo "${dirty}"
             exit 1
@@ -110,7 +109,6 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: "22.23.4"
-          cache: false
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
