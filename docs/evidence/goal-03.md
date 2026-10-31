@@ -241,7 +241,7 @@ note schema and fixture check; protocol not approved; Gate A approved DEC-001 th
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only python
-36 passed in 1.05s
+37 passed in 0.94s
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only node
