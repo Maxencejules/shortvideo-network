@@ -119,7 +119,7 @@ def cases() -> list[Case]:
     add("r4-title", "note.txt", "\n".join(word.title() for word in words), True)
     add("r4-padded-25", "note.txt", " ".join(_words(25)), True)
     add("r4-validator-prefix", "note.txt", "validator_" + "priv_" + "key: abc", True)
-    add("r4-validator-env", "note.env", "VALIDATOR_" + "PRIV_" + "KEY=\n", True)
+    add("r4-validator-env", "note.env", "VALIDATOR_" + "PRIV_" + "KEY=\n", False)
     add("r4-camel-json", "note.json", '{"' + "priv" + 'Key": "x"}', True)
     add("r4-joined", "note.txt", "priv" + "key: abc", True)
     add("r4-dotted", "note.txt", "priv" + ".key: abc", True)
@@ -576,6 +576,117 @@ def cases() -> list[Case]:
         "r10-py-or",
         "note.py",
         "os.get" + 'env("PRIV_' + 'KEY") or "' + _hex() + '"',
+        True,
+    )
+    # Round 11. r4-validator-env above is the empty-assignment expect change.
+    add(
+        "r11-cjs-env",
+        "examples/hardhat.config.cjs",
+        "const private" + "Key = process.env.PRIVATE_" + "KEY;",
+        False,
+        True,
+    )
+    add("r11-cjs-ident", "examples/r11.cjs", "const priv" + "Key = key;", False)
+    add("r11-mjs-ident", "examples/r11.mjs", "const priv" + "Key = key;", False)
+    add("r11-mts-ident", "examples/r11.mts", "const priv" + "Key = key;", False)
+    add("r11-cts-ident", "examples/r11.cts", "const priv" + "Key = key;", False)
+    add("r11-rs-ident", "examples/r11.rs", "let private_" + "key = key;", False)
+    add("r11-sh-ident", "examples/r11.sh", "private_" + "key=key\n", False)
+    add(
+        "r11-sh-quoted",
+        "examples/r11-hex.sh",
+        "private_" + 'key="' + _hex() + '"\n',
+        True,
+    )
+    add(
+        "r11-go-range-blank",
+        "examples/r11-range.go",
+        "for _, priv" + "Key := range keys {",
+        False,
+        True,
+    )
+    add("r11-go-range", "note.go", "for priv" + "Key := range ch {", False)
+    add("r11-go-addr", "note.go", "priv" + "Key := &ecdsa.PrivateKey{}", False)
+    add(
+        "r11-go-addr-field",
+        "note.go",
+        "priv" + "Key := &ecdsa.PrivateKey{D: d}",
+        False,
+    )
+    add("r11-go-chan", "note.go", "priv" + "Key := <-ch", False)
+    add("r11-go-deref", "note.go", "priv" + "Key := *pk", False)
+    add("r11-go-deref-eq", "note.go", "priv" + "Key = *pk", False)
+    add("r11-go-addr-eq", "note.go", "priv" + "Key = &ecdsa.PrivateKey{}", False)
+    add(
+        "r11-go-tuple-err",
+        "note.go",
+        "priv" + 'Key, err := crypto.HexToECDSA("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r11-go-tuple-blank",
+        "note.go",
+        "priv" + 'Key, _ := crypto.HexToECDSA("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r11-py-tuple",
+        "note.py",
+        "priv_" + 'key, other = "' + _hex() + '"',
+        True,
+    )
+    add("r11-env-empty", "examples/r11.env", "PRIVATE_" + "KEY=\n", False)
+    add("r11-env-empty-quotes", "examples/r11b.env", "PRIVATE_" + 'KEY=""\n', False)
+    add("r11-env-empty-sq", "examples/r11e.env", "PRIVATE_" + "KEY=''\n", False)
+    add("r11-toml-empty-quotes", "examples/r11b.toml", "private_" + 'key = ""\n', False)
+    add(
+        "r11-env-comment",
+        "examples/r11c.env",
+        "PRIVATE_" + "KEY= # set me\n",
+        False,
+    )
+    add("r11-yaml-empty", "examples/r11.yaml", "private_" + "key:\n", False)
+    add("r11-yaml-empty-quotes", "examples/r11b.yaml", "private_" + 'key: ""\n', False)
+    add(
+        "r11-yaml-nested",
+        "examples/r11c.yaml",
+        "private_" + "key:\n  name: one\n",
+        False,
+    )
+    add("r11-ini-empty", "examples/r11.ini", "private_" + "key=\n", False)
+    add("r11-toml-empty", "examples/r11.toml", "private_" + "key = \n", False)
+    add("r11-json-empty", "examples/r11.json", '{"private' + 'Key": ""}', False)
+    add("r11-docker-empty", "Dockerfile", "ENV PRIVATE_" + "KEY=\n", False)
+    add("r11-sh-dollar1", "examples/r11b.sh", "PRIVATE_" + "KEY=$1\n", False)
+    add(
+        "r11-sh-export-missing",
+        "examples/r11c.sh",
+        "export PRIVATE_" + 'KEY="${PRIVATE_KEY:?missing}"\n',
+        False,
+    )
+    add(
+        "r11-yaml-path",
+        "examples/r11d.yaml",
+        "private_" + "key: /run/secrets/key\n",
+        False,
+    )
+    add("r11-yaml-alias", "examples/r11e.yaml", "private_" + "key: *alias\n", False)
+    add("r11-yaml-false", "examples/r11f.yaml", "private_" + "key: false\n", False)
+    add("r11-yaml-true", "examples/r11g.yaml", "private_" + "key: true\n", False)
+    add("r11-yaml-yes", "examples/r11h.yaml", "private_" + "key: yes\n", False)
+    add("r11-yaml-no", "examples/r11i.yaml", "private_" + "key: no\n", False)
+    add("r11-yaml-on", "examples/r11j.yaml", "private_" + "key: on\n", False)
+    add("r11-yaml-off", "examples/r11k.yaml", "private_" + "key: off\n", False)
+    add(
+        "r11-md-prose",
+        "examples/r11.md",
+        "private_" + "key: the hex key is not stored in this sentence.\n",
+        False,
+    )
+    add(
+        "r11-fullwidth",
+        "examples/r11d.env",
+        "PRIVATE_" + "KEY" + "\uff1d" + "Hunter2Secret\n",
         True,
     )
     return out

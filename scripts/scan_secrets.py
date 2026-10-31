@@ -30,12 +30,16 @@ _KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key" + _KEY_SUFFIX
 _KEY_ASSIGN = re.compile(
     r"(?<![A-Za-z0-9])['\"]?(?:[A-Za-z0-9]+_)?"
     + _KEY_BODY
-    + r"(?![A-Za-z0-9])['\"]?\s*(?<![!=<>])(?P<sep>:=|\+=|=(?![=>])|:)",
+    + r"(?![A-Za-z0-9])['\"]?"
+    + r"(?:\s*,\s*(?:_|\.\.\.|[A-Za-z_][\w]*))*"
+    + r"\s*(?<![!=<>])(?P<sep>:=|\+=|=(?![=>])|:)",
     re.IGNORECASE,
 )
 _KEY_CAMEL = re.compile(
     r"(?<=[a-z])(?:Priv(?:ate)?Key(?:Base64|Bytes|Hex|B64)?)"
-    + r"(?![A-Za-z0-9])['\"]?\s*(?<![!=<>])(?P<sep>:=|\+=|=(?![=>])|:)"
+    + r"(?![A-Za-z0-9])['\"]?"
+    + r"(?:\s*,\s*(?:_|\.\.\.|[A-Za-z_][\w]*))*"
+    + r"\s*(?<![!=<>])(?P<sep>:=|\+=|=(?![=>])|:)"
 )
 _KEY_INDEX = re.compile(
     r"(?i)\[\s*['\"](?:[A-Za-z0-9]+_)?"
@@ -62,10 +66,10 @@ _TYPE_AFTER = re.compile(
     r")"
 )
 _QUOTED = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
-_DOLLAR = re.compile(r"\$\{?[A-Za-z_][\w]*\}?")
+_DOLLAR = re.compile(r"\$(?:\{[A-Za-z_][\w]*(?::[^}]*)?\}|[A-Za-z_][\w]*|[0-9]+)")
 _BYTE_LIST = re.compile(r"bytes\s*\(\s*\[(?:\s*\d+\s*,){3,}\s*\d+")
 _HEX_CALL = re.compile(
-    r"(?i)(?:fromhex|unhexlify|DecodeString|hexToBytes|Buffer\.from)"
+    r"(?i)(?:fromhex|unhexlify|DecodeString|hexToBytes|Buffer\.from|HexToECDSA)"
     r"\s*\(\s*[\"'][0-9a-f]{48,}"
 )
 # A getenv default may be plain hex, 0x-hex, or a WIF-shaped token.
@@ -90,7 +94,25 @@ _ENV_FALLBACK = re.compile(
     + r"['\"]?\s*(?:\]|\))?\s*(?:\?\?|\|\||\bor\b)\s*"
     r"(?P<value>[\"'`][^\"'`\n]+[\"'`])"
 )
-_CODE_SUFFIXES = {".py", ".pyi", ".ts", ".tsx", ".js", ".jsx", ".go"}
+# Shell is code: an identifier or `$` reference is not a literal, and a quoted
+# or long hex value is. `.jsx` and `.tsx` are already included.
+_CODE_SUFFIXES = {
+    ".py",
+    ".pyi",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".cjs",
+    ".mjs",
+    ".mts",
+    ".cts",
+    ".go",
+    ".sh",
+    ".bash",
+}
+_CONFIG_SUFFIXES = {".yaml", ".yml", ".toml", ".ini", ".cfg", ".env"}
+_CONFIG_WORDS = {"str", "true", "false", "yes", "no", "on", "off"}
 # Bare assignment values in this set are identifiers, not secrets.
 # `abc` is not in it: older fixtures use it as a literal value.
 # `str` is an identifier. A pure hex token of 7 or more characters, such as
@@ -161,6 +183,16 @@ def _block_hit(count: int) -> bool:
 
 def _is_code(name: str) -> bool:
     return Path(name).suffix.lower() in _CODE_SUFFIXES
+
+
+def _is_config(name: str) -> bool:
+    """Env, yaml, toml, and ini only. Other non-code files are not config."""
+    path = Path(name)
+    suffix = path.suffix.lower()
+    base = path.name.lower()
+    if suffix in _CONFIG_SUFFIXES:
+        return True
+    return base == ".env" or base.endswith(".env") or ".env." in base
 
 
 def _quote_inners(value: str) -> list[str]:
@@ -309,6 +341,8 @@ def _is_placeholder(inner: str) -> bool:
 
 def _quote_is_ignorable(inner: str, *, annotation: bool) -> bool:
     """True when this quoted text is not a literal secret."""
+    if inner.strip() == "":
+        return True
     if _is_dollar_ref(inner) or _is_helm(inner) or _is_placeholder(inner):
         return True
     # A quoted value is a literal. A type name is recognized only on a colon
@@ -339,21 +373,37 @@ def _bare_literal(token: str, *, code: bool) -> bool:
     )
 
 
-def _value_suppressed(value: str, *, annotation: bool = False, code: bool = True) -> bool:
+def _contains_secret_literal(text: str) -> bool:
+    """True when a Go pointer, range, or composite still holds a quoted secret."""
+    inners = _quote_inners(text)
+    if any(
+        inner.strip() != "" and not _quote_is_ignorable(inner, annotation=False) for inner in inners
+    ):
+        return True
+    return _has_byte_list(text)
+
+
+def _value_suppressed(
+    value: str, *, annotation: bool = False, code: bool = True, config: bool = False
+) -> bool:
     """True when a matched value is not a literal secret.
 
-    A quoted value is a literal and is not a type name. A ``$`` reference, a
-    Helm ``{{ }}`` template, and an angle-bracket placeholder are not literals.
-    A colon annotation with no equals sign may name a CamelCase type that has
-    a lowercase letter and no digit, including a quoted one. In code, other
-    identifiers are not literals, except ``abc``, pure hex of 7 or more
-    characters (not a 7-letter word such as ``defaced``), and base64 of 16 or
-    more characters that contains a digit. Outside code, an unquoted token is
-    a literal. ``str``, ``null``, ``None``, and ``~`` are not.
+    A quoted value is a literal and is not a type name. Empty quotes, a ``$``
+    reference, a Helm template, and an angle-bracket placeholder are not
+    literals. An empty or comment-only value is not a literal. In code,
+    including shell, identifiers are not literals except ``abc``, pure hex of
+    7 or more characters (not a 7-letter word such as ``defaced``), and base64
+    of 16 or more characters that contains a digit. A value that starts with
+    ``&``, ``*``, ``<-``, or ``range``, or a composite ``{`` with no quoted
+    secret inside, is not a literal. In config files only, an unquoted token
+    is a literal. ``str``, booleans, ``null``, ``None``, ``~``, a path, and a
+    YAML alias are not.
     """
+    if _is_dollar_ref(value):
+        return True
     text = _trim_assigned(value)
-    if text == "":
-        return False
+    if text == "" or text.startswith("#"):
+        return True
     if text == "~":
         return True
     if _is_dollar_ref(text) or _is_helm(text) or _is_placeholder(text):
@@ -367,7 +417,7 @@ def _value_suppressed(value: str, *, annotation: bool = False, code: bool = True
         return True
     if re.fullmatch(r"(?i)none|null|nil|undefined", text):
         return True
-    if not code and text.lower() == "str":
+    if config and text.lower() in _CONFIG_WORDS:
         return True
     if re.fullmatch(r"0x[0-9a-fA-F]{8,}", text):
         return False
@@ -393,13 +443,25 @@ def _value_suppressed(value: str, *, annotation: bool = False, code: bool = True
         if all(_quote_is_ignorable(inner, annotation=annotation) for inner in inners):
             return True
         return False
+    if code and (
+        re.match(r"(?:&|\*|<-|range\b)", text) is not None
+        or re.match(r"&?[A-Za-z_][\w.]*\{", text) is not None
+        or text.startswith("{")
+    ):
+        return not _contains_secret_literal(text)
+    if config and (
+        "/" in text and " " not in text or re.fullmatch(r"\*[A-Za-z_][\w]*", text) is not None
+    ):
+        return True
     if re.fullmatch(r"[A-Za-z_][\w.]*", text):
-        if not code:
+        if config:
             return False
         if "." in text:
             return True
-        return not _bare_literal(text.split(".")[-1], code=True)
-    return False
+        return not _bare_literal(text.split(".")[-1], code=code)
+    if config:
+        return False
+    return True
 
 
 def _is_type_name(inner: str) -> bool:
@@ -448,9 +510,11 @@ def _assignment_suppressed(text: str, match: re.Match[str], name: str) -> bool:
                 and not _letter_hex_word(line.strip())
             )
         )
+    code = _is_code(name)
+    config = _is_config(name)
     if sep == ":" and "=" in line:
-        return _value_suppressed(line.split("=", 1)[1], code=_is_code(name))
-    return _value_suppressed(rest, code=_is_code(name))
+        return _value_suppressed(line.split("=", 1)[1], code=code, config=config)
+    return _value_suppressed(rest, code=code, config=config)
 
 
 def _quoted_kept(text: str, match: re.Match[str]) -> bool:
@@ -458,7 +522,12 @@ def _quoted_kept(text: str, match: re.Match[str]) -> bool:
 
 
 def _key_hit(text: str, name: str) -> bool:
-    """Base c187f64 hits, plus later patterns, minus narrow suppressions."""
+    """Base c187f64 hits, plus later patterns, minus narrow suppressions.
+
+    U+FF1D (fullwidth equals) is folded to ``=`` for this check only. The
+    mnemonic scan still sees the original text. This is not a general NFKC pass.
+    """
+    text = text.replace("\uff1d", "=")
     for match in _KEY_QUOTED.finditer(text):
         if _quoted_kept(text, match):
             return True

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 # Frozen here, not derived from cases(). Deleting, renaming, or flipping
 # an expected result fails this test.
-PINNED_CORPUS_COUNT = 171
+PINNED_CORPUS_COUNT = 214
 PINNED_CORPUS = (
     ("r2-json-mnemonic", True),
     ("r2-env-seed", True),
@@ -35,7 +35,7 @@ PINNED_CORPUS = (
     ("r4-title", True),
     ("r4-padded-25", True),
     ("r4-validator-prefix", True),
-    ("r4-validator-env", True),
+    ("r4-validator-env", False),
     ("r4-camel-json", True),
     ("r4-joined", True),
     ("r4-dotted", True),
@@ -186,6 +186,49 @@ PINNED_CORPUS = (
     ("r10-defaced", False),
     ("r10-fat-arrow", False),
     ("r10-py-or", True),
+    ("r11-cjs-env", False),
+    ("r11-cjs-ident", False),
+    ("r11-mjs-ident", False),
+    ("r11-mts-ident", False),
+    ("r11-cts-ident", False),
+    ("r11-rs-ident", False),
+    ("r11-sh-ident", False),
+    ("r11-sh-quoted", True),
+    ("r11-go-range-blank", False),
+    ("r11-go-range", False),
+    ("r11-go-addr", False),
+    ("r11-go-addr-field", False),
+    ("r11-go-chan", False),
+    ("r11-go-deref", False),
+    ("r11-go-deref-eq", False),
+    ("r11-go-addr-eq", False),
+    ("r11-go-tuple-err", True),
+    ("r11-go-tuple-blank", True),
+    ("r11-py-tuple", True),
+    ("r11-env-empty", False),
+    ("r11-env-empty-quotes", False),
+    ("r11-env-empty-sq", False),
+    ("r11-toml-empty-quotes", False),
+    ("r11-env-comment", False),
+    ("r11-yaml-empty", False),
+    ("r11-yaml-empty-quotes", False),
+    ("r11-yaml-nested", False),
+    ("r11-ini-empty", False),
+    ("r11-toml-empty", False),
+    ("r11-json-empty", False),
+    ("r11-docker-empty", False),
+    ("r11-sh-dollar1", False),
+    ("r11-sh-export-missing", False),
+    ("r11-yaml-path", False),
+    ("r11-yaml-alias", False),
+    ("r11-yaml-false", False),
+    ("r11-yaml-true", False),
+    ("r11-yaml-yes", False),
+    ("r11-yaml-no", False),
+    ("r11-yaml-on", False),
+    ("r11-yaml-off", False),
+    ("r11-md-prose", False),
+    ("r11-fullwidth", True),
 )
 
 
@@ -229,8 +272,13 @@ def test_corpus_cli_paths_are_reported() -> None:
             text=True,
         )
         assert scanned.returncode != 0, scanned.stdout
-        for name in staged:
-            assert name in scanned.stdout, name
+        for item in cases():
+            if not item["cli"]:
+                continue
+            if item["expect"]:
+                assert item["name"] in scanned.stdout, item["name"]
+            else:
+                assert item["name"] not in scanned.stdout, item["name"]
     finally:
         if staged:
             subprocess.run(

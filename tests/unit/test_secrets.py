@@ -192,7 +192,6 @@ def test_wordlist_path_is_excluded() -> None:
 def test_validator_and_camel_case_key_names() -> None:
     samples = (
         "validator_" + "priv_" + "key" + ": abc",
-        "VALIDATOR_" + "PRIV_" + "KEY=",
         '{"' + "priv" + 'Key": "x"}',
         "priv" + "key" + ": abc",
         "priv" + ".key" + ": abc",
@@ -204,6 +203,8 @@ def test_validator_and_camel_case_key_names() -> None:
         found = findings_in_text("note.txt", body)
         assert any("private key" in item for item in found), body
         assert all("bip39" not in item for item in found)
+    empty = "VALIDATOR_" + "PRIV_" + "KEY="
+    assert findings_in_text("note.env", empty) == []
 
 
 def _phrase(count: int) -> str:
