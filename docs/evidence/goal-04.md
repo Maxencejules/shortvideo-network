@@ -214,7 +214,11 @@ release-check is not implemented. Goal 27 prepares a release. Public launch is d
 EXIT:2
 ```
 
-`.venv/bin/python -m pytest tests/unit/test_env_profile.py -q` : 9 passed, exit 0, after the workspace-name refusal was fixed. `.venv/bin/ruff check` and `.venv/bin/mypy` on that file exited 0. `.venv/bin/python scripts/scan_secrets.py` printed `secret scan ok`, exit 0.
+`.venv/bin/python -m pytest tests/unit/test_env_profile.py -q` : 9 passed, exit 0, after the workspace-name refusal was fixed. `.venv/bin/ruff check` and `.venv/bin/mypy` on that file exited 0. `.venv/bin/python scripts/scan_secrets.py` printed `secret scan ok`, exit 0. Local `make check` exited 0. The inner `devnet-up` exited 2, which that target requires.
+
+## Hosted CI
+
+[41238027067](https://github.com/Maxencejules/shortvideo-network/actions/runs/41238027067) ran on `a160d6904b4625eb89013b815959147fb72211c3` and completed with conclusion `success`. Jobs `python`, `node`, `go`, and `contract` succeeded. The commit that records this paragraph is a later head. Its run is not this one.
 
 ## Handoff for Max
 
