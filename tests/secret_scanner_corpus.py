@@ -74,6 +74,11 @@ def _akia() -> str:
     return "AKIA" + "0000000000000000"
 
 
+def _wif() -> str:
+    """Fake WIF-shaped token: mixed case and digits, not a real key."""
+    return "KwDiBf89" + "FakeNotARealWifKey" + "000000000000"
+
+
 def cases() -> list[Case]:
     """Every review case. ``cli`` entries are also git-added in the corpus test."""
     phrase = _phrase(12)
@@ -161,7 +166,7 @@ def cases() -> list[Case]:
         "def load(" + "priv_" + 'key: str = "deadbeef") -> None:',
         True,
     )
-    add("r5-yaml-str", "config.yaml", "priv_" + "key: str\n", True)
+    add("r5-yaml-str", "config.yaml", "priv_" + "key: str\n", False)
     add("r5-validator-camel", "note.txt", "validator" + "Priv" + 'Key: "deadbeef"', True)
     add("r5-node-private", "note.json", '{"node' + "Private" + 'Key": "cafebabe"}', True)
     add("r5-hex-suffix-env", "note.env", "PRIV_" + "KEY_" + "HEX=deadbeef\n", True)
@@ -291,4 +296,194 @@ def cases() -> list[Case]:
     add("r1-slack", "note.txt", "xox" + "b-0000000000-FAKE", True)
     add("r1-key-suffix", "forced.key", "not-a-key-body", True)
     add("r2-quoted-name", "note.txt", '"' + "PRIV_" + 'KEY"', True)
+    # Round 9. r5-yaml-str above is the only flip (positive to negative).
+    add(
+        "r9-env-wif",
+        "examples/app.env.example",
+        "PRIVATE_" + 'KEY="' + _wif() + '"\n',
+        True,
+        True,
+    )
+    add(
+        "r9-toml-wif",
+        "examples/wallet.toml",
+        "PRIVATE_" + 'KEY = "' + _wif() + '"\n',
+        True,
+        True,
+    )
+    add("r9-py-wif", "examples/wif.py", "priv_" + 'key = "' + _wif() + '"\n', True, True)
+    add(
+        "r9-hunter",
+        "examples/hunter.env",
+        "PRIVATE_" + 'KEY="Hunter2Secret"\n',
+        True,
+        True,
+    )
+    add(
+        "r9-yaml-b64",
+        "examples/wif.yaml",
+        "priv_" + 'key: "MC4CAQAwBQYDK2VwBCIEIGq3a1b2c3d4e5f6"\n',
+        True,
+        True,
+    )
+    add(
+        "r9-optional-arrow",
+        "note.py",
+        "def f(" + "priv_" + "key: Optional[bytes] = None) -> None: ...",
+        False,
+    )
+    add(
+        "r9-none-ellipsis",
+        "note.py",
+        "def f(" + "priv_" + "key: bytes = None): ...",
+        False,
+    )
+    add(
+        "r9-union-none-arrow",
+        "note.py",
+        "def f(" + "priv_" + "key: bytes | None = None) -> bytes:",
+        False,
+    )
+    add(
+        "r9-none-comma-param",
+        "note.py",
+        "def f(" + "priv_" + "key: bytes = None, n: int = 0):",
+        False,
+    )
+    add(
+        "r9-key-fromhex",
+        "note.py",
+        "key = bytes.from" + 'hex("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r9-validator-key",
+        "note.py",
+        "validator_key = bytes.from" + 'hex("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r9-node-key",
+        "note.py",
+        "NODE_KEY = bytes.from" + 'hex("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r9-go-key-decode",
+        "note.go",
+        "key, _ := hex.Decode" + 'String("' + _hex() + '")',
+        True,
+    )
+    add(
+        "r9-key-bytes-list",
+        "note.py",
+        "key = bytes([" + "1, 2, 3, 4])",
+        True,
+    )
+    add(
+        "r9-seed-next-line",
+        "note.py",
+        "random.seed(1)\ndigest = bytes.from" + 'hex("' + _hex() + '")',
+        False,
+    )
+    add("r9-if-eq", "note.py", "if " + "priv_" + "key == other:", False)
+    add("r9-assert-eq", "note.py", "assert " + "priv_" + "key == other", False)
+    add("r9-ts-bang", "wallet.ts", "const priv" + "Key = key!", False)
+    add(
+        "r9-getenv-deadbeef",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY","dead' + 'beef")',
+        True,
+    )
+    add(
+        "r9-private-key-hex",
+        "wallet.ts",
+        "const " + "private" + 'KeyHex = "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r9-private-key-bytes",
+        "wallet.ts",
+        "const " + "private" + 'KeyBytes = "' + _hex() + '"',
+        True,
+    )
+    add(
+        "r9-private-key-b64",
+        "wallet.ts",
+        "const " + "private" + 'KeyB64 = "' + _b64() + '"',
+        True,
+    )
+    add(
+        "r9-snake-key-bytes",
+        "note.env",
+        "PRIVATE_" + "KEY_" + "BYTES=" + _hex() + "\n",
+        True,
+    )
+    add(
+        "r9-snake-key-b64",
+        "note.env",
+        "priv_" + "key_" + "b64=" + _b64() + "\n",
+        True,
+    )
+    add(
+        "r9-camel-my-hex",
+        "wallet.ts",
+        "const my" + "Private" + 'KeyHex = "' + _hex() + '"',
+        True,
+    )
+    add("r9-key2", "note.py", "priv_" + "key = key2", False)
+    add("r9-ed25519-key", "note.py", "priv_" + "key = ed25519_key", False)
+    add("r9-eq-str", "note.py", "priv_" + "key = str", False)
+    add("r9-helm", "chart.yaml", "priv_" + 'key: "{{ .Values.key }}"\n', False)
+    add("r9-placeholder-yaml", "chart.yaml", "priv" + "key: <your key here>\n", False)
+    add("r9-placeholder-md", "note.md", "priv" + "key: <your key here>\n", False)
+    add("r9-bytes-three", "note.py", "priv_" + "key = bytes([" + "1, 2, 3])", False)
+    add(
+        "r9-getenv-short",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY","dead' + 'be")',
+        False,
+    )
+    add(
+        "r9-environ-get",
+        "note.py",
+        'os.environ.get("PRIV_' + 'KEY", "dead' + 'beef")',
+        True,
+    )
+    add(
+        "r9-environ-get-sq",
+        "note.py",
+        "os.environ.get('PRIV_" + "KEY', 'dead" + "beef')",
+        True,
+    )
+    add(
+        "r9-getenv-multiline",
+        "note.py",
+        "os.get" + 'env(\n    "PRIV_' + 'KEY", "dead' + 'beef")',
+        True,
+    )
+    add(
+        "r9-getenv-kw",
+        "note.py",
+        "os.get" + 'env("PRIV_' + 'KEY", default="dead' + 'beef")',
+        True,
+    )
+    add("r9-plus-eq", "note.py", "priv_" + 'key += "abc"', True)
+    add("r9-plus-eq-ident", "note.py", "priv_" + "key += key", False)
+    add("r9-subscript-assign", "note.py", 'cfg["' + "priv_" + 'key"] = "abc"', True)
+    add(
+        "r9-environ-assign",
+        "note.py",
+        'os.environ["PRIV_' + 'KEY"] = "dead' + 'beef"',
+        True,
+    )
+    add("r9-subscript-ident", "note.py", 'cfg["' + "priv_" + 'key"] = key', False)
+    add("r9-paren-literal", "note.py", "priv_" + 'key = (\n    "abc"\n)', True)
+    add(
+        "r9-placeholder-prose",
+        "note.md",
+        "Use " + "priv_" + "key: <your key here> in the chart.\n",
+        False,
+    )
+    add("r9-kw-literal", "note.py", "sign(" + "priv_" + 'key="abc")', True)
     return out

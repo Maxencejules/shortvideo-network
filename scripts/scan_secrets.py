@@ -24,15 +24,27 @@ PATTERNS = (
     re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"),
 )
 # Names are built from pieces so this file does not contain a contiguous marker.
-_KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key" + r"(?:_hex|_base64)?"
+# Hex, Bytes, and B64 may follow the name with or without an underscore.
+_KEY_SUFFIX = r"(?:_?(?:base64|bytes|hex|b64))?"
+_KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key" + _KEY_SUFFIX
 _KEY_ASSIGN = re.compile(
     r"(?<![A-Za-z0-9])['\"]?(?:[A-Za-z0-9]+_)?"
     + _KEY_BODY
-    + r"(?![A-Za-z0-9])['\"]?\s*(?P<sep>[:=])",
+    + r"(?![A-Za-z0-9])['\"]?\s*(?<![!=<>])(?P<sep>\+?=|:)(?!=)",
     re.IGNORECASE,
 )
 _KEY_CAMEL = re.compile(
-    r"(?<=[a-z])(?:Priv(?:ate)?Key(?:Hex|Base64)?)" + r"(?![A-Za-z0-9])['\"]?\s*(?P<sep>[:=])"
+    r"(?<=[a-z])(?:Priv(?:ate)?Key(?:Base64|Bytes|Hex|B64)?)"
+    + r"(?![A-Za-z0-9])['\"]?\s*(?<![!=<>])(?P<sep>\+?=|:)(?!=)"
+)
+_KEY_INDEX = re.compile(
+    r"(?i)\[\s*['\"](?:[A-Za-z0-9]+_)?"
+    + "priv"
+    + r"(?:ate)?"
+    + r"[._-]?"
+    + "key"
+    + _KEY_SUFFIX
+    + r"['\"]\s*\]\s*(?<![!=<>])\+?=(?!=)"
 )
 _KEY_QUOTED = re.compile(
     "['\"]" + r"(?:[A-Za-z0-9]+_)?" + "priv" + r"[._-]?" + "key" + "['\"]",
@@ -55,11 +67,15 @@ _BYTE_LIST = re.compile(r"bytes\s*\(\s*\[(?:\s*\d+\s*,){3,}\s*\d+")
 _HEX_CALL = re.compile(
     r"(?i)(?:fromhex|DecodeString|hexToBytes|Buffer\.from)\s*\(\s*[\"'][0-9a-f]{48,}"
 )
-_GETENV_HEX = re.compile(r"(?i)(?:getenv|environ)\s*[\[(][^)\n]*,\s*[\"'][0-9a-f]{48,}[\"']")
+_GETENV_HEX = re.compile(
+    r"(?i)(?:getenv|environ(?:\s*\.\s*get)?)\s*[\[(][^)]*"
+    r",\s*(?:default\s*=\s*)?[\"'][0-9a-f]{8,}[\"']"
+)
 _CODE_SUFFIXES = {".py", ".pyi", ".ts", ".tsx", ".js", ".jsx", ".go"}
 # Bare assignment values in this set are identifiers, not secrets.
-# `abc` and `str` are not in it: older fixtures use them as literal values.
-# A token that contains a digit, such as ed25519, is also a literal value.
+# `abc` is not in it: older fixtures use it as a literal value.
+# `str` is an identifier. A pure hex token of 7 or more characters, such as
+# ed25519, is a literal. A digit alone does not make an identifier a literal.
 _NON_SECRET_NAMES = {
     "k",
     "key",
@@ -79,13 +95,19 @@ _NON_SECRET_NAMES = {
     "true",
     "false",
 }
-_LITERAL_BARE = {"abc", "str"}
+_LITERAL_BARE = {"abc"}
 # Mnemonic hits inside these directory names are ignored. The names must be a
 # whole path component. `vendor` and `dist` are not in this set.
 _MNEMONIC_SKIP_DIRS = frozenset(
     {"node_modules", ".venv", "site-packages", "__pycache__", ".toolchains"}
 )
-_KEYISH = re.compile(r"(?i)priv|private|secret|seed|mnemonic|signing|signer")
+# `priv` through `signer` match inside a camel name such as `SigningKey`.
+# `key` is a whole token or a `_key` suffix, so `validator_key` and `NODE_KEY`
+# match and `key2` does not.
+_KEYISH = re.compile(
+    r"(?i)(?:priv|private|secret|seed|mnemonic|signing|signer)"
+    r"|(?:^|[^A-Za-z0-9])key(?![A-Za-z0-9])"
+)
 FORBIDDEN_NAMES = {
     "priv_validator_key.json",
     "node_key.json",
@@ -200,26 +222,121 @@ def _bare_quoted_name(text: str) -> bool:
     return _KEY_QUOTED.fullmatch(text.strip()) is not None
 
 
+def _statement_start(text: str, start: int) -> int:
+    """Start of the statement containing ``start``.
+
+    A newline or semicolon ends the previous statement. A previous line is part
+    of this statement only when a parenthesis on that line is still open.
+    """
+    i = start - 1
+    depth = 0
+    while i >= 0:
+        ch = text[i]
+        if ch == ")":
+            depth += 1
+        elif ch == "(":
+            if depth == 0:
+                i -= 1
+                continue
+            depth -= 1
+        elif ch == "\n" and depth == 0:
+            if not _line_has_unclosed_paren(text, i):
+                return i + 1
+        elif ch == ";" and depth == 0:
+            return i + 1
+        i -= 1
+    return 0
+
+
+def _line_has_unclosed_paren(text: str, newline: int) -> bool:
+    """True when the line ending at ``newline`` has a ``(`` that is still open."""
+    j = newline - 1
+    depth = 0
+    while j >= 0 and text[j] != "\n":
+        if text[j] == ")":
+            depth += 1
+        elif text[j] == "(":
+            if depth == 0:
+                return True
+            depth -= 1
+        j -= 1
+    return False
+
+
 def _call_window_is_keyish(text: str, start: int, end: int) -> bool:
-    window = text[max(0, start - 80) : min(len(text), end + 40)]
+    window = text[_statement_start(text, start) : end]
     return _KEYISH.search(window) is not None
 
 
-def _value_suppressed(value: str) -> bool:
-    """True when a base hit should be dropped. Literals are never dropped."""
+def _trim_assigned(value: str) -> str:
+    """Drop a signature tail so ``None) -> None:`` and ``None): ...`` read as None."""
     text = value.strip().strip("`")
     text = re.sub(r"\s+#.*$", "", text).strip()
-    text = text.rstrip(",;)]}:.`")
-    text = text.strip().strip("`")
+    text = re.split(r"\)\s*->", text, maxsplit=1)[0]
+    text = re.split(r"\)\s*:", text, maxsplit=1)[0]
+    text = re.split(r",\s*[A-Za-z_][\w]*\s*:", text, maxsplit=1)[0]
+    text = re.sub(r"\s*\.\.\.\s*$", "", text)
+    text = text.rstrip(",;)]}:.`!")
+    return text.strip().strip("`")
+
+
+def _is_helm(inner: str) -> bool:
+    return re.fullmatch(r"\{\{.*\}\}", inner.strip()) is not None
+
+
+def _is_placeholder(inner: str) -> bool:
+    return re.fullmatch(r"<[^>\n]*>", inner.strip()) is not None
+
+
+def _quote_is_ignorable(inner: str, *, annotation: bool) -> bool:
+    """True when this quoted text is not a literal secret."""
+    if _is_dollar_ref(inner) or _is_helm(inner) or _is_placeholder(inner):
+        return True
+    # A quoted value is a literal. A type name is recognized only on a colon
+    # annotation that has no equals sign, and only when it has no digit.
+    return annotation and _is_type_name(inner)
+
+
+def _bare_literal(token: str) -> bool:
+    """``abc``, pure hex of 7 or more characters, or base64 that contains a digit."""
+    if token.lower() in _LITERAL_BARE:
+        return True
+    if re.fullmatch(r"[0-9a-fA-F]{7,}", token):
+        return True
+    return (
+        len(token) >= 16
+        and re.fullmatch(r"[A-Za-z0-9+/=]+", token) is not None
+        and re.search(r"\d", token) is not None
+    )
+
+
+def _value_suppressed(value: str, *, annotation: bool = False) -> bool:
+    """True when a matched value is not a literal secret.
+
+    A quoted value is a literal and is not a type name. A ``$`` reference, a
+    Helm ``{{ }}`` template, and an angle-bracket placeholder are not literals.
+    A colon annotation with no equals sign may name a CamelCase type that has
+    a lowercase letter and no digit, including a quoted one. Other identifiers
+    are not literals. ``abc``, a pure hex token of 7 or more characters, and a
+    base64 token of 16 or more characters that contains a digit are literals.
+    """
+    text = _trim_assigned(value)
     if text == "":
         return False
-    if _is_dollar_ref(text):
+    if _is_dollar_ref(text) or _is_helm(text) or _is_placeholder(text):
+        return True
+    if (
+        re.search(r"<[^>\n]*>", text)
+        and not _quote_inners(text)
+        and re.search(r"[0-9a-fA-F]{16,}", text) is None
+        and not _has_byte_list(text)
+    ):
         return True
     if re.fullmatch(r"(?i)none|null|nil|undefined", text):
         return True
     if re.fullmatch(r"0x[0-9a-fA-F]{8,}", text):
         return False
-    if re.fullmatch(r"[0-9a-fA-F]{8,}", text):
+    if re.fullmatch(r"[0-9a-fA-F]{7,}", text):
         return False
     if len(text) >= 16 and re.fullmatch(r"[A-Za-z0-9+/]+=*", text) and re.search(r"\d", text):
         return False
@@ -227,42 +344,70 @@ def _value_suppressed(value: str) -> bool:
         inners = [inner for inner in _quote_inners(text) if not _is_dollar_ref(inner)]
         if any(_hex_or_base64(inner) for inner in inners) or _has_byte_list(text):
             return False
+        # A parenthesized quote is a literal. A call such as getenv("NAME") is not.
+        if re.match(r"^\(\s*[\"']", text) and any(
+            inner.strip() != "" and not _quote_is_ignorable(inner, annotation=annotation)
+            for inner in inners
+        ):
+            return False
         return True
     inners = _quote_inners(text)
     if inners:
-        if all(_is_dollar_ref(inner) or _is_type_name(inner) for inner in inners):
+        if all(_quote_is_ignorable(inner, annotation=annotation) for inner in inners):
             return True
         return False
     if re.fullmatch(r"[A-Za-z_][\w.]*", text):
-        base = text.split(".")[-1]
-        if base.lower() in _LITERAL_BARE or re.search(r"\d", base):
-            return False
-        return True
+        if "." in text:
+            return True
+        return not _bare_literal(text.split(".")[-1])
     return False
 
 
 def _is_type_name(inner: str) -> bool:
+    """CamelCase with a lowercase letter and no digit. ``KwDiBf89`` is not one."""
     return (
-        re.fullmatch(r"[A-Z][A-Za-z0-9]*", inner) is not None
+        re.fullmatch(r"[A-Z][A-Za-z]*", inner) is not None
         and re.search(r"[a-z]", inner) is not None
     )
 
 
+def _rest_of_statement(text: str, start: int) -> str:
+    """Text from ``start`` through the end of this statement.
+
+    Following lines stay in the statement while a parenthesis is open, so
+    ``name = (\\n    "literal"\\n)`` is one value.
+    """
+    index = start
+    depth = 0
+    while index < len(text):
+        ch = text[index]
+        if ch == "(":
+            depth += 1
+        elif ch == ")" and depth:
+            depth -= 1
+        elif ch in "\n;" and depth == 0:
+            break
+        index += 1
+    return text[start:index]
+
+
 def _assignment_suppressed(text: str, match: re.Match[str], name: str) -> bool:
-    line = text[match.end() :].split("\n", 1)[0].strip()
+    rest = _rest_of_statement(text, match.end())
+    line = rest.split("\n", 1)[0].strip()
     sep = match.group("sep")
     if sep == ":" and line.startswith("="):
         line = line[1:].strip()
         sep = "="
+        rest = rest.split("=", 1)[1]
     if _is_code(name) and sep == ":" and "=" not in line:
         return (
-            _value_suppressed(line)
+            _value_suppressed(line, annotation=True)
             or not _quote_inners(line)
-            and not re.fullmatch(r"0x[0-9a-fA-F]{8,}|[0-9a-fA-F]{8,}", line.strip())
+            and not re.fullmatch(r"0x[0-9a-fA-F]{8,}|[0-9a-fA-F]{7,}", line.strip())
         )
     if sep == ":" and "=" in line:
         return _value_suppressed(line.split("=", 1)[1])
-    return _value_suppressed(line)
+    return _value_suppressed(rest)
 
 
 def _quoted_kept(text: str, match: re.Match[str]) -> bool:
@@ -289,6 +434,9 @@ def _key_hit(text: str, name: str) -> bool:
             return True
     for match in _KEY_CLI.finditer(text):
         if not _value_suppressed(match.group("value")):
+            return True
+    for match in _KEY_INDEX.finditer(text):
+        if not _value_suppressed(_rest_of_statement(text, match.end())):
             return True
     for pattern in (_HEX_CALL, _GETENV_HEX, _BYTE_LIST):
         for match in pattern.finditer(text):

@@ -266,10 +266,9 @@ def test_annotation_with_value_is_a_private_key() -> None:
     assert any("private key" in item for item in found)
 
 
-def test_yaml_type_word_is_a_value() -> None:
+def test_yaml_type_word_is_not_a_value() -> None:
     body = "priv_" + "key" + ": str\n"
-    found = findings_in_text("config.yaml", body)
-    assert any("private key" in item for item in found), found
+    assert findings_in_text("config.yaml", body) == []
 
 
 def test_code_without_a_literal_secret_is_not_flagged() -> None:
