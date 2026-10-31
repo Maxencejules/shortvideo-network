@@ -4,6 +4,19 @@
 !.env.example
 secrets/
 
+# Local toolchains and virtualenvs
+.toolchains/
+.venv/
+venv/
+
+# Typecheck and test caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
 # Key files
 *.pem
 *.key
@@ -34,10 +47,18 @@ seeds.json
 *seed_phrase*.txt
 *seed_phrase*.json
 
-# Media uploads
+# Media uploads and video bytes
 /uploads/
 **/media-uploads/
 **/user-uploads/
+*.mp4
+*.m4v
+*.mov
+*.mkv
+*.webm
+*.avi
+*.mpeg
+*.mpg
 
 # Database dumps
 *.dump

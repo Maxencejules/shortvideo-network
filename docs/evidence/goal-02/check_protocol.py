@@ -12,8 +12,8 @@ audit, or an approval of DEC-001 through DEC-008.
 
 from __future__ import annotations
 
+import ast
 import hashlib
-import inspect
 import json
 import re
 import shutil
@@ -1307,6 +1307,55 @@ def pin_self_test() -> list[str]:
         errors.append("dropped rpc passed")
     if not handler_reads_down('if state["down"]:\n    return None\n'):
         errors.append("planted down read passed")
+    if not handler_reads_down(
+        'def op_audit(state, step):\n    return state.get("down")\n',
+        entry="op_audit",
+    ):
+        errors.append("planted get down passed")
+    if not handler_reads_down(
+        'def op_audit(state, step):\n    key = "down"\n    return state[key]\n',
+        entry="op_audit",
+    ):
+        errors.append("planted alias down passed")
+    helper = (
+        'def helper(state):\n'
+        '    return state.get("down")\n'
+        "\n"
+        "def op_audit(state, step):\n"
+        "    return helper(state)\n"
+    )
+    if not handler_reads_down(helper, entry="op_audit"):
+        errors.append("planted helper down passed")
+    if not handler_reads_down(
+        "def helper(state):\n"
+        "    return environment_withholds_block(state)\n"
+        "\n"
+        "def op_audit(state, step):\n"
+        "    return helper(state)\n",
+        entry="op_audit",
+    ):
+        errors.append("planted liveness helper passed")
+    clean = (
+        'def helper(state):\n'
+        '    return state.get("down")\n'
+        "\n"
+        "def op_audit(state, step):\n"
+        '    return state.get("validators")\n'
+    )
+    if handler_reads_down(clean, entry="op_audit"):
+        errors.append("unrelated helper flagged")
+    if handler_reads_down(
+        'def op_audit(state, step):\n    note = \'state["down"]\'\n    return note\n',
+        entry="op_audit",
+    ):
+        errors.append("string literal flagged as down read")
+    if handler_reads_down(
+        'def op_audit(state, step):\n    # state["down"]\n    return None\n',
+        entry="op_audit",
+    ):
+        errors.append("comment flagged as down read")
+    if handler_down_errors():
+        errors.append("live handlers read down")
     if name_hits(_descriptor_field("endpoint_digest"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
         errors.append("endpoint matched a forbidden pattern")
     if name_hits(_descriptor_field("address"), PINNED_FORBIDDEN_PATTERNS, PINNED_NAME_EXEMPTIONS):
@@ -1537,22 +1586,173 @@ def compare_languages(python_lines: list[str], go_text: str, ts_text: str) -> li
     return errors
 
 
-DOWN_READ = re.compile(r"""environment_withholds_block|liveness_would_halt|\[["']down["']\]""")
+# Names whose call is a liveness read even when the callee body is not in the
+# snippet under test. Dynamic HANDLERS.get dispatch is goal 05, not this scan.
+LIVENESS_CALLS = frozenset({"environment_withholds_block", "liveness_would_halt"})
+DOWN_KEY = "down"
 
 
-def handler_reads_down(source: str) -> bool:
-    return DOWN_READ.search(source) is not None
+def _string_values(tree: ast.AST) -> dict[str, set[str]]:
+    """Names assigned a string constant in this tree, including 'd'+'own'."""
+    values: dict[str, set[str]] = {}
+
+    def constant(node: ast.AST) -> str | None:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            left = constant(node.left)
+            right = constant(node.right)
+            if left is None or right is None:
+                return None
+            return left + right
+        return None
+
+    for node in ast.walk(tree):
+        target: ast.AST | None = None
+        value: ast.AST | None = None
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+            value = node.value
+        elif isinstance(node, ast.AnnAssign):
+            target = node.target
+            value = node.value
+        if isinstance(target, ast.Name) and value is not None:
+            text = constant(value)
+            if text is not None:
+                values.setdefault(target.id, set()).add(text)
+    return values
+
+
+def _is_down_key(node: ast.AST, values: dict[str, set[str]]) -> bool:
+    if isinstance(node, ast.Constant):
+        return node.value == DOWN_KEY
+    if isinstance(node, ast.Name):
+        return DOWN_KEY in values.get(node.id, set())
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = node.left
+        right = node.right
+        if isinstance(left, ast.Constant) and isinstance(right, ast.Constant):
+            return f"{left.value}{right.value}" == DOWN_KEY
+    return False
+
+
+def _function_aliases(tree: ast.AST, functions: dict[str, ast.AST]) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if isinstance(target, ast.Name) and isinstance(node.value, ast.Name):
+            if node.value.id in functions or node.value.id in LIVENESS_CALLS:
+                aliases[target.id] = node.value.id
+    return aliases
+
+
+def _direct_down_read(tree: ast.AST, functions: dict[str, ast.AST]) -> bool:
+    values = _string_values(tree)
+    aliases = _function_aliases(tree, functions)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Subscript) and _is_down_key(node.slice, values):
+            return True
+        if isinstance(node, ast.Call):
+            func = node.func
+            if isinstance(func, ast.Attribute) and func.attr in {"get", "__getitem__"}:
+                if node.args and _is_down_key(node.args[0], values):
+                    return True
+            if isinstance(func, ast.Name) and func.id == "getattr":
+                if len(node.args) >= 2 and _is_down_key(node.args[1], values):
+                    return True
+            if isinstance(func, ast.Name):
+                called = aliases.get(func.id, func.id)
+                if called in LIVENESS_CALLS:
+                    return True
+    return False
+
+
+def _static_callees(tree: ast.AST, functions: dict[str, ast.AST]) -> list[str]:
+    aliases = _function_aliases(tree, functions)
+    found: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+            continue
+        called = aliases.get(node.func.id, node.func.id)
+        if called in functions and called not in found:
+            found.append(called)
+    return found
+
+
+def _function_reads_down(
+    name: str,
+    functions: dict[str, ast.AST],
+    stack: set[str],
+) -> bool:
+    if name in LIVENESS_CALLS:
+        return True
+    if name in stack:
+        return False
+    func = functions.get(name)
+    if func is None:
+        return False
+    if _direct_down_read(func, functions):
+        return True
+    stack.add(name)
+    try:
+        for callee in _static_callees(func, functions):
+            if _function_reads_down(callee, functions, stack):
+                return True
+    finally:
+        stack.remove(name)
+    return False
+
+
+def _module_functions(tree: ast.AST) -> dict[str, ast.AST]:
+    return {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+
+def handler_reads_down(source: str, entry: str | None = None) -> bool:
+    """True when source reads the liveness key `down`.
+
+    The scan is the AST of the entry function plus static callees. A string
+    or comment that merely contains the characters state["down"] is not a read.
+    `entry` limits the walk to that function's call graph.
+    """
+    tree = ast.parse(source)
+    functions = _module_functions(tree)
+    if entry is not None:
+        if entry not in functions:
+            raise ValueError(entry)
+        return _function_reads_down(entry, functions, set())
+    for stmt in tree.body:
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if _direct_down_read(stmt, functions):
+            return True
+    return any(_function_reads_down(name, functions, set()) for name in functions)
 
 
 def handler_down_errors() -> list[str]:
-    """Chain handlers must not read the liveness fixture. SetDown only writes it."""
+    """Chain handlers must not read the liveness fixture. SetDown only writes it.
+
+    Dynamic dispatch through HANDLERS.get is not a static call. Keeping harness
+    operations out of the transaction router is goal 05.
+    """
     import spec_machine
 
+    source_path = Path(__file__).resolve().parent / "spec_machine.py"
+    functions = _module_functions(ast.parse(source_path.read_text(encoding="utf-8")))
     errors: list[str] = []
     for name, function in spec_machine.HANDLERS.items():
         if name == "SetDown":
             continue
-        if handler_reads_down(inspect.getsource(function)):
+        impl = function.__name__
+        if impl not in functions:
+            errors.append(f"tx handler missing from ast {name}")
+            continue
+        if _function_reads_down(impl, functions, set()):
             errors.append(f"tx handler reads down {name}")
     return errors
 

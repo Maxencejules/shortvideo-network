@@ -1,0 +1,10 @@
+go 1.26.5
+
+toolchain go1.26.10
+
+use (
+	./agents/provider
+	./chain
+	./docs/evidence/goal-02/go
+	./proto
+)
