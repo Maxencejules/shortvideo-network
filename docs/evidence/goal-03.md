@@ -1,10 +1,8 @@
 # Goal 03 evidence
 
-Status: BLOCKED
+Status: IMPLEMENTED
 
-The skeleton, pins, generation, and local checks below are in this branch. Status is not VERIFIED. Two required conditions are unmet.
-
-Hosted GitHub Actions has not been observed for this revision. `docs/progress.md` classifies those jobs as a cloud command. A local run of the same commands is not that observation.
+The skeleton, pins, generation, local checks, and a later hosted Actions run are in this branch. Status is not VERIFIED.
 
 The playbook assigns GPT-6.1 Sol at Medium effort. This run did not use that model and Medium was not selectable. The runtime report is below. AGENTS.md says a goal is not VERIFIED when the assigned effort was not selected.
 
@@ -186,7 +184,9 @@ Hosted run [41203392314](https://github.com/Maxencejules/shortvideo-network/acti
 - `pip install --require-hashes` refused `setuptools` because `pip-compile` omits it unless `--allow-unsafe`. `setuptools==84.2.1` is now in `requirements.lock`.
 - `gofmt` from Go 1.26.10 wanted to reformat `docs/evidence/goal-02/go/vectorcheck.go`. The format check no longer includes that file. The Goal 02 source was not reformatted.
 
-Run [41203567927](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203567927) was observed after that fix. `node`, `go`, and `contract` passed. `python` failed because `test_workflow_policy_passes` invoked `python3`, which is not the virtualenv, and that interpreter has no `yaml`. The test now uses `sys.executable`. The hosted run of the commit that contains that test fix was not observed when this paragraph was written.
+Run [41203567927](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203567927) was observed after that fix. `node`, `go`, and `contract` passed. `python` failed because `test_workflow_policy_passes` invoked `python3`, which is not the virtualenv, and that interpreter has no `yaml`. The test now uses `sys.executable`.
+
+Run [41203691127](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203691127) then passed on commit `7594ed19f9e8ff3a5d4f2d5b8437d59f889e806b`. Conclusion: success. Jobs `python`, `node`, `go`, and `contract` completed. `actions/checkout` emitted a Node.js 20 deprecation warning and the jobs still finished. This paragraph is a later commit than `7594ed1`. Its own Actions run is not the run cited here.
 
 ## Blockers and handoff to goal 04
 
