@@ -1,0 +1,8 @@
+waiting for server to shut down.... done
+server stopped
+env-stop: postgres stopped
+Shutting down RabbitMQ node svnqueue@localhost running at PID 17972
+Waiting for PID 17972 to terminate
+RabbitMQ node svnqueue@localhost running at PID 17972 successfully shut down
+env-stop: rabbitmq stopped
+env-reset: deleted disposable workspace dev at /workspace/.local/workspaces/dev

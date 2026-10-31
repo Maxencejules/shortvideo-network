@@ -7,6 +7,9 @@ secrets/
 # Local toolchains and virtualenvs
 .toolchains/
 .venv/
+
+# Disposable development workspaces: credentials, databases, queue data, devnet keys.
+.local/
 venv/
 
 # Typecheck and test caches

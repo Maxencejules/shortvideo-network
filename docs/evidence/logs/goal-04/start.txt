@@ -1,0 +1,34 @@
+env-start: wrote new credentials at /workspace/.local/workspaces/dev/credentials.env (mode 0600). The password is not printed.
+env-start: initialising a new postgres data directory
+The files belonging to this database system will be owned by user "ubuntu".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C.UTF-8".
+The default text search configuration will be set to "english".
+
+Data page checksums are enabled.
+
+creating directory /workspace/.local/workspaces/dev/postgres/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default "max_connections" ... 100
+selecting default "shared_buffers" ... 128MB
+selecting default time zone ... Etc/UTC
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+Success. You can now start the database server using:
+
+    /usr/lib/postgresql/18/bin/pg_ctl -D /workspace/.local/workspaces/dev/postgres/data -l logfile start
+
+waiting for server to start.... done
+server started
+env-start: postgres is ready on 127.0.0.1:5432
+env-start: created database svn_dev
+env-start: starting rabbitmq
+env-start: rabbitmq is ready on 127.0.0.1:5672
+Setting permissions for user "svn_queue" in vhost "/" ...
+0
+env-start: workspace /workspace/.local/workspaces/dev is ready. svn_db is the database superuser. Chain files were not changed.

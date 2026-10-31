@@ -1,0 +1,6 @@
+{
+  "name": "shortvideo-network development",
+  "user": "ubuntu",
+  "install": "bash scripts/env/install.sh",
+  "start": "bash scripts/env/start.sh"
+}

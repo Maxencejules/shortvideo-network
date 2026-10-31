@@ -31,7 +31,7 @@ Gate A on 2026-10-31 approved DEC-001 through DEC-012. That approval does not, b
 | 01 | [Requirements, scope and threat model](goals/01-requirements-scope-and-threat-model.md) | VERIFIED | [goal-01.md](evidence/goal-01.md), [PR 4](https://github.com/Maxencejules/shortvideo-network/pull/4) | Blueprint in the repository. Goal 00 merged at `a821cc520060513c7a00f773e6cff28a1b83a92d`. |
 | 02 | [Protocol schemas and invariants](goals/02-protocol-schemas-and-invariants.md) | IMPLEMENTED | [goal-02.md](evidence/goal-02.md), [PR 5](https://github.com/Maxencejules/shortvideo-network/pull/5) | Goal 01. Gate A on 2026-10-31 approved DEC-001 through DEC-012. Effort is the accepted launch allocation grok-4.7 xhigh. v0 freezes once this goal passes review. |
 | 03 | [Monorepo, toolchains and CI](goals/03-monorepo-toolchains-and-ci.md) | IMPLEMENTED | [goal-03.md](evidence/goal-03.md) | Goals 01-02. On 2026-10-31 at 09:37 EDT Max ruled, relayed by shortvideo-reviewer: "goal 03: accept the grok-4.7-high-fast substitution as reported effort". That ruling applies to goal 03 only. The project licence file is not applied. |
-| 04 | [Codex Cloud development environment](goals/04-codex-cloud-development-environment.md) | NOT STARTED | | Goal 03. Cloud environment access. |
+| 04 | [Codex Cloud development environment](goals/04-codex-cloud-development-environment.md) | BLOCKED | [goal-04.md](evidence/goal-04.md), [PR 7](https://github.com/Maxencejules/shortvideo-network/pull/7) | Goal 03 merged at `ab5680b4d95da9104bd53b6c294d6eee485b1480`. Local PostgreSQL, RabbitMQ, FFmpeg, and development storage checks ran. Compose execution stays BLOCKED: the docker command is absent, and the daemon on port 2375 was only probed. Full-stack, browser-product, network-fault, and load checks are BLOCKED. On 2026-10-31 at 16:21 Toronto Max ruled "Don't mind the ai model requirement". The model that ran is `grok-4.7-high-fast`. |
 | 05 | [Chain application, genesis and devnet](goals/05-chain-application-genesis-and-devnet.md) | NOT STARTED | | Goals 02-04. A compatible SDK and CometBFT pair confirmed from current docs. |
 | 06 | [Authority and validator lifecycle](goals/06-authority-and-validator-lifecycle.md) | NOT STARTED | | Goal 05. DEC-008 accepted four seats and three approvals. Production council keys are not named. |
 | 07 | [Provider and content registries](goals/07-provider-and-content-registries.md) | NOT STARTED | | Goals 02, 05-06. DEC-002 blocks the operator list. |
@@ -84,7 +84,7 @@ Three environment classes are distinct. A result from one class does not satisfy
 These need a hosted CI or cloud-environment command, not only a local file check.
 
 - Goal 03 GitHub Actions jobs for format, lint, type-check, schema generation, and unit tests, including the untrusted-pull-request permission checks.
-- Goal 04 inspection and startup of the cloud development profile.
+- Goal 04 inspection and startup of the cloud development profile. On 2026-10-31 the Cursor VM ran the local-process profile. Compose execution stayed BLOCKED because docker was not installed.
 - Goal 27 release-candidate workflow. That workflow must not publish a release, tag, or public deployment from an unapproved run.
 - Later goals may re-run unit tests in CI. CI success is not end-to-end evidence and is not an independent-operator result.
 
