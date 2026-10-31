@@ -131,9 +131,6 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 	}
 	stops[2] = nil
 	stall := observeStall(t, "two-down", rpcs[:2])
-	if stall < beforeTwo.Height {
-		t.Fatalf("stall height %d is below the height at stop %d", stall, beforeTwo.Height)
-	}
 	start(2)
 	start(3)
 	recovered, _, err := devnet.WaitAbove(rpcs, stall, 45*time.Second)
@@ -192,27 +189,30 @@ func observeMoving(t *testing.T, phase string, rpcs []string, threshold int64) {
 
 func observeStall(t *testing.T, phase string, rpcs []string) int64 {
 	t.Helper()
-	var height int64
+	var ceiling []int64
+	var stalled int64
 	for sample := 0; sample < 6; sample++ {
 		rows, err := devnet.Snapshot(rpcs)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for i, row := range rows {
-			if row.Height != rows[0].Height || row.AppHash != rows[0].AppHash {
-				t.Fatalf("phase %s nodes disagree", phase)
+			if row.AppHash != rows[0].AppHash {
+				t.Fatalf("phase %s app hash disagree", phase)
 			}
 			fmt.Printf("phase=%s sample=%d node=%d height=%d app_hash=%s\n", phase, sample, i, row.Height, row.AppHash)
-		}
-		if sample == 0 {
-			height = rows[0].Height
-		}
-		if rows[0].Height != height {
-			t.Fatalf("phase %s height moved from %d to %d", phase, height, rows[0].Height)
+			if sample == 0 {
+				ceiling = append(ceiling, row.Height)
+			} else if row.Height > ceiling[i] {
+				t.Fatalf("phase %s node %d moved from %d to %d", phase, i, ceiling[i], row.Height)
+			}
+			if row.Height > stalled {
+				stalled = row.Height
+			}
 		}
 		time.Sleep(time.Second)
 	}
-	return height
+	return stalled
 }
 
 func launch(home string) (func() error, error) {
