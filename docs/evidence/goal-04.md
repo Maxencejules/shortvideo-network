@@ -20,7 +20,7 @@ Base: `ab5680b4d95da9104bd53b6c294d6eee485b1480`, tree `c00718f55f234115084c1a4d
 
 Branch: `goal-04`, cut from that commit.
 
-This file is part of the commit that contains it. The checkers do not read this file. The tested tree is this commit's tree. The commit message carries `Tested-tree`. This file does not embed that hash.
+The service commands ran against tree `133e25e067f19ddd78440cc15515e6d0cde1c572`. The authorship paragraph does not change those scripts. The tip commit's message carries `Tested-tree` set to that commit's tree. This file does not embed the tip hash, because writing it here would change the tree. The checkers do not read this file.
 
 ## Authorship
 
@@ -28,11 +28,13 @@ This file is part of the commit that contains it. The checkers do not read this 
 
 ```text
 COMMAND git log --format='%an <%ae> | %cn <%ce> | %(trailers)'
+Maxence Jules <Maxencejules@users.noreply.github.com> | Maxence Jules <Maxencejules@users.noreply.github.com> | Tested-tree: 9fc950ac4f087cbdb21c876eb01e8a9a2b16c589
+
 Maxence Jules <Maxencejules@users.noreply.github.com> | Maxence Jules <Maxencejules@users.noreply.github.com> | Tested-tree: 133e25e067f19ddd78440cc15515e6d0cde1c572
 
 ```
 
-That line is `058f50333d5d9bf3ae5365faac66718654d634e4`, tree `133e25e067f19ddd78440cc15515e6d0cde1c572`. A platform hook appended `Co-authored-by` on the first commit attempt. That commit was replaced before any push. The published commit does not carry `Co-authored-by`. The only trailer is `Tested-tree`. The commit that inserts this paragraph uses the same author and committer.
+Those lines are `e86f6c9a9a6d4ab47b737e4b257fe131ec0ada2a` (tree `9fc950ac4f087cbdb21c876eb01e8a9a2b16c589`) and `058f50333d5d9bf3ae5365faac66718654d634e4` (tree `133e25e067f19ddd78440cc15515e6d0cde1c572`). A platform hook appended `Co-authored-by` on the first commit attempt. That commit was replaced before any push. Published commits do not carry `Co-authored-by`. The only trailer is `Tested-tree`. The commit that inserts this paragraph uses the same author and committer.
 
 ## Runtime
 
