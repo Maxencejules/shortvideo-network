@@ -86,14 +86,23 @@ def read(url):
     height = int(info["latest_block_height"])
     return height, info["latest_app_hash"].upper()
 
-rows = [read(node["rpc"]) for node in nodes]
-height, digest = rows[0]
-for item in rows[1:]:
-    if item != (height, digest):
-        raise SystemExit(f"disagreement {rows}")
-for index, (height, digest) in enumerate(rows):
-    print(f"phase={phase} sample=0 node={index} height={height} app_hash={digest}", flush=True)
-print(f"phase={phase} threshold={height} app_hash={digest}", flush=True)
+deadline = time.time() + 20
+last = None
+while time.time() < deadline:
+    try:
+        rows = [read(node["rpc"]) for node in nodes]
+    except Exception:
+        time.sleep(0.3)
+        continue
+    last = rows
+    if all(row == rows[0] for row in rows):
+        height, digest = rows[0]
+        for index, (height, digest) in enumerate(rows):
+            print(f"phase={phase} sample=0 node={index} height={height} app_hash={digest}", flush=True)
+        print(f"phase={phase} threshold={height} app_hash={digest}", flush=True)
+        raise SystemExit(0)
+    time.sleep(0.3)
+raise SystemExit(f"disagreement {last}")
 PY
 }
 
