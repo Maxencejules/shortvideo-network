@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// Gate A approved DEC-001 through DEC-012. No field below sets an on-chain approved flag.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.leases.v1;
+
+import "svn/types/v1/types.proto";
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1;leasesv1";
+
+// LeaseState is the committed hosting obligation only.
+// PROPOSED blueprint labels map as follows:
+//   OFFERED -> LEASE_STATE_OFFERED (an offer, no reservation yet)
+//   ACCEPTED and ACTIVE -> LEASE_STATE_ACTIVE (one committed transition)
+//   RENEWED -> LEASE_STATE_RENEWED (same reservation, new term version)
+//   ENDED -> LEASE_STATE_ENDED
+//   EXPIRED -> LEASE_STATE_EXPIRED
+//   AT_RISK is not a lease state. It is off-chain reachability.
+enum LeaseState {
+  LEASE_STATE_UNSPECIFIED = 0;
+  LEASE_STATE_OFFERED = 1;
+  LEASE_STATE_ACTIVE = 2;
+  LEASE_STATE_RENEWED = 3;
+  LEASE_STATE_ENDED = 4;
+  LEASE_STATE_EXPIRED = 5;
+  reserved 6;
+  reserved "LEASE_STATE_AT_RISK";
+}
+
+message Offer {
+  string offer_id = 1;
+  string content_id = 2;
+  uint64 content_version = 3;
+  string provider_id = 4;
+  svn.types.v1.Digest manifest_digest = 5;
+  uint64 package_bytes = 6;
+  svn.types.v1.Digest terms_digest = 7;
+  int64 start_unix_seconds = 8;
+  int64 deadline_unix_seconds = 9;
+  int64 expiry_unix_seconds = 10;
+  uint64 term_version = 11;
+  bytes scheduler = 12;
+}
+
+message Lease {
+  string lease_id = 1;
+  string offer_id = 2;
+  string content_id = 3;
+  uint64 content_version = 4;
+  string provider_id = 5;
+  svn.types.v1.Digest manifest_digest = 6;
+  uint64 package_bytes = 7;
+  svn.types.v1.Digest terms_digest = 8;
+  int64 start_unix_seconds = 9;
+  int64 deadline_unix_seconds = 10;
+  LeaseState state = 11;
+  uint64 term_version = 12;
+  uint64 policy_version = 13;
+  bool reservation_held = 14;
+}

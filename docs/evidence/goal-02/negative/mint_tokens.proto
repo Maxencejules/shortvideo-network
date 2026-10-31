@@ -1,0 +1,3 @@
+syntax = "proto3";
+package negative.minttokens;
+message MsgMintTokens { uint64 amount = 1; }

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "svn-public-record-v1",
+  "title": "SVN public-record envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile", "privacy_class", "author_id", "record_id", "sequence", "previous_digest", "key_id", "payload", "signature"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "profile": {"const": "SVN-JCS-1"},
+    "privacy_class": {"const": "PUBLIC_RECORD"},
+    "author_id": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+    "record_id": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+    "sequence": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "previous_digest": {"type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-f]{64}$"},
+    "key_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_type", "body"],
+      "properties": {
+        "record_type": {"enum": ["post", "follow", "unfollow"]},
+        "body": {"type": "string", "maxLength": 4096}
+      }
+    },
+    "signature": {"type": "string", "minLength": 128, "maxLength": 128, "pattern": "^[0-9a-f]{128}$"}
+  }
+}

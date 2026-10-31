@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// Gate A approved DEC-001 through DEC-012. No field below sets an on-chain approved flag.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.leases.v1;
+
+import "svn/types/v1/types.proto";
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1;leasesv1";
+
+message MsgOfferLease {
+  bytes signer = 1;
+  string business_id = 2;
+  string offer_id = 3;
+  string content_id = 4;
+  uint64 content_version = 5;
+  string provider_id = 6;
+  svn.types.v1.Digest manifest_digest = 7;
+  uint64 package_bytes = 8;
+  svn.types.v1.Digest terms_digest = 9;
+  int64 start_unix_seconds = 10;
+  int64 deadline_unix_seconds = 11;
+  int64 expiry_unix_seconds = 12;
+  uint64 term_version = 13;
+}
+
+message MsgAcceptLease {
+  bytes signer = 1;
+  string business_id = 2;
+  string offer_id = 3;
+  string lease_id = 4;
+  svn.types.v1.InnerSignature provider_acceptance = 5;
+}
+
+message MsgRenewLease {
+  bytes signer = 1;
+  string business_id = 2;
+  string lease_id = 3;
+  uint64 term_version = 4;
+  int64 deadline_unix_seconds = 5;
+  svn.types.v1.Digest manifest_digest = 6;
+  uint64 package_bytes = 7;
+  svn.types.v1.InnerSignature provider_signature = 8;
+  // If set, the named evidence is checked and cannot extend the lease.
+  string evidence_id = 9;
+}
+
+message MsgEndLease {
+  bytes signer = 1;
+  string business_id = 2;
+  string lease_id = 3;
+  svn.types.v1.InnerSignature provider_signature = 4;
+  bool authority_end = 5;
+}
+
+service Msg {
+  rpc OfferLease(MsgOfferLease) returns (MsgOfferLeaseResponse);
+  rpc AcceptLease(MsgAcceptLease) returns (MsgAcceptLeaseResponse);
+  rpc RenewLease(MsgRenewLease) returns (MsgRenewLeaseResponse);
+  rpc EndLease(MsgEndLease) returns (MsgEndLeaseResponse);
+}
+
+message MsgOfferLeaseResponse {}
+message MsgAcceptLeaseResponse {}
+message MsgRenewLeaseResponse {}
+message MsgEndLeaseResponse {}

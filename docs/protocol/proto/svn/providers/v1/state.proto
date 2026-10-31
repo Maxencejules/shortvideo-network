@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// Gate A approved DEC-001 through DEC-012. No field below sets an on-chain approved flag.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.providers.v1;
+
+import "svn/types/v1/types.proto";
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1;providersv1";
+
+enum ProviderState {
+  PROVIDER_STATE_UNSPECIFIED = 0;
+  PROVIDER_STATE_APPLIED = 1;
+  PROVIDER_STATE_ADMITTED = 2;
+  PROVIDER_STATE_DRAINING = 3;
+  PROVIDER_STATE_DISABLED = 4;
+}
+
+message PreviousSigningKey {
+  bytes public_key = 1;
+  uint64 generation = 2;
+  int64 retired_unix_seconds = 3;
+}
+
+message Provider {
+  string provider_id = 1;
+  bytes account = 2;
+  bytes signing_pubkey = 3;
+  string signing_key_id = 4;
+  uint64 key_generation = 5;
+  svn.types.v1.Digest endpoint_manifest_digest = 6;
+  ProviderState state = 7;
+  uint64 admitted_capacity_bytes = 8;
+  uint64 reserved_bytes = 9;
+  // Opaque group id. It is not evidence of an independent operator. DEC-002.
+  string operator_group_id = 10;
+  repeated PreviousSigningKey previous_signing_keys = 11;
+}

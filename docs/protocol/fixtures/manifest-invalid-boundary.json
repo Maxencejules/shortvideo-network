@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "profile": "SVN-JCS-1",
+  "manifest_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "content_id": "c1",
+  "content_version": 1,
+  "package_bytes": "4",
+  "renditions": [
+    {
+      "rendition_id": "r1",
+      "codec": "avc1",
+      "segments": [
+        {"segment_id": "s1", "sha256": "7365676d656e7400000000000000000000000000000000000000000000000000", "byte_count": "4"}
+      ]
+    }
+  ]
+}

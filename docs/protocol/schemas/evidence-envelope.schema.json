@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "svn-evidence-envelope-v1",
+  "title": "SVN beta evidence envelope v1",
+  "description": "An attestation. Not proof of independent storage or future delivery.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile", "evidence_id", "kind", "attestation", "claim_limit", "lease_id", "content_id", "content_version", "observation_sha256", "epoch", "expiry_unix_seconds", "signer_key_id"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "profile": {"const": "SVN-JCS-1"},
+    "evidence_id": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+    "kind": {"enum": ["PROVIDER_RECEIPT", "AUDITOR_ATTESTATION"]},
+    "attestation": {"const": true},
+    "claim_limit": {"const": "ATTESTATION_NOT_STORAGE_PROOF"},
+    "lease_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "content_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "content_version": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "observation_sha256": {"type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-f]{64}$"},
+    "epoch": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "expiry_unix_seconds": {"type": "integer", "minimum": 1, "maximum": 253402300799},
+    "signer_key_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

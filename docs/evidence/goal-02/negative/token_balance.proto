@@ -1,0 +1,3 @@
+syntax = "proto3";
+package negative.token;
+message BadBalance { uint64 token_balance = 1; }

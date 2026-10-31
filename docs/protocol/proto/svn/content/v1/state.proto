@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// Gate A approved DEC-001 through DEC-012. No field below sets an on-chain approved flag.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.content.v1;
+
+import "svn/types/v1/types.proto";
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1;contentv1";
+
+// ContentState is coordination only. PUBLISHED is not a chain value.
+// The PROPOSED blueprint label PUBLISHED is an off-chain publication
+// condition, not this enum. See svn.offchain.v1.PublicationStatus.
+enum ContentState {
+  CONTENT_STATE_UNSPECIFIED = 0;
+  CONTENT_STATE_PENDING = 1;
+  CONTENT_STATE_WITHDRAWN = 2;
+  reserved 3;
+  reserved "CONTENT_STATE_PUBLISHED";
+}
+
+message Content {
+  string content_id = 1;
+  uint64 content_version = 2;
+  svn.types.v1.Digest manifest_digest = 3;
+  uint64 package_bytes = 4;
+  bytes submitting_host = 5;
+  ContentState state = 6;
+}
+
+// Tombstone retains the coordination fact. history_erased must be false.
+// retention_value_version stays 0 while DEC-004 is OPEN.
+message Tombstone {
+  string content_id = 1;
+  uint64 content_version = 2;
+  int64 committed_unix_seconds = 3;
+  svn.types.v1.Digest reason_digest = 4;
+  bool history_erased = 5;
+  string retention_decision_id = 6;
+  uint32 retention_value_version = 7;
+}

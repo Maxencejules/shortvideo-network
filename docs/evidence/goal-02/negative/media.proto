@@ -1,0 +1,8 @@
+syntax = "proto3";
+package negative.media;
+message BadMedia {
+  bytes video_data = 1;
+  string uploader_ip = 2;
+  double score = 3;
+  uint64 reward_amount = 4;
+}

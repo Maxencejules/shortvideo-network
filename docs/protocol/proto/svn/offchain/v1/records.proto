@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+// Draft protocol v0 types for the permissioned beta.
+// Frozen-pending-Gate-A. Not an approved protocol. Public launch: DISABLED.
+// Gate A approved DEC-001 through DEC-012. No field below sets an on-chain approved flag.
+// No video bytes, personal data, token, mint, distribution, or slashing.
+
+package svn.offchain.v1;
+
+option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/offchain/v1;offchainv1";
+
+// Off-chain records. These types are not chain state.
+// The signed encoding is SVN-JCS-1 JSON, not this protobuf.
+// Reachability is observed availability. It is not a hosting obligation.
+// Publication is community approval. It is not a chain content state
+// and it is not a validator legality decision.
+
+enum Reachability {
+  REACHABILITY_UNSPECIFIED = 0;
+  REACHABILITY_UNKNOWN = 1;
+  REACHABILITY_REACHABLE = 2;
+  // PROPOSED blueprint label AT_RISK maps here, not onto a lease.
+  REACHABILITY_DEGRADED = 3;
+  REACHABILITY_UNREACHABLE = 4;
+}
+
+enum PublicationStatus {
+  PUBLICATION_STATUS_UNSPECIFIED = 0;
+  PUBLICATION_STATUS_NOT_REQUESTED = 1;
+  PUBLICATION_STATUS_REVIEW_PENDING = 2;
+  PUBLICATION_STATUS_APPROVED = 3;
+  PUBLICATION_STATUS_REJECTED = 4;
+  PUBLICATION_STATUS_DELISTED = 5;
+}
+
+enum PrivacyClass {
+  PRIVACY_CLASS_UNSPECIFIED = 0;
+  PRIVACY_CLASS_PUBLIC_COORDINATION = 1;
+  PRIVACY_CLASS_PUBLIC_RECORD = 2;
+  PRIVACY_CLASS_PRIVATE = 3;
+  PRIVACY_CLASS_SECRET = 4;
+  PRIVACY_CLASS_RESTRICTED_CASE = 5;
+}
+
+enum OperationStatus {
+  OPERATION_STATUS_UNSPECIFIED = 0;
+  OPERATION_STATUS_REQUESTED = 1;
+  OPERATION_STATUS_SUBMITTED = 2;
+  OPERATION_STATUS_COMMITTED = 3;
+  OPERATION_STATUS_FAILED = 4;
+  OPERATION_STATUS_PENDING_STALL = 5;
+}

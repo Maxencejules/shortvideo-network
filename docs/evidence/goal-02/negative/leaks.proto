@@ -1,0 +1,19 @@
+syntax = "proto3";
+package negative.leaks;
+message Leak {
+  string ipv4_address = 1;
+  string ipAddress = 2;
+  string remote_addr = 3;
+  string client_ipv6 = 4;
+  string device_id = 5;
+  string geo_location = 6;
+  string viewer_history = 7;
+  uint64 payout_amount = 8;
+  uint64 bond_amount = 9;
+  uint64 fee_amount = 10;
+  string coin_denom = 11;
+  string inflation_rate = 12;
+  uint64 issuance = 13;
+  bytes media_blob = 14;
+  bytes chunk_data = 15;
+}

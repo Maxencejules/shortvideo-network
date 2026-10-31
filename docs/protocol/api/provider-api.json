@@ -1,0 +1,15 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SVN provider API v0",
+    "version": "0",
+    "description": "Provider signatures are not service signatures. Receipts are attestations, not proof of future delivery."
+  },
+  "paths": {
+    "/capability": {"get": {"operationId": "getCapability", "responses": {"200": {"description": "signed capability manifest"}}}},
+    "/offers/{offer_id}/acceptance": {"post": {"operationId": "acceptOffer", "responses": {"200": {"description": "provider signature over the offer; not yet a chain commit"}}}},
+    "/packages/{content_id}/{content_version}": {"get": {"operationId": "fetchPackage", "responses": {"200": {"description": "bytes checked against the manifest before advertisement"}}}},
+    "/transfers/{transfer_id}/receipt": {"post": {"operationId": "transferReceipt", "responses": {"201": {"description": "attestation receipt"}}}},
+    "/inventory": {"post": {"operationId": "reportInventory", "responses": {"200": {"description": "declared inventory, not physical proof"}}}}
+  }
+}

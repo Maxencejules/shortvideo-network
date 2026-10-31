@@ -1,0 +1,118 @@
+{
+  "chain_id": "shortvideo-dev-1",
+  "chain_id_label": "PROPOSED_EXAMPLE",
+  "genesis_unix_seconds": 1700000000,
+  "protocol_version": 1,
+  "mint_module_enabled": false,
+  "distribution_module_enabled": false,
+  "slashing_module_enabled": false,
+  "staking_module_enabled": false,
+  "permissionless_validator_creation": false,
+  "allow_devnet_test_parameters": true,
+  "validators": [
+    {
+      "node_id": "v1",
+      "power": 1,
+      "consensus_pubkey_hex": "0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+      "node_id": "v2",
+      "power": 1,
+      "consensus_pubkey_hex": "0000000000000000000000000000000000000000000000000000000000000002"
+    },
+    {
+      "node_id": "v3",
+      "power": 1,
+      "consensus_pubkey_hex": "0000000000000000000000000000000000000000000000000000000000000003"
+    },
+    {
+      "node_id": "v4",
+      "power": 1,
+      "consensus_pubkey_hex": "0000000000000000000000000000000000000000000000000000000000000004"
+    }
+  ],
+  "approved_council": [],
+  "blocked_decisions": [
+    {
+      "decision_id": "DEC-001",
+      "schema_version": 1,
+      "value_version": 0,
+      "approved": false
+    },
+    {
+      "decision_id": "DEC-002",
+      "schema_version": 1,
+      "value_version": 0,
+      "approved": false
+    },
+    {
+      "decision_id": "DEC-003",
+      "schema_version": 1,
+      "value_version": 0,
+      "approved": false
+    },
+    {
+      "decision_id": "DEC-004",
+      "schema_version": 1,
+      "value_version": 0,
+      "approved": false
+    },
+    {
+      "decision_id": "DEC-005",
+      "schema_version": 1,
+      "value_version": 0,
+      "approved": false
+    },
+    {
+      "decision_id": "DEC-006",
+      "schema_version": 1,
+      "value_version": 0,
+      "approved": false
+    },
+    {
+      "decision_id": "DEC-007",
+      "schema_version": 1,
+      "value_version": 0,
+      "approved": false
+    },
+    {
+      "decision_id": "DEC-008",
+      "schema_version": 1,
+      "value_version": 0,
+      "approved": false
+    }
+  ],
+  "devnet_test_parameters": [
+    {
+      "label": "PROPOSED_TEST_PARAMETER",
+      "decision_id": "DEC-001",
+      "approved_policy": false,
+      "role_name": "DEVNET_TEST_ONLY"
+    },
+    {
+      "label": "PROPOSED_TEST_PARAMETER",
+      "decision_id": "DEC-005",
+      "approved_policy": false,
+      "numeric_value": 3600
+    },
+    {
+      "label": "PROPOSED_TEST_PARAMETER",
+      "decision_id": "DEC-008",
+      "approved_policy": false,
+      "numeric_value": 2,
+      "delay_seconds": 10
+    }
+  ],
+  "contents": [],
+  "leases": [],
+  "offers": [],
+  "safety_caps": {
+    "safety_max_package_bytes": 268435456,
+    "safety_max_evidence_batch": 32,
+    "safety_max_expiry_steps_per_block": 128,
+    "safety_max_page_limit": 100,
+    "safety_max_tx_bytes": 65536,
+    "safety_max_gas_per_tx": 20000000,
+    "safety_max_open_offers_per_provider": 1024
+  }
+}
