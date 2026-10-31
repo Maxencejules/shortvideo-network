@@ -10,7 +10,9 @@ ifeq ($(wildcard $(PY)),)
 PY := python3
 endif
 
-.PHONY: install fmt lint typecheck proto proto-check test unit-python unit-node unit-go contract sbom secrets policy build devnet-up devnet-down smoke fault release-check check env-diagnose env-install env-start env-stop env-reset env-smoke env-devnet-keys env-compose env-prove-restart env-prove-failures
+.PHONY: install fmt lint typecheck proto proto-check test unit-python unit-node unit-go contract sbom secrets policy build devnet-up devnet-down devnet-status devnet-resume smoke fault release-check check env-diagnose env-install env-start env-stop env-reset env-smoke env-devnet-keys env-compose env-prove-restart env-prove-failures
+
+BIN := $(ROOT)/bin/svnd
 
 install:
 	python3 -m venv $(ROOT)/.venv
@@ -63,15 +65,23 @@ policy:
 	$(PY) scripts/workflow_policy.py
 
 build:
-	@echo "build compiles scaffold packages. It does not produce a chain binary."
-	go build -C chain ./app/
+	mkdir -p $(ROOT)/bin
+	go build -C chain -o $(BIN) ./cmd/svnd
 	go build -C agents/provider .
 	npm run typecheck
 	$(PY) -m compileall -q services workers/media packages/protocol scripts tests/unit
 
-devnet-up devnet-down:
-	@echo "$@ is not implemented. Goal 05 starts four validator processes." >&2
-	@exit 2
+devnet-up:
+	bash scripts/devnet/up.sh
+
+devnet-down:
+	bash scripts/devnet/down.sh
+
+devnet-status:
+	bash scripts/devnet/status.sh
+
+devnet-resume:
+	bash scripts/devnet/resume.sh
 
 smoke:
 	@echo "smoke is not implemented. Goal 18 is the joined upload-to-playback path." >&2
@@ -116,5 +126,7 @@ env-prove-failures:
 	bash scripts/env/prove-failures.sh
 
 check: fmt lint typecheck proto-check sbom test contract build
-	@echo "unimplemented targets stay failed on purpose"
-	@$(MAKE) devnet-up; status=$$?; test $$status -ne 0
+	@echo "smoke, fault, and release-check stay failed on purpose"
+	@$(MAKE) smoke; status=$$?; test $$status -ne 0
+	@$(MAKE) fault; status=$$?; test $$status -ne 0
+	@$(MAKE) release-check; status=$$?; test $$status -ne 0

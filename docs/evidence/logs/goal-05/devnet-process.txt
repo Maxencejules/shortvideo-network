@@ -1,0 +1,6 @@
+=== RUN   TestInitRefusesToReplaceGenesis
+--- PASS: TestInitRefusesToReplaceGenesis (0.03s)
+=== RUN   TestFourValidatorsCommitRestartAndQuorum
+--- PASS: TestFourValidatorsCommitRestartAndQuorum (12.21s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	12.271s

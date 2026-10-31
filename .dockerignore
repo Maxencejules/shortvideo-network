@@ -1,0 +1,8 @@
+.git
+.local
+.venv
+.toolchains
+node_modules
+**/priv_validator_key.json
+**/node_key.json
+**/*.hex

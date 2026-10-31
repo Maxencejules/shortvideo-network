@@ -88,6 +88,23 @@ jobs:
           fi
           git diff --exit-code -- proto/svn proto/gen/python
           python3 scripts/run_tests.py --only go
+          go vet ./chain/...
+          go vet ./proto/...
+          go vet ./agents/provider/...
+          go test -race -count=1 -timeout 12m ./chain/...
+          go test -race -count=1 -timeout 2m ./proto/...
+          go test -race -count=1 -timeout 2m ./agents/provider/...
+
+  devnet:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Build and run the host-network devnet
+        run: bash scripts/devnet/prove-containers.sh
 
   contract:
     runs-on: ubuntu-24.04

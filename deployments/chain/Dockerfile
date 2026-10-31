@@ -1,0 +1,17 @@
+# Build the development chain binary. The image is local. It is not published.
+# Digests are the linux/amd64 manifests inspected on 2026-10-31.
+# Go 1.26.10 matches docs/dependencies.md.
+FROM golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949 AS build
+WORKDIR /src
+COPY chain ./chain
+COPY proto ./proto
+WORKDIR /src/chain
+RUN go build -o /out/svnd ./cmd/svnd
+
+FROM debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e
+RUN useradd --create-home --uid 65532 svn
+USER svn
+COPY --from=build /out/svnd /usr/local/bin/svnd
+EXPOSE 26656 26657 27101
+ENTRYPOINT ["svnd"]
+CMD ["start", "--home", "/home/svn"]

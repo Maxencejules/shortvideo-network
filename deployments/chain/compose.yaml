@@ -1,0 +1,34 @@
+# Four validator containers. Build the image locally.
+# scripts/devnet/compose-up.sh refuses a Docker host on port 2375.
+# This VM's bridge does not deliver container-to-container packets, so the
+# containers use the host network and the loopback peer addresses from init.
+# Homes stay on the host. The script does not delete them after a failure.
+services:
+  v1:
+    image: svn-devnet:goal05
+    network_mode: host
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    command: ["start", "--home", "/home/node"]
+    volumes:
+      - ${SVN_HOME}/nodes/v1:/home/node
+  v2:
+    image: svn-devnet:goal05
+    network_mode: host
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    command: ["start", "--home", "/home/node"]
+    volumes:
+      - ${SVN_HOME}/nodes/v2:/home/node
+  v3:
+    image: svn-devnet:goal05
+    network_mode: host
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    command: ["start", "--home", "/home/node"]
+    volumes:
+      - ${SVN_HOME}/nodes/v3:/home/node
+  v4:
+    image: svn-devnet:goal05
+    network_mode: host
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    command: ["start", "--home", "/home/node"]
+    volumes:
+      - ${SVN_HOME}/nodes/v4:/home/node

@@ -1,0 +1,55 @@
+COMMAND bash scripts/devnet/prove-genesis.sh
+DATE 2026-10-31T22:27:03+00:00
+TREE 9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5
+COMMAND /workspace/bin/svnd genesis validate --file /tmp/tmp.eIQCyakWWP/devnet/genesis.json
+DATE 2026-10-31T22:27:07+00:00
+EXIT:0
+COMMAND /workspace/bin/svnd genesis validate --file /tmp/tmp.eIQCyakWWP/duplicate.json
+DATE 2026-10-31T22:27:08+00:00
+EXIT:1
+Error: duplicate validator key
+Usage:
+  svnd genesis validate [flags]
+
+Flags:
+      --file string   genesis document
+  -h, --help          help for validate
+
+duplicate validator key
+COMMAND /workspace/bin/svnd genesis validate --file /tmp/tmp.eIQCyakWWP/chain-id.json
+DATE 2026-10-31T22:27:08+00:00
+EXIT:1
+Error: inconsistent chain id: document shortvideo-dev-434437623beae658 comet shortvideo-dev-other
+Usage:
+  svnd genesis validate [flags]
+
+Flags:
+      --file string   genesis document
+  -h, --help          help for validate
+
+inconsistent chain id: document shortvideo-dev-434437623beae658 comet shortvideo-dev-other
+COMMAND /workspace/bin/svnd genesis validate --file /tmp/tmp.eIQCyakWWP/malformed.json
+DATE 2026-10-31T22:27:08+00:00
+EXIT:1
+Error: malformed genesis: unexpected end of JSON input
+Usage:
+  svnd genesis validate [flags]
+
+Flags:
+      --file string   genesis document
+  -h, --help          help for validate
+
+malformed genesis: unexpected end of JSON input
+COMMAND /workspace/bin/svnd genesis validate --file /tmp/tmp.eIQCyakWWP/material.json
+DATE 2026-10-31T22:27:08+00:00
+EXIT:1
+Error: genesis contains private_key
+Usage:
+  svnd genesis validate [flags]
+
+Flags:
+      --file string   genesis document
+  -h, --help          help for validate
+
+genesis contains private_key
+EXIT:0

@@ -62,7 +62,7 @@ REPLAY_GOLDEN = "3def4df5d8035e0963cbf798ebe373fe2ceaa35473941c6463cbd011fd2fb35
 
 
 def broadcaster_submit(state: dict, request_id: str, tx: dict) -> str | None:
-    """Broadcaster outbox. Not a chain handler and not in HANDLERS.
+    """Broadcaster outbox. Not a chain handler and not in TX_HANDLERS.
 
     When more than one third of power is down, the environment produces no
     block. The outbox parks the request. The chain handler Submit does not

@@ -1,0 +1,54 @@
+{
+  "chain_id": "shortvideo-dev-8e9346b8cf00522c",
+  "genesis_unix_seconds": 1793482793,
+  "genesis_sha256": "42fe3ddc7e407aa3006d84b834e56016ea1986d5107f4b6142bd6410fba3b8f4",
+  "peer_mode": "loopback",
+  "validators": [
+    {
+      "name": "v1",
+      "home": "/workspace/.local/devnet/containers/nodes/v1",
+      "moniker": "v1",
+      "peer_id": "a8f9d7afc7d815da16af8ad5b714163acea5e2d1",
+      "p2p": "a8f9d7afc7d815da16af8ad5b714163acea5e2d1@127.0.0.1:26656",
+      "rpc": "http://127.0.0.1:26657",
+      "grpc": "127.0.0.1:27101",
+      "power": 1,
+      "consensus_pubkey_hex": "6411f7db256da033ec566ecf05be5a15e755ee683abe91b524d6f718e71ac33d"
+    },
+    {
+      "name": "v2",
+      "home": "/workspace/.local/devnet/containers/nodes/v2",
+      "moniker": "v2",
+      "peer_id": "a5650a7461353f10b2e4f6effacbb1e1ce72ebfc",
+      "p2p": "a5650a7461353f10b2e4f6effacbb1e1ce72ebfc@127.0.0.1:26756",
+      "rpc": "http://127.0.0.1:26757",
+      "grpc": "127.0.0.1:27102",
+      "power": 1,
+      "consensus_pubkey_hex": "04d8f2cafe4a87d490fa7463dad6c2106a43b0dce8602e0b0ed88ec3428aba0a"
+    },
+    {
+      "name": "v3",
+      "home": "/workspace/.local/devnet/containers/nodes/v3",
+      "moniker": "v3",
+      "peer_id": "ecd40c291127ea2e659a2b3b9787029aaac5fd4a",
+      "p2p": "ecd40c291127ea2e659a2b3b9787029aaac5fd4a@127.0.0.1:26856",
+      "rpc": "http://127.0.0.1:26857",
+      "grpc": "127.0.0.1:27103",
+      "power": 1,
+      "consensus_pubkey_hex": "54093ddc0a533285b7552c7ad6795aa703a78f5cea874d53e9e54ea3ebccb489"
+    },
+    {
+      "name": "v4",
+      "home": "/workspace/.local/devnet/containers/nodes/v4",
+      "moniker": "v4",
+      "peer_id": "abd0a0eab4fa4133a6ec0107631b8d62912501f5",
+      "p2p": "abd0a0eab4fa4133a6ec0107631b8d62912501f5@127.0.0.1:26956",
+      "rpc": "http://127.0.0.1:26957",
+      "grpc": "127.0.0.1:27104",
+      "power": 1,
+      "consensus_pubkey_hex": "6bed7df186e099ca6b68646615fe2f5ff492e3b1257967f26a828340404835b5"
+    }
+  ],
+  "authority_address": "svn163lf3utrqmd5chs6llcch4gy9qsfmd2y7d2zlv",
+  "service_address": "svn1w7nz4kcqgckl2qva28zdysqw88vd42aeaf6f60"
+}

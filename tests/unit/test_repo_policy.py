@@ -45,9 +45,9 @@ def test_blueprint_paths_exist() -> None:
     assert missing == []
 
 
-def test_chain_has_no_main_package() -> None:
+def test_chain_main_is_only_svnd() -> None:
     mains = [path.relative_to(ROOT).as_posix() for path in (ROOT / "chain").rglob("main.go")]
-    assert mains == []
+    assert mains == ["chain/cmd/svnd/main.go"]
 
 
 def test_reference_projects_are_not_vendored() -> None:
@@ -165,7 +165,7 @@ def test_workflow_policy_passes() -> None:
 
 
 def test_unimplemented_make_targets_fail() -> None:
-    for target in ("devnet-up", "devnet-down", "smoke", "fault", "release-check"):
+    for target in ("smoke", "fault", "release-check"):
         completed = subprocess.run(
             ["make", target],
             cwd=ROOT,

@@ -1615,7 +1615,7 @@ def compare_languages(python_lines: list[str], go_text: str, ts_text: str) -> li
 
 
 # Names whose call is a liveness read even when the callee body is not in the
-# snippet under test. Dynamic HANDLERS.get dispatch is goal 05, not this scan.
+# snippet under test. TX_HANDLERS.get is followed by the call graph.
 LIVENESS_CALLS = frozenset({"environment_withholds_block", "liveness_would_halt"})
 DOWN_KEY = "down"
 
@@ -1646,6 +1646,17 @@ def _const_str(node: ast.AST | None) -> str | None:
                 continue
             return None
         return "".join(parts)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "join":
+        sep = _const_str(node.func.value)
+        if sep is None or len(node.args) != 1 or not isinstance(node.args[0], (ast.List, ast.Tuple)):
+            return None
+        parts: list[str] = []
+        for item in node.args[0].elts:
+            part = _const_str(item)
+            if part is None:
+                return None
+            parts.append(part)
+        return sep.join(parts)
     return None
 
 
@@ -1794,26 +1805,90 @@ def _direct_down_read(
             if isinstance(func, ast.Name) and func.id == "getattr":
                 if len(node.args) >= 2 and _is_down_key(node.args[1], local_strings, module_strings):
                     return True
+            if isinstance(func, ast.Attribute) and func.attr == "itemgetter":
+                if node.args and _is_down_key(node.args[0], local_strings, module_strings):
+                    return True
+            if isinstance(func, ast.Name) and func.id == "itemgetter":
+                if node.args and _is_down_key(node.args[0], local_strings, module_strings):
+                    return True
+            if isinstance(func, ast.Attribute) and func.attr == "values":
+                if isinstance(func.value, ast.Name) and func.value.id in states:
+                    return True
             if isinstance(func, ast.Name):
                 called = _resolve_name(func.id, local_aliases, module_aliases)
                 if called in LIVENESS_CALLS:
                     return True
+        if isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values, strict=True):
+                if key is None and isinstance(value, ast.Name) and value.id in states:
+                    return True
+        if isinstance(node, ast.Call):
+            for keyword in node.keywords:
+                if keyword.arg is None and isinstance(keyword.value, ast.Name) and keyword.value.id in states:
+                    return True
     return False
+
+
+def _handler_tables(tree: ast.AST, functions: dict[str, ast.AST]) -> dict[str, dict[str, str]]:
+    """Module-level dicts whose values are functions, such as TX_HANDLERS."""
+    tables: dict[str, dict[str, str]] = {}
+    for stmt in getattr(tree, "body", []):
+        if not isinstance(stmt, ast.Assign) or len(stmt.targets) != 1:
+            continue
+        target = stmt.targets[0]
+        if not isinstance(target, ast.Name) or not isinstance(stmt.value, ast.Dict):
+            continue
+        table: dict[str, str] = {}
+        for key, value in zip(stmt.value.keys, stmt.value.values, strict=True):
+            if isinstance(value, ast.Name) and value.id in functions and key is not None:
+                text = _const_str(key)
+                if text is not None:
+                    table[text] = value.id
+        if table:
+            tables[target.id] = table
+    return tables
+
+
+def _dict_get_targets(call: ast.Call, tables: dict[str, dict[str, str]]) -> list[str]:
+    func = call.func
+    if not isinstance(func, ast.Attribute) or func.attr != "get":
+        return []
+    if not isinstance(func.value, ast.Name) or func.value.id not in tables:
+        return []
+    table = tables[func.value.id]
+    if not call.args:
+        return list(table.values())
+    key = _const_str(call.args[0])
+    if key is None:
+        return list(table.values())
+    name = table.get(key)
+    return [name] if name else []
 
 
 def _static_callees(
     tree: ast.AST,
     functions: dict[str, ast.AST],
     module_aliases: dict[str, str],
+    handler_tables: dict[str, dict[str, str]] | None = None,
 ) -> list[str]:
     local_aliases = _name_aliases(tree, set(functions) | set(LIVENESS_CALLS))
+    tables = handler_tables or {}
     found: list[str] = []
+
+    def add(name: str) -> None:
+        if name in functions and name not in found:
+            found.append(name)
+
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+        if not isinstance(node, ast.Call):
             continue
-        called = _resolve_name(node.func.id, local_aliases, module_aliases)
-        if called in functions and called not in found:
-            found.append(called)
+        if isinstance(node.func, ast.Name):
+            add(_resolve_name(node.func.id, local_aliases, module_aliases))
+        for target in _dict_get_targets(node, tables):
+            add(target)
+        if isinstance(node.func, ast.Call):
+            for target in _dict_get_targets(node.func, tables):
+                add(target)
     return found
 
 
@@ -1824,6 +1899,7 @@ def _function_reads_down(
     module_strings: dict[str, set[str]],
     module_aliases: dict[str, str],
     module_dicts: set[str],
+    handler_tables: dict[str, dict[str, str]] | None = None,
 ) -> bool:
     if name in LIVENESS_CALLS:
         return True
@@ -1836,9 +1912,9 @@ def _function_reads_down(
         return True
     stack.add(name)
     try:
-        for callee in _static_callees(func, functions, module_aliases):
+        for callee in _static_callees(func, functions, module_aliases, handler_tables):
             if _function_reads_down(
-                callee, functions, stack, module_strings, module_aliases, module_dicts
+                callee, functions, stack, module_strings, module_aliases, module_dicts, handler_tables
             ):
                 return True
     finally:
@@ -1910,11 +1986,12 @@ def handler_reads_down(source: str, entry: str | None = None) -> bool:
     module_strings = _module_strings(tree)
     module_aliases = _module_function_aliases(tree, functions)
     module_dicts = _module_dict_names(tree)
+    handler_tables = _handler_tables(tree, functions)
     if entry is not None:
         if entry not in functions:
             raise ValueError(entry)
         return _function_reads_down(
-            entry, functions, set(), module_strings, module_aliases, module_dicts
+            entry, functions, set(), module_strings, module_aliases, module_dicts, handler_tables
         )
     for stmt in tree.body:
         if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -1922,16 +1999,18 @@ def handler_reads_down(source: str, entry: str | None = None) -> bool:
         if _direct_down_read(stmt, functions, module_strings, module_aliases, module_dicts):
             return True
     return any(
-        _function_reads_down(name, functions, set(), module_strings, module_aliases, module_dicts)
+        _function_reads_down(
+            name, functions, set(), module_strings, module_aliases, module_dicts, handler_tables
+        )
         for name in functions
     )
 
 
 def handler_down_errors() -> list[str]:
-    """Chain handlers must not read the liveness fixture. SetDown only writes it.
+    """Transaction handlers must not read the liveness fixture.
 
-    Dynamic dispatch through HANDLERS.get is not a static call. Keeping harness
-    operations out of the transaction router is goal 05.
+    Harness operations, including SetDown, are outside TX_HANDLERS. A dynamic
+    TX_HANDLERS.get is part of the call graph.
     """
     import spec_machine
 
@@ -1941,16 +2020,15 @@ def handler_down_errors() -> list[str]:
     module_strings = _module_strings(tree)
     module_aliases = _module_function_aliases(tree, functions)
     module_dicts = _module_dict_names(tree)
+    handler_tables = _handler_tables(tree, functions)
     errors: list[str] = []
-    for name, function in spec_machine.HANDLERS.items():
-        if name == "SetDown":
-            continue
+    for name, function in spec_machine.TX_HANDLERS.items():
         impl = function.__name__
         if impl not in functions:
             errors.append(f"tx handler missing from ast {name}")
             continue
         if _function_reads_down(
-            impl, functions, set(), module_strings, module_aliases, module_dicts
+            impl, functions, set(), module_strings, module_aliases, module_dicts, handler_tables
         ):
             errors.append(f"tx handler reads down {name}")
     return errors

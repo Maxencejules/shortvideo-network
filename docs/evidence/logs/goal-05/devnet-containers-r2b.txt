@@ -1,0 +1,148 @@
+COMMAND bash scripts/devnet/prove-containers.sh
+DATE 2026-10-31T22:37:43+00:00
+TREE f9ad8430a3372d1d3de7608cc201587dc63adf4b
+DOCKER_HOST=<unset>
+NOTE empty blocks only. No application transaction is submitted, so the hash is the genesis application state.
+NOTE bridge networking is BLOCKED. This run uses host networking.
+docker context default endpoint unix:///var/run/docker.sock
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  117.1MB
+Step 1/13 : FROM golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949 AS build
+ ---> 2bba1f6b063d
+Step 2/13 : WORKDIR /src
+ ---> Using cache
+ ---> bd8a27f9dc18
+Step 3/13 : COPY chain ./chain
+ ---> Using cache
+ ---> c41480b5b842
+Step 4/13 : COPY proto ./proto
+ ---> Using cache
+ ---> dc7a418fb4bf
+Step 5/13 : WORKDIR /src/chain
+ ---> Using cache
+ ---> 4f43126a8ec2
+Step 6/13 : RUN go build -o /out/svnd ./cmd/svnd
+ ---> Using cache
+ ---> 844e1b7d012b
+Step 7/13 : FROM debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e
+ ---> a3bba7dc7dbc
+Step 8/13 : RUN useradd --create-home --uid 65532 svn
+ ---> Using cache
+ ---> c28e97dbfd1f
+Step 9/13 : USER svn
+ ---> Using cache
+ ---> fd9a496087a0
+Step 10/13 : COPY --from=build /out/svnd /usr/local/bin/svnd
+ ---> Using cache
+ ---> c70e7b7a579f
+Step 11/13 : EXPOSE 26656 26657 27101
+ ---> Using cache
+ ---> c5d82073a888
+Step 12/13 : ENTRYPOINT ["svnd"]
+ ---> Using cache
+ ---> 3ae1cd91b783
+Step 13/13 : CMD ["start", "--home", "/home/svn"]
+ ---> Using cache
+ ---> 036c8acc978f
+Successfully built 036c8acc978f
+Successfully tagged svn-devnet:goal05
+ Container chain-v4-1  Recreate
+ Container chain-v2-1  Recreate
+ Container chain-v3-1  Recreate
+ Container chain-v1-1  Recreate
+ Container chain-v3-1  Recreated
+ Container chain-v1-1  Recreated
+ Container chain-v4-1  Recreated
+ Container chain-v2-1  Recreated
+ Container chain-v4-1  Starting
+ Container chain-v1-1  Starting
+ Container chain-v2-1  Starting
+ Container chain-v3-1  Starting
+ Container chain-v3-1  Started
+ Container chain-v1-1  Started
+ Container chain-v2-1  Started
+ Container chain-v4-1  Started
+COMMAND docker compose -f deployments/chain/compose.yaml up -d
+phase=start sample=0 node=0 height=3 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=start sample=0 node=1 height=3 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=start sample=0 node=2 height=3 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=start sample=0 node=3 height=3 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+COMMAND docker compose -f deployments/chain/compose.yaml stop
+ Container chain-v2-1  Stopping
+ Container chain-v4-1  Stopping
+ Container chain-v1-1  Stopping
+ Container chain-v3-1  Stopping
+ Container chain-v2-1  Stopped
+ Container chain-v3-1  Stopped
+ Container chain-v4-1  Stopped
+ Container chain-v1-1  Stopped
+COMMAND docker compose -f deployments/chain/compose.yaml start
+ Container chain-v4-1  Starting
+ Container chain-v1-1  Starting
+ Container chain-v2-1  Starting
+ Container chain-v3-1  Starting
+ Container chain-v1-1  Started
+ Container chain-v2-1  Started
+ Container chain-v4-1  Started
+ Container chain-v3-1  Started
+phase=restart sample=0 node=0 height=6 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=restart sample=0 node=1 height=6 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=restart sample=0 node=2 height=6 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=restart sample=0 node=3 height=6 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=restart threshold=4 reached=6
+COMMAND docker compose -f deployments/chain/compose.yaml stop v4
+phase=stop-one threshold=6
+ Container chain-v4-1  Stopping
+ Container chain-v4-1  Stopped
+phase=one-down sample=0 node=0 height=7 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=0 node=1 height=7 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=0 node=2 height=7 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down threshold=6 reached=7
+phase=one-down sample=0 node=0 height=7 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=0 node=1 height=7 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=0 node=2 height=7 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=1 node=0 height=9 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=1 node=1 height=9 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=1 node=2 height=9 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=2 node=0 height=10 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=2 node=1 height=10 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=2 node=2 height=10 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=3 node=0 height=12 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=3 node=1 height=12 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=one-down sample=3 node=2 height=12 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+COMMAND docker compose -f deployments/chain/compose.yaml stop v3
+phase=stop-two threshold=14
+ Container chain-v3-1  Stopping
+ Container chain-v3-1  Stopped
+phase=two-down sample=0 node=0 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=0 node=1 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=1 node=0 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=1 node=1 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=2 node=0 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=2 node=1 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=3 node=0 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=3 node=1 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=4 node=0 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=4 node=1 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=5 node=0 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down sample=5 node=1 height=14 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=two-down stall=14
+COMMAND docker compose -f deployments/chain/compose.yaml start v3 v4
+ Container chain-v4-1  Starting
+ Container chain-v3-1  Starting
+ Container chain-v3-1  Started
+ Container chain-v4-1  Started
+phase=recovery sample=0 node=0 height=16 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=recovery sample=0 node=1 height=16 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=recovery sample=0 node=2 height=16 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=recovery sample=0 node=3 height=16 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=recovery threshold=14 reached=16
+phase=recovery sample=0 node=0 height=17 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=recovery sample=0 node=1 height=17 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=recovery sample=0 node=2 height=17 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=recovery sample=0 node=3 height=17 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+phase=recovery threshold=17 app_hash=D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F
+EXIT:0
