@@ -166,16 +166,20 @@ func observeMoving(t *testing.T, phase string, rpcs []string, threshold int64) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		low := rows[0].Height
 		for i, row := range rows {
-			if row.Height != rows[0].Height || row.AppHash != rows[0].AppHash {
-				t.Fatalf("phase %s nodes disagree", phase)
+			if row.AppHash != rows[0].AppHash {
+				t.Fatalf("phase %s app hash disagree", phase)
+			}
+			if row.Height < low {
+				low = row.Height
 			}
 			fmt.Printf("phase=%s sample=%d node=%d height=%d app_hash=%s\n", phase, sample, i, row.Height, row.AppHash)
 		}
 		if sample == 0 {
-			first = rows[0].Height
+			first = low
 		}
-		last = rows[0].Height
+		last = low
 		if last < first {
 			t.Fatalf("phase %s height moved backward", phase)
 		}

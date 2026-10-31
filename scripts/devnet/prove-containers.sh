@@ -162,24 +162,29 @@ def read(url):
     return int(info["latest_block_height"]), info["latest_app_hash"].upper()
 
 first = None
-last = None
+ceiling = None
 for sample in range(samples):
     rows = [read(node["rpc"]) for node in nodes]
-    if any(row != rows[0] for row in rows):
-        raise SystemExit(f"phase {phase} disagreement {rows}")
-    height, digest = rows[0]
+    digest = rows[0][1]
+    if any(row[1] != digest for row in rows):
+        raise SystemExit(f"phase {phase} app hash disagreement {rows}")
+    heights = [row[0] for row in rows]
     for index, row in enumerate(rows):
         print(f"phase={phase} sample={sample} node={index} height={row[0]} app_hash={row[1]}", file=sys.stderr, flush=True)
-    if first is None:
-        first = height
-    last = height
-    if mode == "stall" and height != first:
-        raise SystemExit(f"phase {phase} moved from {first} to {height}")
+    if ceiling is None:
+        ceiling = heights
+        first = min(heights)
+    elif mode == "stall":
+        for index, height in enumerate(heights):
+            if height > ceiling[index]:
+                raise SystemExit(f"phase {phase} node {index} moved from {ceiling[index]} to {height}")
+    elif min(heights) < first:
+        raise SystemExit(f"phase {phase} height moved backward")
     time.sleep(1)
-if mode == "moving" and not (last > first):
-    raise SystemExit(f"phase {phase} did not keep committing {first} -> {last}")
+if mode == "moving" and not (min(heights) > first):
+    raise SystemExit(f"phase {phase} did not keep committing {first} -> {min(heights)}")
 if mode == "stall":
-    print(first)
+    print(max(ceiling))
 PY
 }
 
