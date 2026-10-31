@@ -18,7 +18,7 @@ On 2026-10-31 at 09:50 EDT Max ruled, relayed word for word by shortvideo-review
 
 The branch history since `2ef8573c59645646cd13f0a49c3392095a7ad4a2` was rewritten for authorship. Every commit on `goal-03` is authored and committed as `Maxence Jules <Maxencejules@users.noreply.github.com>`. `Co-authored-by` and Cursor trailers were removed. `Tested-tree` trailers were kept.
 
-The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. The commit that contains this paragraph changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, their unit tests, and this evidence file.
+The rewrite through `887905e176334acaa10e4239750237fdfd0c9ebc` does not change the file content of the earlier commits. Relative to `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, that note commit changes only `docs/evidence/goal-03.md`. Commits after `887905e` change more than the note. `82bb067214883d5970a02715a0c8ff98c357bbad` changes `scripts/workflow_policy.py`, `scripts/run_tests.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_node_suite.py`, `tests/unit/test_secrets.py`, `docs/evidence/goal-02.md`, and `docs/evidence/goal-03.md`. `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` changes `scripts/workflow_policy.py`, `scripts/scan_secrets.py`, `tests/unit/test_workflow_policy.py`, `tests/unit/test_secrets.py`, and `docs/evidence/goal-03.md`. The commit that contains this paragraph changes `scripts/scan_secrets.py`, `tests/unit/test_secrets.py`, and this evidence file.
 
 Before the rewrite, these commits were authored and committed by `Cursor Agent <cursoragent@cursor.com>` and carried a `Co-authored-by` trailer:
 
@@ -245,7 +245,7 @@ note schema and fixture check; protocol not approved; Gate A approved DEC-001 th
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only python
-77 passed in 1.56s
+89 passed in 1.65s
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only node
@@ -377,7 +377,7 @@ go tests failed: 1
 
 ## Hosted CI
 
-These are every hosted run of `goal-03` through `82bb067214883d5970a02715a0c8ff98c357bbad`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
+These are every hosted run of `goal-03` through `337f7c2c8b2b6361c63fa47bafcd5699a2b03363`. A failed run is not a pass. Where the recorded head was rewritten, the current commit with the same tree is named beside it. The run for the commit that contains this paragraph starts after the push. The pull request names that run.
 
 | Run | Head | Conclusion |
 | --- | --- | --- |
@@ -389,6 +389,7 @@ These are every hosted run of `goal-03` through `82bb067214883d5970a02715a0c8ff9
 | [41207177004](https://github.com/Maxencejules/shortvideo-network/actions/runs/41207177004) | `3a820b55f87d6ef66f7b3efbb3ab283544d011e6`, same tree as `2c40b443d7d92e45a839c4d97a7a3f7b44901af9` | success |
 | [41207468346](https://github.com/Maxencejules/shortvideo-network/actions/runs/41207468346) | `887905e176334acaa10e4239750237fdfd0c9ebc` | success |
 | [41208566946](https://github.com/Maxencejules/shortvideo-network/actions/runs/41208566946) | `82bb067214883d5970a02715a0c8ff98c357bbad` | success |
+| [41210751631](https://github.com/Maxencejules/shortvideo-network/actions/runs/41210751631) | `337f7c2c8b2b6361c63fa47bafcd5699a2b03363` | success |
 
 `41203787093` is the hosted run for the revision the first review marked FIX. Jobs `python`, `node`, `go`, and `contract` completed. `41207064075` failed its python job. None of these runs is a run of this commit.
 
@@ -413,4 +414,4 @@ The same run also failed `pip install --require-hashes` because `setuptools` was
 
 ## Not claimed
 
-No devnet, no chain binary, and no production deployment. The secret scan covers the patterns in `scripts/scan_secrets.py`. It is not a third-party secret scanner.
+No devnet, no chain binary, and no production deployment. The secret scan lowercases mnemonic text and ignores list, comment, quote, bracket, and table markers because they are not letters. A blank line does not reset a block. It flags 12, 15, 18, 21, or 24 BIP39 words, and a window of one of those lengths inside a longer block. A block of 13 or 14 words is not a mnemonic. `scripts/bip39_english.txt` is excluded by path. Key assignments cover a validator prefix, camel case, a joined name, a dot, a hyphen, and a private key name. A parameter annotation such as `priv_key: bytes` is not an assignment. The scan is not a third-party secret scanner.

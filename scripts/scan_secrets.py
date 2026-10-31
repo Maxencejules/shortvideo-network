@@ -21,11 +21,26 @@ PATTERNS = (
     re.compile(r"\bghp_[A-Za-z0-9]{20,}\b"),
     re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"),
     re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"),
-    re.compile("['\"]" + "priv" + r"[-_]" + "key" + "['\"]", re.IGNORECASE),
-    re.compile(
-        r"(?<![A-Za-z0-9_])" + "priv" + r"[-_]" + "key" + r"\s*[:=]",
-        re.IGNORECASE,
-    ),
+)
+# Names are built from pieces so this file does not contain a contiguous marker.
+_KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key"
+_KEY_ASSIGN = re.compile(
+    r"(?<![A-Za-z0-9])['\"]?(?:[A-Za-z0-9]+_)?"
+    + _KEY_BODY
+    + r"(?![A-Za-z0-9])['\"]?\s*(?P<sep>[:=])",
+    re.IGNORECASE,
+)
+_KEY_QUOTED = re.compile(
+    "['\"]" + r"(?:[A-Za-z0-9]+_)?" + "priv" + r"[._-]?" + "key" + "['\"]",
+    re.IGNORECASE,
+)
+_TYPE_AFTER = re.compile(
+    r"(?ix)^\s*(?:"
+    r"(?:bytes|str|int|float|bool|object|any|none|path|bytearray)"
+    r"(?:\s*\|\s*(?:bytes|str|int|float|bool|object|any|none|path|bytearray))*"
+    r"\b"
+    r"|(?:optional|union|list|dict|tuple|sequence|mapping)\s*\[[^\]]*\]"
+    r")"
 )
 FORBIDDEN_NAMES = {
     "priv_validator_key.json",
@@ -49,62 +64,66 @@ def bip39_words() -> set[str]:
 
 MNEMONIC_LENGTHS = (12, 15, 18, 21, 24)
 _TOKEN = re.compile(r"[a-z]+")
-_PHRASE_LINE = re.compile(r"^[a-z]+(?:[ \t]+[a-z]+)*$")
-_PREFIXED_PHRASE = re.compile(
-    r"^[A-Za-z_][A-Za-z0-9_]*\s*[=:]\s*['\"]?([a-z]+(?:[ \t]+[a-z]+)*)['\"]?\s*$"
-)
+_WORDLIST_NAME = "bip39_english.txt"
 
 
-def _tokens(line: str) -> list[str]:
-    return _TOKEN.findall(line.lower())
+def _block_hit(count: int) -> bool:
+    """Valid lengths, or a valid window inside a longer block. 13 and 14 are not."""
+    if count in (13, 14) or count < 12:
+        return False
+    if count in MNEMONIC_LENGTHS:
+        return True
+    return any(length <= count for length in MNEMONIC_LENGTHS)
 
 
-def _window_hit(tokens: list[str], words: set[str]) -> bool:
-    for length in MNEMONIC_LENGTHS:
-        if len(tokens) < length:
+def _key_hit(text: str) -> bool:
+    """Assignment or quoted key name. A Python type annotation is not an assignment."""
+    if _KEY_QUOTED.search(text):
+        return True
+    for match in _KEY_ASSIGN.finditer(text):
+        if match.group("sep") == ":" and _TYPE_AFTER.match(text[match.end() :]):
             continue
-        for start in range(len(tokens) - length + 1):
-            window = tokens[start : start + length]
-            if all(token in words for token in window):
-                return True
+        return True
     return False
 
 
-def _phrase_tokens(line: str, words: set[str]) -> list[str] | None:
-    """Words from a phrase line, or from a single KEY=phrase / KEY: phrase line."""
-    stripped = line.strip()
-    prefixed = _PREFIXED_PHRASE.fullmatch(stripped)
-    if prefixed:
-        tokens = prefixed.group(1).split()
-    elif _PHRASE_LINE.fullmatch(stripped):
-        tokens = stripped.split()
-    else:
-        return None
-    if not tokens or any(token not in words for token in tokens):
-        return None
-    return tokens
+def _is_wordlist(name: str) -> bool:
+    path = name.replace("\\", "/")
+    return path.endswith("/" + _WORDLIST_NAME) or path == _WORDLIST_NAME
 
 
 def mnemonic_hit(text: str, words: set[str]) -> bool:
-    """BIP39 phrase on one line, one word per line, or split across phrase lines.
+    """12, 15, 18, 21, or 24 BIP39 words, including a window inside a longer block.
 
-    A finished block of 12 to 24 phrase-line words counts. Code punctuation
-    breaks a block. The 2048-line wordlist is one longer block, so it does not.
+    Lines are lowercased. List, comment, quote, bracket, and table markers are
+    not letters, so they fall away. A blank line does not reset the block. A
+    word that is not on the BIP39 list does. `:` and `=` start a new block so a
+    key is not glued to its value. A block of 13 or 14 words is not a mnemonic.
+    `scripts/bip39_english.txt` is excluded by path in `findings_in_text`.
     """
-    lines = text.splitlines()
-    for line in lines:
-        if _window_hit(_tokens(line), words):
-            return True
     block: list[str] = []
-    for line in [*lines, ""]:
-        tokens = _phrase_tokens(line, words)
-        if tokens:
-            block.extend(tokens)
+
+    def finish() -> bool:
+        return _block_hit(len(block))
+
+    for line in text.splitlines():
+        lowered = line.lower()
+        if _TOKEN.search(lowered) is None:
             continue
-        if 12 <= len(block) <= 24:
-            return True
-        block = []
-    return False
+        parts = re.split(r"[:=]", lowered)
+        for index, part in enumerate(parts):
+            if index and finish():
+                return True
+            if index:
+                block = []
+            for token in _TOKEN.findall(part):
+                if token in words:
+                    block.append(token)
+                    continue
+                if finish():
+                    return True
+                block = []
+    return finish()
 
 
 def tracked_files() -> list[Path]:
@@ -129,7 +148,9 @@ def findings_in_text(name: str, text: str, words: set[str] | None = None) -> lis
     for pattern in PATTERNS:
         if pattern.search(text):
             found.append(f"{name}: {pattern.pattern}")
-    if mnemonic_hit(text, words if words is not None else bip39_words()):
+    if _key_hit(text):
+        found.append(f"{name}: private key name")
+    if not _is_wordlist(name) and mnemonic_hit(text, words if words is not None else bip39_words()):
         found.append(f"{name}: bip39 mnemonic")
     return found
 
