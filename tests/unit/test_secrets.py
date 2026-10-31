@@ -168,10 +168,10 @@ def test_mnemonic_padded_past_24_words() -> None:
     assert _has_mnemonic(" ".join(_words(25)))
 
 
-def test_thirteen_and_fourteen_word_blocks_are_not_mnemonics() -> None:
-    for count in (13, 14):
-        assert findings_in_text("note.txt", "\n".join(_words(count))) == []
-        assert findings_in_text("note.txt", " ".join(_words(count))) == []
+def test_thirteen_word_run_contains_a_twelve_word_window() -> None:
+    """A 13-word run is not a special exclusion. It still holds a 12-word window."""
+    assert _has_mnemonic(" ".join(_words(13)))
+    assert _has_mnemonic("\n".join(_words(14)))
 
 
 def test_sixteen_word_block_has_a_valid_window() -> None:
@@ -204,6 +204,84 @@ def test_validator_and_camel_case_key_names() -> None:
         found = findings_in_text("note.txt", body)
         assert any("private key" in item for item in found), body
         assert all("bip39" not in item for item in found)
+
+
+def _phrase(count: int) -> str:
+    return " ".join(_words(count))
+
+
+def test_config_values_catch_twelve_and_twenty_four_word_mnemonics() -> None:
+    for count in (12, 24):
+        phrase = _phrase(count)
+        samples = {
+            "wallet.toml": 'seed = "' + phrase + '"\n',
+            "wallet.ini": "seed=" + phrase + "\n",
+            "wallet.yaml": "seed: " + phrase + "\n",
+            "wallet.json": '{"seed": "' + phrase + '"}\n',
+            "wallet.env": "SEED=" + phrase + "\n",
+            "note.txt": phrase + "\n",
+        }
+        for name, body in samples.items():
+            found = findings_in_text(name, body)
+            assert any("bip39" in item for item in found), (count, name)
+        glued = 'seed = "' + phrase + '"\nabove = "keep"\n'
+        assert any("bip39" in item for item in findings_in_text("wallet.toml", glued))
+
+
+def test_ordinary_prose_is_not_a_mnemonic() -> None:
+    prose = (
+        "The viewer uploads a video through the https api and the chain stores only a digest.\n"
+        "Operators keep media bytes off the ledger.\n"
+    )
+    assert findings_in_text("readme.md", prose) == []
+
+
+def test_numbered_colon_list_is_a_mnemonic() -> None:
+    body = "\n".join(f"{index}: {word}" for index, word in enumerate(_words(12), start=1))
+    assert _has_mnemonic(body)
+
+
+def test_heading_then_word_list_is_a_mnemonic() -> None:
+    body = "## Seed\n" + "\n".join("- " + word for word in _words(12))
+    assert _has_mnemonic(body)
+
+
+def test_literal_key_names_with_values() -> None:
+    samples = (
+        "validator" + "Priv" + "Key" + ' = "deadbeef"',
+        "node" + "Private" + "Key" + ': "cafebabe"',
+        "PRIV_" + "KEY_" + "HEX=deadbeef",
+        "private_" + "key_" + "hex: deadbeef",
+        "--" + "priv-" + "key deadbeef",
+        "--" + "priv-" + "key=cafebabe",
+    )
+    for body in samples:
+        found = findings_in_text("note.txt", body)
+        assert any("private key" in item for item in found), body
+
+
+def test_annotation_with_value_is_a_private_key() -> None:
+    body = "def load(" + "priv_" + "key" + ': str = "deadbeef") -> None:'
+    found = findings_in_text("note.py", body)
+    assert any("private key" in item for item in found)
+
+
+def test_yaml_type_word_is_a_value() -> None:
+    body = "priv_" + "key" + ": str\n"
+    found = findings_in_text("config.yaml", body)
+    assert any("private key" in item for item in found), found
+
+
+def test_code_without_a_literal_secret_is_not_flagged() -> None:
+    samples = (
+        "priv_" + "key" + " = load_key(path)",
+        "def sign(" + "priv_" + "key" + "):",
+        "priv_" + "key" + ' = os.environ["' + "PRIV_" + 'KEY"]',
+        "priv_" + "key" + ' = os.getenv("' + "PRIV_" + 'KEY")',
+        "--" + "priv-" + "key $" + "PRIV_" + "KEY",
+    )
+    for body in samples:
+        assert findings_in_text("note.py", body) == [], body
 
 
 def test_type_annotation_is_not_a_private_key() -> None:

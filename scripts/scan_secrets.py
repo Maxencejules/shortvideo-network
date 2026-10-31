@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Scan tracked files for private-key material and credential shapes.
 
-This is not a complete secret scanner. It fails closed on the patterns below.
+Best-effort guard, not a guarantee. It misses values that are not literals,
+mnemonics broken by a non-BIP39 word, and formats this file does not name.
 """
 
 from __future__ import annotations
@@ -23,17 +24,21 @@ PATTERNS = (
     re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"),
 )
 # Names are built from pieces so this file does not contain a contiguous marker.
-_KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key"
+_KEY_BODY = "priv" + r"(?:ate)?" + r"[._-]?" + "key" + r"(?:_hex)?"
 _KEY_ASSIGN = re.compile(
     r"(?<![A-Za-z0-9])['\"]?(?:[A-Za-z0-9]+_)?"
     + _KEY_BODY
     + r"(?![A-Za-z0-9])['\"]?\s*(?P<sep>[:=])",
     re.IGNORECASE,
 )
+_KEY_CAMEL = re.compile(
+    r"(?<=[a-z])(?:Priv(?:ate)?Key(?:Hex)?)" + r"(?![A-Za-z0-9])['\"]?\s*(?P<sep>[:=])"
+)
 _KEY_QUOTED = re.compile(
     "['\"]" + r"(?:[A-Za-z0-9]+_)?" + "priv" + r"[._-]?" + "key" + "['\"]",
     re.IGNORECASE,
 )
+_KEY_CLI = re.compile(r"(?i)--" + "priv" + r"(?:ate)?-" + "key" + r"(?:=|\s+)(?P<value>[^\s$]\S*)")
 _TYPE_AFTER = re.compile(
     r"(?ix)^\s*(?:"
     r"(?:bytes|str|int|float|bool|object|any|none|path|bytearray)"
@@ -42,6 +47,7 @@ _TYPE_AFTER = re.compile(
     r"|(?:optional|union|list|dict|tuple|sequence|mapping)\s*\[[^\]]*\]"
     r")"
 )
+_CALL_OR_ENV = re.compile(r"(?i)^(?:os\.)?(?:environ|getenv)\b|^[A-Za-z_][\w.]*\s*\(")
 FORBIDDEN_NAMES = {
     "priv_validator_key.json",
     "node_key.json",
@@ -68,22 +74,55 @@ _WORDLIST_NAME = "bip39_english.txt"
 
 
 def _block_hit(count: int) -> bool:
-    """Valid lengths, or a valid window inside a longer block. 13 and 14 are not."""
-    if count in (13, 14) or count < 12:
+    """A valid length, or a valid window inside a longer run, including 13 and 14."""
+    if count < 12:
         return False
-    if count in MNEMONIC_LENGTHS:
-        return True
     return any(length <= count for length in MNEMONIC_LENGTHS)
 
 
-def _key_hit(text: str) -> bool:
-    """Assignment or quoted key name. A Python type annotation is not an assignment."""
-    if _KEY_QUOTED.search(text):
-        return True
-    for match in _KEY_ASSIGN.finditer(text):
-        if match.group("sep") == ":" and _TYPE_AFTER.match(text[match.end() :]):
+def _is_python(name: str) -> bool:
+    return Path(name).suffix.lower() == ".py"
+
+
+def _literal_secret(rest: str, sep: str, python: bool) -> bool:
+    """True when the text after the key is a literal, not code or an env lookup.
+
+    A bare Python annotation (`name: str`) has no equals sign. The same spelling
+    in YAML is a value. `name: str = "..."` is an assignment and is checked
+    after the equals sign.
+    """
+    line = rest.split("\n", 1)[0]
+    stripped = line.strip()
+    if python and sep == ":" and "=" not in stripped:
+        if stripped == "" or stripped.startswith((")", ",", ":")) or _TYPE_AFTER.match(rest):
+            return False
+    if python and sep == ":" and "=" in stripped and _TYPE_AFTER.match(rest):
+        return _literal_secret(stripped.split("=", 1)[1], "=", False)
+    if stripped == "":
+        return sep == "="
+    if _CALL_OR_ENV.match(stripped):
+        return False
+    return True
+
+
+def _quoted_env_argument(text: str, start: int) -> bool:
+    before = text[max(0, start - 48) : start]
+    return re.search(r"(?i)(?:environ\s*\[\s*|getenv\s*\(\s*)$", before) is not None
+
+
+def _key_hit(text: str, name: str) -> bool:
+    """Literal assignment, quoted short name, or CLI flag. Not a code use."""
+    for match in _KEY_QUOTED.finditer(text):
+        if _quoted_env_argument(text, match.start()):
             continue
         return True
+    if _KEY_CLI.search(text):
+        return True
+    python = _is_python(name)
+    for pattern in (_KEY_ASSIGN, _KEY_CAMEL):
+        for match in pattern.finditer(text):
+            if _literal_secret(text[match.end() :], match.group("sep"), python):
+                return True
     return False
 
 
@@ -92,38 +131,58 @@ def _is_wordlist(name: str) -> bool:
     return path.endswith("/" + _WORDLIST_NAME) or path == _WORDLIST_NAME
 
 
+_HEADING = re.compile(r"^\s*#{2,6}\s+\S")
+_SECTION = re.compile(r"^\s*\[[^\]]+\]\s*$")
+_KEY_BOUNDARY = re.compile(r"""["']?(?P<key>[A-Za-z_][\w.-]*)["']?\s*[:=]""")
+
+
+def _add_words(fragment: str, block: list[str], words: set[str]) -> bool:
+    """Append BIP39 words. A non-BIP39 word ends the run. Blank text does not."""
+    for token in _TOKEN.findall(fragment.lower()):
+        if token in words:
+            block.append(token)
+            continue
+        if _block_hit(len(block)):
+            return True
+        block.clear()
+    return False
+
+
 def mnemonic_hit(text: str, words: set[str]) -> bool:
-    """12, 15, 18, 21, or 24 BIP39 words, including a window inside a longer block.
+    """12, 15, 18, 21, or 24 BIP39 words, including a window inside a longer run.
 
     Lines are lowercased. List, comment, quote, bracket, and table markers are
-    not letters, so they fall away. A blank line does not reset the block. A
-    word that is not on the BIP39 list does. `:` and `=` start a new block so a
-    key is not glued to its value. A block of 13 or 14 words is not a mnemonic.
-    `scripts/bip39_english.txt` is excluded by path in `findings_in_text`.
+    not letters, so they fall away. A blank line does not reset the run. A word
+    that is not on the BIP39 list does. A key or field name before `:` or `=`
+    resets the run so the name is not glued to the value. A numeric `1: word`
+    item is a list entry, not a key. A markdown heading of two or more hashes
+    resets the run and is not itself a phrase. `scripts/bip39_english.txt` is
+    excluded by path in `findings_in_text`.
     """
     block: list[str] = []
-
-    def finish() -> bool:
-        return _block_hit(len(block))
-
     for line in text.splitlines():
-        lowered = line.lower()
-        if _TOKEN.search(lowered) is None:
-            continue
-        parts = re.split(r"[:=]", lowered)
-        for index, part in enumerate(parts):
-            if index and finish():
+        if _HEADING.match(line) or _SECTION.match(line) or "(" in line or ")" in line:
+            # Headings and section labels are boundaries. A parenthesis is code,
+            # not a phrase, so its identifiers do not extend a mnemonic run.
+            if _block_hit(len(block)):
                 return True
-            if index:
-                block = []
-            for token in _TOKEN.findall(part):
-                if token in words:
-                    block.append(token)
-                    continue
-                if finish():
-                    return True
-                block = []
-    return finish()
+            block = []
+            continue
+        if "://" in line:
+            line = re.sub(r"://", " ", line)
+        cursor = 0
+        for match in _KEY_BOUNDARY.finditer(line):
+            if _add_words(line[cursor : match.start()], block, words):
+                return True
+            if _block_hit(len(block)):
+                return True
+            block = []
+            cursor = match.end()
+        if _add_words(line[cursor:], block, words):
+            return True
+        if _TOKEN.search(line.lower()) is None:
+            continue
+    return _block_hit(len(block))
 
 
 def tracked_files() -> list[Path]:
@@ -148,7 +207,7 @@ def findings_in_text(name: str, text: str, words: set[str] | None = None) -> lis
     for pattern in PATTERNS:
         if pattern.search(text):
             found.append(f"{name}: {pattern.pattern}")
-    if _key_hit(text):
+    if _key_hit(text, name):
         found.append(f"{name}: private key name")
     if not _is_wordlist(name) and mnemonic_hit(text, words if words is not None else bip39_words()):
         found.append(f"{name}: bip39 mnemonic")
