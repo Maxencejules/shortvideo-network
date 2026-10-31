@@ -1,0 +1,122 @@
+# Continuous integration for the skeleton.
+# contents: read is the only permission. The workflow does not receive
+# repository credentials, does not merge, and does not publish an image.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12.3"
+      - name: Install locked Python dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --require-hashes -r requirements.lock
+      - name: Format, lint, types, unit tests, secret scan
+        run: |
+          .venv/bin/ruff format --check services workers/media packages/protocol tests scripts
+          .venv/bin/ruff check services workers/media packages/protocol tests scripts
+          .venv/bin/mypy
+          .venv/bin/python scripts/workflow_policy.py
+          .venv/bin/python scripts/scan_secrets.py
+          .venv/bin/python scripts/write_sbom.py --check
+          .venv/bin/python scripts/run_tests.py --only python
+
+  node:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22.23.4"
+      - name: Install, type-check, and test
+        run: |
+          npm ci
+          npm run typecheck
+          python3 scripts/run_tests.py --only node
+
+  go:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: "1.26.10"
+          cache: false
+      - name: Install protoc
+        run: bash scripts/install_toolchains.sh --protoc-only
+      - name: Format, generate, and test
+        run: |
+          export PATH="${GITHUB_WORKSPACE}/.toolchains/bin:${PATH}"
+          bash scripts/gofmt_check.sh
+          bash scripts/gen_proto.sh
+          untracked="$(git ls-files --others --exclude-standard -- proto/svn proto/gen/python)"
+          if [ -n "${untracked}" ]; then
+            echo "${untracked}"
+            exit 1
+          fi
+          git diff --exit-code -- proto/svn proto/gen/python
+          python3 scripts/run_tests.py --only go
+
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12.3"
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22.23.4"
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: "1.26.10"
+          cache: false
+      - name: Install protoc and Python dependencies
+        run: |
+          bash scripts/install_toolchains.sh --protoc-only
+          python -m venv .venv
+          .venv/bin/pip install --require-hashes -r requirements.lock
+      - name: Run specification checkers
+        run: |
+          export PATH="${GITHUB_WORKSPACE}/.toolchains/bin:${PATH}"
+          .venv/bin/python docs/evidence/goal-01/check_requirements.py
+          .venv/bin/python docs/evidence/goal-02/check_protocol.py

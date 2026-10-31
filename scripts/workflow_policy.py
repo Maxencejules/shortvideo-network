@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Reject GitHub Actions workflows that widen trust or unpin actions."""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+WORKFLOWS = ROOT / ".github" / "workflows"
+ACTION_PINS = {
+    "actions/checkout": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+    "actions/setup-go": "924ae3a1cded613372ab5595356fb5720e22ba16",
+    "actions/setup-node": "249970729cb0ef3589644e2896645e5dc5ba9c38",
+    "actions/setup-python": "ece7cb06caefa5fff74198d8649806c4678c61a1",
+}
+SHA = re.compile(r"^[0-9a-f]{40}$")
+MAX_TIMEOUT = 20
+
+
+def _continue_on_error(value: object) -> bool:
+    """True for boolean true, the string true, or any ${{ expression."""
+    if value is True:
+        return True
+    if isinstance(value, str):
+        stripped = value.strip().strip("\"'")
+        if stripped.lower() == "true":
+            return True
+        if "${{" in value:
+            return True
+    return False
+
+
+# GitHub expression names are case-insensitive. Index syntax is github['key'].
+_SECRETS_DOT = re.compile(r"\bsecrets\s*\.", re.IGNORECASE)
+_SECRETS_INDEX = re.compile(r"\bsecrets\s*\[", re.IGNORECASE)
+_TOJSON_SECRETS = re.compile(r"\btojson\s*\(\s*secrets\s*\)", re.IGNORECASE)
+_TOJSON_GITHUB = re.compile(r"\btojson\s*\(\s*github\s*\)", re.IGNORECASE)
+_RUN_CONTEXT = re.compile(
+    r"github\s*(?:\.|\[)\s*['\"]?(?:event_path|event|head_ref)\b",
+    re.IGNORECASE,
+)
+
+
+def _run_leaks_context(run: str) -> bool:
+    """True when a shell step interpolates untrusted event or branch data."""
+    return _RUN_CONTEXT.search(run) is not None
+
+
+def check_text(path: Path, text: str) -> list[str]:
+    errors: list[str] = []
+    if re.search(r"pull_request_target", text, re.IGNORECASE):
+        errors.append(
+            f"{path.name}: pull_request_target checks out untrusted code with elevated credentials"
+        )
+    if _SECRETS_DOT.search(text):
+        errors.append(f"{path.name}: secrets context")
+    if _SECRETS_INDEX.search(text):
+        errors.append(f"{path.name}: secrets index")
+    if _TOJSON_SECRETS.search(text):
+        errors.append(f"{path.name}: toJSON(secrets)")
+    if _TOJSON_GITHUB.search(text):
+        errors.append(f"{path.name}: toJSON(github)")
+    if re.search(r"(?i)secrets\s*:\s*inherit\b", text):
+        errors.append(f"{path.name}: secrets inherit")
+    if re.search(r"(?i)continue-on-error:[^\n]*\$\{\{", text):
+        errors.append(f"{path.name}: continue-on-error expression")
+    if re.search(r"(?i)continue-on-error:\s*['\"]true['\"]", text):
+        errors.append(f"{path.name}: continue-on-error expression")
+    if re.search(r"\bgh\s+pr\s+merge\b", text) or re.search(r"auto-merge", text, re.IGNORECASE):
+        errors.append(f"{path.name}: automatic merge")
+    if re.search(r"\bproduction\b", text, re.IGNORECASE):
+        errors.append(f"{path.name}: production target")
+    if re.search(r"\bworkflow_run\b", text, re.IGNORECASE):
+        errors.append(f"{path.name}: workflow_run trigger")
+    return errors
+
+
+def check_job(path: Path, name: str, job: object) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(job, dict):
+        return [f"{path.name}: job {name} is not a mapping"]
+    permissions = job.get("permissions")
+    if permissions is not None and permissions != {"contents": "read"}:
+        errors.append(f"{path.name}: job {name} permissions {permissions}")
+    timeout = job.get("timeout-minutes")
+    if not isinstance(timeout, int) or timeout < 1 or timeout > MAX_TIMEOUT:
+        errors.append(f"{path.name}: job {name} timeout {timeout}")
+    environment = job.get("environment")
+    if environment not in (None, ""):
+        errors.append(f"{path.name}: job {name} environment {environment}")
+    if _continue_on_error(job.get("continue-on-error")):
+        errors.append(f"{path.name}: job {name} continue-on-error")
+    inherited = job.get("secrets")
+    if isinstance(inherited, str) and inherited.lower() == "inherit":
+        errors.append(f"{path.name}: job {name} secrets inherit")
+    steps = job.get("steps")
+    if not isinstance(steps, list) or not steps:
+        errors.append(f"{path.name}: job {name} has no steps")
+        return errors
+    for step in steps:
+        if not isinstance(step, dict):
+            errors.append(f"{path.name}: job {name} step is not a mapping")
+            continue
+        if _continue_on_error(step.get("continue-on-error")):
+            errors.append(f"{path.name}: job {name} step continue-on-error")
+        run = step.get("run")
+        if isinstance(run, str) and _run_leaks_context(run):
+            errors.append(f"{path.name}: event data interpolated into run")
+        uses = step.get("uses")
+        if uses is None:
+            continue
+        if not isinstance(uses, str):
+            errors.append(f"{path.name}: job {name} uses is not a string")
+            continue
+        if uses.startswith("./"):
+            errors.append(f"{path.name}: local action {uses} is not used")
+            continue
+        if "@" not in uses:
+            errors.append(f"{path.name}: unpinned {uses}")
+            continue
+        action, sha = uses.split("@", 1)
+        if not SHA.fullmatch(sha):
+            errors.append(f"{path.name}: {action} is not a full commit SHA")
+            continue
+        expected = ACTION_PINS.get(action)
+        if expected is None:
+            errors.append(f"{path.name}: unexpected action {action}")
+        elif expected != sha:
+            errors.append(f"{path.name}: {action} SHA is not the verified pin")
+        raw_with = step.get("with")
+        options: dict[str, object] = raw_with if isinstance(raw_with, dict) else {}
+        if "token" in options or "ssh-key" in options:
+            errors.append(f"{path.name}: {action} receives a credential input")
+        if action == "actions/checkout" and options.get("persist-credentials") is not False:
+            errors.append(f"{path.name}: checkout persists credentials")
+        if action == "actions/setup-go" and options.get("cache") is not False:
+            errors.append(f"{path.name}: setup-go cache is not disabled")
+        if action == "actions/setup-node" and "cache" in options:
+            errors.append(f"{path.name}: setup-node rejects a false cache value")
+    return errors
+
+
+def check_workflow_text(name: str, text: str) -> list[str]:
+    """Policy errors for one workflow document. `name` is the file name."""
+    path = Path(name)
+    errors = check_text(path, text)
+    data = yaml.safe_load(text)
+    if not isinstance(data, dict):
+        return errors + [f"{path.name}: workflow is not a mapping"]
+    if data.get("permissions") != {"contents": "read"}:
+        errors.append(f"{path.name}: workflow permissions are not contents read")
+    jobs = data.get("jobs")
+    if not isinstance(jobs, dict) or not jobs:
+        return errors + [f"{path.name}: no jobs"]
+    for name, job in jobs.items():
+        errors.extend(check_job(path, str(name), job))
+    return errors
+
+
+def check_workflow(path: Path) -> list[str]:
+    return check_workflow_text(path.name, path.read_text(encoding="utf-8"))
+
+
+def main() -> int:
+    paths = sorted(WORKFLOWS.glob("*.yml")) + sorted(WORKFLOWS.glob("*.yaml"))
+    if not paths:
+        print("no workflows")
+        return 1
+    errors: list[str] = []
+    for path in paths:
+        errors.extend(check_workflow(path))
+    if errors:
+        for error in errors:
+            print(error)
+        return 1
+    print(f"workflow policy ok files {len(paths)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
