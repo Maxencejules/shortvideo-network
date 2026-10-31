@@ -11,6 +11,14 @@ Public launch: DISABLED. No tradable token, coin, sale, or mining. This is not a
 - GPT-6 Astra was not used. A separate Astra HIGH control was not selected. `high-fast` is the suffix of the reported model name.
 - The goal 05 prompt says Max waived the model requirement. The mismatch is recorded and is not a blocker.
 
+## Tested revision
+
+Application, genesis, and devnet checks ran on commit `5bd4bf99fadf919b3bdc51865c7a16d4e265d241`, tree `89aa295fe4bbe58778ff45e8f2fe033ff800b649`. The progress-only commit `c78f00befed28ba98463395fdf61735661917a3a` did not change chain code. Its tree is `d6c8e83ef7d944f9cfc69b208b150b3334084aec`.
+
+GitHub Actions run `41244886019` was canceled because a newer run for the same pull request was queued. It is not a test failure. Run `41244914773` on `c78f00b` failed the python job and passed go, node, and contract. The python failure is `chain/app/app_test.go: private key name`. Log: [ci-41244914773-python.txt](logs/goal-05/ci-41244914773-python.txt).
+
+The malformed-genesis test now builds that field name at runtime. `go test -count=1 -timeout 180s ./chain/...` then exited 0, including `TestMalformedGenesisRejected` and `TestFourValidatorsCommitRestartAndQuorum` (12.78s). Log: [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt). `scripts/scan_secrets.py` exited 0 on that tree. The `Tested-tree` trailer of the commit that adds this paragraph is the tree of that fix.
+
 ## Base and prerequisites
 
 Base: `aa205ea9aa6ea49f4e9d33112b1629a42cee330c`, subject `goal 04: cloud dev environment (#7)` on `origin/main`. Branch `goal-05` was cut from that commit.
@@ -99,7 +107,7 @@ COMMAND sg docker -c 'bash scripts/devnet/compose-up.sh'
 
 The image `svn-devnet:goal05` built from `deployments/chain/Dockerfile`. Four containers reached the hash above. `DOCKER_HOST` was unset. `docker version` reported engine 29.1.3, which is the package installed in this step, not the process that was already listening on port 2375.
 
-Unit Python, mypy, secret scan, and `gofmt` were run with the project venv and exited 0. Ruff on `services workers/media packages/protocol tests scripts` exited 0.
+Unit Python, mypy, secret scan, and `gofmt` were run with the project venv and exited 0 before the pull request. Ruff on `services workers/media packages/protocol tests scripts` exited 0. Actions run `41244914773` then rejected the quoted field in `chain/app/app_test.go`. After the test built that name at runtime, `scripts/scan_secrets.py` exited 0 again and `go test -count=1 -timeout 180s ./chain/...` exited 0. That log is [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt).
 
 ## Residual risks
 

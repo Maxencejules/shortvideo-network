@@ -1,0 +1,23 @@
+python	Format, lint, types, unit tests, secret scan	﻿2026-10-31T21:44:19.0854054Z ##[group]Run .venv/bin/ruff format --check services workers/media packages/protocol tests scripts
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0855025Z ^[[36;1m.venv/bin/ruff format --check services workers/media packages/protocol tests scripts^[[0m
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0855976Z ^[[36;1m.venv/bin/ruff check services workers/media packages/protocol tests scripts^[[0m
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0856520Z ^[[36;1m.venv/bin/mypy^[[0m
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0856878Z ^[[36;1m.venv/bin/python scripts/workflow_policy.py^[[0m
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0857322Z ^[[36;1m.venv/bin/python scripts/scan_secrets.py^[[0m
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0857774Z ^[[36;1m.venv/bin/python scripts/write_sbom.py --check^[[0m
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0858261Z ^[[36;1m.venv/bin/python scripts/run_tests.py --only python^[[0m
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0880168Z shell: /usr/bin/bash -e {0}
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0880459Z env:
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0880762Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.3/x64
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0881275Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.3/x64/lib/pkgconfig
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0881949Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/x64
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0882403Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/x64
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0882856Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/x64
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0883320Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.3/x64/lib
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.0883918Z ##[endgroup]
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.1080514Z 33 files already formatted
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:19.1226557Z All checks passed!
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:22.8711879Z Success: no issues found in 24 source files
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:22.9372555Z workflow policy ok files 1
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:24.8629716Z chain/app/app_test.go: private key name
+python	Format, lint, types, unit tests, secret scan	2026-10-31T21:44:24.8714489Z ##[error]Process completed with exit code 1.
