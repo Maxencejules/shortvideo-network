@@ -75,7 +75,7 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 		t.Fatal(tail(layout, err))
 	}
 	logPhase(t, "start", rpcs)
-	beforeStop, err := devnet.Agreed(rpcs)
+	beforeStop, err := devnet.HighWater(rpcs)
 	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
@@ -104,7 +104,7 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 	if preserved != startHash {
 		t.Fatalf("height %d hash changed from %s to %s", startHeight, startHash, preserved)
 	}
-	beforeOne, err := devnet.Agreed(rpcs)
+	beforeOne, err := devnet.HighWater(rpcs)
 	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
@@ -121,7 +121,7 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 		t.Fatalf("one validator down did not pass height %d (at %d)", beforeOne.Height, oneDown)
 	}
 	observeMoving(t, "one-down", rpcs[:3], beforeOne.Height)
-	beforeTwo, err := devnet.Agreed(rpcs[:3])
+	beforeTwo, err := devnet.HighWater(rpcs[:3])
 	if err != nil {
 		t.Fatal(tail(layout, err))
 	}

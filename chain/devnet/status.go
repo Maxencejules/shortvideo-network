@@ -112,6 +112,26 @@ func Snapshot(rpcs []string) ([]Status, error) {
 	return readAll(rpcs)
 }
 
+// HighWater is the greatest height among endpoints that share one app hash.
+// A validator can be one block ahead while empty blocks are committing.
+func HighWater(rpcs []string) (Status, error) {
+	rows, err := readAll(rpcs)
+	if err != nil {
+		return Status{}, err
+	}
+	hash := strings.ToUpper(rows[0].AppHash)
+	height := rows[0].Height
+	for _, row := range rows[1:] {
+		if !strings.EqualFold(row.AppHash, hash) {
+			return Status{}, fmt.Errorf("app hash disagreement %s/%s", hash, row.AppHash)
+		}
+		if row.Height > height {
+			height = row.Height
+		}
+	}
+	return Status{Height: height, AppHash: hash}, nil
+}
+
 // Agreed returns the shared height and application hash.
 func Agreed(rpcs []string) (Status, error) {
 	rows, err := readAll(rpcs)
