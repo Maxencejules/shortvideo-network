@@ -79,6 +79,40 @@ def test_nearby_forms_are_not_reads() -> None:
         assert checker.handler_reads_down(source, entry="op_audit") is False
 
 
+def test_dynamic_forms_are_reads() -> None:
+    checker = _checker()
+    forms = {
+        "getattr": 'def op_audit(state, step):\n    return getattr(state, "down")\n',
+        "itemgetter": "def op_audit(state, step):\n    return itemgetter('down')(state)\n",
+        "join": 'def op_audit(state, step):\n    return state["".join(["down"])]\n',
+        "values": "def op_audit(state, step):\n    return state.values()\n",
+        "star": "def op_audit(state, step):\n    return {**state}\n",
+        "handlers get": (
+            "def reads(state, step):\n"
+            '    return state["down"]\n'
+            'TX_HANDLERS = {"Bad": reads}\n'
+            "def op_audit(state, step):\n"
+            '    return TX_HANDLERS.get(step["op"])(state, step)\n'
+        ),
+    }
+    for label, source in forms.items():
+        assert checker.handler_reads_down(source, entry="op_audit") is True, label
+
+
+def test_constant_handler_get_does_not_follow_other_entries() -> None:
+    checker = _checker()
+    source = (
+        "def reads(state, step):\n"
+        '    return state["down"]\n'
+        "def clean(state, step):\n"
+        "    return None\n"
+        'TX_HANDLERS = {"Bad": reads, "Ok": clean}\n'
+        "def op_audit(state, step):\n"
+        '    return TX_HANDLERS.get("Ok")(state, step)\n'
+    )
+    assert checker.handler_reads_down(source, entry="op_audit") is False
+
+
 def test_live_handlers_do_not_read_down() -> None:
     checker = _checker()
     assert checker.handler_down_errors() == []

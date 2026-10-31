@@ -1,6 +1,6 @@
 # Dependencies
 
-Selected on 2026-10-31 from the sources below. Versions are pins for this repository. They are not an audit and they are not a claim that the chain binary exists.
+Selected on 2026-10-31 from the sources below. Versions are pins for this repository. They are not an audit. Goal 05 builds `svnd` from the Cosmos SDK and CometBFT pins.
 
 Public launch: DISABLED. No tradable token, coin, sale, or mining.
 

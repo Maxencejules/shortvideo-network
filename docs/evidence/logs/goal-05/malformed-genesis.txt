@@ -1,0 +1,11 @@
+COMMAND /tmp/svnd genesis validate malformed
+Error: inconsistent chain id: document shortvideo-dev-8e9346b8cf00522c comet not-the-same
+Usage:
+  svnd genesis validate [flags]
+
+Flags:
+      --file string   genesis document
+  -h, --help          help for validate
+
+inconsistent chain id: document shortvideo-dev-8e9346b8cf00522c comet not-the-same
+EXIT:1

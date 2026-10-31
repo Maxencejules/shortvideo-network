@@ -172,7 +172,8 @@ PY_ALLOW = (
     "proto/gen/python/",
 )
 # Frozen protos stay under docs/protocol. Generated Go lives under proto/.
-# Scaffold Go lives under chain/ and agents/. The goal 02 vector runner stays.
+# Scaffold Go lives under chain/ and agents/. Goal 05 adds chain/cmd/svnd.
+# The goal 02 vector runner stays.
 SOURCE_ALLOW = (
     "docs/protocol/",
     "docs/evidence/goal-02/",
@@ -610,8 +611,11 @@ def validate_tree() -> list[str]:
     for name in REQUIRED_ROOTS:
         if not (ROOT / name).exists():
             errors.append(f"application path missing: {name}")
+    allowed_main = "chain/cmd/svnd/main.go"
     for path in (ROOT / "chain").rglob("main.go"):
-        errors.append(f"chain main package: {path.relative_to(ROOT).as_posix()}")
+        rel = path.relative_to(ROOT).as_posix()
+        if rel != allowed_main:
+            errors.append(f"chain main package: {rel}")
     for path in ROOT.rglob("*"):
         if not path.is_file():
             continue

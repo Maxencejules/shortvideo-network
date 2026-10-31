@@ -1,0 +1,15 @@
+COMMAND go test -count=1 -timeout 180s ./chain/...
+?   	github.com/Maxencejules/shortvideo-network/chain/address	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	0.112s
+?   	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	[no test files]
+--- FAIL: TestFourValidatorsCommitRestartAndQuorum (0.34s)
+    prove_test.go:98: exit status 1
+FAIL
+FAIL	github.com/Maxencejules/shortvideo-network/chain/devnet	0.400s
+?   	github.com/Maxencejules/shortvideo-network/chain/genesis	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/chain/node	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/chain/svnerr	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/chain/x/authority	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/chain/x/scaffold	[no test files]
+FAIL
+EXIT:1

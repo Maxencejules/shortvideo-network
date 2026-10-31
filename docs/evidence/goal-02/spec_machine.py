@@ -82,10 +82,25 @@ def apply(state: dict, step: dict) -> dict[str, object]:
 
 
 def dispatch(state: dict, step: dict) -> dict[str, object]:
+    """Route one step. Harness operations are not transaction messages."""
     op = step.get("op")
     if not isinstance(op, str):
         return err("ERROR_CODE_MALFORMED")
-    handler = HANDLERS.get(op)
+    harness = HARNESS_OPS.get(op)
+    if harness is not None:
+        blocked = guard_decisions(state)
+        if blocked is not None and op != "ApproveDecision":
+            return blocked
+        return harness(state, step)
+    return dispatch_tx(state, step)
+
+
+def dispatch_tx(state: dict, step: dict) -> dict[str, object]:
+    """Transaction router. It cannot reach harness operations."""
+    op = step.get("op")
+    if not isinstance(op, str):
+        return err("ERROR_CODE_MALFORMED")
+    handler = TX_HANDLERS.get(op)
     if handler is None:
         return err("ERROR_CODE_MALFORMED")
     blocked = guard_decisions(state)
@@ -1593,7 +1608,7 @@ def op_submit(state: dict, step: dict) -> dict[str, object]:
         return err("ERROR_CODE_QUORUM", keep=True)
     if not isinstance(step["tx"], dict):
         return err("ERROR_CODE_MALFORMED")
-    return dispatch(state, step["tx"])
+    return dispatch_tx(state, step["tx"])
 
 
 def op_check_fee(state: dict, step: dict) -> dict[str, object]:
@@ -1833,7 +1848,7 @@ def op_force_withdraw(state: dict, step: dict) -> dict[str, object]:
     return err("ERROR_CODE_FORBIDDEN")
 
 
-HANDLERS = {
+TX_HANDLERS = {
     "RegisterProvider": op_register_provider,
     "AdmitProvider": op_admit_provider,
     "RegisterContent": op_register_content,
@@ -1846,6 +1861,16 @@ HANDLERS = {
     "ProposeChange": op_propose,
     "ApproveChange": op_approve,
     "ExecuteChange": op_execute,
+    "DrainProvider": op_drain,
+    "RotateProviderKey": op_rotate,
+    "UpdateProvider": op_update_capacity,
+    "DisableProvider": op_disable_provider,
+    "ForceWithdraw": op_force_withdraw,
+}
+
+# Harness operations drive the specification tests. They are not chain messages
+# and they are not reachable from dispatch_tx.
+HARNESS_OPS = {
     "ExpireDue": op_expire,
     "CommitBlock": op_commit,
     "SetDown": op_set_down,
@@ -1859,11 +1884,6 @@ HANDLERS = {
     "ApproveDecision": op_approve_decision,
     "CheckReplica": op_check_replica,
     "FixtureSetCounters": op_fixture_counters,
-    "DrainProvider": op_drain,
-    "RotateProviderKey": op_rotate,
-    "UpdateProvider": op_update_capacity,
-    "DisableProvider": op_disable_provider,
-    "ForceWithdraw": op_force_withdraw,
 }
 
 
