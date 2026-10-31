@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -154,7 +155,7 @@ def test_secret_scanner_catches_a_private_key_and_the_tree_is_clean() -> None:
 
 def test_workflow_policy_passes() -> None:
     completed = subprocess.run(
-        ["python3", "scripts/workflow_policy.py"],
+        [sys.executable, "scripts/workflow_policy.py"],
         cwd=ROOT,
         check=False,
         text=True,

@@ -186,7 +186,7 @@ Hosted run [41203392314](https://github.com/Maxencejules/shortvideo-network/acti
 - `pip install --require-hashes` refused `setuptools` because `pip-compile` omits it unless `--allow-unsafe`. `setuptools==84.2.1` is now in `requirements.lock`.
 - `gofmt` from Go 1.26.10 wanted to reformat `docs/evidence/goal-02/go/vectorcheck.go`. The format check no longer includes that file. The Goal 02 source was not reformatted.
 
-The hosted run of the commit that contains these fixes was not observed when this paragraph was written.
+Run [41203567927](https://github.com/Maxencejules/shortvideo-network/actions/runs/41203567927) was observed after that fix. `node`, `go`, and `contract` passed. `python` failed because `test_workflow_policy_passes` invoked `python3`, which is not the virtualenv, and that interpreter has no `yaml`. The test now uses `sys.executable`. The hosted run of the commit that contains that test fix was not observed when this paragraph was written.
 
 ## Blockers and handoff to goal 04
 
