@@ -48,25 +48,81 @@ def run_python() -> int:
 
 
 NODE_FILE_SUFFIXES = (".mjs", ".cjs", ".js", ".mts", ".cts", ".ts")
+NODE_TEST_GLOBS = (
+    "**/*.test.mjs",
+    "**/*.test.cjs",
+    "**/*.test.js",
+    "**/*.test.mts",
+    "**/*.test.cts",
+    "**/*.test.ts",
+)
 
 
-def node_test_files() -> list[Path]:
-    directory = ROOT / "apps" / "web" / "test"
-    files = [
-        path for path in directory.glob("*") if path.is_file() and path.name.endswith(".test.mjs")
-    ]
-    return sorted(files)
+def node_test_files(root: Path | None = None) -> list[Path]:
+    """Discover Node tests under apps/web, including nested directories."""
+    base = root if root is not None else ROOT / "apps" / "web"
+    found: set[Path] = set()
+    for pattern in NODE_TEST_GLOBS:
+        for path in base.glob(pattern):
+            if path.is_file() and "node_modules" not in path.parts:
+                found.add(path)
+    return sorted(found)
+
+
+def _is_filename_subtest(name: str) -> bool:
+    base = Path(name).name
+    return name.endswith(NODE_FILE_SUFFIXES) or base.endswith(NODE_FILE_SUFFIXES)
+
+
+_SUBTEST = re.compile(r"^[ \t]*# Subtest: (.+)$", re.MULTILINE)
 
 
 def real_node_subtests(tap: str) -> list[str]:
-    """Return test() names. A file with no tests is reported as one passing file."""
-    names = re.findall(r"^# Subtest: (.+)$", tap, re.MULTILINE)
+    """Executed test() results. Suites, skips, todos, and file placeholders do not count."""
     real: list[str] = []
-    for name in names:
-        if name.endswith(NODE_FILE_SUFFIXES) or Path(name).name.endswith(NODE_FILE_SUFFIXES):
+    for match in _SUBTEST.finditer(tap):
+        name = match.group(1).strip()
+        if _is_filename_subtest(name):
+            continue
+        ok_line = re.compile(
+            r"^[ \t]*(?:not )?ok \d+ - "
+            + re.escape(name)
+            + r"(?: # (?P<flag>SKIP|TODO)\b.*)?[ \t]*$",
+            re.MULTILINE,
+        )
+        ok = ok_line.search(tap, match.end())
+        if ok is None or ok.group("flag") in {"SKIP", "TODO"}:
+            continue
+        window = tap[ok.end() :]
+        nxt = _SUBTEST.search(window)
+        if nxt is not None:
+            window = window[: nxt.start()]
+        kind = re.search(r"type:\s*['\"](\w+)['\"]", window)
+        if kind is not None and kind.group(1) == "suite":
             continue
         real.append(name)
     return real
+
+
+def node_run_status(output: str, returncode: int) -> int:
+    """1 when the file has no executed test, or the process did not pass."""
+    if not real_node_subtests(output):
+        return 1
+    if returncode != 0:
+        return returncode
+    if re.search(r"^# fail 0$", output, re.MULTILINE) is None:
+        return 1
+    if re.search(r"^# pass [1-9]", output, re.MULTILINE) is None:
+        return 1
+    return 0
+
+
+def node_command(path: Path) -> list[str]:
+    command = ["node"]
+    if path.suffix in {".ts", ".mts", ".cts"}:
+        command.append("--experimental-strip-types")
+    command.extend(["--test", "--test-reporter", "tap", str(path)])
+    return command
 
 
 def run_node() -> int:
@@ -76,7 +132,7 @@ def run_node() -> int:
         return 1
     for path in files:
         completed = subprocess.run(
-            ["node", "--test", "--test-reporter", "tap", str(path)],
+            node_command(path),
             cwd=ROOT,
             check=False,
             text=True,
@@ -85,16 +141,10 @@ def run_node() -> int:
         sys.stdout.write(completed.stdout)
         sys.stderr.write(completed.stderr)
         output = completed.stdout + completed.stderr
-        real = real_node_subtests(output)
-        if completed.returncode != 0:
-            print(f"{path.relative_to(ROOT)}: node tests failed")
-            return completed.returncode
-        if not real:
-            print(f"{path.relative_to(ROOT)}: zero tests; an empty file is not verification")
-            return 1
-        if re.search(r"^# fail 0$", output, re.MULTILINE) is None:
-            print(f"{path.relative_to(ROOT)}: node test did not report zero failures")
-            return 1
+        status = node_run_status(output, completed.returncode)
+        if status != 0:
+            print(f"{path.relative_to(ROOT)}: node tests are not verification ({status})")
+            return status
     return 0
 
 

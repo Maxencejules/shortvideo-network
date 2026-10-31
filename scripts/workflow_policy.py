@@ -21,6 +21,19 @@ SHA = re.compile(r"^[0-9a-f]{40}$")
 MAX_TIMEOUT = 20
 
 
+def _continue_on_error(value: object) -> bool:
+    """True for a boolean, the string true, or an expression that yields true."""
+    if value is True:
+        return True
+    if isinstance(value, str):
+        stripped = value.strip().strip("\"'")
+        if stripped.lower() == "true":
+            return True
+        if "${{" in value and "true" in value.lower():
+            return True
+    return False
+
+
 def check_text(path: Path, text: str) -> list[str]:
     errors: list[str] = []
     if "pull_request_target" in text:
@@ -29,6 +42,14 @@ def check_text(path: Path, text: str) -> list[str]:
         )
     if re.search(r"\bsecrets\.", text):
         errors.append(f"{path.name}: secrets context")
+    if re.search(r"secrets\s*\[", text):
+        errors.append(f"{path.name}: secrets index")
+    if re.search(r"toJSON\s*\(\s*secrets\s*\)", text):
+        errors.append(f"{path.name}: toJSON(secrets)")
+    if re.search(r"(?i)secrets\s*:\s*inherit\b", text):
+        errors.append(f"{path.name}: secrets inherit")
+    if re.search(r"continue-on-error:\s*(\$\{\{\s*true\s*\}\}|['\"]true['\"])", text):
+        errors.append(f"{path.name}: continue-on-error expression")
     if re.search(r"\bgh\s+pr\s+merge\b", text) or "auto-merge" in text:
         errors.append(f"{path.name}: automatic merge")
     if re.search(r"\bproduction\b", text, re.IGNORECASE):
@@ -51,8 +72,10 @@ def check_job(path: Path, name: str, job: object) -> list[str]:
     environment = job.get("environment")
     if environment not in (None, ""):
         errors.append(f"{path.name}: job {name} environment {environment}")
-    if job.get("continue-on-error") is True:
+    if _continue_on_error(job.get("continue-on-error")):
         errors.append(f"{path.name}: job {name} continue-on-error")
+    if job.get("secrets") == "inherit":
+        errors.append(f"{path.name}: job {name} secrets inherit")
     steps = job.get("steps")
     if not isinstance(steps, list) or not steps:
         errors.append(f"{path.name}: job {name} has no steps")
@@ -61,10 +84,10 @@ def check_job(path: Path, name: str, job: object) -> list[str]:
         if not isinstance(step, dict):
             errors.append(f"{path.name}: job {name} step is not a mapping")
             continue
-        if step.get("continue-on-error") is True:
+        if _continue_on_error(step.get("continue-on-error")):
             errors.append(f"{path.name}: job {name} step continue-on-error")
         run = step.get("run")
-        if isinstance(run, str) and "github.event" in run:
+        if isinstance(run, str) and ("github.event" in run or "github.head_ref" in run):
             errors.append(f"{path.name}: event data interpolated into run")
         uses = step.get("uses")
         if uses is None:

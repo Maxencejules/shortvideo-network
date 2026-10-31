@@ -22,6 +22,7 @@ PATTERNS = (
     re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"),
     re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"),
     re.compile("['\"]" + "priv_" + "key" + "['\"]"),
+    re.compile(r"(?<![A-Za-z0-9_])" + "priv_" + "key" + r"\s*:"),
 )
 FORBIDDEN_NAMES = {
     "priv_validator_key.json",
@@ -43,17 +44,20 @@ def bip39_words() -> set[str]:
     }
 
 
+MNEMONIC_LENGTHS = (12, 15, 24)
+
+
 def mnemonic_hit(text: str, words: set[str]) -> bool:
-    """A line that is only 12 or 24 BIP39 words."""
+    """12, 15, or 24 BIP39 words in a row on one line, including a JSON or env value."""
     for line in text.splitlines():
         tokens = re.findall(r"[a-z]+", line.lower())
-        if len(tokens) not in (12, 24):
-            continue
-        if not all(token in words for token in tokens):
-            continue
-        remainder = re.sub(r"[a-z]+", "", line.lower())
-        if re.fullmatch(r"[\s,.-]*", remainder):
-            return True
+        for length in MNEMONIC_LENGTHS:
+            if len(tokens) < length:
+                continue
+            for start in range(len(tokens) - length + 1):
+                window = tokens[start : start + length]
+                if all(token in words for token in window):
+                    return True
     return False
 
 

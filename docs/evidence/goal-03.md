@@ -31,7 +31,7 @@ Base commit: `2ef8573c59645646cd13f0a49c3392095a7ad4a2` (`goal 02: protocol sche
 
 Branch: `goal-03`.
 
-This evidence file is part of the commit that contains it. The checkers do not read this file. They do read `docs/progress.md` and `docs/progress.tsv`. The tested tree is this commit's tree. It is the `Tested-tree` trailer. Confirm with `git rev-parse 'HEAD^{tree}'`.
+`887905e176334acaa10e4239750237fdfd0c9ebc` records the authorship rewrite and has no `Tested-tree` trailer. This evidence file is part of the later commit that contains it. The checkers do not read this file. They do read `docs/progress.md` and `docs/progress.tsv`. The tested tree is this commit's tree. The commit message carries `Tested-tree` set to that tree, which is `git rev-parse 'HEAD^{tree}'`.
 
 ## Runtime
 
@@ -70,7 +70,7 @@ Cosmos SDK v0.55.0 and CometBFT v0.40.0 are the 2026.1 pair from https://docs.co
 | `tests/e2e`, `tests/chaos` | READMEs. Not a passing suite. |
 | `make devnet-up`, `devnet-down`, `smoke`, `fault`, `release-check` | Exit non-zero on purpose. |
 
-Protocol files under `docs/protocol/` were not edited. `handler_down_errors` is an AST call-graph scan. It catches a module constant key, `setdefault`, `dict.get`, `state.items()`, a module alias chain, an f-string key, and `"down" in state`, plus the earlier subscript, `.get`, and helper forms. A comment or a string literal is not a read. `state["offers"].items()` is not a read of `down`. Dynamic `HANDLERS.get` dispatch stays goal 05.
+Protocol files under `docs/protocol/` were not edited. `handler_down_errors` is an AST call-graph scan. It catches a module constant key, `setdefault`, `dict.get`, `state.items()`, a module alias chain, an f-string key, and `"down" in state`, plus the earlier subscript, `.get`, and helper forms. A comment or a string literal is not a read. `state["offers"].items()` is not a read of `down`. Dynamic `HANDLERS.get` dispatch stays goal 05. The liveness scan is best effort. It misses dynamic keys (getattr, itemgetter, join, values, **state). That gap is deferred.
 
 ## Requirement notes
 
@@ -243,7 +243,7 @@ note schema and fixture check; protocol not approved; Gate A approved DEC-001 th
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only python
-37 passed in 0.94s
+52 passed in 1.43s
 EXIT:0
 
 COMMAND .venv/bin/python scripts/run_tests.py --only node
@@ -386,15 +386,15 @@ These runs were observed. A failed run is not a pass.
 
 `41203787093` is the hosted run for the revision the reviewer marked FIX. Jobs `python`, `node`, `go`, and `contract` completed. That run is not a run of this commit.
 
-CI failure example from `41203392314`, verbatim from the failed-step log:
+`41203392314` was a setup failure, not a deliberate test failure. Verbatim from the failed-step log:
 
 ```
 node	Set up Node	##[error]Caching for 'false' is not supported
 ```
 
-The same run also failed `pip install --require-hashes` because `setuptools` was not pinned, and `gofmt` listed `docs/evidence/goal-02/go/vectorcheck.go`. Those three causes are fixed in this commit: checkout is v5.1.0 on Node 24, `setuptools==84.2.1` is in the lock, and `scripts/gofmt_check.sh` formats every Go file, including that one.
+The same run also failed `pip install --require-hashes` because `setuptools` was not pinned, and `gofmt` listed `docs/evidence/goal-02/go/vectorcheck.go`. The setup-node cache input and the `setuptools==84.2.1` pin are in `db9f9b16cdfd32201b7512ec49e06136565f9116`. Formatting that Go file, and `scripts/gofmt_check.sh` covering every Go file, are in `f3f9841aa0ef1c393f9fe5fe48b75c513d7c8e70`.
 
-`41203567927` failed the python job because a test invoked `python3` outside the virtualenv (`ModuleNotFoundError: No module named 'yaml'`). The test now uses `sys.executable`.
+`41203567927` failed the python job because a test invoked `python3` outside the virtualenv (`ModuleNotFoundError: No module named 'yaml'`). The test uses `sys.executable`.
 
 ## Handoff to goal 04
 
@@ -402,6 +402,7 @@ The same run also failed `pip install --require-hashes` because `setuptools` was
 - RabbitMQ, Celery, and FFmpeg are not pinned.
 - No `LICENSE` file. DEC-006 says this goal must not treat the project licence split as applied.
 - AST scan does not follow `HANDLERS.get`. Goal 05 keeps harness operations out of the transaction router.
+- The liveness scan is best effort and misses dynamic keys (getattr, itemgetter, join, values, **state). Deferred.
 - `make devnet-up`, `smoke`, `fault`, and `release-check` exit non-zero. There is no chain binary.
 
 ## Not claimed
