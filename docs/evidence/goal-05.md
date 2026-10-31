@@ -13,13 +13,20 @@ Public launch: DISABLED. No tradable token, coin, sale, or mining. This is not a
 
 ## Tested revision
 
-Application, genesis, and devnet checks ran on commit `5bd4bf99fadf919b3bdc51865c7a16d4e265d241`, tree `89aa295fe4bbe58778ff45e8f2fe033ff800b649`. The progress-only commit `c78f00befed28ba98463395fdf61735661917a3a` did not change chain code. Its tree is `d6c8e83ef7d944f9cfc69b208b150b3334084aec`.
+Round 3 corrects the citations. It does not change chain code, `prove_test.go`, or the prove scripts. Head before this documentation commit is `406bb2e25a3d1c30d81ad033530efc4f9c945cbc`, tree `10bdc0def6e1c974501d1c1242eb924bcfaa31e9`. CI on that head is Actions run `41249938901`, success.
 
-GitHub Actions run `41244886019` was canceled because a newer run for the same pull request was queued. It is not a test failure. Run `41244914773` on `c78f00b` failed the python job and passed go, node, and contract. The python failure is `chain/app/app_test.go: private key name`. Log: [ci-41244914773-python.txt](logs/goal-05/ci-41244914773-python.txt).
+The proofs that support the code at that head are not one tree:
 
-The malformed-genesis test now builds that field name at runtime. `go test -count=1 -timeout 180s ./chain/...` then exited 0, including `TestMalformedGenesisRejected` and `TestFourValidatorsCommitRestartAndQuorum` (12.78s). Log: [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt). `scripts/scan_secrets.py` exited 0 on that tree. Commit `08faed8c5b2be99e6d01be28baaae4d9164cbd51` carries that fix. Its tree is `1c03d6dbd0d5105bc63ac1e0709b134a81ac61d6`.
+| Proof | Log | Tree the command recorded | Why this is the current proof |
+| --- | --- | --- | --- |
+| Four processes | [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt) | `1c48fc02d3a4004c98cdc53f1dd8251da1b3753b` | Last change to `prove_test.go` and `status.go`. Later commits are documentation. |
+| Four containers | [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt) | `f9ad8430a3372d1d3de7608cc201587dc63adf4b` | Last change to `scripts/devnet/prove-containers.sh`. |
+| CLI genesis rejection | [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt) | `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5` | `prove-genesis.sh` and `validateGenesisFile` are unchanged since this tree. |
+| Goal 04 compose | [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) | `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5` | `scripts/env/compose.sh` is unchanged since this tree. |
 
-Actions run `41245418439` on that commit passed go, node, and contract. The python job passed the secret scan and then printed `sbom drift` from `scripts/write_sbom.py --check`. `chain/go.sum` was not in the committed CycloneDX file. Regenerating `docs/sbom.cdx.json` with that script produced 1320 components. `--check` then exited 0. `scripts/run_tests.py --only python` exited 0 with 120 passed. The chain packages were not changed for the inventory.
+`git diff` from each of those trees to `406bb2e` is empty for the files named in that row.
+
+Round 1 commit `5bd4bf99fadf919b3bdc51865c7a16d4e265d241`, tree `89aa295fe4bbe58778ff45e8f2fe033ff800b649`, is not the tested revision for this head. The round 1 history is in the superseded section below.
 
 ## Base and prerequisites
 
@@ -62,14 +69,14 @@ github.com/cosmos/cosmos-sdk v0.55.0
 
 ## Public genesis and topology
 
-Container run, home `.local/devnet/containers` (gitignored):
+Round 1 container snapshot, superseded. It is not the container proof for this head. Home `.local/devnet/containers` (gitignored):
 
 - Chain id: `shortvideo-dev-8e9346b8cf00522c`
 - Genesis SHA-256: `42fe3ddc7e407aa3006d84b834e56016ea1986d5107f4b6142bd6410fba3b8f4`
 - Four validators, power 1 each, distinct consensus public keys and peer ids
 - Public copy: [container-topology.json](logs/goal-05/container-topology.json)
 
-At height 192 all four container RPC ports reported app hash `9242B71A92C248E317788251EFCF52FDF338117984DCB32671EB59B19A05F93A`. Empty blocks do not change that hash. The log is [container-status.txt](logs/goal-05/container-status.txt).
+At height 192 that run reported app hash `9242B71A92C248E317788251EFCF52FDF338117984DCB32671EB59B19A05F93A`. The log [container-status.txt](logs/goal-05/container-status.txt) is a single snapshot. It has no command, timestamp, tree, or exit code. The current container proof is [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt).
 
 ## Acceptance
 
@@ -78,21 +85,21 @@ At height 192 all four container RPC ports reported app hash `9242B71A92C248E317
 | Genesis validation, init order, import/export, chain-id mismatch | VERIFIED | `go test ./chain/app` |
 | Unknown message, outsider, fee amount, gas 0, no end-block power change | VERIFIED | same package, `TestMessagesAreRejected` |
 | One `abci.ValidatorUpdate` constructor, no economic imports | VERIFIED | `TestValidatorUpdatesHaveOneConstructor`, `TestChainSourcesDoNotImportEconomicModules` |
-| Four processes, same hash, restart, one stopped, two stopped, resume | VERIFIED | Round 2 log [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt). Tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. Restart, one-down, and recovery each commit above the height recorded at the stop. Two-down stays at that height. No transaction was submitted, so the hash is the genesis application state. |
-| Malformed comet genesis chain id | VERIFIED | `svnd genesis validate` exit 1, `inconsistent chain id`. Log [malformed-genesis.txt](logs/goal-05/malformed-genesis.txt). |
-| Four containers, same app hash, restart, one down, two down, recovery | VERIFIED | [devnet-containers-r2.txt](logs/goal-05/devnet-containers-r2.txt). Tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. Host network. Restart 4 to 5, one-down through 11, stall at 12, recovery at 13. The hash is the genesis application state. |
+| Four processes, same hash, restart, one stopped, two stopped, resume | VERIFIED | [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt) on tree `1c48fc02d3a4004c98cdc53f1dd8251da1b3753b`. Exit 0. Stall held at 12. Recovery reached 14. App hash `7AFE302F17F9E46DA33684CE3B5C21477B1FA349E6C7F41F4E1E3419162FE7E5`. No transaction was submitted, so the hash is the genesis application state. [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt) and [devnet-process-r2c.txt](logs/goal-05/devnet-process-r2c.txt) are earlier trees. They are not this row. |
+| Malformed comet genesis chain id | VERIFIED | [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt) on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. `svnd genesis validate --file` exit 1, `inconsistent chain id`. [malformed-genesis.txt](logs/goal-05/malformed-genesis.txt) is round 1 and is superseded. |
+| Four containers, same app hash, restart, one down, two down, recovery | VERIFIED | [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt) on tree `f9ad8430a3372d1d3de7608cc201587dc63adf4b`. Exit 0. Host network. Start 3, restart 6, one-down through 12, stall 14, recovery 16. App hash `D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F`. The hash is the genesis application state. [devnet-containers-r2.txt](logs/goal-05/devnet-containers-r2.txt) is an earlier sampler. It is not this row. |
 | Docker bridge between containers | BLOCKED | The first compose file used a bridge. Dials to `172.18.0.0/16:26656` returned `i/o timeout`. Host networking is what ran. It needs Max's approval at merge. This round does not claim the bridge works. |
-| CLI genesis rejection | VERIFIED | [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt). `svnd genesis validate --file` accepts one genesis and rejects a duplicate key, a chain-id mismatch, malformed JSON, and private-key material. |
+| CLI genesis rejection | VERIFIED | [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt) on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. `svnd genesis validate --file` accepts one genesis and rejects a duplicate key, a chain-id mismatch, malformed JSON, and private-key material. The CLI code is unchanged since that tree. |
 | Protocol checker | VERIFIED | `python3 docs/evidence/goal-02/check_protocol.py` with protoc 36.2 on `PATH`. `transition_cases 97`, `transition_failures 0`, `errors 0`, `result PASS`. |
 | Requirements checker | VERIFIED | `python docs/evidence/goal-01/check_requirements.py` exit 0, `result PASS`. |
 
-An earlier `go test ./chain/...` exited 1 because the containers still held the loopback ports. That log is [go-test.txt](logs/goal-05/go-test.txt). It is not the passing run. The rerun after `docker compose stop` is the process result above. Genesis was not deleted to recover.
+Round 1, superseded: `go test ./chain/...` exited 1 because containers still held the loopback ports. That log is [go-test.txt](logs/goal-05/go-test.txt). The rerun after `docker compose stop` is [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt). Neither file is the process proof for this head. That proof is [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt). Genesis was not deleted to recover.
 
 `docker compose stop` stopped the containers and left the homes.
 
 ## Commands
 
-Process devnet, ports free, exit 0:
+Round 1, superseded. These commands are not the proof for this head.
 
 ```text
 COMMAND cd /workspace && go test -count=1 -timeout 180s ./chain/devnet/ -run 'TestInit|TestFour' -v
@@ -102,15 +109,17 @@ EXIT:0
 ok  github.com/Maxencejules/shortvideo-network/chain/devnet  12.271s
 ```
 
-Container profile, after `sudo apt-get install -y docker.io docker-compose-v2` and `sudo dockerd --host unix:///var/run/docker.sock`:
+That run has no `date -Is` line and no tree. The current process proof is [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt).
+
+Round 1 container start, superseded:
 
 ```text
 COMMAND sg docker -c 'bash scripts/devnet/compose-up.sh'
 ```
 
-The image `svn-devnet:goal05` built from `deployments/chain/Dockerfile`. Four containers reached the hash above. `DOCKER_HOST` was unset. `docker version` reported engine 29.1.3, which is the package installed in this step, not the process that was already listening on port 2375.
+That image build used `svn-devnet:goal05`. `docker version` reported engine 29.1.3, the package installed in this VM, not a daemon on port 2375. The current container proof, including `DOCKER_HOST=<unset>` and `unix:///var/run/docker.sock`, is [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt).
 
-Unit Python, mypy, secret scan, and `gofmt` were run with the project venv and exited 0 before the pull request. Ruff on `services workers/media packages/protocol tests scripts` exited 0. Actions run `41244914773` then rejected the quoted field in `chain/app/app_test.go`. After the test built that name at runtime, `scripts/scan_secrets.py` exited 0 again and `go test -count=1 -timeout 180s ./chain/...` exited 0. That log is [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt). Run `41245418439` then failed `scripts/write_sbom.py --check` with `sbom drift`. The regenerated `docs/sbom.cdx.json` makes `--check` exit 0 (1320 components). `scripts/run_tests.py --only python` exited 0, 120 passed.
+Round 1 CI, superseded as the tested revision. Unit Python, mypy, secret scan, and `gofmt` exited 0 before the first pull request. Ruff on `services workers/media packages/protocol tests scripts` exited 0. Run `41244886019` was canceled because a newer run was queued. Run `41244914773` failed the python job on `chain/app/app_test.go: private key name` and passed go, node, and contract. Log: [ci-41244914773-python.txt](logs/goal-05/ci-41244914773-python.txt). The test then built that field name at runtime. `go test -count=1 -timeout 180s ./chain/...` exited 0. Log: [go-test-rerun.txt](logs/goal-05/go-test-rerun.txt). Commit `08faed8c5b2be99e6d01be28baaae4d9164cbd51`, tree `1c03d6dbd0d5105bc63ac1e0709b134a81ac61d6`. Run `41245418439` then failed `scripts/write_sbom.py --check` with `sbom drift`. The regenerated `docs/sbom.cdx.json` has 1320 components. `scripts/run_tests.py --only python` exited 0, 120 passed. Those runs are not the devnet proof for this head.
 
 ## Residual risks
 
@@ -124,13 +133,13 @@ Unit Python, mypy, secret scan, and `gofmt` were run with the project venv and e
 
 Review [5725171267](https://github.com/Maxencejules/shortvideo-network/pull/8#pullrequestreview-5725171267) on `e699f383c83647e98c2ff86ebeb6adcf3f898d33` returned FIX. The round 1 VERIFIED status did not hold while those items stood.
 
-Proofs in this round ran on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. Each log starts with the command, `date -Is`, that tree, and ends with an exit code.
+Round 2 proofs did not all run on one tree. Each log below names the tree `git rev-parse HEAD^{tree}` printed at the start of that command.
 
 | Item | Status | What changed |
 | --- | --- | --- |
 | Authority consensus bytes | VERIFIED | `chain/x/authority/keeper.go` stores `proto.MarshalOptions{Deterministic: true}`. Export stays protojson. `TestAuthorityConsensusBytesArePinned` pins the stored hex for `sampleDocument`. |
-| Liveness thresholds | VERIFIED | The process test records the height at each stop or stall and requires `WaitAbove` of that height after restart, during one-down, and after recovery. |
-| Raw phase logs | VERIFIED | Process log [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt). Container log [devnet-containers-r2.txt](logs/goal-05/devnet-containers-r2.txt). CLI log [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt). An earlier container run failed because a one-block skew was treated as disagreement: [devnet-containers-r2-skew.txt](logs/goal-05/devnet-containers-r2-skew.txt), exit 1. The rerun allows that skew when the application hash matches and requires the minimum height to advance. |
+| Liveness thresholds | VERIFIED | Current process proof is [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt), tree `1c48fc02d3a4004c98cdc53f1dd8251da1b3753b`. The test records a high-water height before each stop and requires `WaitAbove` of the stall ceiling after recovery. |
+| Raw phase logs | VERIFIED | Current logs are [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt) and [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt). CLI log [genesis-cli-r2.txt](logs/goal-05/genesis-cli-r2.txt) is still current for the validator file check. Earlier logs [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt), [devnet-process-r2c.txt](logs/goal-05/devnet-process-r2c.txt), [devnet-containers-r2.txt](logs/goal-05/devnet-containers-r2.txt), and the failed [devnet-containers-r2-skew.txt](logs/goal-05/devnet-containers-r2-skew.txt) are kept. They are not the proof for the code at head `406bb2e`. |
 | Goal 04 compose | VERIFIED | `scripts/env/compose.sh` ran. Both services were healthy. Log [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt). Passwords are not in the log. |
 | Empty-block hash | VERIFIED as genesis state | No application transaction was submitted. Every registered application message still fails closed. The equal hashes are the genesis application state, not a hosting transaction. Blueprint step 7's hosting transaction stays with Goals 07-08. |
 | Image digests | IMPLEMENTED | `deployments/chain/Dockerfile` pins the linux/amd64 manifests `golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949` and `debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e`. |
@@ -138,15 +147,30 @@ Proofs in this round ran on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`. Eac
 | Docker context | IMPLEMENTED | `scripts/devnet/compose-up.sh` and the container proof refuse a set `DOCKER_HOST`, a non-unix endpoint, and port 2375. The container log records `DOCKER_HOST=<unset>` and `unix:///var/run/docker.sock`. |
 | Docker bridge | BLOCKED | Unchanged. Host networking needs Max's approval at merge. |
 
-Process heights on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5`: stop at 3, restart at 4, one-down through 11, two-down held at 11, recovery at 15. Shared app hash `8B4D86E7FA70D5808129193EA913B4DF9544CE83F4776AB0ADD9B6EC98B99B6E`.
+Process log [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt) on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5` is superseded. `prove_test.go` changed after it. Heights in that log: stop at 3, restart at 4, one-down through 11, two-down held at 11, recovery at 15. App hash `8B4D86E7FA70D5808129193EA913B4DF9544CE83F4776AB0ADD9B6EC98B99B6E`.
 
 Actions run `41249097464` passed the devnet job and failed the go job: `Agreed` rejected height 4 against 5 when the app hash matched. The stop threshold is now the greatest of those heights. [devnet-process-r2c.txt](logs/goal-05/devnet-process-r2c.txt) on tree `5131629633ec1c5b86dd7243754020e5829bdd33` exited 0. Restart reached 4 from a stop at 3, and recovery reached 15. App hash `5CBE3D352BF07AAA9CB1D28F68D6FBC9F45159290308B0A520AE15121C3CAE8F`.
 
 Actions run `41249637172` passed devnet again and failed the go job during the two-validator stall: the survivors were one block apart. A stall now rejects a later increase on each node, and recovery must pass the highest height in that window. [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt) on tree `1c48fc02d3a4004c98cdc53f1dd8251da1b3753b` exited 0. The stall held at 12 and recovery reached 14. App hash `7AFE302F17F9E46DA33684CE3B5C21477B1FA349E6C7F41F4E1E3419162FE7E5`.
 
-Container heights: start 4, restart 5, one-down through 11, stall 12, recovery 13. Shared app hash `9A8DEE600967031F7D61817CBDD8A3F46BA1805C8D308E67F48111BE844D8C68`.
+Container log [devnet-containers-r2.txt](logs/goal-05/devnet-containers-r2.txt) on tree `9bdf99eba90ecb5f87c8e2d0eb4f4ee6fe4c52a5` is superseded. `prove-containers.sh` changed after it. Heights in that log: start 4, restart 5, one-down through 11, stall 12, recovery 13. App hash `9A8DEE600967031F7D61817CBDD8A3F46BA1805C8D308E67F48111BE844D8C68`.
 
 CI on this round adds `go vet` and `go test -race`, and a `devnet` job that runs `scripts/devnet/prove-containers.sh`. The job timeout stays at 20 minutes. Actions run `41248540896` on `931216d140a68838327494c241078680f579244d` passed python, contract, node, and go, including `go test -race`. The devnet job reached recovery and then failed one snapshot while one validator was a block behind. The sampler now waits until the heights match. The rerun is [devnet-containers-r2b.txt](logs/goal-05/devnet-containers-r2b.txt) on tree `f9ad8430a3372d1d3de7608cc201587dc63adf4b`: start 3, restart 6, one-down through 12, stall 14, recovery 16. App hash `D2516ED06E4A3DE1408C5A9A64FB8710BC6EEF49A485750A98BD451CFA8D131F`. Exit 0.
+
+## Round 3
+
+Review [5725373923](https://github.com/Maxencejules/shortvideo-network/pull/8#pullrequestreview-5725373923) on `406bb2e25a3d1c30d81ad033530efc4f9c945cbc` returned FIX. The code was accepted. This section corrects the evidence. No chain file and no prove script changed, so the proofs were not rerun. `git diff` from the proof trees to `406bb2e` is empty for `prove_test.go`, `status.go`, `prove-containers.sh`, `prove-genesis.sh`, and `validateGenesisFile`.
+
+### Follow-ups
+
+These are not fixed in this round. They are not VERIFIED claims.
+
+1. Recovery still passes at one block above the stall ceiling (`prove_test.go` waits with `WaitAbove` of that ceiling). A head CI run reached 13 against a stall of 12. A later change should require two blocks, or one block interval after the restarted validators are up, and then rerun the process and container proofs on that tree.
+2. `chain/app/authmodule.go` registers the auth query and message servers and sets consensus version 7. It does not register the x/auth migrations from version 5 to 6 and from 6 to 7. A fresh chain starts at 7. Goal 10 has to register those migrations before an upgrade from an older auth version.
+3. `scripts/devnet/prove-process.sh`, `prove-containers.sh`, and `prove-genesis.sh` print `TREE` from `git rev-parse HEAD^{tree}`. They do not print whether the worktree was dirty. A dirty flag belongs in those scripts, followed by a rerun.
+4. [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) records `COMMAND bash scripts/env/compose.sh` and, later, `COMMAND docker compose -f deployments/compose/docker-compose.yml stop`. The healthy `ps` table has no COMMAND line of its own. The stop command is the line above the container shutdown. A rerun should print COMMAND before `ps`.
+5. The Dockerfile digests are linux/amd64 manifests. Another architecture cannot use them as written. That limit is already in the Dockerfile comment.
+6. Exact-height checks can still flake when empty blocks leave validators one height apart. Runs `41248540896`, `41249097464`, and `41249637172` failed that way and were fixed in the sampler, the high-water height, and the per-node stall. `WaitEqual` at the start of the process test still requires one shared height. Keep watching it.
 
 ## Next safe action
 
