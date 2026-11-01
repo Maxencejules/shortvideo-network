@@ -1,0 +1,12 @@
+COMMAND bash -c git\ ls-remote\ origin\ refs/heads/goal-06\ refs/heads/goal-07\ refs/heads/main\;\ git\ merge-base\ --is-ancestor\ 3853e3430217096c3e65664bc799859942ea451e\ HEAD\ \&\&\ echo\ \"3853e34\ is\ an\ ancestor\ of\ HEAD\"\;\ echo\ \"PR\ 9\ state\ merged\ head.ref\ head.sha:\"\;\ gh\ api\ repos/Maxencejules/shortvideo-network/pulls/9\ --jq\ \"\[.state\,\ .merged\,\ .head.ref\,\ .head.sha\]\ \|\ @tsv\"
+DATE 2026-11-01T09:30:57Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+3853e3430217096c3e65664bc799859942ea451e	refs/heads/goal-06
+43c1a104d43ba55f2f58684a6f3790c0bb04c9f2	refs/heads/goal-07
+f3f583e19355a181ef64de874e5cf26679e6ec30	refs/heads/main
+3853e34 is an ancestor of HEAD
+PR 9 state merged head.ref head.sha:
+open	false	goal-06	3853e3430217096c3e65664bc799859942ea451e
+EXIT:0

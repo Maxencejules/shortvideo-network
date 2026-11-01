@@ -1,0 +1,25 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ env\ -C\ chain\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzProviderTransitions\$\'\ -fuzztime=30s\ ./x/providers/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \"new\ or\ changed\ files\ under\ chain/\ after\ the\ run:\"\;\ git\ status\ --porcelain\ --untracked-files=all\ --\ chain\;\ echo\ \"\(end\ of\ list\)\"\;\ exit\ \$s
+DATE 2026-11-01T09:42:23Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+loadavg before: 5.14 3.72 2.52 1/187 19524
+fuzz: elapsed: 0s, gathering baseline coverage: 0/135 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 69/135 completed
+fuzz: elapsed: 6s, gathering baseline coverage: 135/135 completed, now fuzzing with 4 workers
+fuzz: elapsed: 6s, execs: 216 (49/sec), new interesting: 0 (total: 135)
+fuzz: elapsed: 9s, execs: 1548 (444/sec), new interesting: 3 (total: 138)
+fuzz: elapsed: 12s, execs: 4819 (1090/sec), new interesting: 6 (total: 141)
+fuzz: elapsed: 15s, execs: 5357 (179/sec), new interesting: 7 (total: 142)
+fuzz: elapsed: 18s, execs: 8280 (976/sec), new interesting: 9 (total: 144)
+fuzz: elapsed: 21s, execs: 11461 (1061/sec), new interesting: 9 (total: 144)
+fuzz: elapsed: 24s, execs: 11589 (43/sec), new interesting: 9 (total: 144)
+fuzz: elapsed: 27s, execs: 15969 (1459/sec), new interesting: 10 (total: 145)
+fuzz: elapsed: 30s, execs: 15969 (0/sec), new interesting: 10 (total: 145)
+fuzz: elapsed: 31s, execs: 15969 (0/sec), new interesting: 10 (total: 145)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	31.136s
+loadavg after: 7.64 4.46 2.81 1/191 19697
+new or changed files under chain/ after the run:
+(end of list)
+EXIT:0

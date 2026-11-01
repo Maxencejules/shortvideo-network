@@ -1,0 +1,252 @@
+COMMAND env -C chain go test -count=1 -v ./x/authority/...
+DATE 2026-11-01T09:32:25Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+=== RUN   TestEnforceCommitted
+--- PASS: TestEnforceCommitted (0.00s)
+=== RUN   TestHandlerMeterCheckByMode
+--- PASS: TestHandlerMeterCheckByMode (0.00s)
+=== RUN   TestProposalPathsDoNotMutateOnReject
+--- PASS: TestProposalPathsDoNotMutateOnReject (0.00s)
+=== RUN   TestExpiredExecuteKeepsMarkWithoutApplying
+--- PASS: TestExpiredExecuteKeepsMarkWithoutApplying (0.00s)
+=== RUN   TestDelayAndForbiddenRemoval
+--- PASS: TestDelayAndForbiddenRemoval (0.00s)
+=== RUN   TestRemovalBindHaltsAndRotationsStaySeparate
+--- PASS: TestRemovalBindHaltsAndRotationsStaySeparate (0.00s)
+=== RUN   TestAdmissionAndMixedActivation
+--- PASS: TestAdmissionAndMixedActivation (0.00s)
+=== RUN   TestQuorumUsesPowerNotCount
+--- PASS: TestQuorumUsesPowerNotCount (0.00s)
+=== RUN   TestPayloadVectorDigest
+--- PASS: TestPayloadVectorDigest (0.00s)
+=== RUN   TestFuzzBoundedPayload
+--- PASS: TestFuzzBoundedPayload (0.00s)
+=== RUN   TestCouncilRegistrySeedsReachEveryPath
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/admit_then_disable
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/force_withdraw_then_withdrawn
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/admit_without_DEC-002_stays_queued
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/admit_of_another_group_is_rejected
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/expired_before_execute
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/rejected_then_expired
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/disable_of_a_draining_provider
+--- PASS: TestCouncilRegistrySeedsReachEveryPath (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/admit_then_disable (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/force_withdraw_then_withdrawn (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/admit_without_DEC-002_stays_queued (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/admit_of_another_group_is_rejected (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/expired_before_execute (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/rejected_then_expired (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/disable_of_a_draining_provider (0.00s)
+=== RUN   TestKeeperRegistryHookCommitsOnlyOnSuccess
+--- PASS: TestKeeperRegistryHookCommitsOnlyOnSuccess (0.00s)
+=== RUN   TestKeeperRegistryForbiddenKeepsTheRejection
+=== RUN   TestKeeperRegistryForbiddenKeepsTheRejection/admit
+=== RUN   TestKeeperRegistryForbiddenKeepsTheRejection/disable
+=== RUN   TestKeeperRegistryForbiddenKeepsTheRejection/force_withdraw
+--- PASS: TestKeeperRegistryForbiddenKeepsTheRejection (0.00s)
+    --- PASS: TestKeeperRegistryForbiddenKeepsTheRejection/admit (0.00s)
+    --- PASS: TestKeeperRegistryForbiddenKeepsTheRejection/disable (0.00s)
+    --- PASS: TestKeeperRegistryForbiddenKeepsTheRejection/force_withdraw (0.00s)
+=== RUN   TestKeeperRegistryFailureWritesNothing
+=== RUN   TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_NOT_FOUND
+=== RUN   TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_DECISION_BLOCKED
+=== RUN   TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_CONFLICT
+=== RUN   TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_WITHDRAWN
+=== RUN   TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_STALE_VERSION
+=== RUN   TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_WRONG_DOMAIN
+=== RUN   TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_NOT_FOUND
+=== RUN   TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_DECISION_BLOCKED
+=== RUN   TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_CONFLICT
+=== RUN   TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_WITHDRAWN
+=== RUN   TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_STALE_VERSION
+=== RUN   TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_WRONG_DOMAIN
+=== RUN   TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_NOT_FOUND
+=== RUN   TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_DECISION_BLOCKED
+=== RUN   TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_CONFLICT
+=== RUN   TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_WITHDRAWN
+=== RUN   TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_STALE_VERSION
+=== RUN   TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_WRONG_DOMAIN
+--- PASS: TestKeeperRegistryFailureWritesNothing (0.01s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_NOT_FOUND (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_CONFLICT (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_WITHDRAWN (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_STALE_VERSION (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_WRONG_DOMAIN (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_NOT_FOUND (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_CONFLICT (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_WITHDRAWN (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_STALE_VERSION (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_WRONG_DOMAIN (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_NOT_FOUND (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_CONFLICT (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_WITHDRAWN (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_STALE_VERSION (0.00s)
+    --- PASS: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_WRONG_DOMAIN (0.00s)
+=== RUN   TestKeeperForceWithdrawArgumentsSurviveTheSideDocument
+--- PASS: TestKeeperForceWithdrawArgumentsSurviveTheSideDocument (0.00s)
+=== RUN   TestKeeperWithoutRegistryIsMalformed
+--- PASS: TestKeeperWithoutRegistryIsMalformed (0.00s)
+=== RUN   TestWithRegistryRejectsNilHooks
+=== RUN   TestWithRegistryRejectsNilHooks/nil_provider
+=== RUN   TestWithRegistryRejectsNilHooks/nil_content
+=== RUN   TestWithRegistryRejectsNilHooks/both_nil
+--- PASS: TestWithRegistryRejectsNilHooks (0.00s)
+    --- PASS: TestWithRegistryRejectsNilHooks/nil_provider (0.00s)
+    --- PASS: TestWithRegistryRejectsNilHooks/nil_content (0.00s)
+    --- PASS: TestWithRegistryRejectsNilHooks/both_nil (0.00s)
+=== RUN   TestKeeperBusinessIDsAreOneNamespace
+--- PASS: TestKeeperBusinessIDsAreOneNamespace (0.00s)
+=== RUN   TestKeeperReadSurface
+=== RUN   TestKeeperReadSurface/role
+=== RUN   TestKeeperReadSurface/devnet_role
+=== RUN   TestKeeperReadSurface/governed_limit
+=== RUN   TestKeeperReadSurface/business_digest
+=== RUN   TestKeeperReadSurface/corrupt_side_document
+--- PASS: TestKeeperReadSurface (0.00s)
+    --- PASS: TestKeeperReadSurface/role (0.00s)
+    --- PASS: TestKeeperReadSurface/devnet_role (0.00s)
+    --- PASS: TestKeeperReadSurface/governed_limit (0.00s)
+    --- PASS: TestKeeperReadSurface/business_digest (0.00s)
+    --- PASS: TestKeeperReadSurface/corrupt_side_document (0.00s)
+=== RUN   TestKeeperLoadsAnOlderSideDocument
+--- PASS: TestKeeperLoadsAnOlderSideDocument (0.00s)
+=== RUN   TestAuthoritySourcesAreDeterministic
+--- PASS: TestAuthoritySourcesAreDeterministic (0.00s)
+=== RUN   TestAdmitPassesTheDEC002Flag
+=== RUN   TestAdmitPassesTheDEC002Flag/devnet_test_role
+=== RUN   TestAdmitPassesTheDEC002Flag/missing
+=== RUN   TestAdmitPassesTheDEC002Flag/other_role
+=== RUN   TestAdmitPassesTheDEC002Flag/empty_role
+=== RUN   TestAdmitPassesTheDEC002Flag/wrong_label
+=== RUN   TestAdmitPassesTheDEC002Flag/approved_policy
+=== RUN   TestAdmitPassesTheDEC002Flag/only_DEC-003
+--- PASS: TestAdmitPassesTheDEC002Flag (0.00s)
+    --- PASS: TestAdmitPassesTheDEC002Flag/devnet_test_role (0.00s)
+    --- PASS: TestAdmitPassesTheDEC002Flag/missing (0.00s)
+    --- PASS: TestAdmitPassesTheDEC002Flag/other_role (0.00s)
+    --- PASS: TestAdmitPassesTheDEC002Flag/empty_role (0.00s)
+    --- PASS: TestAdmitPassesTheDEC002Flag/wrong_label (0.00s)
+    --- PASS: TestAdmitPassesTheDEC002Flag/approved_policy (0.00s)
+    --- PASS: TestAdmitPassesTheDEC002Flag/only_DEC-003 (0.00s)
+=== RUN   TestDisablePassesTheProviderID
+--- PASS: TestDisablePassesTheProviderID (0.00s)
+=== RUN   TestForceWithdrawPassesTheDecodedPayload
+=== RUN   TestForceWithdrawPassesTheDecodedPayload/devnet_test_role
+=== RUN   TestForceWithdrawPassesTheDecodedPayload/missing
+=== RUN   TestForceWithdrawPassesTheDecodedPayload/only_DEC-002
+=== RUN   TestForceWithdrawPassesTheDecodedPayload/other_role
+--- PASS: TestForceWithdrawPassesTheDecodedPayload (0.00s)
+    --- PASS: TestForceWithdrawPassesTheDecodedPayload/devnet_test_role (0.00s)
+    --- PASS: TestForceWithdrawPassesTheDecodedPayload/missing (0.00s)
+    --- PASS: TestForceWithdrawPassesTheDecodedPayload/only_DEC-002 (0.00s)
+    --- PASS: TestForceWithdrawPassesTheDecodedPayload/other_role (0.00s)
+=== RUN   TestForceWithdrawPassesTheProposedVersion
+--- PASS: TestForceWithdrawPassesTheProposedVersion (0.00s)
+=== RUN   TestRegistryForbiddenRejectsAndKeeps
+=== RUN   TestRegistryForbiddenRejectsAndKeeps/admit
+=== RUN   TestRegistryForbiddenRejectsAndKeeps/disable
+=== RUN   TestRegistryForbiddenRejectsAndKeeps/force_withdraw
+--- PASS: TestRegistryForbiddenRejectsAndKeeps (0.00s)
+    --- PASS: TestRegistryForbiddenRejectsAndKeeps/admit (0.00s)
+    --- PASS: TestRegistryForbiddenRejectsAndKeeps/disable (0.00s)
+    --- PASS: TestRegistryForbiddenRejectsAndKeeps/force_withdraw (0.00s)
+=== RUN   TestRegistryFailureLeavesTheProposalQueued
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_NOT_FOUND
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_DECISION_BLOCKED
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_CONFLICT
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_WITHDRAWN
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_STALE_VERSION
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_WRONG_DOMAIN
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_NOT_FOUND
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_DECISION_BLOCKED
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_CONFLICT
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_WITHDRAWN
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_STALE_VERSION
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_WRONG_DOMAIN
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_NOT_FOUND
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_DECISION_BLOCKED
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_CONFLICT
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_WITHDRAWN
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_STALE_VERSION
+=== RUN   TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_WRONG_DOMAIN
+--- PASS: TestRegistryFailureLeavesTheProposalQueued (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_NOT_FOUND (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_CONFLICT (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_WITHDRAWN (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_STALE_VERSION (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/admit/ERROR_CODE_WRONG_DOMAIN (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_NOT_FOUND (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_CONFLICT (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_WITHDRAWN (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_STALE_VERSION (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/disable/ERROR_CODE_WRONG_DOMAIN (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_NOT_FOUND (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_CONFLICT (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_WITHDRAWN (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_STALE_VERSION (0.00s)
+    --- PASS: TestRegistryFailureLeavesTheProposalQueued/force_withdraw/ERROR_CODE_WRONG_DOMAIN (0.00s)
+=== RUN   TestRegistryCannotAskForKeepOrIdempotent
+--- PASS: TestRegistryCannotAskForKeepOrIdempotent (0.00s)
+=== RUN   TestNilRegistryIsMalformed
+=== RUN   TestNilRegistryIsMalformed/admit
+=== RUN   TestNilRegistryIsMalformed/disable
+=== RUN   TestNilRegistryIsMalformed/force_withdraw
+--- PASS: TestNilRegistryIsMalformed (0.00s)
+    --- PASS: TestNilRegistryIsMalformed/admit (0.00s)
+    --- PASS: TestNilRegistryIsMalformed/disable (0.00s)
+    --- PASS: TestNilRegistryIsMalformed/force_withdraw (0.00s)
+=== RUN   TestExpiredRegistryProposalDoesNotCallTheRegistry
+--- PASS: TestExpiredRegistryProposalDoesNotCallTheRegistry (0.00s)
+=== RUN   TestExternalBusinessIDIsReplay
+=== RUN   TestExternalBusinessIDIsReplay/propose
+=== RUN   TestExternalBusinessIDIsReplay/approve
+=== RUN   TestExternalBusinessIDIsReplay/execute
+=== RUN   TestExternalBusinessIDIsReplay/own_ledger_first
+=== RUN   TestExternalBusinessIDIsReplay/same_digest_is_idempotent
+=== RUN   TestExternalBusinessIDIsReplay/malformed_id_never_reaches_peers
+--- PASS: TestExternalBusinessIDIsReplay (0.00s)
+    --- PASS: TestExternalBusinessIDIsReplay/propose (0.00s)
+    --- PASS: TestExternalBusinessIDIsReplay/approve (0.00s)
+    --- PASS: TestExternalBusinessIDIsReplay/execute (0.00s)
+    --- PASS: TestExternalBusinessIDIsReplay/own_ledger_first (0.00s)
+    --- PASS: TestExternalBusinessIDIsReplay/same_digest_is_idempotent (0.00s)
+    --- PASS: TestExternalBusinessIDIsReplay/malformed_id_never_reaches_peers (0.00s)
+=== RUN   TestDevnetRoleRule
+--- PASS: TestDevnetRoleRule (0.00s)
+=== RUN   FuzzParsePayload
+=== RUN   FuzzParsePayload/seed#0
+--- PASS: FuzzParsePayload (0.00s)
+    --- PASS: FuzzParsePayload/seed#0 (0.00s)
+=== RUN   FuzzCouncilRegistryPayloads
+=== RUN   FuzzCouncilRegistryPayloads/seed#0
+=== RUN   FuzzCouncilRegistryPayloads/seed#1
+=== RUN   FuzzCouncilRegistryPayloads/seed#2
+=== RUN   FuzzCouncilRegistryPayloads/seed#3
+=== RUN   FuzzCouncilRegistryPayloads/seed#4
+=== RUN   FuzzCouncilRegistryPayloads/seed#5
+=== RUN   FuzzCouncilRegistryPayloads/seed#6
+--- PASS: FuzzCouncilRegistryPayloads (0.00s)
+    --- PASS: FuzzCouncilRegistryPayloads/seed#0 (0.00s)
+    --- PASS: FuzzCouncilRegistryPayloads/seed#1 (0.00s)
+    --- PASS: FuzzCouncilRegistryPayloads/seed#2 (0.00s)
+    --- PASS: FuzzCouncilRegistryPayloads/seed#3 (0.00s)
+    --- PASS: FuzzCouncilRegistryPayloads/seed#4 (0.00s)
+    --- PASS: FuzzCouncilRegistryPayloads/seed#5 (0.00s)
+    --- PASS: FuzzCouncilRegistryPayloads/seed#6 (0.00s)
+=== RUN   FuzzStateTransitions
+=== RUN   FuzzStateTransitions/seed#0
+=== RUN   FuzzStateTransitions/seed#1
+--- PASS: FuzzStateTransitions (0.00s)
+    --- PASS: FuzzStateTransitions/seed#0 (0.00s)
+    --- PASS: FuzzStateTransitions/seed#1 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	0.065s
+EXIT:0

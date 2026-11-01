@@ -1,0 +1,9 @@
+COMMAND bash -c b=\$\(git\ grep\ -h\ -E\ \"\^func\ \(Test\|Fuzz\)\"\ 3853e3430217096c3e65664bc799859942ea451e\ --\ chain\ \|\ sed\ \"s/\(.\*//\"\ \|\ sort\)\;\ h=\$\(git\ grep\ -h\ -E\ \"\^func\ \(Test\|Fuzz\)\"\ HEAD\ --\ chain\ \|\ sed\ \"s/\(.\*//\"\ \|\ sort\)\;\ echo\ \"base\ test/fuzz\ functions:\ \$\(echo\ \"\$b\"\ \|\ wc\ -l\)\"\;\ echo\ \"head\ test/fuzz\ functions:\ \$\(echo\ \"\$h\"\ \|\ wc\ -l\)\"\;\ gone=\$\(comm\ -23\ \<\(echo\ \"\$b\"\)\ \<\(echo\ \"\$h\"\)\)\;\ echo\ \"removed\ since\ base:\ \$\{gone:-none\}\"\;\ test\ -z\ \"\$gone\"
+DATE 2026-11-01T09:31:13Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+base test/fuzz functions: 28
+head test/fuzz functions: 242
+removed since base: none
+EXIT:0

@@ -1,0 +1,174 @@
+COMMAND env -C chain go test -count=1 -v ./msgkit/...
+DATE 2026-11-01T09:32:17Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+=== RUN   TestBoundsDrift
+--- PASS: TestBoundsDrift (0.00s)
+=== RUN   TestValidIDAgreesWithBoundsPattern
+--- PASS: TestValidIDAgreesWithBoundsPattern (0.00s)
+=== RUN   TestLedgerGateAndCommit
+--- PASS: TestLedgerGateAndCommit (0.00s)
+=== RUN   TestLedgerOwnRecordWinsOverPeers
+--- PASS: TestLedgerOwnRecordWinsOverPeers (0.00s)
+=== RUN   TestLedgerWithoutPeers
+--- PASS: TestLedgerWithoutPeers (0.00s)
+=== RUN   TestLedgerCommitRequiresAPassingGate
+--- PASS: TestLedgerCommitRequiresAPassingGate (0.00s)
+=== RUN   TestPeersLookupOrderIsDeterministic
+--- PASS: TestPeersLookupOrderIsDeterministic (0.00s)
+=== RUN   TestPeersAddRejectsWiringErrors
+--- PASS: TestPeersAddRejectsWiringErrors (0.00s)
+=== RUN   TestCanonicalRotatePayloadText
+--- PASS: TestCanonicalRotatePayloadText (0.00s)
+=== RUN   TestCanonicalRejectsNonCanonicalValues
+--- PASS: TestCanonicalRejectsNonCanonicalValues (0.00s)
+=== RUN   TestEncoders
+--- PASS: TestEncoders (0.00s)
+=== RUN   TestBusinessDigestVector
+--- PASS: TestBusinessDigestVector (0.00s)
+=== RUN   TestCodesMatchProtoEnum
+--- PASS: TestCodesMatchProtoEnum (0.00s)
+=== RUN   TestCodeErrSuccessAndUnknown
+--- PASS: TestCodeErrSuccessAndUnknown (0.00s)
+=== RUN   TestEventAllowlistIsEventsProto
+--- PASS: TestEventAllowlistIsEventsProto (0.00s)
+=== RUN   TestEmitParseRoundTripEveryEventType
+--- PASS: TestEmitParseRoundTripEveryEventType (0.00s)
+=== RUN   TestEmitTypedEncoding
+--- PASS: TestEmitTypedEncoding (0.00s)
+=== RUN   TestEmitTypedRejectsOtherMessages
+--- PASS: TestEmitTypedRejectsOtherMessages (0.00s)
+=== RUN   TestParseTypedRejects
+--- PASS: TestParseTypedRejects (0.00s)
+=== RUN   TestParseCommitted
+--- PASS: TestParseCommitted (0.00s)
+=== RUN   TestEmitIdempotent
+--- PASS: TestEmitIdempotent (0.00s)
+=== RUN   TestCheckID
+--- PASS: TestCheckID (0.00s)
+=== RUN   TestCheckDigest
+--- PASS: TestCheckDigest (0.00s)
+=== RUN   TestSignBytesLayout
+--- PASS: TestSignBytesLayout (0.00s)
+=== RUN   TestInnerSignatureCheckOrder
+--- PASS: TestInnerSignatureCheckOrder (0.00s)
+=== RUN   TestVerifyInnerWithRealKeys
+--- PASS: TestVerifyInnerWithRealKeys (0.00s)
+=== RUN   TestCrossDomainReuse
+--- PASS: TestCrossDomainReuse (0.01s)
+=== RUN   TestVerifyWithKeyRejectsBadSizesWithoutPanic
+--- PASS: TestVerifyWithKeyRejectsBadSizesWithoutPanic (0.00s)
+=== RUN   TestEffectiveLimit
+--- PASS: TestEffectiveLimit (0.00s)
+=== RUN   TestEnforce
+--- PASS: TestEnforce (0.00s)
+=== RUN   TestStoreSnapshot
+--- PASS: TestStoreSnapshot (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+=== RUN   TestCheckPage
+--- PASS: TestCheckPage (0.00s)
+=== RUN   TestPaginateBoundaries
+--- PASS: TestPaginateBoundaries (0.00s)
+=== RUN   TestPaginateStartKeyIsInclusive
+--- PASS: TestPaginateStartKeyIsInclusive (0.00s)
+=== RUN   TestPaginateErrors
+--- PASS: TestPaginateErrors (0.00s)
+=== RUN   TestQueryErrCarriesTheProtocolCode
+--- PASS: TestQueryErrCarriesTheProtocolCode (0.00s)
+=== RUN   TestQueryCodeRejects
+--- PASS: TestQueryCodeRejects (0.00s)
+=== RUN   TestWriteLayoutVersion
+--- PASS: TestWriteLayoutVersion (0.00s)
+=== RUN   TestReadLayoutVersion
+--- PASS: TestReadLayoutVersion (0.00s)
+=== RUN   FuzzTypedEventParse
+=== RUN   FuzzTypedEventParse/seed#0
+=== RUN   FuzzTypedEventParse/seed#1
+=== RUN   FuzzTypedEventParse/seed#2
+=== RUN   FuzzTypedEventParse/seed#3
+=== RUN   FuzzTypedEventParse/seed#4
+=== RUN   FuzzTypedEventParse/seed#5
+=== RUN   FuzzTypedEventParse/seed#6
+=== RUN   FuzzTypedEventParse/seed#7
+=== RUN   FuzzTypedEventParse/seed#8
+=== RUN   FuzzTypedEventParse/seed#9
+=== RUN   FuzzTypedEventParse/seed#10
+=== RUN   FuzzTypedEventParse/seed#11
+=== RUN   FuzzTypedEventParse/seed#12
+=== RUN   FuzzTypedEventParse/seed#13
+=== RUN   FuzzTypedEventParse/seed#14
+=== RUN   FuzzTypedEventParse/seed#15
+=== RUN   FuzzTypedEventParse/seed#16
+=== RUN   FuzzTypedEventParse/seed#17
+=== RUN   FuzzTypedEventParse/seed#18
+=== RUN   FuzzTypedEventParse/seed#19
+=== RUN   FuzzTypedEventParse/seed#20
+=== RUN   FuzzTypedEventParse/seed#21
+=== RUN   FuzzTypedEventParse/seed#22
+=== RUN   FuzzTypedEventParse/seed#23
+=== RUN   FuzzTypedEventParse/seed#24
+--- PASS: FuzzTypedEventParse (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#0 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#1 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#2 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#3 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#4 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#5 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#6 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#7 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#8 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#9 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#10 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#11 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#12 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#13 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#14 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#15 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#16 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#17 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#18 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#19 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#20 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#21 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#22 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#23 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#24 (0.00s)
+=== RUN   FuzzInnerSignatureCheck
+=== RUN   FuzzInnerSignatureCheck/seed#0
+=== RUN   FuzzInnerSignatureCheck/seed#1
+=== RUN   FuzzInnerSignatureCheck/seed#2
+=== RUN   FuzzInnerSignatureCheck/seed#3
+=== RUN   FuzzInnerSignatureCheck/seed#4
+=== RUN   FuzzInnerSignatureCheck/seed#5
+--- PASS: FuzzInnerSignatureCheck (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#0 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#1 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#2 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#3 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#4 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#5 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	0.047s
+=== RUN   TestNewContextMountsRealStores
+--- PASS: TestNewContextMountsRealStores (0.00s)
+=== RUN   TestNewContextRejectsBadNames
+--- PASS: TestNewContextRejectsBadNames (0.00s)
+=== RUN   TestScanDeterministicFindsEveryForbiddenSource
+--- PASS: TestScanDeterministicFindsEveryForbiddenSource (0.00s)
+=== RUN   TestScanDeterministicAcceptsCleanSource
+--- PASS: TestScanDeterministicAcceptsCleanSource (0.00s)
+=== RUN   TestAssertDeterministicSourcesFailsOnEmptyDir
+--- PASS: TestAssertDeterministicSourcesFailsOnEmptyDir (0.00s)
+=== RUN   TestScannerFlagsTestSupportPackage
+--- PASS: TestScannerFlagsTestSupportPackage (0.00s)
+=== RUN   TestForbiddenNamePatternsLoadBounds
+--- PASS: TestForbiddenNamePatternsLoadBounds (0.00s)
+=== RUN   TestNameHitsMatchesGoal02Rule
+--- PASS: TestNameHitsMatchesGoal02Rule (0.00s)
+=== RUN   TestFindCanaryForms
+--- PASS: TestFindCanaryForms (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	0.028s
+EXIT:0

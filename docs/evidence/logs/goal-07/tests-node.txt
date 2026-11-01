@@ -1,0 +1,22 @@
+COMMAND .venv/bin/python scripts/run_tests.py --only node
+DATE 2026-11-01T09:31:51Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+TAP version 13
+# Subtest: react version is the pinned release
+ok 1 - react version is the pinned release
+  ---
+  duration_ms: 0.92181
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 79.478007
+EXIT:0

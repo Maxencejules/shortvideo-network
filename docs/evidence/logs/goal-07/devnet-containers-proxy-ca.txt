@@ -1,0 +1,417 @@
+COMMAND bash docs/evidence/goal-07/containers/prove-containers-proxy-ca.sh
+DATE 2026-11-01T10:02:34Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY yes
+DIRTY_PATH docs/progress.md
+DIRTY_PATH docs/progress.tsv
+COMMAND bash docs/evidence/goal-07/containers/prove-containers-proxy-ca.sh (copy of scripts/devnet/prove-containers.sh; build step changed)
+DATE 2026-11-01T10:02:34+00:00
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY yes
+DOCKER_HOST=<unset>
+NOTE empty blocks only. No application transaction is submitted, so the hash is the genesis application state.
+NOTE bridge networking is BLOCKED. This run uses host networking.
+docker context default endpoint unix:///var/run/docker.sock
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.proxy-ca
+#1 transferring dockerfile: 1.00kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 136B done
+#4 DONE 0.0s
+
+#5 [build 1/6] FROM docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949
+#5 resolve docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949 done
+#5 DONE 0.0s
+
+#6 [stage-1 1/3] FROM docker.io/library/debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e
+#6 resolve docker.io/library/debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e done
+#6 CACHED
+
+#7 [internal] load build context
+#7 transferring context: 15.29kB 0.0s done
+#7 DONE 0.0s
+
+#8 [build 2/6] WORKDIR /src
+#8 CACHED
+
+#9 [build 4/6] COPY proto ./proto
+#9 CACHED
+
+#10 [build 3/6] COPY chain ./chain
+#10 CACHED
+
+#11 [build 5/6] WORKDIR /src/chain
+#11 CACHED
+
+#12 [stage-1 2/3] RUN useradd --create-home --uid 65532 svn
+#12 0.078 useradd warning: svn's uid 65532 outside of the UID_MIN 1000 and UID_MAX 60000 range.
+#12 DONE 0.1s
+
+#13 [build 6/6] RUN --mount=type=secret,id=proxyca,target=/usr/local/share/ca-certificates/proxy-ca.crt     update-ca-certificates >/dev/null && go build -o /out/svnd ./cmd/svnd
+#13 1.395 rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+#13 1.417 rehash: warning: skipping proxy-ca.pem,it does not contain exactly one certificate or CRL
+#13 1.471 go: downloading github.com/cometbft/cometbft v0.40.0
+#13 1.471 go: downloading github.com/spf13/cobra v1.10.2
+#13 5.069 go: downloading github.com/cosmos/cosmos-sdk v0.55.0
+#13 5.090 go: downloading cosmossdk.io/log/v2 v2.1.0
+#13 5.124 go: downloading github.com/cosmos/cosmos-db v1.1.3
+#13 6.666 go: downloading google.golang.org/grpc v1.82.1
+#13 6.667 go: downloading cosmossdk.io/core v1.1.0
+#13 6.687 go: downloading cosmossdk.io/errors v1.1.0
+#13 6.715 go: downloading github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+#13 6.717 go: downloading github.com/cosmos/gogoproto v1.7.2
+#13 6.719 go: downloading github.com/grpc-ecosystem/grpc-gateway v1.16.0
+#13 6.791 go: downloading google.golang.org/protobuf v1.36.12
+#13 7.142 go: downloading github.com/spf13/pflag v1.0.10
+#13 7.147 go: downloading github.com/stretchr/testify v1.11.1
+#13 7.151 go: downloading github.com/cometbft/cometbft-db v0.14.3
+#13 7.178 go: downloading github.com/libp2p/go-libp2p v0.48.0
+#13 7.210 go: downloading github.com/oasisprotocol/curve25519-voi v0.0.0-20251114093237-2ab5a27a1729
+#13 7.304 go: downloading github.com/go-kit/kit v0.13.0
+#13 7.392 go: downloading github.com/prometheus/client_golang v1.24.1
+#13 7.393 go: downloading golang.org/x/net v0.57.0
+#13 7.438 go: downloading github.com/bytedance/sonic v1.15.1
+#13 7.439 go: downloading github.com/pkg/errors v0.9.1
+#13 7.462 go: downloading github.com/rs/zerolog v1.35.1
+#13 7.507 go: downloading go.opentelemetry.io/otel/trace v1.44.0
+#13 7.508 go: downloading github.com/lib/pq v1.12.3
+#13 7.533 go: downloading go.opentelemetry.io/otel v1.44.0
+#13 7.557 go: downloading github.com/rs/cors v1.11.1
+#13 7.575 go: downloading github.com/cockroachdb/pebble v1.1.5
+#13 7.825 go: downloading github.com/google/btree v1.1.3
+#13 7.836 go: downloading github.com/spf13/cast v1.10.0
+#13 7.870 go: downloading github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
+#13 7.926 go: downloading github.com/hdevalence/ed25519consensus v0.2.0
+#13 7.933 go: downloading github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1
+#13 8.001 go: downloading golang.org/x/crypto v0.54.0
+#13 8.001 go: downloading cosmossdk.io/collections v1.4.0
+#13 8.061 go: downloading cosmossdk.io/math v1.5.3
+#13 8.062 go: downloading github.com/cosmos/cosmos-proto v1.0.0-beta.5
+#13 8.102 go: downloading github.com/hashicorp/golang-lru v1.0.2
+#13 8.115 go: downloading sigs.k8s.io/yaml v1.6.0
+#13 8.130 go: downloading github.com/cockroachdb/errors v1.13.0
+#13 8.145 go: downloading github.com/spf13/viper v1.21.0
+#13 8.168 go: downloading go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0
+#13 8.194 go: downloading cosmossdk.io/depinject v1.2.1
+#13 8.216 go: downloading google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
+#13 8.225 go: downloading google.golang.org/genproto v0.0.0-20260511170946-3700d4141b60
+#13 8.244 go: downloading github.com/golang/protobuf v1.5.4
+#13 8.245 go: downloading github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
+#13 8.299 go: downloading go.opentelemetry.io/otel/metric v1.44.0
+#13 8.301 go: downloading cosmossdk.io/api v1.1.0
+#13 8.312 go: downloading google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa
+#13 8.569 go: downloading github.com/tendermint/go-amino v0.16.0
+#13 8.569 go: downloading github.com/cosmos/gogogateway v1.2.0
+#13 8.594 go: downloading github.com/gorilla/handlers v1.5.2
+#13 8.613 go: downloading github.com/gorilla/mux v1.8.1
+#13 8.620 go: downloading github.com/improbable-eng/grpc-web v0.15.0
+#13 8.632 go: downloading github.com/cosmos/ics23/go v0.11.0
+#13 8.934 go: downloading github.com/google/go-cmp v0.7.0
+#13 8.940 go: downloading github.com/cloudflare/circl v1.6.3
+#13 8.941 go: downloading github.com/go-kit/log v0.2.1
+#13 8.964 go: downloading github.com/go-logfmt/logfmt v0.6.1
+#13 8.970 go: downloading github.com/mr-tron/base58 v1.3.0
+#13 8.970 go: downloading github.com/multiformats/go-multiaddr v0.16.1
+#13 8.989 go: downloading github.com/ipfs/go-cid v0.5.0
+#13 9.003 go: downloading github.com/multiformats/go-multicodec v0.9.1
+#13 9.004 go: downloading github.com/multiformats/go-multihash v0.2.3
+#13 9.032 go: downloading github.com/flynn/noise v1.1.0
+#13 9.032 go: downloading github.com/libp2p/go-buffer-pool v0.1.0
+#13 9.064 go: downloading github.com/cespare/xxhash/v2 v2.3.0
+#13 9.065 go: downloading github.com/beorn7/perks v1.0.1
+#13 9.065 go: downloading github.com/prometheus/client_model v0.6.2
+#13 9.081 go: downloading github.com/prometheus/common v0.70.1
+#13 9.082 go: downloading github.com/prometheus/procfs v0.21.1
+#13 9.124 go: downloading github.com/mattn/go-colorable v0.1.14
+#13 9.131 go: downloading golang.org/x/sync v0.22.0
+#13 9.141 go: downloading github.com/minio/highwayhash v1.0.4
+#13 9.144 go: downloading github.com/gorilla/websocket v1.5.3
+#13 9.157 go: downloading github.com/hashicorp/golang-lru/v2 v2.0.7
+#13 9.164 go: downloading filippo.io/edwards25519 v1.2.0
+#13 9.166 go: downloading cosmossdk.io/schema v1.1.0
+#13 9.170 go: downloading github.com/tidwall/btree v1.8.1
+#13 9.180 go: downloading github.com/cosmos/btcutil v1.0.5
+#13 9.184 go: downloading go.yaml.in/yaml/v2 v2.4.4
+#13 9.198 go: downloading github.com/99designs/keyring v1.2.1
+#13 9.202 go: downloading github.com/cosmos/go-bip39 v1.0.0
+#13 9.211 go: downloading github.com/cosmos/iavl v1.2.8
+#13 9.219 go: downloading github.com/fsnotify/fsnotify v1.9.0
+#13 9.227 go: downloading github.com/go-viper/mapstructure/v2 v2.5.0
+#13 9.243 go: downloading github.com/sagikazarmark/locafero v0.11.0
+#13 9.260 go: downloading github.com/spf13/afero v1.15.0
+#13 9.261 go: downloading github.com/cockroachdb/logtags v0.0.0-20241215232642-bb51bb14a506
+#13 9.272 go: downloading github.com/cockroachdb/redact v1.1.8
+#13 9.277 go: downloading github.com/getsentry/sentry-go v0.46.2
+#13 9.286 go: downloading github.com/hashicorp/go-hclog v1.6.3
+#13 9.294 go: downloading github.com/hashicorp/go-plugin v1.7.0
+#13 9.308 go: downloading github.com/hashicorp/go-metrics v0.5.4
+#13 9.344 go: downloading go.opentelemetry.io/contrib/otelconf v0.24.0
+#13 9.344 go: downloading go.opentelemetry.io/contrib/propagators/b3 v1.44.0
+#13 9.356 go: downloading go.opentelemetry.io/contrib/propagators/jaeger v1.44.0
+#13 9.361 go: downloading go.opentelemetry.io/otel/log v0.20.0
+#13 9.379 go: downloading go.yaml.in/yaml/v3 v3.0.5
+#13 9.386 go: downloading github.com/huandu/skiplist v1.2.1
+#13 9.406 go: downloading github.com/cockroachdb/fifo v0.0.0-20240816210425-c5d0cb0b6fc0
+#13 9.414 go: downloading github.com/cockroachdb/tokenbucket v0.0.0-20250429170803-42689b6311bb
+#13 9.415 go: downloading golang.org/x/exp v0.0.0-20260527015227-08cc5374adb3
+#13 9.426 go: downloading github.com/go-logr/logr v1.4.3
+#13 9.429 go: downloading github.com/iancoleman/strcase v0.3.0
+#13 9.442 go: downloading github.com/gogo/googleapis v1.4.1
+#13 9.451 go: downloading github.com/felixge/httpsnoop v1.0.4
+#13 9.469 go: downloading github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
+#13 9.487 go: downloading github.com/cenkalti/backoff/v4 v4.3.0
+#13 9.490 go: downloading github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f
+#13 9.501 go: downloading nhooyr.io/websocket v1.8.17
+#13 9.503 go: downloading golang.org/x/sys v0.47.0
+#13 9.581 go: downloading go.uber.org/fx v1.24.0
+#13 9.627 go: downloading github.com/multiformats/go-multistream v0.6.1
+#13 9.654 go: downloading github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
+#13 9.683 go: downloading github.com/multiformats/go-multiaddr-dns v0.4.1
+#13 9.713 go: downloading github.com/multiformats/go-multiaddr-fmt v0.1.0
+#13 9.724 go: downloading github.com/quic-go/quic-go v0.60.0
+#13 9.810 go: downloading github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
+#13 9.822 go: downloading github.com/multiformats/go-multibase v0.2.0
+#13 9.841 go: downloading github.com/multiformats/go-varint v0.0.7
+#13 9.872 go: downloading github.com/jbenet/go-temp-err-catcher v0.1.0
+#13 9.891 go: downloading github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
+#13 9.894 go: downloading github.com/mattn/go-isatty v0.0.24
+#13 9.899 go: downloading github.com/google/orderedcode v0.0.1
+#13 9.907 go: downloading github.com/golang/snappy v1.0.0
+#13 9.925 go: downloading github.com/bytedance/gopkg v0.1.4
+#13 9.933 go: downloading github.com/cloudwego/base64x v0.1.7
+#13 9.934 go: downloading golang.org/x/arch v0.26.0
+#13 9.960 go: downloading github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
+#13 9.979 go: downloading github.com/bgentry/speakeasy v0.2.0
+#13 9.982 go: downloading github.com/dvsekhvalnov/jose2go v1.7.0
+#13 9.989 go: downloading github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2
+#13 10.00 go: downloading github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c
+#13 10.01 go: downloading github.com/mtibben/percent v0.2.1
+#13 10.01 go: downloading golang.org/x/term v0.45.0
+#13 10.02 go: downloading github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8
+#13 10.03 go: downloading github.com/subosito/gotenv v1.6.0
+#13 10.04 go: downloading github.com/pelletier/go-toml/v2 v2.2.4
+#13 10.04 go: downloading github.com/gogo/protobuf v1.3.2
+#13 10.09 go: downloading github.com/kr/pretty v0.3.1
+#13 10.10 go: downloading github.com/emicklei/dot v1.11.0
+#13 10.13 go: downloading golang.org/x/text v0.40.0
+#13 10.58 go: downloading github.com/RoaringBitmap/roaring/v2 v2.24.0
+#13 10.58 go: downloading github.com/cosmos/btree v1.0.0
+#13 10.58 go: downloading github.com/fatih/color v1.18.0
+#13 10.59 go: downloading github.com/shirou/gopsutil/v4 v4.26.6
+#13 10.62 go: downloading go.opentelemetry.io/contrib/instrumentation/host v0.69.0
+#13 10.65 go: downloading go.opentelemetry.io/contrib/instrumentation/runtime v0.69.0
+#13 10.65 go: downloading github.com/hashicorp/yamux v0.1.2
+#13 10.66 go: downloading github.com/oklog/run v1.2.0
+#13 10.67 go: downloading github.com/hashicorp/go-immutable-radix v1.3.1
+#13 10.68 go: downloading github.com/DataDog/datadog-go v3.2.0+incompatible
+#13 10.69 go: downloading go.opentelemetry.io/contrib/propagators/autoprop v0.69.0
+#13 10.69 go: downloading go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.20.0
+#13 10.71 go: downloading go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.20.0
+#13 10.71 go: downloading go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.44.0
+#13 10.73 go: downloading go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.44.0
+#13 10.73 go: downloading go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.44.0
+#13 10.75 go: downloading go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.44.0
+#13 10.75 go: downloading go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.44.0
+#13 10.76 go: downloading go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.20.0
+#13 10.77 go: downloading go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.44.0
+#13 10.78 go: downloading go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.44.0
+#13 10.78 go: downloading go.opentelemetry.io/otel/sdk v1.44.0
+#13 10.79 go: downloading go.opentelemetry.io/otel/sdk/log v0.20.0
+#13 10.81 go: downloading go.opentelemetry.io/otel/sdk/metric v1.44.0
+#13 10.85 go: downloading github.com/DataDog/zstd v1.5.7
+#13 10.85 go: downloading github.com/go-logr/stdr v1.2.2
+#13 10.86 go: downloading go.opentelemetry.io/auto/sdk v1.2.1
+#13 10.88 go: downloading github.com/libp2p/go-flow-metrics v0.2.0
+#13 10.90 go: downloading github.com/libp2p/go-msgio v0.3.0
+#13 10.92 go: downloading github.com/benbjohnson/clock v1.3.5
+#13 10.93 go: downloading github.com/libp2p/go-yamux/v5 v5.0.1
+#13 10.93 go: downloading github.com/libp2p/go-libp2p-asn-util v0.4.1
+#13 10.96 go: downloading github.com/libp2p/go-netroute v0.4.0
+#13 10.97 go: downloading golang.org/x/time v0.15.0
+#13 10.98 go: downloading github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd
+#13 10.99 go: downloading github.com/mikioh/tcpinfo v0.0.0-20190314235526-30a79bb1804b
+#13 11.01 go: downloading github.com/pion/datachannel v1.5.10
+#13 11.01 go: downloading github.com/pion/logging v0.2.4
+#13 11.03 go: downloading github.com/pion/sctp v1.8.39
+#13 11.04 go: downloading github.com/pion/webrtc/v4 v4.1.2
+#13 11.08 go: downloading filippo.io/keygen v0.0.0-20260114151900-8e2790ea4c5b
+#13 11.11 go: downloading github.com/quic-go/webtransport-go v0.11.1
+#13 11.15 go: downloading go.uber.org/dig v1.19.0
+#13 11.18 go: downloading go.uber.org/multierr v1.11.0
+#13 11.20 go: downloading github.com/miekg/dns v1.1.72
+#13 11.20 go: downloading gopkg.in/yaml.v3 v3.0.1
+#13 11.21 go: downloading github.com/multiformats/go-base32 v0.1.0
+#13 11.24 go: downloading github.com/multiformats/go-base36 v0.2.0
+#13 11.25 go: downloading github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c
+#13 11.27 go: downloading github.com/bytedance/sonic/loader v0.5.1
+#13 11.27 go: downloading github.com/kr/text v0.2.0
+#13 11.29 go: downloading github.com/rogpeppe/go-internal v1.14.1
+#13 11.31 go: downloading go.opentelemetry.io/proto/otlp v1.10.0
+#13 11.33 go: downloading go.opentelemetry.io/contrib/propagators/aws v1.44.0
+#13 11.33 go: downloading go.opentelemetry.io/contrib/propagators/ot v1.44.0
+#13 11.34 go: downloading github.com/google/uuid v1.6.0
+#13 11.35 go: downloading github.com/libp2p/go-reuseport v0.4.0
+#13 11.35 go: downloading go.uber.org/zap v1.27.1
+#13 11.36 go: downloading github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc
+#13 11.38 go: downloading github.com/pion/ice/v4 v4.0.10
+#13 11.40 go: downloading github.com/pion/stun/v3 v3.1.1
+#13 11.40 go: downloading github.com/pion/randutil v0.1.0
+#13 11.41 go: downloading github.com/pion/transport/v3 v3.0.7
+#13 11.43 go: downloading filippo.io/bigmod v0.1.1-0.20260103110540-f8a47775ebe5
+#13 11.43 go: downloading github.com/quic-go/qpack v0.6.0
+#13 11.44 go: downloading github.com/dunglas/httpsfv v1.1.0
+#13 11.44 go: downloading github.com/pion/dtls/v3 v3.1.2
+#13 11.53 go: downloading github.com/pion/interceptor v0.1.40
+#13 11.58 go: downloading github.com/pion/rtcp v1.2.16
+#13 11.58 go: downloading github.com/pion/rtp v1.8.19
+#13 11.60 go: downloading github.com/pion/sdp/v3 v3.0.18
+#13 11.62 go: downloading github.com/pion/srtp/v3 v3.0.6
+#13 11.62 go: downloading lukechampine.com/blake3 v1.4.1
+#13 11.62 go: downloading github.com/spaolacci/murmur3 v1.1.0
+#13 11.63 go: downloading github.com/klauspost/cpuid/v2 v2.3.0
+#13 11.65 go: downloading github.com/twitchyliquid64/golang-asm v0.15.1
+#13 11.70 go: downloading github.com/tklauser/go-sysconf v0.4.0
+#13 11.70 go: downloading github.com/cenkalti/backoff/v5 v5.0.3
+#13 11.70 go: downloading github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
+#13 11.73 go: downloading github.com/huin/goupnp v1.3.0
+#13 11.76 go: downloading github.com/jackpal/go-nat-pmp v1.0.2
+#13 11.77 go: downloading github.com/koron/go-ssdp v0.0.6
+#13 11.80 go: downloading github.com/pion/mdns/v2 v2.0.7
+#13 11.82 go: downloading github.com/pion/turn/v4 v4.0.2
+#13 11.85 go: downloading github.com/pion/transport/v4 v4.0.1
+#13 11.89 go: downloading github.com/tklauser/numcpus v0.12.0
+#13 11.89 go: downloading github.com/wlynxg/anet v0.0.5
+#13 18.82 go: downloading github.com/mschoch/smat v0.2.0
+#13 18.82 go: downloading github.com/bits-and-blooms/bitset v1.24.5
+#13 DONE 121.2s
+
+#14 [stage-1 3/3] COPY --from=build /out/svnd /usr/local/bin/svnd
+#14 DONE 0.2s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 4.4s done
+#15 exporting manifest sha256:8fee98d17eae39f1f8eab7bd75ea6fd4caf2c44c22d1f23d44a8451a55722810 done
+#15 exporting config sha256:83a93a8b90e8dba712a9dfe9c450d0c3050519433f5063ea9d93f47a86b59ca6 done
+#15 exporting attestation manifest sha256:9364d464df63fc6b8c2fda1299ebed0f85a4d0d0667959ab1fc9e387c38b160f done
+#15 exporting manifest list sha256:26f36f27fac8d14cd77be23b48090efd5214e36baeac4d5f4af9b065b273ea6d done
+#15 naming to docker.io/library/svn-devnet:goal05 done
+#15 unpacking to docker.io/library/svn-devnet:goal05
+#15 unpacking to docker.io/library/svn-devnet:goal05 0.6s done
+#15 DONE 5.1s
+ Container chain-v4-1 Creating 
+ Container chain-v3-1 Creating 
+ Container chain-v2-1 Creating 
+ Container chain-v1-1 Creating 
+ Container chain-v3-1 Created 
+ Container chain-v1-1 Created 
+ Container chain-v2-1 Created 
+ Container chain-v4-1 Created 
+ Container chain-v4-1 Starting 
+ Container chain-v1-1 Starting 
+ Container chain-v3-1 Starting 
+ Container chain-v2-1 Starting 
+ Container chain-v4-1 Started 
+ Container chain-v1-1 Started 
+ Container chain-v3-1 Started 
+ Container chain-v2-1 Started 
+COMMAND docker compose -f deployments/chain/compose.yaml up -d
+phase=start sample=0 node=0 height=5 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=start sample=0 node=1 height=5 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=start sample=0 node=2 height=5 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=start sample=0 node=3 height=5 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+COMMAND docker compose -f deployments/chain/compose.yaml stop
+ Container chain-v4-1 Stopping 
+ Container chain-v1-1 Stopping 
+ Container chain-v3-1 Stopping 
+ Container chain-v2-1 Stopping 
+ Container chain-v3-1 Stopped 
+ Container chain-v1-1 Stopped 
+ Container chain-v2-1 Stopped 
+ Container chain-v4-1 Stopped 
+COMMAND docker compose -f deployments/chain/compose.yaml start
+ Container chain-v3-1 Starting 
+ Container chain-v1-1 Starting 
+ Container chain-v4-1 Starting 
+ Container chain-v2-1 Starting 
+ Container chain-v3-1 Started 
+ Container chain-v1-1 Started 
+ Container chain-v4-1 Started 
+ Container chain-v2-1 Started 
+phase=restart-up sample=0 node=0 height=5 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=restart-up sample=0 node=1 height=5 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=restart-up sample=0 node=2 height=5 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=restart-up sample=0 node=3 height=5 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=restart sample=0 node=0 height=8 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=restart sample=0 node=1 height=8 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=restart sample=0 node=2 height=8 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=restart sample=0 node=3 height=8 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=restart up=5 reached=8
+COMMAND docker compose -f deployments/chain/compose.yaml stop v4
+phase=stop-one threshold=8
+ Container chain-v4-1 Stopping 
+ Container chain-v4-1 Stopped 
+phase=one-down sample=0 node=0 height=9 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=0 node=1 height=9 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=0 node=2 height=9 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down threshold=8 reached=9
+phase=one-down sample=0 node=0 height=9 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=0 node=1 height=9 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=0 node=2 height=9 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=1 node=0 height=10 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=1 node=1 height=10 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=1 node=2 height=10 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=2 node=0 height=12 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=2 node=1 height=12 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=2 node=2 height=12 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=3 node=0 height=14 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=3 node=1 height=14 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=one-down sample=3 node=2 height=14 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+COMMAND docker compose -f deployments/chain/compose.yaml stop v3
+phase=stop-two threshold=15
+ Container chain-v3-1 Stopping 
+ Container chain-v3-1 Stopped 
+phase=two-down sample=0 node=0 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=0 node=1 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=1 node=0 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=1 node=1 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=2 node=0 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=2 node=1 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=3 node=0 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=3 node=1 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=4 node=0 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=4 node=1 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=5 node=0 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down sample=5 node=1 height=15 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=two-down stall=15
+COMMAND docker compose -f deployments/chain/compose.yaml start v3 v4
+ Container chain-v3-1 Starting 
+ Container chain-v4-1 Starting 
+ Container chain-v3-1 Started 
+ Container chain-v4-1 Started 
+phase=recovery-up sample=0 node=0 height=19 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery-up sample=0 node=1 height=19 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery-up sample=0 node=2 height=19 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery-up sample=0 node=3 height=19 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery sample=0 node=0 height=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery sample=0 node=1 height=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery sample=0 node=2 height=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery sample=0 node=3 height=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery stall=15 up=19 reached=21
+phase=recovery sample=0 node=0 height=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery sample=0 node=1 height=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery sample=0 node=2 height=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery sample=0 node=3 height=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+phase=recovery threshold=21 app_hash=20C8212C2B8264E9CF89647778BE2E66690B854BE31C484C1DC378DBEBBFAC2F
+EXIT:0
+EXIT:0
