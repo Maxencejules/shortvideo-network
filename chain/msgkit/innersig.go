@@ -11,18 +11,18 @@ import (
 // are docs/protocol/bounds.json "domains"; TestBoundsDrift compares them.
 // Verifiers sign and check the string, never the enum number alone.
 var domainStrings = map[typesv1.SignatureDomain]string{
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_HOSTING_INTENT:        "SVN-HOSTING-INTENT-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT:       "SVN-PROVIDER-ACCEPT-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW:        "SVN-PROVIDER-RENEW-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END:          "SVN-PROVIDER-END-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_CAPABILITY:            "SVN-CAPABILITY-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_MEDIA_MANIFEST:        "SVN-MEDIA-MANIFEST-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_EVIDENCE_ATTESTATION:  "SVN-EVIDENCE-ATTESTATION-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PUBLIC_RECORD:         "SVN-PUBLIC-RECORD-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_TRANSFER_RECEIPT:      "SVN-TRANSFER-RECEIPT-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_INVENTORY:             "SVN-INVENTORY-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_DRAIN:        "SVN-PROVIDER-DRAIN-1",
-	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ROTATE:       "SVN-PROVIDER-ROTATE-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_HOSTING_INTENT:       "SVN-HOSTING-INTENT-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT:      "SVN-PROVIDER-ACCEPT-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW:       "SVN-PROVIDER-RENEW-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END:         "SVN-PROVIDER-END-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_CAPABILITY:           "SVN-CAPABILITY-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_MEDIA_MANIFEST:       "SVN-MEDIA-MANIFEST-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_EVIDENCE_ATTESTATION: "SVN-EVIDENCE-ATTESTATION-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PUBLIC_RECORD:        "SVN-PUBLIC-RECORD-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_TRANSFER_RECEIPT:     "SVN-TRANSFER-RECEIPT-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_INVENTORY:            "SVN-INVENTORY-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_DRAIN:       "SVN-PROVIDER-DRAIN-1",
+	typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ROTATE:      "SVN-PROVIDER-ROTATE-1",
 }
 
 // DomainString returns the pinned ASCII domain. UNSPECIFIED and unknown
