@@ -98,9 +98,10 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) json.RawMe
 	return raw
 }
 
-// EndBlock keeps the validator set static. Goal 06 owns scheduled updates.
-func (AppModule) EndBlock(context.Context) ([]abci.ValidatorUpdate, error) {
-	return nil, nil
+// EndBlock returns the authority changeset. No other module implements
+// HasABCIEndBlock, so nothing else can overwrite the set.
+func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+	return am.keeper.EndBlock(ctx)
 }
 
 func (AppModule) ConsensusVersion() uint64 { return 1 }

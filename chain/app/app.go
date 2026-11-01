@@ -178,7 +178,7 @@ func New(cfg Config) (*App, error) {
 
 	configurator := module.NewConfigurator(enc.Codec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	authModule.RegisterServices(configurator)
-	registerApplicationMessages(app.MsgServiceRouter())
+	registerApplicationMessages(app.MsgServiceRouter(), authorityKeeper)
 
 	ante, err := NewAnteHandler(accountKeeper, enc.TxConfig.SignModeHandler(), func(ctx sdk.Context, addr []byte) bool {
 		return authorityKeeper.Admitted(ctx, addr)

@@ -32,14 +32,14 @@ _KEY_ASSIGN = re.compile(
     + _KEY_BODY
     + r"(?![A-Za-z0-9])['\"]?"
     + r"(?:\s*,\s*(?:_|\.\.\.|[A-Za-z_][\w]*))*"
-    + r"\s*(?<![!=<>])(?P<sep>:=|\+=|=(?![=>])|:)",
+    + r"\s*(?<![!=<>])(?P<sep>:=|\+=|\?=|=(?![=>])|:)",
     re.IGNORECASE,
 )
 _KEY_CAMEL = re.compile(
     r"(?<=[a-z])(?:Priv(?:ate)?Key(?:Base64|Bytes|Hex|B64)?)"
     + r"(?![A-Za-z0-9])['\"]?"
     + r"(?:\s*,\s*(?:_|\.\.\.|[A-Za-z_][\w]*))*"
-    + r"\s*(?<![!=<>])(?P<sep>:=|\+=|=(?![=>])|:)"
+    + r"\s*(?<![!=<>])(?P<sep>:=|\+=|\?=|=(?![=>])|:)"
 )
 _KEY_INDEX = re.compile(
     r"(?i)\[\s*['\"](?:[A-Za-z0-9]+_)?"
@@ -69,11 +69,23 @@ _QUOTED = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
 # `${name}` and `${name:?msg}` / `${name?msg}` are references. `:-`, `-`,
 # `:=`, and `=` carry a default that is scanned separately.
 _DOLLAR = re.compile(r"\$(?:\{[A-Za-z_][\w]*(?::\?[^}]*|\?[^}]*)?\}|[A-Za-z_][\w]*|[0-9]+)")
-_DOLLAR_DEFAULT = re.compile(r"\$\{[A-Za-z_][\w]*(?::[-=]|[-=])(?P<default>.*)\}")
+_DOLLAR_DEFAULT = re.compile(
+    r"\$\{(?P<name>[A-Za-z_][\w]*)(?::[-=]|[-=])(?P<default>.*)\}"
+)
 _BYTE_LIST = re.compile(r"bytes\s*\(\s*\[(?:\s*\d+\s*,){3,}\s*\d+")
 _HEX_CALL = re.compile(
     r"(?i)(?:fromhex|unhexlify|DecodeString|hexToBytes|Buffer\.from|HexToECDSA)"
     r"\s*\(\s*[\"'][0-9a-f]{48,}"
+)
+# Docker ENV/ARG accepts both ``KEY=value`` and ``KEY value``.
+_DOCKER_ENV = re.compile(
+    r"(?im)^[ \t]*(?:ENV|ARG)[ \t]+(?:[A-Za-z0-9]+_)?"
+    + "priv"
+    + r"(?:ate)?"
+    + r"[._-]?"
+    + "key"
+    + _KEY_SUFFIX
+    + r"(?:[ \t]*=[ \t]*|[ \t]+)(?P<value>\S+)"
 )
 # A getenv default may be plain hex, 0x-hex, or a WIF-shaped token.
 # The fake WIF is not strict base58: it contains 0 and l. The first letter
@@ -221,11 +233,37 @@ def _dollar_default(value: str) -> str | None:
     return match.group("default")
 
 
+def _inside_shell_expansion(text: str, index: int) -> bool:
+    """True when ``index`` sits inside ``${...}``, including nested braces."""
+    start = text.rfind("${", 0, index)
+    if start < 0:
+        return False
+    depth = 0
+    cursor = start
+    while cursor < len(text):
+        if text.startswith("${", cursor):
+            depth += 1
+            cursor += 2
+            continue
+        if text[cursor] == "}":
+            depth -= 1
+            if depth == 0:
+                return index < cursor
+        cursor += 1
+    return True
+
+
+def _is_docker_file(name: str) -> bool:
+    """Dockerfile and Dockerfile.dev. The dev suffix is the same file kind."""
+    base = Path(name).name.lower()
+    return base == "dockerfile" or base.startswith("dockerfile.")
+
+
 def _is_shellish(name: str) -> bool:
     """Shell, direnv, and Dockerfile. Mixed-case tokens there can be literals."""
     path = Path(name)
     base = path.name.lower()
-    return path.suffix.lower() in {".sh", ".bash", ".envrc"} or base in {"dockerfile", ".envrc"}
+    return path.suffix.lower() in {".sh", ".bash", ".envrc"} or base in {".envrc"} or _is_docker_file(name)
 
 
 def _shell_literal(token: str) -> bool:
@@ -235,7 +273,17 @@ def _shell_literal(token: str) -> bool:
     return re.search(r"[a-z]", token) is not None and re.search(r"[A-Z]", token) is not None
 
 
+# BIP32/BIP44 derivation paths contain several integers and are not key bytes.
+_DERIVE_PATH = re.compile(r"m/\d+'|\d+'/\d+")
+
+
+def _is_derive_path(text: str) -> bool:
+    return _DERIVE_PATH.search(text) is not None
+
+
 def _has_four_ints(text: str) -> bool:
+    if _is_derive_path(text):
+        return False
     return len(re.findall(r"\b(?:0x[0-9a-fA-F]+|\d+)\b", text)) >= 4
 
 
@@ -374,6 +422,8 @@ def _is_placeholder(inner: str) -> bool:
 
 def _quote_is_ignorable(inner: str, *, annotation: bool) -> bool:
     """True when this quoted text is not a literal secret."""
+    if _is_derive_path(inner):
+        return True
     if inner.strip() == "":
         return True
     if _is_dollar_ref(inner) or _is_helm(inner) or _is_placeholder(inner):
@@ -445,7 +495,13 @@ def _value_suppressed(
     if _is_dollar_ref(value):
         return True
     text = _trim_assigned(value)
-    if text == "" or text.startswith("#"):
+    if text == "":
+        return True
+    # ``=#<hex>`` in a dotenv file is a value, not a comment. A comment has a
+    # space before ``#`` or is not hex.
+    if re.fullmatch(r"#[0-9a-fA-F]{7,}", text):
+        return False
+    if text.startswith("#"):
         return True
     if text == "~":
         return True
@@ -543,11 +599,31 @@ def _rest_of_statement(text: str, start: int) -> str:
 
 
 def _nested_key(line: str) -> bool:
-    """A following `name:` line is a nested map, not a continued literal."""
+    """A following map, list key, or JSON object is not a continued literal."""
     stripped = line.strip()
+    if stripped.startswith(("{", "[")):
+        return True
+    if stripped.startswith("-"):
+        stripped = re.sub(r"^-\s*", "", stripped)
+    if re.match(r"['\"][^'\"]+['\"]\s*:", stripped):
+        return True
     if stripped.startswith(("'", '"', "0x", "0X")):
         return False
     return re.match(r"[A-Za-z_][\w-]*\s*:", stripped) is not None
+
+
+def _is_another_assignment(line: str) -> bool:
+    """The next source line is its own assignment, not this value."""
+    stripped = line.strip()
+    if _nested_key(line):
+        return True
+    return (
+        re.match(
+            r"(?:export\s+)?['\"]?[A-Za-z0-9_.-]+['\"]?\s*(?:\?=|:=|\+=|=(?![=>]))",
+            stripped,
+        )
+        is not None
+    )
 
 
 def _next_nonblank(text: str, index: int) -> str:
@@ -588,9 +664,11 @@ def _logical_value(text: str, start: int) -> str:
         return (stripped[:-1] + " " + nxt).strip()
     if stripped in {'"""', "'''"}:
         return _triple_body(text, next_at, stripped)
-    if stripped == "" or re.fullmatch(r".*=\s*", stripped) is not None:
+    # A type tail such as ``bytes =`` continues. Base64 padding ``==`` does not:
+    # the characters before that equals sign are not an identifier.
+    if stripped == "" or re.fullmatch(r"(?:[A-Za-z_][\w.]*\s*)?=\s*", stripped) is not None:
         nxt = _next_nonblank(text, next_at)
-        if _nested_key(nxt):
+        if _nested_key(nxt) or _is_another_assignment(nxt):
             return ""
         return nxt
     return first
@@ -637,6 +715,8 @@ def _key_hit(text: str, name: str) -> bool:
         if _quoted_kept(text, match):
             return True
     for match in _KEY_ASSIGN.finditer(text):
+        if _inside_shell_expansion(text, match.start()):
+            continue
         if (
             _is_code(name)
             and match.group("sep") == ":"
@@ -647,6 +727,8 @@ def _key_hit(text: str, name: str) -> bool:
         if not _assignment_suppressed(text, match, name):
             return True
     for match in _KEY_CAMEL.finditer(text):
+        if _inside_shell_expansion(text, match.start()):
+            continue
         if not _assignment_suppressed(text, match, name):
             return True
     for match in _KEY_CLI.finditer(text):
@@ -660,8 +742,23 @@ def _key_hit(text: str, name: str) -> bool:
             return True
     for pattern in (_HEX_CALL, _GETENV_HEX, _BYTE_LIST):
         for match in pattern.finditer(text):
-            if _call_window_is_keyish(text, match.start(), match.end()):
+            # HexToECDSA of a long hex literal is key material even when the
+            # surrounding statement never uses the word key.
+            if re.search(r"(?i)HexToECDSA", match.group(0)) or _call_window_is_keyish(
+                text, match.start(), match.end()
+            ):
                 return True
+    if _is_docker_file(name):
+        for match in _DOCKER_ENV.finditer(text):
+            if not _value_suppressed(match.group("value"), code=False, shell=True):
+                return True
+    for match in _DOLLAR_DEFAULT.finditer(text):
+        # `${PRIVATE_KEY:=<literal>}` hides the literal inside the expansion.
+        # Empty, `:?`, and `${name:-$other}` defaults are not literals.
+        if re.search(r"(?i)" + _KEY_BODY, match.group("name")) is None:
+            continue
+        if not _value_suppressed(match.group("default"), code=False, config=True, shell=True):
+            return True
     return False
 
 

@@ -14,6 +14,11 @@ home="${SVN_HOME:-${root}/.local/devnet/prove-containers-${stamp//:/-}}"
 echo "COMMAND bash scripts/devnet/prove-containers.sh"
 echo "DATE ${stamp}"
 echo "TREE $(git rev-parse 'HEAD^{tree}')"
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "DIRTY yes"
+else
+  echo "DIRTY no"
+fi
 echo "DOCKER_HOST=${DOCKER_HOST-<unset>}"
 echo "NOTE empty blocks only. No application transaction is submitted, so the hash is the genesis application state."
 echo "NOTE bridge networking is BLOCKED. This run uses host networking."
@@ -100,6 +105,40 @@ while time.time() < deadline:
         for index, (height, digest) in enumerate(rows):
             print(f"phase={phase} sample=0 node={index} height={height} app_hash={digest}", flush=True)
         print(f"phase={phase} threshold={height} app_hash={digest}", flush=True)
+        raise SystemExit(0)
+    time.sleep(0.3)
+raise SystemExit(f"disagreement {last}")
+PY
+}
+
+agreed_height() {
+  local count="$1"
+  python3 - "${home}/topology.json" "${count}" <<'PY'
+import json
+import sys
+import time
+import urllib.request
+
+topology = json.load(open(sys.argv[1]))
+count = int(sys.argv[2])
+nodes = topology["validators"][:count]
+deadline = time.time() + 45
+last = None
+
+def read(url):
+    with urllib.request.urlopen(url + "/status", timeout=2) as response:
+        info = json.load(response)["result"]["sync_info"]
+    return int(info["latest_block_height"])
+
+while time.time() < deadline:
+    try:
+        heights = [read(node["rpc"]) for node in nodes]
+    except Exception:
+        time.sleep(0.3)
+        continue
+    last = heights
+    if len(set(heights)) == 1:
+        print(heights[0])
         raise SystemExit(0)
     time.sleep(0.3)
 raise SystemExit(f"disagreement {last}")
@@ -238,22 +277,18 @@ echo "COMMAND docker compose -f deployments/chain/compose.yaml stop"
 HOST_UID="$(id -u)" HOST_GID="$(id -g)" SVN_HOME="${home}" docker compose -f "${compose}" stop
 echo "COMMAND docker compose -f deployments/chain/compose.yaml start"
 HOST_UID="$(id -u)" HOST_GID="$(id -g)" SVN_HOME="${home}" docker compose -f "${compose}" start
-restart_height="$(wait_above restart 4 "${start_height}")"
-echo "phase=restart threshold=${start_height} reached=${restart_height}"
+# Do not use the pre-stop height. A block during shutdown used to pass threshold+1.
+restart_up="$(wait_above restart-up 4 0)"
+restart_height="$(wait_above restart 4 "$((restart_up + 1))")"
+echo "phase=restart up=${restart_up} reached=${restart_height}"
+if [[ "${restart_height}" -lt "$((restart_up + 2))" ]]; then
+  echo "restart did not produce two blocks after ${restart_up}" >&2
+  echo "EXIT:1"
+  exit 1
+fi
 
 echo "COMMAND docker compose -f deployments/chain/compose.yaml stop v4"
-one_threshold="$(python3 - "${home}/topology.json" <<'PY'
-import json, sys, urllib.request
-nodes = json.load(open(sys.argv[1]))["validators"]
-heights = []
-for node in nodes:
-    with urllib.request.urlopen(node["rpc"] + "/status", timeout=2) as response:
-        heights.append(int(json.load(response)["result"]["sync_info"]["latest_block_height"]))
-if len(set(heights)) != 1:
-    raise SystemExit(f"disagreement {heights}")
-print(heights[0])
-PY
-)"
+one_threshold="$(agreed_height 4)"
 echo "phase=stop-one threshold=${one_threshold}"
 HOST_UID="$(id -u)" HOST_GID="$(id -g)" SVN_HOME="${home}" docker compose -f "${compose}" stop v4
 one_height="$(wait_above one-down 3 "${one_threshold}")"
@@ -261,18 +296,7 @@ echo "phase=one-down threshold=${one_threshold} reached=${one_height}"
 watch one-down 3 moving
 
 echo "COMMAND docker compose -f deployments/chain/compose.yaml stop v3"
-two_threshold="$(python3 - "${home}/topology.json" <<'PY'
-import json, sys, urllib.request
-nodes = json.load(open(sys.argv[1]))["validators"][:3]
-heights = []
-for node in nodes:
-    with urllib.request.urlopen(node["rpc"] + "/status", timeout=2) as response:
-        heights.append(int(json.load(response)["result"]["sync_info"]["latest_block_height"]))
-if len(set(heights)) != 1:
-    raise SystemExit(f"disagreement {heights}")
-print(heights[0])
-PY
-)"
+two_threshold="$(agreed_height 3)"
 echo "phase=stop-two threshold=${two_threshold}"
 HOST_UID="$(id -u)" HOST_GID="$(id -g)" SVN_HOME="${home}" docker compose -f "${compose}" stop v3
 stall="$(watch two-down 2 stall)"
@@ -280,6 +304,12 @@ echo "phase=two-down stall=${stall}"
 
 echo "COMMAND docker compose -f deployments/chain/compose.yaml start v3 v4"
 HOST_UID="$(id -u)" HOST_GID="$(id -g)" SVN_HOME="${home}" docker compose -f "${compose}" start v3 v4
-recovered="$(wait_above recovery 4 "${stall}")"
-echo "phase=recovery threshold=${stall} reached=${recovered}"
+recovery_up="$(wait_above recovery-up 4 "${stall}")"
+recovered="$(wait_above recovery 4 "$((recovery_up + 1))")"
+echo "phase=recovery stall=${stall} up=${recovery_up} reached=${recovered}"
+if [[ "${recovered}" -lt "$((recovery_up + 2))" ]]; then
+  echo "recovery did not produce two blocks after ${recovery_up}" >&2
+  echo "EXIT:1"
+  exit 1
+fi
 sample recovery 4

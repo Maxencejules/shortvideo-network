@@ -171,7 +171,7 @@ These are not fixed in this round. They are not VERIFIED claims.
 4. `scripts/devnet/prove-process.sh`, `prove-containers.sh`, and `prove-genesis.sh` print `TREE` from `git rev-parse HEAD^{tree}`. They do not print whether the worktree was dirty. A dirty flag belongs in those scripts, followed by a rerun.
 5. [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) records `COMMAND bash scripts/env/compose.sh` and, later, `COMMAND docker compose -f deployments/compose/docker-compose.yml stop`. The healthy `ps` table has no COMMAND line of its own. The stop command is the line above the container shutdown. A rerun should print COMMAND before `ps`.
 6. The Dockerfile digests are linux/amd64 manifests. Another architecture cannot use them as written. That limit is already in the Dockerfile comment.
-7. Exact-height checks can still flake when empty blocks leave validators one height apart. Runs `41248540896`, `41249097464`, and `41249637172` failed that way and were fixed in the sampler, the high-water height, and the per-node stall. `WaitEqual` at the start of the process test still requires one shared height. Keep watching it.
+7. Exact-height checks can still flake when empty blocks leave validators one height apart. Runs `41248540896`, `41249097464`, `41249637172`, and `41252788163` failed that way. Run `41252788163` reported `disagreement [14, 14, 13]` after stop v3: that sampler read the three live heights once and exited. Goal 06 makes that read wait until the heights match, and the restart and recovery proofs wait for two blocks after the restarted validators are up.
 
 ## Round 4
 

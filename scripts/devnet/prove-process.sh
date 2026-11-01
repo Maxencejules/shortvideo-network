@@ -9,6 +9,7 @@ cd "${root}"
 echo "COMMAND bash scripts/devnet/prove-process.sh"
 echo "DATE $(date -Is)"
 echo "TREE $(git rev-parse 'HEAD^{tree}')"
+if [[ -n "$(git status --porcelain)" ]]; then echo "DIRTY yes"; else echo "DIRTY no"; fi
 echo "NOTE empty blocks only. No application transaction is submitted, so the hash is the genesis application state."
 
 set +e

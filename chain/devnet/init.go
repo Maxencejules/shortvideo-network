@@ -19,6 +19,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	cmttypes "github.com/cometbft/cometbft/types"
+	sdked "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -68,6 +69,14 @@ type Topology struct {
 	Validators         []Node `json:"validators"`
 	AuthorityAddress   string `json:"authority_address"`
 	ServiceAddress     string `json:"service_address"`
+	Seats              []Seat `json:"seats,omitempty"`
+}
+
+// Seat is a public devnet council key. It is not a consensus key.
+type Seat struct {
+	SeatID       string `json:"seat_id"`
+	Address      string `json:"address"`
+	PublicKeyHex string `json:"public_key_hex"`
 }
 
 // Layout is the result of Init.
@@ -132,8 +141,20 @@ func Init(opts Options) (layout Layout, err error) {
 	if err = writeKey(filepath.Join(opts.Home, "accounts", "service.hex"), serviceKey.Bytes()); err != nil {
 		return Layout{}, err
 	}
+	seats := make([]councilKey, 4)
+	for i := range seats {
+		key := sdked.GenPrivKey()
+		pub := key.PubKey().Bytes()
+		if len(pub) != 32 {
+			return Layout{}, fmt.Errorf("council public key length %d", len(pub))
+		}
+		seats[i] = councilKey{id: fmt.Sprintf("seat-%d", i+1), key: key, pub: pub}
+		if err = writeKey(filepath.Join(opts.Home, "accounts", fmt.Sprintf("seat-%d.hex", i+1)), key.Bytes()); err != nil {
+			return Layout{}, err
+		}
+	}
 
-	doc := document(opts, nodes, authorityKey, serviceKey)
+	doc := document(opts, nodes, authorityKey, serviceKey, seats)
 	enc, err := app.MakeEncoding()
 	if err != nil {
 		return Layout{}, err
@@ -191,6 +212,7 @@ func Init(opts Options) (layout Layout, err error) {
 		Validators:         public,
 		AuthorityAddress:   sdk.AccAddress(authorityKey.PubKey().Address()).String(),
 		ServiceAddress:     sdk.AccAddress(serviceKey.PubKey().Address()).String(),
+		Seats:              publicSeats(seats),
 	}
 	rawTopology, err := json.MarshalIndent(topology, "", "  ")
 	if err != nil {
@@ -348,7 +370,25 @@ func writeNodeConfig(p prepared, peers string) error {
 	return os.WriteFile(filepath.Join(p.home, "config", "svn-listen.json"), append(rawListen, '\n'), 0o644)
 }
 
-func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.PrivKey) genesis.Document {
+type councilKey struct {
+	id  string
+	key *sdked.PrivKey
+	pub []byte
+}
+
+func publicSeats(seats []councilKey) []Seat {
+	out := make([]Seat, len(seats))
+	for i, seat := range seats {
+		out[i] = Seat{
+			SeatID:       seat.id,
+			Address:      sdk.AccAddress(seat.key.PubKey().Address()).String(),
+			PublicKeyHex: hex.EncodeToString(seat.pub),
+		}
+	}
+	return out
+}
+
+func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.PrivKey, seats []councilKey) genesis.Document {
 	validators := make([]genesis.Validator, len(nodes))
 	for i, nodeHome := range nodes {
 		validators[i] = genesis.Validator{
@@ -361,21 +401,34 @@ func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.
 	for i, id := range genesis.DecisionIDs {
 		rows[i] = genesis.BlockedDecision{DecisionID: id, SchemaVersion: 1}
 	}
+	submitters := []genesis.Submitter{
+		{AddressHex: hex.EncodeToString(authorityKey.PubKey().Address()), Role: genesis.RoleAuthority},
+		{AddressHex: hex.EncodeToString(serviceKey.PubKey().Address()), Role: genesis.RoleAdmittedService},
+	}
+	seatRows := make([]genesis.DevnetTestSeat, len(seats))
+	for i, seat := range seats {
+		submitters = append(submitters, genesis.Submitter{
+			AddressHex: hex.EncodeToString(seat.key.PubKey().Address()),
+			Role:       genesis.RoleBroadcaster,
+		})
+		seatRows[i] = genesis.DevnetTestSeat{SeatID: seat.id, PublicKeyHex: hex.EncodeToString(seat.pub)}
+	}
 	return genesis.Document{
 		ChainID:                   opts.ChainID,
 		GenesisUnixSeconds:        opts.GenesisTime.Unix(),
 		ProtocolVersion:           genesis.ProtocolVersion,
 		AllowDevnetTestParameters: true,
 		Validators:                validators,
-		Submitters: []genesis.Submitter{
-			{AddressHex: hex.EncodeToString(authorityKey.PubKey().Address()), Role: genesis.RoleAuthority},
-			{AddressHex: hex.EncodeToString(serviceKey.PubKey().Address()), Role: genesis.RoleAdmittedService},
-		},
-		BlockedDecisions: rows,
+		Submitters:                submitters,
+		DevnetTestSeats:           seatRows,
+		BlockedDecisions:          rows,
 		DevnetTestParameters: []genesis.DevnetTestParameter{
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-001", RoleName: "DEVNET_TEST_ONLY"},
+			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-002", RoleName: "DEVNET_TEST_ONLY"},
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-005", NumericValue: 3600},
-			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-008", NumericValue: 2, DelaySeconds: 10},
+			// Four seats and three approvals is DEC-008. Delay 0 is the
+			// devnet test parameter. Activation is still strictly later.
+			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-008", NumericValue: 3, DelaySeconds: 0},
 		},
 		SafetyCaps: genesis.DefaultSafetyCaps(),
 	}

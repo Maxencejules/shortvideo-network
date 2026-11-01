@@ -142,11 +142,23 @@ func authorityState(doc genesis.Document) (*authorityv1.GenesisState, error) {
 	slices.SortFunc(submitters, func(a, b *typesv1.Submitter) int {
 		return bytes.Compare(a.GetAddress(), b.GetAddress())
 	})
+	seats := make([]*authorityv1.DevnetTestSeat, len(doc.DevnetTestSeats))
+	for i, row := range doc.DevnetTestSeats {
+		raw, err := hex.DecodeString(row.PublicKeyHex)
+		if err != nil {
+			return nil, fmt.Errorf("seat %s: %w", row.SeatID, err)
+		}
+		seats[i] = &authorityv1.DevnetTestSeat{SeatId: row.SeatID, PublicKey: raw}
+	}
+	slices.SortFunc(seats, func(a, b *authorityv1.DevnetTestSeat) int {
+		return strings.Compare(a.GetSeatId(), b.GetSeatId())
+	})
 	return &authorityv1.GenesisState{
 		Authority: &authorityv1.AuthorityState{
-			Validators: validators,
-			Submitters: submitters,
-			QuorumLoss: authorityv1.QuorumLossBehavior_QUORUM_LOSS_BEHAVIOR_UNSET,
+			Validators:      validators,
+			Submitters:      submitters,
+			DevnetTestSeats: seats,
+			QuorumLoss:      authorityv1.QuorumLossBehavior_QUORUM_LOSS_BEHAVIOR_UNSET,
 		},
 		BlockedDecisions:     blocked(doc.BlockedDecisions),
 		DevnetTestParameters: devnetTests(doc.DevnetTestParameters),
@@ -313,6 +325,12 @@ func DocumentFromModules(modules map[string]json.RawMessage) (genesis.Document, 
 			SchemaVersion: row.GetSchemaVersion(),
 			ValueVersion:  row.GetValueVersion(),
 			Approved:      row.GetApproved(),
+		})
+	}
+	for _, row := range authority.GetAuthority().GetDevnetTestSeats() {
+		doc.DevnetTestSeats = append(doc.DevnetTestSeats, genesis.DevnetTestSeat{
+			SeatID:       row.GetSeatId(),
+			PublicKeyHex: hex.EncodeToString(row.GetPublicKey()),
 		})
 	}
 	for _, row := range authority.GetDevnetTestParameters() {

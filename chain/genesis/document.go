@@ -26,6 +26,7 @@ type Document struct {
 	Validators                      []Validator           `json:"validators"`
 	Submitters                      []Submitter           `json:"submitters"`
 	ApprovedCouncil                 []json.RawMessage     `json:"approved_council"`
+	DevnetTestSeats                 []DevnetTestSeat      `json:"devnet_test_seats,omitempty"`
 	BlockedDecisions                []BlockedDecision     `json:"blocked_decisions"`
 	DevnetTestParameters            []DevnetTestParameter `json:"devnet_test_parameters"`
 	Contents                        []json.RawMessage     `json:"contents"`
@@ -55,6 +56,12 @@ type BlockedDecision struct {
 	SchemaVersion uint32 `json:"schema_version"`
 	ValueVersion  uint32 `json:"value_version"`
 	Approved      bool   `json:"approved"`
+}
+
+// DevnetTestSeat is a disposable council key. It is not an approved seat.
+type DevnetTestSeat struct {
+	SeatID       string `json:"seat_id"`
+	PublicKeyHex string `json:"public_key_hex"`
 }
 
 // DevnetTestParameter is a labeled test value. It is not an approved policy.
@@ -270,6 +277,7 @@ func validateDevnet(doc Document) error {
 	if !strings.HasPrefix(doc.ChainID, DevnetChainIDPrefix) {
 		return fmt.Errorf("devnet chain id")
 	}
+	var threshold uint64
 	for _, row := range doc.DevnetTestParameters {
 		if row.Label != DevnetTestLabel || row.ApprovedPolicy {
 			return fmt.Errorf("devnet test label")
@@ -277,6 +285,51 @@ func validateDevnet(doc Document) error {
 		if !slices.Contains(DecisionIDs, row.DecisionID) {
 			return fmt.Errorf("devnet test decision %s", row.DecisionID)
 		}
+		if row.DecisionID == "DEC-008" {
+			threshold = row.NumericValue
+			if row.NumericValue != 0 && row.NumericValue != 3 {
+				return fmt.Errorf("DEC-008 test threshold %d is not the approved 3", row.NumericValue)
+			}
+			if row.DelaySeconds < 0 {
+				return fmt.Errorf("DEC-008 delay")
+			}
+		}
+	}
+	if err := validateSeats(doc.DevnetTestSeats, threshold); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateSeats(rows []DevnetTestSeat, threshold uint64) error {
+	if threshold == 3 && len(rows) != 4 {
+		return fmt.Errorf("approved council shape is 4 seats and 3 approvals")
+	}
+	if len(rows) == 0 {
+		return nil
+	}
+	if len(rows) != 4 {
+		return fmt.Errorf("devnet test seats %d", len(rows))
+	}
+	seenID := map[string]struct{}{}
+	seenKey := map[string]struct{}{}
+	for _, row := range rows {
+		if !idPattern.MatchString(row.SeatID) {
+			return fmt.Errorf("seat id %q", row.SeatID)
+		}
+		if _, ok := seenID[row.SeatID]; ok {
+			return fmt.Errorf("duplicate seat %s", row.SeatID)
+		}
+		seenID[row.SeatID] = struct{}{}
+		raw, err := hex.DecodeString(row.PublicKeyHex)
+		if err != nil || len(raw) != ConsensusKeyBytes {
+			return fmt.Errorf("seat key %s", row.SeatID)
+		}
+		key := strings.ToLower(row.PublicKeyHex)
+		if _, ok := seenKey[key]; ok {
+			return fmt.Errorf("duplicate seat key")
+		}
+		seenKey[key] = struct{}{}
 	}
 	return nil
 }

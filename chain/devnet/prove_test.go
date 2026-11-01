@@ -75,11 +75,8 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 		t.Fatal(tail(layout, err))
 	}
 	logPhase(t, "start", rpcs)
-	beforeStop, err := devnet.HighWater(rpcs)
-	if err != nil {
-		t.Fatal(tail(layout, err))
-	}
-	fmt.Printf("phase=stop-all threshold=%d app_hash=%s\n", beforeStop.Height, beforeStop.AppHash)
+	// The threshold is not read before the stops. A block committed while
+	// the processes are shutting down used to satisfy a threshold+1 check.
 	for _, stop := range stops {
 		if err := stop(); err != nil {
 			t.Fatal(err)
@@ -89,12 +86,18 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 	for i := range stops {
 		start(i)
 	}
-	resumed, _, err := devnet.WaitAbove(rpcs, beforeStop.Height, 45*time.Second)
+	up, _, err := devnet.WaitEqual(rpcs, 1, 45*time.Second)
 	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
-	if resumed <= beforeStop.Height {
-		t.Fatalf("restart did not pass height %d (at %d)", beforeStop.Height, resumed)
+	fmt.Printf("phase=restart-up height=%d\n", up)
+	// Two committed blocks after the validators are observed up.
+	resumed, _, err := devnet.WaitAbove(rpcs, up+1, 45*time.Second)
+	if err != nil {
+		t.Fatal(tail(layout, err))
+	}
+	if resumed < up+2 {
+		t.Fatalf("restart did not produce two blocks after height %d (at %d)", up, resumed)
 	}
 	logPhase(t, "restart", rpcs)
 	preserved, err := devnet.BlockHash(rpcs[0], startHeight)
@@ -133,12 +136,20 @@ func TestFourValidatorsCommitRestartAndQuorum(t *testing.T) {
 	stall := observeStall(t, "two-down", rpcs[:2])
 	start(2)
 	start(3)
-	recovered, _, err := devnet.WaitAbove(rpcs, stall, 45*time.Second)
+	// stall+1 is not enough: a block already in flight can satisfy it.
+	// Wait until the restarted validators are up past the stall, then
+	// require two further blocks.
+	up, _, err = devnet.WaitEqual(rpcs, stall+1, 45*time.Second)
 	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
-	if recovered <= stall {
-		t.Fatalf("recovery did not pass stall height %d (at %d)", stall, recovered)
+	fmt.Printf("phase=recovery-up height=%d stall=%d\n", up, stall)
+	recovered, _, err := devnet.WaitAbove(rpcs, up+1, 45*time.Second)
+	if err != nil {
+		t.Fatal(tail(layout, err))
+	}
+	if recovered < up+2 {
+		t.Fatalf("recovery did not produce two blocks after height %d (at %d)", up, recovered)
 	}
 	logPhase(t, "recovery", rpcs)
 }
