@@ -85,6 +85,16 @@ func init() {
 	registerGogo("svn.authority.v1.ForceWithdrawChange", &authorityv1.ForceWithdrawChange{})
 	registerGogo("svn.authority.v1.ActivationPoint", &authorityv1.ActivationPoint{})
 	registerGogo("svn.types.v1.Digest", &typesv1.Digest{})
+	// Every message with an InnerSignature field carries one:
+	// MsgRotateProviderKey, MsgDrainProvider, MsgRegisterContent,
+	// MsgWithdrawContent, MsgAcceptLease, MsgRenewLease, MsgEndLease, and
+	// MsgSubmitAuditBatch. MsgSubmitAuditBatch also carries repeated
+	// EvidenceItem. Without these registrations the tx decoder fails on such
+	// a message (codespace sdk, code 2) before the router can return
+	// ERROR_CODE_FORBIDDEN. TestEveryProtocolMessageDecodes sends each
+	// message with every field set.
+	registerGogo("svn.types.v1.InnerSignature", &typesv1.InnerSignature{})
+	registerGogo("svn.evidence.v1.EvidenceItem", &evidencev1.EvidenceItem{})
 }
 
 func registerGogo(name string, msg gogoproto.Message) {

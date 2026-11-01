@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"slices"
 	"strings"
@@ -144,8 +146,13 @@ func Parse(raw []byte) (Document, error) {
 	if err := dec.Decode(&doc); err != nil {
 		return Document{}, fmt.Errorf("malformed genesis: %w", err)
 	}
-	var extra any
-	if err := dec.Decode(&extra); err != nil && err.Error() != "EOF" {
+	// Only whitespace may follow the document. A second JSON value is
+	// rejected too, so a file never validates as its first document alone.
+	var extra json.RawMessage
+	switch err := dec.Decode(&extra); {
+	case err == nil:
+		return Document{}, fmt.Errorf("malformed genesis trailing data: a second JSON value follows the document")
+	case !errors.Is(err, io.EOF):
 		return Document{}, fmt.Errorf("malformed genesis trailing data: %w", err)
 	}
 	return doc, nil
@@ -382,6 +389,11 @@ func validateValidators(rows []Validator) ([]string, []int64, error) {
 	// share test explicit so a later edit cannot drop it.
 	if maxPower*3 >= total {
 		return nil, nil, fmt.Errorf("validator power share")
+	}
+	// Spec validate_genesis_view runs power_set_invariant, which rejects a
+	// total above safe_integer_max (spec_machine.py:337).
+	if total > SafeIntegerMax {
+		return nil, nil, fmt.Errorf("validator power total exceeds safe_integer_max")
 	}
 	return pubs, powers, nil
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"regexp"
 	"strconv"
 
@@ -14,40 +13,33 @@ import (
 )
 
 const (
-	safeMax      int64 = 9007199254740991
-	unixMin      int64 = 1
-	unixMax      int64 = 253402300799
-	int64Max     int64 = 1<<63 - 1
-	rotateDomain       = "SVN-PROVIDER-ROTATE-1"
+	safeMax  int64 = 9007199254740991
+	unixMin  int64 = 1
+	unixMax  int64 = 253402300799
+	int64Max int64 = 1<<63 - 1
+)
+
+// Payload kinds. They name the oneof alternative of ProposalPayload and are
+// stored in proposal records.
+const (
+	kindValidatorPower  = "validator_power"
+	kindGovernedLimit   = "governed_limit"
+	kindAdmitProvider   = "admit_provider"
+	kindDisableProvider = "disable_provider"
+	kindForceWithdraw   = "force_withdraw"
 )
 
 var idPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
 
 // PowerChange is the normalized validator payload.
 type PowerChange struct {
-	NodeID    string
-	PubKey    []byte
-	Power     int64
-	Reason    []byte
-	Height    uint64
-	Unix      int64
-	ByHeight  bool
-	Canonical string
-	Digest    []byte
-}
-
-func (p PowerChange) kind() string {
-	if p.ByHeight {
-		return "height"
-	}
-	return "time"
-}
-
-func (p PowerChange) point() int64 {
-	if p.ByHeight {
-		return int64(p.Height)
-	}
-	return p.Unix
+	NodeID   string
+	PubKey   []byte
+	Power    int64
+	Reason   []byte
+	Height   uint64
+	Unix     int64
+	ByHeight bool
 }
 
 // PayloadDigest is the SHA-256 of the canonical payload.
@@ -93,9 +85,7 @@ func CanonicalFromProto(payload *authorityv1.ProposalPayload, digest []byte) (Po
 		if len(digest) != 32 || !bytes.Equal(sum[:], digest) {
 			return PowerChange{}, "", "", fail(CodeIntegrity)
 		}
-		change.Canonical = canon
-		change.Digest = append([]byte(nil), digest...)
-		return change, "validator_power", canon, ok()
+		return change, kindValidatorPower, canon, ok()
 	case *authorityv1.ProposalPayload_GovernedLimit:
 		canon, out := governedCanonical(body.GovernedLimit)
 		if !out.Success() {
@@ -104,7 +94,7 @@ func CanonicalFromProto(payload *authorityv1.ProposalPayload, digest []byte) (Po
 		if !digestMatches(canon, digest) {
 			return PowerChange{}, "", "", fail(CodeIntegrity)
 		}
-		return PowerChange{}, "governed_limit", canon, ok()
+		return PowerChange{}, kindGovernedLimit, canon, ok()
 	case *authorityv1.ProposalPayload_AdmitProvider:
 		canon, out := idCanonical("admitProvider", "providerId", body.AdmitProvider.GetProviderId())
 		if !out.Success() {
@@ -113,7 +103,7 @@ func CanonicalFromProto(payload *authorityv1.ProposalPayload, digest []byte) (Po
 		if !digestMatches(canon, digest) {
 			return PowerChange{}, "", "", fail(CodeIntegrity)
 		}
-		return PowerChange{}, "admit_provider", canon, ok()
+		return PowerChange{}, kindAdmitProvider, canon, ok()
 	case *authorityv1.ProposalPayload_DisableProvider:
 		canon, out := idCanonical("disableProvider", "providerId", body.DisableProvider.GetProviderId())
 		if !out.Success() {
@@ -122,7 +112,7 @@ func CanonicalFromProto(payload *authorityv1.ProposalPayload, digest []byte) (Po
 		if !digestMatches(canon, digest) {
 			return PowerChange{}, "", "", fail(CodeIntegrity)
 		}
-		return PowerChange{}, "disable_provider", canon, ok()
+		return PowerChange{}, kindDisableProvider, canon, ok()
 	case *authorityv1.ProposalPayload_ForceWithdraw:
 		canon, out := withdrawCanonical(body.ForceWithdraw)
 		if !out.Success() {
@@ -131,7 +121,7 @@ func CanonicalFromProto(payload *authorityv1.ProposalPayload, digest []byte) (Po
 		if !digestMatches(canon, digest) {
 			return PowerChange{}, "", "", fail(CodeIntegrity)
 		}
-		return PowerChange{}, "force_withdraw", canon, ok()
+		return PowerChange{}, kindForceWithdraw, canon, ok()
 	default:
 		return PowerChange{}, "", "", fail(CodeMalformed)
 	}
@@ -202,7 +192,8 @@ func activationJSON(point *authorityv1.ActivationPoint) (activation, map[string]
 	}
 	switch body := point.GetPoint().(type) {
 	case *authorityv1.ActivationPoint_Height:
-		if body.Height < 1 || int64(body.Height) > safeMax {
+		// Compare as uint64: int64(height) is negative from 2^63 up.
+		if body.Height < 1 || body.Height > uint64(safeMax) {
 			return activation{}, nil, fail(CodeMalformed)
 		}
 		return activation{byHeight: true, height: body.Height}, map[string]any{
@@ -290,32 +281,17 @@ func withdrawCanonical(body *authorityv1.ForceWithdrawChange) (string, Outcome) 
 	return canon, ok()
 }
 
-// ParsePayloadJSON parses one bounded SVN-JCS-1 object. Fuzz and the replay
-// test use it. Unknown fields and a second alternative are malformed.
-func ParsePayloadJSON(raw []byte) (string, Outcome) {
-	if len(raw) == 0 || len(raw) > 8192 {
-		return "", fail(CodeBounds)
-	}
-	canon, err := jcs.ParseAndCanonicalize(string(raw))
-	if err != nil {
-		return "", fail(CodeMalformed)
-	}
-	return canon, ok()
-}
-
 func parameterKey(kind, nodeID, limitKey, providerID, contentID string) string {
 	switch kind {
-	case "validator_power":
+	case kindValidatorPower:
 		return "validator-" + nodeID
-	case "governed_limit":
+	case kindGovernedLimit:
 		return limitKey
-	case "admit_provider":
+	case kindAdmitProvider:
 		return "admit-" + providerID
-	case "disable_provider":
+	case kindDisableProvider:
 		return "disable-" + providerID
 	default:
 		return "withdraw-" + contentID
 	}
 }
-
-func pubkeyHex(raw []byte) string { return hex.EncodeToString(raw) }

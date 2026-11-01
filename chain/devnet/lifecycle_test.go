@@ -87,12 +87,34 @@ func TestDevnetValidatorLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	v4Key, err := hex.DecodeString(layout.Topology.Validators[3].ConsensusPubkeyHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runningSet := validatorSet(t, rpc, beforeStop.Height)
+	if !inSet(runningSet, addKey) || !inSet(runningSet, v4Key) {
+		t.Fatal("v5 or v4 is not in the RPC validator set")
+	}
+	// model_quorum is this test's quorum model applied to the RPC set
+	// (onlinePowerQuorum), not an observation. The observed evidence is the
+	// stall below and the recovery after the restart.
+	quorumV5Down := onlinePowerQuorum(runningSet, [][]byte{addKey})
+	fmt.Printf("phase=power-quorum height=%d validators=%d offline=v5 processes=%d model_quorum=%t\n", beforeStop.Height, len(runningSet), runningProcesses(stops), quorumV5Down)
+	if !quorumV5Down {
+		t.Fatal("4 of 5 power online is not quorum")
+	}
 	if err := stops[3](); err != nil {
 		t.Fatal(err)
 	}
 	stops[3] = nil
 	stall := observeStall(t, "power-one-down", rpcs[:3])
 	fmt.Printf("phase=power-stall height=%d threshold=%d\n", stall, beforeStop.Height)
+	stallSet := validatorSet(t, rpcs[0], stall)
+	quorumAtStall := onlinePowerQuorum(stallSet, [][]byte{addKey, v4Key})
+	fmt.Printf("phase=power-quorum height=%d validators=%d offline=v5,v4 processes=%d model_quorum=%t\n", stall, len(stallSet), runningProcesses(stops), quorumAtStall)
+	if len(stallSet) != 5 || quorumAtStall {
+		t.Fatalf("stall set %d validators, quorum %t; 3 of 5 power online must not be quorum", len(stallSet), quorumAtStall)
+	}
 	stop, err := launch(layout.Topology.Validators[3].Home)
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +142,7 @@ func TestDevnetValidatorLifecycle(t *testing.T) {
 	rotateOld := validatorSet(t, rpc, rotEffective-1)
 	rotatedSet := validatorSet(t, rpc, rotEffective)
 	fmt.Printf("phase=rotate h+1=%d count=%d oldkey=%t h+2=%d count=%d newkey=%t\n", rotEffective-1, len(rotateOld), hasPower(rotateOld, addKey, 1), rotEffective, len(rotatedSet), hasPower(rotatedSet, rotated, 1))
-	if !hasPower(rotateOld, addKey, 1) || hasPower(rotateOld, rotated, 1) || hasPower(rotatedSet, addKey, 1) || !hasPower(rotatedSet, rotated, 1) || len(rotatedSet) != 5 {
+	if len(rotateOld) != 5 || !hasPower(rotateOld, addKey, 1) || hasPower(rotateOld, rotated, 1) || hasPower(rotatedSet, addKey, 1) || !hasPower(rotatedSet, rotated, 1) || len(rotatedSet) != 5 {
 		t.Fatalf("rotation old %d new %d", len(rotateOld), len(rotatedSet))
 	}
 
@@ -382,6 +404,54 @@ func validatorSet(t *testing.T, rpc string, height int64) []voted {
 	return out
 }
 
+func inSet(rows []voted, pub []byte) bool {
+	for _, row := range rows {
+		if bytes.Equal(row.pub, pub) {
+			return true
+		}
+	}
+	return false
+}
+
+// runningProcesses counts the validator processes this test has started and
+// not stopped.
+func runningProcesses(stops []func() error) int {
+	n := 0
+	for _, stop := range stops {
+		if stop != nil {
+			n++
+		}
+	}
+	return n
+}
+
+// onlinePowerQuorum is this test's model of the CometBFT commit rule: it
+// reports whether the validators outside offline hold more than two thirds
+// of the set's voting power. It is computed from an RPC validator set; it is
+// not an observation and not consensus state (DEC-011 keeps liveness out of
+// the application hash). A nonpositive power, a total above 2^53-1, or an
+// empty set is never quorum.
+func onlinePowerQuorum(set []voted, offline [][]byte) bool {
+	const safeMax = 9007199254740991
+	var total, available int64
+	for _, row := range set {
+		if row.power <= 0 || row.power > safeMax-total {
+			return false
+		}
+		total += row.power
+		down := false
+		for _, key := range offline {
+			if bytes.Equal(key, row.pub) {
+				down = true
+			}
+		}
+		if !down {
+			available += row.power
+		}
+	}
+	return total > 0 && available*3 > total*2
+}
+
 func hasPower(rows []voted, pub []byte, power int64) bool {
 	for _, row := range rows {
 		if bytes.Equal(row.pub, pub) && row.power == power {
@@ -389,4 +459,110 @@ func hasPower(rows []voted, pub []byte, power int64) bool {
 		}
 	}
 	return false
+}
+
+// TestQuorumModelVectors runs without processes. It checks this test's
+// quorum model (onlinePowerQuorum) on fixed vectors, including sets where
+// the model's answer differs from a count of validators online. It shows
+// nothing about CometBFT or the chain; the devnet stall and recovery in
+// TestDevnetValidatorLifecycle are the observed evidence.
+func TestQuorumModelVectors(t *testing.T) {
+	key := func(n byte) []byte { return bytes.Repeat([]byte{n}, 32) }
+	set := func(powers ...int64) []voted {
+		out := make([]voted, len(powers))
+		for i, power := range powers {
+			out[i] = voted{pub: key(byte(i + 1)), power: power}
+		}
+		return out
+	}
+	cases := []struct {
+		name    string
+		set     []voted
+		offline [][]byte
+		want    bool
+	}{
+		{"2,2,2,2,1 with the power-1 validator offline", set(2, 2, 2, 2, 1), [][]byte{key(5)}, true},
+		{"2,2,2,2,1 with two power-2 validators offline, three nodes up", set(2, 2, 2, 2, 1), [][]byte{key(1), key(2)}, false},
+		{"1,1,1,1 with one offline", set(1, 1, 1, 1), [][]byte{key(1)}, true},
+		{"1,1,1,1 with half offline", set(1, 1, 1, 1), [][]byte{key(1), key(2)}, false},
+		{"devnet 1,1,1,1,1 with v5 offline", set(1, 1, 1, 1, 1), [][]byte{key(5)}, true},
+		{"devnet 1,1,1,1,1 with v5 and v4 offline, three processes up", set(1, 1, 1, 1, 1), [][]byte{key(5), key(4)}, false},
+		{"exactly two thirds online is not more than two thirds", set(1, 1, 1, 1, 1, 1), [][]byte{key(1), key(2)}, false},
+		{"nothing offline", set(1, 1, 1, 1), nil, true},
+		{"empty set", nil, nil, false},
+		{"zero power", set(1, 1, 1, 0), nil, false},
+		{"negative power", set(1, 1, 1, -1), nil, false},
+		{"total above 2^53-1", set(9007199254740991, 1, 1, 1), nil, false},
+	}
+	for _, tc := range cases {
+		if got := onlinePowerQuorum(tc.set, tc.offline); got != tc.want {
+			t.Errorf("%s: quorum %t, want %t", tc.name, got, tc.want)
+		}
+	}
+}
+
+// TestDevnetKeysAreDistinct (REQ-SEC-002) starts no process. Every key file
+// Init writes is distinct: four consensus keys, four p2p node keys, the
+// authority and service account keys, and four council seat keys. The
+// public keys and addresses of the three roles do not overlap.
+func TestDevnetKeysAreDistinct(t *testing.T) {
+	home := t.TempDir()
+	layout, err := devnet.Init(devnet.Options{Home: home})
+	if err != nil {
+		t.Fatal(err)
+	}
+	type keyFile struct {
+		PubKey struct {
+			Value []byte `json:"value"`
+		} `json:"pub_key"`
+		PrivKey struct {
+			Value []byte `json:"value"`
+		} `json:"priv_key"`
+	}
+	readJSON := func(path string) keyFile {
+		t.Helper()
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out keyFile
+		if err := json.Unmarshal(raw, &out); err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		if len(out.PrivKey.Value) == 0 {
+			t.Fatalf("%s has no private key", path)
+		}
+		return out
+	}
+	private := map[string]string{}
+	public := map[string]string{}
+	note := func(seen map[string]string, value []byte, what string) {
+		t.Helper()
+		if prev, dup := seen[string(value)]; dup {
+			t.Fatalf("%s and %s share a key", prev, what)
+		}
+		seen[string(value)] = what
+	}
+	for i, node := range layout.Topology.Validators {
+		consensus := readJSON(node.Home + "/config/priv_validator_key.json")
+		note(private, consensus.PrivKey.Value, fmt.Sprintf("v%d consensus", i+1))
+		note(public, consensus.PubKey.Value, fmt.Sprintf("v%d consensus", i+1))
+		if hex.EncodeToString(consensus.PubKey.Value) != node.ConsensusPubkeyHex {
+			t.Fatalf("v%d topology key differs from its key file", i+1)
+		}
+		nodeKey := readJSON(node.Home + "/config/node_key.json")
+		note(private, nodeKey.PrivKey.Value, fmt.Sprintf("v%d node", i+1))
+	}
+	signers := loadSigners(t, home)
+	if len(signers) != 6 {
+		t.Fatalf("%d account keys", len(signers))
+	}
+	for _, signer := range signers {
+		note(private, signer.key.Bytes(), signer.name)
+		note(public, signer.key.PubKey().Bytes(), signer.name)
+		note(public, signer.key.PubKey().Address(), signer.name+" address")
+	}
+	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+6 {
+		t.Fatalf("%d validators, %d distinct private keys", len(layout.Topology.Validators), len(private))
+	}
 }

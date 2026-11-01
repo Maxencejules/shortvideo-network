@@ -2,15 +2,17 @@ package authority
 
 import (
 	"bytes"
-	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
 
 	cmted25519 "github.com/cometbft/cometbft/crypto/ed25519"
+	"google.golang.org/protobuf/proto"
 
+	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/jcs"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
@@ -25,145 +27,119 @@ func SeatAddress(pub []byte) []byte {
 	return cmted25519.PubKey(pub).Address()
 }
 
-// State is the authority working set. Liveness is not a field.
+// State is the engine view of the authority store for one message or one
+// EndBlock. It holds the decoded config key; every other object is read from
+// the store when a message names it. Liveness is not a field.
+//
+// The engine writes only on a success or keep path, after every check that
+// can fail, through one batch flushed at the end. A rejected message performs
+// no Set and no Delete.
 type State struct {
-	ChainID       string
-	Height        int64
-	Time          int64
-	PolicyVersion uint64
-	Validators    []*authorityv1.ValidatorPower
-	Submitters    []*typesv1.Submitter
-	Seats         []*authorityv1.DevnetTestSeat
-	Proposals     []*authorityv1.Proposal
-	Pending       []*authorityv1.PendingValidatorPower
-	Params        []*typesv1.DevnetTestParameter
-	Payloads      map[string]string
-	Decoded       map[string]storedChange
-	Business      map[string][]byte
-	Executed      map[string][]byte
-	Providers     map[string]*ProviderRecord
-	Governed      map[string]uint64
-	PrevCouncil   [][]byte
-	PrevService   [][]byte
-	PrevProvider  map[string][][]byte
+	ChainID string
+	Height  int64
+	Time    int64
+
+	kv     KV
+	config *authorityv1.GenesisState
 }
 
-// storedChange is the payload decoded at propose time. Execute uses this
-// record. It does not scrape the canonical JSON again.
-type storedChange struct {
-	Kind       string
-	NodeID     string
-	PubKey     []byte
-	Power      int64
-	Reason     []byte
-	ByHeight   bool
-	Height     uint64
-	Unix       int64
-	LimitKey   string
-	LimitValue uint64
-	ProviderID string
-}
-
-func (c storedChange) power() PowerChange {
-	return PowerChange{
-		NodeID: c.NodeID, PubKey: append([]byte(nil), c.PubKey...), Power: c.Power,
-		Reason: append([]byte(nil), c.Reason...), ByHeight: c.ByHeight, Height: c.Height, Unix: c.Unix,
+// LoadState decodes the config key and returns the engine view. A missing or
+// undecodable config key is an error; the keeper reports it as
+// ERROR_CODE_INTEGRITY and EndBlock halts on it.
+func LoadState(kv KV, chainID string, height, unix int64) (*State, error) {
+	cfg, err := readConfig(kv)
+	if err != nil {
+		return nil, err
 	}
+	return &State{ChainID: chainID, Height: height, Time: unix, kv: kv, config: cfg}, nil
 }
 
-func storedFrom(kind string, change PowerChange, msg *authorityv1.MsgProposeChange) storedChange {
-	out := storedChange{Kind: kind}
-	switch kind {
-	case "validator_power":
-		out.NodeID = change.NodeID
-		out.PubKey = append([]byte(nil), change.PubKey...)
-		out.Power = change.Power
-		out.Reason = append([]byte(nil), change.Reason...)
-		out.ByHeight = change.ByHeight
-		out.Height = change.Height
-		out.Unix = change.Unix
-	case "governed_limit":
-		body := msg.GetPayload().GetGovernedLimit()
-		out.LimitKey = body.GetLimitKey()
-		out.LimitValue = body.GetValue()
-	case "admit_provider":
-		out.ProviderID = msg.GetPayload().GetAdmitProvider().GetProviderId()
-	case "disable_provider":
-		out.ProviderID = msg.GetPayload().GetDisableProvider().GetProviderId()
-	case "force_withdraw":
-		out.ProviderID = ""
-	}
+func (s *State) auth() *authorityv1.AuthorityState { return s.config.GetAuthority() }
+
+// Validators returns a copy of the current set, sorted by consensus key.
+func (s *State) Validators() []*authorityv1.ValidatorPower {
+	out := cloneValidators(s.auth().GetValidators())
+	slices.SortFunc(out, func(a, b *authorityv1.ValidatorPower) int {
+		return bytes.Compare(a.GetConsensusPubkey(), b.GetConsensusPubkey())
+	})
 	return out
 }
 
-// ProviderRecord is the admission row authority keeps until Goal 07 owns
-// the registry. It is not a capacity ledger.
-type ProviderRecord struct {
-	ID            string
-	Account       []byte
-	SigningPub    []byte
-	SigningKeyID  string
-	Generation    uint64
-	State         string
-	OperatorGroup string
-	Endpoint      []byte
-	Capacity      uint64
+// policy is the policy version: 1 until the first execute. A stored value
+// that is not 8 bytes, or is below 2, is integrity damage.
+func (s *State) policy() (uint64, Outcome) {
+	raw := s.kv.Get([]byte{policyKey})
+	if raw == nil {
+		return 1, ok()
+	}
+	version, good := decodeU64(raw)
+	if !good || version < 2 {
+		return 0, fail(CodeIntegrity)
+	}
+	return version, ok()
 }
 
-func (s *State) clone() *State {
-	out := *s
-	out.Validators = cloneValidators(s.Validators)
-	out.Submitters = cloneSubmitters(s.Submitters)
-	out.Seats = cloneSeats(s.Seats)
-	out.Proposals = cloneProposals(s.Proposals)
-	out.Pending = clonePending(s.Pending)
-	out.Params = cloneParams(s.Params)
-	out.Payloads = cloneStringMap(s.Payloads)
-	out.Decoded = cloneDecoded(s.Decoded)
-	out.Business = cloneBytesMap(s.Business)
-	out.Executed = cloneBytesMap(s.Executed)
-	out.Providers = cloneProviders(s.Providers)
-	out.Governed = cloneUintMap(s.Governed)
-	out.PrevCouncil = cloneBytesList(s.PrevCouncil)
-	out.PrevService = cloneBytesList(s.PrevService)
-	out.PrevProvider = cloneBytesListMap(s.PrevProvider)
-	return &out
+// batch collects the writes of one transition. flush applies them in order.
+type batch struct {
+	keys   [][]byte
+	values [][]byte // nil value: delete
+}
+
+func (b *batch) set(key, value []byte) {
+	b.keys = append(b.keys, key)
+	b.values = append(b.values, value)
+}
+
+func (b *batch) del(key []byte) {
+	b.keys = append(b.keys, key)
+	b.values = append(b.values, nil)
+}
+
+func (s *State) flush(b *batch) {
+	for i, key := range b.keys {
+		if b.values[i] == nil {
+			s.kv.Delete(key)
+			continue
+		}
+		s.kv.Set(key, b.values[i])
+	}
 }
 
 func (s *State) devnet(id string) *typesv1.DevnetTestParameter {
-	if !strings.HasPrefix(s.ChainID, "shortvideo-dev-") {
+	if !strings.HasPrefix(s.ChainID, genesis.DevnetChainIDPrefix) {
 		return nil
 	}
-	for _, row := range s.Params {
-		if row.GetDecisionId() == id && row.GetLabel() == "PROPOSED_TEST_PARAMETER" && !row.GetApprovedPolicy() {
+	for _, row := range s.config.GetDevnetTestParameters() {
+		if row.GetDecisionId() == id && row.GetLabel() == genesis.DevnetTestLabel && !row.GetApprovedPolicy() {
 			return row
 		}
 	}
 	return nil
 }
 
+// council is spec council_ready plus the approved DEC-008 shape.
 func (s *State) council() Outcome {
 	param := s.devnet("DEC-008")
 	if param == nil || param.GetNumericValue() != ApprovedThreshold || param.GetDelaySeconds() < 0 || param.GetDelaySeconds() > unixMax {
 		return fail(CodeDecisionBlocked)
 	}
-	if len(s.Seats) != ApprovedSeats {
+	if len(s.auth().GetDevnetTestSeats()) != ApprovedSeats {
 		return fail(CodeDecisionBlocked)
 	}
 	return ok()
 }
 
-func (s *State) seatPub(signer []byte) []byte {
-	for _, seat := range s.Seats {
+func (s *State) seatOf(signer []byte) *authorityv1.DevnetTestSeat {
+	for _, seat := range s.auth().GetDevnetTestSeats() {
 		if bytes.Equal(SeatAddress(seat.GetPublicKey()), signer) {
-			return seat.GetPublicKey()
+			return seat
 		}
 	}
 	return nil
 }
 
 func (s *State) role(signer []byte) typesv1.SubmitterRole {
-	for _, row := range s.Submitters {
+	for _, row := range s.auth().GetSubmitters() {
 		if bytes.Equal(row.GetAddress(), signer) {
 			return row.GetRole()
 		}
@@ -171,28 +147,22 @@ func (s *State) role(signer []byte) typesv1.SubmitterRole {
 	return typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED
 }
 
-func (s *State) proposal(id string) *authorityv1.Proposal {
-	for _, row := range s.Proposals {
-		if row.GetProposalId() == id {
-			return row
-		}
-	}
-	return nil
-}
-
+// business is spec business_gate. It reads only the message's own id. Each
+// caller has already refused an empty id as MALFORMED (require_fields), so a
+// non-matching id here is BOUNDS.
 func (s *State) business(id string, digest []byte) Outcome {
 	if !idPattern.MatchString(id) {
-		if id == "" {
-			return fail(CodeMalformed)
-		}
 		return fail(CodeBounds)
 	}
-	if digest == nil {
+	if len(digest) != sha256.Size {
 		return fail(CodeMalformed)
 	}
-	prev, okHave := s.Business[id]
-	if !okHave {
+	prev := s.kv.Get(businessKey(id))
+	if prev == nil {
 		return ok()
+	}
+	if len(prev) != sha256.Size {
+		return fail(CodeIntegrity)
 	}
 	if bytes.Equal(prev, digest) {
 		return Outcome{Idempotent: true}
@@ -200,31 +170,107 @@ func (s *State) business(id string, digest []byte) Outcome {
 	return fail(CodeReplay)
 }
 
-func (s *State) commitBusiness(id string, digest []byte) {
-	if s.Business == nil {
-		s.Business = map[string][]byte{}
+// record reads one proposal. An id outside the pattern cannot name a stored
+// record, so it is NOT_FOUND without a store read.
+func (s *State) record(id string) (*proposalRecord, Outcome) {
+	if !idPattern.MatchString(id) {
+		return nil, fail(CodeNotFound)
 	}
-	s.Business[id] = append([]byte(nil), digest...)
+	raw := s.kv.Get(proposalKey(id))
+	if raw == nil {
+		return nil, fail(CodeNotFound)
+	}
+	rec, err := decodeRecord(id, raw)
+	if err != nil {
+		return nil, fail(CodeIntegrity)
+	}
+	return rec, ok()
+}
+
+func putRecord(b *batch, rec *proposalRecord) Outcome {
+	raw, err := encodeRecord(rec)
+	if err != nil {
+		return fail(CodeIntegrity)
+	}
+	b.set(proposalKey(rec.ProposalID), raw)
+	return ok()
+}
+
+// openCount is the number of OPEN or QUEUED proposals of seatID opened on
+// base version version.
+func (s *State) openCount(seatID string, version uint64) (uint64, Outcome) {
+	raw := s.kv.Get(openKey(seatID, version))
+	if raw == nil {
+		return 0, ok()
+	}
+	count, good := decodeU64(raw)
+	if !good || count == 0 {
+		return 0, fail(CodeIntegrity)
+	}
+	return count, ok()
+}
+
+// release takes rec out of its proposer's open count for its base version.
+// It runs once per proposal, on its transition out of OPEN or QUEUED. A count
+// that would go below zero is integrity damage.
+func (s *State) release(b *batch, rec *proposalRecord) Outcome {
+	count, out := s.openCount(rec.Proposer, rec.BasePolicyVersion)
+	if !out.Success() {
+		return out
+	}
+	key := openKey(rec.Proposer, rec.BasePolicyVersion)
+	switch count {
+	case 0:
+		return fail(CodeIntegrity)
+	case 1:
+		b.del(key)
+	default:
+		b.set(key, encodeU64(count-1))
+	}
+	return ok()
+}
+
+// keepAs stores a keep outcome: the record gets its terminal mark, and the
+// proposer's open count drops if the record was OPEN or QUEUED. An EXECUTED
+// proposal relabelled EXPIRED (spec op_execute) does not touch the count.
+func (s *State) keepAs(rec *proposalRecord, state authorityv1.ProposalState, code string) Outcome {
+	var b batch
+	if rec.open() {
+		if out := s.release(&b, rec); !out.Success() {
+			return out
+		}
+	}
+	rec.State = int32(state)
+	if out := putRecord(&b, rec); !out.Success() {
+		return out
+	}
+	s.flush(&b)
+	return keep(code)
 }
 
 // ProposeChange opens one proposal. The signer must be a devnet test seat.
+// Check order follows spec op_propose (spec_machine.py:1403-1449).
 func (s *State) ProposeChange(msg *authorityv1.MsgProposeChange) Outcome {
-	if ready := s.council(); !ready.Success() {
-		return ready
-	}
-	if msg == nil || len(msg.GetSigner()) != 20 {
+	// require_fields (1405). proto3 has no absent integer, so only strings,
+	// bytes and messages can be missing here.
+	if msg == nil || len(msg.GetSigner()) != 20 || msg.GetBusinessId() == "" || msg.GetProposalId() == "" ||
+		msg.GetParameterKey() == "" || msg.GetPayload() == nil || msg.GetPayloadDigest() == nil {
 		return fail(CodeMalformed)
 	}
-	pub := s.seatPub(msg.GetSigner())
-	if pub == nil {
+	if ready := s.council(); !ready.Success() { // 1408
+		return ready
+	}
+	seat := s.seatOf(msg.GetSigner())
+	if seat == nil { // 1411
 		return fail(CodeUnauthorized)
 	}
-	if !idPattern.MatchString(msg.GetProposalId()) || !idPattern.MatchString(msg.GetParameterKey()) {
+	if !idPattern.MatchString(msg.GetProposalId()) || !idPattern.MatchString(msg.GetParameterKey()) { // 1413-1416
 		return fail(CodeBounds)
 	}
-	if strings.HasPrefix(msg.GetParameterKey(), "dec-") {
+	if strings.HasPrefix(msg.GetParameterKey(), "dec-") { // 1417
 		return fail(CodeForbidden)
 	}
+	// validated_payload (1191-1210): parse, digest, parameter key, activation.
 	change, kind, canon, parsed := CanonicalFromProto(msg.GetPayload(), msg.GetPayloadDigest().GetValue())
 	if !parsed.Success() {
 		return parsed
@@ -232,15 +278,14 @@ func (s *State) ProposeChange(msg *authorityv1.MsgProposeChange) Outcome {
 	if msg.GetPayloadDigest().GetAlgorithm() != typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256 {
 		return fail(CodeMalformed)
 	}
-	wantKey := parameterKey(kind, change.NodeID, limitKey(msg), providerID(msg), contentID(msg))
-	if msg.GetParameterKey() != wantKey {
+	if msg.GetParameterKey() != parameterKey(kind, change.NodeID, limitKey(msg), providerID(msg), contentID(msg)) {
 		return fail(CodeMalformed)
 	}
-	if msg.GetExpiryUnixSeconds() < unixMin || msg.GetExpiryUnixSeconds() > unixMax {
-		return fail(CodeBounds)
-	}
-	if kind == "validator_power" && !activationFuture(change, s.Height, s.Time) {
+	if kind == kindValidatorPower && !activationFuture(activationPoint(change), s.Height, s.Time) {
 		return fail(CodeOutOfRange)
+	}
+	if msg.GetExpiryUnixSeconds() < unixMin || msg.GetExpiryUnixSeconds() > unixMax { // check_time 1423
+		return fail(CodeBounds)
 	}
 	digest := businessDigest(map[string]any{
 		"base_policy_version": strconv.FormatUint(msg.GetBasePolicyVersion(), 10),
@@ -249,455 +294,281 @@ func (s *State) ProposeChange(msg *authorityv1.MsgProposeChange) Outcome {
 		"payload":             canon,
 		"proposal_id":         msg.GetProposalId(),
 	})
-	gate := s.business(msg.GetBusinessId(), digest)
-	if !gate.Success() || gate.Idempotent {
+	if gate := s.business(msg.GetBusinessId(), digest); !gate.Success() || gate.Idempotent { // 1429
 		return gate
 	}
-	if s.proposal(msg.GetProposalId()) != nil {
+	if s.kv.Has(proposalKey(msg.GetProposalId())) { // 1432
 		return fail(CodeDuplicate)
 	}
-	if msg.GetExpiryUnixSeconds() <= s.Time {
+	if msg.GetExpiryUnixSeconds() <= s.Time { // 1434
 		return fail(CodeExpired)
 	}
-	if msg.GetBasePolicyVersion() != s.PolicyVersion {
+	version, out := s.policy()
+	if !out.Success() {
+		return out
+	}
+	if msg.GetBasePolicyVersion() != version { // 1436
 		return fail(CodeStale)
 	}
-	if len(s.Proposals) >= MaxRecords {
+	// Go only (DR-06-03): the per-seat open quota is the last check. It
+	// counts only proposals on the current base version: one on an older
+	// base can never execute, so it no longer holds a slot.
+	open, out := s.openCount(seat.GetSeatId(), version)
+	if !out.Success() {
+		return out
+	}
+	if open >= MaxOpenProposalsPerSeat {
 		return fail(CodeBounds)
 	}
-	if s.Payloads == nil {
-		s.Payloads = map[string]string{}
-	}
-	if s.Decoded == nil {
-		s.Decoded = map[string]storedChange{}
-	}
-	s.Payloads[msg.GetProposalId()] = canon
-	s.Decoded[msg.GetProposalId()] = storedFrom(kind, change, msg)
-	s.Proposals = append(s.Proposals, &authorityv1.Proposal{
-		ProposalId:        msg.GetProposalId(),
+	rec := &proposalRecord{
+		ProposalID:        msg.GetProposalId(),
 		ParameterKey:      msg.GetParameterKey(),
 		BasePolicyVersion: msg.GetBasePolicyVersion(),
-		PayloadDigest:     msg.GetPayloadDigest(),
-		State:             authorityv1.ProposalState_PROPOSAL_STATE_OPEN,
+		PayloadDigest:     bytes.Clone(msg.GetPayloadDigest().GetValue()),
+		State:             int32(authorityv1.ProposalState_PROPOSAL_STATE_OPEN),
 		ExpiryUnixSeconds: msg.GetExpiryUnixSeconds(),
-		BusinessId:        msg.GetBusinessId(),
-	})
-	s.commitBusiness(msg.GetBusinessId(), digest)
+		BusinessID:        msg.GetBusinessId(),
+		Proposer:          seat.GetSeatId(),
+		Payload:           canon,
+		Decoded:           decodedFrom(kind, change, msg),
+	}
+	var b batch
+	if out := putRecord(&b, rec); !out.Success() {
+		return out
+	}
+	b.set(businessKey(msg.GetBusinessId()), digest)
+	b.set(openKey(seat.GetSeatId(), version), encodeU64(open+1))
+	s.flush(&b)
 	return ok()
 }
 
-// ApproveChange records one seat. The same seat again is a replay.
+// ApproveChange records one seat. The same seat again is a replay, also
+// after its key rotates: approvals are deduplicated by seat id.
+// Check order follows spec op_approve (spec_machine.py:1452-1482).
 func (s *State) ApproveChange(msg *authorityv1.MsgApproveChange) Outcome {
-	if ready := s.council(); !ready.Success() {
-		return ready
-	}
-	if msg == nil || len(msg.GetSigner()) != 20 || !idPattern.MatchString(msg.GetProposalId()) {
+	if msg == nil || len(msg.GetSigner()) != 20 || msg.GetBusinessId() == "" || msg.GetProposalId() == "" { // 1455
 		return fail(CodeMalformed)
 	}
-	pub := s.seatPub(msg.GetSigner())
-	if pub == nil {
+	if ready := s.council(); !ready.Success() { // 1457
+		return ready
+	}
+	seat := s.seatOf(msg.GetSigner())
+	if seat == nil { // 1460
 		return fail(CodeUnauthorized)
 	}
 	digest := businessDigest(map[string]any{
 		"proposal_id": msg.GetProposalId(),
 		"signer":      hex.EncodeToString(msg.GetSigner()),
 	})
-	gate := s.business(msg.GetBusinessId(), digest)
-	if !gate.Success() || gate.Idempotent {
+	if gate := s.business(msg.GetBusinessId(), digest); !gate.Success() || gate.Idempotent { // 1462
 		return gate
 	}
-	proposal := s.proposal(msg.GetProposalId())
-	if proposal == nil {
-		return fail(CodeNotFound)
+	rec, out := s.record(msg.GetProposalId()) // 1465-1467
+	if !out.Success() {
+		return out
 	}
-	if proposal.GetState() != authorityv1.ProposalState_PROPOSAL_STATE_OPEN {
+	if rec.state() != authorityv1.ProposalState_PROPOSAL_STATE_OPEN { // 1468
 		return fail(CodeConflict)
 	}
-	if s.Time >= proposal.GetExpiryUnixSeconds() {
-		proposal.State = authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED
-		return keep(CodeExpired)
+	if s.Time >= rec.ExpiryUnixSeconds { // 1470-1472
+		return s.keepAs(rec, authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED, CodeExpired)
 	}
-	for _, have := range proposal.GetApproverKeys() {
-		if bytes.Equal(have, pub) {
-			return fail(CodeReplay)
-		}
+	if slices.Contains(rec.Approvers, seat.GetSeatId()) { // 1473
+		return fail(CodeReplay)
 	}
+	// Go only: the execute-after time must stay inside the unix bound.
 	delay := s.devnet("DEC-008").GetDelaySeconds()
-	if len(proposal.GetApproverKeys())+1 >= ApprovedThreshold && s.Time > unixMax-delay {
+	if len(rec.Approvers)+1 >= ApprovedThreshold && s.Time > unixMax-delay {
 		return fail(CodeOverflow)
 	}
-	proposal.ApproverKeys = append(proposal.ApproverKeys, append([]byte(nil), pub...))
-	slices.SortFunc(proposal.ApproverKeys, bytes.Compare)
-	if len(proposal.ApproverKeys) >= ApprovedThreshold {
-		proposal.State = authorityv1.ProposalState_PROPOSAL_STATE_QUEUED
-		proposal.ExecuteAfterUnixSeconds = s.Time + delay
+	rec.Approvers = append(rec.Approvers, seat.GetSeatId())
+	slices.Sort(rec.Approvers)
+	rec.ApproverKeys = append(rec.ApproverKeys, bytes.Clone(seat.GetPublicKey()))
+	slices.SortFunc(rec.ApproverKeys, bytes.Compare)
+	if len(rec.Approvers) >= ApprovedThreshold {
+		rec.State = int32(authorityv1.ProposalState_PROPOSAL_STATE_QUEUED)
+		rec.ExecuteAfterUnixSeconds = s.Time + delay
 	}
-	s.commitBusiness(msg.GetBusinessId(), digest)
+	var b batch
+	if out := putRecord(&b, rec); !out.Success() {
+		return out
+	}
+	b.set(businessKey(msg.GetBusinessId()), digest)
+	s.flush(&b)
 	return ok()
 }
 
 // ExecuteChange applies or schedules the stored payload.
+// Check order follows spec op_execute (spec_machine.py:1485-1527).
 func (s *State) ExecuteChange(msg *authorityv1.MsgExecuteChange) Outcome {
-	if msg == nil || len(msg.GetSigner()) != 20 {
+	if msg == nil || len(msg.GetSigner()) != 20 || msg.GetBusinessId() == "" || msg.GetProposalId() == "" { // 1488
 		return fail(CodeMalformed)
 	}
-	if s.role(msg.GetSigner()) != typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY {
-		if s.role(msg.GetSigner()) == typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
+	if role := s.role(msg.GetSigner()); role != typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY { // check_role 1490
+		if role == typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
 			return fail(CodeUnauthorized)
 		}
 		return fail(CodeForbidden)
 	}
-	if ready := s.council(); !ready.Success() {
+	if ready := s.council(); !ready.Success() { // 1493
 		return ready
 	}
-	if !idPattern.MatchString(msg.GetProposalId()) {
-		return fail(CodeBounds)
-	}
 	digest := businessDigest(map[string]any{"proposal_id": msg.GetProposalId()})
-	gate := s.business(msg.GetBusinessId(), digest)
-	if !gate.Success() || gate.Idempotent {
+	if gate := s.business(msg.GetBusinessId(), digest); !gate.Success() || gate.Idempotent { // 1496
 		return gate
 	}
-	proposal := s.proposal(msg.GetProposalId())
-	if proposal == nil {
-		return fail(CodeNotFound)
+	rec, out := s.record(msg.GetProposalId()) // 1499-1501
+	if !out.Success() {
+		return out
 	}
-	// Expiry is tested before the QUEUED check. That order is op_execute in
-	// the frozen spec machine. A later goal can revisit it.
-	if s.Time >= proposal.GetExpiryUnixSeconds() {
-		proposal.State = authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED
-		return keep(CodeExpired)
+	// Expiry is tested before the QUEUED check, as in op_execute (1502-1504).
+	if s.Time >= rec.ExpiryUnixSeconds {
+		return s.keepAs(rec, authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED, CodeExpired)
 	}
-	if proposal.GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+	if rec.state() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
 		return fail(CodeConflict)
 	}
-	if s.Time < proposal.GetExecuteAfterUnixSeconds() {
+	if s.Time < rec.ExecuteAfterUnixSeconds {
 		return fail(CodeOutOfRange)
 	}
-	if proposal.GetBasePolicyVersion() != s.PolicyVersion {
-		prev := s.Executed[proposal.GetParameterKey()]
-		if prev != nil && !bytes.Equal(prev, proposal.GetPayloadDigest().GetValue()) {
+	version, out := s.policy()
+	if !out.Success() {
+		return out
+	}
+	if rec.BasePolicyVersion != version {
+		prev := s.kv.Get(executedKey(rec.ParameterKey))
+		if prev != nil && !bytes.Equal(prev, rec.PayloadDigest) {
 			return fail(CodeConflict)
 		}
 		return fail(CodeStale)
 	}
-	applied := s.applyPayload(proposal)
-	if !applied.Success() {
+	var b batch
+	if applied := s.applyPayload(&b, rec); !applied.Success() {
 		if applied.Code == CodeForbidden {
-			proposal.State = authorityv1.ProposalState_PROPOSAL_STATE_REJECTED
-			return keep(CodeForbidden)
+			return s.keepAs(rec, authorityv1.ProposalState_PROPOSAL_STATE_REJECTED, CodeForbidden)
 		}
 		return applied
 	}
-	if s.Executed == nil {
-		s.Executed = map[string][]byte{}
+	if version == math.MaxUint64 {
+		return fail(CodeOverflow)
 	}
-	s.Executed[proposal.GetParameterKey()] = append([]byte(nil), proposal.GetPayloadDigest().GetValue()...)
-	s.PolicyVersion++
-	proposal.State = authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED
-	s.commitBusiness(msg.GetBusinessId(), digest)
+	if out := s.release(&b, rec); !out.Success() {
+		return out
+	}
+	rec.State = int32(authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED)
+	if out := putRecord(&b, rec); !out.Success() {
+		return out
+	}
+	b.set(executedKey(rec.ParameterKey), bytes.Clone(rec.PayloadDigest))
+	b.set([]byte{policyKey}, encodeU64(version+1))
+	b.set(businessKey(msg.GetBusinessId()), digest)
+	s.flush(&b)
 	return ok()
 }
 
-func (s *State) applyPayload(proposal *authorityv1.Proposal) Outcome {
-	canon := s.Payloads[proposal.GetProposalId()]
-	decoded, okDecoded := s.Decoded[proposal.GetProposalId()]
-	if canon == "" || !okDecoded || !digestMatches(canon, proposal.GetPayloadDigest().GetValue()) {
+// applyPayload checks the stored payload and adds its writes to b. It writes
+// nothing itself; a failure leaves b to be discarded.
+func (s *State) applyPayload(b *batch, rec *proposalRecord) Outcome {
+	if rec.Payload == "" || !digestMatches(rec.Payload, rec.PayloadDigest) {
 		return fail(CodeIntegrity)
 	}
+	decoded := rec.Decoded
 	switch decoded.Kind {
-	case "validator_power":
-		change := decoded.power()
-		if !activationFuture(change, s.Height, s.Time) {
-			return fail(CodeOutOfRange)
-		}
-		pending := &authorityv1.PendingValidatorPower{
-			ProposalId:      proposal.GetProposalId(),
-			ConsensusPubkey: change.PubKey,
-			Power:           change.Power,
-			NodeId:          change.NodeID,
-			ReasonDigest:    &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: change.Reason},
-			Activation:      activationPoint(change),
-		}
-		if out := s.project(pending); !out.Success() {
-			return out
-		}
-		if len(s.Pending) >= MaxRecords {
+	case kindValidatorPower:
+		return s.schedule(b, rec.ProposalID, decoded.power())
+	case kindGovernedLimit:
+		ceiling, known := governedCeiling(decoded.LimitKey)
+		if !known || decoded.LimitValue < 1 || decoded.LimitValue > ceiling {
 			return fail(CodeBounds)
 		}
-		s.Pending = append(s.Pending, pending)
+		b.set(governedKey(decoded.LimitKey), encodeU64(decoded.LimitValue))
 		return ok()
-	case "governed_limit":
-		return s.applyGovernedValue(decoded.LimitKey, decoded.LimitValue)
-	case "admit_provider":
-		return s.admit(decoded.ProviderID)
-	case "disable_provider":
-		return s.disable(decoded.ProviderID)
-	case "force_withdraw":
+	case kindAdmitProvider:
+		return s.admit(b, decoded.ProviderID)
+	case kindDisableProvider:
+		return s.disable(b, decoded.ProviderID)
+	case kindForceWithdraw:
+		// No content registry until Goal 07.
 		return fail(CodeNotFound)
 	default:
-		return fail(CodeMalformed)
+		return fail(CodeIntegrity)
 	}
 }
 
-func (s *State) project(extra *authorityv1.PendingValidatorPower) Outcome {
-	items := append(clonePending(s.Pending), extra)
-	kinds := map[string]struct{}{}
-	for _, item := range items {
-		kinds[activationKind(item.GetActivation())] = struct{}{}
+// schedule adds one pending validator change after projecting it with every
+// entry already pending (spec apply_proposal_payload, 1344-1359).
+func (s *State) schedule(b *batch, proposalID string, change PowerChange) Outcome {
+	point := activationPoint(change)
+	if !activationFuture(point, s.Height, s.Time) {
+		return fail(CodeOutOfRange)
 	}
-	if len(kinds) > 1 {
-		return fail(CodeConflict)
+	entry := &authorityv1.PendingValidatorPower{
+		ProposalId:      proposalID,
+		ConsensusPubkey: change.PubKey,
+		Power:           change.Power,
+		NodeId:          change.NodeID,
+		ReasonDigest:    &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: change.Reason},
+		Activation:      point,
 	}
-	slices.SortFunc(items, func(a, b *authorityv1.PendingValidatorPower) int {
-		if cmp := strings.Compare(activationKind(a.GetActivation()), activationKind(b.GetActivation())); cmp != 0 {
-			return cmp
-		}
-		if ap, bp := activationValue(a.GetActivation()), activationValue(b.GetActivation()); ap != bp {
-			if ap < bp {
-				return -1
-			}
-			return 1
-		}
-		return strings.Compare(a.GetProposalId(), b.GetProposalId())
-	})
-	vals := map[string]*authorityv1.ValidatorPower{}
-	for _, row := range s.Validators {
-		vals[row.GetNodeId()] = &authorityv1.ValidatorPower{
-			ConsensusPubkey: append([]byte(nil), row.GetConsensusPubkey()...),
-			Power:           row.GetPower(),
-			NodeId:          row.GetNodeId(),
-		}
+	pending, err := readPending(s.kv)
+	if err != nil {
+		return fail(CodeIntegrity)
 	}
-	for index := 0; index < len(items); {
-		point := activationValue(items[index].GetActivation())
-		kind := activationKind(items[index].GetActivation())
-		var group []*authorityv1.PendingValidatorPower
-		for index < len(items) && activationKind(items[index].GetActivation()) == kind && activationValue(items[index].GetActivation()) == point {
-			group = append(group, items[index])
-			index++
-		}
-		seenNode := map[string]struct{}{}
-		seenKey := map[string]struct{}{}
-		for _, item := range group {
-			if _, ok := seenNode[item.GetNodeId()]; ok {
-				return fail(CodeConflict)
-			}
-			seenNode[item.GetNodeId()] = struct{}{}
-			if item.GetPower() == 0 {
-				current := vals[item.GetNodeId()]
-				if current == nil || !bytes.Equal(current.GetConsensusPubkey(), item.GetConsensusPubkey()) {
-					return fail(CodeConflict)
-				}
-			}
-			key := string(item.GetConsensusPubkey())
-			if _, ok := seenKey[key]; ok {
-				return fail(CodeConflict)
-			}
-			seenKey[key] = struct{}{}
-		}
-		for _, item := range group {
-			if item.GetPower() > 0 {
-				for id, row := range vals {
-					if id != item.GetNodeId() && bytes.Equal(row.GetConsensusPubkey(), item.GetConsensusPubkey()) {
-						return fail(CodeDuplicate)
-					}
-				}
-				vals[item.GetNodeId()] = &authorityv1.ValidatorPower{
-					ConsensusPubkey: append([]byte(nil), item.GetConsensusPubkey()...),
-					Power:           item.GetPower(),
-					NodeId:          item.GetNodeId(),
-				}
-				continue
-			}
-			current := vals[item.GetNodeId()]
-			if current == nil {
-				return fail(CodeNotFound)
-			}
-			if !bytes.Equal(current.GetConsensusPubkey(), item.GetConsensusPubkey()) {
-				return fail(CodeConflict)
-			}
-			delete(vals, item.GetNodeId())
-		}
-		if out := powerInvariant(vals); !out.Success() {
-			return out
+	// A genesis entry can carry the id of a later council proposal. The
+	// spec leaves a same-id item out of the projection; its pending ids are
+	// always executed proposal ids, so that never happens there. Here it
+	// would let EndBlock apply a set the projection never checked, so a
+	// same-id entry (which also covers the same key) is a CONFLICT.
+	for _, item := range pending {
+		if item.GetProposalId() == proposalID {
+			return fail(CodeConflict)
 		}
 	}
-	return ok()
-}
-
-// ApplyDue applies validator changes whose activation point has been reached.
-// A removal whose key does not match halts: the caller must not save.
-func (s *State) ApplyDue() (before []*authorityv1.ValidatorPower, changed bool, out Outcome) {
-	var due []*authorityv1.PendingValidatorPower
-	var wait []*authorityv1.PendingValidatorPower
-	for _, item := range s.Pending {
-		if activationDue(item.GetActivation(), s.Height, s.Time) {
-			due = append(due, item)
-		} else {
-			wait = append(wait, item)
-		}
+	if out := projectAll(s.auth().GetValidators(), append(pending, entry)); !out.Success() {
+		return out
 	}
-	if len(due) == 0 {
-		return nil, false, ok()
-	}
-	slices.SortFunc(due, func(a, b *authorityv1.PendingValidatorPower) int {
-		if ap, bp := activationValue(a.GetActivation()), activationValue(b.GetActivation()); ap != bp {
-			if ap < bp {
-				return -1
-			}
-			return 1
-		}
-		return strings.Compare(a.GetProposalId(), b.GetProposalId())
-	})
-	before = cloneValidators(s.Validators)
-	working := cloneValidators(s.Validators)
-	find := func(id string) *authorityv1.ValidatorPower {
-		for _, row := range working {
-			if row.GetNodeId() == id {
-				return row
-			}
-		}
-		return nil
-	}
-	for _, item := range due {
-		if item.GetPower() == 0 {
-			current := find(item.GetNodeId())
-			if current == nil {
-				return before, false, fail(CodeNotFound)
-			}
-			if !bytes.Equal(current.GetConsensusPubkey(), item.GetConsensusPubkey()) {
-				// Halt. The working copy is discarded. The pending entry stays.
-				return before, false, fail(CodeConflict)
-			}
-			working = slices.DeleteFunc(working, func(row *authorityv1.ValidatorPower) bool {
-				return row.GetNodeId() == item.GetNodeId()
-			})
-			continue
-		}
-		if current := find(item.GetNodeId()); current == nil {
-			working = append(working, &authorityv1.ValidatorPower{
-				ConsensusPubkey: append([]byte(nil), item.GetConsensusPubkey()...),
-				Power:           item.GetPower(),
-				NodeId:          item.GetNodeId(),
-				ReasonDigest:    item.GetReasonDigest(),
-			})
-		} else {
-			current.ConsensusPubkey = append([]byte(nil), item.GetConsensusPubkey()...)
-			current.Power = item.GetPower()
-			current.ReasonDigest = item.GetReasonDigest()
-		}
-	}
-	vals := map[string]*authorityv1.ValidatorPower{}
-	for _, row := range working {
-		vals[row.GetNodeId()] = row
-	}
-	if out := powerInvariant(vals); !out.Success() {
-		return before, false, out
-	}
-	s.Validators = working
-	s.Pending = wait
-	slices.SortFunc(s.Validators, func(a, b *authorityv1.ValidatorPower) int {
-		return bytes.Compare(a.GetConsensusPubkey(), b.GetConsensusPubkey())
-	})
-	return before, true, ok()
-}
-
-func (s *State) validator(id string) *authorityv1.ValidatorPower {
-	for _, row := range s.Validators {
-		if row.GetNodeId() == id {
-			return row
-		}
-	}
-	return nil
-}
-
-func powerInvariant(vals map[string]*authorityv1.ValidatorPower) Outcome {
-	if len(vals) < ApprovedSeats {
-		return fail(CodeForbidden)
-	}
-	var total int64
-	var maxPower int64
-	seen := map[string]struct{}{}
-	for _, row := range vals {
-		if row.GetPower() <= 0 {
-			return fail(CodeForbidden)
-		}
-		key := string(row.GetConsensusPubkey())
-		if _, ok := seen[key]; ok {
-			return fail(CodeDuplicate)
-		}
-		seen[key] = struct{}{}
-		if row.GetPower() > safeMax-total {
-			return fail(CodeOverflow)
-		}
-		total += row.GetPower()
-		if row.GetPower() > maxPower {
-			maxPower = row.GetPower()
-		}
-	}
-	if total > safeMax || maxPower*3 >= total {
-		return fail(CodeForbidden)
-	}
-	return ok()
-}
-
-// PowerQuorum reports whether the online power is more than two thirds.
-// It is not consensus state. Callers pass the offline set from outside.
-func PowerQuorum(powers []int64, offline []bool) bool {
-	if len(powers) != len(offline) {
-		return false
-	}
-	var total, available int64
-	for i, power := range powers {
-		if power <= 0 {
-			return false
-		}
-		if power > safeMax-total {
-			return false
-		}
-		total += power
-		if !offline[i] {
-			available += power
-		}
-	}
-	if total <= 0 || total > safeMax {
-		return false
-	}
-	return available*3 > total*2
-}
-
-func (s *State) RegisterProvider(signer []byte, id string, pub []byte, keyID string, group string, capacity uint64, endpoint []byte) Outcome {
-	if s.role(signer) != typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER {
-		if s.role(signer) == typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
-			return fail(CodeUnauthorized)
-		}
-		return fail(CodeForbidden)
-	}
-	if !idPattern.MatchString(id) || !idPattern.MatchString(keyID) || len(pub) != 32 || len(endpoint) != 32 || capacity < 1 {
+	// Go only (DR-06-04): checked after the projection, as the last rule.
+	if len(pending) >= MaxPendingChanges {
 		return fail(CodeBounds)
 	}
-	if s.Providers[id] != nil {
-		return fail(CodeDuplicate)
+	raw, err := marshalState(entry)
+	if err != nil {
+		return fail(CodeIntegrity)
 	}
-	if len(s.Providers) >= MaxRecords {
-		return fail(CodeBounds)
-	}
-	if s.Providers == nil {
-		s.Providers = map[string]*ProviderRecord{}
-	}
-	s.Providers[id] = &ProviderRecord{
-		ID: id, Account: append([]byte(nil), signer...), SigningPub: append([]byte(nil), pub...),
-		SigningKeyID: keyID, Generation: 1, State: "APPLIED", OperatorGroup: group,
-		Endpoint: append([]byte(nil), endpoint...), Capacity: capacity,
-	}
+	b.set(PendingKey(entry), raw)
 	return ok()
 }
 
-func (s *State) admit(id string) Outcome {
-	row := s.Providers[id]
-	if row == nil {
-		return fail(CodeNotFound)
+func (s *State) provider(id string) (*providerRecord, Outcome) {
+	if !idPattern.MatchString(id) {
+		return nil, fail(CodeNotFound)
+	}
+	raw := s.kv.Get(providerKey(id))
+	if raw == nil {
+		return nil, fail(CodeNotFound)
+	}
+	row, err := decodeProvider(id, raw)
+	if err != nil {
+		return nil, fail(CodeIntegrity)
+	}
+	return row, ok()
+}
+
+func putProvider(b *batch, row *providerRecord) Outcome {
+	raw, err := encodeProvider(row)
+	if err != nil {
+		return fail(CodeIntegrity)
+	}
+	b.set(providerKey(row.ID), raw)
+	return ok()
+}
+
+// admit is the council admit payload (DEC-009). It needs an existing row; no
+// goal-06 message creates one, so on chain it executes to NOT_FOUND.
+func (s *State) admit(b *batch, id string) Outcome {
+	row, out := s.provider(id)
+	if !out.Success() {
+		return out
 	}
 	param := s.devnet("DEC-002")
 	if param == nil || param.GetRoleName() != "DEVNET_TEST_ONLY" {
@@ -707,115 +578,316 @@ func (s *State) admit(id string) Outcome {
 		return fail(CodeForbidden)
 	}
 	row.State = "ADMITTED"
-	return ok()
+	return putProvider(b, row)
 }
 
-func (s *State) disable(id string) Outcome {
-	row := s.Providers[id]
-	if row == nil {
-		return fail(CodeNotFound)
+// disable is the council disable payload (DEC-009).
+func (s *State) disable(b *batch, id string) Outcome {
+	row, out := s.provider(id)
+	if !out.Success() {
+		return out
 	}
 	if row.State != "ADMITTED" && row.State != "DRAINING" {
 		return fail(CodeConflict)
 	}
 	row.State = "DISABLED"
-	return ok()
+	return putProvider(b, row)
 }
 
-func (s *State) applyGovernedValue(key string, value uint64) Outcome {
-	// Caps are the protocol ceilings. A value above its own ceiling is bounds.
-	caps := map[string]uint64{
-		"max_evidence_batch": 32,
-		"max_page_limit":     100,
-		"max_open_offers":    1024,
-		"max_expiry_steps":   128,
-		"max_package_bytes":  268435456,
+// governedCeiling is the protocol ceiling of each governed limit.
+func governedCeiling(key string) (uint64, bool) {
+	switch key {
+	case "max_evidence_batch":
+		return uint64(genesis.MaxEvidenceBatch), true
+	case "max_page_limit":
+		return uint64(genesis.MaxPageLimit), true
+	case "max_open_offers":
+		return uint64(genesis.MaxOpenOffersPerProvider), true
+	case "max_expiry_steps":
+		return uint64(genesis.MaxExpiryStepsPerBlock), true
+	case "max_package_bytes":
+		return genesis.MaxPackageBytes, true
+	default:
+		return 0, false
 	}
-	// The canonical object is small. Pull the two fields by a second parse
-	// through the known shape stored at propose time.
-	ceiling, known := caps[key]
-	if !known || value > ceiling || value < 1 {
-		return fail(CodeBounds)
-	}
-	if s.Governed == nil {
-		s.Governed = map[string]uint64{}
-	}
-	s.Governed[key] = value
-	return ok()
 }
 
-// RotateProviderKey changes the provider signing key only.
-func (s *State) RotateProviderKey(signer []byte, id, newKeyID string, newPub, sig []byte, generation uint64) Outcome {
-	row := s.Providers[id]
-	if row == nil {
-		return fail(CodeNotFound)
+// projected is one validator in a projection: its key and power.
+type projected struct {
+	pub   []byte
+	power int64
+}
+
+// projectAll is spec project_power_changes over the given validators and
+// items. Execute passes every pending entry plus the new one; genesis
+// validation passes the genesis entries. Map iteration below never decides
+// a result: each loop returns the same code whichever entry fails first.
+func projectAll(validators []*authorityv1.ValidatorPower, items []*authorityv1.PendingValidatorPower) Outcome {
+	if len(items) == 0 {
+		return ok()
 	}
-	if !bytes.Equal(row.Account, signer) {
-		return fail(CodeForbidden)
-	}
-	if !idPattern.MatchString(newKeyID) || len(newPub) != 32 || len(sig) != 64 {
-		return fail(CodeBounds)
-	}
-	canon, err := jcs.Canonicalize(map[string]any{
-		"expectedGeneration": strconv.FormatUint(generation, 10),
-		"newSigningKeyId":    newKeyID,
-		"newSigningPubkey":   hex.EncodeToString(newPub),
-		"providerId":         id,
-	})
-	if err != nil {
+	ordered := slices.Clone(items)
+	firstKind, _, good := activationSlot(ordered[0].GetActivation())
+	if !good {
 		return fail(CodeMalformed)
 	}
-	msg := append(append([]byte(rotateDomain), 0), []byte(canon)...)
-	if !ed25519.Verify(row.SigningPub, msg, sig) {
-		return fail(CodeUnauthorized)
+	for _, item := range ordered {
+		kind, _, good := activationSlot(item.GetActivation())
+		if !good {
+			return fail(CodeMalformed)
+		}
+		if kind != firstKind { // DEC-012
+			return fail(CodeConflict)
+		}
 	}
-	if generation != row.Generation {
-		return fail(CodeStale)
+	slices.SortFunc(ordered, comparePending)
+	vals := validatorMap(validators)
+	for index := 0; index < len(ordered); {
+		_, point, _ := activationSlot(ordered[index].GetActivation())
+		var group []*authorityv1.PendingValidatorPower
+		for index < len(ordered) {
+			_, next, _ := activationSlot(ordered[index].GetActivation())
+			if next != point {
+				break
+			}
+			group = append(group, ordered[index])
+			index++
+		}
+		nodes := map[string]struct{}{}
+		keys := map[string]struct{}{}
+		for _, item := range group {
+			if _, dup := nodes[item.GetNodeId()]; dup {
+				return fail(CodeConflict)
+			}
+			nodes[item.GetNodeId()] = struct{}{}
+			if item.GetPower() == 0 {
+				// Bind a removal to the key the validator holds now.
+				current, have := vals[item.GetNodeId()]
+				if !have || !bytes.Equal(current.pub, item.GetConsensusPubkey()) {
+					return fail(CodeConflict)
+				}
+			}
+			if _, dup := keys[string(item.GetConsensusPubkey())]; dup {
+				return fail(CodeConflict)
+			}
+			keys[string(item.GetConsensusPubkey())] = struct{}{}
+		}
+		for _, item := range group {
+			if item.GetPower() == 0 {
+				delete(vals, item.GetNodeId())
+				continue
+			}
+			for node, row := range vals {
+				if node != item.GetNodeId() && bytes.Equal(row.pub, item.GetConsensusPubkey()) {
+					return fail(CodeDuplicate)
+				}
+			}
+			vals[item.GetNodeId()] = projected{pub: bytes.Clone(item.GetConsensusPubkey()), power: item.GetPower()}
+		}
+		if out := powerInvariant(vals); !out.Success() {
+			return out
+		}
 	}
-	if newKeyID == row.SigningKeyID || bytes.Equal(newPub, row.SigningPub) {
-		return fail(CodeConflict)
-	}
-	if s.PrevProvider == nil {
-		s.PrevProvider = map[string][][]byte{}
-	}
-	s.PrevProvider[id] = append(s.PrevProvider[id], append([]byte(nil), row.SigningPub...))
-	row.SigningPub = append([]byte(nil), newPub...)
-	row.SigningKeyID = newKeyID
-	row.Generation++
 	return ok()
+}
+
+// comparePending is spec activation_sort_key: kind, point, proposal id. It
+// is also the order of the pending keys.
+func comparePending(a, b *authorityv1.PendingValidatorPower) int {
+	ak, ap, _ := activationSlot(a.GetActivation())
+	bk, bp, _ := activationSlot(b.GetActivation())
+	if ak != bk {
+		return int(ak) - int(bk)
+	}
+	if ap != bp {
+		if ap < bp {
+			return -1
+		}
+		return 1
+	}
+	return strings.Compare(a.GetProposalId(), b.GetProposalId())
+}
+
+// powerInvariant is spec power_set_invariant (spec_machine.py:321-338): at
+// least four validators, every power positive, total at most the safe
+// integer maximum, and max_power*3 < total. Every failure is FORBIDDEN.
+// The sum is checked before each addition, so it cannot overflow int64.
+func powerInvariant(vals map[string]projected) Outcome {
+	if len(vals) < genesis.MinValidators {
+		return fail(CodeForbidden)
+	}
+	var total, maxPower int64
+	for _, row := range vals {
+		if row.power <= 0 || row.power > safeMax-total {
+			return fail(CodeForbidden)
+		}
+		total += row.power
+		maxPower = max(maxPower, row.power)
+	}
+	if maxPower*3 >= total {
+		return fail(CodeForbidden)
+	}
+	return ok()
+}
+
+// ApplyDue applies the validator changes whose activation point has been
+// reached (spec apply_due_validator_power). It reads the pending entries
+// (at most MaxPendingChanges) and writes the new set and the deletions only
+// on success. A removal whose key does not match, or a resulting set that
+// breaks the invariant, halts: nothing is written and the entry stays.
+func (s *State) ApplyDue() (before []*authorityv1.ValidatorPower, changed bool, out Outcome) {
+	pending, err := readPending(s.kv)
+	if err != nil {
+		return nil, false, fail(CodeIntegrity)
+	}
+	var due []*authorityv1.PendingValidatorPower
+	for _, item := range pending {
+		if activationDue(item.GetActivation(), s.Height, s.Time) {
+			due = append(due, item)
+		}
+	}
+	if len(due) == 0 {
+		return nil, false, ok()
+	}
+	// readPending returns key order, which is the spec due order.
+	before = s.Validators()
+	working := s.Validators()
+	find := func(id string) *authorityv1.ValidatorPower {
+		for _, row := range working {
+			if row.GetNodeId() == id {
+				return row
+			}
+		}
+		return nil
+	}
+	for _, item := range due {
+		current := find(item.GetNodeId())
+		if item.GetPower() == 0 {
+			if current == nil {
+				return before, false, fail(CodeNotFound)
+			}
+			if !bytes.Equal(current.GetConsensusPubkey(), item.GetConsensusPubkey()) {
+				// Halt (RemovalBindCommit). The working copy is discarded.
+				return before, false, fail(CodeConflict)
+			}
+			working = slices.DeleteFunc(working, func(row *authorityv1.ValidatorPower) bool {
+				return row.GetNodeId() == item.GetNodeId()
+			})
+			continue
+		}
+		if current == nil {
+			working = append(working, &authorityv1.ValidatorPower{
+				ConsensusPubkey: bytes.Clone(item.GetConsensusPubkey()),
+				Power:           item.GetPower(),
+				NodeId:          item.GetNodeId(),
+				ReasonDigest:    item.GetReasonDigest(),
+			})
+			continue
+		}
+		current.ConsensusPubkey = bytes.Clone(item.GetConsensusPubkey())
+		current.Power = item.GetPower()
+		current.ReasonDigest = item.GetReasonDigest()
+	}
+	keys := map[string]struct{}{}
+	for _, row := range working {
+		if _, dup := keys[string(row.GetConsensusPubkey())]; dup {
+			return before, false, fail(CodeDuplicate)
+		}
+		keys[string(row.GetConsensusPubkey())] = struct{}{}
+	}
+	if out := powerInvariant(validatorMap(working)); !out.Success() {
+		return before, false, out
+	}
+	slices.SortFunc(working, func(a, b *authorityv1.ValidatorPower) int {
+		return bytes.Compare(a.GetConsensusPubkey(), b.GetConsensusPubkey())
+	})
+	cfg := proto.Clone(s.config).(*authorityv1.GenesisState)
+	cfg.Authority.Validators = working
+	raw, err := marshalState(cfg)
+	if err != nil {
+		return before, false, fail(CodeIntegrity)
+	}
+	var b batch
+	b.set([]byte{configKey}, raw)
+	for _, item := range due {
+		b.del(PendingKey(item))
+	}
+	s.flush(&b)
+	s.config = cfg
+	return before, true, ok()
 }
 
 // RotateCouncilSeat replaces one council key. It does not touch consensus
-// keys or provider signing keys. There is no single-signature message for it.
+// keys or provider signing keys. There is no single-signature message for
+// it; it is engine-only. The old key is retired (0x15) and cannot return.
+//
+// A seat account passes the ante only through a submitter row (DR-06-06).
+// When the old seat address has one, the rotation moves that row and its
+// admission row (0x02) to the new seat address in the same batch, so the
+// retired key is no longer admitted and the new key is. A new address that
+// is already a submitter is DUPLICATE_ID.
 func (s *State) RotateCouncilSeat(seatID string, newPub []byte) Outcome {
 	if !idPattern.MatchString(seatID) || len(newPub) != 32 {
 		return fail(CodeBounds)
 	}
+	cfg := proto.Clone(s.config).(*authorityv1.GenesisState)
 	var seat *authorityv1.DevnetTestSeat
-	for _, row := range s.Seats {
+	for _, row := range cfg.GetAuthority().GetDevnetTestSeats() {
 		if row.GetSeatId() == seatID {
 			seat = row
+			continue
 		}
-		if bytes.Equal(row.GetPublicKey(), newPub) && row.GetSeatId() != seatID {
+		if bytes.Equal(row.GetPublicKey(), newPub) {
 			return fail(CodeDuplicate)
 		}
 	}
 	if seat == nil {
 		return fail(CodeNotFound)
 	}
-	s.PrevCouncil = append(s.PrevCouncil, append([]byte(nil), seat.GetPublicKey()...))
-	seat.PublicKey = append([]byte(nil), newPub...)
+	if bytes.Equal(seat.GetPublicKey(), newPub) || s.kv.Has(retiredCouncilKey(newPub)) {
+		return fail(CodeConflict)
+	}
+	old := bytes.Clone(seat.GetPublicKey())
+	oldAddr, newAddr := SeatAddress(old), SeatAddress(newPub)
+	var moved *typesv1.Submitter
+	for _, row := range cfg.GetAuthority().GetSubmitters() {
+		if bytes.Equal(row.GetAddress(), newAddr) {
+			return fail(CodeDuplicate)
+		}
+		if bytes.Equal(row.GetAddress(), oldAddr) {
+			moved = row
+		}
+	}
+	seat.PublicKey = bytes.Clone(newPub)
+	if moved != nil {
+		moved.Address = bytes.Clone(newAddr)
+	}
+	raw, err := marshalState(cfg)
+	if err != nil {
+		return fail(CodeIntegrity)
+	}
+	var b batch
+	b.set([]byte{configKey}, raw)
+	b.set(retiredCouncilKey(old), []byte(seatID))
+	if moved != nil {
+		b.del(AdmissionKey(oldAddr))
+		b.set(AdmissionKey(newAddr), []byte{byte(moved.GetRole())})
+	}
+	s.flush(&b)
+	s.config = cfg
 	return ok()
 }
 
-// RotateServiceSubmitter replaces an admitted service account. The old
-// address is retained and is not a consensus key.
+// RotateServiceSubmitter replaces an admitted service account and its ante
+// admission row. It is engine-only. The old address is retired (0x16); it is
+// not a consensus key.
 func (s *State) RotateServiceSubmitter(oldAddr, newAddr []byte) Outcome {
 	if len(oldAddr) != 20 || len(newAddr) != 20 || bytes.Equal(oldAddr, newAddr) {
 		return fail(CodeBounds)
 	}
+	cfg := proto.Clone(s.config).(*authorityv1.GenesisState)
 	var found *typesv1.Submitter
-	for _, row := range s.Submitters {
+	for _, row := range cfg.GetAuthority().GetSubmitters() {
 		if bytes.Equal(row.GetAddress(), newAddr) {
 			return fail(CodeDuplicate)
 		}
@@ -826,45 +898,44 @@ func (s *State) RotateServiceSubmitter(oldAddr, newAddr []byte) Outcome {
 	if found == nil || found.GetRole() != typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE {
 		return fail(CodeNotFound)
 	}
-	s.PrevService = append(s.PrevService, append([]byte(nil), oldAddr...))
-	found.Address = append([]byte(nil), newAddr...)
+	if s.kv.Has(retiredServiceKey(newAddr)) {
+		return fail(CodeConflict)
+	}
+	found.Address = bytes.Clone(newAddr)
+	raw, err := marshalState(cfg)
+	if err != nil {
+		return fail(CodeIntegrity)
+	}
+	var b batch
+	b.set([]byte{configKey}, raw)
+	b.del(AdmissionKey(oldAddr))
+	b.set(AdmissionKey(newAddr), []byte{byte(found.GetRole())})
+	b.set(retiredServiceKey(oldAddr), []byte{0x01})
+	s.flush(&b)
+	s.config = cfg
 	return ok()
 }
 
-func activationFuture(change PowerChange, height, unix int64) bool {
-	if change.ByHeight {
-		return int64(change.Height) > height
+func activationFuture(point *authorityv1.ActivationPoint, height, unix int64) bool {
+	switch body := point.GetPoint().(type) {
+	case *authorityv1.ActivationPoint_Height:
+		return body.Height > uint64(max(height, 0))
+	case *authorityv1.ActivationPoint_UnixSeconds:
+		return body.UnixSeconds > unix
+	default:
+		return false
 	}
-	return change.Unix > unix
 }
 
 func activationDue(point *authorityv1.ActivationPoint, height, unix int64) bool {
-	if point.GetHeight() != 0 && point.GetUnixSeconds() == 0 && point.GetPoint() != nil {
-		if _, ok := point.GetPoint().(*authorityv1.ActivationPoint_Height); ok {
-			return height >= int64(point.GetHeight())
-		}
+	switch body := point.GetPoint().(type) {
+	case *authorityv1.ActivationPoint_Height:
+		return height >= 0 && uint64(height) >= body.Height
+	case *authorityv1.ActivationPoint_UnixSeconds:
+		return unix >= body.UnixSeconds
+	default:
+		return false
 	}
-	if _, ok := point.GetPoint().(*authorityv1.ActivationPoint_UnixSeconds); ok {
-		return unix >= point.GetUnixSeconds()
-	}
-	if _, ok := point.GetPoint().(*authorityv1.ActivationPoint_Height); ok {
-		return height >= int64(point.GetHeight())
-	}
-	return false
-}
-
-func activationKind(point *authorityv1.ActivationPoint) string {
-	if _, ok := point.GetPoint().(*authorityv1.ActivationPoint_Height); ok {
-		return "height"
-	}
-	return "time"
-}
-
-func activationValue(point *authorityv1.ActivationPoint) int64 {
-	if _, ok := point.GetPoint().(*authorityv1.ActivationPoint_Height); ok {
-		return int64(point.GetHeight())
-	}
-	return point.GetUnixSeconds()
 }
 
 func activationPoint(change PowerChange) *authorityv1.ActivationPoint {
@@ -883,26 +954,37 @@ func businessDigest(fields map[string]any) []byte {
 	return sum[:]
 }
 
-func limitKey(msg *authorityv1.MsgProposeChange) string {
-	if body := msg.GetPayload().GetGovernedLimit(); body != nil {
-		return body.GetLimitKey()
+func decodedFrom(kind string, change PowerChange, msg *authorityv1.MsgProposeChange) decodedWire {
+	out := decodedWire{Kind: kind}
+	switch kind {
+	case kindValidatorPower:
+		out.NodeID = change.NodeID
+		out.PubKey = bytes.Clone(change.PubKey)
+		out.Power = change.Power
+		out.Reason = bytes.Clone(change.Reason)
+		out.ByHeight = change.ByHeight
+		out.Height = change.Height
+		out.Unix = change.Unix
+	case kindGovernedLimit:
+		out.LimitKey = limitKey(msg)
+		out.LimitValue = msg.GetPayload().GetGovernedLimit().GetValue()
+	case kindAdmitProvider, kindDisableProvider:
+		out.ProviderID = providerID(msg)
 	}
-	return ""
+	return out
+}
+
+func limitKey(msg *authorityv1.MsgProposeChange) string {
+	return msg.GetPayload().GetGovernedLimit().GetLimitKey()
 }
 
 func providerID(msg *authorityv1.MsgProposeChange) string {
 	if body := msg.GetPayload().GetAdmitProvider(); body != nil {
 		return body.GetProviderId()
 	}
-	if body := msg.GetPayload().GetDisableProvider(); body != nil {
-		return body.GetProviderId()
-	}
-	return ""
+	return msg.GetPayload().GetDisableProvider().GetProviderId()
 }
 
 func contentID(msg *authorityv1.MsgProposeChange) string {
-	if body := msg.GetPayload().GetForceWithdraw(); body != nil {
-		return body.GetContentId()
-	}
-	return ""
+	return msg.GetPayload().GetForceWithdraw().GetContentId()
 }

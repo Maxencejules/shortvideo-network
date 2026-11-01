@@ -2,10 +2,7 @@ package authority
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
-
-	"google.golang.org/protobuf/proto"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,17 +10,13 @@ import (
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 )
 
-const (
-	// ModuleName is the only module that may return validator updates.
-	ModuleName = "authority"
+// ModuleName is the only module that may return validator updates.
+const ModuleName = "authority"
 
-	stateKey byte = 0x01
-	admitKey byte = 0x02
-)
-
-// Keeper stores authority state. InitGenesis writes the genesis set.
-// EndBlock writes a scheduled power or key change when its activation
-// point is due. No other module returns validator updates.
+// Keeper stores authority state in the per-object layout of store.go.
+// InitGenesis writes the genesis set. EndBlock writes a scheduled power or
+// key change when its activation point is due. No other module returns
+// validator updates.
 type Keeper struct {
 	storeKey *storetypes.KVStoreKey
 }
@@ -36,105 +29,34 @@ func (k Keeper) StoreKey() *storetypes.KVStoreKey {
 	return k.storeKey
 }
 
-// ConsensusSnapshot is the state key and the side document, length-prefixed.
-// Tests compare it with bytes.Equal. A nil side document is a zero length.
-func (k Keeper) ConsensusSnapshot(ctx sdk.Context) []byte {
-	store := ctx.KVStore(k.storeKey)
-	state := store.Get([]byte{stateKey})
-	side := store.Get([]byte{sideKey})
-	out := make([]byte, 8+len(state)+len(side))
-	binary.BigEndian.PutUint32(out[0:4], uint32(len(state)))
-	binary.BigEndian.PutUint32(out[4:8], uint32(len(side)))
-	copy(out[8:], state)
-	copy(out[8+len(state):], side)
-	return out
-}
-
-// InstallMismatchedRemoval writes a due removal whose consensus key is not
-// the key that validator holds. It is not a message and not an RPC. The
-// app halt test uses it. EndBlock must refuse to commit that block.
-func (k Keeper) InstallMismatchedRemoval(ctx sdk.Context) error {
-	st, err := k.load(ctx)
-	if err != nil {
-		return err
-	}
-	if len(st.Validators) == 0 {
-		return fmt.Errorf("no validator")
-	}
-	current := st.Validators[0]
-	wrong := make([]byte, len(current.GetConsensusPubkey()))
-	copy(wrong, current.GetConsensusPubkey())
-	wrong[0] ^= 0xff
-	st.Pending = append(st.Pending, &authorityv1.PendingValidatorPower{
-		ProposalId:      "commit-bad-key",
-		NodeId:          current.GetNodeId(),
-		ConsensusPubkey: wrong,
-		Power:           0,
-		Activation:      &authorityv1.ActivationPoint{Point: &authorityv1.ActivationPoint_Height{Height: 1}},
-	})
-	return k.save(ctx, st)
-}
-
+// Init writes a validated genesis state into the empty store (InitStore).
 func (k Keeper) Init(ctx context.Context, state *authorityv1.GenesisState) error {
 	if state == nil {
 		return fmt.Errorf("authority genesis is nil")
 	}
-	raw, err := marshalState(state)
-	if err != nil {
-		return err
-	}
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	store := sdkCtx.KVStore(k.storeKey)
-	store.Set([]byte{stateKey}, raw)
-	for _, row := range state.GetAuthority().GetSubmitters() {
-		addr := row.GetAddress()
-		if len(addr) != 20 {
-			return fmt.Errorf("submitter address length")
-		}
-		store.Set(admitKeyBytes(addr), []byte{byte(row.GetRole())})
-	}
-	return nil
+	return InitStore(sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey), state)
 }
 
+// Export returns the genesis form of the store, or an error wrapping
+// ErrExportRefused while the store holds state the genesis proto cannot carry.
 func (k Keeper) Export(ctx context.Context) (*authorityv1.GenesisState, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	raw := sdkCtx.KVStore(k.storeKey).Get([]byte{stateKey})
-	if raw == nil {
-		return nil, fmt.Errorf("authority state is missing")
-	}
-	var state authorityv1.GenesisState
-	if err := proto.Unmarshal(raw, &state); err != nil {
-		return nil, err
-	}
-	return &state, nil
+	return ExportState(sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey))
 }
 
-// ConsensusBytes returns the bytes stored for consensus. Callers compare them
-// to marshalState. ExportGenesis may encode the decoded state as protojson.
+// ConsensusBytes returns the bytes of the config key. They are
+// proto.MarshalOptions{Deterministic: true}, never protojson.
 func (k Keeper) ConsensusBytes(ctx context.Context) ([]byte, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	raw := sdkCtx.KVStore(k.storeKey).Get([]byte{stateKey})
+	raw := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey).Get([]byte{configKey})
 	if raw == nil {
-		return nil, fmt.Errorf("authority state is missing")
+		return nil, errMissing
 	}
 	return append([]byte(nil), raw...), nil
 }
 
-// marshalState is the only consensus encoding for authority state.
-// protojson is not used here. Its output changes across builds.
-func marshalState(state *authorityv1.GenesisState) ([]byte, error) {
-	return proto.MarshalOptions{Deterministic: true}.Marshal(state)
-}
-
-// Admitted reports whether addr is an application account from genesis.
+// Admitted reports whether addr has an admission row (a genesis submitter).
 func (k Keeper) Admitted(ctx context.Context, addr []byte) bool {
 	if len(addr) != 20 {
 		return false
 	}
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	return sdkCtx.KVStore(k.storeKey).Has(admitKeyBytes(addr))
-}
-
-func admitKeyBytes(addr []byte) []byte {
-	return append([]byte{admitKey}, addr...)
+	return sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey).Has(AdmissionKey(addr))
 }

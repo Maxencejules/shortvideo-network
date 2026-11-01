@@ -15,6 +15,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
+	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
@@ -271,6 +272,26 @@ func authGenesis(cdc codec.Codec, doc genesis.Document) (json.RawMessage, error)
 	}
 	state := authtypes.NewGenesisState(authtypes.DefaultParams(), accounts)
 	return cdc.MarshalJSON(state)
+}
+
+// ValidateAuthorityGenesis runs the authority rules on the authority module
+// genesis: no genesis proposals, an empty approved council, quorum loss
+// UNSET, well-formed seats and submitters, the validator power invariant,
+// and every pending validator change projected on the genesis set and
+// activating at or after the first block (authority.ValidateGenesisState).
+// DocumentFromModules does not carry pending entries, proposals, or the
+// approved council, so genesis.Validate cannot check them. InitChain and
+// `svnd genesis validate` both call this, so the command refuses every
+// authority genesis InitChain refuses.
+func ValidateAuthorityGenesis(modules map[string]json.RawMessage, initialHeight, genesisUnixSeconds int64) error {
+	var state authorityv1.GenesisState
+	if err := protojson.Unmarshal(modules[authority.ModuleName], &state); err != nil {
+		return fmt.Errorf("authority genesis: %w", err)
+	}
+	return authority.ValidateGenesisState(&state, &authority.GenesisPoint{
+		InitialHeight:      max(initialHeight, 1),
+		GenesisUnixSeconds: genesisUnixSeconds,
+	})
 }
 
 // DocumentFromModules rebuilds the inventory from module genesis JSON.

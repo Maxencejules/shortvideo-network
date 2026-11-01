@@ -31,6 +31,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/scaffold"
+	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
@@ -57,9 +58,12 @@ func InitOrder() []string {
 	}
 }
 
-// App is the Goal 05 chain. The six blueprint modules are registered.
-// Provider, content, lease, evidence, and policy execution stay empty until
-// Goals 06-10. The validator set is static.
+// App is the chain application. The six blueprint modules are registered.
+// x/authority runs the council proposal flow and is the only module that
+// returns validator updates (Goal 06). The set changes only when a council
+// change is due in EndBlock. Provider, content, lease, and evidence messages
+// are rejected until Goals 07-09. Policy has no message service: a governed
+// limit changes only through a council governed-limit payload.
 type App struct {
 	*baseapp.BaseApp
 
@@ -216,6 +220,11 @@ func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.
 	}); err != nil {
 		return nil, err
 	}
+	// The authority module's own InitGenesis cannot return an error and does
+	// not see the start point, so its rules run here.
+	if err := ValidateAuthorityGenesis(modules, req.InitialHeight, req.Time.Unix()); err != nil {
+		return nil, err
+	}
 	return app.mm.InitGenesis(ctx, app.encoding.Codec, modules)
 }
 
@@ -231,14 +240,48 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	return app.mm.EndBlock(ctx)
 }
 
-// Export returns the current committed application state.
+// Export returns the current committed application state as module genesis
+// JSON. It refuses, with an error that starts "export refused:", in two
+// cases (DR-06-01, DR-06-02):
+//
+//   - the authority store holds state the frozen genesis proto has no field
+//     for (proposal records, business ids, the policy version, and the other
+//     prefixes ExportState names). Dropping it would lose replay protection
+//     and council state on import. The authority check runs before the module
+//     manager export, because the module ExportGenesis can only panic.
+//   - the exported genesis does not validate, for example unequal validator
+//     powers after a genesis pending power change applied. Import would
+//     reject that file.
+//
+// A fresh chain with no such state round-trips byte for byte.
 func (app *App) Export() (map[string]json.RawMessage, error) {
 	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
-	return app.mm.ExportGenesis(ctx, app.encoding.Codec)
+	if _, err := app.authority.Export(ctx); err != nil {
+		return nil, fmt.Errorf("export refused: %w", err)
+	}
+	out, err := app.mm.ExportGenesis(ctx, app.encoding.Codec)
+	if err != nil {
+		return nil, fmt.Errorf("export refused: %w", err)
+	}
+	doc, err := DocumentFromModules(out)
+	if err != nil {
+		return nil, fmt.Errorf("export refused: exported genesis does not validate: %w", err)
+	}
+	if err := genesis.Validate(doc, genesis.CometIdentity{ChainID: app.ChainID()}); err != nil {
+		return nil, fmt.Errorf("export refused: exported genesis does not validate: %w", err)
+	}
+	var state authorityv1.GenesisState
+	if err := protojson.Unmarshal(out[authority.ModuleName], &state); err != nil {
+		return nil, fmt.Errorf("export refused: exported genesis does not validate: %w", err)
+	}
+	if err := authority.ValidateGenesisState(&state, nil); err != nil {
+		return nil, fmt.Errorf("export refused: exported genesis does not validate: %w", err)
+	}
+	return out, nil
 }
 
 // RegisterAPIRoutes registers the tx, CometBFT, and node gateway routes.
-// Application-module REST routes are Goals 06-10.
+// No application module registers REST routes.
 func (app *App) RegisterAPIRoutes(apiSvr *api.Server, _ sdkserverconfig.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
@@ -284,20 +327,6 @@ func (app *App) ServerConfig() sdkserverconfig.Config {
 func (app *App) AuthorityConsensusBytes() ([]byte, error) {
 	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
 	return app.authority.ConsensusBytes(ctx)
-}
-
-// AuthoritySnapshot is the state key and the side document. Reject tests
-// compare it with bytes.Equal.
-func (app *App) AuthoritySnapshot() []byte {
-	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
-	return app.authority.ConsensusSnapshot(ctx)
-}
-
-// InstallMismatchedRemovalForTest writes a due removal with the wrong key.
-// It is not a consensus message. The next EndBlock must halt.
-func (app *App) InstallMismatchedRemovalForTest() error {
-	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
-	return app.authority.InstallMismatchedRemoval(ctx)
 }
 
 func checkHeader(raw json.RawMessage) error {
