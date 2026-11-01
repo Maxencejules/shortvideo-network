@@ -8,95 +8,91 @@ Public launch: DISABLED. No tradable token, coin, sale, or mining. This is not a
 
 - Playbook assignment: GPT-6 Astra, effort HIGH.
 - Model that ran: `grok-4.7-high-fast`. Source: cursor-cloud `run-info` field `originalModelName` for `bcId=bc-e644227c-dbbe-5453-bc33-05e9f27aa7ff`.
-- GPT-6 Astra was not used. A separate Astra HIGH control was not selected. `high-fast` is the suffix of the reported model name.
-- Max waived the model and effort mismatch for this goal. The mismatch is recorded and is not a blocker.
+- GPT-6 Astra was not used. A separate Astra HIGH control was not selected.
+- Max waived the model and effort mismatch. The mismatch is recorded and is not a blocker.
 
-## Tested revision
+## Round 2 tested revision
 
-Go checks ran on commit `f38c6ef31ff98e082a9fddd9531c29b29d954792`, tree `4279ae1a61184bd306fd7e361d70b5cb2c6e9c86`. The working tree was dirty only because this evidence log and a ruff format of `scripts/scan_secrets.py` and `tests/secret_scanner_corpus.py` were uncommitted. Those two files do not change the chain. `git diff f38c6ef -- chain` is empty for that tree.
+Review [5725824160](https://github.com/Maxencejules/shortvideo-network/pull/9#pullrequestreview-5725824160) on `a6a5273` returned FIX. The proofs below ran after that fix, on commit `4c87282`, tree `eacc6b47cfaa19c876efdda1578324420dcdeb3c`. Each log prints that tree. The worktree was dirty only by these new log files.
 
-Base: `f3f583e19355a181ef64de874e5cf26679e6ec30`, subject `goal 05: chain app, genesis and 4-validator devnet (#8)` on `origin/main`. Branch `goal-06` was cut from that commit.
+`git diff eacc6b47 HEAD -- chain` is empty once this evidence commit is the child of `4c87282`. The chain sources in the evidence commit are that tree.
 
-| Prerequisite | Status read before this work | Evidence |
+Base: `f3f583e19355a181ef64de874e5cf26679e6ec30` on `origin/main`. Branch `goal-06`.
+
+| Prerequisite | Status | Evidence |
 | --- | --- | --- |
-| Goal 02 | IMPLEMENTED | [goal-02.md](goal-02.md). Protocol v0 is the frozen candidate. DEC-001..012 are approved. |
-| Goal 05 | VERIFIED | [goal-05.md](goal-05.md). Static validator set. Process proof and container proof are cited there. |
+| Goal 02 | IMPLEMENTED | [goal-02.md](goal-02.md). Protocol v0 stays the frozen candidate. |
+| Goal 05 | VERIFIED | [goal-05.md](goal-05.md), [PR 8](https://github.com/Maxencejules/shortvideo-network/pull/8). |
 
-## What this goal is
+## Round 2 fixes
 
-`x/authority` is the only constructor of `abci.ValidatorUpdate`. Propose, approve, and execute are committed handlers. A validator power or key change is scheduled until its activation point. EndBlock applies due changes. CometBFT v0.40 applies the changeset two heights later (`state/execution.go` `updateState`, `LastHeightValidatorsChanged = header.Height + 2`).
-
-The devnet uses four disposable seats and three approvals. That is DEC-008. The spec machine's three seats and threshold of two are rejected by genesis validation. `approved_council` stays empty. There is no single-signature admit, disable, or force-withdraw.
-
-## Carried items
-
-| Item | Status | What happened |
+| Review item | Status | What changed |
 | --- | --- | --- |
-| Goal 02 removal-bind-commit | VERIFIED | Decision: halt. A due removal whose consensus key does not match is not dropped and is not applied. `ApplyDue` returns `ERROR_CODE_CONFLICT` without writing. EndBlock returns that error, so the block is not committed. The pending entry remains and the next attempt fails the same way. `TestRemovalBindHaltsAndRotationsStaySeparate`. |
-| Goal 03 secret-scanner regressions | VERIFIED | Seventeen cases were appended. No earlier id was deleted, renamed, or flipped. The pin is 249. `.env` `=#<hex>`, Makefile `?=`, yaml `${X:=hex}`, `Dockerfile.dev`, and a non-key `HexToECDSA` are positives. An empty `PRIVATE_KEY=` does not consume the next assignment. Base64 `==` padding is the value. BIP44 paths are not key bytes. A following `{`, `- name:`, or quoted key is not a continued literal. Compose `${PRIVATE_KEY:?}`, `${PRIVATE_KEY:-}`, and `${PRIVATE_KEY:-$Y}` are not hits. `${PRIVATE_KEY:=<hex>}` is. |
-| Goal 05 restart threshold+1 | VERIFIED | The pass condition is two blocks after the restarted processes are observed up. [devnet-lifecycle.txt](logs/goal-06/devnet-lifecycle.txt): `phase=restart-up height=3`, then restart samples at height 9. |
-| Goal 05 recovery stall+1 | VERIFIED | Same rule. The log shows stall 17, `phase=recovery-up height=19`, recovery samples at 21. |
-| Goal 05 follow-up 7, run `41252788163` | VERIFIED | The one-shot `disagreement [14, 14, 13]` read is now `agreed_height`, which polls until the live nodes match. The note is in [goal-05.md](goal-05.md). |
-| Goal 05 auth migrations 5 to 7 | DEFERRED | Unchanged. A fresh chain starts at auth version 7. Goal 10 registers the migrations before an upgrade from an older auth version. |
-| Force-withdraw tombstone | DEFERRED | The payload parses. With no content record the execution is `ERROR_CODE_NOT_FOUND` and the proposal stays `QUEUED`. Content registration is Goal 07. A direct force-withdraw message is not registered. |
+| 1. Reject no-mutate byte compare | VERIFIED | `AuthoritySnapshot` is the length-prefixed state key and side document. `TestRejectedMessagesLeaveTheFullAuthorityState` uses `bytes.Equal` after outsider, corrupt signature, malformed propose, fee, duplicate id, missing approval, repeated approval, execute of an open proposal, stale approval, non-authority execute, and early execute. Log: [unit-r2.txt](logs/goal-06/unit-r2.txt). |
+| 2. State-transition fuzz | VERIFIED | `FuzzStateTransitions` runs a bounded op sequence and checks the committed bytes and the power invariant. [fuzz-state-r2.txt](logs/goal-06/fuzz-state-r2.txt): `-fuzztime=20s`, 46195 execs, exit 0, tree `eacc6b47`. |
+| 3. effective-1 set | VERIFIED | [devnet-r2.txt](logs/goal-06/devnet-r2.txt). Add: h+1=44 count 4, h+2=45 count 5. Rotate: h+1 still has the old key, h+2 has the new key. Remove: h+1 count 5 with the key, h+2 count 4. |
+| 4. Stall height 48 | Dropped | That number was not in a committed log. The quorum stall in [devnet-r2.txt](logs/goal-06/devnet-r2.txt) is height 45. |
+| 5. RegisterProvider and rotation | VERIFIED | Both are committed handlers in `app/services.go`. Update and drain stay `ERROR_CODE_FORBIDDEN` until Goal 07. |
+| 6. Stale comments | VERIFIED | The handler comment no longer says it rechecks the signature. Init and EndBlock comments say EndBlock returns scheduled updates. |
+| 7. Expiry before QUEUED | Follow-up | The order is `op_execute` in the frozen spec machine. This round does not change it. |
+| 8. JSON scrape, no-op delete, unused compare | VERIFIED | Execute uses the record stored at propose time. The no-op delete and `bytesEqual` are gone. |
+| 9. Delay upper bound | VERIFIED | A devnet delay outside `0..unix_seconds_max` is rejected. Approve refuses a delay that would overflow the execution time. |
+| 10. Halt at app level | VERIFIED | `TestRemovalBindHaltLeavesTheSnapshot` in [unit-r2.txt](logs/goal-06/unit-r2.txt). The mismatched removal is not committed, and a second attempt fails with the same snapshot. |
+| 11. Seat wording | VERIFIED | The operations note says four seats and three approvals. |
+| 12. Progress link and goal 05 item 4 | VERIFIED | Goal 06 links [PR 9](https://github.com/Maxencejules/shortvideo-network/pull/9). Goal 05 follow-up 4 is marked done: the prove scripts print `DIRTY`. |
+| 13. Head CI | See the CI section after the push of this commit. | |
 
 ## Acceptance
 
-| Check | Status | Evidence |
+| Check | Status | Log on tree `eacc6b47` |
 | --- | --- | --- |
-| Approved proposal schedules, third approval queues, execute does not apply inside the transaction | VERIFIED | `TestProposalPathsDoNotMutateOnReject`, `TestCommittedAuthorityFlowAndReplay` |
-| Rejected messages do not change authority bytes | VERIFIED | Outsider and corrupt signature in `TestWrongSignatureDoesNotMutate` and the engine test. Repeated vote is `ERROR_CODE_REPLAY` and stores one approval. |
-| Stale approval, delay, expiry | VERIFIED | Approval after `QUEUED` is `ERROR_CODE_CONFLICT`. Delay 10 refuses early execute. Expiry marks `EXPIRED` and does not schedule power. |
-| Unauthorized submitter and wrong signature | VERIFIED | Engine and app tests. Ante plus the handler. |
-| Mixed height and time | VERIFIED | `TestAdmissionAndMixedActivation`. `ERROR_CODE_CONFLICT`, proposal stays `QUEUED`. |
-| Duplicate and invalid sets | VERIFIED | Removing one of four equal powers is `ERROR_CODE_FORBIDDEN` and the proposal is `REJECTED`. Projection rejects duplicate keys and a share cap break. |
-| Provider admission does not change the validator set | VERIFIED | Same test. Consensus, council, provider, and service rotations touch different records. |
-| Effective height | VERIFIED | Application returns the changeset at the activation height. [devnet-lifecycle.txt](logs/goal-06/devnet-lifecycle.txt): height 42 has 4 validators, activation height 43 has 4, effective height 45 has 5. Rotate at 90 still has 5 and the new key. Remove at 132 has 4. |
-| Quorum by power | VERIFIED | After the add, v5 is in the set and is not a process. Stopping one of the four processes leaves three processes up and 3/5 of the power online. The log stalls at 48 (race run) and at 45 (verbose run). Restart reaches two blocks past the up height (`up=46 reached=48` in the verbose log). `TestQuorumUsesPowerNotCount` checks 2,2,2,2,1 without reading a `down` field into state. |
-| Fuzz and deterministic replay | VERIFIED | `FuzzParsePayload` seed, 200 bounded random inputs, and two apps with the same txs share `LastCommitID` in `TestCommittedAuthorityFlowAndReplay`. |
-| `go test -race ./chain/...` | VERIFIED | [go-test-race.txt](logs/goal-06/go-test-race.txt). Exit 0. app 9.085s, devnet 109.355s, authority 1.109s. |
-| Python scanner, ruff, mypy, SBOM, workflow policy | VERIFIED | [python-checks.txt](logs/goal-06/python-checks.txt). Exit 0. |
-| Container script on this VM | BLOCKED | `docker` is not installed here. The script syntax check passed. The bridge stays BLOCKED. |
-| CI on `54503ac` | VERIFIED | Actions run [41257591421](https://github.com/Maxencejules/shortvideo-network/actions/runs/41257591421) succeeded: go, contract, python, devnet, node. The devnet job ran `scripts/devnet/prove-containers.sh`. |
+| Full-state reject compare | VERIFIED | [unit-r2.txt](logs/goal-06/unit-r2.txt) `TestRejectedMessagesLeaveTheFullAuthorityState` |
+| Approved schedule, replay of two apps | VERIFIED | [unit-r2.txt](logs/goal-06/unit-r2.txt) `TestCommittedAuthorityFlowAndReplay` |
+| State-transition fuzz | VERIFIED | [fuzz-state-r2.txt](logs/goal-06/fuzz-state-r2.txt) exit 0 |
+| Add, rotate, remove at effective-1 and effective | VERIFIED | [devnet-r2.txt](logs/goal-06/devnet-r2.txt) |
+| Quorum by power, restart and recovery two blocks after up | VERIFIED | Same log. Stall 45. Restart up 3 then height 9. Recovery up 19 then height 21. |
+| `go test -race ./chain/...` | VERIFIED | [go-test-race-r2.txt](logs/goal-06/go-test-race-r2.txt) exit 0. devnet 107.706s. |
+| Python ruff, mypy, scan, SBOM, pytest | VERIFIED | [python-r2.txt](logs/goal-06/python-r2.txt) exit 0 |
+| Container proof on this VM | BLOCKED | `docker` is not installed here. CI runs the host-network script. The bridge stays BLOCKED. |
 
 ## Commands
 
 ```text
-COMMAND go test -race -count=1 -timeout 12m ./chain/...
-DATE 2026-11-01T00:31:14+00:00
-HEAD f38c6ef31ff98e082a9fddd9531c29b29d954792
-TREE 4279ae1a61184bd306fd7e361d70b5cb2c6e9c86
-EXIT:0
-```
-
-```text
 COMMAND go test -count=1 -timeout 180s ./chain/devnet/ -run 'TestDevnetValidatorLifecycle|TestFour' -v
-TREE 4279ae1a61184bd306fd7e361d70b5cb2c6e9c86
+TREE eacc6b47cfaa19c876efdda1578324420dcdeb3c
 EXIT:0
 ```
 
 ```text
-COMMAND .venv/bin/ruff format --check, ruff check, scan_secrets.py, mypy, write_sbom.py --check, workflow_policy.py, pytest
+COMMAND go test -fuzz=FuzzStateTransitions -fuzztime=20s -count=1 ./x/authority/
+TREE eacc6b47cfaa19c876efdda1578324420dcdeb3c
 EXIT:0
 ```
 
-The full outputs are the log files named above.
+```text
+COMMAND go test -race -count=1 -timeout 12m ./chain/...
+TREE eacc6b47cfaa19c876efdda1578324420dcdeb3c
+EXIT:0
+```
 
-## Framework and licence notes
+```text
+COMMAND go test -count=1 -timeout 120s ./chain/app/ ./chain/x/authority/ -v
+TREE eacc6b47cfaa19c876efdda1578324420dcdeb3c
+EXIT:0
+```
 
-Cosmos SDK v0.55.0 discards the message branch when a handler returns an error, and it commits the ante branch first. Spec transitions that must keep a mark (`EXPIRED`, `REJECTED` on `ERROR_CODE_FORBIDDEN`) are saved, and the code is the `authority_result` event, because returning the error would drop the mark. The payload is not applied. A rejected message does not change authority bytes. The account sequence can advance when ante succeeded. That is not an authority decision.
+Round 1 logs under `logs/goal-06/` that do not print tree `eacc6b47` are not evidence for this revision.
 
-The provider rotate preimage is SVN-JCS-1 of `expectedGeneration`, `newSigningKeyId`, `newSigningPubkey` (hex), and `providerId`, under `SVN-PROVIDER-ROTATE-1`. Protocol v0 names the domain and does not publish a rotate vector. This object is the reversible choice used here.
+## Follow-ups
 
-CometBFT v0.40 and cosmos-sdk v0.55.0 are Apache-2.0 as recorded by their modules. No project licence file is applied (DEC-006). Enterprise PoA and Groups are not imported.
+- Execute checks expiry before it checks `QUEUED`. That is the spec machine. This round did not reorder it.
+- Force-withdraw still returns `ERROR_CODE_NOT_FOUND` until Goal 07 has a content record. The direct message is not registered.
+- Auth version migrations 5 to 7 stay with Goal 10.
 
-## Residual risks
+## Framework note
 
-- One workstation is one operator. Four processes are not four independent operators.
-- This VM did not run the containers. Actions run 41257591421 did, on the host network.
-- Force-withdraw does not write a content tombstone until Goal 07.
-- This is not an audit and not a production deployment.
+SDK v0.55 commits the ante branch before the message and discards the message branch when the handler returns an error. A spec `keep` path (`EXPIRED`, or `REJECTED` on `ERROR_CODE_FORBIDDEN`) is saved and the code is the `authority_result` event. Those paths are not in the no-mutate set. The signature check is the ante decorator, not a second check in the handler.
 
 ## Next safe action
 
-Goal 07 can implement the provider and content registries on top of these admission records. Do not treat the devnet seats as production council keys. Do not delete a genesis to recover a stuck chain.
+Goal 07 can build the provider and content registries on `RegisterProvider` and `RotateProviderKey`. Do not treat devnet seats as production council keys.
