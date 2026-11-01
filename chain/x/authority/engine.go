@@ -38,6 +38,7 @@ type State struct {
 	Pending       []*authorityv1.PendingValidatorPower
 	Params        []*typesv1.DevnetTestParameter
 	Payloads      map[string]string
+	Decoded       map[string]storedChange
 	Business      map[string][]byte
 	Executed      map[string][]byte
 	Providers     map[string]*ProviderRecord
@@ -45,6 +46,54 @@ type State struct {
 	PrevCouncil   [][]byte
 	PrevService   [][]byte
 	PrevProvider  map[string][][]byte
+}
+
+// storedChange is the payload decoded at propose time. Execute uses this
+// record. It does not scrape the canonical JSON again.
+type storedChange struct {
+	Kind       string
+	NodeID     string
+	PubKey     []byte
+	Power      int64
+	Reason     []byte
+	ByHeight   bool
+	Height     uint64
+	Unix       int64
+	LimitKey   string
+	LimitValue uint64
+	ProviderID string
+}
+
+func (c storedChange) power() PowerChange {
+	return PowerChange{
+		NodeID: c.NodeID, PubKey: append([]byte(nil), c.PubKey...), Power: c.Power,
+		Reason: append([]byte(nil), c.Reason...), ByHeight: c.ByHeight, Height: c.Height, Unix: c.Unix,
+	}
+}
+
+func storedFrom(kind string, change PowerChange, msg *authorityv1.MsgProposeChange) storedChange {
+	out := storedChange{Kind: kind}
+	switch kind {
+	case "validator_power":
+		out.NodeID = change.NodeID
+		out.PubKey = append([]byte(nil), change.PubKey...)
+		out.Power = change.Power
+		out.Reason = append([]byte(nil), change.Reason...)
+		out.ByHeight = change.ByHeight
+		out.Height = change.Height
+		out.Unix = change.Unix
+	case "governed_limit":
+		body := msg.GetPayload().GetGovernedLimit()
+		out.LimitKey = body.GetLimitKey()
+		out.LimitValue = body.GetValue()
+	case "admit_provider":
+		out.ProviderID = msg.GetPayload().GetAdmitProvider().GetProviderId()
+	case "disable_provider":
+		out.ProviderID = msg.GetPayload().GetDisableProvider().GetProviderId()
+	case "force_withdraw":
+		out.ProviderID = ""
+	}
+	return out
 }
 
 // ProviderRecord is the admission row authority keeps until Goal 07 owns
@@ -70,6 +119,7 @@ func (s *State) clone() *State {
 	out.Pending = clonePending(s.Pending)
 	out.Params = cloneParams(s.Params)
 	out.Payloads = cloneStringMap(s.Payloads)
+	out.Decoded = cloneDecoded(s.Decoded)
 	out.Business = cloneBytesMap(s.Business)
 	out.Executed = cloneBytesMap(s.Executed)
 	out.Providers = cloneProviders(s.Providers)
@@ -94,7 +144,7 @@ func (s *State) devnet(id string) *typesv1.DevnetTestParameter {
 
 func (s *State) council() Outcome {
 	param := s.devnet("DEC-008")
-	if param == nil || param.GetNumericValue() != ApprovedThreshold || param.GetDelaySeconds() < 0 {
+	if param == nil || param.GetNumericValue() != ApprovedThreshold || param.GetDelaySeconds() < 0 || param.GetDelaySeconds() > unixMax {
 		return fail(CodeDecisionBlocked)
 	}
 	if len(s.Seats) != ApprovedSeats {
@@ -218,7 +268,11 @@ func (s *State) ProposeChange(msg *authorityv1.MsgProposeChange) Outcome {
 	if s.Payloads == nil {
 		s.Payloads = map[string]string{}
 	}
+	if s.Decoded == nil {
+		s.Decoded = map[string]storedChange{}
+	}
 	s.Payloads[msg.GetProposalId()] = canon
+	s.Decoded[msg.GetProposalId()] = storedFrom(kind, change, msg)
 	s.Proposals = append(s.Proposals, &authorityv1.Proposal{
 		ProposalId:        msg.GetProposalId(),
 		ParameterKey:      msg.GetParameterKey(),
@@ -268,11 +322,15 @@ func (s *State) ApproveChange(msg *authorityv1.MsgApproveChange) Outcome {
 			return fail(CodeReplay)
 		}
 	}
+	delay := s.devnet("DEC-008").GetDelaySeconds()
+	if len(proposal.GetApproverKeys())+1 >= ApprovedThreshold && s.Time > unixMax-delay {
+		return fail(CodeOverflow)
+	}
 	proposal.ApproverKeys = append(proposal.ApproverKeys, append([]byte(nil), pub...))
 	slices.SortFunc(proposal.ApproverKeys, bytes.Compare)
 	if len(proposal.ApproverKeys) >= ApprovedThreshold {
 		proposal.State = authorityv1.ProposalState_PROPOSAL_STATE_QUEUED
-		proposal.ExecuteAfterUnixSeconds = s.Time + s.devnet("DEC-008").GetDelaySeconds()
+		proposal.ExecuteAfterUnixSeconds = s.Time + delay
 	}
 	s.commitBusiness(msg.GetBusinessId(), digest)
 	return ok()
@@ -304,6 +362,8 @@ func (s *State) ExecuteChange(msg *authorityv1.MsgExecuteChange) Outcome {
 	if proposal == nil {
 		return fail(CodeNotFound)
 	}
+	// Expiry is tested before the QUEUED check. That order is op_execute in
+	// the frozen spec machine. A later goal can revisit it.
 	if s.Time >= proposal.GetExpiryUnixSeconds() {
 		proposal.State = authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED
 		return keep(CodeExpired)
@@ -327,7 +387,6 @@ func (s *State) ExecuteChange(msg *authorityv1.MsgExecuteChange) Outcome {
 			proposal.State = authorityv1.ProposalState_PROPOSAL_STATE_REJECTED
 			return keep(CodeForbidden)
 		}
-		delete(s.Business, msg.GetBusinessId())
 		return applied
 	}
 	if s.Executed == nil {
@@ -342,20 +401,13 @@ func (s *State) ExecuteChange(msg *authorityv1.MsgExecuteChange) Outcome {
 
 func (s *State) applyPayload(proposal *authorityv1.Proposal) Outcome {
 	canon := s.Payloads[proposal.GetProposalId()]
-	if canon == "" || !digestMatches(canon, proposal.GetPayloadDigest().GetValue()) {
+	decoded, okDecoded := s.Decoded[proposal.GetProposalId()]
+	if canon == "" || !okDecoded || !digestMatches(canon, proposal.GetPayloadDigest().GetValue()) {
 		return fail(CodeIntegrity)
 	}
-	// The stored canonical form is the authority record. Re-parse is bounded.
-	if _, out := ParsePayloadJSON([]byte(canon)); !out.Success() {
-		return out
-	}
-	kind := payloadKind(canon)
-	switch kind {
-	case "validatorPower":
-		change, _, out := validatorFromCanonical(canon)
-		if !out.Success() {
-			return out
-		}
+	switch decoded.Kind {
+	case "validator_power":
+		change := decoded.power()
 		if !activationFuture(change, s.Height, s.Time) {
 			return fail(CodeOutOfRange)
 		}
@@ -375,13 +427,13 @@ func (s *State) applyPayload(proposal *authorityv1.Proposal) Outcome {
 		}
 		s.Pending = append(s.Pending, pending)
 		return ok()
-	case "governedLimit":
-		return s.applyGoverned(canon)
-	case "admitProvider":
-		return s.admit(providerFrom(canon))
-	case "disableProvider":
-		return s.disable(providerFrom(canon))
-	case "forceWithdraw":
+	case "governed_limit":
+		return s.applyGovernedValue(decoded.LimitKey, decoded.LimitValue)
+	case "admit_provider":
+		return s.admit(decoded.ProviderID)
+	case "disable_provider":
+		return s.disable(decoded.ProviderID)
+	case "force_withdraw":
 		return fail(CodeNotFound)
 	default:
 		return fail(CodeMalformed)
@@ -670,7 +722,7 @@ func (s *State) disable(id string) Outcome {
 	return ok()
 }
 
-func (s *State) applyGoverned(canon string) Outcome {
+func (s *State) applyGovernedValue(key string, value uint64) Outcome {
 	// Caps are the protocol ceilings. A value above its own ceiling is bounds.
 	caps := map[string]uint64{
 		"max_evidence_batch": 32,
@@ -681,10 +733,6 @@ func (s *State) applyGoverned(canon string) Outcome {
 	}
 	// The canonical object is small. Pull the two fields by a second parse
 	// through the known shape stored at propose time.
-	key, value, out := governedFields(canon)
-	if !out.Success() {
-		return out
-	}
 	ceiling, known := caps[key]
 	if !known || value > ceiling || value < 1 {
 		return fail(CodeBounds)
@@ -857,117 +905,4 @@ func contentID(msg *authorityv1.MsgProposeChange) string {
 		return body.GetContentId()
 	}
 	return ""
-}
-
-func payloadKind(canon string) string {
-	switch {
-	case strings.Contains(canon, `"validatorPower"`):
-		return "validatorPower"
-	case strings.Contains(canon, `"governedLimit"`):
-		return "governedLimit"
-	case strings.Contains(canon, `"admitProvider"`):
-		return "admitProvider"
-	case strings.Contains(canon, `"disableProvider"`):
-		return "disableProvider"
-	case strings.Contains(canon, `"forceWithdraw"`):
-		return "forceWithdraw"
-	default:
-		return ""
-	}
-}
-
-func providerFrom(canon string) string {
-	const marker = `"providerId":"`
-	i := strings.Index(canon, marker)
-	if i < 0 {
-		return ""
-	}
-	rest := canon[i+len(marker):]
-	j := strings.IndexByte(rest, '"')
-	if j < 0 {
-		return ""
-	}
-	return rest[:j]
-}
-
-func validatorFromCanonical(canon string) (PowerChange, string, Outcome) {
-	// Rebuild through the protobuf the keeper already checked at propose time.
-	// The canonical string is hashed again. Fields are read from that string
-	// only for the values the proposer stored.
-	change := PowerChange{}
-	pub, okPub := jsonString(canon, "consensusPubkey")
-	node, okNode := jsonString(canon, "nodeId")
-	if !okPub || !okNode {
-		return PowerChange{}, "", fail(CodeMalformed)
-	}
-	raw, err := decodeB64(pub)
-	if err != nil || len(raw) != 32 {
-		return PowerChange{}, "", fail(CodeBounds)
-	}
-	change.PubKey = raw
-	change.NodeID = node
-	if power, ok := jsonString(canon, "power"); ok {
-		n, err := strconv.ParseInt(power, 10, 64)
-		if err != nil || n <= 0 {
-			return PowerChange{}, "", fail(CodeMalformed)
-		}
-		change.Power = n
-	}
-	if height, ok := jsonString(canon, "height"); ok {
-		n, err := strconv.ParseUint(height, 10, 64)
-		if err != nil || n < 1 {
-			return PowerChange{}, "", fail(CodeMalformed)
-		}
-		change.ByHeight = true
-		change.Height = n
-	} else if unix, ok := jsonString(canon, "unixSeconds"); ok {
-		n, err := strconv.ParseInt(unix, 10, 64)
-		if err != nil {
-			return PowerChange{}, "", fail(CodeMalformed)
-		}
-		change.Unix = n
-	} else {
-		return PowerChange{}, "", fail(CodeMalformed)
-	}
-	reason, okReason := jsonString(canon, "value")
-	if !okReason {
-		return PowerChange{}, "", fail(CodeMalformed)
-	}
-	rawReason, err := decodeB64(reason)
-	if err != nil || len(rawReason) != 32 {
-		return PowerChange{}, "", fail(CodeBounds)
-	}
-	change.Reason = rawReason
-	return change, canon, ok()
-}
-
-func governedFields(canon string) (string, uint64, Outcome) {
-	key, okKey := jsonString(canon, "limitKey")
-	value, okValue := jsonString(canon, "value")
-	if !okKey || !okValue {
-		return "", 0, fail(CodeMalformed)
-	}
-	n, err := strconv.ParseUint(value, 10, 64)
-	if err != nil {
-		return "", 0, fail(CodeMalformed)
-	}
-	return key, n, ok()
-}
-
-func jsonString(canon, key string) (string, bool) {
-	marker := `"` + key + `":"`
-	i := strings.Index(canon, marker)
-	if i < 0 {
-		return "", false
-	}
-	rest := canon[i+len(marker):]
-	j := strings.IndexByte(rest, '"')
-	if j < 0 {
-		return "", false
-	}
-	return rest[:j], true
-}
-
-func decodeB64(text string) ([]byte, error) {
-	return b64Decode(text)
 }

@@ -279,11 +279,25 @@ func (app *App) ServerConfig() sdkserverconfig.Config {
 	return app.config
 }
 
-// AuthorityConsensusBytes is the authority module's committed state.
+// AuthorityConsensusBytes is the authority module's committed state key.
 // The bytes are proto.MarshalOptions{Deterministic:true}, not protojson.
 func (app *App) AuthorityConsensusBytes() ([]byte, error) {
 	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
 	return app.authority.ConsensusBytes(ctx)
+}
+
+// AuthoritySnapshot is the state key and the side document. Reject tests
+// compare it with bytes.Equal.
+func (app *App) AuthoritySnapshot() []byte {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	return app.authority.ConsensusSnapshot(ctx)
+}
+
+// InstallMismatchedRemovalForTest writes a due removal with the wrong key.
+// It is not a consensus message. The next EndBlock must halt.
+func (app *App) InstallMismatchedRemovalForTest() error {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	return app.authority.InstallMismatchedRemoval(ctx)
 }
 
 func checkHeader(raw json.RawMessage) error {

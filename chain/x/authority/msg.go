@@ -9,11 +9,13 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
+	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 )
 
 // Propose, Approve, and Execute are the committed handlers.
-// Ante checks the signature. These handlers check it again against the
-// message signer so a permissive mempool cannot skip that binding.
+// The ante decorator verifies the signature during FinalizeBlock and during
+// CheckTx. This handler checks gas, transaction size, and that the message
+// carries a 20-byte signer. It does not verify the signature bytes again.
 func (k Keeper) Propose(ctx context.Context, msg *authorityv1.MsgProposeChange) (*authorityv1.MsgProposeChangeResponse, error) {
 	if err := k.transition(ctx, msg.GetSigner(), func(st *State) Outcome { return st.ProposeChange(msg) }); err != nil {
 		return nil, err
@@ -79,9 +81,6 @@ func enforceCommitted(ctx sdk.Context, signer []byte) string {
 	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {
 		return CodeBounds
 	}
-	// The ante decorator already verified the signature against this signer
-	// during FinalizeBlock. That check is committed execution, not only
-	// CheckTx. The handler still rejects a signer the message does not carry.
 	ctx.GasMeter().ConsumeGas(50_000, "authority")
 	if len(signer) != 20 {
 		return CodeMalformed
@@ -89,16 +88,32 @@ func enforceCommitted(ctx sdk.Context, signer []byte) string {
 	return ""
 }
 
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
+// RegisterProvider and RotateProviderKey are committed handlers. They do
+// not change the validator set. Goal 07 owns the rest of the provider registry.
+func (k Keeper) RegisterProvider(ctx context.Context, msg *providersv1.MsgRegisterProvider) (*providersv1.MsgRegisterProviderResponse, error) {
+	if msg == nil {
+		return nil, sdkError(CodeMalformed)
 	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
+	if err := k.transition(ctx, msg.GetSigner(), func(st *State) Outcome {
+		endpoint := msg.GetEndpointManifestDigest().GetValue()
+		return st.RegisterProvider(msg.GetSigner(), msg.GetProviderId(), msg.GetSigningPubkey(), msg.GetSigningKeyId(), msg.GetOperatorGroupId(), msg.GetDeclaredCapacityBytes(), endpoint)
+	}); err != nil {
+		return nil, err
 	}
-	return true
+	return &providersv1.MsgRegisterProviderResponse{}, nil
+}
+
+func (k Keeper) RotateProviderKey(ctx context.Context, msg *providersv1.MsgRotateProviderKey) (*providersv1.MsgRotateProviderKeyResponse, error) {
+	if msg == nil || msg.GetCurrentKeySignature() == nil {
+		return nil, sdkError(CodeMalformed)
+	}
+	sig := msg.GetCurrentKeySignature()
+	if err := k.transition(ctx, msg.GetSigner(), func(st *State) Outcome {
+		return st.RotateProviderKey(msg.GetSigner(), msg.GetProviderId(), msg.GetNewSigningKeyId(), msg.GetNewSigningPubkey(), sig.GetSignature(), msg.GetExpectedGeneration())
+	}); err != nil {
+		return nil, err
+	}
+	return &providersv1.MsgRotateProviderKeyResponse{}, nil
 }
 
 // EndBlock applies due validator changes. A removal-bind failure halts:

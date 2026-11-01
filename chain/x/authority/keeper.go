@@ -2,6 +2,7 @@ package authority
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
@@ -20,9 +21,9 @@ const (
 	admitKey byte = 0x02
 )
 
-// Keeper stores the genesis authority set. Admitted accounts are an index
-// over that state. Voting power is not written from anywhere except
-// InitialUpdates during InitGenesis.
+// Keeper stores authority state. InitGenesis writes the genesis set.
+// EndBlock writes a scheduled power or key change when its activation
+// point is due. No other module returns validator updates.
 type Keeper struct {
 	storeKey *storetypes.KVStoreKey
 }
@@ -33,6 +34,45 @@ func NewKeeper(storeKey *storetypes.KVStoreKey) Keeper {
 
 func (k Keeper) StoreKey() *storetypes.KVStoreKey {
 	return k.storeKey
+}
+
+// ConsensusSnapshot is the state key and the side document, length-prefixed.
+// Tests compare it with bytes.Equal. A nil side document is a zero length.
+func (k Keeper) ConsensusSnapshot(ctx sdk.Context) []byte {
+	store := ctx.KVStore(k.storeKey)
+	state := store.Get([]byte{stateKey})
+	side := store.Get([]byte{sideKey})
+	out := make([]byte, 8+len(state)+len(side))
+	binary.BigEndian.PutUint32(out[0:4], uint32(len(state)))
+	binary.BigEndian.PutUint32(out[4:8], uint32(len(side)))
+	copy(out[8:], state)
+	copy(out[8+len(state):], side)
+	return out
+}
+
+// InstallMismatchedRemoval writes a due removal whose consensus key is not
+// the key that validator holds. It is not a message and not an RPC. The
+// app halt test uses it. EndBlock must refuse to commit that block.
+func (k Keeper) InstallMismatchedRemoval(ctx sdk.Context) error {
+	st, err := k.load(ctx)
+	if err != nil {
+		return err
+	}
+	if len(st.Validators) == 0 {
+		return fmt.Errorf("no validator")
+	}
+	current := st.Validators[0]
+	wrong := make([]byte, len(current.GetConsensusPubkey()))
+	copy(wrong, current.GetConsensusPubkey())
+	wrong[0] ^= 0xff
+	st.Pending = append(st.Pending, &authorityv1.PendingValidatorPower{
+		ProposalId:      "commit-bad-key",
+		NodeId:          current.GetNodeId(),
+		ConsensusPubkey: wrong,
+		Power:           0,
+		Activation:      &authorityv1.ActivationPoint{Point: &authorityv1.ActivationPoint_Height{Height: 1}},
+	})
+	return k.save(ctx, st)
 }
 
 func (k Keeper) Init(ctx context.Context, state *authorityv1.GenesisState) error {

@@ -32,8 +32,8 @@ func (o *Order) Record(name string) {
 	o.Names = append(o.Names, name)
 }
 
-// AppModule is the authority scaffold. InitGenesis is the only call that
-// returns validator updates. EndBlock returns none until Goal 06.
+// AppModule owns validator updates. InitGenesis returns the genesis set.
+// EndBlock returns a changeset when a scheduled change is due.
 type AppModule struct {
 	keeper Keeper
 	order  *Order

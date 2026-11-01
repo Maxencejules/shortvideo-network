@@ -13,11 +13,11 @@ import (
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 )
 
-// InitialUpdates is the only constructor of consensus validator updates.
+// InitialUpdates builds the genesis validator set.
 //
-// Goal 05 calls it from InitGenesis and nowhere else. EndBlock does not call
-// it. No other module package may build an abci.ValidatorUpdate. Goal 06
-// adds the scheduled-update control and is the next caller of this function.
+// EndBlock calls Changeset, which uses the same validatorUpdate constructor,
+// when a scheduled change is due. No other module package may build an
+// abci.ValidatorUpdate.
 func InitialUpdates(validators []*authorityv1.ValidatorPower) ([]abci.ValidatorUpdate, error) {
 	if len(validators) == 0 {
 		return nil, fmt.Errorf("validator set is empty")

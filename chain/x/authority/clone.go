@@ -57,6 +57,16 @@ func cloneParams(rows []*typesv1.DevnetTestParameter) []*typesv1.DevnetTestParam
 	return out
 }
 
+func cloneDecoded(in map[string]storedChange) map[string]storedChange {
+	out := make(map[string]storedChange, len(in))
+	for key, row := range in {
+		row.PubKey = append([]byte(nil), row.PubKey...)
+		row.Reason = append([]byte(nil), row.Reason...)
+		out[key] = row
+	}
+	return out
+}
+
 func cloneStringMap(in map[string]string) map[string]string {
 	out := make(map[string]string, len(in))
 	for key, value := range in {

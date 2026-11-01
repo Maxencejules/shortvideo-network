@@ -319,7 +319,3 @@ func parameterKey(kind, nodeID, limitKey, providerID, contentID string) string {
 }
 
 func pubkeyHex(raw []byte) string { return hex.EncodeToString(raw) }
-
-func b64Decode(text string) ([]byte, error) {
-	return base64.StdEncoding.DecodeString(text)
-}

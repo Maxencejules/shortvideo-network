@@ -11,12 +11,12 @@ Reviewer note for Goal 06. This is not an audit. Public launch is disabled. Ther
 | `MsgProposeChange` | A devnet test seat | Seat public key derives the signer address. Payload digest is SHA-256 of SVN-JCS-1. Proposal id is new. Base policy version matches. Expiry is in the future. |
 | `MsgApproveChange` | A devnet test seat, once | Same seat again is `ERROR_CODE_REPLAY`. Two approvals leave the proposal `OPEN`. The third, of four, queues it. |
 | `MsgExecuteChange` | `SUBMITTER_ROLE_AUTHORITY` | Council signatures are not replaced by this signature. The proposal must be `QUEUED`, unexpired, and past the devnet delay. |
-| `RegisterProvider` | `SUBMITTER_ROLE_ADMITTED_PROVIDER` | Creates `APPLIED`. It does not change the validator set. |
-| Provider signing-key rotation | The provider account, plus an ed25519 signature on domain `SVN-PROVIDER-ROTATE-1` | Changes the provider signing key only. Previous public keys are kept. |
+| `RegisterProvider` | `SUBMITTER_ROLE_ADMITTED_PROVIDER` | Committed handler. Creates `APPLIED`. It does not change the validator set. Update and drain stay closed until Goal 07. |
+| `RotateProviderKey` | The provider account, plus an ed25519 signature on domain `SVN-PROVIDER-ROTATE-1` | Committed handler. Changes the provider signing key only. Previous public keys are kept. |
 | Council seat rotation | Not a transaction | `RotateCouncilSeat` changes the seat key and keeps the old one. It is not an RPC and not a message. |
 | Service account rotation | Not a transaction | `RotateServiceSubmitter` changes an admitted service address and keeps the old one. |
 
-The ante decorator verifies the SDK signature and the account sequence during FinalizeBlock, which is committed execution, and again during CheckTx. The handler then checks gas limit, transaction size, and the role or seat. A failed message does not store a business id. The same business id and payload is idempotent. A different payload is `ERROR_CODE_REPLAY`.
+The ante decorator verifies the SDK signature and the account sequence during FinalizeBlock, and again during CheckTx. The authority handler checks the gas limit, the transaction size, and that the message signer is 20 bytes. It does not verify the signature bytes a second time. A failed message does not store a business id. The same business id and payload is idempotent. A different payload is `ERROR_CODE_REPLAY`.
 
 ## What the approvals are not
 
@@ -32,7 +32,7 @@ EndBlock of the activation block applies the due changes and returns a changeset
 
 ## Rejection
 
-`ERROR_CODE_FORBIDDEN` marks the proposal `REJECTED` and does not schedule the change. Other execution errors leave the proposal `QUEUED` and do not store the business id. Unauthorized, malformed, and bad-signature messages do not change authority state.
+`ERROR_CODE_FORBIDDEN` marks the proposal `REJECTED` and does not schedule the change. Other execution errors leave the proposal `QUEUED` and do not store the business id. Unauthorized, malformed, bad-signature, replay, stale, early, and wrong-role messages do not change the authority state key or the side document. The comparison is `bytes.Equal` on the length-prefixed snapshot of both. Expiry is not in that set: the spec marks the proposal `EXPIRED` and keeps that mark.
 
 SDK v0.55 discards the message branch when a handler returns an error, and it commits the ante branch first. A spec `keep` transition (expiry, or forbidden rejection) is saved and reported on the `authority_result` event. The payload is not applied. A rejected message's authority bytes are unchanged. The account sequence can still advance when ante succeeded. That sequence is not an authority decision.
 

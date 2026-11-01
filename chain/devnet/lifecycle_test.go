@@ -74,10 +74,11 @@ func TestDevnetValidatorLifecycle(t *testing.T) {
 	}
 	before := validatorSet(t, rpc, int64(activation)-1)
 	atActivation := validatorSet(t, rpc, int64(activation))
+	oneLater := validatorSet(t, rpc, effective-1)
 	landed := validatorSet(t, rpc, effective)
-	fmt.Printf("phase=add before=%d count=%d at=%d count=%d effective=%d count=%d\n", int64(activation)-1, len(before), activation, len(atActivation), effective, len(landed))
-	if len(before) != 4 || len(atActivation) != 4 || len(landed) != 5 || !hasPower(landed, addKey, 1) {
-		t.Fatalf("add set before %d at %d effective %d", len(before), len(atActivation), len(landed))
+	fmt.Printf("phase=add h-1=%d count=%d h=%d count=%d h+1=%d count=%d h+2=%d count=%d\n", int64(activation)-1, len(before), activation, len(atActivation), effective-1, len(oneLater), effective, len(landed))
+	if len(before) != 4 || len(atActivation) != 4 || len(oneLater) != 4 || hasPower(oneLater, addKey, 1) || len(landed) != 5 || !hasPower(landed, addKey, 1) {
+		t.Fatalf("add sets h-1 %d h %d h+1 %d h+2 %d", len(before), len(atActivation), len(oneLater), len(landed))
 	}
 
 	// v5 has power and no process. Stopping one running validator leaves 3/5
@@ -116,10 +117,11 @@ func TestDevnetValidatorLifecycle(t *testing.T) {
 	if _, _, err := devnet.WaitEqual(rpcs, rotEffective, 60*time.Second); err != nil {
 		t.Fatal(tail(layout, err))
 	}
+	rotateOld := validatorSet(t, rpc, rotEffective-1)
 	rotatedSet := validatorSet(t, rpc, rotEffective)
-	fmt.Printf("phase=rotate effective=%d count=%d\n", rotEffective, len(rotatedSet))
-	if hasPower(rotatedSet, addKey, 1) || !hasPower(rotatedSet, rotated, 1) || len(rotatedSet) != 5 {
-		t.Fatalf("rotation did not replace the consensus key: %d", len(rotatedSet))
+	fmt.Printf("phase=rotate h+1=%d count=%d oldkey=%t h+2=%d count=%d newkey=%t\n", rotEffective-1, len(rotateOld), hasPower(rotateOld, addKey, 1), rotEffective, len(rotatedSet), hasPower(rotatedSet, rotated, 1))
+	if !hasPower(rotateOld, addKey, 1) || hasPower(rotateOld, rotated, 1) || hasPower(rotatedSet, addKey, 1) || !hasPower(rotatedSet, rotated, 1) || len(rotatedSet) != 5 {
+		t.Fatalf("rotation old %d new %d", len(rotateOld), len(rotatedSet))
 	}
 
 	heightNow = mustHeight(t, rpc)
@@ -130,10 +132,11 @@ func TestDevnetValidatorLifecycle(t *testing.T) {
 	if _, _, err := devnet.WaitEqual(rpcs, rmEffective, 60*time.Second); err != nil {
 		t.Fatal(tail(layout, err))
 	}
+	removeOld := validatorSet(t, rpc, rmEffective-1)
 	removed := validatorSet(t, rpc, rmEffective)
-	fmt.Printf("phase=remove effective=%d count=%d\n", rmEffective, len(removed))
-	if len(removed) != 4 || hasPower(removed, rotated, 0) || hasPower(removed, rotated, 1) {
-		t.Fatalf("removal left %d validators", len(removed))
+	fmt.Printf("phase=remove h+1=%d count=%d still=%t h+2=%d count=%d\n", rmEffective-1, len(removeOld), hasPower(removeOld, rotated, 1), rmEffective, len(removed))
+	if !hasPower(removeOld, rotated, 1) || len(removeOld) != 5 || len(removed) != 4 || hasPower(removed, rotated, 1) {
+		t.Fatalf("removal old %d new %d", len(removeOld), len(removed))
 	}
 }
 

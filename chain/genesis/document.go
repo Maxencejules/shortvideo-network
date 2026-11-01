@@ -290,7 +290,7 @@ func validateDevnet(doc Document) error {
 			if row.NumericValue != 0 && row.NumericValue != 3 {
 				return fmt.Errorf("DEC-008 test threshold %d is not the approved 3", row.NumericValue)
 			}
-			if row.DelaySeconds < 0 {
+			if row.DelaySeconds < 0 || row.DelaySeconds > UnixSecondsMax {
 				return fmt.Errorf("DEC-008 delay")
 			}
 		}

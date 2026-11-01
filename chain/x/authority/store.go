@@ -18,6 +18,7 @@ const sideKey byte = 0x20
 type sideDocument struct {
 	PolicyVersion uint64         `json:"policy_version"`
 	Payloads      []namedText    `json:"payloads,omitempty"`
+	Decoded       []decodedWire  `json:"decoded,omitempty"`
 	Business      []namedBytes   `json:"business,omitempty"`
 	Executed      []namedBytes   `json:"executed,omitempty"`
 	Governed      []namedUint    `json:"governed,omitempty"`
@@ -30,6 +31,21 @@ type sideDocument struct {
 type namedText struct {
 	ID    string `json:"id"`
 	Value string `json:"value"`
+}
+
+type decodedWire struct {
+	ID         string `json:"id"`
+	Kind       string `json:"kind"`
+	NodeID     string `json:"node_id,omitempty"`
+	PubKey     []byte `json:"pub_key,omitempty"`
+	Power      int64  `json:"power"`
+	Reason     []byte `json:"reason,omitempty"`
+	ByHeight   bool   `json:"by_height,omitempty"`
+	Height     uint64 `json:"height,omitempty"`
+	Unix       int64  `json:"unix,omitempty"`
+	LimitKey   string `json:"limit_key,omitempty"`
+	LimitValue uint64 `json:"limit_value,omitempty"`
+	ProviderID string `json:"provider_id,omitempty"`
 }
 
 type namedBytes struct {
@@ -77,6 +93,7 @@ func (k Keeper) load(ctx sdk.Context) (*State, error) {
 		Pending:       genesis.GetAuthority().GetPendingValidatorPower(),
 		Params:        genesis.GetDevnetTestParameters(),
 		Payloads:      map[string]string{},
+		Decoded:       map[string]storedChange{},
 		Business:      map[string][]byte{},
 		Executed:      map[string][]byte{},
 		Providers:     map[string]*ProviderRecord{},
@@ -96,6 +113,13 @@ func (k Keeper) load(ctx sdk.Context) (*State, error) {
 	}
 	for _, row := range side.Payloads {
 		st.Payloads[row.ID] = row.Value
+	}
+	for _, row := range side.Decoded {
+		st.Decoded[row.ID] = storedChange{
+			Kind: row.Kind, NodeID: row.NodeID, PubKey: row.PubKey, Power: row.Power, Reason: row.Reason,
+			ByHeight: row.ByHeight, Height: row.Height, Unix: row.Unix, LimitKey: row.LimitKey,
+			LimitValue: row.LimitValue, ProviderID: row.ProviderID,
+		}
 	}
 	for _, row := range side.Business {
 		st.Business[row.ID] = row.Value
@@ -154,6 +178,13 @@ func sideFrom(st *State) sideDocument {
 	for id, value := range st.Payloads {
 		doc.Payloads = append(doc.Payloads, namedText{ID: id, Value: value})
 	}
+	for id, row := range st.Decoded {
+		doc.Decoded = append(doc.Decoded, decodedWire{
+			ID: id, Kind: row.Kind, NodeID: row.NodeID, PubKey: row.PubKey, Power: row.Power, Reason: row.Reason,
+			ByHeight: row.ByHeight, Height: row.Height, Unix: row.Unix, LimitKey: row.LimitKey,
+			LimitValue: row.LimitValue, ProviderID: row.ProviderID,
+		})
+	}
 	for id, value := range st.Business {
 		doc.Business = append(doc.Business, namedBytes{ID: id, Value: value})
 	}
@@ -176,6 +207,7 @@ func sideFrom(st *State) sideDocument {
 		doc.PrevProvider = append(doc.PrevProvider, namedList{ID: id, Value: rows})
 	}
 	slices.SortFunc(doc.Payloads, func(a, b namedText) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
+	slices.SortFunc(doc.Decoded, func(a, b decodedWire) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
 	slices.SortFunc(doc.Business, func(a, b namedBytes) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
 	slices.SortFunc(doc.Executed, func(a, b namedBytes) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
 	slices.SortFunc(doc.Governed, func(a, b namedUint) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
