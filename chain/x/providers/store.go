@@ -32,11 +32,33 @@ import (
 // later write to fit in the transaction gas limit, and the council could
 // no longer disable it. Queries and genesis export put the retired keys
 // back into previous_signing_keys.
+//
+// One provider holds at most MaxRetiredKeysPerProvider retired-key rows,
+// so every read of one provider's history is bounded.
 const (
 	ProviderKeyPrefix byte = 0x01
 	BusinessKeyPrefix byte = 0x02
 	RetiredKeyPrefix  byte = 0x03
 )
+
+// MaxRetiredKeysPerProvider is the number of keys one provider id may
+// retire. It is a chain safety bound, not a rule of the v0 spec machine
+// (which has none): PROPOSED, decision request DR-07-10. A rotation that
+// would retire one more key is ERROR_CODE_BOUNDS, after every spec check;
+// a provider at the bound registers a new provider id to keep rotating.
+// Under a capped id the provider can no longer rotate away from a
+// compromised signing key: the remedies are drain, council disable, and a
+// new id that needs council admission again.
+// ValidateGenesis rejects a record above it, and a stored record above it
+// is an invariant violation that queries and export report as an error.
+//
+// It is not above MaxRetiredKeysPerPage, so one provider's whole history
+// fits in one Providers page: Query/Provider, every Providers page, and
+// every exported record carry at most this many retired keys. Without it,
+// rotations (which cost no fee) grew one provider's Query/Provider
+// response, the Providers page that starts with it, and its export
+// without limit.
+const MaxRetiredKeysPerProvider = 1024
 
 // ProviderKey is the store key of one provider record.
 func ProviderKey(id string) []byte {
@@ -129,10 +151,30 @@ func decodeProvider(key, raw []byte) (*providersv1.Provider, error) {
 	return &record, nil
 }
 
+// retiredCount is the number of retired keys record claims
+// (key_generation-1). A key_generation of 0, or a count above
+// MaxRetiredKeysPerProvider, is an invariant violation: no message or
+// genesis import writes one. Queries and export check it before they read
+// any retired-key row, so their work stays bounded on any store.
+func retiredCount(record *providersv1.Provider) (uint64, error) {
+	generation := record.GetKeyGeneration()
+	if generation < 1 || generation-1 > MaxRetiredKeysPerProvider {
+		return 0, fmt.Errorf("providers: stored record %q has key_generation %d outside 1..%d",
+			record.GetProviderId(), generation, MaxRetiredKeysPerProvider+1)
+	}
+	return generation - 1, nil
+}
+
 // history reads the retired keys of record in generation order. It checks
-// the stored invariant: generations 1 to key_generation-1, one row each.
-// Work is one iterator step per retired key; message paths never call it.
+// the stored invariant: generations 1 to key_generation-1, one row each,
+// at most MaxRetiredKeysPerProvider. Work is at most
+// MaxRetiredKeysPerProvider+1 iterator steps: the walk stops at the first
+// row past the claimed count. Message paths never call it.
 func (k Keeper) history(ctx sdk.Context, record *providersv1.Provider) (keys []*providersv1.PreviousSigningKey, err error) {
+	count, err := retiredCount(record)
+	if err != nil {
+		return nil, err
+	}
 	prefix := retiredPrefix(record.GetProviderId())
 	it := ctx.KVStore(k.key).Iterator(prefix, storetypes.PrefixEndBytes(prefix))
 	defer func() {
@@ -142,6 +184,9 @@ func (k Keeper) history(ctx sdk.Context, record *providersv1.Provider) (keys []*
 	}()
 	for ; it.Valid(); it.Next() {
 		want := uint64(len(keys)) + 1
+		if want > count {
+			return nil, fmt.Errorf("providers: %q has a retired key row past key_generation %d", record.GetProviderId(), record.GetKeyGeneration())
+		}
 		var key providersv1.PreviousSigningKey
 		if err := proto.Unmarshal(it.Value(), &key); err != nil {
 			return nil, fmt.Errorf("providers: retired key %q/%d does not decode: %w", record.GetProviderId(), want, err)
@@ -152,7 +197,7 @@ func (k Keeper) history(ctx sdk.Context, record *providersv1.Provider) (keys []*
 		}
 		keys = append(keys, &key)
 	}
-	if uint64(len(keys)) != record.GetKeyGeneration()-1 {
+	if uint64(len(keys)) != count {
 		return nil, fmt.Errorf("providers: %q has %d retired keys at key_generation %d", record.GetProviderId(), len(keys), record.GetKeyGeneration())
 	}
 	return keys, nil

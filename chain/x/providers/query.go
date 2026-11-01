@@ -39,7 +39,9 @@ func (k Keeper) QueryProvider(goCtx context.Context, req *providersv1.QueryProvi
 }
 
 // MaxRetiredKeysPerPage bounds the retired keys one Providers page carries.
-// It is a query rule, not consensus state.
+// It is a query rule, not consensus state. It is at least
+// MaxRetiredKeysPerProvider, so the first provider of a page, which a page
+// always returns, also fits in the budget.
 const MaxRetiredKeysPerPage = 1024
 
 // QueryProviders is svn.providers.v1.Query/Providers. It lists every
@@ -56,10 +58,15 @@ const MaxRetiredKeysPerPage = 1024
 //   - each record carries its retired keys; a page ends early, before the
 //     provider that would take the page above MaxRetiredKeysPerPage
 //     retired keys, and next_page_key names that provider. The first
-//     provider of a page is always included, so a walk always advances.
+//     provider of a page is always included, so a walk always advances;
+//     it holds at most MaxRetiredKeysPerProvider retired keys, which is
+//     not above the page budget.
 //
-// The work is bounded by limit+1 iterator steps over the records plus one
-// step per returned retired key.
+// The work is bounded by limit+1 iterator steps over the records plus, for
+// each returned record, its retired keys and one more step: at most
+// MaxRetiredKeysPerPage+limit steps over retired-key rows. A record whose
+// key_generation claims more than MaxRetiredKeysPerProvider retired keys
+// is an error before any of its rows is read.
 func (k Keeper) QueryProviders(goCtx context.Context, req *providersv1.QueryProvidersRequest) (*providersv1.QueryProvidersResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	limit, key, code := msgkit.CheckPage(req.GetPage(), k.pageLimit(ctx))
@@ -79,11 +86,17 @@ func (k Keeper) QueryProviders(goCtx context.Context, req *providersv1.QueryProv
 		return nil, err
 	}
 	// key_generation-1 is the retired-key count (history checks it), so the
-	// cut is decided before any retired key is read.
+	// cut is decided before any retired key is read. retired never exceeds
+	// MaxRetiredKeysPerPage (retiredCount caps one record at
+	// MaxRetiredKeysPerProvider, TestRetiredKeyBoundsFitAPage keeps that
+	// within the page budget), so the subtraction cannot wrap.
 	var retired uint64
 	for i, record := range records {
-		count := record.GetKeyGeneration() - 1
-		if i > 0 && retired+count > MaxRetiredKeysPerPage {
+		count, err := retiredCount(record)
+		if err != nil {
+			return nil, err
+		}
+		if i > 0 && count > MaxRetiredKeysPerPage-retired {
 			next = []byte(record.GetProviderId())
 			records = records[:i]
 			break

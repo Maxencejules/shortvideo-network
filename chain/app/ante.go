@@ -88,7 +88,12 @@ func (boundsDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, nex
 		return ctx, svnerr.ErrMalformed.Wrap("transaction has no gas limit")
 	}
 	limit := feeTx.GetGas()
-	if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+	// In simulation a declared gas limit of 0 asks for an estimate: the SDK
+	// client's gas=auto flow simulates a transaction built with gas 0 and
+	// then signs the real one with the estimate. Simulation commits
+	// nothing. Every other declared value, and every value outside
+	// simulation (CheckTx, FinalizeBlock), must be in range.
+	if !(simulate && limit == 0) && (limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx) {
 		return ctx, svnerr.ErrBounds.Wrapf("gas_limit %d", limit)
 	}
 	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {

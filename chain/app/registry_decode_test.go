@@ -498,8 +498,8 @@ func TestStateSchemaHasNoPayloadField(t *testing.T) {
 }
 
 // TestMigrationsNoOpInApp: in the app, both registries report consensus
-// version 1, and running the app's migrations from that version map is a
-// no-op. The SDK returns before it looks for a step when from equals to,
+// version 2 (version 1 was the goal-05/06 scaffold slot), and running the
+// app's migrations from that version map is a no-op. The SDK returns before it looks for a step when from equals to,
 // so that half proves only that nothing else runs; the registration path is
 // TestRegistryMigrationPathInApp, and the module tables are
 // TestMigrationTable (x/providers) and TestRegisterMigrationsPath
@@ -510,7 +510,7 @@ func TestMigrationsNoOpInApp(t *testing.T) {
 	runRegistryFlow(t, n, c)
 	chainApp := c.app()
 	from := chainApp.VersionMapForTest()
-	if from[app.ModuleProviders] != providers.ConsensusVersion || from[app.ModuleContent] != content.ConsensusVersion || providers.ConsensusVersion != 1 || content.ConsensusVersion != 1 {
+	if from[app.ModuleProviders] != providers.ConsensusVersion || from[app.ModuleContent] != content.ConsensusVersion || providers.ConsensusVersion != 2 || content.ConsensusVersion != 2 {
 		t.Fatalf("version map %v", from)
 	}
 	before := chainApp.FullSnapshot()
@@ -533,10 +533,10 @@ func TestMigrationsNoOpInApp(t *testing.T) {
 }
 
 // TestRegistryMigrationPathInApp drives the migration path through the
-// app's own configurator: a test-only 1 -> 2 step for each registry module
-// registers without a duplicate (the module registered no version-1 step),
+// app's own configurator: a test-only 2 -> 3 step for each registry module
+// registers without a duplicate (the module registered no version-2 step),
 // runs exactly once on the committed stores (it reads a record the flow
-// wrote), and moves the version map to 2. The step writes nothing.
+// wrote), and moves the version map to 3. The step writes nothing.
 func TestRegistryMigrationPathInApp(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -564,7 +564,7 @@ func TestRegistryMigrationPathInApp(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if ran != 1 || to[tc.name] != 2 || len(to) != 1 {
+			if ran != 1 || to[tc.name] != 3 || len(to) != 1 {
 				t.Fatalf("step ran %d times, version map %v", ran, to)
 			}
 			if !bytes.Equal(before, chainApp.FullSnapshot()) {

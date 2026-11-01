@@ -75,6 +75,8 @@ type App struct {
 }
 
 // Config is the construction input. DB and ChainID are required.
+// AppOptions are node options; New reads QueryGasLimitOption from them and
+// nothing else.
 type Config struct {
 	Logger     log.Logger
 	DB         dbm.DB
@@ -100,6 +102,10 @@ func New(cfg Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	queryGasLimit, err := QueryGasLimit(cfg.AppOptions)
+	if err != nil {
+		return nil, err
+	}
 	base := baseapp.NewBaseApp(
 		Name,
 		cfg.Logger,
@@ -108,6 +114,9 @@ func New(cfg Config) (*App, error) {
 		baseapp.SetChainID(cfg.ChainID),
 		baseapp.EnableBlockGasMeter(),
 		baseapp.SetMinGasPrices(""),
+		// Every query runs on a finite gas meter (DefaultQueryGasLimit
+		// unless the node sets another value).
+		baseapp.SetQueryGasLimit(queryGasLimit),
 	)
 	base.SetInterfaceRegistry(enc.InterfaceRegistry)
 	base.SetTxEncoder(enc.TxConfig.TxEncoder())
@@ -231,8 +240,45 @@ func New(cfg Config) (*App, error) {
 		if err := app.LoadLatestVersion(); err != nil {
 			return nil, err
 		}
+		if err := app.checkRegistryLayouts(); err != nil {
+			return nil, err
+		}
 	}
 	return app, nil
+}
+
+// checkRegistryLayouts refuses committed state whose registry stores are
+// not in this binary's layout. Every committed version of a registry store
+// holds msgkit.LayoutVersionKey, which InitGenesis writes. A store without
+// it was written by the goal-05/06 scaffold slot (layout version 1: the
+// module genesis JSON at key [0x01], inside the registry's record prefix),
+// which this binary would misread; no migration from it exists, so the
+// node does not start. It runs once at load, outside consensus, and only
+// when a block has been committed.
+func (app *App) checkRegistryLayouts() error {
+	if app.LastBlockHeight() == 0 {
+		return nil
+	}
+	for _, store := range []struct {
+		name    string
+		version uint64
+	}{
+		{ModuleProviders, providers.ConsensusVersion},
+		{ModuleContent, content.ConsensusVersion},
+	} {
+		version, found, err := msgkit.ReadLayoutVersion(app.CommitMultiStore().GetKVStore(app.keys[store.name]))
+		switch {
+		case err != nil:
+			return fmt.Errorf("%s store at height %d: %w", store.name, app.LastBlockHeight(), err)
+		case !found:
+			return fmt.Errorf("%s store at height %d has no layout version: it is the goal-05/06 scaffold layout (version %d), which this binary cannot read or migrate; initialize a new home",
+				store.name, app.LastBlockHeight(), msgkit.ScaffoldLayoutVersion)
+		case version != store.version:
+			return fmt.Errorf("%s store at height %d has layout version %d, this binary reads version %d",
+				store.name, app.LastBlockHeight(), version, store.version)
+		}
+	}
+	return nil
 }
 
 func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {

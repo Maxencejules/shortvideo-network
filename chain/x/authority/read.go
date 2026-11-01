@@ -62,10 +62,15 @@ func (k Keeper) DevnetRole(ctx sdk.Context, decisionID string) (string, bool) {
 // value was set. The caller applies msgkit.Effective, which uses the
 // protocol ceiling when found is false.
 //
-// The side document is written only by save. If it ever failed to decode,
-// every authority message would already fail on load; this method then
-// reports not found rather than panic, because query handlers call it and a
-// panic there is not recovered on the node's gRPC server.
+// It fails closed, like BusinessDigest: a side document that does not
+// decode panics instead of reporting no limit, so a transaction never runs
+// against the protocol ceiling when a lower governed value may be set. The
+// side document is written only by save, so this is an invariant
+// violation. A transaction handler panic becomes a failed transaction on
+// every node alike. Query handlers also call it: ABCI Query recovers a
+// panic into an error result, and the node gRPC server
+// (RegisterGRPCServerWithSkipCheckHeader) wraps every query in a recovery
+// interceptor, so a query fails and the node keeps running.
 func (k Keeper) GovernedLimit(ctx sdk.Context, key string) (uint64, bool) {
 	raw := ctx.KVStore(k.storeKey).Get([]byte{sideKey})
 	if raw == nil {
@@ -75,7 +80,7 @@ func (k Keeper) GovernedLimit(ctx sdk.Context, key string) (uint64, bool) {
 		Governed []namedUint `json:"governed"`
 	}
 	if err := json.Unmarshal(raw, &side); err != nil {
-		return 0, false
+		panic(fmt.Sprintf("authority: side document does not decode: %v", err))
 	}
 	for _, row := range side.Governed {
 		if row.ID == key {

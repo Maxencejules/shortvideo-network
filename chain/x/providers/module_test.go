@@ -210,28 +210,61 @@ func TestUnaryHandlerInterceptor(t *testing.T) {
 	}
 }
 
-// TestRunMigrationsAtV1IsANoOp: the module registers through a real
-// configurator, the version map holds ConsensusVersion 1, and RunMigrations
-// from version 1 returns version 1 and leaves the store byte-identical.
-// Real migrations (and the auth 5 -> 7 follow-up) belong to goal 10.
-func TestRunMigrationsAtV1IsANoOp(t *testing.T) {
+// TestRunMigrationsAtCurrentVersionIsANoOp: the module registers through a
+// real configurator, the version map holds ConsensusVersion 2, and
+// RunMigrations from 2 returns 2 and leaves the store byte-identical (the
+// SDK returns before it looks for a step). Real migrations (and the auth
+// 5 -> 7 follow-up) belong to goal 10.
+func TestRunMigrationsAtCurrentVersionIsANoOp(t *testing.T) {
 	e := newEnv(t)
 	e.admitted("p1")
 	am := NewAppModule(e.k, nil)
 	mm := module.NewManager(am)
 	r := newRouters(t, am)
-	if got := mm.GetVersionMap()[ModuleName]; got != 1 {
-		t.Fatalf("version map %d, want 1", got)
+	if got := mm.GetVersionMap()[ModuleName]; got != ConsensusVersion || ConsensusVersion != 2 {
+		t.Fatalf("version map %d, ConsensusVersion %d, want 2", got, ConsensusVersion)
 	}
 	before := e.snapshot()
-	vm, err := mm.RunMigrations(e.fresh(), r.cfg, module.VersionMap{ModuleName: 1})
+	vm, err := mm.RunMigrations(e.fresh(), r.cfg, module.VersionMap{ModuleName: ConsensusVersion})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if vm[ModuleName] != 1 || len(vm) != 1 {
+	if vm[ModuleName] != ConsensusVersion || len(vm) != 1 {
 		t.Fatalf("version map after migrations %v", vm)
 	}
 	e.requireSameSnapshot(before, "RunMigrations")
+}
+
+// TestNoMigrationFromScaffoldLayout: version 1 is the goal-05/06 scaffold
+// layout (one key [0x01] holding the genesis JSON). No step leaves it, so
+// RunMigrations from version 1 fails instead of treating that store as the
+// registry layout, and the store is not touched.
+func TestNoMigrationFromScaffoldLayout(t *testing.T) {
+	e := newEnv(t)
+	e.admitted("p1")
+	am := NewAppModule(e.k, nil)
+	mm := module.NewManager(am)
+	r := newRouters(t, am)
+	before := e.snapshot()
+	if _, err := mm.RunMigrations(e.fresh(), r.cfg, module.VersionMap{ModuleName: msgkit.ScaffoldLayoutVersion}); err == nil {
+		t.Fatal("RunMigrations from the scaffold layout succeeded")
+	}
+	e.requireSameSnapshot(before, "migration from the scaffold layout")
+}
+
+// TestScaffoldStoreIsNotAProvider: what the scaffold slot wrote, the
+// genesis JSON at key [0x01], sits inside the record prefix 0x01. InitGenesis
+// refuses such a store, so the registry layout is never written on top of
+// it; the app refuses to load one (TestAppRefusesScaffoldLayout in
+// chain/app).
+func TestScaffoldStoreIsNotAProvider(t *testing.T) {
+	e := newEnv(t)
+	e.store(ModuleName).Set([]byte{ProviderKeyPrefix}, []byte(`{"providers":[]}`))
+	before := e.snapshot()
+	if err := e.k.InitGenesis(e.unmetered(), &providersv1.GenesisState{}); err == nil {
+		t.Fatal("InitGenesis wrote the registry layout over the scaffold key")
+	}
+	e.requireSameSnapshot(before, "InitGenesis over the scaffold key")
 }
 
 // versionedModule reports a test-only consensus version, so the manager
@@ -243,35 +276,36 @@ type versionedModule struct {
 
 func (v versionedModule) ConsensusVersion() uint64 { return v.version }
 
-// TestMigrationTable: the table covers exactly 1 .. ConsensusVersion-1, and
-// registerMigrations registers each entry with the configurator, where the
-// module manager runs it.
+// TestMigrationTable: the table covers exactly 2 .. ConsensusVersion-1 (no
+// step from the scaffold version 1), and registerMigrations registers each
+// entry with the configurator, where the module manager runs it.
 func TestMigrationTable(t *testing.T) {
-	for from := uint64(1); from < ConsensusVersion; from++ {
+	first := msgkit.ScaffoldLayoutVersion + 1
+	for from := first; from < ConsensusVersion; from++ {
 		if migrations[from] == nil {
 			t.Fatalf("no migration from %d", from)
 		}
 	}
-	if uint64(len(migrations)) != ConsensusVersion-1 {
+	if uint64(len(migrations)) != ConsensusVersion-first || migrations[msgkit.ScaffoldLayoutVersion] != nil {
 		t.Fatalf("%d migrations for ConsensusVersion %d", len(migrations), ConsensusVersion)
 	}
 	saved := migrations
 	defer func() { migrations = saved }()
 	ran := 0
-	migrations = map[uint64]module.MigrationHandler{1: func(sdk.Context) error { ran++; return nil }}
+	migrations = map[uint64]module.MigrationHandler{ConsensusVersion: func(sdk.Context) error { ran++; return nil }}
 	e := newEnv(t)
 	r := newRouters(t, NewAppModule(e.k, nil))
 	// newRouters ran registerMigrations with the temporary table, so a
-	// second registration of version 1 is a duplicate.
-	if err := r.cfg.RegisterMigration(ModuleName, 1, func(sdk.Context) error { return nil }); err == nil {
-		t.Fatal("migration from 1 was not registered")
+	// second registration of the same version is a duplicate.
+	if err := r.cfg.RegisterMigration(ModuleName, ConsensusVersion, func(sdk.Context) error { return nil }); err == nil {
+		t.Fatalf("migration from %d was not registered", ConsensusVersion)
 	}
-	mm := module.NewManager(versionedModule{AppModule: NewAppModule(e.k, nil), version: 2})
-	vm, err := mm.RunMigrations(e.fresh(), r.cfg, module.VersionMap{ModuleName: 1})
+	mm := module.NewManager(versionedModule{AppModule: NewAppModule(e.k, nil), version: ConsensusVersion + 1})
+	vm, err := mm.RunMigrations(e.fresh(), r.cfg, module.VersionMap{ModuleName: ConsensusVersion})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ran != 1 || vm[ModuleName] != 2 {
+	if ran != 1 || vm[ModuleName] != ConsensusVersion+1 {
 		t.Fatalf("step ran %d times, version map %v", ran, vm)
 	}
 }

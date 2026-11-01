@@ -11,8 +11,10 @@
 // Everything in this directory runs inside chain execution. It reads block
 // data only from sdk.Context, iterates stores in key order, and never reads
 // the local clock, randomness, the environment, files, or the network. A
-// source scan test enforces that. The capability subpackage is off-chain
-// tooling; the keeper never imports it.
+// syntactic source scan (TestDeterministicSources) checks the forbidden
+// imports, clock and time-zone calls, file-system calls, and floating-point
+// use that msgkittest.AssertDeterministicSources lists. The capability
+// subpackage is off-chain tooling; the keeper never imports it.
 package providers
 
 import (
@@ -27,9 +29,14 @@ import (
 // the shared business-id namespace (msgkit.Peers).
 const ModuleName = "providers"
 
-// ConsensusVersion is the store layout version. Version 1 is the first one;
-// there is no migration into it.
-const ConsensusVersion uint64 = 1
+// ConsensusVersion is the store layout version, written at genesis under
+// msgkit.LayoutVersionKey. Version 1 (msgkit.ScaffoldLayoutVersion) was the
+// goal-05/06 scaffold slot: one key [0x01] holding the module genesis JSON.
+// Version 2 is the first registry layout (store.go). No migration from
+// version 1 is registered: goal-06 state is not upgradable in place, and
+// the app refuses to load a committed store without the version-2 layout
+// key.
+const ConsensusVersion uint64 = 2
 
 // DevnetOperatorGroup is the only operator group the council may admit while
 // DEC-002 stays a devnet test parameter. It is a label, not evidence of an

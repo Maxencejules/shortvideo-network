@@ -30,8 +30,12 @@ var (
 // content whose off-chain manifest and complaint carry canaries, then
 // scans every stored key and value, every event, and the exported genesis
 // JSON for each canary in raw, hex, and base64 form and for URL schemes.
-// It also checks every event key and genesis JSON key against the
-// bounds.json forbidden name patterns.
+// The test hashes the canaries before it builds a message, so the canary
+// scan checks that this flow submits only digests; it cannot fail because
+// of anything the keeper does. The chain-side checks are the forbidden
+// name scan of every event key and genesis JSON key (bounds.json
+// patterns) and, in chain/app, TestSubmitterTextFields, which submits the
+// text itself.
 func TestContentStoresOnlyDigests(t *testing.T) {
 	manifest, err := json.Marshal(map[string]any{
 		"content_id": "c-canary",

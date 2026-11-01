@@ -274,6 +274,12 @@ func (k Keeper) rotateProviderKey(ctx sdk.Context, msg *providersv1.MsgRotatePro
 	if record.GetKeyGeneration() == math.MaxUint64 {
 		return fail(msgkit.Overflow)
 	}
+	// Chain safety bound after every spec check (not in spec_machine.py):
+	// a provider holds at most MaxRetiredKeysPerProvider retired keys, so
+	// its history stays readable in one query (DR-07-10).
+	if record.GetKeyGeneration()-1 >= MaxRetiredKeysPerProvider {
+		return fail(msgkit.Bounds)
+	}
 	// The retired key is a row of its own, so the record keeps a constant
 	// size (see the store layout).
 	k.saveRetired(ctx, record.GetProviderId(), &providersv1.PreviousSigningKey{

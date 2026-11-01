@@ -1,9 +1,11 @@
 package app_test
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
+	errorsmod "cosmossdk.io/errors"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
@@ -73,4 +75,43 @@ func TestGovernedLimitsReachTheRegistries(t *testing.T) {
 		t.Fatalf("page limit 0 uses the governed cap: code %d, %d providers", code, len(page.GetProviders()))
 	}
 	assertQueryCode(t, c.app(), "/svn.providers.v1.Query/Providers", &providersv1.QueryProvidersRequest{Page: &typesv1.PageRequest{Limit: pageLimit + 1}}, msgkit.Bounds)
+}
+
+// TestGovernedLimitFailsClosed: when the authority side document does not
+// decode, x/authority GovernedLimit panics instead of reporting no limit.
+// The Providers query (which reads max_page_limit) fails with the SDK's
+// recovered-panic result and the node keeps answering: Query/Provider,
+// which reads no governed limit, still returns the record. A
+// RegisterContent message (which reads max_package_bytes) fails the same
+// way instead of running against the protocol ceiling; it is run through
+// Simulate, which executes the handler without a block, because the next
+// block's authority EndBlock halts on the corrupt document by design.
+func TestGovernedLimitFailsClosed(t *testing.T) {
+	n := newRegNet()
+	c := n.start(t, 1)
+	chainApp := c.app()
+	wantCode(t, "register p1", n.send(t, c, n.provider1, n.registerProvider(t, n.provider1, "reg-p1", "p1", groupDevnet, capacity1)), msgkit.OK)
+	// A committed council message writes the side document.
+	wantCode(t, "propose admit p1", n.send(t, c, n.seats[0], n.proposal(t, "prop-admit-p1", "admit-p1", admitPayload("p1"))), msgkit.OK)
+	if err := chainApp.CorruptAuthoritySideDocumentForTest(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, res := query(t, chainApp, "/svn.providers.v1.Query/Providers", &providersv1.QueryProvidersRequest{}, 0)
+	if res.Codespace != errorsmod.UndefinedCodespace || res.Code != errorsmod.ErrPanic.ABCICode() {
+		t.Fatalf("Providers on a corrupt side document: %s/%d %s", res.Codespace, res.Code, res.Log)
+	}
+	if record, _ := queryProvider(t, chainApp, "p1", 0); record.GetProviderId() != "p1" {
+		t.Fatalf("Query/Provider after the failed query: %v", record)
+	}
+
+	before := chainApp.FullSnapshot()
+	raw := n.signed(t, c, n.service, registryGas, nil, n.registerContent(t, n.service, "reg-c1", "c1", 1, packageManifest("c1"), sizeC1))
+	_, _, err := chainApp.Simulate(raw)
+	if codespace, code, _ := errorsmod.ABCIInfo(err, false); codespace != errorsmod.UndefinedCodespace || code != errorsmod.ErrPanic.ABCICode() {
+		t.Fatalf("RegisterContent on a corrupt side document: %s/%d %v", codespace, code, err)
+	}
+	if !bytes.Equal(before, chainApp.FullSnapshot()) {
+		t.Fatal("the failed message changed state")
+	}
 }

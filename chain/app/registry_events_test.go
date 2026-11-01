@@ -165,6 +165,15 @@ func TestRegistryEventSchemas(t *testing.T) {
 // schema; the test pins their values (no fee is ever charged).
 var sdkOwnedNames = map[string]bool{"fee": true, "fee_payer": true}
 
+// TestNoPrivateDataInStateOrEvents runs the registry flow and scans every
+// store, every committed transaction, the export, and every event. The
+// flow hashes its canaries before it builds a transaction, so the canary
+// and URL-scheme scans check that this client submits only digests; they
+// cannot fail because of anything the chain does. The chain-side checks
+// here are the forbidden-name scans of event types, attribute keys, and
+// the keys of the providers and content export.
+// Chain enforcement against submitted private text is
+// TestSubmitterTextFields and TestTransactionsRejectVideoBytes.
 func TestNoPrivateDataInStateOrEvents(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)

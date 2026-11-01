@@ -921,7 +921,10 @@ func replayQuery(t *testing.T, replayed *app.App, path string, req proto.Message
 var sdkEventNames = map[string]bool{"fee": true, "fee_payer": true}
 
 // scanEvents reads every committed block's results and checks that no
-// canary, no URL, and no forbidden field name appears.
+// canary, no URL, and no forbidden field name appears. The demo hashes its
+// canaries before it builds a transaction, so the canary part checks that
+// the demo client submits only digests; the forbidden-name part checks the
+// chain's event schema.
 func (d *demo) scanEvents(to int64) {
 	d.t.Helper()
 	patterns, exemptions := msgkittest.ForbiddenNamePatterns(d.t)

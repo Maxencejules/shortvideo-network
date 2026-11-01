@@ -99,8 +99,10 @@ func (r *specRegistry) ForceWithdraw(id string, version uint64, reason []byte, d
 // authority trial and the registry writes; a keep saves the authority trial
 // and discards the registry writes.
 //
-// Invariants: a failure leaves the canonical authority bytes unchanged; a
-// keep writes nothing to the registry; the registry changed exactly once
+// Invariants: a failure leaves the trial's canonical authority bytes equal
+// to the state before the operation and writes nothing to the registry
+// (the engine writes nothing before it fails); a keep writes nothing to
+// the registry; the registry changed exactly once
 // per proposal that ever executed; the policy version is one plus that
 // count; the validator set and pending set never change; DISABLED
 // providers and withdrawn content stay terminal; a proposal never returns
@@ -245,9 +247,12 @@ func runCouncilRegistrySequence(t *testing.T, raw []byte) (*State, *specRegistry
 			}
 			st = trial
 		default:
+			if !registry.equal(saved) {
+				t.Fatalf("op %d code %s: a failure wrote to the registry", i, out.Code)
+			}
 			registry = saved
-			if !bytes.Equal(before, canonicalBytes(t, st)) {
-				t.Fatalf("op %d code %s mutated committed state", i, out.Code)
+			if !bytes.Equal(before, canonicalBytes(t, trial)) {
+				t.Fatalf("op %d code %s mutated the authority state before it failed", i, out.Code)
 			}
 		}
 		for _, p := range st.Proposals {

@@ -168,11 +168,12 @@ func withRetired(id string, n int) *providersv1.Provider {
 // provider that would take it above MaxRetiredKeysPerPage retired keys, and
 // next_page_key names that provider. The first provider of a page is
 // always returned, so a walk advances and returns every provider and every
-// retired key exactly once.
+// retired key exactly once; a provider at MaxRetiredKeysPerProvider fills
+// a page on its own.
 func TestProvidersPageRetiredKeyBudget(t *testing.T) {
 	e := newEnv(t)
 	e.seed(
-		withRetired("p0", MaxRetiredKeysPerPage+500),
+		withRetired("p0", MaxRetiredKeysPerProvider),
 		withRetired("p1", 1000),
 		withRetired("p2", 30),
 		withRetired("p3", 0),
@@ -206,7 +207,7 @@ func TestProvidersPageRetiredKeyBudget(t *testing.T) {
 		}
 		key = res.GetPage().GetNextPageKey()
 	}
-	if total != MaxRetiredKeysPerPage+500+1000+30 {
+	if total != MaxRetiredKeysPerProvider+1000+30 {
 		t.Fatalf("walk returned %d retired keys", total)
 	}
 }

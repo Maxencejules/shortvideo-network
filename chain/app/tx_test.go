@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -92,11 +93,17 @@ type running struct {
 
 func boot(t *testing.T, doc genesis.Document) *running {
 	t.Helper()
+	return bootWith(t, doc, nil)
+}
+
+// bootWith is boot with node options (nil: none).
+func bootWith(t *testing.T, doc genesis.Document, opts servertypes.AppOptions) *running {
+	t.Helper()
 	modules, err := app.AppStateFromDocument(codecFromApp(t, doc.ChainID), doc)
 	if err != nil {
 		t.Fatal(err)
 	}
-	chainApp := newTestApp(t, doc.ChainID, nil)
+	chainApp := newTestAppWith(t, doc.ChainID, nil, opts)
 	params := consensusParams()
 	if _, err := chainApp.InitChain(&abci.RequestInitChain{
 		ChainId:         doc.ChainID,

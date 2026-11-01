@@ -27,11 +27,19 @@ deployed, so there is no migration and `ConsensusVersion` stays 1.
 ## Messages
 
 `MsgProposeChange`, `MsgApproveChange`, and `MsgExecuteChange` are the committed handlers. Each runs
-`enforceCommitted` (gas limit within `[MinGasPerTx, MaxGasPerTx]`, transaction bytes at most `MaxTxBytes`, a fixed
-50 000 gas charge, a 20-byte signer) and then the pure engine in `engine.go` on a clone of the stored state. The
+`enforceCommitted` (gas meter limit within `[MinGasPerTx, MaxGasPerTx]`, transaction bytes at most `MaxTxBytes`, a
+fixed 50 000 gas charge, a 20-byte signer) and then the pure engine in `engine.go` on a clone of the stored state. The
 check order is `op_propose`, `op_approve`, and `op_execute` of the frozen spec machine
 (`docs/evidence/goal-02/spec_machine.py`). Execute tests expiry before `QUEUED`; that is the spec order and a
-recorded Goal 06 follow-up.
+recorded Goal 06 follow-up. In simulation (`sdk.ExecModeSimulate`) the SDK runs the handler on an infinite gas
+meter, so `enforceCommitted` skips only the meter-limit check there; the ante handler still checks the declared gas
+limit (a declared 0 is accepted only in simulation). FinalizeBlock always runs the meter check. CheckTx runs no
+message handler (`baseapp` `runMsgs` stops unless the mode is finalize or simulate); the ante handler checks the
+declared limit there. `TestEnforceCommitted` covers each mode by calling the function directly (an
+infinite meter is `BOUNDS` in the finalize and check modes and passes in simulation; the size, gas charge, and signer
+checks run in every mode), `TestHandlerMeterCheckByMode` drives the same split through `Approve`, and
+`TestSimulateEstimatesGas` in `chain/app` simulates and then commits each council message. The ante handler rejects an
+out-of-range declared gas limit first, so the handler check is not observable at app level.
 
 A rejected message saves nothing. A keep result saves the proposal mark and returns handler success with the code
 on an `authority_result` event: `EXPIRED`, and `REJECTED` when the payload is `FORBIDDEN`. An idempotent repeat
@@ -83,10 +91,11 @@ Other modules consume these through their own small interfaces. They read commit
 | `BusinessDigest(ctx, id)` | the business digest authority committed for `id` (implements `msgkit.BusinessSource`) |
 | `Admitted(ctx, addr)` | whether `addr` is in the admission index (ante decorator) |
 
-`BusinessDigest` panics if the side document does not decode, so no id is reported free on unreadable state;
-only transaction handlers call it, and the SDK turns a handler panic into a failed transaction on every node.
-`GovernedLimit` reports not found in that case, because query handlers call it; the caller then uses the
-protocol ceiling.
+`BusinessDigest` and `GovernedLimit` panic if the side document does not decode, so no id is reported free
+and no transaction runs against the protocol ceiling on unreadable state. The SDK turns a handler panic into a
+failed transaction on every node. Query handlers also call `GovernedLimit` (the `Providers` page cap): ABCI
+`Query` recovers a panic into an error result, and the node gRPC server wraps every query in a recovery
+interceptor, so the query fails and the node keeps running.
 
 ## Wiring
 
@@ -112,5 +121,9 @@ peers.Add(authority.ModuleName, authorityKeeper)
 - `keeper_test.go` (real IAVL multistore): hook writes committed only on success, discarded on keep and failure;
   side-document round trip of force-withdraw arguments; one business-id namespace through `msgkit.Peers`; read
   surface; older side documents; deterministic sources.
+- `enforce_test.go`: `enforceCommitted` per execution mode (`TestEnforceCommitted`) and through `Approve`
+  (`TestHandlerMeterCheckByMode`).
 - `fuzz_test.go` `FuzzStateTransitions` and `fuzz_registry_test.go` `FuzzCouncilRegistryPayloads`: bounded
-  operation sequences; a failure leaves the canonical bytes unchanged.
+  operation sequences. Each operation runs on a clone of the state, as `Keeper.transition` does. On a failure
+  the test compares the clone's canonical bytes with the bytes before the operation, so an engine that wrote
+  before it failed is caught; the registry fuzz also requires the spec registry to be unchanged on a failure.

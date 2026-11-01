@@ -115,9 +115,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // migrations maps a from-version to the in-place migration to from+1.
-// Version 1 is the first layout, so the table is empty. A layout change
-// bumps ConsensusVersion and adds the entry here; a test checks the table
-// covers 1 .. ConsensusVersion-1.
+// Version 2 is the first registry layout, so the table is empty. Version 1
+// is the scaffold layout and has no step on purpose: RunMigrations from it
+// fails. A layout change bumps ConsensusVersion and adds the entry here; a
+// test checks the table covers 2 .. ConsensusVersion-1 and nothing else.
 var migrations = map[uint64]module.MigrationHandler{}
 
 // registerMigrations registers every migration in from-version order.

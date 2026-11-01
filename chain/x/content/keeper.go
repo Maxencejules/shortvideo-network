@@ -11,7 +11,8 @@
 // Everything in this package except the _test.go files runs inside chain
 // execution. It reads block data only from sdk.Context, iterates stores in
 // key order, and never reads the clock, randomness, the environment, files,
-// or the network.
+// or the network. TestDeterministicSources runs the syntactic source scan
+// of msgkittest.AssertDeterministicSources on it.
 package content
 
 import (
@@ -29,8 +30,14 @@ const (
 	// peer name.
 	ModuleName = "content"
 
-	// ConsensusVersion is the module state version. v1 is the first version.
-	ConsensusVersion uint64 = 1
+	// ConsensusVersion is the module state version, written at genesis
+	// under msgkit.LayoutVersionKey. Version 1 (msgkit.ScaffoldLayoutVersion)
+	// was the goal-05/06 scaffold slot: one key [0x01] holding the module
+	// genesis JSON. Version 2 is the first registry layout (store.go). No
+	// migration from version 1 is registered: goal-06 state is not
+	// upgradable in place, and the app refuses to load a committed store
+	// without the version-2 layout key.
+	ConsensusVersion uint64 = 2
 
 	// HostingDecisionID is the decision that owns the hosting-intent signer
 	// role. It is unset; only the labelled devnet role passes.

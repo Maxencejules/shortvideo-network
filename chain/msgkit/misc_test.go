@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest"
@@ -61,26 +62,33 @@ func TestEnforce(t *testing.T) {
 		want      Code
 		wantSpent uint64
 		outOfGas  bool
+		mode      sdk.ExecMode
 	}{
-		{"ok", 200_000, false, 256, signer, OK, FixedMessageGas, false},
-		{"gas limit 0", 0, false, 256, signer, Bounds, 0, false},
-		{"gas limit 1 passes bounds, then runs out of gas", 1, false, 256, signer, OK, 0, true},
-		{"gas limit max", genesis.MaxGasPerTx, false, 256, signer, OK, FixedMessageGas, false},
-		{"gas limit max+1", genesis.MaxGasPerTx + 1, false, 256, signer, Bounds, 0, false},
-		{"infinite gas meter", 0, true, 256, signer, Bounds, 0, false},
-		{"tx at the cap", 200_000, false, int(genesis.MaxTxBytes), signer, OK, FixedMessageGas, false},
-		{"tx above the cap", 200_000, false, int(genesis.MaxTxBytes) + 1, signer, Bounds, 0, false},
-		{"signer 19 bytes", 200_000, false, 256, signer[:19], Malformed, FixedMessageGas, false},
-		{"signer 21 bytes", 200_000, false, 256, append(append([]byte{}, signer...), 1), Malformed, FixedMessageGas, false},
-		{"signer empty", 200_000, false, 256, nil, Malformed, FixedMessageGas, false},
-		{"bounds before signer", 0, false, 256, nil, Bounds, 0, false},
+		{"ok", 200_000, false, 256, signer, OK, FixedMessageGas, false, sdk.ExecModeFinalize},
+		{"gas limit 0", 0, false, 256, signer, Bounds, 0, false, sdk.ExecModeFinalize},
+		{"gas limit 1 passes bounds, then runs out of gas", 1, false, 256, signer, OK, 0, true, sdk.ExecModeFinalize},
+		{"gas limit max", genesis.MaxGasPerTx, false, 256, signer, OK, FixedMessageGas, false, sdk.ExecModeFinalize},
+		{"gas limit max+1", genesis.MaxGasPerTx + 1, false, 256, signer, Bounds, 0, false, sdk.ExecModeFinalize},
+		{"infinite gas meter", 0, true, 256, signer, Bounds, 0, false, sdk.ExecModeFinalize},
+		{"tx at the cap", 200_000, false, int(genesis.MaxTxBytes), signer, OK, FixedMessageGas, false, sdk.ExecModeFinalize},
+		{"tx above the cap", 200_000, false, int(genesis.MaxTxBytes) + 1, signer, Bounds, 0, false, sdk.ExecModeFinalize},
+		{"signer 19 bytes", 200_000, false, 256, signer[:19], Malformed, FixedMessageGas, false, sdk.ExecModeFinalize},
+		{"signer 21 bytes", 200_000, false, 256, append(append([]byte{}, signer...), 1), Malformed, FixedMessageGas, false, sdk.ExecModeFinalize},
+		{"signer empty", 200_000, false, 256, nil, Malformed, FixedMessageGas, false, sdk.ExecModeFinalize},
+		{"bounds before signer", 0, false, 256, nil, Bounds, 0, false, sdk.ExecModeFinalize},
+		// Simulation runs on the SDK's infinite meter (limit 2^64-1). Only
+		// the meter check is skipped there; FinalizeBlock keeps it.
+		{"simulate on the infinite meter", 0, true, 256, signer, OK, FixedMessageGas, false, sdk.ExecModeSimulate},
+		{"finalize on the infinite meter", 0, true, 256, signer, Bounds, 0, false, sdk.ExecModeFinalize},
+		{"simulate tx above the cap", 0, true, int(genesis.MaxTxBytes) + 1, signer, Bounds, 0, false, sdk.ExecModeSimulate},
+		{"simulate signer 19 bytes", 0, true, 256, signer[:19], Malformed, FixedMessageGas, false, sdk.ExecModeSimulate},
 	}
 	for _, tc := range cases {
 		meter := storetypes.NewGasMeter(tc.gasLimit)
 		if tc.infinite {
 			meter = storetypes.NewInfiniteGasMeter()
 		}
-		ctx := base.WithGasMeter(meter).WithTxBytes(make([]byte, tc.txBytes))
+		ctx := base.WithGasMeter(meter).WithTxBytes(make([]byte, tc.txBytes)).WithExecMode(tc.mode)
 		if tc.outOfGas {
 			func() {
 				defer func() {

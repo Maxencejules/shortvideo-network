@@ -40,7 +40,11 @@ type Listen struct {
 // Start runs one validator until SIGINT or SIGTERM. It does not delete data.
 func Start(home string) error {
 	logger := log.NewLogger(os.Stdout).With("home", home)
-	cfg, err := loadCometConfig(home)
+	saved, err := loadNodeFile(home)
+	if err != nil {
+		return err
+	}
+	cfg, err := cometConfig(home, saved)
 	if err != nil {
 		return err
 	}
@@ -52,11 +56,7 @@ func Start(home string) error {
 	if err != nil {
 		return err
 	}
-	application, err := app.New(app.Config{
-		Logger:  logger,
-		DB:      db,
-		ChainID: chainID,
-	})
+	application, err := app.New(AppConfig(logger, db, chainID, saved))
 	if err != nil {
 		_ = db.Close()
 		return err
@@ -139,6 +139,8 @@ func Start(home string) error {
 
 // NodeFile is the bind and peer record start reads. config.toml is written
 // from the same values for operators. Start does not reparse durations.
+// QueryGasLimit is the gas one ABCI or gRPC query may consume; 0 or absent
+// selects app.DefaultQueryGasLimit (never unlimited).
 type NodeFile struct {
 	Moniker          string `json:"moniker"`
 	P2P              string `json:"p2p"`
@@ -147,17 +149,38 @@ type NodeFile struct {
 	AllowDuplicateIP bool   `json:"allow_duplicate_ip"`
 	AddrBookStrict   bool   `json:"addr_book_strict"`
 	Pex              bool   `json:"pex"`
+	QueryGasLimit    uint64 `json:"query_gas_limit,omitempty"`
 }
 
-func loadCometConfig(home string) (*cmtcfg.Config, error) {
+// options is the node options the app reads (servertypes.AppOptions).
+type options map[string]any
+
+func (o options) Get(key string) any { return o[key] }
+
+// AppConfig is the application configuration Start builds from node.json:
+// the query gas limit goes to the app as app.QueryGasLimitOption.
+func AppConfig(logger log.Logger, db dbm.DB, chainID string, saved NodeFile) app.Config {
+	return app.Config{
+		Logger:     logger,
+		DB:         db,
+		ChainID:    chainID,
+		AppOptions: options{app.QueryGasLimitOption: saved.QueryGasLimit},
+	}
+}
+
+func loadNodeFile(home string) (NodeFile, error) {
 	raw, err := os.ReadFile(filepath.Join(home, "config", "node.json"))
 	if err != nil {
-		return nil, err
+		return NodeFile{}, err
 	}
 	var saved NodeFile
 	if err := json.Unmarshal(raw, &saved); err != nil {
-		return nil, err
+		return NodeFile{}, err
 	}
+	return saved, nil
+}
+
+func cometConfig(home string, saved NodeFile) (*cmtcfg.Config, error) {
 	cfg := cmtcfg.DefaultConfig()
 	cfg.SetRoot(home)
 	cfg.Moniker = saved.Moniker

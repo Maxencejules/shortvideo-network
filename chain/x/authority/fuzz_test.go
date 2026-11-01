@@ -11,8 +11,11 @@ import (
 )
 
 // FuzzStateTransitions applies a bounded sequence of authority operations.
-// A non-keeping failure must leave the canonical authority bytes unchanged.
-// The committed set keeps distinct keys and positive power.
+// Each operation runs on a clone (trial), as Keeper.transition does. A
+// non-keeping failure must leave the trial's canonical authority bytes
+// equal to the state before the operation: the engine writes nothing
+// before it fails. The committed set keeps distinct keys and positive
+// power.
 func FuzzStateTransitions(f *testing.F) {
 	f.Add([]byte{0, 1, 2, 3, 1, 1, 2, 4})
 	f.Add([]byte{0, 1, 1, 1, 2, 5, 3, 2})
@@ -27,8 +30,8 @@ func FuzzStateTransitions(f *testing.F) {
 			out := applyFuzzOp(trial, seats, authoritySigner, b, i)
 			if out.Success() || out.Keep {
 				st = trial
-			} else if !bytes.Equal(before, canonicalBytes(t, st)) {
-				t.Fatalf("op %d code %s mutated committed state", b%6, out.Code)
+			} else if !bytes.Equal(before, canonicalBytes(t, trial)) {
+				t.Fatalf("op %d code %s mutated the authority state before it failed", b%6, out.Code)
 			}
 			if problem := fuzzInvariant(st); problem != "" {
 				t.Fatalf("op %d: %s", i, problem)

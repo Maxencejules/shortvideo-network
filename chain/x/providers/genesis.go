@@ -44,7 +44,8 @@ func ParseGenesis(raw json.RawMessage) (*providersv1.GenesisState, error) {
 //
 //   - provider_id in the id pattern and unique
 //   - account 20 bytes; signing_pubkey 32 bytes; signing_key_id in the id pattern
-//   - key_generation >= 1; previous_signing_keys has key_generation-1 entries
+//   - 1 <= key_generation <= MaxRetiredKeysPerProvider+1;
+//     previous_signing_keys has key_generation-1 entries
 //     with generations 1, 2, ... in order, 32-byte keys, and retired times in
 //     [1, 253402300799] that never decrease
 //   - endpoint_manifest_digest a SHA-256 digest of 32 bytes
@@ -101,6 +102,9 @@ func validateProvider(p *providersv1.Provider) error {
 	}
 	if p.GetKeyGeneration() < 1 {
 		return errors.New("key_generation is 0")
+	}
+	if p.GetKeyGeneration()-1 > MaxRetiredKeysPerProvider {
+		return fmt.Errorf("key_generation %d retires more than %d keys", p.GetKeyGeneration(), MaxRetiredKeysPerProvider)
 	}
 	if err := validatePreviousKeys(p.GetKeyGeneration(), p.GetPreviousSigningKeys()); err != nil {
 		return err

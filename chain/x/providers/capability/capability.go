@@ -39,8 +39,13 @@
 // same before and after signing, and a re-signature does not change the
 // digest. The chain never checks this signature; it stores the digest that
 // the provider account's transaction carried. A peer that fetched a
-// manifest checks both: Verify against the provider's current key from
-// Query/Provider, and the digest against endpoint_manifest_digest. The wire
+// manifest passes it, its signature, and the provider record from
+// Query/Provider to Verify, which binds all three: the manifest names the
+// record's provider_id and current signing_key_id, the signature is by the
+// record's current key, and the body's digest is the record's
+// endpoint_manifest_digest. A provider that rotates its key therefore
+// publishes a new manifest naming the new key and sends UpdateProvider
+// with its digest; until then peers reject the old manifest. The wire
 // envelope that GET /capability returns (body and signature together) is
 // not defined by protocol v0; decision request DR-07-09.
 package capability
@@ -60,6 +65,7 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/jcs"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
@@ -140,15 +146,46 @@ func Sign(r Result, key ed25519.PrivateKey) (*typesv1.InnerSignature, error) {
 	}, nil
 }
 
-// Verify checks a manifest signature against the provider's current key
-// (pub, as Query/Provider returns it in signing_pubkey). The order is
-// msgkit.VerifyInner: structure (MALFORMED, OUT_OF_RANGE, BOUNDS), a
-// domain other than SVN-CAPABILITY-1 (WRONG_DOMAIN), then a key id other
-// than the manifest's signing_key_id, a public key other than pub, or a bad
-// ed25519 signature (UNAUTHORIZED). OK means the key pub signed exactly
-// this body.
-func Verify(r Result, sig *typesv1.InnerSignature, pub []byte) msgkit.Code {
-	return msgkit.VerifyInner(sig, SignatureDomain, r.Manifest.SigningKeyID, pub, r.Canonical)
+// Verify checks a signed manifest against the provider record a peer read
+// from Query/Provider. In order:
+//
+//  1. r is not a parsed result: MALFORMED; record nil: NOT_FOUND
+//  2. signature structure (MALFORMED, OUT_OF_RANGE, BOUNDS) and a domain
+//     other than SVN-CAPABILITY-1 (WRONG_DOMAIN), as msgkit.VerifyInner
+//  3. manifest provider_id is not the record's provider_id: UNAUTHORIZED
+//  4. manifest signing_key_id is not the record's current signing_key_id
+//     (a retired or unknown key id): UNAUTHORIZED
+//  5. signature key_id, public key, or ed25519 signature is not by the
+//     record's current key (msgkit.VerifyInner): UNAUTHORIZED
+//  6. the body's SHA-256 is not the record's endpoint_manifest_digest:
+//     INTEGRITY
+//
+// OK means the provider's current key signed exactly this body, the body
+// names that provider and that key, and the chain committed its digest.
+func Verify(r Result, sig *typesv1.InnerSignature, record *providersv1.Provider) msgkit.Code {
+	if r.Canonical == "" {
+		return msgkit.Malformed
+	}
+	if record == nil {
+		return msgkit.NotFound
+	}
+	if code := msgkit.CheckInnerSignature(sig, SignatureDomain); code != msgkit.OK {
+		return code
+	}
+	if r.Manifest.ProviderID != record.GetProviderId() {
+		return msgkit.Unauthorized
+	}
+	if r.Manifest.SigningKeyID != record.GetSigningKeyId() {
+		return msgkit.Unauthorized
+	}
+	if code := msgkit.VerifyInner(sig, SignatureDomain, record.GetSigningKeyId(), record.GetSigningPubkey(), r.Canonical); code != msgkit.OK {
+		return code
+	}
+	committed := record.GetEndpointManifestDigest()
+	if committed.GetAlgorithm() != typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256 || !bytes.Equal(committed.GetValue(), r.SHA256[:]) {
+		return msgkit.Integrity
+	}
+	return msgkit.OK
 }
 
 func invalid(format string, args ...any) error {

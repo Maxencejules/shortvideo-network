@@ -43,7 +43,7 @@ A due removal whose consensus key does not match the key the validator holds is 
 
 ## Quotas
 
-Each transaction's gas limit must be from 1 through `safety_max_gas_per_tx`. The byte length must be within `safety_max_tx_bytes`. Proposals and pending power changes are capped at 128. Provider and content rows moved to `x/providers` and `x/content` in Goal 07; they have no per-account row quota while DEC-005 is unset. The handler consumes a fixed gas amount. There is no fee amount and no coin.
+Each transaction's gas limit must be from 1 through `safety_max_gas_per_tx`. Simulation is the one exception: it runs on the SDK's infinite gas meter and accepts a declared limit of 0 (the SDK client's gas=auto flow); it commits nothing. The byte length must be within `safety_max_tx_bytes`. Proposals and pending power changes are capped at 128. Provider and content rows moved to `x/providers` and `x/content` in Goal 07; they have no per-account row quota while DEC-005 is unset. The handler consumes a fixed gas amount. There is no fee amount and no coin.
 
 ## No admin finality
 

@@ -84,10 +84,18 @@ func (k Keeper) transition(ctx context.Context, signer []byte, fn func(*State) O
 	return sdkError(out.Code)
 }
 
+// enforceCommitted is the first check of every authority handler. In
+// simulation (sdk.ExecModeSimulate) the SDK installs an infinite gas meter
+// whose limit is 2^64-1; the meter check is skipped there so a client can
+// estimate gas, and the ante handler still checks the declared gas limit
+// (a declared 0 is accepted only in simulation). FinalizeBlock always runs
+// the meter check; CheckTx runs no message handler.
 func enforceCommitted(ctx sdk.Context, signer []byte) string {
-	limit := ctx.GasMeter().Limit()
-	if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
-		return CodeBounds
+	if ctx.ExecMode() != sdk.ExecModeSimulate {
+		limit := ctx.GasMeter().Limit()
+		if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+			return CodeBounds
+		}
 	}
 	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {
 		return CodeBounds

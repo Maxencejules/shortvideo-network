@@ -14,31 +14,61 @@ import (
 )
 
 // forbiddenImports read the clock indirectly, randomness, the environment,
-// files, processes, or the network. Any "net/..." path is forbidden too.
+// files, processes, the host, or the network. Every path under one of
+// forbiddenImportTrees is forbidden too.
 var forbiddenImports = map[string]bool{
 	"math/rand":    true,
 	"math/rand/v2": true,
 	"crypto/rand":  true,
-	"os":           true,
-	"os/exec":      true,
-	"net":          true,
-	"net/http":     true,
+	"hash/maphash": true, // random per-process seed
 	"io/ioutil":    true,
-	"syscall":      true,
+	"io/fs":        true,
+	"plugin":       true,
+}
+
+// forbiddenImportTrees are import paths forbidden with every path below
+// them: os (environment, files, processes, user, signals), net, runtime
+// (NumCPU, GOOS, scheduler state), and syscall.
+var forbiddenImportTrees = []string{"os", "net", "runtime", "syscall"}
+
+// forbiddenFileCalls are the functions of path/filepath that read the file
+// system or the working directory. The rest of path/filepath is pure path
+// arithmetic.
+var forbiddenFileCalls = map[string]bool{
+	"Abs":          true,
+	"EvalSymlinks": true,
+	"Glob":         true,
+	"Walk":         true,
+	"WalkDir":      true,
 }
 
 // forbiddenTimeCalls read the local clock or act on it (timers, tickers,
-// sleeps).
+// sleeps), or read the host's time zone (Local, LoadLocation).
 var forbiddenTimeCalls = map[string]bool{
-	"Now":       true,
-	"Since":     true,
-	"Until":     true,
-	"Tick":      true,
-	"After":     true,
-	"AfterFunc": true,
-	"NewTimer":  true,
-	"NewTicker": true,
-	"Sleep":     true,
+	"Now":          true,
+	"Since":        true,
+	"Until":        true,
+	"Tick":         true,
+	"After":        true,
+	"AfterFunc":    true,
+	"NewTimer":     true,
+	"NewTicker":    true,
+	"Sleep":        true,
+	"Local":        true,
+	"LoadLocation": true,
+}
+
+// forbiddenImport reports whether path is a forbidden import.
+func forbiddenImport(path string) bool {
+	if forbiddenImports[path] {
+		return true
+	}
+	for _, tree := range forbiddenImportTrees {
+		if path == tree || strings.HasPrefix(path, tree+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 // allowedMathNames are the integer constants of package math. Every other
@@ -66,11 +96,15 @@ var forbiddenTypes = map[string]bool{
 // AssertDeterministicSources fails t when a non-test Go file directly in
 // dir (not its subdirectories):
 //
-//   - imports a nondeterministic package (randomness, os, processes,
-//     syscalls, any net package)
-//   - calls a clock or timer function of package time (Now, Since, Until,
-//     Tick, After, AfterFunc, NewTimer, NewTicker, Sleep)
-//   - dot-imports "time" or "math"
+//   - imports a nondeterministic package: math/rand, math/rand/v2,
+//     crypto/rand, hash/maphash, io/ioutil, io/fs, plugin, or os, net,
+//     runtime, syscall, or any path below them
+//   - uses a file-system function of path/filepath (Abs, EvalSymlinks,
+//     Glob, Walk, WalkDir)
+//   - uses a clock, timer, or time-zone name of package time (Now, Since,
+//     Until, Tick, After, AfterFunc, NewTimer, NewTicker, Sleep, Local,
+//     LoadLocation)
+//   - dot-imports "time", "math", or "path/filepath"
 //   - names a floating-point or complex type (float32, float64, complex64,
 //     complex128), which also covers conversions such as float64(x)
 //   - writes a floating-point or imaginary literal (0.75, 1e3, 2i)
@@ -79,9 +113,11 @@ var forbiddenTypes = map[string]bool{
 //   - uses big.Float, big.NewFloat, big.ParseFloat, strconv.ParseFloat,
 //     strconv.FormatFloat, or strconv.AppendFloat
 //
-// It is a syntactic scan: a float that arrives through another package's
-// API (for example encoding/json decoding a number into an interface) is
-// not visible to it. A directory without non-test Go files fails too, so a
+// It is a syntactic scan of selectors on package names. It does not see a
+// float that arrives through another package's API (for example
+// encoding/json decoding a number into an interface), a method on a value
+// (time.Time.Local), a goroutine or a select, or a range over a map; those
+// stay review items. A directory without non-test Go files fails too, so a
 // wrong path cannot pass silently.
 func AssertDeterministicSources(t testing.TB, dir string) {
 	t.Helper()
@@ -138,17 +174,17 @@ func scanFile(fset *token.FileSet, file *ast.File) []string {
 			report(spec.Pos(), "unreadable import %s", spec.Path.Value)
 			continue
 		}
-		if forbiddenImports[path] || strings.HasPrefix(path, "net/") {
+		if forbiddenImport(path) {
 			report(spec.Pos(), "imports %q", path)
 		}
-		if path != "time" && path != "math" && forbiddenFloatCalls[path] == nil {
+		if path != "time" && path != "math" && path != "path/filepath" && forbiddenFloatCalls[path] == nil {
 			continue
 		}
 		local := filepath.Base(path)
 		switch {
 		case spec.Name == nil:
 		case spec.Name.Name == ".":
-			if path == "time" || path == "math" {
+			if path == "time" || path == "math" || path == "path/filepath" {
 				report(spec.Pos(), "dot-imports %q", path)
 			}
 			continue
@@ -170,6 +206,8 @@ func scanFile(fset *token.FileSet, file *ast.File) []string {
 			switch path := watched[pkg.Name]; {
 			case path == "time" && forbiddenTimeCalls[name]:
 				report(typed.Pos(), "uses time.%s", name)
+			case path == "path/filepath" && forbiddenFileCalls[name]:
+				report(typed.Pos(), "uses filepath.%s", name)
 			case path == "math" && !allowedMathName(name):
 				report(typed.Pos(), "uses floating-point math.%s", name)
 			case forbiddenFloatCalls[path][name]:

@@ -100,13 +100,15 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	}
 }
 
-// ConsensusVersion is 1, the first state version.
+// ConsensusVersion is 2, the first registry layout (1 was the scaffold).
 func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // migrationSteps maps a from-version to the in-place store migration that
-// moves state to from+1. v1 is the first version, so there is no step.
-// A ConsensusVersion bump must add the step for the old version;
-// TestMigrationStepsCoverConsensusVersion fails until it does.
+// moves state to from+1. Version 2 is the first registry layout, so there
+// is no step. Version 1 is the scaffold layout and has no step on purpose:
+// RunMigrations from it fails. A ConsensusVersion bump must add the step
+// for the old version; TestMigrationStepsCoverConsensusVersion fails until
+// it does.
 func (am AppModule) migrationSteps() map[uint64]module.MigrationHandler {
 	return map[uint64]module.MigrationHandler{}
 }

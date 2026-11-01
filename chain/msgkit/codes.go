@@ -3,8 +3,11 @@
 //
 // Everything here runs inside chain execution. It reads block data only
 // from sdk.Context, iterates stores in key order, and never reads the local
-// clock, randomness, the environment, files, or the network. A source scan
-// test (msgkittest.AssertDeterministicSources) enforces that for this package.
+// clock, randomness, the environment, files, or the network. A syntactic
+// source scan (msgkittest.AssertDeterministicSources) checks this package
+// for the forbidden imports, clock and time-zone calls, file-system calls
+// of path/filepath, and floating-point use it lists; map iteration order,
+// goroutines, and methods on values stay review items.
 package msgkit
 
 import (

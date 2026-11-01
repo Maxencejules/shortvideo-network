@@ -15,6 +15,7 @@ import (
 	sdked "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/proto"
 
@@ -180,9 +181,15 @@ type cluster struct {
 
 func (n *regNet) start(t *testing.T, nodes int) *cluster {
 	t.Helper()
+	return n.startWith(t, nodes, nil)
+}
+
+// startWith is start with node options for every node (nil: none).
+func (n *regNet) startWith(t *testing.T, nodes int, opts servertypes.AppOptions) *cluster {
+	t.Helper()
 	c := &cluster{}
 	for i := 0; i < nodes; i++ {
-		c.nodes = append(c.nodes, boot(t, n.doc))
+		c.nodes = append(c.nodes, bootWith(t, n.doc, opts))
 	}
 	c.block(t)
 	return c

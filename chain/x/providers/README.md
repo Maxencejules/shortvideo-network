@@ -1,6 +1,7 @@
 # chain/x/providers
 
-The provider registry module (goal 07). Package `providers`, module name `providers`, consensus version 1.
+The provider registry module (goal 07). Package `providers`, module name `providers`, consensus version 2 (version 1
+was the goal-05/06 scaffold slot; see "Genesis and migrations").
 
 A provider record is a coordination record. It says which account registered a provider id, which ed25519 key
 signs for it now, which keys it retired, the SHA-256 digest of its off-chain capability manifest, its declared
@@ -9,9 +10,13 @@ independent operator, of physical capacity, or of reachability.
 
 The keeper code in this directory is chain code. It reads block height and time only from `sdk.Context`, iterates
 stores in key order, and never reads the clock, randomness, the environment, files, or the network.
-`TestDeterministicSources` runs the `msgkittest` source scan on it: no nondeterministic import, no clock or timer
-call of package `time`, no floating-point type, literal, or `math` function. The scan is syntactic; it does not see
-a float that another package's API returns. It does not import `x/authority`, the app, the other registry modules, or the
+`TestDeterministicSources` runs the `msgkittest` source scan on it. The scan flags an import of `math/rand`,
+`math/rand/v2`, `crypto/rand`, `hash/maphash`, `io/ioutil`, `io/fs`, `plugin`, or anything under `os`, `net`,
+`runtime`, or `syscall`; the file-system functions of `path/filepath` (`Abs`, `EvalSymlinks`, `Glob`, `Walk`,
+`WalkDir`); the clock, timer, and time-zone names of `time` (`Now`, `Since`, `Until`, `Tick`, `After`, `AfterFunc`,
+`NewTimer`, `NewTicker`, `Sleep`, `Local`, `LoadLocation`); and any floating-point type, literal, or `math` function.
+The scan is syntactic: it does not see a float that another package's API returns, a method on a value such as
+`time.Time.Local`, a goroutine, or a range over a map. Those stay review items. It does not import `x/authority`, the app, the other registry modules, or the
 `capability` subpackage (`TestKeeperImports`). It has no BeginBlock or EndBlock and returns no validator updates;
 `x/authority` stays the only validator-set writer (`TestNoValidatorUpdates`).
 
@@ -53,8 +58,11 @@ the codespace is not. A client that keys on `svn/2` does not see this rejection 
 
 ## Messages and check order
 
-Each handler runs `msgkit.Enforce` first (gas limit in `[1, 20000000]`, transaction at most 65536 bytes, a fixed
-50000 gas charge, a 20-byte signer). Then the presence rule: an empty string, empty bytes, or a nil message field the
+Each handler runs `msgkit.Enforce` first (gas meter limit in `[1, 20000000]`, transaction at most 65536 bytes, a fixed
+50000 gas charge, a 20-byte signer). Simulation (`/cosmos.tx.v1beta1.Service/Simulate`) runs on the SDK's infinite
+gas meter, so `Enforce` skips only the meter-limit check there and the ante handler still checks the declared gas
+limit (a declared 0 is accepted only in simulation); a simulated message reports the same gas a committed one uses (`TestSimulateEstimatesGas` in `chain/app`).
+Then the presence rule: an empty string, empty bytes, or a nil message field the
 spec requires is `ERROR_CODE_MALFORMED`; an integer 0 goes through its range check. Then the order of
 `docs/evidence/goal-02/spec_machine.py`. Every check runs before the first write.
 
@@ -62,7 +70,7 @@ spec requires is `ERROR_CODE_MALFORMED`; an integer 0 goes through its range che
 | --- | --- |
 | `RegisterProvider` (`op_register_provider`) | role (none `UNAUTHORIZED`, other than `ADMITTED_PROVIDER` `FORBIDDEN`); provider id, signing key id, operator group id pattern `BOUNDS`; signing pubkey not 32 bytes `BOUNDS`; endpoint digest (`MALFORMED` / `BOUNDS`); capacity 0 `BOUNDS`; business gate; existing id `DUPLICATE_ID` |
 | `UpdateProvider` (`op_update_capacity`) | lookup `NOT_FOUND`; signer not the account `FORBIDDEN`; capacity 0 `BOUNDS`; endpoint digest; business gate; capacity below reserved bytes `CAPACITY` |
-| `RotateProviderKey` (`op_rotate`) | lookup `NOT_FOUND`; inner signature (domain `SVN-PROVIDER-ROTATE-1`, current key only); signer not the account `FORBIDDEN`; new key id pattern, new pubkey not 32 bytes `BOUNDS`; business gate; expected generation `STALE_VERSION`; same key id or pubkey `CONFLICT`; generation at 2^64-1 `OVERFLOW` |
+| `RotateProviderKey` (`op_rotate`) | lookup `NOT_FOUND`; inner signature (domain `SVN-PROVIDER-ROTATE-1`, current key only); signer not the account `FORBIDDEN`; new key id pattern, new pubkey not 32 bytes `BOUNDS`; business gate; expected generation `STALE_VERSION`; same key id or pubkey `CONFLICT`; generation at 2^64-1 `OVERFLOW`; then a chain bound the spec does not have: the provider already retired `MaxRetiredKeysPerProvider` (1024) keys `BOUNDS` (DR-07-10) |
 | `DrainProvider` (`op_drain`) | lookup `NOT_FOUND`; inner signature (domain `SVN-PROVIDER-DRAIN-1`, current key only); signer not the account `FORBIDDEN`; business gate; state not `ADMITTED` `CONFLICT` |
 
 Inner signature order (`msgkit.VerifyInner`): nil `MALFORMED`; domain unknown `MALFORMED`, another known domain
@@ -133,7 +141,8 @@ test role. `operator_group_id` is metadata. It is not evidence that two provider
 | `0x02` | `0x02 \| business_id` | 32-byte business digest |
 | `0x03` | `0x03 \| provider_id \| 0x00 \| generation (8 bytes big endian)` | `svn.providers.v1.PreviousSigningKey`, one row per retired key |
 
-Retired keys are rows of their own, not a list inside the record. The record therefore has a constant size: a
+Retired keys are rows of their own, not a list inside the record. One provider holds at most
+`MaxRetiredKeysPerProvider` (1024) of them (see "Limits and residual notes"). The record has a constant size: a
 rotation, an update, a drain, and a council admit or disable read and write the same bytes however many times the
 provider rotated. With the list inline, each rotation added about 45 bytes to the one value every later write
 rewrites at about 33 gas per byte, so a provider could rotate until no council `ExecuteChange(disable_provider)` fit in
@@ -173,13 +182,17 @@ emits. It is not part of the `svn.events.v1` schema. `msgkit.ParseTyped` parses 
 (`/svn.providers.v1.Query/Provider`, `/svn.providers.v1.Query/Providers`) and the node gRPC server.
 
 - `Provider{provider_id}`: empty `MALFORMED`, outside the pattern `BOUNDS`, absent `NOT_FOUND`. The record carries every
-  retired key.
+  retired key, at most `MaxRetiredKeysPerProvider` (1024).
 - `Providers{page}`: every provider in every state, in id order, each with its retired keys. The page cap is the
   effective `max_page_limit` (governed value, at most 100). A nil page or limit 0 uses the cap. A limit above the cap,
   a `page_key` above 64 bytes, or a non-empty `page_key` outside the id pattern is `BOUNDS`. `page_key` is inclusive.
   `next_page_key` is the next id, empty on the last page. A page also ends early, before the provider that would take
   it above `MaxRetiredKeysPerPage` (1024) retired keys; `next_page_key` then names that provider. The first provider of
-  a page is always returned, so a walk advances (`TestProvidersPageRetiredKeyBudget`).
+  a page is always returned, so a walk advances (`TestProvidersPageRetiredKeyBudget`); it holds at most
+  `MaxRetiredKeysPerProvider` retired keys, which is not above the page budget (`TestRetiredKeyBoundsFitAPage`).
+- A stored record whose `key_generation` is 0 or claims more than `MaxRetiredKeysPerProvider` retired keys, or a
+  retired-key row past the claimed count, is an invariant violation. Both queries and export return an error before
+  reading more rows (`TestStoredRecordAboveTheCap`).
 
 A rejected query returns `msgkit.QueryErr`: the `svn` error, with a gRPC status (`NotFound` for `NOT_FOUND`,
 `InvalidArgument` for `MALFORMED` and `BOUNDS`) that holds one `google.rpc.ErrorInfo` detail: domain `svn`, reason the
@@ -194,7 +207,7 @@ message router and query router directly.
 ## Genesis and migrations
 
 `ValidateGenesis` checks: unique ids in the pattern; 20-byte account; 32-byte signing key; signing key id in the
-pattern; `key_generation >= 1`; exactly `key_generation - 1` retired keys with generations 1, 2, ... in order, 32-byte
+pattern; `1 <= key_generation <= MaxRetiredKeysPerProvider + 1`; exactly `key_generation - 1` retired keys with generations 1, 2, ... in order, 32-byte
 keys, and retirement times in `[1, 253402300799]` that never decrease; a SHA-256 endpoint digest; a defined state;
 capacity at least 1; reserved bytes at most capacity; operator group in the pattern; no unknown fields. A retired key
 may equal the current key: the v0 spec lets a provider rotate back.
@@ -203,11 +216,22 @@ may equal the current key: the v0 spec lets a provider rotate back.
 proto names and unpopulated fields. Business ids are not in the v0 genesis schema and are not exported (DR-07-03). The
 launch genesis keeps the provider list empty; the app enforces that at InitChain (DR-07-02).
 
-Consensus version 1 is the first layout. The migration table is empty. `TestMigrationTable` is the evidence for the
-registration path: a test table entry is registered with a real configurator (a second registration is a duplicate)
-and the module manager runs it once when the module reports version 2. `TestRegistryMigrationPathInApp` (`chain/app`)
-does the same through the app's own configurator on committed state. `TestRunMigrationsAtV1IsANoOp` only shows that
-nothing runs from version 1 to 1; the SDK returns before it looks for a step in that case.
+Consensus version 2 is the first registry layout. Version 1 (`msgkit.ScaffoldLayoutVersion`) was the goal-05/06
+scaffold slot, which stored exactly one key in this store: `[0x01]`, holding the module genesis JSON (an empty
+provider list), and no layout version key. That key lies inside the record prefix `0x01`, so this binary would read
+it as a provider record and fail to decode it (export and `Providers` failed on such a store). Goal-06 state is not
+upgradable in place: no step from version 1 is registered (`RunMigrations` from 1 fails,
+`TestNoMigrationFromScaffoldLayout`), `InitGenesis` refuses a store holding `[0x01]` (`TestScaffoldStoreIsNotAProvider`),
+and `app.New` refuses to load committed state whose providers or content store lacks the version-2 layout key
+(`TestAppRefusesScaffoldLayout` in `chain/app`). A goal-06 home must be initialized again; x/authority's side
+document also changed in goal 07 (goal-06 provider rows are ignored). No deployed chain exists.
+
+The migration table is empty and covers versions 2 .. `ConsensusVersion`-1. `TestMigrationTable` is the evidence
+for the registration path: a test table entry from version 2 is registered with a real configurator (a second
+registration is a duplicate) and the module manager runs it once when the module reports version 3.
+`TestRegistryMigrationPathInApp` (`chain/app`) does the same through the app's own configurator on committed state.
+`TestRunMigrationsAtCurrentVersionIsANoOp` only shows that nothing runs from version 2 to 2; the SDK returns before
+it looks for a step in that case.
 
 ## Handoff API (goal 08)
 
@@ -226,28 +250,47 @@ Off-chain tooling, not chain code. `capability.Parse` validates a manifest again
 `docs/protocol/schemas/provider-capability.schema.json` on top of SVN-JCS-1 and returns the canonical text and
 `SHA-256(SVN-JCS-1(manifest))`, the value for `endpoint_manifest_digest`. `capability.Encode` builds one. It also
 requires `declared_capacity_bytes` to fit in uint64, which is stricter than the schema. The rules are written in Go;
-`TestValidatorMatchesSchemaFile` reads the schema file and compares every keyword the package implements (required
-keys, `additionalProperties`, `const`, lengths, item counts, patterns) with the package constants. Endpoint URLs stay
-in the manifest. The chain stores only the digest and never fetches a manifest.
+`TestValidatorMatchesSchemaFile` reads the schema file in two steps. First it requires the exact keyword set at every
+schema position it walks (the root, each entry of `properties`, and `items`); the annotations `$schema`, `$id`, and
+`title` are allowed at the root only. A keyword added or removed at any of those positions fails it, including a
+keyword the package implements at a position where it does not (for example a `pattern` on an endpoint name), and so
+does a new or removed property. A keyword that holds subschemas (`not`, `anyOf`, ...) is itself such an addition.
+Then it compares the value of every validation keyword in that set (`type`, required keys, `additionalProperties`,
+`const`, lengths, item counts, patterns) with the package constants. `TestSchemaKeywordCheck` shows the walk reports
+each kind of edit. Endpoint URLs stay in the manifest. The chain stores only the digest and never fetches a manifest.
 
 The signed manifest is the body plus a detached `svn.types.v1.InnerSignature` by the provider's current signing key
 over `UTF-8("SVN-CAPABILITY-1") || 0x00 || UTF-8(SVN-JCS-1 body)`, with `key_id` equal to the manifest's
-`signing_key_id`. `capability.Sign` makes it; `capability.Verify` checks it with `msgkit.VerifyInner` (another domain
-`WRONG_DOMAIN`; another key id, another key, or a bad signature `UNAUTHORIZED`). `endpoint_manifest_digest` covers the
-body only, so signing does not change it. The chain never checks the manifest signature. A peer that fetches a
-manifest checks both: the signature against the current key from `Query/Provider`, and the digest against
-`endpoint_manifest_digest`. Protocol v0 does not define the wire envelope `GET /capability` returns (body and signature
-together); that is decision request DR-07-09.
+`signing_key_id`. `capability.Sign` makes it. `capability.Verify(result, signature, record)` takes the provider record
+from `Query/Provider` and checks, in order: signature structure and domain (`MALFORMED`, `OUT_OF_RANGE`, `BOUNDS`,
+`WRONG_DOMAIN`); the manifest's `provider_id` is the record's (`UNAUTHORIZED` otherwise); the manifest's
+`signing_key_id` is the record's current one, not a retired or unknown id (`UNAUTHORIZED`); the signature's key id,
+public key, and ed25519 signature are the record's current key (`UNAUTHORIZED`); the body's SHA-256 is the record's
+`endpoint_manifest_digest` (`INTEGRITY`). `TestSignAndVerify` covers each rule with a case that only that rule rejects.
+`endpoint_manifest_digest` covers the body only, so signing does not change it. A provider that rotates its key
+publishes a new manifest naming the new key and sends `UpdateProvider` with its digest; until then peers reject the
+old manifest. The chain never checks the manifest signature. Protocol v0 does not define the wire envelope
+`GET /capability` returns (body and signature together); that is decision request DR-07-09.
 
 ## Privacy
 
 On chain: ids, 20-byte accounts, 32-byte public keys, digests, byte counts, states, generations, and block times. The
-protocol has no field for manifests, endpoint URLs, video bytes, emails, or usernames, and the chain stores none in
-the normal flow (`TestNoPrivateDataInStateOrEvents` scans every store, event, export, and committed transaction).
+protocol has no field for manifests, endpoint URLs, video bytes, emails, or usernames.
 
-Ids are text the submitter chooses. Every id field is checked against `^[a-z0-9][a-z0-9._-]{0,63}$`, so an email or a
-URL in an id is `BOUNDS` and nothing is stored. An id-shaped value such as a username matches the pattern and is
-stored verbatim; the chain cannot tell it from an id (`TestSubmitterTextFields`). A transaction a handler rejects is
+What the chain enforces is tested with the private text inside submitted transactions. `TestSubmitterTextFields`
+puts a synthetic email and URL into every id field of the six registry messages. Ids must match
+`^[a-z0-9][a-z0-9._-]{0,63}$`, which an email or a URL never does: where the handler checks the pattern (registration
+ids, business ids, the new key id, signature key ids) the result is `BOUNDS`; where it looks the id up first
+(`provider_id` of update, rotate, and drain) the result is `NOT_FOUND`, because no record can have such an id. Either
+way the full state is byte-identical and no store holds the text. `TestTransactionsRejectVideoBytes` puts synthetic
+media and the canaries into unknown fields, the memo, the fee payer, the fee granter, and the tip. An id-shaped value
+such as a username matches the pattern and is stored verbatim; the chain cannot tell it from an id
+(`TestSubmitterTextFields` asserts that too).
+
+`TestNoPrivateDataInStateOrEvents` is a different check. Its flow hashes the canaries before it builds a transaction,
+so its canary scan of stores, events, export, and committed transactions checks the client side (that the flow
+submits only digests), not chain enforcement. Its chain check is the forbidden-name scan of event types, attribute
+keys, and export keys. A transaction a handler rejects is
 still in its block. The memo, fee payer, fee granter, and tip are rejected in the ante handler and unknown fields fail
 decoding, so those never reach a block an honest proposer builds. An opaque id or a digest can still be linkable to a
 person or a host by anyone who holds the preimage. Hashing is not anonymization.
@@ -256,9 +299,32 @@ person or a host by anyone who holds the preimage. Hashing is not anonymization.
 
 - There is no per-account limit on registered providers; DEC-005 allowances are unset. Gas meters every write.
 - Retired keys are one row each; the history grows by one row per committed rotation. Message paths never read it.
-  `Query/Provider` reads all of one provider's rows; a `Providers` page reads at most `MaxRetiredKeysPerPage` rows
-  beyond its first provider's. There is no cap on rotations in v0 (no spec rule); a node bounds query work with its
-  query gas limit.
+  Rotations cost no fee and are allowed in every state, and v0 has no rotation limit, so without a bound one provider
+  account could grow `Query/Provider`, the `Providers` page that starts with it, and its export without limit. The
+  chain therefore caps the history: `MaxRetiredKeysPerProvider` (1024) retired keys per provider id. The rotation that
+  would retire one more is `ERROR_CODE_BOUNDS` after every spec check and leaves the full state byte-identical
+  (`TestRotationCap`; `TestRotationCapInApp` drives 1024 committed rotations); a provider at the bound registers a new
+  provider id. Security consequence: under a capped id the provider can no longer rotate away from a compromised
+  signing key; the remedies are drain, council disable, and a new id that needs council admission again
+  (`TestRotationCap` shows update and drain still work at the bound). The number is PROPOSED, not a v0 rule: decision request DR-07-10 asks the owner to approve it or to
+  choose pruning of old keys instead.
+- What bounds a response: `Query/Provider` returns at most 1024 retired keys; a `Providers` page at most 100 records
+  and 1024 retired keys; an exported record at most 1024 retired keys. With every field at its largest encoding,
+  `TestQueryResponseSizeBound` measures them against stated bounds: 64 KiB and 128 KiB of protobuf for the two query
+  responses, 192 KiB of protojson for an exported record. All are far below the 4 MiB a default gRPC client accepts. Export as a whole grows with the number of providers, which has no
+  per-account limit (DEC-005 unset).
+- What bounds query work: the store reads above (at most 1024 retired-key rows plus 101 records per call), and the
+  node's query gas limit. `svnd` sets one on every gRPC-routed query (ABCI query on a registered service path, and the
+  node gRPC server): `query_gas_limit` in `node.json`, or
+  `app.DefaultQueryGasLimit` (20,000,000, the transaction gas cap; a PROPOSED node default in DR-07-10) when it is
+  absent or 0. A query that exceeds it fails (`TestQueryGasLimit` covers the ABCI query path and the query router). At the retired-key bound `Query/Provider` uses
+  about 200,000 gas (`TestRotationCapInApp` logs it).
+- Raw store queries are not bounded. CometBFT `abci_query` on `/store/providers/key` or `/store/providers/subspace`
+  goes to the SDK's store query path (`baseapp` `handleQueryStore`, then the IAVL store), which has no gas meter and no
+  page cap. A subspace query on `0x03` returns every retired key of every provider, and on `0x01` every provider
+  record, so its work and response grow with the whole registry. The query gas limit and the page caps do not apply.
+  `svnd` does not filter these paths. Operators must not expose the CometBFT RPC port publicly; rejecting `/store`
+  paths in the node is a follow-up.
 - A provider signing key equal to another provider's key, a council key, or a consensus key is not rejected (DR-07-06).
 - A stored record that does not decode, that names another id than its key, or that carries retired keys inline is
   an invariant violation. Message paths and council hooks panic on it and the SDK fails the transaction; queries and

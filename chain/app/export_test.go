@@ -7,6 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 )
@@ -39,26 +41,63 @@ type versionedContent struct {
 
 func (v versionedContent) ConsensusVersion() uint64 { return v.version }
 
-// RunRegistryMigrationForTest registers step as the 1 -> 2 migration of the
-// registry module name on the configurator New built (the one every module
-// registered its services and migrations on), wraps the app's own module of
-// that name so it reports version 2, and runs the manager's RunMigrations
-// from version 1. A duplicate registration (a version-1 migration already
-// registered by the module) is an error.
+// RunRegistryMigrationForTest registers step as the migration from the
+// current ConsensusVersion v to v+1 of the registry module name on the
+// configurator New built (the one every module registered its services and
+// migrations on), wraps the app's own module of that name so it reports
+// v+1, and runs the manager's RunMigrations from v. A duplicate
+// registration (a version-v migration already registered by the module) is
+// an error.
 func (app *App) RunRegistryMigrationForTest(ctx sdk.Context, name string, step module.MigrationHandler) (module.VersionMap, error) {
 	var wrapped module.AppModule
+	var from uint64
 	switch m := app.mm.Modules[name].(type) {
 	case providers.AppModule:
-		wrapped = versionedProviders{AppModule: m, version: 2}
+		from = m.ConsensusVersion()
+		wrapped = versionedProviders{AppModule: m, version: from + 1}
 	case content.AppModule:
-		wrapped = versionedContent{AppModule: m, version: 2}
+		from = m.ConsensusVersion()
+		wrapped = versionedContent{AppModule: m, version: from + 1}
 	default:
 		return nil, fmt.Errorf("%s is not a registry module (%T)", name, m)
 	}
-	if err := app.configurator.RegisterMigration(name, 1, step); err != nil {
+	if err := app.configurator.RegisterMigration(name, from, step); err != nil {
 		return nil, err
 	}
-	return module.NewManager(wrapped).RunMigrations(ctx, app.configurator, module.VersionMap{name: 1})
+	return module.NewManager(wrapped).RunMigrations(ctx, app.configurator, module.VersionMap{name: from})
+}
+
+// WriteScaffoldLayoutForTest rewrites the committed store name the way the
+// goal-05/06 scaffold slot left it: no layout version key, and the module
+// genesis JSON at key [0x01]. It then commits a new version outside ABCI.
+// The registry store then holds what a goal-06 binary left in it.
+func (app *App) WriteScaffoldLayoutForTest(name string, genesisJSON []byte) {
+	store := app.CommitMultiStore().GetKVStore(app.keys[name])
+	store.Delete(msgkit.LayoutVersionKey)
+	store.Set([]byte{0x01}, genesisJSON)
+	app.CommitMultiStore().Commit()
+}
+
+// WriteLayoutVersionForTest overwrites the layout version of the committed
+// store name and commits a new version outside ABCI.
+func (app *App) WriteLayoutVersionForTest(name string, version uint64) {
+	msgkit.WriteLayoutVersion(app.CommitMultiStore().GetKVStore(app.keys[name]), version)
+	app.CommitMultiStore().Commit()
+}
+
+// CorruptAuthoritySideDocumentForTest overwrites the authority side
+// document (key 0x20 of the authority store) with bytes that do not decode
+// and commits a new version outside ABCI. It fails if the key is absent,
+// so a wrong key cannot pass silently.
+func (app *App) CorruptAuthoritySideDocumentForTest() error {
+	store := app.CommitMultiStore().GetKVStore(app.keys[authority.ModuleName])
+	key := []byte{0x20}
+	if store.Get(key) == nil {
+		return fmt.Errorf("no authority side document at %x", key)
+	}
+	store.Set(key, []byte("{"))
+	app.CommitMultiStore().Commit()
+	return nil
 }
 
 // StoreKeyForTest is the mounted store key of one module.

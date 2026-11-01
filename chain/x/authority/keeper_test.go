@@ -529,9 +529,15 @@ func TestKeeperReadSurface(t *testing.T) {
 		ctx, keys := msgkittest.NewContext(t, ModuleName)
 		k := NewKeeper(keys[ModuleName])
 		ctx.KVStore(keys[ModuleName]).Set([]byte{sideKey}, []byte("{"))
-		if _, found := k.GovernedLimit(ctx, msgkit.LimitMaxPageLimit); found {
-			t.Fatal("a corrupt document has a limit")
-		}
+		// Both fail closed: neither reports "no value" on unreadable state.
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatal("GovernedLimit reported no limit on a corrupt document")
+				}
+			}()
+			k.GovernedLimit(ctx, msgkit.LimitMaxPageLimit)
+		}()
 		defer func() {
 			if recover() == nil {
 				t.Fatal("BusinessDigest reported an id free on a corrupt document")

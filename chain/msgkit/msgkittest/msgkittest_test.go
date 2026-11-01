@@ -174,6 +174,59 @@ import . "math"
 
 var _ = MaxInt64
 `)
+	writeGo(t, dir, "host.go", `package bad
+
+import (
+	"hash/maphash"
+	"io/fs"
+	"os/signal"
+	"os/user"
+	"path/filepath"
+	"plugin"
+	"runtime"
+	"runtime/debug"
+	"syscall/js"
+	"time"
+)
+
+var seed = maphash.MakeSeed
+
+var _ fs.FS
+
+var _ = signal.Notify
+
+var who, _ = user.Current()
+
+var files, _ = filepath.Glob("/etc/*")
+
+var walk = filepath.WalkDir
+
+var walkOld = filepath.Walk
+
+var abs = filepath.Abs
+
+var links = filepath.EvalSymlinks
+
+var joined = filepath.Join("a", "b")
+
+var _ = plugin.Open
+
+var cpus = runtime.NumCPU()
+
+var _ = debug.Stack
+
+var _ = js.Global
+
+var zone = time.Local
+
+var loaded, _ = time.LoadLocation("UTC")
+`)
+	writeGo(t, dir, "dotfilepath.go", `package bad
+
+import . "path/filepath"
+
+var _ = Base
+`)
 	// Test files are not scanned.
 	writeGo(t, dir, "bad_test.go", `package bad
 
@@ -185,8 +238,8 @@ var _ = os.Getenv
 	if err != nil {
 		t.Fatal(err)
 	}
-	if scanned != 4 {
-		t.Fatalf("scanned %d files, want 4", scanned)
+	if scanned != 6 {
+		t.Fatalf("scanned %d files, want 6", scanned)
 	}
 	joined := strings.Join(findings, "\n")
 	for _, want := range []string{
@@ -216,6 +269,22 @@ var _ = os.Getenv
 		"uses time.AfterFunc",
 		"uses time.NewTicker",
 		"uses time.Sleep",
+		`imports "hash/maphash"`,
+		`imports "io/fs"`,
+		`imports "os/signal"`,
+		`imports "os/user"`,
+		`imports "plugin"`,
+		`imports "runtime"`,
+		`imports "runtime/debug"`,
+		`imports "syscall/js"`,
+		"uses filepath.Glob",
+		"uses filepath.WalkDir",
+		"uses filepath.Walk",
+		"uses filepath.Abs",
+		"uses filepath.EvalSymlinks",
+		"uses time.Local",
+		"uses time.LoadLocation",
+		`dot-imports "path/filepath"`,
 	} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("missing finding %q in:\n%s", want, joined)
@@ -224,9 +293,21 @@ var _ = os.Getenv
 	if strings.Contains(joined, "bad_test.go") {
 		t.Fatalf("test file scanned:\n%s", joined)
 	}
-	// Integer constants of package math are not floating-point.
-	if strings.Contains(joined, "math.MaxUint64") {
-		t.Fatalf("math.MaxUint64 flagged:\n%s", joined)
+	// Integer constants of package math are not floating-point, and
+	// path arithmetic of path/filepath reads no file.
+	if strings.Contains(joined, "math.MaxUint64") || strings.Contains(joined, "filepath.Join") {
+		t.Fatalf("math.MaxUint64 or filepath.Join flagged:\n%s", joined)
+	}
+	// "net/url" is under the net tree; "osx"-style prefixes are not os.
+	for _, path := range []string{"os", "os/exec", "net", "net/url", "runtime", "runtime/debug", "syscall", "syscall/js"} {
+		if !forbiddenImport(path) {
+			t.Errorf("%s is not forbidden", path)
+		}
+	}
+	for _, path := range []string{"osx", "netip", "runtimes", "path/filepath", "io", "hash/crc32", "time"} {
+		if forbiddenImport(path) {
+			t.Errorf("%s is forbidden", path)
+		}
 	}
 }
 
