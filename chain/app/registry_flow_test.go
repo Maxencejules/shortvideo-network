@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"strings"
 	"testing"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -226,16 +225,41 @@ func TestRegistryFlowReplayAndQueries(t *testing.T) {
 	assertQueryCode(t, c.app(), "/svn.content.v1.Query/Content", &contentv1.QueryContentRequest{ContentId: "c1", ContentVersion: 2}, msgkit.NotFound)
 }
 
-// assertQueryCode checks a rejected ABCI query. The SDK's gRPC query path
-// (baseapp gRPCErrorToSDKError) maps an svn error, whose gRPC status code is
-// Unknown, to sdk ErrUnknownRequest (code 6) and keeps the error text, so
-// the protocol name is in the log, not in the code. The keepers' query tests
-// assert the typed svn error directly.
+// assertQueryCode checks a rejected query on both paths a node serves.
+//
+//   - gRPC: the query router's handler, the one the node gRPC server calls,
+//     returns the protocol code as a google.rpc.ErrorInfo detail;
+//     msgkit.QueryCode reads it.
+//   - ABCI query: the SDK (baseapp gRPCErrorToSDKError) keeps only the
+//     gRPC status code, so NOT_FOUND is sdk ErrKeyNotFound and MALFORMED,
+//     BOUNDS, and OUT_OF_RANGE are sdk ErrInvalidRequest. The protocol name
+//     is only in the log text there; the test does not read it.
 func assertQueryCode(t *testing.T, chainApp *app.App, path string, req proto.Message, want msgkit.Code) {
 	t.Helper()
+	data, err := proto.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, err := chainApp.CreateQueryContext(0, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := chainApp.GRPCQueryRouter().Route(path)
+	if handler == nil {
+		t.Fatalf("%s: no query route", path)
+	}
+	if _, err := handler(ctx, &abci.RequestQuery{Path: path, Data: data}); err == nil {
+		t.Fatalf("%s: query succeeded", path)
+	} else if got, ok := msgkit.QueryCode(err); !ok || got != want {
+		t.Fatalf("%s: gRPC detail %q (%v), want %s; error %v", path, got, ok, want, err)
+	}
+	sdkWant := sdkerrors.ErrInvalidRequest
+	if want == msgkit.NotFound {
+		sdkWant = sdkerrors.ErrKeyNotFound
+	}
 	_, res := query(t, chainApp, path, req, 0)
-	if res.Codespace != sdkerrors.RootCodespace || res.Code != sdkerrors.ErrUnknownRequest.ABCICode() || !strings.Contains(res.Log, string(want)) {
-		t.Fatalf("%s: got %s/%d %q want sdk/%d with %s", path, res.Codespace, res.Code, res.Log, sdkerrors.ErrUnknownRequest.ABCICode(), want)
+	if res.Codespace != sdkerrors.RootCodespace || res.Code != sdkWant.ABCICode() {
+		t.Fatalf("%s: ABCI query %s/%d, want sdk/%d", path, res.Codespace, res.Code, sdkWant.ABCICode())
 	}
 }
 
@@ -277,6 +301,13 @@ func prefixPairs(t *testing.T, snapshot []byte, prefix byte) []byte {
 	return out
 }
 
+// TestGenesisRoundTripFromCommittedState is a module-level round trip: the
+// app's export of committed state goes through each registry's
+// ValidateGenesis, InitGenesis into fresh bare module stores, and
+// ExportGenesis. It is not an app export/import: InitChain refuses a
+// non-empty catalogue (TestLaunchGenesisRejectsNonEmptyCatalog), so the
+// app-level round trip is BLOCKED on decision requests DR-07-02 and
+// DR-07-03.
 func TestGenesisRoundTripFromCommittedState(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)
@@ -312,9 +343,11 @@ func TestGenesisRoundTripFromCommittedState(t *testing.T) {
 		t.Fatal("providers export -> import -> export changed the state")
 	}
 	imported := msgkit.StoreSnapshot(ctx.KVStore(keys[providers.ModuleName]))
-	if len(prefixPairs(t, committedProviders, providers.ProviderKeyPrefix)) == 0 ||
-		!bytes.Equal(prefixPairs(t, committedProviders, providers.ProviderKeyPrefix), prefixPairs(t, imported, providers.ProviderKeyPrefix)) {
-		t.Fatal("imported provider records differ from the committed store")
+	for _, prefix := range []byte{providers.ProviderKeyPrefix, providers.RetiredKeyPrefix} {
+		if len(prefixPairs(t, committedProviders, prefix)) == 0 ||
+			!bytes.Equal(prefixPairs(t, committedProviders, prefix), prefixPairs(t, imported, prefix)) {
+			t.Fatalf("imported provider rows under prefix %#x differ from the committed store", prefix)
+		}
 	}
 
 	contState, err := content.ParseGenesis(exported[app.ModuleContent])
@@ -345,6 +378,10 @@ func TestGenesisRoundTripFromCommittedState(t *testing.T) {
 	}
 }
 
+// TestLaunchGenesisRejectsNonEmptyCatalog: the app's InitChain refuses its
+// own export once a provider or content record exists. This is the goal 05
+// launch rule, stricter than protocol v0 for providers; the app-level
+// export/import round trip is BLOCKED on DR-07-02 and DR-07-03.
 func TestLaunchGenesisRejectsNonEmptyCatalog(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)

@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	eventsv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/events/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
@@ -194,21 +195,34 @@ func TestWithdrawContentIdempotent(t *testing.T) {
 
 // TestWithdrawHookFailureWritesNothing: a failing hook aborts the whole
 // withdrawal, including the hook's own write, the business id, the
-// tombstone, and the event.
+// tombstone, and the event. The message result carries the hook's svn
+// code, or MALFORMED for an error that has none, as the council path does
+// (TestForceWithdrawHookFailure).
 func TestWithdrawHookFailureWritesNothing(t *testing.T) {
-	f := newFixture(t)
-	f.mustRegister("reg-c1", "c1")
-	f.hook.err = errPlainHook
-	f.hook.write = []byte{0x7f, 'x'}
-	before := f.snapshot()
-	ctx, err := f.withdraw(f.withdrawMsg("wd-c1", "c1"))
-	if err == nil {
-		t.Fatal("withdrawal succeeded with a failing hook")
+	cases := []struct {
+		name string
+		err  error
+		want msgkit.Code
+	}{
+		{"svn-forbidden", svnerr.ErrForbidden.Wrap("synthetic"), msgkit.Forbidden},
+		{"svn-capacity", svnerr.ErrCapacity.Wrap("synthetic"), msgkit.Capacity},
+		{"plain-error", errPlainHook, msgkit.Malformed},
 	}
-	requireSame(t, before, f.snapshot(), "failed hook")
-	noEvents(t, ctx, "failed hook")
-	if _, ok := f.keeper.BusinessDigest(f.ctx, "wd-c1"); ok {
-		t.Fatal("business id committed by a failed withdrawal")
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := newFixture(t)
+			f.mustRegister("reg-c1", "c1")
+			f.hook.err = c.err
+			f.hook.write = []byte{0x7f, 'x'}
+			before := f.snapshot()
+			ctx, err := f.withdraw(f.withdrawMsg("wd-c1", "c1"))
+			requireCode(t, err, c.want)
+			requireSame(t, before, f.snapshot(), "failed hook")
+			noEvents(t, ctx, "failed hook")
+			if _, ok := f.keeper.BusinessDigest(f.ctx, "wd-c1"); ok {
+				t.Fatal("business id committed by a failed withdrawal")
+			}
+		})
 	}
 }
 

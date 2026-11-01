@@ -10,7 +10,8 @@ A record holds an opaque `content_id`, `content_version`, the SHA-256 digest of 
 - A record is not a hosting receipt. Registration writes no lease, offer, or reservation. Hosting obligations are lease state (Goal 08).
 - A record is not publication approval. `PENDING` is not `PUBLISHED`. Publication is the off-chain `PublicationStatus`. `CONTENT_STATE_PUBLISHED` is reserved and never written.
 - Opaque ids and digests can still be linkable. A party that holds the manifest or the complaint can match its digest to the record. Hashing is not anonymization.
-- The chain stores no manifest, endpoint URL, email, username, watch event, or complaint text. `reason_digest` is a digest, not the complaint.
+- The protocol has no field for a manifest, endpoint URL, email, username, watch event, or complaint text, and the chain stores none in the normal flow. `reason_digest` is a digest, not the complaint.
+- Ids are text the submitter chooses. `content_id`, `business_id`, and the intent `key_id` must match `^[a-z0-9][a-z0-9._-]{0,63}$`, so an email or a URL there is `BOUNDS` and nothing is stored. An id-shaped value such as a username matches and is stored verbatim (`TestSubmitterTextFields` in `chain/app`). A transaction a handler rejects is still in its block. The memo, fee payer, fee granter, and tip are rejected in the ante handler, and unknown fields fail decoding.
 
 ## State and store
 
@@ -36,6 +37,8 @@ Both handlers run `msgkit.Enforce` first (gas limit and tx size `BOUNDS`, signer
 `WithdrawContent` (spec `op_withdraw_content`, `withdraw_content`): presence of `business_id`, `content_id`, `reason_digest`, `hosting_intent`; signer role; reason digest; hosting intent; business gate; no record (`NOT_FOUND`); signer is not the submitting host (`FORBIDDEN`); already withdrawn (`WITHDRAWN`); version mismatch (`STALE_VERSION`). Success marks the record `WITHDRAWN` and writes the tombstone.
 
 The protocol defines no direct force-withdraw message (DEC-009). Force-withdraw exists only as the council path below.
+
+Deviation from the protocol error table: `protocol.md` says a direct `ForceWithdraw` is `ERROR_CODE_FORBIDDEN` (codespace `svn`, code 2). No such message type is registered, so a transaction that names `/svn.content.v1.MsgForceWithdraw` fails transaction decoding: codespace `sdk`, code 2 (`ErrTxDecode`), in CheckTx and in a block (`TestDirectAdminMessagesDoNotExist`). The number is the same; the codespace is not.
 
 The business id namespace is global. The gate consults this module's ledger first, then the other modules registered in `msgkit.Peers`, in name order. An idempotent replay returns ABCI 0, writes nothing, and emits only `content_result` with `idempotent=true`.
 
@@ -66,7 +69,7 @@ Limits of this interim:
 - A tombstone keeps `content_id`, `content_version`, `committed_unix_seconds` (block time), `reason_digest`, `history_erased` false, `retention_decision_id` `DEC-004`, and `retention_value_version` 0. The `Content` row stays.
 - A later register of the id is `DUPLICATE_ID`. A second withdrawal is `WITHDRAWN`. The id cannot be revived.
 - Withdrawal blocks new offers, accepts, and renewals through the lease handoff below (Goal 08 enforces it in its handlers). It does not release an accepted reservation.
-- `Deps.Hook` (`WithdrawalHook`) runs inside the withdrawal. Goal 08 implements it to void open offers. Goal 07 wires no hook because no offer store exists. A hook error aborts the withdrawal and nothing of it is written. On the council path the hook's svn code is passed through; any other error is `MALFORMED`.
+- `Deps.Hook` (`WithdrawalHook`) runs inside the withdrawal. Goal 08 implements it to void open offers. Goal 07 wires no hook because no offer store exists. A hook error aborts the withdrawal and nothing of it is written. On both the message path and the council path the hook's svn code is passed through; any other error is `MALFORMED` (`TestWithdrawHookFailureWritesNothing`, `TestForceWithdrawHookFailure`).
 - A block time outside `1..253402300799` is `OUT_OF_RANGE`, checked after every protocol check, so an exported tombstone always validates.
 
 ## Events
@@ -79,9 +82,13 @@ Limits of this interim:
 
 Events are emitted with `msgkit.EmitTyped` and parse back with `msgkit.ParseTyped`. They are indexer input, not app-hash input.
 
+A committed event (FinalizeBlock results, `/block_results`, the tx index) ends with one more attribute, `msg_index`, which the SDK appends to every event a message emits. It is not part of the `svn.events.v1` schema and `msgkit.ParseTyped` rejects it. `msgkit.ParseCommitted` parses a committed event and returns the typed message and the message index.
+
 ## Queries
 
 `svn.content.v1.Query/Content{content_id, content_version}` is registered on the SDK query router, which serves the ABCI query path `/svn.content.v1.Query/Content` and the node's gRPC server when the app enables it. Empty id or version 0 is `MALFORMED`, an id outside the pattern is `BOUNDS`, and an absent pair is `NOT_FOUND`. The response holds the record and, when withdrawn, its tombstone. v0 has no paginated content list (DR-07-07).
+
+A rejected query returns `msgkit.QueryErr`: the `svn` error with a gRPC status (`NotFound`, or `InvalidArgument` for `MALFORMED` and `BOUNDS`) holding one `google.rpc.ErrorInfo` detail (domain `svn`, reason the protocol name, metadata `code`). The node gRPC server returns it and `msgkit.QueryCode` reads it. Over ABCI query the SDK keeps only the gRPC status code (`sdk` `ErrKeyNotFound` 38 or `ErrInvalidRequest` 18) and the text.
 
 ## Handoff API for the lease module (Goal 08)
 
@@ -97,8 +104,8 @@ Events are emitted with `msgkit.EmitTyped` and parse back with `msgkit.ParseType
 
 The application's launch genesis keeps the catalogue empty (goal 05, REQ-GEN-002). Importing a non-empty exported catalogue at InitChain is decision request DR-07-02.
 
-`ConsensusVersion` is 1. `RegisterServices` registers the Msg service on the message router, the Query service on the query router, and one migration per version step (none at v1).
+`ConsensusVersion` is 1. `RegisterServices` registers the Msg service on the message router, the Query service on the query router, and one migration per version step (none at v1). `TestRegisterMigrationsPath` is the evidence for the registration path: synthetic steps register in order, the module manager runs them, and a duplicate or nil step is an error. `TestRegistryMigrationPathInApp` (`chain/app`) runs a test step through the app's own configurator on committed state. `TestRunMigrationsAtV1IsANoOp` only shows that nothing runs from version 1 to 1.
 
 ## Determinism
 
-The module reads block time from the header, iterates stores in key order, and has no clock, randomness, environment, file, network, or float use (`TestDeterministicSources`). It has no BeginBlock or EndBlock and returns no validator updates; x/authority stays the only validator-set writer. It does not import x/authority or the app; it reads roles, devnet parameters, and governed limits through the `Roles`, `DevnetParams`, and `Limits` interfaces.
+The module reads block time from the header, iterates stores in key order, and has no clock, randomness, environment, file, network, or float use. `TestDeterministicSources` runs the `msgkittest` source scan: no nondeterministic import, no clock or timer call of package `time`, no floating-point type, literal, or `math` function. The scan is syntactic; a float another package's API returns is not visible to it. It has no BeginBlock or EndBlock and returns no validator updates; x/authority stays the only validator-set writer. It does not import x/authority or the app; it reads roles, devnet parameters, and governed limits through the `Roles`, `DevnetParams`, and `Limits` interfaces.

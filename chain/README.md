@@ -16,7 +16,7 @@ The binary wires auth accounts, signatures, sequences, transaction size, and gas
 
 Queries: `svn.providers.v1.Query` (`Provider`, `Providers`) and `svn.content.v1.Query` (`Content`) are served by ABCI query (`/svn.providers.v1.Query/Provider` and so on, with a height) and by the node gRPC server. The REST gateway is disabled. See `x/providers/README.md` and `x/content/README.md`.
 
-A registry entry is a coordination record. It is not copyright proof, a hosting receipt, or publication approval. Endpoint URLs, manifests, media bytes, and personal data stay off chain; the chain stores digests, byte counts, ids, and states. Opaque ids and digests can still be linkable.
+A registry entry is a coordination record. It is not copyright proof, a hosting receipt, or publication approval. The protocol has no field for endpoint URLs, manifests, media bytes, or personal data; the chain stores digests, byte counts, ids, and states. Unknown fields (critical and non-critical) fail transaction decoding, and the ante handler rejects a memo, a fee payer, a fee granter, and a tip. Ids are still text the submitter chooses: an email or a URL does not match the id pattern and is rejected, but an id-shaped value such as a username is stored as given, and a transaction a handler rejects stays in its block. Opaque ids and digests can still be linkable.
 
 Staking, bank, mint, distribution, slashing, governance-by-token, EVM, and IBC are not imported. There is no coin denomination and no fee amount.
 

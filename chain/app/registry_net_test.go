@@ -173,6 +173,9 @@ type cluster struct {
 	nodes  []*running
 	blocks []*abci.ResponseFinalizeBlock
 	hashes [][]byte
+	// txs is every transaction delivered in a committed block, in order:
+	// the block data, including transactions a handler rejected.
+	txs [][]byte
 }
 
 func (n *regNet) start(t *testing.T, nodes int) *cluster {
@@ -229,6 +232,9 @@ func (c *cluster) block(t *testing.T, txs ...[]byte) *abci.ResponseFinalizeBlock
 	}
 	c.blocks = append(c.blocks, first)
 	c.hashes = append(c.hashes, append([]byte(nil), hash...))
+	for _, tx := range txs {
+		c.txs = append(c.txs, append([]byte(nil), tx...))
+	}
 	return first
 }
 

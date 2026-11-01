@@ -11,7 +11,9 @@ import (
 )
 
 // Queries of svn.providers.v1.Query. They read committed state at the
-// query height and never write. Errors are svnerr errors.
+// query height and never write. A protocol failure is Code.QueryErr: the
+// svnerr error with a gRPC status that carries the protocol code as a
+// google.rpc.ErrorInfo detail (msgkit.QueryCode reads it).
 
 // QueryProvider is svn.providers.v1.Query/Provider.
 //
@@ -20,17 +22,25 @@ import (
 func (k Keeper) QueryProvider(goCtx context.Context, req *providersv1.QueryProviderRequest) (*providersv1.QueryProviderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	if code := msgkit.CheckID(req.GetProviderId()); code != msgkit.OK {
-		return nil, code.Err()
+		return nil, code.QueryErr()
 	}
 	record, found, err := k.load(ctx, req.GetProviderId())
 	if err != nil {
 		return nil, err
 	}
 	if !found {
-		return nil, msgkit.NotFound.Err()
+		return nil, msgkit.NotFound.QueryErr()
+	}
+	record, err = k.withHistory(ctx, record)
+	if err != nil {
+		return nil, err
 	}
 	return &providersv1.QueryProviderResponse{Provider: record}, nil
 }
+
+// MaxRetiredKeysPerPage bounds the retired keys one Providers page carries.
+// It is a query rule, not consensus state.
+const MaxRetiredKeysPerPage = 1024
 
 // QueryProviders is svn.providers.v1.Query/Providers. It lists every
 // provider in every state (history is never deleted), in id byte order.
@@ -43,25 +53,50 @@ func (k Keeper) QueryProvider(goCtx context.Context, req *providersv1.QueryProvi
 //   - page_key is inclusive: the page starts at that id or the next one
 //   - next_page_key is the id of the first provider after the page, empty
 //     on the last page
+//   - each record carries its retired keys; a page ends early, before the
+//     provider that would take the page above MaxRetiredKeysPerPage
+//     retired keys, and next_page_key names that provider. The first
+//     provider of a page is always included, so a walk always advances.
 //
-// The work is bounded by limit+1 iterator steps.
+// The work is bounded by limit+1 iterator steps over the records plus one
+// step per returned retired key.
 func (k Keeper) QueryProviders(goCtx context.Context, req *providersv1.QueryProvidersRequest) (*providersv1.QueryProvidersResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	limit, key, code := msgkit.CheckPage(req.GetPage(), k.pageLimit(ctx))
 	if code != msgkit.OK {
-		return nil, code.Err()
+		return nil, code.QueryErr()
 	}
-	out := &providersv1.QueryProvidersResponse{}
+	var records []*providersv1.Provider
 	next, err := msgkit.Paginate(ctx.KVStore(k.key), []byte{ProviderKeyPrefix}, key, limit, func(storeKey, value []byte) error {
 		record, err := decodeProvider(storeKey, value)
 		if err != nil {
 			return err
 		}
-		out.Providers = append(out.Providers, record)
+		records = append(records, record)
 		return nil
 	})
 	if err != nil {
 		return nil, err
+	}
+	// key_generation-1 is the retired-key count (history checks it), so the
+	// cut is decided before any retired key is read.
+	var retired uint64
+	for i, record := range records {
+		count := record.GetKeyGeneration() - 1
+		if i > 0 && retired+count > MaxRetiredKeysPerPage {
+			next = []byte(record.GetProviderId())
+			records = records[:i]
+			break
+		}
+		retired += count
+	}
+	out := &providersv1.QueryProvidersResponse{}
+	for _, record := range records {
+		full, err := k.withHistory(ctx, record)
+		if err != nil {
+			return nil, err
+		}
+		out.Providers = append(out.Providers, full)
 	}
 	out.Page = &typesv1.PageResponse{NextPageKey: next}
 	return out, nil

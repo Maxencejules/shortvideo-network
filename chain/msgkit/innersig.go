@@ -110,8 +110,8 @@ func checkShapeAfterDomain(sig *typesv1.InnerSignature) Code {
 // VerifyInner runs the full inner signature order against one stored key:
 // CheckInnerSignature (steps 1-4), then key_id != keyID: UNAUTHORIZED,
 // public_key != pub: UNAUTHORIZED, and an ed25519 failure over
-// SignBytes(want, canonical): UNAUTHORIZED. Retired keys are never passed
-// here, so an old key cannot sign.
+// SignBytes(want, canonical): UNAUTHORIZED. Callers pass only the current
+// key, so a retired key does not verify while it stays retired.
 func VerifyInner(sig *typesv1.InnerSignature, want typesv1.SignatureDomain, keyID string, pub []byte, canonical string) Code {
 	if code := CheckInnerSignature(sig, want); code != OK {
 		return code

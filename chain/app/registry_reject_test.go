@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -78,6 +79,11 @@ func TestRejectedRegistryMessagesLeaveTheFullState(t *testing.T) {
 		}, msgkit.Bounds},
 		{"service account registers a provider", n.service, func() sdk.Msg { return n.registerProvider(t, n.service, "x-reg-1", "p7", groupDevnet, capacity1) }, msgkit.Forbidden},
 		{"duplicate provider id", n.provider2, func() sdk.Msg { return n.registerProvider(t, n.provider2, "x-reg-2", "p1", groupDevnet, capacity1) }, msgkit.DuplicateID},
+		// The same business id and payload as p1's committed registration,
+		// signed by another provider account: not an idempotent success.
+		{"copy of another account's registration", n.provider2, func() sdk.Msg {
+			return n.registerProvider(t, n.provider2, "reg-p1", "p1", groupDevnet, capacity1)
+		}, msgkit.Forbidden},
 		{"65-byte provider id", n.provider1, func() sdk.Msg {
 			return n.registerProvider(t, n.provider1, "x-reg-3", strings.Repeat("p", 65), groupDevnet, capacity1)
 		}, msgkit.Bounds},
@@ -159,31 +165,34 @@ func TestRejectedRegistryMessagesLeaveTheFullState(t *testing.T) {
 	// Ante rejections: nothing reaches a handler, and the account sequence
 	// does not move either.
 	accounts := func() []byte { return chainApp.ModuleSnapshot("acc") }
+	// Each case names its exact code: a protocol code (svn) or an SDK
+	// ante error (codespace sdk).
 	ante := []struct {
-		name string
-		raw  func() []byte
-		svn  msgkit.Code
+		name   string
+		raw    func() []byte
+		svn    msgkit.Code
+		sdkErr *errorsmod.Error
 	}{
 		{"outsider", func() []byte {
 			outsider := newSecp("outsider")
 			return signFull(t, chainApp, n.doc.ChainID, outsider.key, 0, 0, registryGas, nil, n.registerProvider(t, outsider, "x-out", "p9", groupDevnet, capacity1))
-		}, ""},
+		}, "", sdkerrors.ErrUnknownAddress},
 		{"corrupt outer signature", func() []byte {
 			raw := n.signed(t, c, n.provider1, registryGas, nil, n.registerProvider(t, n.provider1, "x-sig", "p9", groupDevnet, capacity1))
 			raw[len(raw)-1] ^= 0xff
 			return raw
-		}, ""},
+		}, "", sdkerrors.ErrUnauthorized},
 		{"fee", func() []byte {
 			return n.signed(t, c, n.provider1, registryGas, sdk.NewCoins(sdk.NewInt64Coin("reject", 1)), n.registerProvider(t, n.provider1, "x-fee", "p9", groupDevnet, capacity1))
-		}, msgkit.FeeRejected},
+		}, msgkit.FeeRejected, nil},
 		{"gas limit 0", func() []byte {
 			return n.signed(t, c, n.provider1, 0, nil, n.registerProvider(t, n.provider1, "x-gas", "p9", groupDevnet, capacity1))
-		}, msgkit.Bounds},
+		}, msgkit.Bounds, nil},
 		{"70 KiB transaction", func() []byte {
 			msg := n.registerProvider(t, n.provider1, "x-big", "p9", groupDevnet, capacity1)
 			msg.OperatorGroupId = strings.Repeat("g", 70*1024)
 			return n.signed(t, c, n.provider1, registryGas, nil, msg)
-		}, msgkit.Bounds},
+		}, msgkit.Bounds, nil},
 	}
 	for _, tc := range ante {
 		before := chainApp.FullSnapshot()
@@ -192,7 +201,11 @@ func TestRejectedRegistryMessagesLeaveTheFullState(t *testing.T) {
 		if res.Code == 0 || anteCommitted(res) {
 			t.Fatalf("%s: code %d ante committed %t", tc.name, res.Code, anteCommitted(res))
 		}
-		if tc.svn != msgkit.OK {
+		if tc.sdkErr != nil {
+			if res.Codespace != sdkerrors.RootCodespace || res.Code != tc.sdkErr.ABCICode() {
+				t.Fatalf("%s: got %s/%d want sdk/%d (%s)", tc.name, res.Codespace, res.Code, tc.sdkErr.ABCICode(), tc.sdkErr)
+			}
+		} else {
 			wantCode(t, tc.name, res, tc.svn)
 		}
 		unchanged(t, tc.name, chainApp, before, res)

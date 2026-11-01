@@ -55,10 +55,7 @@ func (k Keeper) RegisterContent(goCtx context.Context, msg *contentv1.MsgRegiste
 	if err != nil {
 		return nil, err
 	}
-	out, err := k.registerContent(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
+	out := k.registerContent(ctx, msg)
 	if out.Code != msgkit.OK {
 		return nil, out.Code.Err()
 	}
@@ -68,37 +65,37 @@ func (k Keeper) RegisterContent(goCtx context.Context, msg *contentv1.MsgRegiste
 	return &contentv1.MsgRegisterContentResponse{}, nil
 }
 
-func (k Keeper) registerContent(ctx sdk.Context, msg *contentv1.MsgRegisterContent) (msgkit.Outcome, error) {
+func (k Keeper) registerContent(ctx sdk.Context, msg *contentv1.MsgRegisterContent) msgkit.Outcome {
 	if msg == nil {
-		return failed(msgkit.Malformed), nil
+		return failed(msgkit.Malformed)
 	}
 	if code := msgkit.Enforce(ctx, msg.GetSigner()); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	if msg.GetBusinessId() == "" || msg.GetContentId() == "" || msg.GetManifestDigest() == nil || msg.GetHostingIntent() == nil {
-		return failed(msgkit.Malformed), nil
+		return failed(msgkit.Malformed)
 	}
 	if code := k.checkServiceRole(ctx, msg.GetSigner()); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	if !msgkit.ValidID(msg.GetContentId()) {
-		return failed(msgkit.Bounds), nil
+		return failed(msgkit.Bounds)
 	}
 	if msg.GetContentVersion() != v0ContentVersion {
-		return failed(msgkit.OutOfRange), nil
+		return failed(msgkit.OutOfRange)
 	}
 	if code := k.checkPackageBytes(ctx, msg.GetPackageBytes()); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	manifest, code := msgkit.CheckDigest(msg.GetManifestDigest())
 	if code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	intent := func(role string) (string, error) {
 		return registerIntentCanonical(msg.GetSigner(), msg.GetContentId(), msg.GetContentVersion(), manifest, msg.GetPackageBytes(), role)
 	}
 	if code := k.checkIntent(ctx, msg.GetHostingIntent(), intent); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	business, code := msgkit.BusinessDigest(map[string]any{
 		"content_id":      msg.GetContentId(),
@@ -108,13 +105,13 @@ func (k Keeper) registerContent(ctx sdk.Context, msg *contentv1.MsgRegisterConte
 		"package_bytes":   msgkit.Dec(msg.GetPackageBytes()),
 	})
 	if code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	if gate := k.ledger.Gate(ctx, msg.GetBusinessId(), business); gate.Code != msgkit.OK || gate.Idempotent {
-		return gate, nil
+		return gate
 	}
 	if _, exists := k.contentByID(ctx, msg.GetContentId()); exists {
-		return failed(msgkit.DuplicateID), nil
+		return failed(msgkit.DuplicateID)
 	}
 
 	record := &contentv1.Content{
@@ -136,9 +133,11 @@ func (k Keeper) registerContent(ctx sdk.Context, msg *contentv1.MsgRegisterConte
 		})
 	})
 	if err != nil {
-		return msgkit.Outcome{}, err
+		// An event encoding failure carries no svn code: MALFORMED.
+		// Nothing of the branch was written.
+		return failed(codeOf(err))
 	}
-	return msgkit.Outcome{}, nil
+	return msgkit.Outcome{}
 }
 
 // WithdrawContent is the committed WithdrawContent handler. Checks run in
@@ -164,10 +163,7 @@ func (k Keeper) WithdrawContent(goCtx context.Context, msg *contentv1.MsgWithdra
 	if err != nil {
 		return nil, err
 	}
-	out, err := k.withdrawContent(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
+	out := k.withdrawContent(ctx, msg)
 	if out.Code != msgkit.OK {
 		return nil, out.Code.Err()
 	}
@@ -177,28 +173,28 @@ func (k Keeper) WithdrawContent(goCtx context.Context, msg *contentv1.MsgWithdra
 	return &contentv1.MsgWithdrawContentResponse{}, nil
 }
 
-func (k Keeper) withdrawContent(ctx sdk.Context, msg *contentv1.MsgWithdrawContent) (msgkit.Outcome, error) {
+func (k Keeper) withdrawContent(ctx sdk.Context, msg *contentv1.MsgWithdrawContent) msgkit.Outcome {
 	if msg == nil {
-		return failed(msgkit.Malformed), nil
+		return failed(msgkit.Malformed)
 	}
 	if code := msgkit.Enforce(ctx, msg.GetSigner()); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	if msg.GetBusinessId() == "" || msg.GetContentId() == "" || msg.GetReasonDigest() == nil || msg.GetHostingIntent() == nil {
-		return failed(msgkit.Malformed), nil
+		return failed(msgkit.Malformed)
 	}
 	if code := k.checkServiceRole(ctx, msg.GetSigner()); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	reason, code := msgkit.CheckDigest(msg.GetReasonDigest())
 	if code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	intent := func(role string) (string, error) {
 		return withdrawIntentCanonical(msg.GetSigner(), msg.GetContentId(), msg.GetContentVersion(), reason, role)
 	}
 	if code := k.checkIntent(ctx, msg.GetHostingIntent(), intent); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	business, code := msgkit.BusinessDigest(map[string]any{
 		"content_id":      msg.GetContentId(),
@@ -207,32 +203,35 @@ func (k Keeper) withdrawContent(ctx sdk.Context, msg *contentv1.MsgWithdrawConte
 		"reason_digest":   msgkit.DigestObject(msg.GetReasonDigest()),
 	})
 	if code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	if gate := k.ledger.Gate(ctx, msg.GetBusinessId(), business); gate.Code != msgkit.OK || gate.Idempotent {
-		return gate, nil
+		return gate
 	}
 	record, found := k.contentByID(ctx, msg.GetContentId())
 	if !found {
-		return failed(msgkit.NotFound), nil
+		return failed(msgkit.NotFound)
 	}
 	if !bytes.Equal(record.GetSubmittingHost(), msg.GetSigner()) {
-		return failed(msgkit.Forbidden), nil
+		return failed(msgkit.Forbidden)
 	}
 	if code := checkWithdrawable(record, msg.GetContentVersion()); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	if code := checkTombstoneTime(ctx); code != msgkit.OK {
-		return failed(code), nil
+		return failed(code)
 	}
 	err := k.commit(ctx, func(cc sdk.Context) error {
 		k.ledger.Commit(cc, msg.GetBusinessId(), business)
 		return k.writeWithdrawal(cc, record, reason)
 	})
 	if err != nil {
-		return msgkit.Outcome{}, err
+		// A hook or event failure: its svn code, or MALFORMED for an error
+		// that carries none, as ForceWithdrawByCouncil maps it. Nothing of
+		// the branch was written.
+		return failed(codeOf(err))
 	}
-	return msgkit.Outcome{}, nil
+	return msgkit.Outcome{}
 }
 
 // ForceWithdrawByCouncil applies an executed council ForceWithdrawChange

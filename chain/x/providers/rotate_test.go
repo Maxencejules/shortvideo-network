@@ -232,7 +232,14 @@ func TestRotateProviderKeyRecordsHistory(t *testing.T) {
 	}
 	later := e.ctx.WithBlockTime(e.ctx.BlockTime().Add(3600 * 1e9))
 	e.mustOK(e.rotate(later.WithGasMeter(newGasMeter(200_000)).WithEventManager(sdk.NewEventManager()), rotMsg(t, "p1", "key-p1b", "key-p1", 2)), "rotate back")
-	record := e.record("p1")
+	if inline := e.record("p1"); len(inline.GetPreviousSigningKeys()) != 0 {
+		t.Fatalf("the handoff read carries %d retired keys", len(inline.GetPreviousSigningKeys()))
+	}
+	res, err := e.k.QueryProvider(e.unmetered(), &providersv1.QueryProviderRequest{ProviderId: "p1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	record := res.GetProvider()
 	if record.GetKeyGeneration() != 3 || record.GetSigningKeyId() != "key-p1" {
 		t.Fatalf("record %v", record)
 	}
@@ -260,7 +267,8 @@ func TestRotateProviderKeyRecordsHistory(t *testing.T) {
 }
 
 // TestRotationTouchesOnlyTheProvidersStore: a rotation changes exactly the
-// provider record and its business id, and nothing in any other store.
+// provider record, and adds its business id and one retired-key row, and
+// nothing in any other store.
 func TestRotationTouchesOnlyTheProvidersStore(t *testing.T) {
 	e := newEnv(t)
 	e.admitted("p1")
@@ -281,7 +289,7 @@ func TestRotationTouchesOnlyTheProvidersStore(t *testing.T) {
 			added[key] = true
 		}
 	}
-	if len(added) != 1 || !added[string(append([]byte{BusinessKeyPrefix}, "rot-p1-key-p1b"...))] {
+	if len(added) != 2 || !added[string(append([]byte{BusinessKeyPrefix}, "rot-p1-key-p1b"...))] || !added[string(RetiredKeyKey("p1", 1))] {
 		t.Fatalf("rotation added keys %v", added)
 	}
 }

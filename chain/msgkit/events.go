@@ -177,6 +177,33 @@ func ParseTyped(ev abci.Event) (proto.Message, error) {
 	return m.Interface(), nil
 }
 
+// MsgIndexKey is the attribute the SDK (baseapp) appends, after the
+// message's own attributes, to every event a message emits. Committed
+// events (FinalizeBlock results, /block_results, the tx index) carry it.
+// EmitTyped does not write it; it is not part of the svn.events.v1 schema.
+const MsgIndexKey = "msg_index"
+
+// ParseCommitted decodes a typed event as a node commits it: exactly the
+// EmitTyped attributes, then one msg_index attribute holding the index of
+// the message in its transaction (a canonical decimal). It returns the
+// typed message and that index. An event without a trailing msg_index, or
+// with any other attribute after the typed ones, is an error.
+func ParseCommitted(ev abci.Event) (proto.Message, uint32, error) {
+	n := len(ev.Attributes)
+	if n == 0 || ev.Attributes[n-1].Key != MsgIndexKey {
+		return nil, 0, fmt.Errorf("committed event: %s does not end with %s", ev.Type, MsgIndexKey)
+	}
+	index, err := parseCanonicalUint(ev.Attributes[n-1].Value, 32)
+	if err != nil {
+		return nil, 0, fmt.Errorf("committed event: %s %s: %w", ev.Type, MsgIndexKey, err)
+	}
+	m, err := ParseTyped(abci.Event{Type: ev.Type, Attributes: ev.Attributes[:n-1]})
+	if err != nil {
+		return nil, 0, err
+	}
+	return m, uint32(index), nil
+}
+
 func parseEventValue(fd protoreflect.FieldDescriptor, text string) (protoreflect.Value, error) {
 	if fd.IsList() || fd.IsMap() {
 		return protoreflect.Value{}, fmt.Errorf("repeated and map fields are not event attributes")

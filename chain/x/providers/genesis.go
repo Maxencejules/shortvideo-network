@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
@@ -181,20 +182,36 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *providersv1.GenesisState) er
 	records := append([]*providersv1.Provider(nil), state.GetProviders()...)
 	sort.Slice(records, func(i, j int) bool { return records[i].GetProviderId() < records[j].GetProviderId() })
 	for _, record := range records {
-		k.save(ctx, record)
+		// The record is stored without its retired keys; each retired key
+		// is a row of its own (store layout).
+		stored := proto.Clone(record).(*providersv1.Provider)
+		stored.PreviousSigningKeys = nil
+		k.save(ctx, stored)
+		for _, retired := range record.GetPreviousSigningKeys() {
+			k.saveRetired(ctx, record.GetProviderId(), retired)
+		}
 	}
 	msgkit.WriteLayoutVersion(ctx.KVStore(k.key), ConsensusVersion)
 	return nil
 }
 
-// ExportGenesis reads every provider in id byte order.
+// ExportGenesis reads every provider in id byte order, with its retired
+// keys in previous_signing_keys.
 func (k Keeper) ExportGenesis(ctx sdk.Context) (*providersv1.GenesisState, error) {
-	state := &providersv1.GenesisState{}
+	var records []*providersv1.Provider
 	if err := k.iterateProviders(ctx, func(record *providersv1.Provider) error {
-		state.Providers = append(state.Providers, record)
+		records = append(records, record)
 		return nil
 	}); err != nil {
 		return nil, err
+	}
+	state := &providersv1.GenesisState{}
+	for _, record := range records {
+		full, err := k.withHistory(ctx, record)
+		if err != nil {
+			return nil, err
+		}
+		state.Providers = append(state.Providers, full)
 	}
 	return state, nil
 }

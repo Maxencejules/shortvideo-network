@@ -219,3 +219,42 @@ func TestRegisterProviderNormalizesTheDigest(t *testing.T) {
 		t.Fatal("unknown digest fields reached state")
 	}
 }
+
+// TestRegisterReplayByAnotherAccountIsForbidden is the regression for a
+// front-run registration. The spec's business digest does not cover the
+// signer, so a second provider account can send a byte-for-byte copy of a
+// registration under its own signature. Whichever copy commits first owns
+// the record. The other account's copy is FORBIDDEN, not an idempotent
+// success, and it changes nothing. The owner's own retry stays idempotent.
+func TestRegisterReplayByAnotherAccountIsForbidden(t *testing.T) {
+	for _, c := range []struct {
+		name         string
+		first, other []byte
+	}{
+		{"owner first, copy second", providerAcct, provider2Acct},
+		{"copy front-runs the original", provider2Acct, providerAcct},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			e := newEnv(t)
+			msg := regMsg("p1")
+			msg.Signer = c.first
+			e.mustOK(e.register(e.fresh(), msg), "first registration")
+			before := e.snapshot()
+			copied := proto.Clone(msg).(*providersv1.MsgRegisterProvider)
+			copied.Signer = c.other
+			r := e.register(e.fresh(), copied)
+			if r.code != msgkit.Forbidden || r.idempotent || len(r.typed()) != 0 {
+				t.Fatalf("copy by another account: code %s idempotent %t", r.code, r.idempotent)
+			}
+			e.requireSameSnapshot(before, "rejected copy")
+			if got := e.record("p1").GetAccount(); string(got) != string(c.first) {
+				t.Fatalf("p1 account %x, want %x", got, c.first)
+			}
+			retry := e.register(e.fresh(), proto.Clone(msg).(*providersv1.MsgRegisterProvider))
+			if retry.code != msgkit.OK || !retry.idempotent {
+				t.Fatalf("owner retry: code %s idempotent %t", retry.code, retry.idempotent)
+			}
+			e.requireSameSnapshot(before, "owner retry")
+		})
+	}
+}

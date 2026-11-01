@@ -34,7 +34,9 @@ func (k Keeper) Content(goCtx context.Context, req *contentv1.QueryContentReques
 	}
 	out, code := k.queryContent(ctx, req)
 	if code != msgkit.OK {
-		return nil, code.Err()
+		// The svnerr error with the protocol code as a gRPC status detail
+		// (msgkit.QueryCode reads it).
+		return nil, code.QueryErr()
 	}
 	return out, nil
 }

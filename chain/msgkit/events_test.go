@@ -252,6 +252,46 @@ func TestParseTypedRejects(t *testing.T) {
 	}
 }
 
+// TestParseCommitted: a committed event is the EmitTyped attributes and
+// then the SDK's msg_index. ParseCommitted returns the typed message and
+// the index, and rejects an event without a trailing canonical msg_index.
+func TestParseCommitted(t *testing.T) {
+	const changed = "svn.events.v1.ProviderStateChanged"
+	typed := attrs("provider_id", "p", "state", "ADMITTED", "key_generation", "2")
+	committed := func(extra ...string) abci.Event {
+		return abci.Event{Type: changed, Attributes: append(append([]abci.EventAttribute(nil), typed...), attrs(extra...)...)}
+	}
+	msg, index, err := ParseCommitted(committed(MsgIndexKey, "3"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if index != 3 || !proto.Equal(msg, &eventsv1.ProviderStateChanged{ProviderId: "p", State: "ADMITTED", KeyGeneration: 2}) {
+		t.Fatalf("parsed %v index %d", msg, index)
+	}
+	if _, err := ParseTyped(committed(MsgIndexKey, "0")); err == nil {
+		t.Fatal("ParseTyped accepted a committed event; msg_index is not schema")
+	}
+	cases := map[string]abci.Event{
+		"no msg_index":            committed(),
+		"msg_index first":         {Type: changed, Attributes: append(attrs(MsgIndexKey, "0"), typed...)},
+		"msg_index leading zero":  committed(MsgIndexKey, "01"),
+		"msg_index negative":      committed(MsgIndexKey, "-1"),
+		"msg_index above uint32":  committed(MsgIndexKey, "4294967296"),
+		"msg_index empty":         committed(MsgIndexKey, ""),
+		"two msg_index":           committed(MsgIndexKey, "0", MsgIndexKey, "0"),
+		"attribute after":         committed(MsgIndexKey, "0", "extra", "x"),
+		"typed part invalid":      {Type: changed, Attributes: attrs("provider_id", "p", MsgIndexKey, "0")},
+		"not an svn.events type":  {Type: "message", Attributes: attrs("action", "x", MsgIndexKey, "0")},
+		"no attributes":           {Type: changed},
+		"msg_index only, no type": {Type: "", Attributes: attrs(MsgIndexKey, "0")},
+	}
+	for name, ev := range cases {
+		if msg, _, err := ParseCommitted(ev); err == nil {
+			t.Errorf("%s: parsed as %v", name, msg)
+		}
+	}
+}
+
 func TestEmitIdempotent(t *testing.T) {
 	ctx := freshEventContext(t)
 	EmitIdempotent(ctx, "providers")

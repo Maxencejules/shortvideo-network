@@ -6,6 +6,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -14,14 +15,17 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/mempool"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -37,6 +41,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest"
+	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
@@ -100,8 +105,7 @@ func TestDevnetRegistryDemo(t *testing.T) {
 	d.council("disable-p2", "prop-disable-p2", "disable-p2", disableChange("p2"))
 	d.commit("register-c1", d.service, d.registerContent(d.service, "reg-c1", "c1", 1, sizeOne))
 	d.commit("register-c2", d.service, d.registerContent(d.service, "reg-c2", "c2", 1, sizeTwo))
-	beforeWithdraw := d.height()
-	d.commit("withdraw-c1", d.service, d.withdrawContent(d.service, "wd-c1", "c1", 1, reason("c1")))
+	withdrawHeight := d.commit("withdraw-c1", d.service, d.withdrawContent(d.service, "wd-c1", "c1", 1, reason("c1")))
 	d.council("force-withdraw-c2", "prop-withdraw-c2", "withdraw-c2", withdrawChange("c2", 1, reason("c2")))
 	c1Before := d.abciQuery(d.clients[0], contentPath, &contentv1.QueryContentRequest{ContentId: "c1", ContentVersion: 1}, 0)
 	d.commit("idempotent-replay-c1", d.service, d.registerContent(d.service, "reg-c1", "c1", 1, sizeOne))
@@ -130,12 +134,15 @@ func TestDevnetRegistryDemo(t *testing.T) {
 	// CheckTx rejections: never included in a block.
 	outsider := loaded{name: "outsider", key: sdksecp.GenPrivKey()}
 	outsider.addr = hex.EncodeToString(outsider.key.PubKey().Address())
-	d.notIncluded("outsider", signDevnetWith(t, d.enc, d.chainID, outsider.key, 0, 0, 2_000_000, nil, d.registerProvider(outsider, "x-out", "p9", capacityOne)))
+	d.notIncluded("outsider", signDevnetWith(t, d.enc, d.chainID, outsider.key, 0, 0, 2_000_000, nil, d.registerProvider(outsider, "x-out", "p9", capacityOne)),
+		sdkerrors.RootCodespace, sdkerrors.ErrUnknownAddress.ABCICode())
 	d.notIncluded("fee", signDevnetWith(t, d.enc, d.chainID, d.provider1.key, d.numbers[d.provider1.addr], d.seq[d.provider1.addr], 2_000_000,
-		sdk.NewCoins(sdk.NewInt64Coin("reject", 1)), d.registerProvider(d.provider1, "x-fee", "p9", capacityOne)))
+		sdk.NewCoins(sdk.NewInt64Coin("reject", 1)), d.registerProvider(d.provider1, "x-fee", "p9", capacityOne)),
+		svnerr.ModuleName, svnerr.ErrFeeRejected.ABCICode())
 	big := d.registerProvider(d.provider1, "x-big", "p9", capacityOne)
 	big.OperatorGroupId = strings.Repeat("g", 70*1024)
-	d.notIncluded("tx-70-KiB", signDevnetWith(t, d.enc, d.chainID, d.provider1.key, d.numbers[d.provider1.addr], d.seq[d.provider1.addr], 2_000_000, nil, big))
+	d.notIncluded("tx-70-KiB", signDevnetWith(t, d.enc, d.chainID, d.provider1.key, d.numbers[d.provider1.addr], d.seq[d.provider1.addr], 2_000_000, nil, big),
+		svnerr.ModuleName, svnerr.ErrBounds.ABCICode())
 	d.rebroadcast("same-signed-bytes")
 
 	// Phase 5: queries from committed state at one fixed height.
@@ -160,12 +167,27 @@ func TestDevnetRegistryDemo(t *testing.T) {
 	for _, name := range sortedKeys(queries) {
 		fmt.Printf("phase=query height=%d name=%s nodes=4 equal=true bytes=%d sha256=%x\n", fixed, name, len(queries[name].want), sha256.Sum256(queries[name].want))
 	}
-	d.checkQueryValues(queries, beforeWithdraw)
+	d.checkQueryValues(queries, withdrawHeight)
 	grpcBytes := d.grpcProvider(layout.Topology.Validators[0].GRPC, "p1", fixed)
 	if !bytes.Equal(grpcBytes, queries["provider-p1"].want) {
 		t.Fatal("gRPC Provider bytes differ from node v1 ABCI query bytes")
 	}
 	fmt.Printf("phase=grpc node=v1 height=%d path=/svn.providers.v1.Query/Provider equal_to_abci=true\n", fixed)
+	grpcAddr := layout.Topology.Validators[0].GRPC
+	for _, rejected := range []struct {
+		path     string
+		req, res proto.Message
+		want     msgkit.Code
+	}{
+		{"/svn.providers.v1.Query/Provider", &providersv1.QueryProviderRequest{ProviderId: "p404"}, &providersv1.QueryProviderResponse{}, msgkit.NotFound},
+		{"/svn.providers.v1.Query/Providers", &providersv1.QueryProvidersRequest{Page: &typesv1.PageRequest{Limit: 101}}, &providersv1.QueryProvidersResponse{}, msgkit.Bounds},
+		{"/svn.content.v1.Query/Content", &contentv1.QueryContentRequest{ContentId: "c1", ContentVersion: 2}, &contentv1.QueryContentResponse{}, msgkit.NotFound},
+	} {
+		if got := d.grpcRejection(grpcAddr, rejected.path, rejected.req, rejected.res, fixed); got != rejected.want {
+			t.Fatalf("gRPC %s: %s, want %s", rejected.path, got, rejected.want)
+		}
+		fmt.Printf("phase=grpc-reject node=v1 height=%d path=%s detail=%s\n", fixed, rejected.path, rejected.want)
+	}
 	for h := rotation - 1; h <= rotation+cometDelay(); h++ {
 		set := validatorSet(t, rpcs[0], h)
 		if len(set) != 4 || !sameValidators(set, validatorSet(t, rpcs[0], 1)) {
@@ -347,15 +369,16 @@ func (d *demo) reject(phase string, who loaded, msg sdk.Msg, want msgkit.Code) {
 	fmt.Printf("phase=reject name=%s height=%d codespace=svn code=%d (%s) included=true txhash=%X\n", phase, res.height, number, want, res.hash)
 }
 
-// notIncluded asserts a CheckTx rejection and that no block holds the tx.
-func (d *demo) notIncluded(phase string, raw []byte) {
+// notIncluded asserts a CheckTx rejection with the exact codespace and
+// code, and that no block holds the tx.
+func (d *demo) notIncluded(phase string, raw []byte, codespace string, code uint32) {
 	d.t.Helper()
 	res, err := d.broadcast(raw)
 	if err != nil {
 		d.t.Fatalf("phase %s: %v", phase, err)
 	}
-	if res.check.Code == 0 {
-		d.t.Fatalf("phase %s passed CheckTx", phase)
+	if res.check.Codespace != codespace || res.check.Code != code {
+		d.t.Fatalf("phase %s: check tx %s/%d, want %s/%d (log %s)", phase, res.check.Codespace, res.check.Code, codespace, code, res.check.Log)
 	}
 	sum := sha256.Sum256(raw)
 	if _, err := d.clients[0].Tx(context.Background(), sum[:], false); err == nil {
@@ -365,7 +388,10 @@ func (d *demo) notIncluded(phase string, raw []byte) {
 }
 
 // rebroadcast sends the signed bytes of the first included tx again. The
-// mempool cache or the sequence check refuses them, and the original stays
+// application's CheckTx (the /check_tx route, no mempool) refuses them with
+// the SDK sequence error. A broadcast is refused either by the mempool
+// cache (the node's own ErrTxInCache, the only error accepted) or by the
+// same sequence error; any other error fails the phase. The original stays
 // the only inclusion.
 func (d *demo) rebroadcast(phase string) {
 	d.t.Helper()
@@ -377,21 +403,39 @@ func (d *demo) rebroadcast(phase string) {
 	if err != nil {
 		d.t.Fatal(err)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	checked, err := d.clients[0].CheckTx(ctx, original.Tx)
+	cancel()
+	if err != nil {
+		d.t.Fatalf("phase %s: check_tx: %v", phase, err)
+	}
+	wrongSequence := sdkerrors.ErrWrongSequence.ABCICode()
+	if checked.Codespace != sdkerrors.RootCodespace || checked.Code != wrongSequence {
+		d.t.Fatalf("phase %s: check_tx %s/%d, want sdk/%d (log %s)", phase, checked.Codespace, checked.Code, wrongSequence, checked.Log)
+	}
 	res, err := d.broadcast(original.Tx)
 	outcome := ""
 	switch {
 	case err != nil:
-		outcome = "rpc-error"
-	case res.check.Code != 0:
-		outcome = fmt.Sprintf("checktx %s/%d", res.check.Codespace, res.check.Code)
+		// broadcast_tx_commit reports a mempool refusal as a JSON-RPC error
+		// whose data is "error on broadcastTxCommit: " and the mempool
+		// error. The RPC carries no typed code for it, so the data must be
+		// exactly that text for the node's own ErrTxInCache.
+		var rpcErr *rpctypes.RPCError
+		if !errors.As(err, &rpcErr) || rpcErr.Data != "error on broadcastTxCommit: "+mempool.ErrTxInCache.Error() {
+			d.t.Fatalf("phase %s: broadcast error %v is not the mempool cache refusal", phase, err)
+		}
+		outcome = "mempool ErrTxInCache"
+	case res.check.Codespace == sdkerrors.RootCodespace && res.check.Code == wrongSequence:
+		outcome = fmt.Sprintf("checktx sdk/%d (wrong sequence)", wrongSequence)
 	default:
-		d.t.Fatalf("phase %s: the same signed bytes passed CheckTx", phase)
+		d.t.Fatalf("phase %s: broadcast check tx %s/%d, want the cache refusal or sdk/%d", phase, res.check.Codespace, res.check.Code, wrongSequence)
 	}
 	again, err := d.clients[0].Tx(context.Background(), first, false)
 	if err != nil || again.Height != original.Height {
 		d.t.Fatalf("phase %s: inclusion moved from %d", phase, original.Height)
 	}
-	fmt.Printf("phase=checktx-reject name=%s result=%q original_height=%d included_again=false (not included)\n", phase, outcome, original.Height)
+	fmt.Printf("phase=checktx-reject name=%s check_tx=sdk/%d broadcast=%q original_height=%d included_again=false (not included)\n", phase, checked.Code, outcome, original.Height)
 }
 
 func (d *demo) registerProvider(who loaded, bid, providerID string, capacity uint64) *providersv1.MsgRegisterProvider {
@@ -634,7 +678,11 @@ func (d *demo) registryQueries(height int64) map[string]namedQuery {
 	}
 }
 
-func (d *demo) checkQueryValues(queries map[string]namedQuery, beforeWithdraw int64) {
+// checkQueryValues checks the decoded query results at the fixed height,
+// and the withdrawal of c1 on every node at the height before it committed
+// (PENDING, no tombstone) and at the height it committed (WITHDRAWN, with a
+// tombstone stamped with that block's time).
+func (d *demo) checkQueryValues(queries map[string]namedQuery, withdrawHeight int64) {
 	d.t.Helper()
 	var p1, p2 providersv1.QueryProviderResponse
 	if err := proto.Unmarshal(queries["provider-p1"].want, &p1); err != nil {
@@ -656,14 +704,30 @@ func (d *demo) checkQueryValues(queries map[string]namedQuery, beforeWithdraw in
 			d.t.Fatalf("content %s: %v", id, &c)
 		}
 	}
-	var earlier contentv1.QueryContentResponse
-	if err := proto.Unmarshal(d.abciQuery(d.clients[0], contentPath, &contentv1.QueryContentRequest{ContentId: "c1", ContentVersion: 1}, beforeWithdraw), &earlier); err != nil {
+	block, err := d.clients[0].Block(context.Background(), &withdrawHeight)
+	if err != nil {
 		d.t.Fatal(err)
 	}
-	if earlier.GetContent().GetState() != contentv1.ContentState_CONTENT_STATE_PENDING || earlier.GetTombstone() != nil {
-		d.t.Fatalf("c1 at height %d: %v", beforeWithdraw, &earlier)
+	committedAt := block.Block.Time.Unix()
+	c1 := &contentv1.QueryContentRequest{ContentId: "c1", ContentVersion: 1}
+	for i, client := range d.clients {
+		var before, at contentv1.QueryContentResponse
+		if err := proto.Unmarshal(d.abciQuery(client, contentPath, c1, withdrawHeight-1), &before); err != nil {
+			d.t.Fatal(err)
+		}
+		if before.GetContent().GetState() != contentv1.ContentState_CONTENT_STATE_PENDING || before.GetTombstone() != nil {
+			d.t.Fatalf("node %d: c1 at height %d: %v", i+1, withdrawHeight-1, &before)
+		}
+		if err := proto.Unmarshal(d.abciQuery(client, contentPath, c1, withdrawHeight), &at); err != nil {
+			d.t.Fatal(err)
+		}
+		if at.GetContent().GetState() != contentv1.ContentState_CONTENT_STATE_WITHDRAWN || at.GetTombstone() == nil ||
+			at.GetTombstone().GetCommittedUnixSeconds() != committedAt || at.GetTombstone().GetHistoryErased() {
+			d.t.Fatalf("node %d: c1 at height %d: %v", i+1, withdrawHeight, &at)
+		}
 	}
-	fmt.Printf("phase=history height=%d c1=PENDING tombstone=false; height=latest c1=WITHDRAWN tombstone=true\n", beforeWithdraw)
+	fmt.Printf("phase=history nodes=%d height=%d c1=PENDING tombstone=false; height=%d c1=WITHDRAWN tombstone=true committed_unix_seconds=%d\n",
+		len(d.clients), withdrawHeight-1, withdrawHeight, committedAt)
 }
 
 func (d *demo) abciQuery(client *rpchttp.HTTP, path string, req proto.Message, height int64) []byte {
@@ -710,6 +774,29 @@ func (d *demo) grpcProvider(address, id string, height int64) []byte {
 		d.t.Fatal(err)
 	}
 	return raw
+}
+
+// grpcRejection runs one rejected query on the node gRPC server and
+// returns the protocol code read from the status detail (msgkit.QueryCode).
+func (d *demo) grpcRejection(address, path string, req, res proto.Message, height int64) msgkit.Code {
+	d.t.Helper()
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		d.t.Fatal(err)
+	}
+	defer conn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	ctx = metadata.AppendToOutgoingContext(ctx, grpctypes.GRPCBlockHeightHeader, strconv.FormatInt(height, 10))
+	err = conn.Invoke(ctx, path, req, res)
+	if err == nil {
+		d.t.Fatalf("%s succeeded", path)
+	}
+	code, ok := msgkit.QueryCode(err)
+	if !ok {
+		d.t.Fatalf("%s: no svn ErrorInfo detail in %v", path, err)
+	}
+	return code
 }
 
 func sameValidators(a, b []voted) bool {
@@ -842,9 +929,25 @@ func (d *demo) scanEvents(to int64) {
 		[]byte(demoEndpoint), []byte("canary-endpoint.invalid"), []byte(demoEmail), []byte(demoUser),
 		[]byte(demoWatch), []byte(demoReport), demoMedia, demoMedia[:64],
 	}
-	var events, typed int
+	var events, typed, txs int
 	for h := int64(1); h <= to; h++ {
 		height := h
+		// The block data: every transaction, including the ones a handler
+		// rejected. In the demo the canaries reach a transaction only
+		// through SHA-256.
+		block, err := d.clients[0].Block(context.Background(), &height)
+		if err != nil {
+			d.t.Fatal(err)
+		}
+		for i, tx := range block.Block.Txs {
+			txs++
+			if hit, found := msgkittest.FindCanary(tx, canaries...); found {
+				d.t.Fatalf("height %d tx %d holds %s", h, i, hit)
+			}
+			if bytes.Contains(tx, []byte("https://")) || bytes.Contains(tx, []byte("http://")) {
+				d.t.Fatalf("height %d tx %d holds a URL", h, i)
+			}
+		}
 		res, err := d.clients[0].BlockResults(context.Background(), &height)
 		if err != nil {
 			d.t.Fatal(err)
@@ -857,6 +960,15 @@ func (d *demo) scanEvents(to int64) {
 		for _, ev := range all {
 			events++
 			if strings.HasPrefix(ev.Type, "svn.events.v1.") {
+				// The raw /block_results event: typed attributes, then
+				// the SDK's msg_index (every demo tx has one message).
+				msg, index, err := msgkit.ParseCommitted(ev)
+				if err != nil {
+					d.t.Fatalf("height %d committed event %s: %v", h, ev.Type, err)
+				}
+				if index != 0 || string(proto.MessageName(msg)) != ev.Type {
+					d.t.Fatalf("height %d committed event %s parsed as %s msg_index %d", h, ev.Type, proto.MessageName(msg), index)
+				}
 				typed++
 			}
 			var blob []byte
@@ -892,7 +1004,10 @@ func (d *demo) scanEvents(to int64) {
 	if typed == 0 {
 		d.t.Fatal("no typed registry event was committed")
 	}
-	fmt.Printf("phase=events heights=1..%d events=%d typed=%d canaries=0 forbidden_names=0\n", to, events, typed)
+	if txs == 0 {
+		d.t.Fatal("no committed transaction was scanned")
+	}
+	fmt.Printf("phase=events heights=1..%d block_txs=%d events=%d typed=%d typed_parsed_with_msg_index=%d canaries=0 forbidden_names=0\n", to, txs, events, typed, typed)
 }
 
 func sortedKeys(m map[string]namedQuery) []string {

@@ -60,11 +60,17 @@ func TestRegistryEventSchemas(t *testing.T) {
 	var got []goldenEvent
 	counts := map[string]int{}
 	for _, committed := range typedEvents(allEvents(c)) {
-		ev := withoutMsgIndex(t, committed)
-		msg, err := msgkit.ParseTyped(ev)
+		// A committed event is the typed attributes and then the SDK's
+		// msg_index. Every registry transaction here has one message.
+		msg, index, err := msgkit.ParseCommitted(committed)
 		if err != nil {
-			t.Fatalf("%s: %v", ev.Type, err)
+			t.Fatalf("%s: %v", committed.Type, err)
 		}
+		if index != 0 {
+			t.Fatalf("%s: msg_index %d in a one-message transaction", committed.Type, index)
+		}
+		ev := committed
+		ev.Attributes = committed.Attributes[:len(committed.Attributes)-1]
 		desc := msg.ProtoReflect().Descriptor()
 		if string(desc.FullName()) != ev.Type {
 			t.Fatalf("event type %s parsed as %s", ev.Type, desc.FullName())
@@ -154,21 +160,6 @@ func TestRegistryEventSchemas(t *testing.T) {
 	}
 }
 
-// withoutMsgIndex removes the msg_index attribute baseapp appends to every
-// event a message emits. Every registry transaction here has one message,
-// so the value must be "0" and it must be the last attribute. The typed
-// schema itself has no msg_index field.
-func withoutMsgIndex(t *testing.T, ev abci.Event) abci.Event {
-	t.Helper()
-	n := len(ev.Attributes)
-	if n == 0 || ev.Attributes[n-1].Key != "msg_index" || ev.Attributes[n-1].Value != "0" {
-		t.Fatalf("%s: committed event has no trailing msg_index=0: %v", ev.Type, ev.Attributes)
-	}
-	out := ev
-	out.Attributes = append([]abci.EventAttribute(nil), ev.Attributes[:n-1]...)
-	return out
-}
-
 // sdkOwnedNames are SDK ante and message event keys that contain a
 // forbidden name pattern. They are framework attributes, not registry
 // schema; the test pins their values (no fee is ever charged).
@@ -194,6 +185,22 @@ func TestNoPrivateDataInStateOrEvents(t *testing.T) {
 		for _, w := range web {
 			if bytes.Contains(blob, w) {
 				t.Fatalf("store %s holds %q", name, w)
+			}
+		}
+	}
+
+	// The block data: every transaction of every committed block. In this
+	// flow the canaries reach a transaction only through SHA-256.
+	if len(c.txs) == 0 {
+		t.Fatal("the flow delivered no transactions")
+	}
+	for i, tx := range c.txs {
+		if hit, found := msgkittest.FindCanary(tx, list...); found {
+			t.Fatalf("committed transaction %d holds %s", i, hit)
+		}
+		for _, w := range web {
+			if bytes.Contains(tx, w) {
+				t.Fatalf("committed transaction %d holds %q", i, w)
 			}
 		}
 	}

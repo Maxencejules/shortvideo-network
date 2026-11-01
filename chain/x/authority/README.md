@@ -105,8 +105,10 @@ peers.Add(authority.ModuleName, authorityKeeper)
 - `engine_test.go`: council flow, delay, expiry keep, forbidden removal keep, halt on a mismatched removal,
   council and service rotation, admission through a fake registry, payload digest vector.
 - `registry_test.go`: DEC-002 and DEC-003 flags, decoded force-withdraw arguments, `FORBIDDEN` keeps `REJECTED`,
-  other registry codes leave the proposal `QUEUED` with unchanged canonical bytes, nil registry, external
-  business-id `REPLAY` on propose, approve, and execute.
+  other registry codes leave the proposal `QUEUED`, nil registry, external business-id `REPLAY` on propose,
+  approve, and execute. On each failure the test reads the engine's own trial clone, not the discarded result,
+  so it proves the engine wrote nothing before it failed. The keeper and app tests below prove the store side
+  (`TestKeeperRegistryFailureWritesNothing`, and `TestRejectedRegistryMessagesLeaveTheFullState` in `chain/app`).
 - `keeper_test.go` (real IAVL multistore): hook writes committed only on success, discarded on keep and failure;
   side-document round trip of force-withdraw arguments; one business-id namespace through `msgkit.Peers`; read
   surface; older side documents; deterministic sources.

@@ -152,7 +152,19 @@ func (k Keeper) registerProvider(ctx sdk.Context, msg *providersv1.MsgRegisterPr
 		"signing_key_id":           msg.GetSigningKeyId(),
 		"signing_pubkey":           msgkit.Hex(msg.GetSigningPubkey()),
 	})
-	if gate.Code != msgkit.OK || gate.Idempotent {
+	if gate.Code != msgkit.OK {
+		return gate
+	}
+	if gate.Idempotent {
+		// The spec's business digest does not cover the signer, so another
+		// provider account can send a copy of a pending registration under
+		// the same business id. An idempotent success is reported only to
+		// the account that owns the committed record; any other signer is
+		// FORBIDDEN. This is stricter than spec_machine.py, which reports
+		// success to every signer (decision request DR-07-08).
+		if existing, exists := k.mustLoad(ctx, msg.GetProviderId()); exists && !bytes.Equal(existing.GetAccount(), msg.GetSigner()) {
+			return fail(msgkit.Forbidden)
+		}
 		return gate
 	}
 	if _, exists := k.mustLoad(ctx, msg.GetProviderId()); exists {
@@ -262,7 +274,9 @@ func (k Keeper) rotateProviderKey(ctx sdk.Context, msg *providersv1.MsgRotatePro
 	if record.GetKeyGeneration() == math.MaxUint64 {
 		return fail(msgkit.Overflow)
 	}
-	record.PreviousSigningKeys = append(record.PreviousSigningKeys, &providersv1.PreviousSigningKey{
+	// The retired key is a row of its own, so the record keeps a constant
+	// size (see the store layout).
+	k.saveRetired(ctx, record.GetProviderId(), &providersv1.PreviousSigningKey{
 		PublicKey:          append([]byte(nil), record.GetSigningPubkey()...),
 		Generation:         record.GetKeyGeneration(),
 		RetiredUnixSeconds: ctx.BlockTime().Unix(),

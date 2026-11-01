@@ -117,14 +117,19 @@ func queueProposal(t *testing.T, st *State, seats [][]byte, id string, msg *auth
 }
 
 // executeTrial runs ExecuteChange the way Keeper.transition does: on a
-// clone, committing the clone only on success or keep.
-func executeTrial(st *State, signer []byte, businessID, proposalID string) (*State, Outcome) {
-	trial := st.clone()
-	out := trial.ExecuteChange(execute(signer, businessID, proposalID))
+// clone, committing the clone only on success or keep. It returns the
+// committed state, the clone the engine ran on, and the outcome. On a
+// failure the committed state is st itself, untouched by construction, so
+// a test of "a failure changes nothing" must look at the clone: it proves
+// the engine wrote nothing before it failed, not only that the keeper
+// discards the clone.
+func executeTrial(st *State, signer []byte, businessID, proposalID string) (committed, trial *State, out Outcome) {
+	trial = st.clone()
+	out = trial.ExecuteChange(execute(signer, businessID, proposalID))
 	if out.Success() || out.Keep {
-		return trial, out
+		return trial, trial, out
 	}
-	return st, out
+	return st, trial, out
 }
 
 var reasonValue = func() []byte {
@@ -161,7 +166,7 @@ func TestAdmitPassesTheDEC002Flag(t *testing.T) {
 			st.Registry = registry
 			queueProposal(t, st, seats, "admit-p1", admitProposal("p1"))
 			before := canonicalBytes(t, st)
-			after, out := executeTrial(st, authoritySigner, "ex-admit", "admit-p1")
+			after, trial, out := executeTrial(st, authoritySigner, "ex-admit", "admit-p1")
 			if !sameCalls(registry.calls, []registryCall{{Method: "admit", ID: "p1", Devnet: tc.devnet}}) {
 				t.Fatalf("calls %+v", registry.calls)
 			}
@@ -174,11 +179,11 @@ func TestAdmitPassesTheDEC002Flag(t *testing.T) {
 			if out.Code != CodeDecisionBlocked || out.Keep {
 				t.Fatalf("%+v", out)
 			}
-			if !bytes.Equal(before, canonicalBytes(t, after)) {
+			if !bytes.Equal(before, canonicalBytes(t, trial)) {
 				t.Fatal("blocked admission changed authority state")
 			}
-			if after.proposal("admit-p1").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-				t.Fatal(after.proposal("admit-p1").GetState())
+			if trial.proposal("admit-p1").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+				t.Fatal(trial.proposal("admit-p1").GetState())
 			}
 		})
 	}
@@ -191,7 +196,7 @@ func TestDisablePassesTheProviderID(t *testing.T) {
 	queueProposal(t, st, seats, "disable-p7", disableProposal("p7"))
 	validators := cloneValidators(st.Validators)
 	version := st.PolicyVersion
-	after, out := executeTrial(st, authoritySigner, "ex-disable", "disable-p7")
+	after, _, out := executeTrial(st, authoritySigner, "ex-disable", "disable-p7")
 	if !out.Success() {
 		t.Fatal(out)
 	}
@@ -228,7 +233,7 @@ func TestForceWithdrawPassesTheDecodedPayload(t *testing.T) {
 			if stored.Kind != "force_withdraw" || stored.ContentID != "c1" || stored.ContentVersion != 1 || !bytes.Equal(stored.Reason, reasonValue) {
 				t.Fatalf("stored %+v", stored)
 			}
-			after, out := executeTrial(st, authoritySigner, "ex-withdraw", "withdraw-c1")
+			after, _, out := executeTrial(st, authoritySigner, "ex-withdraw", "withdraw-c1")
 			if !out.Success() {
 				t.Fatal(out)
 			}
@@ -252,14 +257,14 @@ func TestForceWithdrawPassesTheProposedVersion(t *testing.T) {
 	st.Registry = registry
 	queueProposal(t, st, seats, "withdraw-c9", withdrawProposal("c9", 2, reasonValue))
 	before := canonicalBytes(t, st)
-	after, out := executeTrial(st, authoritySigner, "ex-c9", "withdraw-c9")
+	_, trial, out := executeTrial(st, authoritySigner, "ex-c9", "withdraw-c9")
 	if out.Code != CodeStale || out.Keep {
 		t.Fatalf("%+v", out)
 	}
 	if !sameCalls(registry.calls, []registryCall{{Method: "force_withdraw", ID: "c9", Version: 2, Reason: reasonValue, Devnet: true}}) {
 		t.Fatalf("calls %+v", registry.calls)
 	}
-	if !bytes.Equal(before, canonicalBytes(t, after)) {
+	if !bytes.Equal(before, canonicalBytes(t, trial)) {
 		t.Fatal("stale force-withdraw changed authority state")
 	}
 }
@@ -274,7 +279,7 @@ func TestRegistryForbiddenRejectsAndKeeps(t *testing.T) {
 			id, msg := registryProposal(kind)
 			queueProposal(t, st, seats, id, msg)
 			version := st.PolicyVersion
-			after, out := executeTrial(st, authoritySigner, "ex-"+id, id)
+			after, _, out := executeTrial(st, authoritySigner, "ex-"+id, id)
 			if out.Code != CodeForbidden || !out.Keep {
 				t.Fatalf("%+v", out)
 			}
@@ -292,7 +297,7 @@ func TestRegistryForbiddenRejectsAndKeeps(t *testing.T) {
 			}
 			// A second execute of a REJECTED proposal is a conflict and does
 			// not reach the registry.
-			_, again := executeTrial(after, authoritySigner, "ex2-"+id, id)
+			_, _, again := executeTrial(after, authoritySigner, "ex2-"+id, id)
 			if again.Code != CodeConflict || len(registry.calls) != 1 {
 				t.Fatalf("again %+v calls %d", again, len(registry.calls))
 			}
@@ -323,19 +328,19 @@ func TestRegistryFailureLeavesTheProposalQueued(t *testing.T) {
 				id, msg := registryProposal(kind)
 				queueProposal(t, st, seats, id, msg)
 				before := canonicalBytes(t, st)
-				after, out := executeTrial(st, authoritySigner, "ex-"+id, id)
+				after, trial, out := executeTrial(st, authoritySigner, "ex-"+id, id)
 				if out.Code != code || out.Keep || out.Idempotent {
 					t.Fatalf("%+v", out)
 				}
-				if !bytes.Equal(before, canonicalBytes(t, after)) {
+				if !bytes.Equal(before, canonicalBytes(t, trial)) {
 					t.Fatal("a registry failure changed authority state")
 				}
-				if after.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-					t.Fatal(after.proposal(id).GetState())
+				if trial.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+					t.Fatal(trial.proposal(id).GetState())
 				}
 				// The same proposal can execute once the registry accepts.
 				registry.out = nil
-				final, retry := executeTrial(after, authoritySigner, "ex-retry-"+id, id)
+				final, _, retry := executeTrial(after, authoritySigner, "ex-retry-"+id, id)
 				if !retry.Success() || final.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
 					t.Fatalf("retry %+v", retry)
 				}
@@ -354,15 +359,15 @@ func TestRegistryCannotAskForKeepOrIdempotent(t *testing.T) {
 	st.Registry = registry
 	queueProposal(t, st, seats, "admit-p1", admitProposal("p1"))
 	before := canonicalBytes(t, st)
-	after, out := executeTrial(st, authoritySigner, "ex-1", "admit-p1")
+	_, trial, out := executeTrial(st, authoritySigner, "ex-1", "admit-p1")
 	if out.Code != CodeConflict || out.Keep {
 		t.Fatalf("a registry keep leaked: %+v", out)
 	}
-	if !bytes.Equal(before, canonicalBytes(t, after)) {
+	if !bytes.Equal(before, canonicalBytes(t, trial)) {
 		t.Fatal("state changed")
 	}
 	registry.out = map[string]Outcome{"admit": {Idempotent: true}}
-	final, out := executeTrial(st, authoritySigner, "ex-2", "admit-p1")
+	final, _, out := executeTrial(st, authoritySigner, "ex-2", "admit-p1")
 	if !out.Success() || out.Idempotent {
 		t.Fatalf("a registry idempotent leaked: %+v", out)
 	}
@@ -379,11 +384,11 @@ func TestNilRegistryIsMalformed(t *testing.T) {
 			id, msg := registryProposal(kind)
 			queueProposal(t, st, seats, id, msg)
 			before := canonicalBytes(t, st)
-			after, out := executeTrial(st, authoritySigner, "ex-"+id, id)
+			_, trial, out := executeTrial(st, authoritySigner, "ex-"+id, id)
 			if out.Code != CodeMalformed || out.Keep {
 				t.Fatalf("%+v", out)
 			}
-			if !bytes.Equal(before, canonicalBytes(t, after)) || after.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+			if !bytes.Equal(before, canonicalBytes(t, trial)) || trial.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
 				t.Fatal("a missing registry changed authority state")
 			}
 		})
@@ -391,7 +396,7 @@ func TestNilRegistryIsMalformed(t *testing.T) {
 	// Validator and governed-limit payloads do not need a registry.
 	st, seats, authoritySigner := readyState()
 	queueProposal(t, st, seats, "p-add", powerMsg("v5", pub(9), 1, 20))
-	if _, out := executeTrial(st, authoritySigner, "ex-add", "p-add"); !out.Success() {
+	if _, _, out := executeTrial(st, authoritySigner, "ex-add", "p-add"); !out.Success() {
 		t.Fatal(out)
 	}
 }
@@ -412,7 +417,7 @@ func TestExpiredRegistryProposalDoesNotCallTheRegistry(t *testing.T) {
 		}
 	}
 	st.Time += 5
-	after, out := executeTrial(st, authoritySigner, "ex-late", "admit-p1")
+	after, _, out := executeTrial(st, authoritySigner, "ex-late", "admit-p1")
 	if out.Code != CodeExpired || !out.Keep {
 		t.Fatalf("%+v", out)
 	}
@@ -444,7 +449,7 @@ func TestExternalBusinessIDIsReplay(t *testing.T) {
 		if out := trial.ProposeChange(msg); out.Code != CodeReplay {
 			t.Fatalf("%+v", out)
 		}
-		if !bytes.Equal(before, canonicalBytes(t, st)) || !slices.Equal(lookups, []string{"shared"}) {
+		if !bytes.Equal(before, canonicalBytes(t, trial)) || !slices.Equal(lookups, []string{"shared"}) {
 			t.Fatalf("lookups %v", lookups)
 		}
 	})
@@ -461,7 +466,7 @@ func TestExternalBusinessIDIsReplay(t *testing.T) {
 		if out := trial.ApproveChange(approve(seats[1], "shared", "p-add")); out.Code != CodeReplay {
 			t.Fatalf("%+v", out)
 		}
-		if len(trial.proposal("p-add").GetApproverKeys()) != 0 || !bytes.Equal(before, canonicalBytes(t, st)) {
+		if len(trial.proposal("p-add").GetApproverKeys()) != 0 || !bytes.Equal(before, canonicalBytes(t, trial)) {
 			t.Fatal("a replayed approval was recorded")
 		}
 	})
@@ -472,11 +477,11 @@ func TestExternalBusinessIDIsReplay(t *testing.T) {
 		st.External = external(&lookups)
 		queueProposal(t, st, seats, "p-add", powerMsg("v5", pub(9), 1, 20))
 		before := canonicalBytes(t, st)
-		after, out := executeTrial(st, authoritySigner, "shared", "p-add")
+		_, trial, out := executeTrial(st, authoritySigner, "shared", "p-add")
 		if out.Code != CodeReplay || out.Keep {
 			t.Fatalf("%+v", out)
 		}
-		if !bytes.Equal(before, canonicalBytes(t, after)) || after.proposal("p-add").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+		if !bytes.Equal(before, canonicalBytes(t, trial)) || trial.proposal("p-add").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
 			t.Fatal("a replayed execute changed authority state")
 		}
 	})

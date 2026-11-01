@@ -234,8 +234,18 @@ func TestRunMigrationsAtV1IsANoOp(t *testing.T) {
 	e.requireSameSnapshot(before, "RunMigrations")
 }
 
+// versionedModule reports a test-only consensus version, so the manager
+// has a step to run.
+type versionedModule struct {
+	AppModule
+	version uint64
+}
+
+func (v versionedModule) ConsensusVersion() uint64 { return v.version }
+
 // TestMigrationTable: the table covers exactly 1 .. ConsensusVersion-1, and
-// registerMigrations registers each entry with the configurator.
+// registerMigrations registers each entry with the configurator, where the
+// module manager runs it.
 func TestMigrationTable(t *testing.T) {
 	for from := uint64(1); from < ConsensusVersion; from++ {
 		if migrations[from] == nil {
@@ -247,13 +257,22 @@ func TestMigrationTable(t *testing.T) {
 	}
 	saved := migrations
 	defer func() { migrations = saved }()
-	migrations = map[uint64]module.MigrationHandler{1: func(sdk.Context) error { return nil }}
+	ran := 0
+	migrations = map[uint64]module.MigrationHandler{1: func(sdk.Context) error { ran++; return nil }}
 	e := newEnv(t)
 	r := newRouters(t, NewAppModule(e.k, nil))
 	// newRouters ran registerMigrations with the temporary table, so a
 	// second registration of version 1 is a duplicate.
 	if err := r.cfg.RegisterMigration(ModuleName, 1, func(sdk.Context) error { return nil }); err == nil {
 		t.Fatal("migration from 1 was not registered")
+	}
+	mm := module.NewManager(versionedModule{AppModule: NewAppModule(e.k, nil), version: 2})
+	vm, err := mm.RunMigrations(e.fresh(), r.cfg, module.VersionMap{ModuleName: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ran != 1 || vm[ModuleName] != 2 {
+		t.Fatalf("step ran %d times, version map %v", ran, vm)
 	}
 }
 

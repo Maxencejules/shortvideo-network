@@ -129,6 +129,51 @@ import . "time"
 
 var _ = Second
 `)
+	writeGo(t, dir, "floats.go", `package bad
+
+import (
+	"math"
+	"math/big"
+	conv "strconv"
+	"time"
+)
+
+func scale(n int) int { return int(0.75 * 4) * n }
+
+var exponent = 1e3
+
+var imaginary = 2i
+
+var root = math.Sqrt
+
+var huge = math.Inf
+
+var bits = math.Float64bits
+
+var limit = math.MaxUint64
+
+var bigFloat = big.NewFloat
+
+var parsed, _ = conv.ParseFloat("1", 64)
+
+var ticks = time.Tick
+
+var timer = time.NewTimer
+
+var later = time.After
+
+var callLater = time.AfterFunc
+
+var ticker = time.NewTicker
+
+var nap = time.Sleep
+`)
+	writeGo(t, dir, "dotmath.go", `package bad
+
+import . "math"
+
+var _ = MaxInt64
+`)
 	// Test files are not scanned.
 	writeGo(t, dir, "bad_test.go", `package bad
 
@@ -140,8 +185,8 @@ var _ = os.Getenv
 	if err != nil {
 		t.Fatal(err)
 	}
-	if scanned != 2 {
-		t.Fatalf("scanned %d files, want 2", scanned)
+	if scanned != 4 {
+		t.Fatalf("scanned %d files, want 4", scanned)
 	}
 	joined := strings.Join(findings, "\n")
 	for _, want := range []string{
@@ -156,6 +201,21 @@ var _ = os.Getenv
 		"uses float64",
 		"uses complex128",
 		`dot-imports "time"`,
+		`dot-imports "math"`,
+		"uses the literal 0.75",
+		"uses the literal 1e3",
+		"uses the literal 2i",
+		"uses floating-point math.Sqrt",
+		"uses floating-point math.Inf",
+		"uses floating-point math.Float64bits",
+		"uses math/big.NewFloat",
+		"uses strconv.ParseFloat",
+		"uses time.Tick",
+		"uses time.NewTimer",
+		"uses time.After",
+		"uses time.AfterFunc",
+		"uses time.NewTicker",
+		"uses time.Sleep",
 	} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("missing finding %q in:\n%s", want, joined)
@@ -164,6 +224,10 @@ var _ = os.Getenv
 	if strings.Contains(joined, "bad_test.go") {
 		t.Fatalf("test file scanned:\n%s", joined)
 	}
+	// Integer constants of package math are not floating-point.
+	if strings.Contains(joined, "math.MaxUint64") {
+		t.Fatalf("math.MaxUint64 flagged:\n%s", joined)
+	}
 }
 
 func TestScanDeterministicAcceptsCleanSource(t *testing.T) {
@@ -171,7 +235,9 @@ func TestScanDeterministicAcceptsCleanSource(t *testing.T) {
 	writeGo(t, dir, "clean.go", `package clean
 
 import (
+	"math"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -179,6 +245,12 @@ import (
 func at(seconds int64) time.Time { return time.Unix(seconds, 0).UTC() }
 
 func order(xs []string) { sort.Strings(xs) }
+
+func last(n uint64) bool { return n == math.MaxUint64 || int64(n) > math.MaxInt64-1 }
+
+func text(n uint64) string { return strconv.FormatUint(n, 10) }
+
+const hex = 0x1e3
 `)
 	findings, scanned, err := scanDeterministic(dir)
 	if err != nil {

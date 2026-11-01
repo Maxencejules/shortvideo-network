@@ -9,12 +9,17 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/codec/unknownproto"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -62,6 +67,7 @@ func MakeEncoding() (Encoding, error) {
 	cdc := codec.NewProtoCodec(registry)
 	txConfig, err := authtx.NewTxConfigWithOptions(cdc, authtx.ConfigOptions{
 		EnabledSignModes: []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT},
+		ProtoDecoder:     strictTxDecoder(cdc),
 	})
 	if err != nil {
 		return Encoding{}, err
@@ -89,6 +95,36 @@ func init() {
 	// MsgWithdrawContent carry an InnerSignature. Without this registration
 	// the tx decoder fails on them before any handler runs.
 	registerGogo("svn.types.v1.InnerSignature", &typesv1.InnerSignature{})
+}
+
+// strictTxDecoder is the SDK protobuf decoder plus one rule: the body bytes
+// hold no unknown field at all. The SDK decoder rejects every unknown field
+// in TxRaw and AuthInfo, but in the body it lets through unknown
+// "non-critical" fields (field numbers with bit 0x400 set, such as 1024 to
+// 2047), in the body itself and in every message and nested message it
+// carries. A handler never sees such a field, so the transaction would
+// commit with the extra bytes in the block. Protocol v0 has no silent
+// unknown-field compatibility, so the body is checked again in strict mode.
+// The failure is the SDK decode error (codespace sdk, code 2), the same
+// error an unknown critical field gets.
+func strictTxDecoder(cdc codec.Codec) sdk.TxDecoder {
+	decode := authtx.DefaultTxDecoder(cdc)
+	return func(txBytes []byte) (sdk.Tx, error) {
+		decoded, err := decode(txBytes)
+		if err != nil {
+			return nil, err
+		}
+		// The default decoder accepted txBytes as an ADR-027 TxRaw, so this
+		// second unmarshal cannot fail on a well-formed envelope.
+		var raw txtypes.TxRaw
+		if err := cdc.Unmarshal(txBytes, &raw); err != nil {
+			return nil, errorsmod.Wrap(sdkerrors.ErrTxDecode, err.Error())
+		}
+		if err := unknownproto.RejectUnknownFieldsStrict(raw.BodyBytes, &txtypes.TxBody{}, cdc.InterfaceRegistry()); err != nil {
+			return nil, errorsmod.Wrap(sdkerrors.ErrTxDecode, err.Error())
+		}
+		return decoded, nil
+	}
 }
 
 func registerGogo(name string, msg gogoproto.Message) {

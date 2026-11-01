@@ -26,13 +26,28 @@
 // data. The digest is SHA-256 over the UTF-8 SVN-JCS-1 canonical text, so
 // whitespace and key order of the input do not change it.
 //
-// The manifest is not signed here. SVN-CAPABILITY-1 is reserved for a
-// signed manifest; the chain binds the manifest only through the digest in a
-// transaction the provider account signed.
+// # Signature and digest
+//
+// The signed manifest is the manifest body plus a detached inner signature
+// (svn.types.v1.InnerSignature) by the provider's current signing key:
+//
+//	signed bytes = UTF-8("SVN-CAPABILITY-1") || 0x00 || UTF-8(SVN-JCS-1 body)
+//
+// with key_id equal to the manifest's signing_key_id. Sign and Verify
+// implement it. endpoint_manifest_digest is SHA-256 over the SVN-JCS-1 body
+// only. The signature is not inside the digested bytes: the body is the
+// same before and after signing, and a re-signature does not change the
+// digest. The chain never checks this signature; it stores the digest that
+// the provider account's transaction carried. A peer that fetched a
+// manifest checks both: Verify against the provider's current key from
+// Query/Provider, and the digest against endpoint_manifest_digest. The wire
+// envelope that GET /capability returns (body and signature together) is
+// not defined by protocol v0; decision request DR-07-09.
 package capability
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -94,6 +109,46 @@ func (r Result) Digest() *typesv1.Digest {
 		Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256,
 		Value:     append([]byte(nil), r.SHA256[:]...),
 	}
+}
+
+// SignatureDomain is the inner signature domain of the capability
+// manifest, SVN-CAPABILITY-1.
+const SignatureDomain = typesv1.SignatureDomain_SIGNATURE_DOMAIN_CAPABILITY
+
+// SignBytes is the preimage of the manifest signature:
+// "SVN-CAPABILITY-1" || 0x00 || the SVN-JCS-1 body.
+func (r Result) SignBytes() []byte {
+	return msgkit.SignBytes(SignatureDomain, r.Canonical)
+}
+
+// Sign signs a validated manifest with the provider's signing key. The key
+// id in the signature is the manifest's signing_key_id. A key that is not
+// an ed25519 private key is an error.
+func Sign(r Result, key ed25519.PrivateKey) (*typesv1.InnerSignature, error) {
+	if len(key) != ed25519.PrivateKeySize {
+		return nil, invalid("signing key is %d bytes, want %d", len(key), ed25519.PrivateKeySize)
+	}
+	if r.Canonical == "" || !msgkit.ValidID(r.Manifest.SigningKeyID) {
+		return nil, invalid("manifest is not a parsed result")
+	}
+	return &typesv1.InnerSignature{
+		Domain:                  SignatureDomain,
+		PublicKey:               append([]byte(nil), key.Public().(ed25519.PublicKey)...),
+		Signature:               ed25519.Sign(key, r.SignBytes()),
+		KeyId:                   r.Manifest.SigningKeyID,
+		CanonicalProfileVersion: msgkit.CanonicalProfileVersion,
+	}, nil
+}
+
+// Verify checks a manifest signature against the provider's current key
+// (pub, as Query/Provider returns it in signing_pubkey). The order is
+// msgkit.VerifyInner: structure (MALFORMED, OUT_OF_RANGE, BOUNDS), a
+// domain other than SVN-CAPABILITY-1 (WRONG_DOMAIN), then a key id other
+// than the manifest's signing_key_id, a public key other than pub, or a bad
+// ed25519 signature (UNAUTHORIZED). OK means the key pub signed exactly
+// this body.
+func Verify(r Result, sig *typesv1.InnerSignature, pub []byte) msgkit.Code {
+	return msgkit.VerifyInner(sig, SignatureDomain, r.Manifest.SigningKeyID, pub, r.Canonical)
 }
 
 func invalid(format string, args ...any) error {

@@ -13,7 +13,10 @@ import (
 // Handoff API for the lease module (goal 08). These reads never write.
 // Reserve and release accounting is goal 08; it extends this package.
 
-// Provider returns a copy of one provider record.
+// Provider returns a copy of one provider record without its retired keys
+// (previous_signing_keys is empty). The read is a constant amount of work,
+// however many times the provider rotated, so a consensus path can call it.
+// Query/Provider returns the retired keys.
 func (k Keeper) Provider(ctx sdk.Context, providerID string) (*providersv1.Provider, bool) {
 	record, found := k.mustLoad(ctx, providerID)
 	if !found {
@@ -43,11 +46,14 @@ func (k Keeper) CheckNewObligation(ctx sdk.Context, providerID string) (*provide
 }
 
 // VerifyProviderSignature checks an inner provider signature in domain over
-// canonical (SVN-JCS-1 text) against the provider's current key only. A
-// retired key never verifies ("the old key is retained and cannot sign new
-// accepts"). Order: no record NOT_FOUND, then msgkit.VerifyInner (structure
-// MALFORMED / WRONG_DOMAIN / OUT_OF_RANGE / BOUNDS, then key id, public key,
-// and ed25519 UNAUTHORIZED).
+// canonical (SVN-JCS-1 text) against the provider's current key only. Only
+// the current key verifies; a key the provider retired does not while it
+// stays retired ("the old key is retained and cannot sign new accepts").
+// The v0 spec lets a provider rotate back to a retired key (rotation
+// compares the new key with the current key only); that key is then the
+// current key and verifies again. Order: no record NOT_FOUND, then
+// msgkit.VerifyInner (structure MALFORMED / WRONG_DOMAIN / OUT_OF_RANGE /
+// BOUNDS, then key id, public key, and ed25519 UNAUTHORIZED).
 func (k Keeper) VerifyProviderSignature(ctx sdk.Context, providerID string, domain typesv1.SignatureDomain, canonical string, sig *typesv1.InnerSignature) msgkit.Code {
 	record, found := k.mustLoad(ctx, providerID)
 	if !found {
