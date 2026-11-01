@@ -56,7 +56,8 @@ The devnet uses four disposable seats and three approvals. That is DEC-008. The 
 | Fuzz and deterministic replay | VERIFIED | `FuzzParsePayload` seed, 200 bounded random inputs, and two apps with the same txs share `LastCommitID` in `TestCommittedAuthorityFlowAndReplay`. |
 | `go test -race ./chain/...` | VERIFIED | [go-test-race.txt](logs/goal-06/go-test-race.txt). Exit 0. app 9.085s, devnet 109.355s, authority 1.109s. |
 | Python scanner, ruff, mypy, SBOM, workflow policy | VERIFIED | [python-checks.txt](logs/goal-06/python-checks.txt). Exit 0. |
-| Container script on this VM | BLOCKED | `docker` is not installed here. The script syntax check passed. CI runs `scripts/devnet/prove-containers.sh` on the host network. The bridge stays BLOCKED. |
+| Container script on this VM | BLOCKED | `docker` is not installed here. The script syntax check passed. The bridge stays BLOCKED. |
+| CI on `54503ac` | VERIFIED | Actions run [41257591421](https://github.com/Maxencejules/shortvideo-network/actions/runs/41257591421) succeeded: go, contract, python, devnet, node. The devnet job ran `scripts/devnet/prove-containers.sh`. |
 
 ## Commands
 
@@ -92,7 +93,7 @@ CometBFT v0.40 and cosmos-sdk v0.55.0 are Apache-2.0 as recorded by their module
 ## Residual risks
 
 - One workstation is one operator. Four processes are not four independent operators.
-- The container script's new waits are the same rule as the process test. This VM did not run the containers.
+- This VM did not run the containers. Actions run 41257591421 did, on the host network.
 - Force-withdraw does not write a content tombstone until Goal 07.
 - This is not an audit and not a production deployment.
 
