@@ -24,11 +24,20 @@ On the four-validator devnet a direct removal is `ERROR_CODE_FORBIDDEN`: three v
 
 The replacement needs a free scheduling slot. At most 128 validator changes can be scheduled, and no message cancels one. If 128 are already scheduled, the execute is `ERROR_CODE_BOUNDS` and the replacement waits until some of them apply (PROPOSED cap, DR-06-04).
 
-Losing more than one third of the voting power for good stops the chain. There is no on-chain path back: `QuorumLossBehavior` is `UNSET` (DEC-008), and governance cannot execute while no block commits. Recovery then needs a new genesis or a social recovery, which is out of scope for this beta.
+Losing one third or more of the voting power for good stops the chain: what remains is not more than two thirds. There is no on-chain path back: `QuorumLossBehavior` is `UNSET` (DEC-008), and governance cannot execute while no block commits. Recovery then needs a new genesis or a social recovery, which is out of scope for this beta.
 
 ## Loss of quorum
 
-Quorum is voting power, not the number of processes. More than two thirds of the current power must be online for the network to produce a block. One of four equal powers can be down. More than one third offline means the environment produces no block. The application hash does not record who is down.
+Quorum is voting power, not the number of processes. More than two thirds of the current power must be online for the network to produce a block. One of four equal powers can be down. One third or more of the power offline, so that the online power is not more than two thirds, means the environment produces no block. The application hash does not record who is down.
+
+`TestDevnetQuorumFollowsVotingPower` (`chain/devnet/power_quorum_test.go`) observes this on a single-machine, multi-process devnet: four validator processes on loopback, not independent operators. `devnet.Options.Power` gives the four genesis validators power 10; `svnd devnet init` does not expose that option. Two council proposals add v5 with power 1 and no process, and lower v3 to power 2. The CometBFT set is then v1:10, v2:10, v3:2, v4:10, v5:1, total 33, and CometBFT needs 23 for a block (total*2/3+1). Two cases leave the same count online, three of five validators:
+
+| Case | Offline | Online power | Count rule | Power rule | Observed |
+| --- | --- | --- | --- | --- | --- |
+| X | v3 (2), v5 (1) | 30 of 33: v1, v2, v4 signed the commits | stall | progress | blocks commit; from the second block after the stop, their commits are signed by v1, v2 and v4 and not by v3 or v5 |
+| Y | v1 (10), v5 (1) | 22 of 33, exactly two thirds: v2, v3, v4 voted at the stuck height | stall | stall | no block for a 30-second window and six more one-second samples; every running node holds votes from v2, v3 and v4 at the height that does not commit, and none from v5; the test allows one block already in flight at the stop, and its commit must carry v1's signature |
+
+The test reads the powers from the validator set over CometBFT RPC. It observes the online validators instead of taking them from the processes it runs. In X they are the signers of the commits after the stop. In Y they are the validators whose prevote or precommit the running nodes hold at the height that does not commit, read from CometBFT's `/dump_consensus_state`, which CometBFT marks unstable. In both cases they must be exactly the validators whose process runs. The outcome comes from committed blocks. Each case ends with the stopped process restarted, every node committing again, and every validator process signing at least one commit after that. The `model_quorum` lines of `TestDevnetValidatorLifecycle` are a model applied to an RPC set, not an observation.
 
 `QuorumLossBehavior` stays `UNSET`. There is no on-chain election, freeze, or root key that recovers a stalled chain. Recovery is bringing enough voting power back online, then waiting for two blocks after those processes are up. Do not delete a genesis to recover. Governance cannot execute while the chain is not committing blocks.
 

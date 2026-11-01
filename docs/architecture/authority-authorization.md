@@ -36,6 +36,8 @@ The approved shape is four seats and three approvals (DEC-008). The spec machine
 
 EndBlock of the activation block applies the due changes and returns a changeset. CometBFT v0.40 `state/execution.go` `updateState` applies that changeset to the next validator set and records `LastHeightValidatorsChanged = height + 2`. The comment in that function is "only applies to the next next height." The signing set at the activation height is still the old set. The new set signs the block two heights later.
 
+`TestDevnetQuorumFollowsVotingPower` schedules two changes for one activation height on a single-machine, multi-process devnet whose genesis powers are 10: add v5 at power 1, then lower v3 to power 2. Each execute is projected with the entries pending at that time: 10, 10, 10, 10, 1 (total 41), then the group 10, 10, 2, 10, 1 (total 33). Both keep `max_power * 3 < total_power`. The CometBFT set read over RPC is four validators of power 10 at the effective height minus one, and v1:10, v2:10, v3:2, v4:10, v5:1 at the effective height. The test then observes that block production follows voting power, not the count of validators online; `docs/operations/validator-lifecycle.md` has the cases.
+
 Genesis pending entries follow the same rules. InitChain projects them on the genesis set and requires each to activate at or after the first block. A genesis that fails is refused before any module state is written.
 
 ## Store layout

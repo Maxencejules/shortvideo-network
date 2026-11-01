@@ -45,6 +45,25 @@ type Options struct {
 	ChainID     string
 	GenesisTime time.Time
 	Peers       PeerMode
+	// Power is the voting power of every genesis validator. Zero means 1,
+	// the default. All four validators get the same power because genesis
+	// requires equal powers. The total, Validators*Power, must not exceed
+	// genesis.SafeIntegerMax.
+	Power int64
+}
+
+// validatorPower returns the power Init gives every genesis validator.
+func validatorPower(requested int64) (int64, error) {
+	if requested == 0 {
+		return 1, nil
+	}
+	if requested < 0 {
+		return 0, fmt.Errorf("validator power %d is not positive", requested)
+	}
+	if requested > genesis.SafeIntegerMax/Validators {
+		return 0, fmt.Errorf("validator power %d: the total of %d validators exceeds safe_integer_max", requested, Validators)
+	}
+	return requested, nil
 }
 
 // Node is the public description of one validator. It has no private key.
@@ -91,6 +110,9 @@ type Layout struct {
 func Init(opts Options) (layout Layout, err error) {
 	if opts.Home == "" {
 		return Layout{}, fmt.Errorf("home is required")
+	}
+	if opts.Power, err = validatorPower(opts.Power); err != nil {
+		return Layout{}, err
 	}
 	if opts.Peers == "" {
 		opts.Peers = PeerLoopback
@@ -154,28 +176,8 @@ func Init(opts Options) (layout Layout, err error) {
 		}
 	}
 
-	doc := document(opts, nodes, authorityKey, serviceKey, seats)
-	enc, err := app.MakeEncoding()
+	genDoc, doc, err := genesisDoc(opts, nodes, authorityKey, serviceKey, seats)
 	if err != nil {
-		return Layout{}, err
-	}
-	modules, err := app.AppStateFromDocument(enc.Codec, doc)
-	if err != nil {
-		return Layout{}, err
-	}
-	appState, err := json.Marshal(modules)
-	if err != nil {
-		return Layout{}, err
-	}
-	genDoc := &cmttypes.GenesisDoc{
-		GenesisTime:     doc.Time(),
-		ChainID:         doc.ChainID,
-		InitialHeight:   1,
-		ConsensusParams: consensusParams(),
-		Validators:      cometValidators(nodes),
-		AppState:        appState,
-	}
-	if err = genDoc.ValidateAndComplete(); err != nil {
 		return Layout{}, err
 	}
 	genesisPath := filepath.Join(opts.Home, "genesis.json")
@@ -202,7 +204,7 @@ func Init(opts Options) (layout Layout, err error) {
 		if err = writeNodeConfig(nodes[i], peersExcept(nodes, i, opts.Peers)); err != nil {
 			return Layout{}, err
 		}
-		public[i] = nodes[i].public(opts.Peers)
+		public[i] = nodes[i].public(opts.Peers, opts.Power)
 	}
 	topology := Topology{
 		ChainID:            doc.ChainID,
@@ -224,6 +226,37 @@ func Init(opts Options) (layout Layout, err error) {
 	return Layout{Home: opts.Home, Topology: topology, Genesis: genesisPath}, nil
 }
 
+// genesisDoc builds the validated CometBFT genesis for the prepared nodes
+// and keys. It writes nothing. opts.Power must already be the value
+// validatorPower returned.
+func genesisDoc(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.PrivKey, seats []councilKey) (*cmttypes.GenesisDoc, genesis.Document, error) {
+	doc := document(opts, nodes, authorityKey, serviceKey, seats)
+	enc, err := app.MakeEncoding()
+	if err != nil {
+		return nil, genesis.Document{}, err
+	}
+	modules, err := app.AppStateFromDocument(enc.Codec, doc)
+	if err != nil {
+		return nil, genesis.Document{}, err
+	}
+	appState, err := json.Marshal(modules)
+	if err != nil {
+		return nil, genesis.Document{}, err
+	}
+	genDoc := &cmttypes.GenesisDoc{
+		GenesisTime:     doc.Time(),
+		ChainID:         doc.ChainID,
+		InitialHeight:   1,
+		ConsensusParams: consensusParams(),
+		Validators:      cometValidators(nodes, opts.Power),
+		AppState:        appState,
+	}
+	if err := genDoc.ValidateAndComplete(); err != nil {
+		return nil, genesis.Document{}, err
+	}
+	return genDoc, doc, nil
+}
+
 type prepared struct {
 	name    string
 	home    string
@@ -235,7 +268,7 @@ type prepared struct {
 	pub     []byte
 }
 
-func (p prepared) public(mode PeerMode) Node {
+func (p prepared) public(mode PeerMode, power int64) Node {
 	return Node{
 		Name:               p.name,
 		Home:               p.home,
@@ -244,7 +277,7 @@ func (p prepared) public(mode PeerMode) Node {
 		P2P:                dialAddress(p, mode),
 		RPC:                rpcURL(p),
 		GRPC:               p.grpc,
-		Power:              1,
+		Power:              power,
 		ConsensusPubkeyHex: hex.EncodeToString(p.pub),
 	}
 }
@@ -393,7 +426,7 @@ func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.
 	for i, nodeHome := range nodes {
 		validators[i] = genesis.Validator{
 			NodeID:             nodeHome.name,
-			Power:              1,
+			Power:              opts.Power,
 			ConsensusPubkeyHex: hex.EncodeToString(nodeHome.pub),
 		}
 	}
@@ -434,14 +467,14 @@ func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.
 	}
 }
 
-func cometValidators(nodes []prepared) []cmttypes.GenesisValidator {
+func cometValidators(nodes []prepared, power int64) []cmttypes.GenesisValidator {
 	out := make([]cmttypes.GenesisValidator, len(nodes))
 	for i, nodeHome := range nodes {
 		pub := cmted25519.PubKey(nodeHome.pub)
 		out[i] = cmttypes.GenesisValidator{
 			Address: pub.Address(),
 			PubKey:  pub,
-			Power:   1,
+			Power:   power,
 			Name:    nodeHome.name,
 		}
 	}

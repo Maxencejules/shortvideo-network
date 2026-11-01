@@ -464,8 +464,9 @@ func hasPower(rows []voted, pub []byte, power int64) bool {
 // TestQuorumModelVectors runs without processes. It checks this test's
 // quorum model (onlinePowerQuorum) on fixed vectors, including sets where
 // the model's answer differs from a count of validators online. It shows
-// nothing about CometBFT or the chain; the devnet stall and recovery in
-// TestDevnetValidatorLifecycle are the observed evidence.
+// nothing about CometBFT or the chain. The observed evidence is the devnet
+// stall and recovery in TestDevnetValidatorLifecycle and the power-versus-
+// count cases in TestDevnetQuorumFollowsVotingPower.
 func TestQuorumModelVectors(t *testing.T) {
 	key := func(n byte) []byte { return bytes.Repeat([]byte{n}, 32) }
 	set := func(powers ...int64) []voted {
