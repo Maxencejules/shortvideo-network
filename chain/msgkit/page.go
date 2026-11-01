@@ -9,25 +9,26 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-// CheckPage validates a page request against max, the effective page limit
-// (normally Effective(LimitMaxPageLimit, ...)). A max of 0 or above the
-// protocol safety cap is replaced by the cap, the same rule Effective uses.
+// CheckPage validates a page request against maxLimit, the effective page
+// limit (normally Effective(LimitMaxPageLimit, ...)). A maxLimit of 0 or
+// above the protocol safety cap is replaced by the cap, the same rule
+// Effective uses.
 //
-//   - nil page or limit 0: the page size is max
-//   - limit above max: BOUNDS
+//   - nil page or limit 0: the page size is maxLimit
+//   - limit above maxLimit: BOUNDS
 //   - page_key above 64 bytes: BOUNDS
 //   - a non-empty page_key outside the id pattern: BOUNDS
 //
 // The returned key is a copy; empty means the first page.
-func CheckPage(p *typesv1.PageRequest, max uint32) (limit uint32, key []byte, c Code) {
-	if max == 0 || max > genesis.MaxPageLimit {
-		max = genesis.MaxPageLimit
+func CheckPage(p *typesv1.PageRequest, maxLimit uint32) (limit uint32, key []byte, c Code) {
+	if maxLimit == 0 || maxLimit > genesis.MaxPageLimit {
+		maxLimit = genesis.MaxPageLimit
 	}
 	limit = p.GetLimit()
 	if limit == 0 {
-		limit = max
+		limit = maxLimit
 	}
-	if limit > max {
+	if limit > maxLimit {
 		return 0, nil, Bounds
 	}
 	raw := p.GetPageKey()
