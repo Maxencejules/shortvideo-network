@@ -1,0 +1,19 @@
+COMMAND python CI checks after ruff format
+DATE 2026-11-01T00:34:51+00:00
+HEAD f38c6ef31ff98e082a9fddd9531c29b29d954792
+TREE 4279ae1a61184bd306fd7e361d70b5cb2c6e9c86
+NOTE working tree has ruff format edits not in HEAD. Go sources are unchanged from TREE.
+33 files already formatted
+RUFF_FORMAT:0
+[1;32mAll checks passed![0m
+RUFF_CHECK:0
+secret scan ok
+SCAN:0
+Success: no issues found in 24 source files
+MYPY:0
+sbom ok components 1320
+SBOM:0
+workflow policy ok files 1
+WORKFLOW:0
+.......................................................                  [100%]
+PYTEST:0

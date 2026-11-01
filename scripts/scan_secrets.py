@@ -69,9 +69,7 @@ _QUOTED = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
 # `${name}` and `${name:?msg}` / `${name?msg}` are references. `:-`, `-`,
 # `:=`, and `=` carry a default that is scanned separately.
 _DOLLAR = re.compile(r"\$(?:\{[A-Za-z_][\w]*(?::\?[^}]*|\?[^}]*)?\}|[A-Za-z_][\w]*|[0-9]+)")
-_DOLLAR_DEFAULT = re.compile(
-    r"\$\{(?P<name>[A-Za-z_][\w]*)(?::[-=]|[-=])(?P<default>.*)\}"
-)
+_DOLLAR_DEFAULT = re.compile(r"\$\{(?P<name>[A-Za-z_][\w]*)(?::[-=]|[-=])(?P<default>.*)\}")
 _BYTE_LIST = re.compile(r"bytes\s*\(\s*\[(?:\s*\d+\s*,){3,}\s*\d+")
 _HEX_CALL = re.compile(
     r"(?i)(?:fromhex|unhexlify|DecodeString|hexToBytes|Buffer\.from|HexToECDSA)"
@@ -263,7 +261,11 @@ def _is_shellish(name: str) -> bool:
     """Shell, direnv, and Dockerfile. Mixed-case tokens there can be literals."""
     path = Path(name)
     base = path.name.lower()
-    return path.suffix.lower() in {".sh", ".bash", ".envrc"} or base in {".envrc"} or _is_docker_file(name)
+    return (
+        path.suffix.lower() in {".sh", ".bash", ".envrc"}
+        or base in {".envrc"}
+        or _is_docker_file(name)
+    )
 
 
 def _shell_literal(token: str) -> bool:

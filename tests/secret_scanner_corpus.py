@@ -865,20 +865,20 @@ def cases() -> list[Case]:
     add(
         "r13-go-bip44",
         "examples/r13b.go",
-        "priv" + 'Key := hd.Derive("m/44\'/118\'/0\'/0/0")\n',
+        "priv" + "Key := hd.Derive(\"m/44'/118'/0'/0/0\")\n",
         False,
         True,
     )
     add(
         "r13-go-bip44-quoted",
         "examples/r13c.go",
-        "private_" + 'key := "m/44\'/118\'/0\'/0/0"\n',
+        "private_" + "key := \"m/44'/118'/0'/0/0\"\n",
         False,
     )
     add(
         "r13-yaml-json-brace",
         "examples/r13b.yaml",
-        "private_" + "key:\n{\n  \"a\": 1\n}\n",
+        "private_" + 'key:\n{\n  "a": 1\n}\n',
         False,
         True,
     )
