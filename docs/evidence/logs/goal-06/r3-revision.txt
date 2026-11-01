@@ -1,0 +1,155 @@
+COMMAND bash -c set\ -e\;\ echo\ \"head\ \$\(git\ rev-parse\ HEAD\)\ tree\ \$\(git\ rev-parse\ HEAD\^\{tree\}\)\"\;\ echo\ \"branch\ \$\(git\ rev-parse\ --abbrev-ref\ HEAD\)\"\;\ for\ c\ in\ 2389948\ fb4cde2\ 3853e34\ f3f583e\;\ do\ echo\ \"commit\ \$\(git\ rev-parse\ \$c\)\ tree\ \$\(git\ rev-parse\ \$c\^\{tree\}\)\"\;\ done\;\ echo\ \"##\ git\ log\ f3f583e..HEAD\"\;\ git\ log\ --format=\"%h\ %s\"\ f3f583e19355a181ef64de874e5cf26679e6ec30..HEAD\;\ echo\ \"##\ git\ diff\ --stat\ 3853e34\ HEAD\"\;\ git\ diff\ --stat\ 3853e3430217096c3e65664bc799859942ea451e\ HEAD\;\ echo\ \"##\ git\ diff\ --stat\ f3f583e..HEAD\"\;\ git\ diff\ --stat\ f3f583e19355a181ef64de874e5cf26679e6ec30..HEAD\;\ echo\ \"##\ protocol\,\ proto\ and\ goal\ files\ changed\ since\ base\ \(empty\ means\ none\)\"\;\ git\ diff\ --stat\ f3f583e19355a181ef64de874e5cf26679e6ec30..HEAD\ --\ \"\*.proto\"\ docs/protocol\ docs/protocol.md\ docs/goals\;\ echo\ \"##\ end\"
+DATE 2026-11-01T21:32:41Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+head fb4cde2087269fb9a93900b9a4d11fd24779ced2 tree 7d07a6d632acaa54da9f71d4f16a63d73052df38
+branch goal-06
+commit 2389948eb6c1371a8a0b7f42573cf12699b6cfe5 tree 5503c027c7d4b2bb91e64aa3a5170d04ba7844c6
+commit fb4cde2087269fb9a93900b9a4d11fd24779ced2 tree 7d07a6d632acaa54da9f71d4f16a63d73052df38
+commit 3853e3430217096c3e65664bc799859942ea451e tree 901b86146c870a6199ceba65f67afb715f8901f9
+commit f3f583e19355a181ef64de874e5cf26679e6ec30 tree b890ac395bb7a660e089085f06fa8d955a9447a4
+## git log f3f583e..HEAD
+fb4cde2 goal 06: devnet test that quorum follows voting power, not node count
+2389948 goal 06: round 3 fixes for the PR 9 review
+3853e34 goal 06: round 2 evidence on tree eacc6b47
+4c87282 goal 06: full-state rejects, transition fuzz, and effective-1 sets
+a6a5273 goal 06: record CI run 41257591421
+54503ac goal 06: record authority evidence
+f38c6ef goal 06: authority and validator lifecycle
+## git diff --stat 3853e34 HEAD
+ chain/README.md                              |    4 +-
+ chain/app/app.go                             |   69 +-
+ chain/app/authority_export_test.go           |  285 ++++++
+ chain/app/authority_flow_test.go             |  573 ++++++++----
+ chain/app/authority_hooks_test.go            |  123 +++
+ chain/app/authority_limits_test.go           |  179 ++++
+ chain/app/authority_outcomes_test.go         |  311 +++++++
+ chain/app/decode_test.go                     |  187 ++++
+ chain/app/doc.go                             |    5 +-
+ chain/app/encoding.go                        |   10 +
+ chain/app/power_test.go                      |   65 +-
+ chain/app/scaffold_test.go                   |    2 +-
+ chain/app/services.go                        |   37 +-
+ chain/app/state.go                           |   21 +
+ chain/app/tx_test.go                         |   24 +
+ chain/cmd/svnd/main.go                       |   17 +-
+ chain/cmd/svnd/main_test.go                  |  139 +++
+ chain/devnet/init.go                         |   87 +-
+ chain/devnet/lifecycle_test.go               |  179 +++-
+ chain/devnet/power_quorum_test.go            |  609 +++++++++++++
+ chain/devnet/power_test.go                   |  181 ++++
+ chain/genesis/bounds.go                      |   12 +-
+ chain/genesis/bounds_test.go                 |  113 +++
+ chain/genesis/doc.go                         |    4 +
+ chain/genesis/document.go                    |   16 +-
+ chain/genesis/document_test.go               |  301 +++++++
+ chain/go.mod                                 |    3 +-
+ chain/x/authority/README.md                  |   67 +-
+ chain/x/authority/clone.go                   |  107 ---
+ chain/x/authority/codes.go                   |   31 +-
+ chain/x/authority/engine.go                  | 1216 ++++++++++++++------------
+ chain/x/authority/engine_test.go             | 1049 ++++++++++++++--------
+ chain/x/authority/fuzz_payload_test.go       |  117 +++
+ chain/x/authority/fuzz_reach_test.go         |  318 +++++++
+ chain/x/authority/fuzz_state_test.go         |  832 ++++++++++++++++++
+ chain/x/authority/fuzz_test.go               |  101 ---
+ chain/x/authority/gas_test.go                |  230 +++++
+ chain/x/authority/gates_test.go              |  408 +++++++++
+ chain/x/authority/genesis.go                 |  195 +++++
+ chain/x/authority/genesis_test.go            |  259 ++++++
+ chain/x/authority/helpers_test.go            |  357 ++++++++
+ chain/x/authority/keeper.go                  |  112 +--
+ chain/x/authority/keeper_test.go             |  434 +++++++++
+ chain/x/authority/module.go                  |    9 +
+ chain/x/authority/msg.go                     |  132 +--
+ chain/x/authority/order_test.go              |   96 ++
+ chain/x/authority/payload.go                 |   88 +-
+ chain/x/authority/payload_test.go            |   65 ++
+ chain/x/authority/store.go                   |  624 +++++++++----
+ docs/architecture/authority-authorization.md |   67 +-
+ docs/evidence/goal-05.md                     |    2 +-
+ docs/operations/validator-lifecycle.md       |   29 +-
+ scripts/evidence/capture.sh                  |   45 +
+ 53 files changed, 8756 insertions(+), 1790 deletions(-)
+## git diff --stat f3f583e..HEAD
+ chain/README.md                                 |    4 +-
+ chain/app/app.go                                |   59 +-
+ chain/app/authority_export_test.go              |  285 ++++
+ chain/app/authority_flow_test.go                |  643 ++++++++
+ chain/app/authority_hooks_test.go               |  123 ++
+ chain/app/authority_limits_test.go              |  179 ++
+ chain/app/authority_outcomes_test.go            |  311 ++++
+ chain/app/decode_test.go                        |  187 +++
+ chain/app/doc.go                                |    5 +-
+ chain/app/encoding.go                           |   29 +
+ chain/app/power_test.go                         |   65 +-
+ chain/app/scaffold_test.go                      |    2 +-
+ chain/app/services.go                           |   65 +-
+ chain/app/state.go                              |   45 +-
+ chain/app/tx_test.go                            |   24 +
+ chain/cmd/svnd/main.go                          |   17 +-
+ chain/cmd/svnd/main_test.go                     |  139 ++
+ chain/devnet/init.go                            |  154 +-
+ chain/devnet/lifecycle_test.go                  |  569 +++++++
+ chain/devnet/power_quorum_test.go               |  609 +++++++
+ chain/devnet/power_test.go                      |  181 ++
+ chain/devnet/prove_test.go                      |   33 +-
+ chain/genesis/bounds.go                         |   12 +-
+ chain/genesis/bounds_test.go                    |  113 ++
+ chain/genesis/doc.go                            |    4 +
+ chain/genesis/document.go                       |   69 +-
+ chain/genesis/document_test.go                  |  301 ++++
+ chain/go.mod                                    |    3 +-
+ chain/jcs/jcs.go                                |  412 +++++
+ chain/svnerr/errors.go                          |    9 +
+ chain/x/authority/README.md                     |   67 +-
+ chain/x/authority/clone.go                      |   15 +
+ chain/x/authority/codes.go                      |  127 ++
+ chain/x/authority/engine.go                     |  990 +++++++++++
+ chain/x/authority/engine_test.go                |  853 ++++++++++
+ chain/x/authority/fuzz_payload_test.go          |  117 ++
+ chain/x/authority/fuzz_reach_test.go            |  318 ++++
+ chain/x/authority/fuzz_state_test.go            |  832 ++++++++++
+ chain/x/authority/gas_test.go                   |  230 +++
+ chain/x/authority/gates_test.go                 |  408 +++++
+ chain/x/authority/genesis.go                    |  195 +++
+ chain/x/authority/genesis_test.go               |  259 +++
+ chain/x/authority/helpers_test.go               |  357 ++++
+ chain/x/authority/keeper.go                     |   72 +-
+ chain/x/authority/keeper_test.go                |  434 +++++
+ chain/x/authority/module.go                     |   20 +-
+ chain/x/authority/msg.go                        |  143 ++
+ chain/x/authority/order_test.go                 |   96 ++
+ chain/x/authority/payload.go                    |  297 ++++
+ chain/x/authority/payload_test.go               |   65 +
+ chain/x/authority/store.go                      |  517 ++++++
+ chain/x/authority/updates.go                    |   79 +-
+ docs/architecture/README.md                     |    2 +
+ docs/architecture/authority-authorization.md    |   96 ++
+ docs/evidence/goal-05.md                        |    6 +-
+ docs/evidence/goal-06.md                        |   98 ++
+ docs/evidence/logs/goal-06/devnet-lifecycle.txt |   77 +
+ docs/evidence/logs/goal-06/devnet-r2.txt        |   81 +
+ docs/evidence/logs/goal-06/fuzz-state-r2.txt    |   17 +
+ docs/evidence/logs/goal-06/go-test-race-r2.txt  |   16 +
+ docs/evidence/logs/goal-06/go-test-race.txt     |   17 +
+ docs/evidence/logs/goal-06/python-checks.txt    |   19 +
+ docs/evidence/logs/goal-06/python-r2.txt        |   18 +
+ docs/evidence/logs/goal-06/unit-r2.txt          | 2020 +++++++++++++++++++++++
+ docs/operations/README.md                       |    2 +
+ docs/operations/validator-lifecycle.md          |   50 +
+ docs/progress.md                                |    2 +-
+ docs/progress.tsv                               |    1 +
+ go.work.sum                                     |  715 ++++++++
+ scripts/devnet/prove-containers.sh              |   86 +-
+ scripts/devnet/prove-genesis.sh                 |    1 +
+ scripts/devnet/prove-process.sh                 |    1 +
+ scripts/evidence/capture.sh                     |   45 +
+ scripts/scan_secrets.py                         |  117 +-
+ tests/secret_scanner_corpus.py                  |  120 ++
+ tests/unit/test_secret_corpus.py                |   19 +-
+ 76 files changed, 14567 insertions(+), 201 deletions(-)
+## protocol, proto and goal files changed since base (empty means none)
+## end
+EXIT:0

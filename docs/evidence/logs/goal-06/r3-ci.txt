@@ -1,0 +1,19 @@
+COMMAND bash -c set\ -e\;\ R=repos/Maxencejules/shortvideo-network\;\ gh\ api\ \$R/pulls/9\ --jq\ \"\\\"pr\ \\\(.number\)\ state\ \\\(.state\)\ merged\ \\\(.merged\)\ head\ \\\(.head.ref\)\ \\\(.head.sha\)\ base\ \\\(.base.ref\)\\\"\"\;\ for\ id\ in\ 41339495119\ 41346972144\;\ do\ gh\ api\ \$R/actions/runs/\$id\ --jq\ \"\\\"run\ \\\(.id\)\ head\ \\\(.head_sha\)\ event\ \\\(.event\)\ status\ \\\(.status\)\ conclusion\ \\\(.conclusion\)\ \\\(.html_url\)\\\"\"\;\ gh\ api\ \$R/actions/runs/\$id/jobs\ --jq\ \".jobs\[\]\ \|\ \\\"\ \ job\ \\\(.name\)\ \\\(.status\)\ \\\(.conclusion\)\ \\\(.started_at\)\ \\\(.completed_at\)\\\"\"\;\ done
+DATE 2026-11-01T21:33:12Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+pr 9 state open merged false head goal-06 fb4cde2087269fb9a93900b9a4d11fd24779ced2 base main
+run 41339495119 head 2389948eb6c1371a8a0b7f42573cf12699b6cfe5 event pull_request status completed conclusion success https://github.com/Maxencejules/shortvideo-network/actions/runs/41339495119
+  job node completed success 2026-11-01T19:00:32Z 2026-11-01T19:00:39Z
+  job contract completed success 2026-11-01T19:00:33Z 2026-11-01T19:01:08Z
+  job python completed success 2026-11-01T19:00:33Z 2026-11-01T19:01:30Z
+  job go completed success 2026-11-01T19:00:32Z 2026-11-01T19:09:39Z
+  job devnet completed success 2026-11-01T19:00:32Z 2026-11-01T19:03:11Z
+run 41346972144 head fb4cde2087269fb9a93900b9a4d11fd24779ced2 event pull_request status completed conclusion success https://github.com/Maxencejules/shortvideo-network/actions/runs/41346972144
+  job python completed success 2026-11-01T20:27:55Z 2026-11-01T20:28:57Z
+  job contract completed success 2026-11-01T20:27:54Z 2026-11-01T20:28:39Z
+  job node completed success 2026-11-01T20:27:54Z 2026-11-01T20:28:02Z
+  job go completed success 2026-11-01T20:27:54Z 2026-11-01T20:39:39Z
+  job devnet completed success 2026-11-01T20:27:54Z 2026-11-01T20:30:00Z
+EXIT:0

@@ -1,0 +1,31 @@
+COMMAND go test -run \^\$ -fuzz \^FuzzParsePayload\$ -fuzztime 60s ./chain/x/authority/
+DATE 2026-11-01T20:37:14Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+fuzz: elapsed: 1s, gathering baseline coverage: 0/152 completed
+fuzz: elapsed: 4s, gathering baseline coverage: 90/152 completed
+fuzz: elapsed: 6s, gathering baseline coverage: 152/152 completed, now fuzzing with 4 workers
+fuzz: elapsed: 7s, execs: 4252 (1387/sec), new interesting: 1 (total: 153)
+fuzz: elapsed: 10s, execs: 10788 (2179/sec), new interesting: 2 (total: 154)
+fuzz: elapsed: 13s, execs: 14511 (1241/sec), new interesting: 2 (total: 154)
+fuzz: elapsed: 16s, execs: 17859 (1116/sec), new interesting: 3 (total: 155)
+fuzz: elapsed: 19s, execs: 19101 (414/sec), new interesting: 4 (total: 156)
+fuzz: elapsed: 22s, execs: 19101 (0/sec), new interesting: 4 (total: 156)
+fuzz: elapsed: 25s, execs: 61358 (14093/sec), new interesting: 5 (total: 157)
+fuzz: elapsed: 28s, execs: 64653 (1098/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 31s, execs: 67785 (1044/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 34s, execs: 69981 (732/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 37s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 40s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 43s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 46s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 49s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 52s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 55s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 58s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 1m1s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+fuzz: elapsed: 1m2s, execs: 69981 (0/sec), new interesting: 7 (total: 159)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	61.857s
+EXIT:0

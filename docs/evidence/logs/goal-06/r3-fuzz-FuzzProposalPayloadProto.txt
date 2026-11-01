@@ -1,0 +1,31 @@
+COMMAND go test -run \^\$ -fuzz \^FuzzProposalPayloadProto\$ -fuzztime 60s ./chain/x/authority/
+DATE 2026-11-01T20:41:29Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+fuzz: elapsed: 0s, gathering baseline coverage: 0/191 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 81/191 completed
+fuzz: elapsed: 6s, gathering baseline coverage: 159/191 completed
+fuzz: elapsed: 7s, gathering baseline coverage: 191/191 completed, now fuzzing with 4 workers
+fuzz: elapsed: 9s, execs: 9636 (3159/sec), new interesting: 0 (total: 191)
+fuzz: elapsed: 12s, execs: 24045 (4803/sec), new interesting: 3 (total: 194)
+fuzz: elapsed: 15s, execs: 35136 (3696/sec), new interesting: 4 (total: 195)
+fuzz: elapsed: 18s, execs: 46414 (3760/sec), new interesting: 5 (total: 196)
+fuzz: elapsed: 21s, execs: 49389 (991/sec), new interesting: 5 (total: 196)
+fuzz: elapsed: 24s, execs: 52402 (1004/sec), new interesting: 5 (total: 196)
+fuzz: elapsed: 27s, execs: 55302 (967/sec), new interesting: 5 (total: 196)
+fuzz: elapsed: 30s, execs: 58271 (990/sec), new interesting: 5 (total: 196)
+fuzz: elapsed: 33s, execs: 61349 (1026/sec), new interesting: 5 (total: 196)
+fuzz: elapsed: 36s, execs: 66752 (1801/sec), new interesting: 6 (total: 197)
+fuzz: elapsed: 39s, execs: 67408 (219/sec), new interesting: 6 (total: 197)
+fuzz: elapsed: 42s, execs: 77279 (3291/sec), new interesting: 7 (total: 198)
+fuzz: elapsed: 45s, execs: 77279 (0/sec), new interesting: 7 (total: 198)
+fuzz: elapsed: 48s, execs: 77279 (0/sec), new interesting: 7 (total: 198)
+fuzz: elapsed: 51s, execs: 77279 (0/sec), new interesting: 7 (total: 198)
+fuzz: elapsed: 54s, execs: 77279 (0/sec), new interesting: 7 (total: 198)
+fuzz: elapsed: 57s, execs: 111405 (11376/sec), new interesting: 8 (total: 199)
+fuzz: elapsed: 1m0s, execs: 111405 (0/sec), new interesting: 8 (total: 199)
+fuzz: elapsed: 1m1s, execs: 111405 (0/sec), new interesting: 8 (total: 199)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	61.111s
+EXIT:0

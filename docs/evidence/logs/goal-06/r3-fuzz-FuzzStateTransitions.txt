@@ -1,0 +1,31 @@
+COMMAND go test -run \^\$ -fuzz \^FuzzStateTransitions\$ -fuzztime 60s ./chain/x/authority/
+DATE 2026-11-01T20:40:23Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+fuzz: elapsed: 1s, gathering baseline coverage: 0/471 completed
+fuzz: elapsed: 4s, gathering baseline coverage: 87/471 completed
+fuzz: elapsed: 7s, gathering baseline coverage: 183/471 completed
+fuzz: elapsed: 10s, gathering baseline coverage: 283/471 completed
+fuzz: elapsed: 13s, gathering baseline coverage: 378/471 completed
+fuzz: elapsed: 16s, gathering baseline coverage: 471/471 completed, now fuzzing with 4 workers
+fuzz: elapsed: 16s, execs: 533 (52/sec), new interesting: 0 (total: 471)
+fuzz: elapsed: 19s, execs: 3818 (1095/sec), new interesting: 4 (total: 475)
+fuzz: elapsed: 22s, execs: 4755 (312/sec), new interesting: 5 (total: 476)
+fuzz: elapsed: 25s, execs: 6570 (605/sec), new interesting: 6 (total: 477)
+fuzz: elapsed: 28s, execs: 7589 (340/sec), new interesting: 6 (total: 477)
+fuzz: elapsed: 31s, execs: 10382 (931/sec), new interesting: 8 (total: 479)
+fuzz: elapsed: 34s, execs: 12605 (741/sec), new interesting: 11 (total: 482)
+fuzz: elapsed: 37s, execs: 14193 (529/sec), new interesting: 12 (total: 483)
+fuzz: elapsed: 40s, execs: 14193 (0/sec), new interesting: 12 (total: 483)
+fuzz: elapsed: 43s, execs: 14193 (0/sec), new interesting: 12 (total: 483)
+fuzz: elapsed: 46s, execs: 14193 (0/sec), new interesting: 12 (total: 483)
+fuzz: elapsed: 49s, execs: 21934 (2581/sec), new interesting: 15 (total: 486)
+fuzz: elapsed: 52s, execs: 23099 (388/sec), new interesting: 16 (total: 487)
+fuzz: elapsed: 55s, execs: 30026 (2309/sec), new interesting: 19 (total: 490)
+fuzz: elapsed: 58s, execs: 31341 (438/sec), new interesting: 19 (total: 490)
+fuzz: elapsed: 1m1s, execs: 32678 (446/sec), new interesting: 20 (total: 491)
+fuzz: elapsed: 1m2s, execs: 32678 (0/sec), new interesting: 20 (total: 491)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	62.063s
+EXIT:0

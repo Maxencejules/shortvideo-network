@@ -18,6 +18,10 @@ Removal is the same proposal with power zero and the consensus key the validator
 
 A compromised endpoint is stopped on the machine that runs it: stop the process, or stop listening. That is not a transaction. It does not approve a proposal, remove voting power, or rewrite a committed block. The key remains in the validator set until a council change activates. DEC-009 did not select a single-signature or emergency-key path.
 
+## Who pauses admissions
+
+Only the council, by not approving admissions. There is no pause switch, and no single message pauses admissions. Apart from genesis and the changes genesis schedules, a validator joins only through an executed council `ValidatorPowerChange`. A provider is admitted or disabled only through an executed council `AdmitProviderChange` or `DisableProviderChange` (DEC-009). In Goal 06 no message creates a provider row, so both execute to `ERROR_CODE_NOT_FOUND`. Submitter and service accounts, and their ante admission rows, come from genesis. The engine-only seat and service rotations can move a row to a new address, and no Goal 06 message adds one. DEC-009 selected no single-signature or emergency path. A local operator can stop only its own endpoint, as in the previous section. That pauses nothing for anyone else.
+
 ## Compromised or lost consensus key
 
 On the four-validator devnet a direct removal is `ERROR_CODE_FORBIDDEN`: three validators would remain. Replace a compromised key with one `ValidatorPowerChange` that keeps the node id and the power and names a new consensus key. The set changes at the activation point, and the new key signs blocks two heights later. The old key signs until then.
