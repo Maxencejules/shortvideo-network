@@ -27,11 +27,12 @@ func root() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "svnd",
 		Short: "shortvideo-network development chain",
-		Long: `svnd is the Goal 05 application chain.
+		Long: `svnd is the shortvideo-network application chain.
 
-It is scaffolding. Provider, content, lease, evidence, and policy execution
-are Goals 06-10. There is no token, mint, distribution, slashing, or staking
-module. The initial validator set stays static until Goal 06.
+x/authority runs the devnet council and is the only validator-set writer.
+x/providers and x/content are the provider and content registries. Lease,
+evidence, and policy execution are Goals 08-10. There is no token, mint,
+distribution, slashing, or staking module.
 
 Public launch is disabled. This binary is not a release.`,
 	}

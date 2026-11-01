@@ -6,7 +6,7 @@ Development procedure for the permissioned set. This is not a production runbook
 
 A new validator is a council proposal whose payload is `ValidatorPowerChange` with positive power, a distinct consensus public key, a node id, a reason digest, and an activation height or chain time strictly after execution. Four devnet seats and three approvals queue it. The authority submitter executes it. The set changes in EndBlock at the activation point and the new key signs blocks two heights later.
 
-Provider admission is a different record. `RegisterProvider` is a committed handler and creates `APPLIED`. `AdmitProviderChange` through the council moves it to `ADMITTED` when the devnet DEC-002 test role is present. That does not change voting power. Service admission is the genesis submitter role `ADMITTED_SERVICE`. `RotateProviderKey` is a committed handler and changes the provider signing key only. Council seat rotation and service account rotation are keeper operations, not transactions. None of those rotate a consensus key.
+Provider admission is a different record. `RegisterProvider` is an `x/providers` committed handler and creates `APPLIED`. `AdmitProviderChange` through the council moves it to `ADMITTED` when the devnet DEC-002 test role is present. That does not change voting power. Service admission is the genesis submitter role `ADMITTED_SERVICE`. `RotateProviderKey` is an `x/providers` committed handler and changes the provider signing key only. Council seat rotation and service account rotation are keeper operations, not transactions. None of those rotate a consensus key.
 
 ## Ordinary removal
 

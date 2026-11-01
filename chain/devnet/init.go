@@ -62,14 +62,38 @@ type Node struct {
 
 // Topology is safe to print and to store in evidence.
 type Topology struct {
-	ChainID            string `json:"chain_id"`
-	GenesisUnixSeconds int64  `json:"genesis_unix_seconds"`
-	GenesisSHA256      string `json:"genesis_sha256"`
-	PeerMode           string `json:"peer_mode"`
-	Validators         []Node `json:"validators"`
-	AuthorityAddress   string `json:"authority_address"`
-	ServiceAddress     string `json:"service_address"`
-	Seats              []Seat `json:"seats,omitempty"`
+	ChainID            string    `json:"chain_id"`
+	GenesisUnixSeconds int64     `json:"genesis_unix_seconds"`
+	GenesisSHA256      string    `json:"genesis_sha256"`
+	PeerMode           string    `json:"peer_mode"`
+	Validators         []Node    `json:"validators"`
+	AuthorityAddress   string    `json:"authority_address"`
+	ServiceAddress     string    `json:"service_address"`
+	Seats              []Seat    `json:"seats,omitempty"`
+	Accounts           []Account `json:"accounts,omitempty"`
+}
+
+// Account is one public application account of the devnet genesis. Its
+// secp256k1 key is under accounts/<name>.hex in the home directory only.
+type Account struct {
+	Name    string `json:"name"`
+	Role    string `json:"role"`
+	Address string `json:"address"`
+}
+
+// accountSpec lists the secp256k1 application accounts Init generates, in
+// genesis order. authority and service are the Goal 05 accounts; the two
+// providers and the second service account are the Goal 07 registry demo
+// accounts.
+var accountSpec = []struct {
+	name string
+	role string
+}{
+	{"authority", genesis.RoleAuthority},
+	{"service", genesis.RoleAdmittedService},
+	{"service-2", genesis.RoleAdmittedService},
+	{"provider-1", genesis.RoleAdmittedProvider},
+	{"provider-2", genesis.RoleAdmittedProvider},
 }
 
 // Seat is a public devnet council key. It is not a consensus key.
@@ -133,14 +157,15 @@ func Init(opts Options) (layout Layout, err error) {
 			return Layout{}, err
 		}
 	}
-	authorityKey := sdksecp.GenPrivKey()
-	serviceKey := sdksecp.GenPrivKey()
-	if err = writeKey(filepath.Join(opts.Home, "accounts", "authority.hex"), authorityKey.Bytes()); err != nil {
-		return Layout{}, err
+	accounts := make([]accountKey, len(accountSpec))
+	for i, spec := range accountSpec {
+		key := sdksecp.GenPrivKey()
+		accounts[i] = accountKey{name: spec.name, role: spec.role, key: key}
+		if err = writeKey(filepath.Join(opts.Home, "accounts", spec.name+".hex"), key.Bytes()); err != nil {
+			return Layout{}, err
+		}
 	}
-	if err = writeKey(filepath.Join(opts.Home, "accounts", "service.hex"), serviceKey.Bytes()); err != nil {
-		return Layout{}, err
-	}
+	authorityKey, serviceKey := accounts[0].key, accounts[1].key
 	seats := make([]councilKey, 4)
 	for i := range seats {
 		key := sdked.GenPrivKey()
@@ -154,7 +179,7 @@ func Init(opts Options) (layout Layout, err error) {
 		}
 	}
 
-	doc := document(opts, nodes, authorityKey, serviceKey, seats)
+	doc := document(opts, nodes, accounts, seats)
 	enc, err := app.MakeEncoding()
 	if err != nil {
 		return Layout{}, err
@@ -213,6 +238,7 @@ func Init(opts Options) (layout Layout, err error) {
 		AuthorityAddress:   sdk.AccAddress(authorityKey.PubKey().Address()).String(),
 		ServiceAddress:     sdk.AccAddress(serviceKey.PubKey().Address()).String(),
 		Seats:              publicSeats(seats),
+		Accounts:           publicAccounts(accounts),
 	}
 	rawTopology, err := json.MarshalIndent(topology, "", "  ")
 	if err != nil {
@@ -370,6 +396,24 @@ func writeNodeConfig(p prepared, peers string) error {
 	return os.WriteFile(filepath.Join(p.home, "config", "svn-listen.json"), append(rawListen, '\n'), 0o644)
 }
 
+type accountKey struct {
+	name string
+	role string
+	key  *sdksecp.PrivKey
+}
+
+func publicAccounts(accounts []accountKey) []Account {
+	out := make([]Account, len(accounts))
+	for i, account := range accounts {
+		out[i] = Account{
+			Name:    account.name,
+			Role:    account.role,
+			Address: sdk.AccAddress(account.key.PubKey().Address()).String(),
+		}
+	}
+	return out
+}
+
 type councilKey struct {
 	id  string
 	key *sdked.PrivKey
@@ -388,7 +432,7 @@ func publicSeats(seats []councilKey) []Seat {
 	return out
 }
 
-func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.PrivKey, seats []councilKey) genesis.Document {
+func document(opts Options, nodes []prepared, accounts []accountKey, seats []councilKey) genesis.Document {
 	validators := make([]genesis.Validator, len(nodes))
 	for i, nodeHome := range nodes {
 		validators[i] = genesis.Validator{
@@ -401,9 +445,12 @@ func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.
 	for i, id := range genesis.DecisionIDs {
 		rows[i] = genesis.BlockedDecision{DecisionID: id, SchemaVersion: 1}
 	}
-	submitters := []genesis.Submitter{
-		{AddressHex: hex.EncodeToString(authorityKey.PubKey().Address()), Role: genesis.RoleAuthority},
-		{AddressHex: hex.EncodeToString(serviceKey.PubKey().Address()), Role: genesis.RoleAdmittedService},
+	submitters := make([]genesis.Submitter, 0, len(accounts)+len(seats))
+	for _, account := range accounts {
+		submitters = append(submitters, genesis.Submitter{
+			AddressHex: hex.EncodeToString(account.key.PubKey().Address()),
+			Role:       account.role,
+		})
 	}
 	seatRows := make([]genesis.DevnetTestSeat, len(seats))
 	for i, seat := range seats {
@@ -425,6 +472,8 @@ func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.
 		DevnetTestParameters: []genesis.DevnetTestParameter{
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-001", RoleName: "DEVNET_TEST_ONLY"},
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-002", RoleName: "DEVNET_TEST_ONLY"},
+			// DEC-003 lets the council force-withdraw content on the devnet.
+			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-003", RoleName: "DEVNET_TEST_ONLY"},
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-005", NumericValue: 3600},
 			// Four seats and three approvals is DEC-008. Delay 0 is the
 			// devnet test parameter. Activation is still strictly later.

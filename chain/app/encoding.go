@@ -85,6 +85,10 @@ func init() {
 	registerGogo("svn.authority.v1.ForceWithdrawChange", &authorityv1.ForceWithdrawChange{})
 	registerGogo("svn.authority.v1.ActivationPoint", &authorityv1.ActivationPoint{})
 	registerGogo("svn.types.v1.Digest", &typesv1.Digest{})
+	// MsgRotateProviderKey, MsgDrainProvider, MsgRegisterContent, and
+	// MsgWithdrawContent carry an InnerSignature. Without this registration
+	// the tx decoder fails on them before any handler runs.
+	registerGogo("svn.types.v1.InnerSignature", &typesv1.InnerSignature{})
 }
 
 func registerGogo(name string, msg gogoproto.Message) {

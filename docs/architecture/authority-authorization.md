@@ -1,6 +1,6 @@
 # Authority authorization map
 
-Reviewer note for Goal 06. This is not an audit. Public launch is disabled. There is no token, fee denomination, or staking module.
+Reviewer note for Goal 06, updated for Goal 07. This is not an audit. Public launch is disabled. There is no token, fee denomination, or staking module.
 
 `x/authority` is the only module that builds `abci.ValidatorUpdate`. `InitialUpdates` and `Changeset` both call one constructor. EndBlock on every other module returns no validator updates. `MsgCreateValidator` is not registered. A direct admit, disable, or force-withdraw message is not registered (DEC-009).
 
@@ -11,8 +11,9 @@ Reviewer note for Goal 06. This is not an audit. Public launch is disabled. Ther
 | `MsgProposeChange` | A devnet test seat | Seat public key derives the signer address. Payload digest is SHA-256 of SVN-JCS-1. Proposal id is new. Base policy version matches. Expiry is in the future. |
 | `MsgApproveChange` | A devnet test seat, once | Same seat again is `ERROR_CODE_REPLAY`. Two approvals leave the proposal `OPEN`. The third, of four, queues it. |
 | `MsgExecuteChange` | `SUBMITTER_ROLE_AUTHORITY` | Council signatures are not replaced by this signature. The proposal must be `QUEUED`, unexpired, and past the devnet delay. |
-| `RegisterProvider` | `SUBMITTER_ROLE_ADMITTED_PROVIDER` | Committed handler. Creates `APPLIED`. It does not change the validator set. Update and drain stay closed until Goal 07. |
-| `RotateProviderKey` | The provider account, plus an ed25519 signature on domain `SVN-PROVIDER-ROTATE-1` | Committed handler. Changes the provider signing key only. Previous public keys are kept. |
+| `RegisterProvider`, `UpdateProvider`, `RotateProviderKey`, `DrainProvider` | See [registries.md](registries.md) | Since Goal 07 these are `x/providers` handlers, not authority handlers. None of them changes the validator set or authority state. |
+| `RegisterContent`, `WithdrawContent` | See [registries.md](registries.md) | `x/content` handlers (Goal 07). |
+| Council admit, disable, force-withdraw payloads | Executed by `MsgExecuteChange` | Authority computes the DEC-002 or DEC-003 devnet flag and calls `x/providers` or `x/content`. The registry runs every check before its one write; the write is kept only when the execution succeeds. |
 | Council seat rotation | Not a transaction | `RotateCouncilSeat` changes the seat key and keeps the old one. It is not an RPC and not a message. |
 | Service account rotation | Not a transaction | `RotateServiceSubmitter` changes an admitted service address and keeps the old one. |
 
@@ -42,7 +43,7 @@ A due removal whose consensus key does not match the key the validator holds is 
 
 ## Quotas
 
-Each transaction's gas limit must be from 1 through `safety_max_gas_per_tx`. The byte length must be within `safety_max_tx_bytes`. Proposals, pending power changes, and provider rows are capped at 128. The handler consumes a fixed gas amount. There is no fee amount and no coin.
+Each transaction's gas limit must be from 1 through `safety_max_gas_per_tx`. The byte length must be within `safety_max_tx_bytes`. Proposals and pending power changes are capped at 128. Provider and content rows moved to `x/providers` and `x/content` in Goal 07; they have no per-account row quota while DEC-005 is unset. The handler consumes a fixed gas amount. There is no fee amount and no coin.
 
 ## No admin finality
 

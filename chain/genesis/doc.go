@@ -5,8 +5,10 @@
 // svn.app.v1.AppGenesis: chain id, time, protocol version, the disabled
 // economic modules, initial authorities, public validator keys, equal voting
 // powers, admitted application accounts, and resource bounds. It is not the
-// provider, content, lease, evidence, or policy machine. Those stay empty
-// until Goals 06-10.
+// provider, content, lease, evidence, or policy machine. A launch document
+// keeps the provider and content catalogue, leases, offers, and evidence
+// empty; x/providers and x/content fill their registries from committed
+// transactions.
 //
 // Private keys are rejected. This package does not generate them.
 package genesis

@@ -81,8 +81,9 @@ func Paginate(store storetypes.KVStore, prefix, key []byte, limit uint32, visit 
 		}
 		visited++
 	}
-	if err := it.Error(); err != nil {
-		return nil, fmt.Errorf("paginate: iterator: %w", err)
-	}
+	// Iterator.Error is not consulted after the loop: a query reads through
+	// a cachekv merge iterator, which reports an exhausted range as an error
+	// ("invalid cacheMergeIterator"). The SDK's own pagination does not call
+	// it either.
 	return nil, nil
 }

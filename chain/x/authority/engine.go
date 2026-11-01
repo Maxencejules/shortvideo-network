@@ -2,7 +2,6 @@ package authority
 
 import (
 	"bytes"
-	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
 	"slices"
@@ -26,6 +25,9 @@ func SeatAddress(pub []byte) []byte {
 }
 
 // State is the authority working set. Liveness is not a field.
+//
+// Registry and External are not stored. Keeper.transition binds them to one
+// transaction context before a message runs; the engine itself stays pure.
 type State struct {
 	ChainID       string
 	Height        int64
@@ -41,27 +43,52 @@ type State struct {
 	Decoded       map[string]storedChange
 	Business      map[string][]byte
 	Executed      map[string][]byte
-	Providers     map[string]*ProviderRecord
 	Governed      map[string]uint64
 	PrevCouncil   [][]byte
 	PrevService   [][]byte
-	PrevProvider  map[string][][]byte
+
+	// Registry applies the provider and content payloads of an executed
+	// proposal. nil means no registry is wired: those payloads are MALFORMED.
+	Registry Registry
+	// External returns the business digest another module committed for
+	// id. Business ids are one protocol namespace. nil means no peers.
+	External func(id string) ([]byte, bool)
+}
+
+// Registry is the provider and content registry as an executed council
+// proposal sees it. x/providers and x/content own the records; authority
+// only decides the devnet flag and passes the decoded payload. A method
+// runs every check before its first write, so a failure writes nothing.
+// FORBIDDEN marks the proposal REJECTED; any other failure leaves it QUEUED.
+type Registry interface {
+	// Admit moves an APPLIED provider to ADMITTED. devnet is true only when
+	// DEC-002 is the labelled devnet test parameter with role
+	// DEVNET_TEST_ONLY on a devnet chain id.
+	Admit(providerID string, devnet bool) Outcome
+	// Disable moves an ADMITTED or DRAINING provider to DISABLED.
+	Disable(providerID string) Outcome
+	// ForceWithdraw withdraws one content version and writes its tombstone
+	// with the 32-byte reason digest value. devnet follows the DEC-002 rule
+	// for DEC-003.
+	ForceWithdraw(contentID string, version uint64, reason []byte, devnet bool) Outcome
 }
 
 // storedChange is the payload decoded at propose time. Execute uses this
 // record. It does not scrape the canonical JSON again.
 type storedChange struct {
-	Kind       string
-	NodeID     string
-	PubKey     []byte
-	Power      int64
-	Reason     []byte
-	ByHeight   bool
-	Height     uint64
-	Unix       int64
-	LimitKey   string
-	LimitValue uint64
-	ProviderID string
+	Kind           string
+	NodeID         string
+	PubKey         []byte
+	Power          int64
+	Reason         []byte
+	ByHeight       bool
+	Height         uint64
+	Unix           int64
+	LimitKey       string
+	LimitValue     uint64
+	ProviderID     string
+	ContentID      string
+	ContentVersion uint64
 }
 
 func (c storedChange) power() PowerChange {
@@ -91,23 +118,14 @@ func storedFrom(kind string, change PowerChange, msg *authorityv1.MsgProposeChan
 	case "disable_provider":
 		out.ProviderID = msg.GetPayload().GetDisableProvider().GetProviderId()
 	case "force_withdraw":
-		out.ProviderID = ""
+		// CanonicalFromProto validated the body: id pattern, version >= 1,
+		// and a SHA-256 reason digest of 32 bytes.
+		body := msg.GetPayload().GetForceWithdraw()
+		out.ContentID = body.GetContentId()
+		out.ContentVersion = body.GetContentVersion()
+		out.Reason = append([]byte(nil), body.GetReasonDigest().GetValue()...)
 	}
 	return out
-}
-
-// ProviderRecord is the admission row authority keeps until Goal 07 owns
-// the registry. It is not a capacity ledger.
-type ProviderRecord struct {
-	ID            string
-	Account       []byte
-	SigningPub    []byte
-	SigningKeyID  string
-	Generation    uint64
-	State         string
-	OperatorGroup string
-	Endpoint      []byte
-	Capacity      uint64
 }
 
 func (s *State) clone() *State {
@@ -122,11 +140,9 @@ func (s *State) clone() *State {
 	out.Decoded = cloneDecoded(s.Decoded)
 	out.Business = cloneBytesMap(s.Business)
 	out.Executed = cloneBytesMap(s.Executed)
-	out.Providers = cloneProviders(s.Providers)
 	out.Governed = cloneUintMap(s.Governed)
 	out.PrevCouncil = cloneBytesList(s.PrevCouncil)
 	out.PrevService = cloneBytesList(s.PrevService)
-	out.PrevProvider = cloneBytesListMap(s.PrevProvider)
 	return &out
 }
 
@@ -140,6 +156,13 @@ func (s *State) devnet(id string) *typesv1.DevnetTestParameter {
 		}
 	}
 	return nil
+}
+
+// devnetRole reports whether decision id is the labelled devnet test
+// parameter with role DEVNET_TEST_ONLY on this chain.
+func (s *State) devnetRole(id string) bool {
+	param := s.devnet(id)
+	return param != nil && param.GetRoleName() == devnetTestRole
 }
 
 func (s *State) council() Outcome {
@@ -191,6 +214,9 @@ func (s *State) business(id string, digest []byte) Outcome {
 		return fail(CodeMalformed)
 	}
 	prev, okHave := s.Business[id]
+	if !okHave && s.External != nil {
+		prev, okHave = s.External(id)
+	}
 	if !okHave {
 		return ok()
 	}
@@ -430,14 +456,33 @@ func (s *State) applyPayload(proposal *authorityv1.Proposal) Outcome {
 	case "governed_limit":
 		return s.applyGovernedValue(decoded.LimitKey, decoded.LimitValue)
 	case "admit_provider":
-		return s.admit(decoded.ProviderID)
+		if s.Registry == nil {
+			return fail(CodeMalformed)
+		}
+		return registryOutcome(s.Registry.Admit(decoded.ProviderID, s.devnetRole("DEC-002")))
 	case "disable_provider":
-		return s.disable(decoded.ProviderID)
+		if s.Registry == nil {
+			return fail(CodeMalformed)
+		}
+		return registryOutcome(s.Registry.Disable(decoded.ProviderID))
 	case "force_withdraw":
-		return fail(CodeNotFound)
+		if s.Registry == nil {
+			return fail(CodeMalformed)
+		}
+		reason := append([]byte(nil), decoded.Reason...)
+		return registryOutcome(s.Registry.ForceWithdraw(decoded.ContentID, decoded.ContentVersion, reason, s.devnetRole("DEC-003")))
 	default:
 		return fail(CodeMalformed)
 	}
+}
+
+// registryOutcome keeps only the code. A registry cannot ask for a keep or
+// an idempotent result; ExecuteChange decides those.
+func registryOutcome(out Outcome) Outcome {
+	if out.Success() {
+		return ok()
+	}
+	return fail(out.Code)
 }
 
 func (s *State) project(extra *authorityv1.PendingValidatorPower) Outcome {
@@ -667,61 +712,6 @@ func PowerQuorum(powers []int64, offline []bool) bool {
 	return available*3 > total*2
 }
 
-func (s *State) RegisterProvider(signer []byte, id string, pub []byte, keyID string, group string, capacity uint64, endpoint []byte) Outcome {
-	if s.role(signer) != typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER {
-		if s.role(signer) == typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
-			return fail(CodeUnauthorized)
-		}
-		return fail(CodeForbidden)
-	}
-	if !idPattern.MatchString(id) || !idPattern.MatchString(keyID) || len(pub) != 32 || len(endpoint) != 32 || capacity < 1 {
-		return fail(CodeBounds)
-	}
-	if s.Providers[id] != nil {
-		return fail(CodeDuplicate)
-	}
-	if len(s.Providers) >= MaxRecords {
-		return fail(CodeBounds)
-	}
-	if s.Providers == nil {
-		s.Providers = map[string]*ProviderRecord{}
-	}
-	s.Providers[id] = &ProviderRecord{
-		ID: id, Account: append([]byte(nil), signer...), SigningPub: append([]byte(nil), pub...),
-		SigningKeyID: keyID, Generation: 1, State: "APPLIED", OperatorGroup: group,
-		Endpoint: append([]byte(nil), endpoint...), Capacity: capacity,
-	}
-	return ok()
-}
-
-func (s *State) admit(id string) Outcome {
-	row := s.Providers[id]
-	if row == nil {
-		return fail(CodeNotFound)
-	}
-	param := s.devnet("DEC-002")
-	if param == nil || param.GetRoleName() != "DEVNET_TEST_ONLY" {
-		return fail(CodeDecisionBlocked)
-	}
-	if row.OperatorGroup != "devnet-test-only" || row.State != "APPLIED" {
-		return fail(CodeForbidden)
-	}
-	row.State = "ADMITTED"
-	return ok()
-}
-
-func (s *State) disable(id string) Outcome {
-	row := s.Providers[id]
-	if row == nil {
-		return fail(CodeNotFound)
-	}
-	if row.State != "ADMITTED" && row.State != "DRAINING" {
-		return fail(CodeConflict)
-	}
-	row.State = "DISABLED"
-	return ok()
-}
-
 func (s *State) applyGovernedValue(key string, value uint64) Outcome {
 	// Caps are the protocol ceilings. A value above its own ceiling is bounds.
 	caps := map[string]uint64{
@@ -741,47 +731,6 @@ func (s *State) applyGovernedValue(key string, value uint64) Outcome {
 		s.Governed = map[string]uint64{}
 	}
 	s.Governed[key] = value
-	return ok()
-}
-
-// RotateProviderKey changes the provider signing key only.
-func (s *State) RotateProviderKey(signer []byte, id, newKeyID string, newPub, sig []byte, generation uint64) Outcome {
-	row := s.Providers[id]
-	if row == nil {
-		return fail(CodeNotFound)
-	}
-	if !bytes.Equal(row.Account, signer) {
-		return fail(CodeForbidden)
-	}
-	if !idPattern.MatchString(newKeyID) || len(newPub) != 32 || len(sig) != 64 {
-		return fail(CodeBounds)
-	}
-	canon, err := jcs.Canonicalize(map[string]any{
-		"expectedGeneration": strconv.FormatUint(generation, 10),
-		"newSigningKeyId":    newKeyID,
-		"newSigningPubkey":   hex.EncodeToString(newPub),
-		"providerId":         id,
-	})
-	if err != nil {
-		return fail(CodeMalformed)
-	}
-	msg := append(append([]byte(rotateDomain), 0), []byte(canon)...)
-	if !ed25519.Verify(row.SigningPub, msg, sig) {
-		return fail(CodeUnauthorized)
-	}
-	if generation != row.Generation {
-		return fail(CodeStale)
-	}
-	if newKeyID == row.SigningKeyID || bytes.Equal(newPub, row.SigningPub) {
-		return fail(CodeConflict)
-	}
-	if s.PrevProvider == nil {
-		s.PrevProvider = map[string][][]byte{}
-	}
-	s.PrevProvider[id] = append(s.PrevProvider[id], append([]byte(nil), row.SigningPub...))
-	row.SigningPub = append([]byte(nil), newPub...)
-	row.SigningKeyID = newKeyID
-	row.Generation++
 	return ok()
 }
 

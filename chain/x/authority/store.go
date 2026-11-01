@@ -15,17 +15,21 @@ import (
 
 const sideKey byte = 0x20
 
+// sideDocument is the authority state that has no field in the frozen
+// authority proto. It is JSON with sorted rows, written only by save.
+//
+// Goal 07 moved provider rows to x/providers. The document no longer has
+// "providers" or "prev_provider"; encoding/json ignores those keys when an
+// older document is decoded, and the next save drops them.
 type sideDocument struct {
-	PolicyVersion uint64         `json:"policy_version"`
-	Payloads      []namedText    `json:"payloads,omitempty"`
-	Decoded       []decodedWire  `json:"decoded,omitempty"`
-	Business      []namedBytes   `json:"business,omitempty"`
-	Executed      []namedBytes   `json:"executed,omitempty"`
-	Governed      []namedUint    `json:"governed,omitempty"`
-	Providers     []providerWire `json:"providers,omitempty"`
-	PrevCouncil   [][]byte       `json:"prev_council,omitempty"`
-	PrevService   [][]byte       `json:"prev_service,omitempty"`
-	PrevProvider  []namedList    `json:"prev_provider,omitempty"`
+	PolicyVersion uint64        `json:"policy_version"`
+	Payloads      []namedText   `json:"payloads,omitempty"`
+	Decoded       []decodedWire `json:"decoded,omitempty"`
+	Business      []namedBytes  `json:"business,omitempty"`
+	Executed      []namedBytes  `json:"executed,omitempty"`
+	Governed      []namedUint   `json:"governed,omitempty"`
+	PrevCouncil   [][]byte      `json:"prev_council,omitempty"`
+	PrevService   [][]byte      `json:"prev_service,omitempty"`
 }
 
 type namedText struct {
@@ -33,19 +37,23 @@ type namedText struct {
 	Value string `json:"value"`
 }
 
+// decodedWire is one storedChange. A force_withdraw row keeps its reason
+// digest value in reason, next to content_id and content_version.
 type decodedWire struct {
-	ID         string `json:"id"`
-	Kind       string `json:"kind"`
-	NodeID     string `json:"node_id,omitempty"`
-	PubKey     []byte `json:"pub_key,omitempty"`
-	Power      int64  `json:"power"`
-	Reason     []byte `json:"reason,omitempty"`
-	ByHeight   bool   `json:"by_height,omitempty"`
-	Height     uint64 `json:"height,omitempty"`
-	Unix       int64  `json:"unix,omitempty"`
-	LimitKey   string `json:"limit_key,omitempty"`
-	LimitValue uint64 `json:"limit_value,omitempty"`
-	ProviderID string `json:"provider_id,omitempty"`
+	ID             string `json:"id"`
+	Kind           string `json:"kind"`
+	NodeID         string `json:"node_id,omitempty"`
+	PubKey         []byte `json:"pub_key,omitempty"`
+	Power          int64  `json:"power"`
+	Reason         []byte `json:"reason,omitempty"`
+	ByHeight       bool   `json:"by_height,omitempty"`
+	Height         uint64 `json:"height,omitempty"`
+	Unix           int64  `json:"unix,omitempty"`
+	LimitKey       string `json:"limit_key,omitempty"`
+	LimitValue     uint64 `json:"limit_value,omitempty"`
+	ProviderID     string `json:"provider_id,omitempty"`
+	ContentID      string `json:"content_id,omitempty"`
+	ContentVersion uint64 `json:"content_version,omitempty"`
 }
 
 type namedBytes struct {
@@ -56,23 +64,6 @@ type namedBytes struct {
 type namedUint struct {
 	ID    string `json:"id"`
 	Value uint64 `json:"value"`
-}
-
-type namedList struct {
-	ID    string   `json:"id"`
-	Value [][]byte `json:"value"`
-}
-
-type providerWire struct {
-	ID            string `json:"id"`
-	Account       []byte `json:"account"`
-	SigningPub    []byte `json:"signing_pub"`
-	SigningKeyID  string `json:"signing_key_id"`
-	Generation    uint64 `json:"generation"`
-	State         string `json:"state"`
-	OperatorGroup string `json:"operator_group"`
-	Endpoint      []byte `json:"endpoint"`
-	Capacity      uint64 `json:"capacity"`
 }
 
 func (k Keeper) load(ctx sdk.Context) (*State, error) {
@@ -96,9 +87,7 @@ func (k Keeper) load(ctx sdk.Context) (*State, error) {
 		Decoded:       map[string]storedChange{},
 		Business:      map[string][]byte{},
 		Executed:      map[string][]byte{},
-		Providers:     map[string]*ProviderRecord{},
 		Governed:      map[string]uint64{},
-		PrevProvider:  map[string][][]byte{},
 	}
 	sideRaw := ctx.KVStore(k.storeKey).Get([]byte{sideKey})
 	if sideRaw == nil {
@@ -118,7 +107,8 @@ func (k Keeper) load(ctx sdk.Context) (*State, error) {
 		st.Decoded[row.ID] = storedChange{
 			Kind: row.Kind, NodeID: row.NodeID, PubKey: row.PubKey, Power: row.Power, Reason: row.Reason,
 			ByHeight: row.ByHeight, Height: row.Height, Unix: row.Unix, LimitKey: row.LimitKey,
-			LimitValue: row.LimitValue, ProviderID: row.ProviderID,
+			LimitValue: row.LimitValue, ProviderID: row.ProviderID, ContentID: row.ContentID,
+			ContentVersion: row.ContentVersion,
 		}
 	}
 	for _, row := range side.Business {
@@ -130,18 +120,8 @@ func (k Keeper) load(ctx sdk.Context) (*State, error) {
 	for _, row := range side.Governed {
 		st.Governed[row.ID] = row.Value
 	}
-	for _, row := range side.Providers {
-		st.Providers[row.ID] = &ProviderRecord{
-			ID: row.ID, Account: row.Account, SigningPub: row.SigningPub, SigningKeyID: row.SigningKeyID,
-			Generation: row.Generation, State: row.State, OperatorGroup: row.OperatorGroup,
-			Endpoint: row.Endpoint, Capacity: row.Capacity,
-		}
-	}
 	st.PrevCouncil = side.PrevCouncil
 	st.PrevService = side.PrevService
-	for _, row := range side.PrevProvider {
-		st.PrevProvider[row.ID] = row.Value
-	}
 	return st, nil
 }
 
@@ -182,7 +162,8 @@ func sideFrom(st *State) sideDocument {
 		doc.Decoded = append(doc.Decoded, decodedWire{
 			ID: id, Kind: row.Kind, NodeID: row.NodeID, PubKey: row.PubKey, Power: row.Power, Reason: row.Reason,
 			ByHeight: row.ByHeight, Height: row.Height, Unix: row.Unix, LimitKey: row.LimitKey,
-			LimitValue: row.LimitValue, ProviderID: row.ProviderID,
+			LimitValue: row.LimitValue, ProviderID: row.ProviderID, ContentID: row.ContentID,
+			ContentVersion: row.ContentVersion,
 		})
 	}
 	for id, value := range st.Business {
@@ -194,25 +175,13 @@ func sideFrom(st *State) sideDocument {
 	for id, value := range st.Governed {
 		doc.Governed = append(doc.Governed, namedUint{ID: id, Value: value})
 	}
-	for id, row := range st.Providers {
-		doc.Providers = append(doc.Providers, providerWire{
-			ID: id, Account: row.Account, SigningPub: row.SigningPub, SigningKeyID: row.SigningKeyID,
-			Generation: row.Generation, State: row.State, OperatorGroup: row.OperatorGroup,
-			Endpoint: row.Endpoint, Capacity: row.Capacity,
-		})
-	}
 	doc.PrevCouncil = st.PrevCouncil
 	doc.PrevService = st.PrevService
-	for id, rows := range st.PrevProvider {
-		doc.PrevProvider = append(doc.PrevProvider, namedList{ID: id, Value: rows})
-	}
 	slices.SortFunc(doc.Payloads, func(a, b namedText) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
 	slices.SortFunc(doc.Decoded, func(a, b decodedWire) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
 	slices.SortFunc(doc.Business, func(a, b namedBytes) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
 	slices.SortFunc(doc.Executed, func(a, b namedBytes) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
 	slices.SortFunc(doc.Governed, func(a, b namedUint) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
-	slices.SortFunc(doc.Providers, func(a, b providerWire) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
-	slices.SortFunc(doc.PrevProvider, func(a, b namedList) int { return bytes.Compare([]byte(a.ID), []byte(b.ID)) })
 	return doc
 }
 

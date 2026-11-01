@@ -99,24 +99,4 @@ func cloneBytesList(in [][]byte) [][]byte {
 	return out
 }
 
-func cloneBytesListMap(in map[string][][]byte) map[string][][]byte {
-	out := make(map[string][][]byte, len(in))
-	for key, rows := range in {
-		out[key] = cloneBytesList(rows)
-	}
-	return out
-}
-
-func cloneProviders(in map[string]*ProviderRecord) map[string]*ProviderRecord {
-	out := make(map[string]*ProviderRecord, len(in))
-	for key, row := range in {
-		copyRow := *row
-		copyRow.Account = append([]byte(nil), row.Account...)
-		copyRow.SigningPub = append([]byte(nil), row.SigningPub...)
-		copyRow.Endpoint = append([]byte(nil), row.Endpoint...)
-		out[key] = &copyRow
-	}
-	return out
-}
-
 func sameBytes(a, b []byte) bool { return bytes.Equal(a, b) }

@@ -186,13 +186,11 @@ func TestRemovalBindHaltsAndRotationsStaySeparate(t *testing.T) {
 		t.Fatal("a second block would have continued")
 	}
 
+	// Provider signing-key rotation moved to x/providers in Goal 07
+	// (TestRotationTouchesOnlyTheProvidersStore there). Council and service
+	// rotations stay here and touch no consensus key.
 	councilBefore := append([]byte(nil), st.Seats[0].GetPublicKey()...)
 	serviceBefore := append([]byte(nil), st.Submitters[1].GetAddress()...)
-	provider := &ProviderRecord{
-		ID: "p1", Account: bytes20(4), SigningPub: pub(4), SigningKeyID: "k1", Generation: 1,
-		State: "ADMITTED", OperatorGroup: "devnet-test-only", Endpoint: pub(8),
-	}
-	st.Providers = map[string]*ProviderRecord{"p1": provider}
 	if out := st.RotateCouncilSeat("seat-1", pub(21)); !out.Success() {
 		t.Fatal(out)
 	}
@@ -213,16 +211,6 @@ func TestRemovalBindHaltsAndRotationsStaySeparate(t *testing.T) {
 			t.Fatal("service rotation touched a validator")
 		}
 	}
-	if out := st.RotateProviderKey(provider.Account, "p1", "k1", pub(4), make([]byte, 64), 1); out.Code != CodeConflict && out.Code != CodeUnauthorized {
-		// same key is a conflict only after the signature verifies. A zero
-		// signature is unauthorized and must not change the signing key.
-		if !bytes.Equal(st.Providers["p1"].SigningPub, pub(4)) {
-			t.Fatal("failed provider rotation changed the signing key")
-		}
-	}
-	if !bytes.Equal(st.Providers["p1"].SigningPub, pub(4)) {
-		t.Fatal("provider key changed")
-	}
 }
 
 func TestAdmissionAndMixedActivation(t *testing.T) {
@@ -230,13 +218,10 @@ func TestAdmissionAndMixedActivation(t *testing.T) {
 	st.Params = append(st.Params, &typesv1.DevnetTestParameter{
 		Label: "PROPOSED_TEST_PARAMETER", DecisionId: "DEC-002", RoleName: "DEVNET_TEST_ONLY",
 	})
-	provider := bytes20(4)
-	st.Submitters = append(st.Submitters, &typesv1.Submitter{
-		Address: provider, Role: typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER,
-	})
-	if out := st.RegisterProvider(provider, "p1", pub(4), "k1", "devnet-test-only", 1000, pub(8)); !out.Success() {
-		t.Fatal(out)
-	}
+	// The provider record lives in x/providers. The fake registry records
+	// the call authority makes and admits.
+	registry := &fakeRegistry{}
+	st.Registry = registry
 	payload := &authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_AdmitProvider{
 		AdmitProvider: &authorityv1.AdmitProviderChange{ProviderId: "p1"},
 	}}
@@ -256,12 +241,20 @@ func TestAdmissionAndMixedActivation(t *testing.T) {
 			t.Fatal(out)
 		}
 	}
-	vals := len(st.Validators)
+	validatorsBefore := cloneValidators(st.Validators)
+	pendingBefore := len(st.Pending)
 	if out := st.ExecuteChange(execute(authoritySigner, "ex-admit", "admit-p1")); !out.Success() {
 		t.Fatal(out)
 	}
-	if st.Providers["p1"].State != "ADMITTED" || len(st.Validators) != vals {
-		t.Fatal("admission changed the validator set or missed the provider")
+	want := []registryCall{{Method: "admit", ID: "p1", Devnet: true}}
+	if !sameCalls(registry.calls, want) {
+		t.Fatalf("registry calls %+v want %+v", registry.calls, want)
+	}
+	if !sameValidators(st.Validators, validatorsBefore) || len(st.Pending) != pendingBefore {
+		t.Fatal("admission changed the validator set or scheduled a power change")
+	}
+	if st.proposal("admit-p1").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
+		t.Fatal(st.proposal("admit-p1").GetState())
 	}
 	if out := st.ProposeChange(propose(seats[0], "height-1", st.PolicyVersion, powerMsg("v5", pub(9), 1, 30))); !out.Success() {
 		t.Fatal(out)

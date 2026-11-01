@@ -1,0 +1,189 @@
+[
+  {
+    "type": "svn.events.v1.ProviderRegistered",
+    "attributes": [
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "state",
+        "value": "APPLIED"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProviderRegistered",
+    "attributes": [
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "state",
+        "value": "APPLIED"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProviderStateChanged",
+    "attributes": [
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "state",
+        "value": "ADMITTED"
+      },
+      {
+        "key": "key_generation",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProviderStateChanged",
+    "attributes": [
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "state",
+        "value": "ADMITTED"
+      },
+      {
+        "key": "key_generation",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProviderStateChanged",
+    "attributes": [
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "state",
+        "value": "ADMITTED"
+      },
+      {
+        "key": "key_generation",
+        "value": "2"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProviderStateChanged",
+    "attributes": [
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "state",
+        "value": "DRAINING"
+      },
+      {
+        "key": "key_generation",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProviderStateChanged",
+    "attributes": [
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "state",
+        "value": "DISABLED"
+      },
+      {
+        "key": "key_generation",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ContentRegistered",
+    "attributes": [
+      {
+        "key": "content_id",
+        "value": "c1"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "manifest_sha256",
+        "value": "776af09615756dcfb4ee13fe5c5dd1813985f0f969c184760a73076caa87f78d"
+      },
+      {
+        "key": "package_bytes",
+        "value": "4000000"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ContentRegistered",
+    "attributes": [
+      {
+        "key": "content_id",
+        "value": "c2"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "manifest_sha256",
+        "value": "a1da3af5a40f13bd0d0dfa70572d312de869812315425b6999ec62fa263ceca3"
+      },
+      {
+        "key": "package_bytes",
+        "value": "9000000"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ContentWithdrawn",
+    "attributes": [
+      {
+        "key": "content_id",
+        "value": "c1"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "history_erased",
+        "value": "false"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ContentWithdrawn",
+    "attributes": [
+      {
+        "key": "content_id",
+        "value": "c2"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "history_erased",
+        "value": "false"
+      }
+    ]
+  }
+]

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 
@@ -29,13 +30,14 @@ import (
 	chainaddress "github.com/Maxencejules/shortvideo-network/chain/address"
 	"github.com/Maxencejules/shortvideo-network/chain/cometwrap"
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+	"github.com/Maxencejules/shortvideo-network/chain/x/content"
+	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 	"github.com/Maxencejules/shortvideo-network/chain/x/scaffold"
-	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	policyv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1"
-	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 )
 
 // Name is the application name. It is not a token chain and it is not a release.
@@ -57,16 +59,19 @@ func InitOrder() []string {
 	}
 }
 
-// App is the Goal 05 chain. The six blueprint modules are registered.
-// Provider, content, lease, evidence, and policy execution stay empty until
-// Goals 06-10. The validator set is static.
+// App is the beta chain. The six blueprint modules are registered.
+// x/authority (Goal 06) owns the validator set and the council. x/providers
+// and x/content (Goal 07) are the provider and content registries. Lease,
+// evidence, and policy execution stay closed until Goals 08-10.
 type App struct {
 	*baseapp.BaseApp
 
-	encoding  Encoding
-	mm        *module.Manager
-	authority authority.Keeper
-	config    sdkserverconfig.Config
+	encoding     Encoding
+	mm           *module.Manager
+	configurator module.Configurator
+	keys         map[string]*storetypes.KVStoreKey
+	authority    authority.Keeper
+	config       sdkserverconfig.Config
 }
 
 // Config is the construction input. DB and ChainID are required.
@@ -138,13 +143,36 @@ func New(cfg Config) (*App, error) {
 		authtypes.NewModuleAddress("svn").String(),
 	)
 	authModule := newAuthModule(accountKeeper)
-	authorityKeeper := authority.NewKeeper(keys[authority.ModuleName])
+
+	// The registries read roles, devnet parameters, and governed limits from
+	// x/authority. They hold the keeper copy taken before WithRegistry; that
+	// read surface does not use the council hooks. x/authority then executes
+	// council admit, disable, and force-withdraw payloads through the
+	// registries. Business ids are one namespace across the three modules.
+	readKeeper := authority.NewKeeper(keys[authority.ModuleName])
+	peers := msgkit.NewPeers()
+	providersKeeper := providers.NewKeeper(keys[ModuleProviders], providers.Deps{
+		Roles:  readKeeper,
+		Limits: readKeeper,
+		Peers:  peers,
+	})
+	contentKeeper := content.NewKeeper(keys[ModuleContent], content.Deps{
+		Roles:  readKeeper,
+		Params: readKeeper,
+		Limits: readKeeper,
+		Peers:  peers,
+		// Hook is nil: no lease offer store exists before Goal 08.
+	})
+	authorityKeeper := readKeeper.WithRegistry(providersKeeper, contentKeeper).WithPeers(peers)
+	peers.Add(authority.ModuleName, authorityKeeper)
+	peers.Add(content.ModuleName, contentKeeper)
+	peers.Add(providers.ModuleName, providersKeeper)
 	authorityModule := authority.NewAppModule(authorityKeeper, cfg.Order)
 
 	svnModule := scaffold.New(ModuleSVN, keys[ModuleSVN], cfg.Order, checkHeader)
 	policyModule := scaffold.New(ModulePolicy, keys[ModulePolicy], cfg.Order, checkPolicy)
-	providersModule := scaffold.New(ModuleProviders, keys[ModuleProviders], cfg.Order, checkProviders)
-	contentModule := scaffold.New(ModuleContent, keys[ModuleContent], cfg.Order, checkContent)
+	providersModule := providers.NewAppModule(providersKeeper, cfg.Order)
+	contentModule := content.NewAppModule(contentKeeper, cfg.Order)
 	leasesModule := scaffold.New(ModuleLeases, keys[ModuleLeases], cfg.Order, checkLeases)
 	evidenceModule := scaffold.New(ModuleEvidence, keys[ModuleEvidence], cfg.Order, checkEvidence)
 
@@ -169,6 +197,7 @@ func New(cfg Config) (*App, error) {
 		BaseApp:   base,
 		encoding:  enc,
 		mm:        mm,
+		keys:      keys,
 		authority: authorityKeeper,
 		config:    *sdkserverconfig.DefaultConfig(),
 	}
@@ -177,7 +206,12 @@ func New(cfg Config) (*App, error) {
 	app.config.GRPC.Enable = true
 
 	configurator := module.NewConfigurator(enc.Codec, app.MsgServiceRouter(), app.GRPCQueryRouter())
+	app.configurator = configurator
 	authModule.RegisterServices(configurator)
+	// Each registry registers svn.<module>.v1.Msg on the message router,
+	// svn.<module>.v1.Query on the query router, and its migrations.
+	providersModule.RegisterServices(configurator)
+	contentModule.RegisterServices(configurator)
 	registerApplicationMessages(app.MsgServiceRouter(), authorityKeeper)
 
 	ante, err := NewAnteHandler(accountKeeper, enc.TxConfig.SignModeHandler(), func(ctx sdk.Context, addr []byte) bool {
@@ -238,7 +272,8 @@ func (app *App) Export() (map[string]json.RawMessage, error) {
 }
 
 // RegisterAPIRoutes registers the tx, CometBFT, and node gateway routes.
-// Application-module REST routes are Goals 06-10.
+// The application modules have no REST gateway routes: the REST API is
+// disabled, and registry queries are served by ABCI query and gRPC.
 func (app *App) RegisterAPIRoutes(apiSvr *api.Server, _ sdkserverconfig.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
@@ -293,6 +328,48 @@ func (app *App) AuthoritySnapshot() []byte {
 	return app.authority.ConsensusSnapshot(ctx)
 }
 
+// SnapshotStores is the order of the stores FullSnapshot concatenates:
+// every mounted store except the auth account store, in genesis order.
+// Account sequences change on every included transaction, rejected or not.
+func SnapshotStores() []string {
+	return []string{
+		ModuleSVN,
+		ModulePolicy,
+		ModuleProviders,
+		ModuleContent,
+		ModuleLeases,
+		ModuleEvidence,
+		authority.ModuleName,
+	}
+}
+
+// ModuleSnapshot is every committed key and value of one mounted store, as
+// msgkit.StoreSnapshot encodes them. Reject tests compare it with
+// bytes.Equal. An unknown store name returns nil.
+func (app *App) ModuleSnapshot(name string) []byte {
+	key, ok := app.keys[name]
+	if !ok {
+		return nil
+	}
+	return msgkit.StoreSnapshot(app.CommitMultiStore().GetKVStore(key))
+}
+
+// FullSnapshot concatenates ModuleSnapshot for every store in
+// SnapshotStores. Each part is the store name and the snapshot, both
+// length-prefixed (8-byte big endian), so two different states never share
+// one encoding.
+func (app *App) FullSnapshot() []byte {
+	var out []byte
+	for _, name := range SnapshotStores() {
+		part := app.ModuleSnapshot(name)
+		out = binary.BigEndian.AppendUint64(out, uint64(len(name)))
+		out = append(out, name...)
+		out = binary.BigEndian.AppendUint64(out, uint64(len(part)))
+		out = append(out, part...)
+	}
+	return out
+}
+
 // InstallMismatchedRemovalForTest writes a due removal with the wrong key.
 // It is not a consensus message. The next EndBlock must halt.
 func (app *App) InstallMismatchedRemovalForTest() error {
@@ -337,28 +414,6 @@ func checkPolicy(raw json.RawMessage) error {
 	}
 	if got != genesis.DefaultSafetyCaps() {
 		return fmt.Errorf("safety caps")
-	}
-	return nil
-}
-
-func checkProviders(raw json.RawMessage) error {
-	var state providersv1.GenesisState
-	if err := protojson.Unmarshal(raw, &state); err != nil {
-		return err
-	}
-	if len(state.GetProviders()) != 0 {
-		return fmt.Errorf("providers are not empty")
-	}
-	return nil
-}
-
-func checkContent(raw json.RawMessage) error {
-	var state contentv1.GenesisState
-	if err := protojson.Unmarshal(raw, &state); err != nil {
-		return err
-	}
-	if len(state.GetContents()) != 0 || len(state.GetTombstones()) != 0 {
-		return fmt.Errorf("content is not empty")
 	}
 	return nil
 }

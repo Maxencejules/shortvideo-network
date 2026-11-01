@@ -1,6 +1,9 @@
 package authority
 
-import "github.com/Maxencejules/shortvideo-network/chain/svnerr"
+import (
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
+)
 
 // Protocol error names. ABCI success is the empty code.
 const (
@@ -36,8 +39,9 @@ const RemovalBindCommit = "halt"
 const (
 	ApprovedSeats     = 4
 	ApprovedThreshold = 3
-	// MaxRecords is the deterministic write quota for proposals, pending
-	// power changes, and provider records. It matches the expiry-step cap.
+	// MaxRecords is the deterministic write quota for proposals and pending
+	// power changes. It matches the expiry-step cap. Provider and content
+	// records live in x/providers and x/content, not here.
 	MaxRecords = 128
 )
 
@@ -97,6 +101,11 @@ func sdkError(code string) error {
 	case CodeQuorum:
 		return svnerr.ErrQuorum.Wrap(code)
 	default:
+		// A registry hook can return a protocol code authority never
+		// produces itself. msgkit maps it; an unknown name is MALFORMED.
+		if err := msgkit.Code(code).Err(); err != nil {
+			return err
+		}
 		return svnerr.ErrMalformed.Wrap(code)
 	}
 }

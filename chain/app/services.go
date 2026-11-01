@@ -14,23 +14,17 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
-	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
-	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 )
 
-// registerApplicationMessages wires authority and the two provider messages
-// Goal 06 commits. The other protocol messages stay closed until their goals.
-// There is no MsgCreateValidator and no single-signer admit, disable, or
-// force-withdraw.
+// registerApplicationMessages wires the x/authority council messages and
+// keeps the lease and evidence messages closed until Goals 08-09. The
+// svn.providers.v1.Msg and svn.content.v1.Msg services are registered by
+// their modules (RegisterServices). There is no MsgCreateValidator and no
+// single-signer admit, disable, or force-withdraw message (DEC-009).
 func registerApplicationMessages(router *baseapp.MsgServiceRouter, keeper authority.Keeper) {
 	registerAuthority(router, keeper)
-	registerProvider(router, keeper)
-	register(router, "svn.content.v1.Msg", []methodSpec{
-		{name: "RegisterContent", msg: &contentv1.MsgRegisterContent{}, err: svnerr.ErrForbidden},
-		{name: "WithdrawContent", msg: &contentv1.MsgWithdrawContent{}, err: svnerr.ErrForbidden},
-	})
 	register(router, "svn.leases.v1.Msg", []methodSpec{
 		{name: "OfferLease", msg: &leasesv1.MsgOfferLease{}, err: svnerr.ErrForbidden},
 		{name: "AcceptLease", msg: &leasesv1.MsgAcceptLease{}, err: svnerr.ErrForbidden},
@@ -66,29 +60,6 @@ func registerAuthority(router *baseapp.MsgServiceRouter, keeper authority.Keeper
 	router.RegisterService(&grpc.ServiceDesc{
 		ServiceName: "svn.authority.v1.Msg",
 		Methods:     descs,
-		HandlerType: (*sdk.Msg)(nil),
-	}, struct{}{})
-}
-
-func registerProvider(router *baseapp.MsgServiceRouter, keeper authority.Keeper) {
-	type call struct {
-		name string
-		msg  proto.Message
-		fn   func(context.Context, proto.Message) (proto.Message, error)
-	}
-	methods := []grpc.MethodDesc{
-		{MethodName: "RegisterProvider", Handler: acceptHandler(&providersv1.MsgRegisterProvider{}, func(ctx context.Context, in proto.Message) (proto.Message, error) {
-			return keeper.RegisterProvider(ctx, in.(*providersv1.MsgRegisterProvider))
-		})},
-		{MethodName: "RotateProviderKey", Handler: acceptHandler(&providersv1.MsgRotateProviderKey{}, func(ctx context.Context, in proto.Message) (proto.Message, error) {
-			return keeper.RotateProviderKey(ctx, in.(*providersv1.MsgRotateProviderKey))
-		})},
-		{MethodName: "UpdateProvider", Handler: rejectHandler("svn.providers.v1.Msg", methodSpec{name: "UpdateProvider", msg: &providersv1.MsgUpdateProvider{}, err: svnerr.ErrForbidden})},
-		{MethodName: "DrainProvider", Handler: rejectHandler("svn.providers.v1.Msg", methodSpec{name: "DrainProvider", msg: &providersv1.MsgDrainProvider{}, err: svnerr.ErrForbidden})},
-	}
-	router.RegisterService(&grpc.ServiceDesc{
-		ServiceName: "svn.providers.v1.Msg",
-		Methods:     methods,
 		HandlerType: (*sdk.Msg)(nil),
 	}, struct{}{})
 }

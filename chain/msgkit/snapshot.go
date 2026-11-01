@@ -10,9 +10,9 @@ import (
 // order as len(key) (8 bytes big-endian) || key || len(value) (8 bytes
 // big-endian) || value. Two stores have equal snapshots exactly when they
 // hold the same pairs. Tests use it to prove a rejected message left a
-// module store byte-identical; it is not used in consensus paths. An
-// iterator error panics, because a partial snapshot would compare as a
-// false result.
+// module store byte-identical; it is not used in consensus paths.
+// Iterator.Error is not consulted: a cachekv merge iterator reports an
+// exhausted range as an error ("invalid cacheMergeIterator").
 func StoreSnapshot(store storetypes.KVStore) []byte {
 	it := store.Iterator(nil, nil)
 	defer it.Close()
@@ -25,9 +25,6 @@ func StoreSnapshot(store storetypes.KVStore) []byte {
 		binary.BigEndian.PutUint64(size[:], uint64(len(it.Value())))
 		out = append(out, size[:]...)
 		out = append(out, it.Value()...)
-	}
-	if err := it.Error(); err != nil {
-		panic("msgkit: snapshot iterator: " + err.Error())
 	}
 	return out
 }

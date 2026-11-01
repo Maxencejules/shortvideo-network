@@ -10,6 +10,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 )
 
@@ -24,8 +25,16 @@ const (
 // Keeper stores authority state. InitGenesis writes the genesis set.
 // EndBlock writes a scheduled power or key change when its activation
 // point is due. No other module returns validator updates.
+//
+// providers and content are the council hooks (WithRegistry). peers joins
+// the business-id ledgers of the other modules (WithPeers). Both are wiring,
+// not state: a Keeper value without them still reads and writes authority
+// state, and executes registry payloads as MALFORMED.
 type Keeper struct {
-	storeKey *storetypes.KVStoreKey
+	storeKey  *storetypes.KVStoreKey
+	providers ProviderAdmission
+	content   ContentRemoval
+	peers     *msgkit.Peers
 }
 
 func NewKeeper(storeKey *storetypes.KVStoreKey) Keeper {
