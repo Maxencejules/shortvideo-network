@@ -128,6 +128,30 @@ func (r *running) deliver(t *testing.T, raw []byte) *abci.ExecTxResult {
 	return res.TxResults[0]
 }
 
+// deliverMany finalizes and commits one block that carries every raw
+// transaction, in order, and returns their results.
+func (r *running) deliverMany(t *testing.T, raws [][]byte) []*abci.ExecTxResult {
+	t.Helper()
+	r.height++
+	res, err := r.app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: r.height,
+		Time:   r.when,
+		Hash:   bytes32(byte(r.height)),
+		Txs:    raws,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.app.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	r.last = res
+	if len(res.TxResults) != len(raws) {
+		t.Fatalf("tx results %d for %d transactions", len(res.TxResults), len(raws))
+	}
+	return res.TxResults
+}
+
 func serviceAccountNumber(authority, service []byte) uint64 {
 	if hex.EncodeToString(authority) < hex.EncodeToString(service) {
 		return 1

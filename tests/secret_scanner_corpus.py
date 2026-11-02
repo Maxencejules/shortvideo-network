@@ -804,4 +804,124 @@ def cases() -> list[Case]:
         "const private" + "Key = Uint8Array.from([" + "1, 2, 3, 4, 5, 6, 7, 8])",
         True,
     )
+    # Goal 06 pins the round of scanner gaps the reviewer blocked on.
+    # No earlier entry is deleted, renamed, or flipped.
+    add(
+        "r13-env-hash-hex",
+        "examples/r13.env",
+        "PRIVATE_" + "KEY=#" + _hex(32) + "\n",
+        True,
+        True,
+    )
+    add(
+        "r13-make-qmark",
+        "examples/r13.mk",
+        "PRIVATE_" + "KEY ?= " + _hex(32) + "\n",
+        True,
+        True,
+    )
+    add(
+        "r13-yaml-default-hex",
+        "examples/r13.yaml",
+        "private_" + "key: ${X:=" + _hex(32) + "}\n",
+        True,
+        True,
+    )
+    add(
+        "r13-docker-dev-env",
+        "examples/Dockerfile.dev",
+        "ENV PRIVATE_" + "KEY=" + _hex(32) + "\n",
+        True,
+        True,
+    )
+    add(
+        "r13-docker-dev-space",
+        "examples/r13/Dockerfile.dev",
+        "ENV PRIVATE_" + "KEY " + _hex(32) + "\n",
+        True,
+        True,
+    )
+    add(
+        "r13-hexto-ecdsa",
+        "examples/r13.go",
+        'sig := crypto.HexToECDSA("' + _hex(64) + '")\n',
+        True,
+        True,
+    )
+    add(
+        "r13-env-empty-next",
+        "examples/r13b.env",
+        "PRIVATE_" + "KEY=\nFOO=" + _hex(32) + "\n",
+        False,
+        True,
+    )
+    add(
+        "r13-env-b64-pad",
+        "examples/r13c.env",
+        "PRIVATE_" + "KEY=" + _b64() + "==\nNEXT=1\n",
+        True,
+        True,
+    )
+    add(
+        "r13-go-bip44",
+        "examples/r13b.go",
+        "priv" + "Key := hd.Derive(\"m/44'/118'/0'/0/0\")\n",
+        False,
+        True,
+    )
+    add(
+        "r13-go-bip44-quoted",
+        "examples/r13c.go",
+        "private_" + "key := \"m/44'/118'/0'/0/0\"\n",
+        False,
+    )
+    add(
+        "r13-yaml-json-brace",
+        "examples/r13b.yaml",
+        "private_" + 'key:\n{\n  "a": 1\n}\n',
+        False,
+        True,
+    )
+    add(
+        "r13-yaml-list-name",
+        "examples/r13c.yaml",
+        "private_" + "key:\n- name: alice\n",
+        False,
+        True,
+    )
+    add(
+        "r13-json-quoted-key",
+        "examples/r13.json",
+        "private_" + 'key:\n"name": "alice"\n',
+        False,
+        True,
+    )
+    add(
+        "r13-compose-qmark",
+        "examples/r13-compose.yaml",
+        "image: ${PRIVATE_" + "KEY:?}\n",
+        False,
+        True,
+    )
+    add(
+        "r13-compose-empty",
+        "examples/r13b-compose.yaml",
+        "image: ${PRIVATE_" + "KEY:-}\n",
+        False,
+        True,
+    )
+    add(
+        "r13-compose-default-var",
+        "examples/r13c-compose.yaml",
+        "image: ${PRIVATE_" + "KEY:-$Y}\n",
+        False,
+        True,
+    )
+    add(
+        "r13-compose-assign-hex",
+        "examples/r13d-compose.yaml",
+        "image: ${PRIVATE_" + "KEY:=" + _hex(32) + "}\n",
+        True,
+        True,
+    )
     return out

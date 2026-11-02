@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"slices"
 	"strings"
@@ -26,6 +28,7 @@ type Document struct {
 	Validators                      []Validator           `json:"validators"`
 	Submitters                      []Submitter           `json:"submitters"`
 	ApprovedCouncil                 []json.RawMessage     `json:"approved_council"`
+	DevnetTestSeats                 []DevnetTestSeat      `json:"devnet_test_seats,omitempty"`
 	BlockedDecisions                []BlockedDecision     `json:"blocked_decisions"`
 	DevnetTestParameters            []DevnetTestParameter `json:"devnet_test_parameters"`
 	Contents                        []json.RawMessage     `json:"contents"`
@@ -55,6 +58,12 @@ type BlockedDecision struct {
 	SchemaVersion uint32 `json:"schema_version"`
 	ValueVersion  uint32 `json:"value_version"`
 	Approved      bool   `json:"approved"`
+}
+
+// DevnetTestSeat is a disposable council key. It is not an approved seat.
+type DevnetTestSeat struct {
+	SeatID       string `json:"seat_id"`
+	PublicKeyHex string `json:"public_key_hex"`
 }
 
 // DevnetTestParameter is a labeled test value. It is not an approved policy.
@@ -137,8 +146,13 @@ func Parse(raw []byte) (Document, error) {
 	if err := dec.Decode(&doc); err != nil {
 		return Document{}, fmt.Errorf("malformed genesis: %w", err)
 	}
-	var extra any
-	if err := dec.Decode(&extra); err != nil && err.Error() != "EOF" {
+	// Only whitespace may follow the document. A second JSON value is
+	// rejected too, so a file never validates as its first document alone.
+	var extra json.RawMessage
+	switch err := dec.Decode(&extra); {
+	case err == nil:
+		return Document{}, fmt.Errorf("malformed genesis trailing data: a second JSON value follows the document")
+	case !errors.Is(err, io.EOF):
 		return Document{}, fmt.Errorf("malformed genesis trailing data: %w", err)
 	}
 	return doc, nil
@@ -270,6 +284,7 @@ func validateDevnet(doc Document) error {
 	if !strings.HasPrefix(doc.ChainID, DevnetChainIDPrefix) {
 		return fmt.Errorf("devnet chain id")
 	}
+	var threshold uint64
 	for _, row := range doc.DevnetTestParameters {
 		if row.Label != DevnetTestLabel || row.ApprovedPolicy {
 			return fmt.Errorf("devnet test label")
@@ -277,6 +292,51 @@ func validateDevnet(doc Document) error {
 		if !slices.Contains(DecisionIDs, row.DecisionID) {
 			return fmt.Errorf("devnet test decision %s", row.DecisionID)
 		}
+		if row.DecisionID == "DEC-008" {
+			threshold = row.NumericValue
+			if row.NumericValue != 0 && row.NumericValue != 3 {
+				return fmt.Errorf("DEC-008 test threshold %d is not the approved 3", row.NumericValue)
+			}
+			if row.DelaySeconds < 0 || row.DelaySeconds > UnixSecondsMax {
+				return fmt.Errorf("DEC-008 delay")
+			}
+		}
+	}
+	if err := validateSeats(doc.DevnetTestSeats, threshold); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateSeats(rows []DevnetTestSeat, threshold uint64) error {
+	if threshold == 3 && len(rows) != 4 {
+		return fmt.Errorf("approved council shape is 4 seats and 3 approvals")
+	}
+	if len(rows) == 0 {
+		return nil
+	}
+	if len(rows) != 4 {
+		return fmt.Errorf("devnet test seats %d", len(rows))
+	}
+	seenID := map[string]struct{}{}
+	seenKey := map[string]struct{}{}
+	for _, row := range rows {
+		if !idPattern.MatchString(row.SeatID) {
+			return fmt.Errorf("seat id %q", row.SeatID)
+		}
+		if _, ok := seenID[row.SeatID]; ok {
+			return fmt.Errorf("duplicate seat %s", row.SeatID)
+		}
+		seenID[row.SeatID] = struct{}{}
+		raw, err := hex.DecodeString(row.PublicKeyHex)
+		if err != nil || len(raw) != ConsensusKeyBytes {
+			return fmt.Errorf("seat key %s", row.SeatID)
+		}
+		key := strings.ToLower(row.PublicKeyHex)
+		if _, ok := seenKey[key]; ok {
+			return fmt.Errorf("duplicate seat key")
+		}
+		seenKey[key] = struct{}{}
 	}
 	return nil
 }
@@ -329,6 +389,11 @@ func validateValidators(rows []Validator) ([]string, []int64, error) {
 	// share test explicit so a later edit cannot drop it.
 	if maxPower*3 >= total {
 		return nil, nil, fmt.Errorf("validator power share")
+	}
+	// Spec validate_genesis_view runs power_set_invariant, which rejects a
+	// total above safe_integer_max (spec_machine.py:337).
+	if total > SafeIntegerMax {
+		return nil, nil, fmt.Errorf("validator power total exceeds safe_integer_max")
 	}
 	return pubs, powers, nil
 }

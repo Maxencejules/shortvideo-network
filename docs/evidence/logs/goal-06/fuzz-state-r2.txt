@@ -1,0 +1,17 @@
+COMMAND go test -fuzz=FuzzStateTransitions -fuzztime=20s -count=1 ./x/authority/
+DATE 2026-11-01T01:18:38+00:00
+HEAD 4c872824aeb25ac64af00a9301f837154f8930dc
+TREE eacc6b47cfaa19c876efdda1578324420dcdeb3c
+fuzz: elapsed: 0s, gathering baseline coverage: 0/180 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 104/180 completed
+fuzz: elapsed: 5s, gathering baseline coverage: 180/180 completed, now fuzzing with 4 workers
+fuzz: elapsed: 6s, execs: 1009 (302/sec), new interesting: 2 (total: 182)
+fuzz: elapsed: 9s, execs: 7062 (2017/sec), new interesting: 11 (total: 191)
+fuzz: elapsed: 12s, execs: 10691 (1210/sec), new interesting: 17 (total: 197)
+fuzz: elapsed: 15s, execs: 16118 (1809/sec), new interesting: 21 (total: 201)
+fuzz: elapsed: 18s, execs: 21653 (1845/sec), new interesting: 24 (total: 204)
+fuzz: elapsed: 21s, execs: 23956 (768/sec), new interesting: 26 (total: 206)
+fuzz: elapsed: 21s, execs: 23956 (0/sec), new interesting: 26 (total: 206)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	21.073s
+EXIT:0

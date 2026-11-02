@@ -1,10 +1,12 @@
 package app_test
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -69,19 +71,39 @@ func TestChainSourcesDoNotImportEconomicModules(t *testing.T) {
 	}
 }
 
-func TestLinkedBinaryOmitsEconomicModules(t *testing.T) {
-	bin := filepath.Join(t.TempDir(), "svnd")
+// svndSymbols builds ./cmd/svnd once per test binary and returns the
+// `go tool nm` listing. The binary is deleted after the listing is read.
+var svndSymbols = sync.OnceValues(func() (string, error) {
+	dir, err := os.MkdirTemp("", "svnd-nm-")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(dir)
+	bin := filepath.Join(dir, "svnd")
 	cmd := exec.Command("go", "build", "-o", bin, "./cmd/svnd")
 	cmd.Dir = filepath.Clean("..")
 	cmd.Env = os.Environ()
 	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, output)
+		return "", fmt.Errorf("build: %v\n%s", err, output)
 	}
 	nm := exec.Command("go", "tool", "nm", bin)
 	output, err := nm.CombinedOutput()
 	if err != nil {
-		t.Fatalf("nm: %v\n%s", err, output)
+		return "", fmt.Errorf("nm: %v\n%s", err, output)
 	}
+	return string(output), nil
+})
+
+func linkedSymbols(t *testing.T) string {
+	t.Helper()
+	text, err := svndSymbols()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return text
+}
+
+func TestLinkedBinaryOmitsEconomicModules(t *testing.T) {
 	forbidden := []string{
 		"github.com/cosmos/cosmos-sdk/x/staking",
 		"github.com/cosmos/cosmos-sdk/x/bank",
@@ -93,10 +115,43 @@ func TestLinkedBinaryOmitsEconomicModules(t *testing.T) {
 		"github.com/cosmos/ibc-go",
 		"github.com/cosmos/evm",
 	}
-	text := string(output)
+	text := linkedSymbols(t)
 	for _, path := range forbidden {
 		if strings.Contains(text, path) {
 			t.Errorf("linked binary contains %s", path)
 		}
+	}
+}
+
+// TestLinkedBinaryOmitsTestHooks fails if svnd links a test hook of this
+// repository: a symbol whose name contains ForTest, or the round-2 hooks
+// InstallMismatchedRemoval, ConsensusSnapshot, and AuthoritySnapshot. The
+// hooks live in _test.go files. Symbols of other modules are not checked
+// (pebble links StringForTests).
+func TestLinkedBinaryOmitsTestHooks(t *testing.T) {
+	const repo = "github.com/Maxencejules/shortvideo-network/"
+	text := linkedSymbols(t)
+	hooks := []string{"ForTest", "InstallMismatchedRemoval", "ConsensusSnapshot", "AuthoritySnapshot"}
+	control := false
+	for _, line := range strings.Split(text, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+		name := strings.Join(fields[2:], " ")
+		if !strings.Contains(name, repo) {
+			continue
+		}
+		if strings.Contains(name, repo+"chain/x/authority.(*State).ApplyDue") {
+			control = true
+		}
+		for _, hook := range hooks {
+			if strings.Contains(name, hook) {
+				t.Errorf("svnd links test hook %s", name)
+			}
+		}
+	}
+	if !control {
+		t.Fatal("the symbol listing has no x/authority ApplyDue; the scan read nothing")
 	}
 }

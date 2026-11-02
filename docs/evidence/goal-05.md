@@ -82,7 +82,7 @@ At height 192 that run reported app hash `9242B71A92C248E317788251EFCF52FDF33811
 
 | Check | Status | Command |
 | --- | --- | --- |
-| Genesis validation, init order, import/export, chain-id mismatch | VERIFIED | `go test ./chain/app` |
+| Genesis validation, init order, fresh-state import/export (no authority side state; see the [authority export rule](../architecture/authority-authorization.md#export)), chain-id mismatch | VERIFIED | `go test ./chain/app` |
 | Unknown message, outsider, fee amount, gas 0, no end-block power change | VERIFIED | same package, `TestMessagesAreRejected` |
 | One `abci.ValidatorUpdate` constructor, no economic imports | VERIFIED | `TestValidatorUpdatesHaveOneConstructor`, `TestChainSourcesDoNotImportEconomicModules` |
 | Four processes, same hash, restart, one stopped, two stopped, resume | VERIFIED | [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt) on tree `1c48fc02d3a4004c98cdc53f1dd8251da1b3753b`. Exit 0. Stall held at 12. Recovery reached 14. App hash `7AFE302F17F9E46DA33684CE3B5C21477B1FA349E6C7F41F4E1E3419162FE7E5`. No transaction was submitted, so the hash is the genesis application state. [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt) and [devnet-process-r2c.txt](logs/goal-05/devnet-process-r2c.txt) are earlier trees. They are not this row. |
@@ -168,10 +168,10 @@ These are not fixed in this round. They are not VERIFIED claims.
 1. Restart also passes at threshold+1: the threshold is recorded before the sequential stops, so a block committed during shutdown can satisfy the restart check. Liveness after restart is shown indirectly by one-down progress.
 2. Recovery passes at stall+1. A head CI run reached 13 against a stall of 12. The fix is to wait for two blocks, or one block interval, after the restarted validators are up, then rerun both proofs.
 3. `chain/app/authmodule.go` registers the auth query and message servers and sets consensus version 7. It does not register the x/auth migrations from version 5 to 6 and from 6 to 7. A fresh chain starts at 7. Goal 10 has to register those migrations before an upgrade from an older auth version.
-4. `scripts/devnet/prove-process.sh`, `prove-containers.sh`, and `prove-genesis.sh` print `TREE` from `git rev-parse HEAD^{tree}`. They do not print whether the worktree was dirty. A dirty flag belongs in those scripts, followed by a rerun.
+4. Done in Goal 06. `scripts/devnet/prove-process.sh`, `prove-containers.sh`, and `prove-genesis.sh` print `DIRTY yes` or `DIRTY no` after `TREE`.
 5. [env-compose-r2.txt](logs/goal-05/env-compose-r2.txt) records `COMMAND bash scripts/env/compose.sh` and, later, `COMMAND docker compose -f deployments/compose/docker-compose.yml stop`. The healthy `ps` table has no COMMAND line of its own. The stop command is the line above the container shutdown. A rerun should print COMMAND before `ps`.
 6. The Dockerfile digests are linux/amd64 manifests. Another architecture cannot use them as written. That limit is already in the Dockerfile comment.
-7. Exact-height checks can still flake when empty blocks leave validators one height apart. Runs `41248540896`, `41249097464`, and `41249637172` failed that way and were fixed in the sampler, the high-water height, and the per-node stall. `WaitEqual` at the start of the process test still requires one shared height. Keep watching it.
+7. Exact-height checks can still flake when empty blocks leave validators one height apart. Runs `41248540896`, `41249097464`, `41249637172`, and `41252788163` failed that way. Run `41252788163` reported `disagreement [14, 14, 13]` after stop v3: that sampler read the three live heights once and exited. Goal 06 makes that read wait until the heights match, and the restart and recovery proofs wait for two blocks after the restarted validators are up.
 
 ## Round 4
 

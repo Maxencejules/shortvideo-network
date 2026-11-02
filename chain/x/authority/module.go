@@ -32,8 +32,8 @@ func (o *Order) Record(name string) {
 	o.Names = append(o.Names, name)
 }
 
-// AppModule is the authority scaffold. InitGenesis is the only call that
-// returns validator updates. EndBlock returns none until Goal 06.
+// AppModule owns validator updates. InitGenesis returns the genesis set.
+// EndBlock returns a changeset when a scheduled change is due.
 type AppModule struct {
 	keeper Keeper
 	order  *Order
@@ -59,10 +59,15 @@ func (AppModule) DefaultGenesis(codec.JSONCodec) json.RawMessage {
 	return json.RawMessage(`{}`)
 }
 
+// ValidateGenesis runs ValidateGenesisState without a chain start point; the
+// app InitChainer checks the start point.
 func (AppModule) ValidateGenesis(_ codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var state authorityv1.GenesisState
 	if err := protojson.Unmarshal(bz, &state); err != nil {
 		return fmt.Errorf("authority genesis: %w", err)
+	}
+	if err := ValidateGenesisState(&state, nil); err != nil {
+		return err
 	}
 	if _, err := InitialUpdates(state.GetAuthority().GetValidators()); err != nil {
 		return err
@@ -86,6 +91,10 @@ func (am AppModule) InitGenesis(ctx sdk.Context, _ codec.JSONCodec, bz json.RawM
 	return updates
 }
 
+// ExportGenesis panics with the ExportState error (wrapping ErrExportRefused)
+// while the store holds state the genesis proto cannot carry. The SDK
+// interface has no error result, so a caller that needs the error calls
+// Keeper.Export before the module manager export.
 func (am AppModule) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) json.RawMessage {
 	state, err := am.keeper.Export(ctx)
 	if err != nil {
@@ -98,9 +107,10 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) json.RawMe
 	return raw
 }
 
-// EndBlock keeps the validator set static. Goal 06 owns scheduled updates.
-func (AppModule) EndBlock(context.Context) ([]abci.ValidatorUpdate, error) {
-	return nil, nil
+// EndBlock returns the authority changeset. No other module implements
+// HasABCIEndBlock, so nothing else can overwrite the set.
+func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+	return am.keeper.EndBlock(ctx)
 }
 
 func (AppModule) ConsensusVersion() uint64 { return 1 }

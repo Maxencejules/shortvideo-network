@@ -5,6 +5,8 @@ import (
 
 	gogoproto "github.com/cosmos/gogoproto/proto"
 	"google.golang.org/protobuf/proto"
+
+	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -70,6 +72,33 @@ func MakeEncoding() (Encoding, error) {
 		TxConfig:          txConfig,
 		Amino:             amino,
 	}, nil
+}
+
+func init() {
+	// The SDK tx decoder rejects unknown fields with the gogo type registry.
+	// Nested v2 messages are not registered there unless we do it.
+	registerGogo("svn.authority.v1.ProposalPayload", &authorityv1.ProposalPayload{})
+	registerGogo("svn.authority.v1.ValidatorPowerChange", &authorityv1.ValidatorPowerChange{})
+	registerGogo("svn.authority.v1.GovernedLimitChange", &authorityv1.GovernedLimitChange{})
+	registerGogo("svn.authority.v1.AdmitProviderChange", &authorityv1.AdmitProviderChange{})
+	registerGogo("svn.authority.v1.DisableProviderChange", &authorityv1.DisableProviderChange{})
+	registerGogo("svn.authority.v1.ForceWithdrawChange", &authorityv1.ForceWithdrawChange{})
+	registerGogo("svn.authority.v1.ActivationPoint", &authorityv1.ActivationPoint{})
+	registerGogo("svn.types.v1.Digest", &typesv1.Digest{})
+	// Every message with an InnerSignature field carries one:
+	// MsgRotateProviderKey, MsgDrainProvider, MsgRegisterContent,
+	// MsgWithdrawContent, MsgAcceptLease, MsgRenewLease, MsgEndLease, and
+	// MsgSubmitAuditBatch. MsgSubmitAuditBatch also carries repeated
+	// EvidenceItem. Without these registrations the tx decoder fails on such
+	// a message (codespace sdk, code 2) before the router can return
+	// ERROR_CODE_FORBIDDEN. TestEveryProtocolMessageDecodes sends each
+	// message with every field set.
+	registerGogo("svn.types.v1.InnerSignature", &typesv1.InnerSignature{})
+	registerGogo("svn.evidence.v1.EvidenceItem", &evidencev1.EvidenceItem{})
+}
+
+func registerGogo(name string, msg gogoproto.Message) {
+	gogoproto.RegisterType(msg, name)
 }
 
 func signerBytes(msg proto.Message) ([][]byte, error) {

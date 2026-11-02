@@ -19,6 +19,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	cmttypes "github.com/cometbft/cometbft/types"
+	sdked "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -44,6 +45,25 @@ type Options struct {
 	ChainID     string
 	GenesisTime time.Time
 	Peers       PeerMode
+	// Power is the voting power of every genesis validator. Zero means 1,
+	// the default. All four validators get the same power because genesis
+	// requires equal powers. The total, Validators*Power, must not exceed
+	// genesis.SafeIntegerMax.
+	Power int64
+}
+
+// validatorPower returns the power Init gives every genesis validator.
+func validatorPower(requested int64) (int64, error) {
+	if requested == 0 {
+		return 1, nil
+	}
+	if requested < 0 {
+		return 0, fmt.Errorf("validator power %d is not positive", requested)
+	}
+	if requested > genesis.SafeIntegerMax/Validators {
+		return 0, fmt.Errorf("validator power %d: the total of %d validators exceeds safe_integer_max", requested, Validators)
+	}
+	return requested, nil
 }
 
 // Node is the public description of one validator. It has no private key.
@@ -68,6 +88,14 @@ type Topology struct {
 	Validators         []Node `json:"validators"`
 	AuthorityAddress   string `json:"authority_address"`
 	ServiceAddress     string `json:"service_address"`
+	Seats              []Seat `json:"seats,omitempty"`
+}
+
+// Seat is a public devnet council key. It is not a consensus key.
+type Seat struct {
+	SeatID       string `json:"seat_id"`
+	Address      string `json:"address"`
+	PublicKeyHex string `json:"public_key_hex"`
 }
 
 // Layout is the result of Init.
@@ -82,6 +110,9 @@ type Layout struct {
 func Init(opts Options) (layout Layout, err error) {
 	if opts.Home == "" {
 		return Layout{}, fmt.Errorf("home is required")
+	}
+	if opts.Power, err = validatorPower(opts.Power); err != nil {
+		return Layout{}, err
 	}
 	if opts.Peers == "" {
 		opts.Peers = PeerLoopback
@@ -132,29 +163,21 @@ func Init(opts Options) (layout Layout, err error) {
 	if err = writeKey(filepath.Join(opts.Home, "accounts", "service.hex"), serviceKey.Bytes()); err != nil {
 		return Layout{}, err
 	}
+	seats := make([]councilKey, 4)
+	for i := range seats {
+		key := sdked.GenPrivKey()
+		pub := key.PubKey().Bytes()
+		if len(pub) != 32 {
+			return Layout{}, fmt.Errorf("council public key length %d", len(pub))
+		}
+		seats[i] = councilKey{id: fmt.Sprintf("seat-%d", i+1), key: key, pub: pub}
+		if err = writeKey(filepath.Join(opts.Home, "accounts", fmt.Sprintf("seat-%d.hex", i+1)), key.Bytes()); err != nil {
+			return Layout{}, err
+		}
+	}
 
-	doc := document(opts, nodes, authorityKey, serviceKey)
-	enc, err := app.MakeEncoding()
+	genDoc, doc, err := genesisDoc(opts, nodes, authorityKey, serviceKey, seats)
 	if err != nil {
-		return Layout{}, err
-	}
-	modules, err := app.AppStateFromDocument(enc.Codec, doc)
-	if err != nil {
-		return Layout{}, err
-	}
-	appState, err := json.Marshal(modules)
-	if err != nil {
-		return Layout{}, err
-	}
-	genDoc := &cmttypes.GenesisDoc{
-		GenesisTime:     doc.Time(),
-		ChainID:         doc.ChainID,
-		InitialHeight:   1,
-		ConsensusParams: consensusParams(),
-		Validators:      cometValidators(nodes),
-		AppState:        appState,
-	}
-	if err = genDoc.ValidateAndComplete(); err != nil {
 		return Layout{}, err
 	}
 	genesisPath := filepath.Join(opts.Home, "genesis.json")
@@ -181,7 +204,7 @@ func Init(opts Options) (layout Layout, err error) {
 		if err = writeNodeConfig(nodes[i], peersExcept(nodes, i, opts.Peers)); err != nil {
 			return Layout{}, err
 		}
-		public[i] = nodes[i].public(opts.Peers)
+		public[i] = nodes[i].public(opts.Peers, opts.Power)
 	}
 	topology := Topology{
 		ChainID:            doc.ChainID,
@@ -191,6 +214,7 @@ func Init(opts Options) (layout Layout, err error) {
 		Validators:         public,
 		AuthorityAddress:   sdk.AccAddress(authorityKey.PubKey().Address()).String(),
 		ServiceAddress:     sdk.AccAddress(serviceKey.PubKey().Address()).String(),
+		Seats:              publicSeats(seats),
 	}
 	rawTopology, err := json.MarshalIndent(topology, "", "  ")
 	if err != nil {
@@ -200,6 +224,37 @@ func Init(opts Options) (layout Layout, err error) {
 		return Layout{}, err
 	}
 	return Layout{Home: opts.Home, Topology: topology, Genesis: genesisPath}, nil
+}
+
+// genesisDoc builds the validated CometBFT genesis for the prepared nodes
+// and keys. It writes nothing. opts.Power must already be the value
+// validatorPower returned.
+func genesisDoc(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.PrivKey, seats []councilKey) (*cmttypes.GenesisDoc, genesis.Document, error) {
+	doc := document(opts, nodes, authorityKey, serviceKey, seats)
+	enc, err := app.MakeEncoding()
+	if err != nil {
+		return nil, genesis.Document{}, err
+	}
+	modules, err := app.AppStateFromDocument(enc.Codec, doc)
+	if err != nil {
+		return nil, genesis.Document{}, err
+	}
+	appState, err := json.Marshal(modules)
+	if err != nil {
+		return nil, genesis.Document{}, err
+	}
+	genDoc := &cmttypes.GenesisDoc{
+		GenesisTime:     doc.Time(),
+		ChainID:         doc.ChainID,
+		InitialHeight:   1,
+		ConsensusParams: consensusParams(),
+		Validators:      cometValidators(nodes, opts.Power),
+		AppState:        appState,
+	}
+	if err := genDoc.ValidateAndComplete(); err != nil {
+		return nil, genesis.Document{}, err
+	}
+	return genDoc, doc, nil
 }
 
 type prepared struct {
@@ -213,7 +268,7 @@ type prepared struct {
 	pub     []byte
 }
 
-func (p prepared) public(mode PeerMode) Node {
+func (p prepared) public(mode PeerMode, power int64) Node {
 	return Node{
 		Name:               p.name,
 		Home:               p.home,
@@ -222,7 +277,7 @@ func (p prepared) public(mode PeerMode) Node {
 		P2P:                dialAddress(p, mode),
 		RPC:                rpcURL(p),
 		GRPC:               p.grpc,
-		Power:              1,
+		Power:              power,
 		ConsensusPubkeyHex: hex.EncodeToString(p.pub),
 	}
 }
@@ -348,12 +403,30 @@ func writeNodeConfig(p prepared, peers string) error {
 	return os.WriteFile(filepath.Join(p.home, "config", "svn-listen.json"), append(rawListen, '\n'), 0o644)
 }
 
-func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.PrivKey) genesis.Document {
+type councilKey struct {
+	id  string
+	key *sdked.PrivKey
+	pub []byte
+}
+
+func publicSeats(seats []councilKey) []Seat {
+	out := make([]Seat, len(seats))
+	for i, seat := range seats {
+		out[i] = Seat{
+			SeatID:       seat.id,
+			Address:      sdk.AccAddress(seat.key.PubKey().Address()).String(),
+			PublicKeyHex: hex.EncodeToString(seat.pub),
+		}
+	}
+	return out
+}
+
+func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.PrivKey, seats []councilKey) genesis.Document {
 	validators := make([]genesis.Validator, len(nodes))
 	for i, nodeHome := range nodes {
 		validators[i] = genesis.Validator{
 			NodeID:             nodeHome.name,
-			Power:              1,
+			Power:              opts.Power,
 			ConsensusPubkeyHex: hex.EncodeToString(nodeHome.pub),
 		}
 	}
@@ -361,34 +434,47 @@ func document(opts Options, nodes []prepared, authorityKey, serviceKey *sdksecp.
 	for i, id := range genesis.DecisionIDs {
 		rows[i] = genesis.BlockedDecision{DecisionID: id, SchemaVersion: 1}
 	}
+	submitters := []genesis.Submitter{
+		{AddressHex: hex.EncodeToString(authorityKey.PubKey().Address()), Role: genesis.RoleAuthority},
+		{AddressHex: hex.EncodeToString(serviceKey.PubKey().Address()), Role: genesis.RoleAdmittedService},
+	}
+	seatRows := make([]genesis.DevnetTestSeat, len(seats))
+	for i, seat := range seats {
+		submitters = append(submitters, genesis.Submitter{
+			AddressHex: hex.EncodeToString(seat.key.PubKey().Address()),
+			Role:       genesis.RoleBroadcaster,
+		})
+		seatRows[i] = genesis.DevnetTestSeat{SeatID: seat.id, PublicKeyHex: hex.EncodeToString(seat.pub)}
+	}
 	return genesis.Document{
 		ChainID:                   opts.ChainID,
 		GenesisUnixSeconds:        opts.GenesisTime.Unix(),
 		ProtocolVersion:           genesis.ProtocolVersion,
 		AllowDevnetTestParameters: true,
 		Validators:                validators,
-		Submitters: []genesis.Submitter{
-			{AddressHex: hex.EncodeToString(authorityKey.PubKey().Address()), Role: genesis.RoleAuthority},
-			{AddressHex: hex.EncodeToString(serviceKey.PubKey().Address()), Role: genesis.RoleAdmittedService},
-		},
-		BlockedDecisions: rows,
+		Submitters:                submitters,
+		DevnetTestSeats:           seatRows,
+		BlockedDecisions:          rows,
 		DevnetTestParameters: []genesis.DevnetTestParameter{
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-001", RoleName: "DEVNET_TEST_ONLY"},
+			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-002", RoleName: "DEVNET_TEST_ONLY"},
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-005", NumericValue: 3600},
-			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-008", NumericValue: 2, DelaySeconds: 10},
+			// Four seats and three approvals is DEC-008. Delay 0 is the
+			// devnet test parameter. Activation is still strictly later.
+			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-008", NumericValue: 3, DelaySeconds: 0},
 		},
 		SafetyCaps: genesis.DefaultSafetyCaps(),
 	}
 }
 
-func cometValidators(nodes []prepared) []cmttypes.GenesisValidator {
+func cometValidators(nodes []prepared, power int64) []cmttypes.GenesisValidator {
 	out := make([]cmttypes.GenesisValidator, len(nodes))
 	for i, nodeHome := range nodes {
 		pub := cmted25519.PubKey(nodeHome.pub)
 		out[i] = cmttypes.GenesisValidator{
 			Address: pub.Address(),
 			PubKey:  pub,
-			Power:   1,
+			Power:   power,
 			Name:    nodeHome.name,
 		}
 	}

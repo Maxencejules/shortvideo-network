@@ -11,6 +11,7 @@ trap 'rm -rf "${work}"' EXIT
 echo "COMMAND bash scripts/devnet/prove-genesis.sh"
 echo "DATE $(date -Is)"
 echo "TREE $(git rev-parse 'HEAD^{tree}')"
+if [[ -n "$(git status --porcelain)" ]]; then echo "DIRTY yes"; else echo "DIRTY no"; fi
 
 mkdir -p "$(dirname "${bin}")"
 go build -C "${root}/chain" -o "${bin}" ./cmd/svnd
