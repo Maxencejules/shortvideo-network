@@ -73,7 +73,7 @@ func Start(home string) error {
 		nodeKey,
 		proxy.NewLocalClientCreator(cmtApp),
 		node.DefaultGenesisDocProviderFunc(cfg),
-		cmtcfg.DefaultDBProvider,
+		dbProvider,
 		node.DefaultMetricsProvider(cfg.Instrumentation),
 		servercmtlog.CometLoggerWrapper{Logger: logger},
 	)

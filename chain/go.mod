@@ -10,6 +10,7 @@ require (
 	cosmossdk.io/log/v2 v2.1.0
 	github.com/Maxencejules/shortvideo-network/protocol v0.0.0
 	github.com/cometbft/cometbft v0.40.0
+	github.com/cometbft/cometbft-db v0.14.3
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-sdk v0.55.0
 	github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
@@ -55,7 +56,6 @@ require (
 	github.com/cockroachdb/pebble v1.1.5 // indirect
 	github.com/cockroachdb/redact v1.1.8 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20250429170803-42689b6311bb // indirect
-	github.com/cometbft/cometbft-db v0.14.3 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/btree v1.0.0 // indirect
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5 // indirect
