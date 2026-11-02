@@ -12,8 +12,8 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-// The read surface below is what x/providers and x/content consume through
-// their own small interfaces. Each method reads committed authority state
+// The read surface below is what x/providers, x/content, and x/leases
+// consume through their own small interfaces. Each method reads committed authority state
 // through ctx and writes nothing.
 
 // Role returns the genesis submitter role of addr from the admission index.
@@ -41,20 +41,71 @@ func (k Keeper) Role(ctx sdk.Context, addr []byte) typesv1.SubmitterRole {
 // every other chain, for any other row, and when the state does not decode,
 // so a caller fails closed with DECISION_BLOCKED.
 func (k Keeper) DevnetRole(ctx sdk.Context, decisionID string) (string, bool) {
-	raw := ctx.KVStore(k.storeKey).Get([]byte{stateKey})
-	if raw == nil {
-		return "", false
-	}
-	var stored authorityv1.GenesisState
-	if err := proto.Unmarshal(raw, &stored); err != nil {
-		return "", false
-	}
-	view := State{ChainID: ctx.ChainID(), Params: stored.GetDevnetTestParameters()}
-	row := view.devnet(decisionID)
+	row := k.devnetRow(ctx, decisionID)
 	if row == nil {
 		return "", false
 	}
 	return row.GetRoleName(), true
+}
+
+// DevnetNumeric returns numeric_value of the devnet test parameter for
+// decisionID, under the same rule as DevnetRole: the chain id of ctx starts
+// with "shortvideo-dev-", the label is PROPOSED_TEST_PARAMETER, and
+// approved_policy is false. found is false on every other chain, for any
+// other row, and when the state does not decode, so a caller fails closed
+// with DECISION_BLOCKED. A matching row without a numeric value returns
+// (0, true); the caller decides what 0 means (x/leases treats a DEC-005
+// value of 0 as DECISION_BLOCKED, as sponsorship_seconds does in
+// spec_machine.py:384). The value is a devnet test number, not policy.
+func (k Keeper) DevnetNumeric(ctx sdk.Context, decisionID string) (uint64, bool) {
+	row := k.devnetRow(ctx, decisionID)
+	if row == nil {
+		return 0, false
+	}
+	return row.GetNumericValue(), true
+}
+
+// devnetRow is the devnet test parameter row for decisionID under the
+// State.devnet rule with the chain id of ctx, or nil. A missing or
+// undecodable state record is nil.
+func (k Keeper) devnetRow(ctx sdk.Context, decisionID string) *typesv1.DevnetTestParameter {
+	raw := ctx.KVStore(k.storeKey).Get([]byte{stateKey})
+	if raw == nil {
+		return nil
+	}
+	var stored authorityv1.GenesisState
+	if err := proto.Unmarshal(raw, &stored); err != nil {
+		return nil
+	}
+	view := State{ChainID: ctx.ChainID(), Params: stored.GetDevnetTestParameters()}
+	return view.devnet(decisionID)
+}
+
+// PolicyVersion returns the committed policy version: policy_version of the
+// side document, which starts at 1 and grows by one with each executed
+// proposal (op_execute, spec_machine.py:1522). It is the value the engine
+// sees when it loads state: 1 when the side document is absent (a store
+// before the first save) and when the document holds 0. x/leases stamps it
+// on each accepted lease.
+//
+// It fails closed, like GovernedLimit: a side document that does not decode
+// as the document load reads panics instead of reporting version 1. The
+// side document is written only by save, so this is an invariant
+// violation; the SDK turns a handler panic into a failed transaction on
+// every node alike.
+func (k Keeper) PolicyVersion(ctx sdk.Context) uint64 {
+	raw := ctx.KVStore(k.storeKey).Get([]byte{sideKey})
+	if raw == nil {
+		return 1
+	}
+	var side sideDocument
+	if err := json.Unmarshal(raw, &side); err != nil {
+		panic(fmt.Sprintf("authority: side document does not decode: %v", err))
+	}
+	if side.PolicyVersion == 0 {
+		return 1
+	}
+	return side.PolicyVersion
 }
 
 // GovernedLimit returns the value an executed GovernedLimitChange set for

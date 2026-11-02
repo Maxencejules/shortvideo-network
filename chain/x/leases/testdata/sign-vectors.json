@@ -1,0 +1,59 @@
+{
+  "comment": "Golden x/leases provider inner-signature vectors (DR-08-04). Signed bytes are UTF-8(domain) || 0x00 || canonical. Test keys: ed25519 seed = sha256(\"svn-leases-test-seed:\" + key_label); no private key is stored. Synthetic values only.",
+  "vectors": [
+    {
+      "name": "accept",
+      "domain": "SVN-PROVIDER-ACCEPT-1",
+      "key_label": "p1",
+      "public_key": "58cd5672b855e597a3e784d82ee968a031201b64a0bdc27c149bd93a6b7a306e",
+      "canonical": "{\"contentId\":\"c1\",\"contentVersion\":\"1\",\"deadlineUnixSeconds\":\"1767229300\",\"expiryUnixSeconds\":\"1767226200\",\"leaseId\":\"l1\",\"manifestDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"ea86e77105d21f0cbf1c1d2ead22114a02e0da39a33eebb2dbc0ac5393272497\"},\"offerId\":\"o1\",\"packageBytes\":\"1000\",\"providerId\":\"p1\",\"scheduler\":\"3333333333333333333333333333333333333333\",\"startUnixSeconds\":\"1767225700\",\"termVersion\":\"1\",\"termsDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"70e7634333980c0edc98a5b6003caa4b835975d69fba333cde5241f1a70b1efd\"}}",
+      "sign_bytes_sha256": "658fe9a57a077ed4e9ebc26567cb2ffa4cebb85bcdb05de63e6d34e599b705eb",
+      "signature": "96fcfe127443a3e04d170efa1d2a7223b71ee02a16e679f09f0bad0d2caedc05f4a3ce75ead90de3e0ce02e66a795f4d4bba29e2ddc937bd78f49eb7b67c9602"
+    },
+    {
+      "name": "accept-extreme-values",
+      "domain": "SVN-PROVIDER-ACCEPT-1",
+      "key_label": "p1",
+      "public_key": "58cd5672b855e597a3e784d82ee968a031201b64a0bdc27c149bd93a6b7a306e",
+      "canonical": "{\"contentId\":\"c1-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\",\"contentVersion\":\"18446744073709551615\",\"deadlineUnixSeconds\":\"9223372036854775807\",\"expiryUnixSeconds\":\"-1\",\"leaseId\":\"l1-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\",\"manifestDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"ea86e77105d21f0cbf1c1d2ead22114a02e0da39a33eebb2dbc0ac5393272497\"},\"offerId\":\"o1-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\",\"packageBytes\":\"18446744073709551615\",\"providerId\":\"p1-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\",\"scheduler\":\"3333333333333333333333333333333333333333\",\"startUnixSeconds\":\"-9223372036854775808\",\"termVersion\":\"18446744073709551615\",\"termsDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"51d2361f4faea3bc8f9facdbc7d99abb555596a2e51f7b25fd3b41c93587e616\"}}",
+      "sign_bytes_sha256": "d43bcf7a507a01663f3de5aa09387ddac9d16c0e5f02cf3e35b7c21effbf7ceb",
+      "signature": "fff2edcd6d7c58263400b71a57a90bc6b7f4c8f3f31e3d0145750fe626991221e3975453b835f162edf8844ef58b70ac22f2b4889b73ab6b6e29d348352a0c02"
+    },
+    {
+      "name": "renew",
+      "domain": "SVN-PROVIDER-RENEW-1",
+      "key_label": "p1",
+      "public_key": "58cd5672b855e597a3e784d82ee968a031201b64a0bdc27c149bd93a6b7a306e",
+      "canonical": "{\"deadlineUnixSeconds\":\"1767232900\",\"evidenceId\":\"\",\"leaseId\":\"l1\",\"manifestDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"ea86e77105d21f0cbf1c1d2ead22114a02e0da39a33eebb2dbc0ac5393272497\"},\"packageBytes\":\"1000\",\"termVersion\":\"2\"}",
+      "sign_bytes_sha256": "3e1c0153bb8dcafca2cbc77b9585d312966706f0edd646bb178cf83f29692faa",
+      "signature": "eda2060bbdea1250850ee678e9b8258fd2254a36c43db53077d09beac3a140e6a67a43b184e0148ecfedaa3298288656d4ba53a8bee3ed294138fa54b4eb140c"
+    },
+    {
+      "name": "renew-with-evidence",
+      "domain": "SVN-PROVIDER-RENEW-1",
+      "key_label": "p1",
+      "public_key": "58cd5672b855e597a3e784d82ee968a031201b64a0bdc27c149bd93a6b7a306e",
+      "canonical": "{\"deadlineUnixSeconds\":\"1767236500\",\"evidenceId\":\"ev-1\",\"leaseId\":\"l1\",\"manifestDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"ea86e77105d21f0cbf1c1d2ead22114a02e0da39a33eebb2dbc0ac5393272497\"},\"packageBytes\":\"1000\",\"termVersion\":\"3\"}",
+      "sign_bytes_sha256": "206ae3d092ed02e8f078fd3e23668436966a1a8e44b796900857be1efc5c43e4",
+      "signature": "6ca3fda5eca182213f92df76e082ed2a1e62e7f967db4e3cc1e70406875fa9313cfe70e21d8c5c9998868a234ff1b3cf02abf1992b50589caa6a0bc16475a909"
+    },
+    {
+      "name": "renew-out-of-range",
+      "domain": "SVN-PROVIDER-RENEW-1",
+      "key_label": "p1",
+      "public_key": "58cd5672b855e597a3e784d82ee968a031201b64a0bdc27c149bd93a6b7a306e",
+      "canonical": "{\"deadlineUnixSeconds\":\"-5\",\"evidenceId\":\"\",\"leaseId\":\"l1\",\"manifestDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"ea86e77105d21f0cbf1c1d2ead22114a02e0da39a33eebb2dbc0ac5393272497\"},\"packageBytes\":\"18446744073709551615\",\"termVersion\":\"18446744073709551615\"}",
+      "sign_bytes_sha256": "b20a3e0757e885ddeff884896147afdec11e5107563357d9fd0b9d94f9211a16",
+      "signature": "63b23a1094ae1a2fb551c7bb9c80d5703b51e1a9f48359e2278c8fe22979fd29735e86be3a0f1ab96d7c01735b26f557a6d18ba5387fb13facdfd36373b19607"
+    },
+    {
+      "name": "end",
+      "domain": "SVN-PROVIDER-END-1",
+      "key_label": "p1",
+      "public_key": "58cd5672b855e597a3e784d82ee968a031201b64a0bdc27c149bd93a6b7a306e",
+      "canonical": "{\"leaseId\":\"l1\",\"providerId\":\"p1\"}",
+      "sign_bytes_sha256": "4dd969c53816588d68188683094b05cd618876c4639408a6ada4dae2df229477",
+      "signature": "d430447af5961a509c988505941a77a3d9a8e2391eef59320bc04dbf7bf91a9ce5572e67d6d6af230763d830c8486a143a8ef3f2dcf25243ec424f970d62970c"
+    }
+  ]
+}

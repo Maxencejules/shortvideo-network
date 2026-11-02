@@ -214,8 +214,9 @@ func TestProvidersPageRetiredKeyBudget(t *testing.T) {
 
 // TestCorruptStoredRecord: a stored provider value that does not decode,
 // that names another id than its key, or that carries retired keys inline
-// is an invariant violation. Every message path and council hook that
-// loads it panics (the SDK turns that into a failed transaction), and
+// is an invariant violation. Every message path, council hook, and lease
+// handoff call (including ReserveProbe, Reserve, and Release) that loads it
+// panics (the SDK turns that into a failed transaction), and
 // Query/Provider, Query/Providers, and ExportGenesis return an error.
 func TestCorruptStoredRecord(t *testing.T) {
 	for _, c := range []struct {
@@ -256,6 +257,9 @@ func TestCorruptStoredRecord(t *testing.T) {
 				"DisableByCouncil": func() { e.k.DisableByCouncil(e.fresh(), "p1") },
 				"AdmitByCouncil":   func() { e.k.AdmitByCouncil(e.fresh(), "p1", true) },
 				"Provider":         func() { e.k.Provider(e.fresh(), "p1") },
+				"ReserveProbe":     func() { e.k.ReserveProbe(e.fresh(), "p1", 1) },
+				"Reserve":          func() { e.k.Reserve(e.fresh(), "p1", 1) },
+				"Release":          func() { e.k.Release(e.fresh(), "p1", 1) },
 			}
 			for name, call := range paths {
 				func() {

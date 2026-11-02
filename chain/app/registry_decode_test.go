@@ -21,6 +21,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
+	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
@@ -497,8 +498,8 @@ func TestStateSchemaHasNoPayloadField(t *testing.T) {
 	}
 }
 
-// TestMigrationsNoOpInApp: in the app, both registries report consensus
-// version 2 (version 1 was the goal-05/06 scaffold slot), and running the
+// TestMigrationsNoOpInApp: in the app, both registries and x/leases report
+// consensus version 2 (version 1 was the goal-05/06 scaffold slot), and running the
 // app's migrations from that version map is a no-op. The SDK returns before it looks for a step when from equals to,
 // so that half proves only that nothing else runs; the registration path is
 // TestRegistryMigrationPathInApp, and the module tables are
@@ -510,7 +511,8 @@ func TestMigrationsNoOpInApp(t *testing.T) {
 	runRegistryFlow(t, n, c)
 	chainApp := c.app()
 	from := chainApp.VersionMapForTest()
-	if from[app.ModuleProviders] != providers.ConsensusVersion || from[app.ModuleContent] != content.ConsensusVersion || providers.ConsensusVersion != 2 || content.ConsensusVersion != 2 {
+	if from[app.ModuleProviders] != providers.ConsensusVersion || from[app.ModuleContent] != content.ConsensusVersion || providers.ConsensusVersion != 2 || content.ConsensusVersion != 2 ||
+		from[app.ModuleLeases] != leases.ConsensusVersion || leases.ConsensusVersion != 2 {
 		t.Fatalf("version map %v", from)
 	}
 	before := chainApp.FullSnapshot()
@@ -534,6 +536,7 @@ func TestMigrationsNoOpInApp(t *testing.T) {
 
 // TestRegistryMigrationPathInApp drives the migration path through the
 // app's own configurator: a test-only 2 -> 3 step for each registry module
+// and x/leases
 // registers without a duplicate (the module registered no version-2 step),
 // runs exactly once on the committed stores (it reads a record the flow
 // wrote), and moves the version map to 3. The step writes nothing.
@@ -541,15 +544,17 @@ func TestRegistryMigrationPathInApp(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		key  []byte
+		flow func(*testing.T, *regNet, *cluster)
 	}{
-		{app.ModuleProviders, providers.ProviderKey("p1")},
+		{app.ModuleProviders, providers.ProviderKey("p1"), func(t *testing.T, n *regNet, c *cluster) { runRegistryFlow(t, n, c) }},
 		// content.ContentPrefix | "c1" | 0x00 | version 1 (8 bytes big endian)
-		{app.ModuleContent, append(append([]byte{content.ContentPrefix}, "c1\x00"...), 0, 0, 0, 0, 0, 0, 0, 1)},
+		{app.ModuleContent, append(append([]byte{content.ContentPrefix}, "c1\x00"...), 0, 0, 0, 0, 0, 0, 0, 1), func(t *testing.T, n *regNet, c *cluster) { runRegistryFlow(t, n, c) }},
+		{app.ModuleLeases, leases.LeaseKey("l1"), func(t *testing.T, n *regNet, c *cluster) { runLeaseFlow(t, n, c) }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			n := newRegNet()
 			c := n.start(t, 1)
-			runRegistryFlow(t, n, c)
+			tc.flow(t, n, c)
 			chainApp := c.app()
 			before := chainApp.FullSnapshot()
 			ctx := chainApp.NewUncachedContext(false, cmtproto.Header{ChainID: n.doc.ChainID, Height: c.height()})

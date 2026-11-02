@@ -87,15 +87,24 @@ Other modules consume these through their own small interfaces. They read commit
 | --- | --- |
 | `Role(ctx, addr)` | the genesis `SubmitterRole` from the admission index; `UNSPECIFIED` for any other address |
 | `DevnetRole(ctx, decisionID)` | the role name of a devnet test parameter under the `State.devnet` rule with the chain id of `ctx`; not found on any other chain |
+| `DevnetNumeric(ctx, decisionID)` | `numeric_value` of the devnet test parameter under the same rule as `DevnetRole`; not found on any other chain, for another label or approved policy, for a missing row, or when the state record does not decode. A matching row without a value returns `(0, true)`; the caller decides what 0 means |
+| `PolicyVersion(ctx)` | the committed policy version: `policy_version` of the side document, 1 when the side document is absent or holds 0 (as `load` sees it); it grows by one with each executed proposal |
 | `GovernedLimit(ctx, key)` | the value an executed `GovernedLimitChange` set; callers apply `msgkit.Effective` |
 | `BusinessDigest(ctx, id)` | the business digest authority committed for `id` (implements `msgkit.BusinessSource`) |
 | `Admitted(ctx, addr)` | whether `addr` is in the admission index (ante decorator) |
 
-`BusinessDigest` and `GovernedLimit` panic if the side document does not decode, so no id is reported free
-and no transaction runs against the protocol ceiling on unreadable state. The SDK turns a handler panic into a
+x/providers reads `Role` and `GovernedLimit`; x/content also reads `DevnetRole`. x/leases (goal 08) reads `Role`,
+`GovernedLimit`, `DevnetNumeric` (the DEC-005 devnet test value, a devnet stand-in, not policy), and `PolicyVersion`.
+
+`BusinessDigest`, `GovernedLimit`, and `PolicyVersion` panic if the side document does not decode, so no id is
+reported free, no transaction runs against the protocol ceiling, and no version 1 is reported on unreadable state.
+`PolicyVersion` fails exactly where `load` fails (`TestPolicyVersionRead`). The SDK turns a handler panic into a
 failed transaction on every node. Query handlers also call `GovernedLimit` (the `Providers` page cap): ABCI
 `Query` recovers a panic into an error result, and the node gRPC server wraps every query in a recovery
 interceptor, so the query fails and the node keeps running.
+
+`DevnetRole` and `DevnetNumeric` report not found on an undecodable state record, so a caller fails closed with
+`DECISION_BLOCKED` (`TestDevnetNumeric`).
 
 ## Wiring
 
@@ -121,6 +130,11 @@ peers.Add(authority.ModuleName, authorityKeeper)
 - `keeper_test.go` (real IAVL multistore): hook writes committed only on success, discarded on keep and failure;
   side-document round trip of force-withdraw arguments; one business-id namespace through `msgkit.Peers`; read
   surface; older side documents; deterministic sources.
+- `read_test.go` (real IAVL multistore): `TestDevnetNumeric` (every chain id, label, approval, and missing-row case
+  against the engine's `State.devnet` and `DevnetRole`; DEC-005 3600 read from a protojson genesis document through
+  `InitGenesis`; empty and undecodable state) and `TestPolicyVersionRead` (1 on an empty store and after genesis, 1
+  while a proposal is only queued, 2 and 3 after executed proposals, unchanged by a rejected execution; stored
+  documents decode or panic exactly as `load` does).
 - `enforce_test.go`: `enforceCommitted` per execution mode (`TestEnforceCommitted`) and through `Approve`
   (`TestHandlerMeterCheckByMode`).
 - `fuzz_test.go` `FuzzStateTransitions` and `fuzz_registry_test.go` `FuzzCouncilRegistryPayloads`: bounded

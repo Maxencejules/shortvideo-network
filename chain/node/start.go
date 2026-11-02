@@ -139,8 +139,11 @@ func Start(home string) error {
 
 // NodeFile is the bind and peer record start reads. config.toml is written
 // from the same values for operators. Start does not reparse durations.
-// QueryGasLimit is the gas one ABCI or gRPC query may consume; 0 or absent
-// selects app.DefaultQueryGasLimit (never unlimited).
+// QueryGasLimit is the gas one gRPC-routed query (ABCI query on a
+// registered service path, or the node gRPC server) may consume; 0 or
+// absent selects app.DefaultQueryGasLimit. An operator who sets 2^64-1 gets
+// the SDK's unlimited meter. Raw store queries (/store/<store>/key or
+// subspace) bypass the query router and are not metered at any setting.
 type NodeFile struct {
 	Moniker          string `json:"moniker"`
 	P2P              string `json:"p2p"`

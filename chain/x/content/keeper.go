@@ -75,9 +75,12 @@ type DevnetParams interface {
 }
 
 // WithdrawalHook runs inside a withdrawal, after the tombstone is written
-// and before the withdrawal commits. Goal 08 implements it to void open
-// lease offers for the content. An error aborts the withdrawal: nothing of
-// it is written. Goal 07 wires no hook because no offer store exists yet.
+// and before the withdrawal commits, on both the message path
+// (WithdrawContent) and the council path (ForceWithdrawByCouncil). In goal
+// 08 the app wires the x/leases keeper here; its ContentWithdrawn voids
+// the open lease offers of the content. An error aborts the withdrawal:
+// nothing of it is written. This package does not import x/leases; it
+// sees the hook only through this interface.
 type WithdrawalHook interface {
 	ContentWithdrawn(ctx sdk.Context, contentID string, version uint64) error
 }
@@ -90,7 +93,8 @@ type InitRecorder interface {
 
 // Deps are the read surfaces this module consumes. Roles, Params, and
 // Limits are required. Peers joins the global business-id namespace and may
-// be nil (no other module). Hook may be nil.
+// be nil (no other module). Hook may be nil (unit tests); the app wires
+// x/leases.
 type Deps struct {
 	Roles  Roles
 	Params DevnetParams

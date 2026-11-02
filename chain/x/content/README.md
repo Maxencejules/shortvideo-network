@@ -69,7 +69,7 @@ Limits of this interim:
 - A tombstone keeps `content_id`, `content_version`, `committed_unix_seconds` (block time), `reason_digest`, `history_erased` false, `retention_decision_id` `DEC-004`, and `retention_value_version` 0. The `Content` row stays.
 - A later register of the id is `DUPLICATE_ID`. A second withdrawal is `WITHDRAWN`. The id cannot be revived.
 - Withdrawal blocks new offers, accepts, and renewals through the lease handoff below (Goal 08 enforces it in its handlers). It does not release an accepted reservation.
-- `Deps.Hook` (`WithdrawalHook`) runs inside the withdrawal. Goal 08 implements it to void open offers. Goal 07 wires no hook because no offer store exists. A hook error aborts the withdrawal and nothing of it is written. On both the message path and the council path the hook's svn code is passed through; any other error is `MALFORMED` (`TestWithdrawHookFailureWritesNothing`, `TestForceWithdrawHookFailure`).
+- `Deps.Hook` (`WithdrawalHook`) runs inside the withdrawal, after the tombstone and before `ContentWithdrawn`, on the message path and the council path. In goal 08 the app wires the x/leases keeper as the hook; it voids the open lease offers of the content and changes no accepted lease. This package does not import x/leases (`TestModuleImportsStayNarrow`). A hook error aborts the withdrawal and nothing of it is written. On both the message path and the council path the hook's svn code is passed through; any other error is `MALFORMED` (`TestWithdrawHookFailureWritesNothing`, `TestForceWithdrawHookFailure`).
 - A block time outside `1..253402300799` is `OUT_OF_RANGE`, checked after every protocol check, so an exported tombstone always validates.
 
 ## Events
@@ -96,7 +96,7 @@ A rejected query returns `msgkit.QueryErr`: the `svn` error with a gRPC status (
 - `Package(ctx, id, version) (PackageIdentity, msgkit.Code)`: absent is `NOT_FOUND`.
 - `CheckOfferable(ctx, id, version, manifestSHA256, packageBytes) msgkit.Code`: the content part of `op_offer`, in order `NOT_FOUND`, `WITHDRAWN`, `CONFLICT` (not `PENDING` or version mismatch), `INTEGRITY` (digest or bytes mismatch).
 - `CheckNotWithdrawn(ctx, id) msgkit.Code`: the `op_accept`/`op_renew` content check.
-- `WithdrawalHook`: implemented by Goal 08 to void open offers.
+- `WithdrawalHook`: `ContentWithdrawn(ctx, contentID, version) error`. The app wires the x/leases keeper here (goal 08). The hook runs in the withdrawal's cache branch, so its writes and events commit only with the withdrawal.
 
 ## Genesis and migrations
 

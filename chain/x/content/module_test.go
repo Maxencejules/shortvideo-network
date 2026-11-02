@@ -254,12 +254,15 @@ func TestDeterministicSources(t *testing.T) {
 }
 
 // TestModuleImportsStayNarrow: content never imports x/authority, the app,
-// another registry module, or a network or file package. It meets
-// authority through the Roles, DevnetParams, and Limits interfaces.
+// another registry module, x/leases, x/evidence, or a network or file
+// package. It meets authority through the Roles, DevnetParams, and Limits
+// interfaces, and x/leases only through the WithdrawalHook interface.
 func TestModuleImportsStayNarrow(t *testing.T) {
 	forbidden := []string{
 		"github.com/Maxencejules/shortvideo-network/chain/x/authority",
 		"github.com/Maxencejules/shortvideo-network/chain/x/providers",
+		"github.com/Maxencejules/shortvideo-network/chain/x/leases",
+		"github.com/Maxencejules/shortvideo-network/chain/x/evidence",
 		"github.com/Maxencejules/shortvideo-network/chain/app",
 		"github.com/Maxencejules/shortvideo-network/chain/devnet",
 		"net/http",

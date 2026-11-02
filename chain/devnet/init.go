@@ -84,7 +84,8 @@ type Account struct {
 // accountSpec lists the secp256k1 application accounts Init generates, in
 // genesis order. authority and service are the Goal 05 accounts; the two
 // providers and the second service account are the Goal 07 registry demo
-// accounts.
+// accounts; broadcaster (BROADCASTER) relays provider-signed lease
+// messages in the Goal 08 lease demo. It is not a council seat.
 var accountSpec = []struct {
 	name string
 	role string
@@ -94,6 +95,7 @@ var accountSpec = []struct {
 	{"service-2", genesis.RoleAdmittedService},
 	{"provider-1", genesis.RoleAdmittedProvider},
 	{"provider-2", genesis.RoleAdmittedProvider},
+	{"broadcaster", genesis.RoleBroadcaster},
 }
 
 // Seat is a public devnet council key. It is not a consensus key.

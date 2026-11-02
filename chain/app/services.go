@@ -15,22 +15,16 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
-	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 )
 
 // registerApplicationMessages wires the x/authority council messages and
-// keeps the lease and evidence messages closed until Goals 08-09. The
-// svn.providers.v1.Msg and svn.content.v1.Msg services are registered by
-// their modules (RegisterServices). There is no MsgCreateValidator and no
-// single-signer admit, disable, or force-withdraw message (DEC-009).
+// keeps the evidence message closed until Goal 09. The
+// svn.providers.v1.Msg, svn.content.v1.Msg, and svn.leases.v1.Msg services
+// are registered by their modules (RegisterServices). There is no
+// MsgCreateValidator and no single-signer admit, disable, or force-withdraw
+// message (DEC-009).
 func registerApplicationMessages(router *baseapp.MsgServiceRouter, keeper authority.Keeper) {
 	registerAuthority(router, keeper)
-	register(router, "svn.leases.v1.Msg", []methodSpec{
-		{name: "OfferLease", msg: &leasesv1.MsgOfferLease{}, err: svnerr.ErrForbidden},
-		{name: "AcceptLease", msg: &leasesv1.MsgAcceptLease{}, err: svnerr.ErrForbidden},
-		{name: "RenewLease", msg: &leasesv1.MsgRenewLease{}, err: svnerr.ErrForbidden},
-		{name: "EndLease", msg: &leasesv1.MsgEndLease{}, err: svnerr.ErrForbidden},
-	})
 	register(router, "svn.evidence.v1.Msg", []methodSpec{
 		{name: "SubmitAuditBatch", msg: &evidencev1.MsgSubmitAuditBatch{}, err: svnerr.ErrForbidden},
 	})
