@@ -1,0 +1,332 @@
+package providers
+
+import (
+	"bytes"
+	"context"
+	"math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
+	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
+)
+
+// The four committed provider messages. Each handler runs msgkit.Enforce
+// first, then the presence rule (an empty string, empty bytes, or a nil
+// message field the spec requires is MALFORMED; an integer 0 is a value and
+// goes through its range check), then the spec machine's check order
+// (docs/evidence/goal-02/spec_machine.py), and writes only after every check
+// passed. A failure returns the protocol code as an svnerr error (codespace
+// "svn", code = svn.types.v1.ErrorCode) and leaves the store untouched. A
+// business-id replay of the same payload is an idempotent success: no write,
+// no typed event, one providers_result idempotent=true event.
+
+// RegisterProvider is op_register_provider (spec_machine.py:418).
+func (k Keeper) RegisterProvider(goCtx context.Context, msg *providersv1.MsgRegisterProvider) (*providersv1.MsgRegisterProviderResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.result(ctx, k.registerProvider(ctx, msg)); err != nil {
+		return nil, err
+	}
+	return &providersv1.MsgRegisterProviderResponse{}, nil
+}
+
+// UpdateProvider is op_update_capacity (spec_machine.py:1815).
+func (k Keeper) UpdateProvider(goCtx context.Context, msg *providersv1.MsgUpdateProvider) (*providersv1.MsgUpdateProviderResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.result(ctx, k.updateProvider(ctx, msg)); err != nil {
+		return nil, err
+	}
+	return &providersv1.MsgUpdateProviderResponse{}, nil
+}
+
+// RotateProviderKey is op_rotate (spec_machine.py:1770).
+func (k Keeper) RotateProviderKey(goCtx context.Context, msg *providersv1.MsgRotateProviderKey) (*providersv1.MsgRotateProviderKeyResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.result(ctx, k.rotateProviderKey(ctx, msg)); err != nil {
+		return nil, err
+	}
+	return &providersv1.MsgRotateProviderKeyResponse{}, nil
+}
+
+// DrainProvider is op_drain (spec_machine.py:1748).
+func (k Keeper) DrainProvider(goCtx context.Context, msg *providersv1.MsgDrainProvider) (*providersv1.MsgDrainProviderResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.result(ctx, k.drainProvider(ctx, msg)); err != nil {
+		return nil, err
+	}
+	return &providersv1.MsgDrainProviderResponse{}, nil
+}
+
+// result turns an outcome into the handler result.
+func (k Keeper) result(ctx sdk.Context, out msgkit.Outcome) error {
+	if out.Code != msgkit.OK {
+		return out.Code.Err()
+	}
+	if out.Idempotent {
+		msgkit.EmitIdempotent(ctx, ModuleName)
+	}
+	return nil
+}
+
+func fail(code msgkit.Code) msgkit.Outcome { return msgkit.Outcome{Code: code} }
+
+// checkRole is check_role (spec_machine.py:225): no role is UNAUTHORIZED,
+// another role is FORBIDDEN.
+func checkRole(role, want typesv1.SubmitterRole) msgkit.Code {
+	if role == typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
+		return msgkit.Unauthorized
+	}
+	if role != want {
+		return msgkit.Forbidden
+	}
+	return msgkit.OK
+}
+
+// gate is business_gate (spec_machine.py:257): the id rule, then the
+// digest of the spec's field set, then the ledger lookup across modules.
+func (k Keeper) gate(ctx sdk.Context, businessID string, fields map[string]any) (msgkit.Outcome, []byte) {
+	if code := msgkit.CheckID(businessID); code != msgkit.OK {
+		return fail(code), nil
+	}
+	digest, code := msgkit.BusinessDigest(fields)
+	if code != msgkit.OK {
+		return fail(code), nil
+	}
+	return k.ledger.Gate(ctx, businessID, digest), digest
+}
+
+// verifyCurrent checks an inner signature against the provider's current
+// key only. A payload with no SVN-JCS-1 form (canonErr) cannot carry a valid
+// signature: after the structural checks it is UNAUTHORIZED, the same code
+// every later step of msgkit.VerifyInner returns.
+func verifyCurrent(record *providersv1.Provider, sig *typesv1.InnerSignature, domain typesv1.SignatureDomain, canonical string, canonErr error) msgkit.Code {
+	if canonErr != nil {
+		if code := msgkit.CheckInnerSignature(sig, domain); code != msgkit.OK {
+			return code
+		}
+		return msgkit.Unauthorized
+	}
+	return msgkit.VerifyInner(sig, domain, record.GetSigningKeyId(), record.GetSigningPubkey(), canonical)
+}
+
+func sha256Digest(value []byte) *typesv1.Digest {
+	return &typesv1.Digest{
+		Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256,
+		Value:     append([]byte(nil), value...),
+	}
+}
+
+func (k Keeper) registerProvider(ctx sdk.Context, msg *providersv1.MsgRegisterProvider) msgkit.Outcome {
+	if code := msgkit.Enforce(ctx, msg.GetSigner()); code != msgkit.OK {
+		return fail(code)
+	}
+	if msg.GetBusinessId() == "" || msg.GetProviderId() == "" || len(msg.GetSigningPubkey()) == 0 ||
+		msg.GetSigningKeyId() == "" || msg.GetEndpointManifestDigest() == nil || msg.GetOperatorGroupId() == "" {
+		return fail(msgkit.Malformed)
+	}
+	if code := checkRole(k.deps.Roles.Role(ctx, msg.GetSigner()), typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER); code != msgkit.OK {
+		return fail(code)
+	}
+	for _, id := range []string{msg.GetProviderId(), msg.GetSigningKeyId(), msg.GetOperatorGroupId()} {
+		if code := msgkit.CheckID(id); code != msgkit.OK {
+			return fail(code)
+		}
+	}
+	if len(msg.GetSigningPubkey()) != msgkit.PublicKeyBytes {
+		return fail(msgkit.Bounds)
+	}
+	endpoint, code := msgkit.CheckDigest(msg.GetEndpointManifestDigest())
+	if code != msgkit.OK {
+		return fail(code)
+	}
+	if msg.GetDeclaredCapacityBytes() < 1 {
+		return fail(msgkit.Bounds)
+	}
+	gate, digest := k.gate(ctx, msg.GetBusinessId(), map[string]any{
+		"business_id":              msg.GetBusinessId(),
+		"declared_capacity_bytes":  msgkit.Dec(msg.GetDeclaredCapacityBytes()),
+		"endpoint_manifest_digest": msgkit.DigestObject(msg.GetEndpointManifestDigest()),
+		"operator_group_id":        msg.GetOperatorGroupId(),
+		"provider_id":              msg.GetProviderId(),
+		"signing_key_id":           msg.GetSigningKeyId(),
+		"signing_pubkey":           msgkit.Hex(msg.GetSigningPubkey()),
+	})
+	if gate.Code != msgkit.OK {
+		return gate
+	}
+	if gate.Idempotent {
+		// The spec's business digest does not cover the signer, so another
+		// provider account can send a copy of a pending registration under
+		// the same business id. An idempotent success is reported only to
+		// the account that owns the committed record; any other signer is
+		// FORBIDDEN. This is stricter than spec_machine.py, which reports
+		// success to every signer (decision request DR-07-08).
+		if existing, exists := k.mustLoad(ctx, msg.GetProviderId()); exists && !bytes.Equal(existing.GetAccount(), msg.GetSigner()) {
+			return fail(msgkit.Forbidden)
+		}
+		return gate
+	}
+	if _, exists := k.mustLoad(ctx, msg.GetProviderId()); exists {
+		return fail(msgkit.DuplicateID)
+	}
+	record := &providersv1.Provider{
+		ProviderId:             msg.GetProviderId(),
+		Account:                append([]byte(nil), msg.GetSigner()...),
+		SigningPubkey:          append([]byte(nil), msg.GetSigningPubkey()...),
+		SigningKeyId:           msg.GetSigningKeyId(),
+		KeyGeneration:          1,
+		EndpointManifestDigest: sha256Digest(endpoint),
+		State:                  providersv1.ProviderState_PROVIDER_STATE_APPLIED,
+		AdmittedCapacityBytes:  msg.GetDeclaredCapacityBytes(),
+		ReservedBytes:          0,
+		OperatorGroupId:        msg.GetOperatorGroupId(),
+	}
+	k.save(ctx, record)
+	k.ledger.Commit(ctx, msg.GetBusinessId(), digest)
+	emitRegistered(ctx, record)
+	return msgkit.Outcome{}
+}
+
+func (k Keeper) updateProvider(ctx sdk.Context, msg *providersv1.MsgUpdateProvider) msgkit.Outcome {
+	if code := msgkit.Enforce(ctx, msg.GetSigner()); code != msgkit.OK {
+		return fail(code)
+	}
+	if msg.GetBusinessId() == "" || msg.GetProviderId() == "" || msg.GetEndpointManifestDigest() == nil {
+		return fail(msgkit.Malformed)
+	}
+	record, found := k.mustLoad(ctx, msg.GetProviderId())
+	if !found {
+		return fail(msgkit.NotFound)
+	}
+	if !bytes.Equal(msg.GetSigner(), record.GetAccount()) {
+		return fail(msgkit.Forbidden)
+	}
+	if msg.GetDeclaredCapacityBytes() < 1 {
+		return fail(msgkit.Bounds)
+	}
+	endpoint, code := msgkit.CheckDigest(msg.GetEndpointManifestDigest())
+	if code != msgkit.OK {
+		return fail(code)
+	}
+	gate, digest := k.gate(ctx, msg.GetBusinessId(), map[string]any{
+		"declared_capacity_bytes":  msgkit.Dec(msg.GetDeclaredCapacityBytes()),
+		"endpoint_manifest_digest": msgkit.DigestObject(msg.GetEndpointManifestDigest()),
+		"provider_id":              msg.GetProviderId(),
+	})
+	if gate.Code != msgkit.OK || gate.Idempotent {
+		return gate
+	}
+	if msg.GetDeclaredCapacityBytes() < record.GetReservedBytes() {
+		return fail(msgkit.Capacity)
+	}
+	record.AdmittedCapacityBytes = msg.GetDeclaredCapacityBytes()
+	record.EndpointManifestDigest = sha256Digest(endpoint)
+	k.save(ctx, record)
+	k.ledger.Commit(ctx, msg.GetBusinessId(), digest)
+	// The spec emits no event for an update and events.proto has none. The
+	// SDK message.action event names the message; indexers re-query.
+	return msgkit.Outcome{}
+}
+
+func (k Keeper) rotateProviderKey(ctx sdk.Context, msg *providersv1.MsgRotateProviderKey) msgkit.Outcome {
+	if code := msgkit.Enforce(ctx, msg.GetSigner()); code != msgkit.OK {
+		return fail(code)
+	}
+	if msg.GetBusinessId() == "" || msg.GetProviderId() == "" || len(msg.GetNewSigningPubkey()) == 0 ||
+		msg.GetNewSigningKeyId() == "" || msg.GetCurrentKeySignature() == nil {
+		return fail(msgkit.Malformed)
+	}
+	record, found := k.mustLoad(ctx, msg.GetProviderId())
+	if !found {
+		return fail(msgkit.NotFound)
+	}
+	canonical, canonErr := rotateCanonical(msg.GetProviderId(), msg.GetNewSigningKeyId(), msg.GetNewSigningPubkey(), msg.GetExpectedGeneration())
+	if code := verifyCurrent(record, msg.GetCurrentKeySignature(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ROTATE, canonical, canonErr); code != msgkit.OK {
+		return fail(code)
+	}
+	if !bytes.Equal(msg.GetSigner(), record.GetAccount()) {
+		return fail(msgkit.Forbidden)
+	}
+	if code := msgkit.CheckID(msg.GetNewSigningKeyId()); code != msgkit.OK {
+		return fail(code)
+	}
+	if len(msg.GetNewSigningPubkey()) != msgkit.PublicKeyBytes {
+		return fail(msgkit.Bounds)
+	}
+	gate, digest := k.gate(ctx, msg.GetBusinessId(), map[string]any{
+		"business_id":           msg.GetBusinessId(),
+		"current_key_signature": msgkit.SignatureObject(msg.GetCurrentKeySignature()),
+		"expected_generation":   msgkit.Dec(msg.GetExpectedGeneration()),
+		"new_signing_key_id":    msg.GetNewSigningKeyId(),
+		"new_signing_pubkey":    msgkit.Hex(msg.GetNewSigningPubkey()),
+		"provider_id":           msg.GetProviderId(),
+	})
+	if gate.Code != msgkit.OK || gate.Idempotent {
+		return gate
+	}
+	if msg.GetExpectedGeneration() != record.GetKeyGeneration() {
+		return fail(msgkit.StaleVersion)
+	}
+	if msg.GetNewSigningKeyId() == record.GetSigningKeyId() || bytes.Equal(msg.GetNewSigningPubkey(), record.GetSigningPubkey()) {
+		return fail(msgkit.Conflict)
+	}
+	if record.GetKeyGeneration() == math.MaxUint64 {
+		return fail(msgkit.Overflow)
+	}
+	// Chain safety bound after every spec check (not in spec_machine.py):
+	// a provider holds at most MaxRetiredKeysPerProvider retired keys, so
+	// its history stays readable in one query (DR-07-10).
+	if record.GetKeyGeneration()-1 > MaxRetiredKeysPerProvider {
+		return fail(msgkit.Bounds)
+	}
+	// The retired key is a row of its own, so the record keeps a constant
+	// size (see the store layout).
+	k.saveRetired(ctx, record.GetProviderId(), &providersv1.PreviousSigningKey{
+		PublicKey:          append([]byte(nil), record.GetSigningPubkey()...),
+		Generation:         record.GetKeyGeneration(),
+		RetiredUnixSeconds: ctx.BlockTime().Unix(),
+	})
+	record.SigningPubkey = append([]byte(nil), msg.GetNewSigningPubkey()...)
+	record.SigningKeyId = msg.GetNewSigningKeyId()
+	record.KeyGeneration++
+	k.save(ctx, record)
+	k.ledger.Commit(ctx, msg.GetBusinessId(), digest)
+	emitStateChanged(ctx, record)
+	return msgkit.Outcome{}
+}
+
+func (k Keeper) drainProvider(ctx sdk.Context, msg *providersv1.MsgDrainProvider) msgkit.Outcome {
+	if code := msgkit.Enforce(ctx, msg.GetSigner()); code != msgkit.OK {
+		return fail(code)
+	}
+	if msg.GetBusinessId() == "" || msg.GetProviderId() == "" || msg.GetProviderSignature() == nil {
+		return fail(msgkit.Malformed)
+	}
+	record, found := k.mustLoad(ctx, msg.GetProviderId())
+	if !found {
+		return fail(msgkit.NotFound)
+	}
+	canonical, canonErr := drainCanonical(msg.GetProviderId(), record.GetKeyGeneration())
+	if code := verifyCurrent(record, msg.GetProviderSignature(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_DRAIN, canonical, canonErr); code != msgkit.OK {
+		return fail(code)
+	}
+	if !bytes.Equal(msg.GetSigner(), record.GetAccount()) {
+		return fail(msgkit.Forbidden)
+	}
+	gate, digest := k.gate(ctx, msg.GetBusinessId(), map[string]any{
+		"provider_id":        msg.GetProviderId(),
+		"provider_signature": msgkit.SignatureObject(msg.GetProviderSignature()),
+	})
+	if gate.Code != msgkit.OK || gate.Idempotent {
+		return gate
+	}
+	if record.GetState() != providersv1.ProviderState_PROVIDER_STATE_ADMITTED {
+		return fail(msgkit.Conflict)
+	}
+	record.State = providersv1.ProviderState_PROVIDER_STATE_DRAINING
+	k.save(ctx, record)
+	k.ledger.Commit(ctx, msg.GetBusinessId(), digest)
+	emitStateChanged(ctx, record)
+	return msgkit.Outcome{}
+}

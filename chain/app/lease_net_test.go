@@ -203,10 +203,12 @@ func (n *regNet) renewMsg(t testing.TB, who *actor, bid, leaseID, providerID, co
 	}
 }
 
-// endMsg builds a provider-signed EndLease relayed by who.
-func (n *regNet) endMsg(t testing.TB, who *actor, bid, leaseID, providerID string) *leasesv1.MsgEndLease {
+// endMsg builds a provider-signed EndLease relayed by who. termVersion is
+// the lease's term version when the provider signs (the payload binds it,
+// D-12).
+func (n *regNet) endMsg(t testing.TB, who *actor, bid, leaseID, providerID string, termVersion uint64) *leasesv1.MsgEndLease {
 	t.Helper()
-	signBytes, err := leases.EndSignBytes(leaseID, providerID)
+	signBytes, err := leases.EndSignBytes(leaseID, providerID, termVersion)
 	if err != nil {
 		t.Fatal(err)
 	}

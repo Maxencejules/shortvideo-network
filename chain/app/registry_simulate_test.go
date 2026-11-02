@@ -72,7 +72,7 @@ func TestSimulateEstimatesGas(t *testing.T) {
 	step("offer lease", n.service, offer)
 	step("accept lease", n.broadcaster, n.acceptMsg(t, n.broadcaster, "ac-sim", offer, "l-sim"))
 	step("renew lease", n.broadcaster, n.renewMsg(t, n.broadcaster, "rn-sim", "l-sim", "p1", "cl", sizeC1, 2, now+1800+leaseTerm))
-	step("end lease", n.broadcaster, n.endMsg(t, n.broadcaster, "en-sim", "l-sim", "p1"))
+	step("end lease", n.broadcaster, n.endMsg(t, n.broadcaster, "en-sim", "l-sim", "p1", 2))
 	step("drain p1", n.provider1, n.drain(t, n.provider1, "drain-p1", "p1", 2, typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_DRAIN))
 	step("register c1", n.service, n.registerContent(t, n.service, "reg-c1", "c1", 1, packageManifest("c1"), sizeC1))
 	step("withdraw c1", n.service, n.withdrawContent(t, n.service, "wd-c1", "c1", 1, reasonDigest("c1")))

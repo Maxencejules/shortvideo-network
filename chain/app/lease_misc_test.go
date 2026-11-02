@@ -3,6 +3,9 @@ package app_test
 import (
 	"bytes"
 	"crypto/sha256"
+	"slices"
+	"sort"
+	"strings"
 	"testing"
 
 	errorsmod "cosmossdk.io/errors"
@@ -36,9 +39,11 @@ func leaseBasics(t *testing.T, n *regNet, c *cluster) {
 // InnerSignature fields, decode from signed transactions and pass CheckTx
 // (which runs only the ante chain). An unknown field, critical or not, at
 // the message top level or inside a Digest or an InnerSignature fails
-// decoding, and so does a message type the protocol does not define (no
-// reachability or AT_RISK message exists: REQ-BOUND-004). State is
-// byte-identical after each decode failure.
+// decoding, and so does an unregistered message type. State is
+// byte-identical after each decode failure. REQ-BOUND-004 (app part): the
+// sdk.Msg implementations the app registers under svn.leases.v1 are
+// exactly the four lease messages, each with a message-router handler, and
+// no registered sdk.Msg of any module names AT_RISK or reachability.
 func TestLeaseMessagesDecode(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)
@@ -48,7 +53,7 @@ func TestLeaseMessagesDecode(t *testing.T) {
 	offer := n.offerMsg(n.service, "of-o1", "o1", "c1", "p1", sizeSmall, now+1800, now+600)
 	accept := n.acceptMsg(t, n.broadcaster, "ac-l1", offer, "l1")
 	renew := n.renewMsg(t, n.broadcaster, "rn-l1", "l1", "p1", "c1", sizeSmall, 2, now+1800+leaseTerm)
-	end := n.endMsg(t, n.broadcaster, "en-l1", "l1", "p1")
+	end := n.endMsg(t, n.broadcaster, "en-l1", "l1", "p1", 2)
 	msgs := []struct {
 		who *actor
 		msg sdk.Msg
@@ -119,7 +124,7 @@ func TestLeaseMessagesDecode(t *testing.T) {
 			return m, m
 		}, 2047},
 		{"EndLease provider_signature, field 99", n.broadcaster, func() (sdk.Msg, proto.Message) {
-			m := n.endMsg(t, n.broadcaster, "en-u9", "l1", "p1")
+			m := n.endMsg(t, n.broadcaster, "en-u9", "l1", "p1", 2)
 			return m, m.ProviderSignature
 		}, 99},
 	}
@@ -136,6 +141,30 @@ func TestLeaseMessagesDecode(t *testing.T) {
 		wantDecodeError(t, tc.name, res.Codespace, res.Code)
 		unchanged(t, tc.name, chainApp, before, res)
 	}
+	registered := chainApp.EncodingConfig().InterfaceRegistry.ListImplementations(sdk.MsgInterfaceProtoName)
+	sort.Strings(registered)
+	var leaseMsgs []string
+	for _, typeURL := range registered {
+		lower := strings.ToLower(typeURL)
+		if strings.Contains(lower, "atrisk") || strings.Contains(lower, "at_risk") || strings.Contains(lower, "reachab") {
+			t.Fatalf("registered message %s names AT_RISK or reachability", typeURL)
+		}
+		if strings.HasPrefix(typeURL, "/svn.leases.v1.") {
+			leaseMsgs = append(leaseMsgs, typeURL)
+			if chainApp.MsgServiceRouter().HandlerByTypeURL(typeURL) == nil {
+				t.Fatalf("%s has no message-router handler", typeURL)
+			}
+		}
+	}
+	wantLeaseMsgs := []string{
+		"/svn.leases.v1.MsgAcceptLease", "/svn.leases.v1.MsgEndLease",
+		"/svn.leases.v1.MsgOfferLease", "/svn.leases.v1.MsgRenewLease",
+	}
+	if !slices.Equal(leaseMsgs, wantLeaseMsgs) {
+		t.Fatalf("registered svn.leases.v1 messages %v, want %v", leaseMsgs, wantLeaseMsgs)
+	}
+	t.Logf("%d registered sdk.Msg types; svn.leases.v1: %v", len(registered), leaseMsgs)
+	// Unregistered type URLs fail decoding with the state unchanged.
 	for _, typeURL := range []string{"/svn.leases.v1.MsgMarkAtRisk", "/svn.leases.v1.MsgCancelOffer", "/svn.leases.v1.MsgReportReachability"} {
 		before := chainApp.FullSnapshot()
 		res := n.deliverRaw(t, c, nil, directAdminTx(t, typeURL, &leasesv1.MsgEndLease{Signer: n.broadcaster.addr}))
@@ -232,14 +261,14 @@ func TestLeaseRetryScenarios(t *testing.T) {
 	renew := n.renewMsg(t, n.broadcaster, "rn-la-2", "la", "p1", "c1", sizeSmall, 2, deadline+leaseTerm)
 	wantCode(t, "renew la", n.send(t, c, n.broadcaster, renew), msgkit.OK)
 	retry("renew la resubmitted", n.broadcaster, renew)
-	end := n.endMsg(t, n.provider1, "en-lb", "lb", "p1")
+	end := n.endMsg(t, n.provider1, "en-lb", "lb", "p1", 1)
 	before := reserved(t, chainApp, "p1", 0)
 	wantCode(t, "end lb", n.send(t, c, n.provider1, end), msgkit.OK)
-	retry("end lb resubmitted by the broadcaster", n.broadcaster, n.endMsg(t, n.broadcaster, "en-lb", "lb", "p1"))
+	retry("end lb resubmitted by the broadcaster", n.broadcaster, n.endMsg(t, n.broadcaster, "en-lb", "lb", "p1", 1))
 	if got := before - reserved(t, chainApp, "p1", 0); got != sizeSmall {
 		t.Fatalf("end lb released %d, want %d once", got, sizeSmall)
 	}
-	reject("end lb with a new business id", n.provider1, n.endMsg(t, n.provider1, "en-lb-2", "lb", "p1"), msgkit.Underflow)
+	reject("end lb with a new business id", n.provider1, n.endMsg(t, n.provider1, "en-lb-2", "lb", "p1", 1), msgkit.Underflow)
 	c.checkInvariants(t, "after the retries")
 }
 

@@ -29,7 +29,9 @@ import (
 //	0x09 | provider_id 0x00 lease_id              -> 0x01 (held leases by provider)
 //	0x0A | provider_id                            -> open-offer count, 8 bytes BE (absent when 0)
 //	0x0B | content_id                             -> open-offer count, 8 bytes BE (absent when 0)
-//	0x0C | offer_id                               -> 0x01 (offer id used; never deleted)
+//	0x0C | offer_id                               -> scheduler, 20 bytes (offer id used; never deleted);
+//	                                                 0x01 when InitGenesis rebuilt it for a lease
+//	0x0D | content_id 0x00 scheduler(20B)         -> open-offer count, 8 bytes BE (absent when 0)
 //
 // Ids match ^[a-z0-9][a-z0-9._-]{0,63}$, so an id never contains 0x00 and
 // key byte order is id byte order; the 0x00 after a scope id stops "p1" from
@@ -39,22 +41,24 @@ import (
 // reports a key with an empty value as absent (msgkit.LayoutVersionKey).
 //
 // Records have a constant size: ids are at most 64 bytes, digests 32 bytes,
-// the rest fixed scalars. Nothing grows inside a value. Index rows and
-// counters are derived state: InitGenesis rebuilds them and ExportGenesis
-// does not export them.
+// the rest fixed scalars. Nothing grows inside a value. Index rows,
+// counters, and used-offer markers are derived state: InitGenesis rebuilds
+// them (a lease's marker without its scheduler) and ExportGenesis does not
+// export them.
 const (
-	OfferPrefix              byte = 0x01
-	LeasePrefix              byte = 0x02
-	BusinessPrefix           byte = 0x03
-	PairPrefix               byte = 0x04
-	OfferExpiryPrefix        byte = 0x05
-	LeaseDeadlinePrefix      byte = 0x06
-	ContentOfferPrefix       byte = 0x07
-	ContentLeasePrefix       byte = 0x08
-	ProviderLeasePrefix      byte = 0x09
-	ProviderOfferCountPrefix byte = 0x0A
-	ContentOfferCountPrefix  byte = 0x0B
-	UsedOfferPrefix          byte = 0x0C
+	OfferPrefix               byte = 0x01
+	LeasePrefix               byte = 0x02
+	BusinessPrefix            byte = 0x03
+	PairPrefix                byte = 0x04
+	OfferExpiryPrefix         byte = 0x05
+	LeaseDeadlinePrefix       byte = 0x06
+	ContentOfferPrefix        byte = 0x07
+	ContentLeasePrefix        byte = 0x08
+	ProviderLeasePrefix       byte = 0x09
+	ProviderOfferCountPrefix  byte = 0x0A
+	ContentOfferCountPrefix   byte = 0x0B
+	UsedOfferPrefix           byte = 0x0C
+	SchedulerOfferCountPrefix byte = 0x0D
 )
 
 // Marker is the value of every index row that only needs to exist. It is
@@ -146,8 +150,19 @@ func ProviderOfferCountKey(id string) []byte { return idKey(ProviderOfferCountPr
 func ContentOfferCountKey(id string) []byte { return idKey(ContentOfferCountPrefix, id) }
 
 // UsedOfferKey marks an offer id as used. It is never deleted, so an offer
-// id is never reused (deviation D-4).
+// id is never reused (deviation D-4). Its value is the 20-byte scheduler
+// that sent the offer: an idempotent OfferLease replay by another
+// scheduler is FORBIDDEN (deviation D-11), and the sponsor of an accepted
+// lease stays in committed state (lease.offer_id names the row). A marker
+// InitGenesis rebuilds for a lease holds Marker instead: svn.leases.v1.Lease
+// has no scheduler field, so an export does not carry it (DR-08-06).
 func UsedOfferKey(id string) []byte { return idKey(UsedOfferPrefix, id) }
+
+// SchedulerOfferCountKey holds the open-offer count of one scheduler for
+// one content id (deviation D-10). The scheduler is a 20-byte account.
+func SchedulerOfferCountKey(contentID string, scheduler []byte) []byte {
+	return append(scopePrefix(SchedulerOfferCountPrefix, contentID), scheduler...)
+}
 
 // timeRangeEnd is the exclusive end of the time-ordered rows of prefix
 // whose time is at most notAfter.
@@ -334,34 +349,47 @@ func (k Keeper) decrement(ctx sdk.Context, key []byte) error {
 }
 
 // addOffer writes an open offer, its expiry and content index rows, and its
-// used-id marker, and increments the provider and content open-offer
-// counters.
+// used-id marker (holding the scheduler), and increments the provider,
+// content, and per-scheduler content open-offer counters.
 func (k Keeper) addOffer(ctx sdk.Context, offer *leasesv1.Offer) error {
 	id := offer.GetOfferId()
 	k.saveOffer(ctx, offer)
 	store := k.kv(ctx)
 	store.Set(OfferExpiryKey(offer.GetExpiryUnixSeconds(), id), marker())
 	store.Set(ContentOfferKey(offer.GetContentId(), id), marker())
-	store.Set(UsedOfferKey(id), marker())
-	if err := k.increment(ctx, ProviderOfferCountKey(offer.GetProviderId())); err != nil {
-		return err
+	store.Set(UsedOfferKey(id), append([]byte(nil), offer.GetScheduler()...))
+	for _, key := range offerCountKeys(offer) {
+		if err := k.increment(ctx, key); err != nil {
+			return err
+		}
 	}
-	return k.increment(ctx, ContentOfferCountKey(offer.GetContentId()))
+	return nil
 }
 
 // removeOffer deletes an open offer and its expiry and content index rows,
-// and decrements the provider and content open-offer counters. The used-id
-// marker stays.
+// and decrements the provider, content, and per-scheduler content
+// open-offer counters. The used-id marker stays.
 func (k Keeper) removeOffer(ctx sdk.Context, offer *leasesv1.Offer) error {
 	id := offer.GetOfferId()
 	store := k.kv(ctx)
 	store.Delete(OfferKey(id))
 	store.Delete(OfferExpiryKey(offer.GetExpiryUnixSeconds(), id))
 	store.Delete(ContentOfferKey(offer.GetContentId(), id))
-	if err := k.decrement(ctx, ProviderOfferCountKey(offer.GetProviderId())); err != nil {
-		return err
+	for _, key := range offerCountKeys(offer) {
+		if err := k.decrement(ctx, key); err != nil {
+			return err
+		}
 	}
-	return k.decrement(ctx, ContentOfferCountKey(offer.GetContentId()))
+	return nil
+}
+
+// offerCountKeys are the open-offer counters one open offer counts in.
+func offerCountKeys(offer *leasesv1.Offer) [][]byte {
+	return [][]byte{
+		ProviderOfferCountKey(offer.GetProviderId()),
+		ContentOfferCountKey(offer.GetContentId()),
+		SchedulerOfferCountKey(offer.GetContentId(), offer.GetScheduler()),
+	}
 }
 
 // holdIndexes writes the rows of a lease that holds a reservation: the

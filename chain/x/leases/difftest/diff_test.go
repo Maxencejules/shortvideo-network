@@ -1,7 +1,10 @@
 package difftest
 
 import (
+	"flag"
 	"fmt"
+	"maps"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -59,9 +62,15 @@ func runSeeded(t *testing.T) *seededRun {
 // requires, at every step, the same code, idempotent flag, typed events,
 // and projected state (providers with reserved bytes, contents, open
 // offers, leases, the pair index, business ids, chain time). The only
-// adapter rules are the chain deviations D-2 to D-6 (chain/x/leases
-// README); the generator respects D-1 and D-8. Keeper level, not end to
-// end.
+// adapter rules are the chain deviations of deviationRules (D-2 to D-6,
+// D-10 to D-13; chain/x/leases README). The generator also avoids known
+// divergences that are not lease rules, so the run does not compare them:
+// D-1 and D-8 (lease deviations the adapter cannot express), provider
+// capacities above 2^53-1 (DR-08-10), a provider registration retried by
+// another account (DR-07-08), more key rotations than
+// MaxRetiredKeysPerProvider (DR-07-10), and hosting intents with a role
+// other than DEVNET_TEST_ONLY. TestGeneratorRestrictionsHideKnownDivergences
+// shows the first two diverge. Keeper level, not end to end.
 func TestDifferentialAgainstSpecMachine(t *testing.T) {
 	run := runSeeded(t)
 	if run.failed {
@@ -83,7 +92,7 @@ func TestDifferentialCoverage(t *testing.T) {
 // FuzzLeaseDifferential compares fuzz-chosen sequences with spec_machine.py
 // (one persistent oracle subprocess per fuzz worker).
 func FuzzLeaseDifferential(f *testing.F) {
-	for _, seed := range fuzzSeeds() {
+	for _, seed := range fuzzSeeds(f) {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
@@ -101,7 +110,7 @@ func FuzzLeaseDifferential(f *testing.F) {
 // content, and leases stores byte-identical, and no lease emitted
 // LeaseEnded twice.
 func FuzzLeaseTransitions(f *testing.F) {
-	for _, seed := range fuzzSeeds() {
+	for _, seed := range fuzzSeeds(f) {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
@@ -109,25 +118,79 @@ func FuzzLeaseTransitions(f *testing.F) {
 	})
 }
 
-// TestFuzzReachesStates shows the Go-only fuzz harness reaches the
-// interesting states: its seed corpus plus a fixed seeded batch must reach
-// every required class.
+// searchReach makes TestFuzzReachesStates also search seeds
+// 0..reachSeeds-1 of every family and log a greedy cover for reachCorpus.
+var searchReach = flag.Bool("difftest.search-reach", false, "log a greedy reachCorpus cover")
+
+// TestFuzzReachesStates shows the fuzz seed corpus reaches the interesting
+// states on its own: fuzzSeeds, run exactly as the fuzz targets run an
+// input (runFuzzInput: byteChooser, fuzzOps operations, Go keepers only),
+// must reach every required class. Each recorded stream must also replay
+// its seeded sequence exactly (the same class counts), so the recording is
+// faithful. A -fuzz run starts from this corpus; mutation can only add
+// inputs.
 func TestFuzzReachesStates(t *testing.T) {
+	if *searchReach {
+		logReachCover(t)
+	}
+	if len(reachCorpus) == 0 {
+		t.Fatal("reachCorpus is empty")
+	}
 	classes := map[string]int{}
-	for _, seed := range fuzzSeeds() {
+	for _, seed := range fuzzSeeds(t) {
 		merge(classes, runFuzzInput(t, seed, nil))
 	}
-	t.Logf("fuzz seed corpus alone: %d classes", len(classes))
-	for fam, name := range familyNames {
-		for seed := 0; seed < reachSeeds; seed++ {
-			found, ok := runSequence(t, newRandChooser(uint64(fam), uint64(seed)), seqOptions{
-				family: fam, ops: diffOps, label: fmt.Sprintf("family %s seed %d (Go only)", name, seed),
-			})
-			merge(classes, found)
-			if !ok {
-				t.Fatalf("family %s seed %d failed", name, seed)
-			}
+	for _, r := range reachCorpus {
+		rec := record(t, r)
+		if got := runFuzzInput(t, rec.input, nil); !maps.Equal(got, rec.classes) {
+			t.Errorf("family %s seed %d: the recorded input replays %v, the seeded run reached %v",
+				familyNames[r.family], r.seed, got, rec.classes)
 		}
 	}
-	checkCoverage(t, "Go-only transitions", classes)
+	checkCoverage(t, fmt.Sprintf("fuzz seed corpus (%d inputs)", 8+len(reachCorpus)), classes)
+}
+
+// logReachCover records seeds 0..reachSeeds-1 of every family and logs a
+// greedy cover of requiredClasses: repeatedly the sequence that reaches
+// the most classes not yet covered.
+func logReachCover(t *testing.T) {
+	type candidate struct {
+		seed    reachSeed
+		classes map[string]int
+	}
+	var all []candidate
+	for fam := range familyNames {
+		for seed := 0; seed < reachSeeds; seed++ {
+			r := reachSeed{family: fam, seed: seed}
+			all = append(all, candidate{r, record(t, r).classes})
+		}
+	}
+	missing := map[string]bool{}
+	for _, class := range requiredClasses {
+		missing[class] = true
+	}
+	var cover strings.Builder
+	for len(missing) > 0 {
+		best, gain := -1, 0
+		for i, c := range all {
+			n := 0
+			for class := range missing {
+				if c.classes[class] > 0 {
+					n++
+				}
+			}
+			if n > gain {
+				best, gain = i, n
+			}
+		}
+		if best < 0 {
+			t.Fatalf("no seed reaches %v", missing)
+		}
+		for class := range all[best].classes {
+			delete(missing, class)
+		}
+		fmt.Fprintf(&cover, "\t{family: %d, seed: %d}, // %s, +%d classes\n",
+			all[best].seed.family, all[best].seed.seed, familyNames[all[best].seed.family], gain)
+	}
+	t.Logf("reachCorpus cover:\n%s", cover.String())
 }

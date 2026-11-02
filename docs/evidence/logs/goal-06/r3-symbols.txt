@@ -1,0 +1,32 @@
+COMMAND bash -c $'set -u\nfail=0\nfor pat in \'func (s \\*State) RegisterProvider\' \'func (s \\*State) RotateProviderKey\' \'rotateDomain\' \'func (s \\*State) PolicyVersion\' \'ParsePayloadJSON\' \'PowerQuorum\' \'InstallMismatchedRemoval\' \'ConsensusSnapshot\' \'AuthoritySnapshot\' \'func registerProvider\' \'PrevProvider\' \'PolicyChanged\'; do\n  hits="$(git grep -n -e "$pat" HEAD -- \'chain/*.go\' \':(exclude)chain/*_test.go\' || true)"\n  if [ -n "$hits" ]; then echo "non-test hits for \'$pat\':"; echo "$hits"; [ "$pat" = PolicyChanged ] || fail=1; else echo "non-test hits for \'$pat\': none"; fi\ndone\necho "## test-only definitions"\ngit grep -n -e \'func (s \\*State) PolicyVersion\' -e \'func ParsePayloadJSON\' HEAD -- \'chain/*_test.go\'\necho "## router entries for provider messages"\ngit grep -n -e \'RegisterProvider\' -e \'RotateProviderKey\' HEAD -- chain/app/services.go\necho "## gogo registrations"\ngit grep -n -e \'registerGogo("svn.types.v1.InnerSignature"\' -e \'registerGogo("svn.evidence.v1.EvidenceItem"\' HEAD -- chain/app/encoding.go\necho "## anchors"\nfor a in \'^## Export$\' \'^## Decision requests$\'; do\n  if git grep -q -e "$a" HEAD -- docs/architecture/authority-authorization.md; then echo "authority-authorization.md has $a"; else echo "missing $a"; fail=1; fi\ndone\ngit grep -n -e \'authority-authorization.md#export\' HEAD -- docs/evidence/goal-05.md || { echo "goal-05.md export link missing"; fail=1; }\nexit $fail'
+DATE 2026-11-01T21:37:56Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+non-test hits for 'func (s \*State) RegisterProvider': none
+non-test hits for 'func (s \*State) RotateProviderKey': none
+non-test hits for 'rotateDomain': none
+non-test hits for 'func (s \*State) PolicyVersion': none
+non-test hits for 'ParsePayloadJSON': none
+non-test hits for 'PowerQuorum': none
+non-test hits for 'InstallMismatchedRemoval': none
+non-test hits for 'ConsensusSnapshot': none
+non-test hits for 'AuthoritySnapshot': none
+non-test hits for 'func registerProvider': none
+non-test hits for 'PrevProvider': none
+non-test hits for 'PolicyChanged': none
+## test-only definitions
+HEAD:chain/x/authority/helpers_test.go:246:func (s *State) PolicyVersion() uint64 {
+HEAD:chain/x/authority/payload_test.go:15:func ParsePayloadJSON(raw []byte) (string, Outcome) {
+## router entries for provider messages
+HEAD:chain/app/services.go:27:// provider registry, with RegisterProvider and RotateProviderKey, is Goal 07.
+HEAD:chain/app/services.go:33:		{name: "RegisterProvider", msg: &providersv1.MsgRegisterProvider{}, err: svnerr.ErrForbidden},
+HEAD:chain/app/services.go:35:		{name: "RotateProviderKey", msg: &providersv1.MsgRotateProviderKey{}, err: svnerr.ErrForbidden},
+## gogo registrations
+HEAD:chain/app/encoding.go:96:	registerGogo("svn.types.v1.InnerSignature", &typesv1.InnerSignature{})
+HEAD:chain/app/encoding.go:97:	registerGogo("svn.evidence.v1.EvidenceItem", &evidencev1.EvidenceItem{})
+## anchors
+authority-authorization.md has ^## Export$
+authority-authorization.md has ^## Decision requests$
+HEAD:docs/evidence/goal-05.md:85:| Genesis validation, init order, fresh-state import/export (no authority side state; see the [authority export rule](../architecture/authority-authorization.md#export)), chain-id mismatch | VERIFIED | `go test ./chain/app` |
+EXIT:0

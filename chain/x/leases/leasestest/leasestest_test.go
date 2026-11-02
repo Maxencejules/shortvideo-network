@@ -73,6 +73,17 @@ func (r *registries) CheckOfferable(_ sdk.Context, id string, version uint64, ma
 	return msgkit.OK
 }
 
+func (r *registries) CheckPackage(_ sdk.Context, id string, version uint64, manifest []byte, _ uint64) msgkit.Code {
+	want, ok := r.manifests[id]
+	if !ok || version != 1 {
+		return msgkit.NotFound
+	}
+	if !bytes.Equal(want, manifest) {
+		return msgkit.Integrity
+	}
+	return msgkit.OK
+}
+
 func (r *registries) CheckNotWithdrawn(_ sdk.Context, id string) msgkit.Code {
 	if _, ok := r.manifests[id]; !ok {
 		return msgkit.NotFound
@@ -91,7 +102,7 @@ func offer(id, content, provider string) *leasesv1.Offer {
 	return &leasesv1.Offer{
 		OfferId: id, ContentId: content, ContentVersion: 1, ProviderId: provider, ManifestDigest: digest("m:" + content),
 		PackageBytes: 1000, TermsDigest: digest("t:" + id), StartUnixSeconds: t0 + 100, DeadlineUnixSeconds: t0 + 3700,
-		ExpiryUnixSeconds: t0 + 600, TermVersion: 1, Scheduler: bytes.Repeat([]byte{3}, 20),
+		ExpiryUnixSeconds: t0 + 600, TermVersion: 1, Scheduler: append([]byte(nil), scheduler...),
 	}
 }
 
@@ -109,6 +120,9 @@ func lease(id, content, provider string, state leasesv1.LeaseState) *leasesv1.Le
 		ReservationHeld: state == leasesv1.LeaseState_LEASE_STATE_ACTIVE || state == leasesv1.LeaseState_LEASE_STATE_RENEWED,
 	}
 }
+
+// scheduler is the scheduler of every fixture offer.
+var scheduler = bytes.Repeat([]byte{3}, 20)
 
 type fixture struct {
 	ctx   sdk.Context
@@ -212,6 +226,13 @@ func TestCheckInvariantsDetectsEachViolation(t *testing.T) {
 			f.store.Set(leases.ContentOfferCountKey("c1"), []byte{0, 0, 0, 0, 0, 0, 0, 2})
 		}},
 		{"I6:", func(_ *testing.T, f *fixture) { f.store.Set(leases.OfferKey("o1"), []byte{0xff}) }},
+		{"I6:", func(_ *testing.T, f *fixture) { f.store.Delete(leases.SchedulerOfferCountKey("c1", scheduler)) }},
+		{"I6:", func(_ *testing.T, f *fixture) {
+			f.store.Set(leases.SchedulerOfferCountKey("c2", scheduler), []byte{0, 0, 0, 0, 0, 0, 0, 2})
+		}},
+		{"I6:", func(_ *testing.T, f *fixture) {
+			f.store.Set(leases.SchedulerOfferCountKey("c1", bytes.Repeat([]byte{4}, 20)), []byte{0, 0, 0, 0, 0, 0, 0, 1})
+		}},
 		{"I7:", func(t *testing.T, f *fixture) {
 			l := lease("l1", "c3", "p1", leasesv1.LeaseState_LEASE_STATE_ACTIVE)
 			l.TermVersion = 2
@@ -236,12 +257,19 @@ func TestCheckInvariantsDetectsEachViolation(t *testing.T) {
 			f.setLease(t, l)
 		}},
 		{"I10:", func(_ *testing.T, f *fixture) { f.store.Set(leases.UsedOfferKey("O"), leases.Marker) }},
+		// An open offer's marker must hold its scheduler.
+		{"I10:", func(_ *testing.T, f *fixture) { f.store.Set(leases.UsedOfferKey("o1"), leases.Marker) }},
+		{"I10:", func(_ *testing.T, f *fixture) {
+			f.store.Set(leases.UsedOfferKey("o2"), bytes.Repeat([]byte{4}, 20))
+		}},
+		// Any marker holds a 20-byte scheduler or Marker.
+		{"I10:", func(_ *testing.T, f *fixture) { f.store.Set(leases.UsedOfferKey("o-l3"), []byte{1, 2}) }},
 		{"I12:", func(_ *testing.T, f *fixture) {
 			f.store.Set(append([]byte{leases.BusinessPrefix}, "b1"...), []byte{1})
 		}},
 		{"layout:", func(_ *testing.T, f *fixture) { f.store.Delete(msgkit.LayoutVersionKey) }},
 		{"layout:", func(_ *testing.T, f *fixture) { f.store.Set(msgkit.LayoutVersionKey, []byte{0, 0, 0, 0, 0, 0, 0, 1}) }},
-		{"layout:", func(_ *testing.T, f *fixture) { f.store.Set([]byte{0x0d, 'x'}, []byte{1}) }},
+		{"layout:", func(_ *testing.T, f *fixture) { f.store.Set([]byte{0x0e, 'x'}, []byte{1}) }},
 	}
 	for _, tc := range cases {
 		f := newFixture(t)
@@ -261,6 +289,13 @@ func TestCheckInvariantsDetectsEachViolation(t *testing.T) {
 	delete(f.reg.manifests, "c1")
 	if err := leasestest.CheckOfferIntegrity(f.ctx, f.k, f.reg); err == nil || !strings.HasPrefix(err.Error(), "I9:") {
 		t.Fatalf("I9 absent content: %v", err)
+	}
+	// I9 for leases: l1 is the only record of c3; its committed package no
+	// longer matches the content record.
+	f = newFixture(t)
+	f.reg.manifests["c3"] = digest("other").GetValue()
+	if err := leasestest.CheckOfferIntegrity(f.ctx, f.k, f.reg); err == nil || !strings.Contains(err.Error(), `I9: lease "l1"`) {
+		t.Fatalf("I9 lease violation: %v", err)
 	}
 }
 

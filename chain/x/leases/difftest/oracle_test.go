@@ -152,6 +152,7 @@ type oracleConfig struct {
 	Submitters              map[string]string `json:"submitters"`
 	MaxOfferLifetimeSeconds int64             `json:"max_offer_lifetime_seconds"`
 	MaxOpenOffersPerContent int               `json:"max_open_offers_per_content"`
+	MaxPerScheduler         int               `json:"max_open_offers_per_content_per_scheduler"`
 }
 
 type resetRequest struct {
@@ -187,8 +188,8 @@ func (r specResult) deviation() string {
 }
 
 // reset starts a new sequence with cfg's chain configuration. The chain
-// constants of deviations D-5 and D-6 come from x/leases, not from the
-// oracle.
+// constants of deviations D-5, D-6, and D-10 come from x/leases, not from
+// the oracle.
 func (o *oracleProc) reset(tb testing.TB, cfg *config, disableDeviations bool) projection {
 	tb.Helper()
 	oc := oracleConfig{
@@ -197,6 +198,7 @@ func (o *oracleProc) reset(tb testing.TB, cfg *config, disableDeviations bool) p
 		Submitters:              map[string]string{},
 		MaxOfferLifetimeSeconds: leases.MaxOfferLifetimeSeconds,
 		MaxOpenOffersPerContent: leases.MaxOpenOffersPerContent,
+		MaxPerScheduler:         leases.MaxOpenOffersPerContentPerScheduler,
 	}
 	if cfg.term > 0 {
 		term := cfg.term

@@ -82,8 +82,11 @@ func TestWithdrawalVoidsOffers(t *testing.T) {
 		if store.Has(leases.OfferKey(id)) || store.Has(leases.ContentOfferKey("c1", id)) {
 			t.Fatalf("offer %s still open", id)
 		}
-		if !bytes.Equal(store.Get(leases.UsedOfferKey(id)), leases.Marker) {
+		if !bytes.Equal(store.Get(leases.UsedOfferKey(id)), serviceAcct) {
 			t.Fatalf("offer %s lost its used marker", id)
+		}
+		if store.Has(leases.SchedulerOfferCountKey("c1", serviceAcct)) {
+			t.Fatalf("the scheduler counter of voided offer %s remains", id)
 		}
 	}
 	if store.Has(leases.ContentOfferCountKey("c1")) || store.Has(leases.ProviderOfferCountKey("p2")) {
@@ -126,9 +129,12 @@ func (e *env) acceptMsgFor(offer *leasesv1.Offer, leaseID string) *leasesv1.MsgA
 // offers in one call; its work is bounded by that constant.
 func TestWithdrawalAtContentCap(t *testing.T) {
 	e := newEnv(t)
+	// Two schedulers: one alone holds at most half (D-10).
 	for i := 0; i < leases.MaxOpenOffersPerContent; i++ {
-		e.seedOffer(e.offerRecord(fmt.Sprintf("o%03d", i), "c1", []string{"p1", "p2"}[i%2]))
+		scheduler := [][]byte{serviceAcct, service2Acct}[(i/2)%2]
+		e.seedOffer(e.offerRecordBy(scheduler, fmt.Sprintf("o%03d", i), "c1", []string{"p1", "p2"}[i%2]))
 	}
+	e.requireInvariants(nil)
 	r := e.withdraw("c1")
 	if r.code != msgkit.OK || len(closedOffers(t, r, leases.ReasonWithdrawn)) != leases.MaxOpenOffersPerContent {
 		t.Fatalf("withdrawal at the cap: %s, %d events", r.code, len(r.events))
@@ -164,6 +170,9 @@ func TestWithdrawalHookInvariantErrors(t *testing.T) {
 		"counter-malformed": func(e *env) { e.leaseStore().Set(leases.ContentOfferCountKey("c1"), []byte{2}) },
 		"provider-counter-missing": func(e *env) {
 			e.leaseStore().Delete(leases.ProviderOfferCountKey("p2"))
+		},
+		"scheduler-counter-missing": func(e *env) {
+			e.leaseStore().Delete(leases.SchedulerOfferCountKey("c1", serviceAcct))
 		},
 		"above-cap": func(e *env) {
 			for i := 0; i < leases.MaxOpenOffersPerContent; i++ {

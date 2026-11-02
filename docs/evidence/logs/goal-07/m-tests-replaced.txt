@@ -1,0 +1,14 @@
+COMMAND git grep -n -E \^func\ \(TestProviderMessagesReachTheRegistryAndDecode\|TestAdmitAndDisableRows\|TestMixedActivationConflicts\|TestQuorumModelVectors\|TestLegacySideDocumentHalts\|TestOldLayoutConfigIsIntegrity\|TestAppRefusesScaffoldLayout\|TestKeeperForceWithdrawArgumentsSurviveTheRecord\)\\\( HEAD -- chain
+DATE 2026-11-02T04:07:22Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+HEAD:chain/app/authority_outcomes_test.go:33:func TestProviderMessagesReachTheRegistryAndDecode(t *testing.T) {
+HEAD:chain/app/restart_test.go:80:func TestAppRefusesScaffoldLayout(t *testing.T) {
+HEAD:chain/devnet/lifecycle_test.go:498:func TestQuorumModelVectors(t *testing.T) {
+HEAD:chain/x/authority/engine_test.go:271:func TestMixedActivationConflicts(t *testing.T) {
+HEAD:chain/x/authority/engine_test.go:750:func TestAdmitAndDisableRows(t *testing.T) {
+HEAD:chain/x/authority/keeper_registry_test.go:289:func TestKeeperForceWithdrawArgumentsSurviveTheRecord(t *testing.T) {
+HEAD:chain/x/authority/keeper_test.go:281:func TestLegacySideDocumentHalts(t *testing.T) {
+HEAD:chain/x/authority/keeper_test.go:324:func TestOldLayoutConfigIsIntegrity(t *testing.T) {
+EXIT:0

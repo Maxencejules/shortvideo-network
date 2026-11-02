@@ -1,0 +1,26 @@
+COMMAND bash docs/evidence/goal-07/mutants/run_mutant.sh m05-authority-meter-finalize-only
+DATE 2026-11-01T09:48:40Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+mutant m05-authority-meter-finalize-only: target chain/x/authority/msg.go, package ./x/authority/, tests ^(TestEnforceCommitted|TestHandlerMeterCheckByMode)$
+--- /home/user/shortvideo-network/chain/x/authority/msg.go	2026-11-01 09:27:53.468094128 +0000
++++ /home/user/shortvideo-network/docs/evidence/goal-07/mutants/m05-authority-meter-finalize-only.go.txt	2026-11-01 09:36:29.688321829 +0000
+@@ -91,7 +91,7 @@
+ // (a declared 0 is accepted only in simulation). FinalizeBlock always runs
+ // the meter check; CheckTx runs no message handler.
+ func enforceCommitted(ctx sdk.Context, signer []byte) string {
+-	if ctx.ExecMode() != sdk.ExecModeSimulate {
++	if ctx.ExecMode() == sdk.ExecModeFinalize {
+ 		limit := ctx.GasMeter().Limit()
+ 		if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+ 			return CodeBounds
+overlay /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07/svn-goal07-m05-authority-meter-finalize-only.overlay.json: {"Replace":{"/home/user/shortvideo-network/chain/x/authority/msg.go":"/home/user/shortvideo-network/docs/evidence/goal-07/mutants/m05-authority-meter-finalize-only.go.txt"}}
+--- FAIL: TestEnforceCommitted (0.00s)
+    enforce_test.go:63: check on the infinite meter: "", want "ERROR_CODE_BOUNDS"
+    enforce_test.go:66: check on the infinite meter: spent 50000 gas, want 0
+FAIL
+FAIL	github.com/Maxencejules/shortvideo-network/chain/x/authority	0.034s
+FAIL
+mutant m05-authority-meter-finalize-only: go test exit 1 (non-zero = killed, 0 = survived)
+EXIT:1

@@ -58,11 +58,18 @@ func (c *scaleChain) ok(s *step) outcome {
 	return out
 }
 
-// offer submits a valid 1000-byte offer and returns the stored record.
+// offer submits a valid 1000-byte offer by serviceAcct and returns the
+// stored record.
 func (c *scaleChain) offer(offerID, contentID, providerID string, deadline, expiry int64) (*leasesv1.Offer, outcome) {
 	c.t.Helper()
+	return c.offerBy(serviceAcct, offerID, contentID, providerID, deadline, expiry)
+}
+
+// offerBy is offer with another scheduler.
+func (c *scaleChain) offerBy(scheduler []byte, offerID, contentID, providerID string, deadline, expiry int64) (*leasesv1.Offer, outcome) {
+	c.t.Helper()
 	p := offerParams{
-		signer: serviceAcct, business: c.business(), offerID: offerID, contentID: contentID, providerID: providerID,
+		signer: scheduler, business: c.business(), offerID: offerID, contentID: contentID, providerID: providerID,
 		version: 1, size: scalePackageBytes, termVersion: 1, manifest: manifestFor(contentID), terms: termsFor(1),
 		start: deadline - termSeconds, deadline: deadline, expiry: expiry,
 	}
@@ -71,7 +78,7 @@ func (c *scaleChain) offer(offerID, contentID, providerID string, deadline, expi
 		OfferId: offerID, ContentId: contentID, ContentVersion: 1, ProviderId: providerID,
 		ManifestDigest: digest(p.manifest), PackageBytes: p.size, TermsDigest: digest(p.terms),
 		StartUnixSeconds: p.start, DeadlineUnixSeconds: deadline, ExpiryUnixSeconds: expiry,
-		TermVersion: 1, Scheduler: serviceAcct,
+		TermVersion: 1, Scheduler: append([]byte(nil), scheduler...),
 	}, out
 }
 
@@ -249,8 +256,10 @@ func absDiff(a, b uint64) uint64 {
 }
 
 // TestWithdrawalAtContentCapGas fills two contents with
-// MaxOpenOffersPerContent (256) open offers across eight providers; the
-// 257th offer is BOUNDS (deviation D-6). WithdrawContent (message path) and
+// MaxOpenOffersPerContent (256) open offers across eight providers, from
+// two schedulers (one alone stops at 128, D-10); the 257th offer, from a
+// third scheduler with no offer of the content (so not D-10), is BOUNDS
+// (deviation D-6). WithdrawContent (message path) and
 // ForceWithdrawByCouncil (council path) then void all 256 offers each,
 // with store gas below withdrawalGasLimit (half the 20,000,000 transaction
 // gas limit).
@@ -260,12 +269,13 @@ func TestWithdrawalAtContentCapGas(t *testing.T) {
 	for _, contentID := range []string{"wm", "wc"} {
 		c.ok(buildRegisterContent(serviceAcct, c.business(), contentID, scalePackageBytes))
 		for k := 0; k < leases.MaxOpenOffersPerContent; k++ {
-			if _, out := c.offer(fmt.Sprintf("%s-%03d", contentID, k), contentID, fmt.Sprintf("p%d", k%scaleProviders),
+			scheduler := [][]byte{serviceAcct, service2Acct}[k%2]
+			if _, out := c.offerBy(scheduler, fmt.Sprintf("%s-%03d", contentID, k), contentID, fmt.Sprintf("p%d", k%scaleProviders),
 				now+termSeconds, now+600); out.code != msgkit.OK {
 				t.Fatalf("offer %d of %s: %s", k, contentID, out.code)
 			}
 		}
-		if _, out := c.offer(contentID+"-extra", contentID, "p0", now+termSeconds, now+600); out.code != msgkit.Bounds {
+		if _, out := c.offerBy(service3Acct, contentID+"-extra", contentID, "p0", now+termSeconds, now+600); out.code != msgkit.Bounds {
 			t.Fatalf("offer %d of %s: %s, want %s (D-6)", leases.MaxOpenOffersPerContent+1, contentID, out.code, msgkit.Bounds)
 		}
 	}

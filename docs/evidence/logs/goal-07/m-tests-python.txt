@@ -1,0 +1,9 @@
+COMMAND .venv/bin/python scripts/run_tests.py --only python
+DATE 2026-11-02T04:09:07Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+........................................................................ [ 60%]
+................................................                         [100%]
+120 passed in 35.60s
+EXIT:0

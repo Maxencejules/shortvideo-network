@@ -309,11 +309,19 @@ func TestAcceptReservesOnceAndBindsTerms(t *testing.T) {
 	}
 	for _, present := range [][]byte{
 		leases.LeaseDeadlineKey(offer.GetDeadlineUnixSeconds(), "l1"), leases.ContentLeaseKey("c1", "l1"),
-		leases.ProviderLeaseKey("p1", "l1"), leases.UsedOfferKey("o1"),
+		leases.ProviderLeaseKey("p1", "l1"),
 	} {
 		if !bytes.Equal(store.Get(present), leases.Marker) {
 			t.Fatalf("row %x missing", present)
 		}
+	}
+	// The used-offer marker stays and keeps the offer's scheduler: the
+	// lease's sponsor is in committed state after the offer is gone.
+	if !bytes.Equal(store.Get(leases.UsedOfferKey("o1")), serviceAcct) {
+		t.Fatalf("used-offer marker %x, want the scheduler", store.Get(leases.UsedOfferKey("o1")))
+	}
+	if store.Has(leases.SchedulerOfferCountKey("c1", serviceAcct)) {
+		t.Fatal("the scheduler counter of the accepted offer remains")
 	}
 	if len(r.events) != 1 {
 		t.Fatalf("events %v", r.events)
@@ -409,4 +417,43 @@ func TestCapacityAndOverflow(t *testing.T) {
 		t.Fatalf("reserved %d", got)
 	}
 	e.requireInvariants(map[string]uint64{"p2": math.MaxUint64 - packageSize})
+}
+
+// TestAcceptReplayByAnotherProviderD13: the AcceptLease business digest
+// (the spec's field set) does not cover the signer. A replay of a committed
+// acceptance (same business id and payload) by an ADMITTED_PROVIDER account
+// that is not the lease's provider account is FORBIDDEN with the state
+// unchanged, as a fresh acceptance by that account is; the spec reports an
+// idempotent success to it (deviation D-13, DR-08-14). A BROADCASTER relays
+// for every provider, so its replay stays idempotent, and so does the
+// provider's own account.
+func TestAcceptReplayByAnotherProviderD13(t *testing.T) {
+	e := newEnv(t)
+	e.mustOffer(e.offerMsg("o1", "c1", "p1"))
+	relayed := e.acceptMsg("o1", "l1")
+	e.requireOK(e.accept(e.fresh(), relayed), "accept relayed by the broadcaster")
+	copied := proto.Clone(relayed).(*leasesv1.MsgAcceptLease)
+	copied.Signer = provider2Acct
+	e.requireReject(e.accept(e.fresh(), copied), msgkit.Forbidden, "broadcaster's acceptance replayed by p2's account")
+	own := proto.Clone(relayed).(*leasesv1.MsgAcceptLease)
+	own.Signer = providerAcct
+	e.requireIdempotent(e.accept(e.fresh(), own), "replay by p1's own account")
+	e.requireIdempotent(e.accept(e.fresh(), relayed), "broadcaster replay")
+
+	e.mustOffer(e.offerMsg("o2", "c2", "p1"))
+	byOwner := e.acceptMsg("o2", "l2")
+	byOwner.Signer = providerAcct
+	e.requireOK(e.accept(e.fresh(), byOwner), "accept sent by p1's account")
+	copied = proto.Clone(byOwner).(*leasesv1.MsgAcceptLease)
+	copied.Signer = provider2Acct
+	e.requireReject(e.accept(e.fresh(), copied), msgkit.Forbidden, "p1's acceptance replayed by p2's account")
+	e.requireIdempotent(e.accept(e.fresh(), byOwner), "p1's own replay")
+
+	// A fresh acceptance by p2's account of a p1 offer is FORBIDDEN too
+	// (row 8), so the replay rule matches it.
+	e.mustOffer(e.offerMsg("o3", "c3", "p1"))
+	fresh := e.acceptMsg("o3", "l3")
+	fresh.Signer = provider2Acct
+	e.requireReject(e.accept(e.fresh(), fresh), msgkit.Forbidden, "fresh acceptance by p2's account")
+	e.requireInvariants(nil)
 }

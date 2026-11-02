@@ -26,13 +26,18 @@ import (
 //	                       built from the STORED offer and the message's lease id
 //	SVN-PROVIDER-RENEW-1   {"deadlineUnixSeconds","evidenceId","leaseId","manifestDigest","packageBytes","termVersion"}
 //	                       built from the message; evidenceId is "" when absent
-//	SVN-PROVIDER-END-1     {"leaseId","providerId"}
+//	SVN-PROVIDER-END-1     {"leaseId","providerId","termVersion"}
+//	                       built from the message's lease id and the STORED
+//	                       lease's provider id and current term version
 //
 // The acceptance binds the provider's consent to the exact content version,
 // manifest digest, package bytes, terms digest, term version, real-time
 // start and deadline, offer expiry, scheduler, and lease id. Lease ids are
 // never reused, so an end signature cannot end another lease, and a second
-// end of the same lease is UNDERFLOW.
+// end of the same lease is UNDERFLOW. An end binds the term version the
+// lease has when it is signed: after a renewal commits, an end signed for
+// the earlier term no longer verifies (UNAUTHORIZED, deviation D-12), so a
+// leaked or stale end cannot override the provider's later renewal.
 
 func decInt(v int64) string { return strconv.FormatInt(v, 10) }
 
@@ -71,10 +76,11 @@ func renewCanonical(leaseID string, termVersion uint64, deadline int64, manifest
 }
 
 // endCanonical is the SVN-JCS-1 text of an end payload.
-func endCanonical(leaseID, providerID string) (string, error) {
+func endCanonical(leaseID, providerID string, termVersion uint64) (string, error) {
 	return msgkit.Canonical(map[string]any{
-		"leaseId":    leaseID,
-		"providerId": providerID,
+		"leaseId":     leaseID,
+		"providerId":  providerID,
+		"termVersion": msgkit.Dec(termVersion),
 	})
 }
 
@@ -105,9 +111,11 @@ func RenewSignBytes(leaseID string, termVersion uint64, deadline int64, manifest
 
 // EndSignBytes returns the bytes the provider's current key signs for a
 // provider-signed MsgEndLease: the SVN-PROVIDER-END-1 domain, 0x00, and the
-// canonical end payload.
-func EndSignBytes(leaseID, providerID string) ([]byte, error) {
-	canonical, err := endCanonical(leaseID, providerID)
+// canonical end payload. termVersion is the lease's term version at the
+// time of signing (1 until the first renewal); the chain verifies against
+// the stored lease's current term version.
+func EndSignBytes(leaseID, providerID string, termVersion uint64) ([]byte, error) {
+	canonical, err := endCanonical(leaseID, providerID, termVersion)
 	if err != nil {
 		return nil, err
 	}

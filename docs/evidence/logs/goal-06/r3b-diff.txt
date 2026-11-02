@@ -1,0 +1,12 @@
+COMMAND bash -c git\ diff\ --stat\ fb4cde2087269fb9a93900b9a4d11fd24779ced2\ HEAD\ --\ .\ \":\!docs\"\;\ git\ diff\ --stat\ fb4cde2087269fb9a93900b9a4d11fd24779ced2\ HEAD\ --\ docs\ \|\ tail\ -1
+DATE 2026-11-02T00:50:28Z
+HEAD 90652c6b6651a4fbdda1344bb91d3c803270c2c6
+TREE ad5cdcb9efb2f785dbd5eb7681a10bb71a45c467
+DIRTY no
+ chain/devnet/lifecycle_test.go    |  19 +-
+ chain/devnet/power_quorum_test.go |  45 ++-
+ chain/devnet/prove_test.go        | 262 +++++++++++++--
+ chain/devnet/stall_test.go        | 675 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 959 insertions(+), 42 deletions(-)
+ 41 files changed, 15541 insertions(+), 51 deletions(-)
+EXIT:0

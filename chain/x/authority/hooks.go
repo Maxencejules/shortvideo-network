@@ -44,8 +44,8 @@ func (k Keeper) WithRegistry(p ProviderAdmission, c ContentRemoval) Keeper {
 
 // WithPeers returns a copy of k whose business gate also consults the
 // ledgers in peers. Business ids are one protocol namespace across
-// authority, providers, and content. Peers may be filled after this call;
-// the pointer is shared. A nil peers set consults no other module.
+// authority, providers, content, and leases. Peers may be filled after this
+// call; the pointer is shared. A nil peers set consults no other module.
 func (k Keeper) WithPeers(peers *msgkit.Peers) Keeper {
 	k.peers = peers
 	return k
@@ -61,7 +61,7 @@ func (k Keeper) registry(ctx sdk.Context) Registry {
 }
 
 // external is the global business-id lookup for the engine. It skips this
-// module's own ledger; the engine reads that from the side document.
+// module's own ledger; the engine reads authority's own id from 0x11.
 func (k Keeper) external(ctx sdk.Context) func(string) ([]byte, bool) {
 	if k.peers == nil {
 		return nil

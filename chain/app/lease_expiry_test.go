@@ -137,7 +137,7 @@ func TestLargeExpiringCatalogue(t *testing.T) {
 	unsweptRenew, unsweptEnd := "l4-k511", "l4-k510"
 	renew := n.renewMsg(t, n.broadcaster, "rn-"+unsweptRenew, unsweptRenew, "p4", "k511", size, 2, due+leaseTerm)
 	accept := n.acceptMsg(t, n.broadcaster, "ac-late", extraOffers["y1-x00"], "l-late")
-	end := n.endMsg(t, n.broadcaster, "en-"+unsweptEnd, unsweptEnd, "p4")
+	end := n.endMsg(t, n.broadcaster, "en-"+unsweptEnd, unsweptEnd, "p4", 1)
 	var txs [][]byte
 	for _, msg := range []sdk.Msg{renew, accept, end} {
 		txs = append(txs, n.signed(t, c, n.broadcaster, registryGas, nil, msg))
@@ -370,32 +370,75 @@ func TestRestartContinuesExpiry(t *testing.T) {
 
 // TestWithdrawalAtCapGasInApp: 256 open offers (the PROPOSED per-content
 // cap MaxOpenOffersPerContent, DR-08-02) on one content, across two
-// providers. The 257th is BOUNDS (D-6) with the state unchanged. A
+// providers, from the two admitted services: the first one's 129th offer
+// is BOUNDS (D-10) while the content has free slots, and the 257th, sent by
+// a third admitted service that holds no offer of the content (so D-10
+// cannot be what rejects it), is BOUNDS (D-6), both with the state
+// unchanged. A
 // WithdrawContent message and a council force-withdraw (ExecuteChange)
 // each void all 256 offers of their content in one committed transaction,
 // emitting 256 leases_offer_closed WITHDRAWN events, with committed gas
-// below withdrawalGasCeiling, half the per-transaction gas cap. The
+// below withdrawalGasCeiling, half the per-transaction gas cap. Each
+// withdrawal transaction is first simulated: simulation changes no
+// committed state and reports exactly the gas the committed transaction of
+// the same bytes uses, so a client can size its gas limit with it. The
 // voided offers' counters are gone (invariants).
 func TestWithdrawalAtCapGasInApp(t *testing.T) {
 	const withdrawalGasCeiling = 10_000_000
 	n := newRegNet()
+	service3 := newSecp("service-3")
+	n.doc.Submitters = append(n.doc.Submitters, genesis.Submitter{AddressHex: service3.hexAddr(), Role: genesis.RoleAdmittedService})
+	n.numbers = accountNumbers(n.doc)
 	c := n.start(t, 1)
 	leaseBasics(t, n, c)
 	chainApp := c.app()
 	now := c.now()
 	fill := func(content string) {
 		t.Helper()
-		var msgs []sdk.Msg
-		for i := 0; i < leases.MaxOpenOffersPerContent; i++ {
-			provider := []string{"p1", "p2"}[i%2]
-			id := fmt.Sprintf("w-%s-%03d", content, i)
-			msgs = append(msgs, n.offerMsg(n.service, "of-"+id, id, content, provider, sizeSmall, now+1800, now+600))
+		for half, who := range []*actor{n.service, n.service2} {
+			var msgs []sdk.Msg
+			for i := 0; i < leases.MaxOpenOffersPerContentPerScheduler; i++ {
+				provider := []string{"p1", "p2"}[i%2]
+				id := fmt.Sprintf("w-%s-%d-%03d", content, half, i)
+				msgs = append(msgs, n.offerMsg(who, "of-"+id, id, content, provider, sizeSmall, now+1800, now+600))
+			}
+			n.sendBatches(t, c, who, fmt.Sprintf("offers on %s by scheduler %d", content, half), msgs)
+			if half == 0 {
+				// One scheduler stops at its quota while the content has
+				// free slots (D-10).
+				before := chainApp.FullSnapshot()
+				res := n.send(t, c, who, n.offerMsg(who, "of-"+content+"-129", content+"-129", content, "p1", sizeSmall, now+1800, now+600))
+				wantCode(t, "offer 129 on "+content+" by one scheduler (D-10)", res, msgkit.Bounds)
+				unchanged(t, "offer 129 on "+content, chainApp, before, res)
+			}
 		}
-		n.sendBatches(t, c, n.service, "offers on "+content, msgs)
+		// The 257th offer comes from a scheduler below its D-10 quota.
 		before := chainApp.FullSnapshot()
-		res := n.send(t, c, n.service, n.offerMsg(n.service, "of-"+content+"-257", content+"-257", content, "p1", sizeSmall, now+1800, now+600))
-		wantCode(t, "offer 257 on "+content+" (D-6)", res, msgkit.Bounds)
+		res := n.send(t, c, service3, n.offerMsg(service3, "of-"+content+"-257", content+"-257", content, "p1", sizeSmall, now+1800, now+600))
+		wantCode(t, "offer 257 on "+content+" by a third scheduler (D-6)", res, msgkit.Bounds)
 		unchanged(t, "offer 257 on "+content, chainApp, before, res)
+	}
+	// simulateThenDeliver simulates the signed bytes, requires an
+	// unchanged committed state, delivers the same bytes, and requires the
+	// simulated gas to equal the committed gas.
+	simulateThenDeliver := func(label string, who *actor, msg sdk.Msg) *abci.ExecTxResult {
+		t.Helper()
+		raw := n.signed(t, c, who, genesis.MaxGasPerTx, nil, msg)
+		before := chainApp.FullSnapshot()
+		info, _, err := chainApp.Simulate(raw)
+		if err != nil {
+			t.Fatalf("%s: simulate: %v", label, err)
+		}
+		if !bytes.Equal(before, chainApp.FullSnapshot()) {
+			t.Fatalf("%s: simulation changed committed state", label)
+		}
+		res := n.deliverRaw(t, c, who, raw)
+		wantCode(t, label, res, msgkit.OK)
+		if info.GasUsed != uint64(res.GasUsed) {
+			t.Fatalf("%s: simulated gas %d, committed gas %d", label, info.GasUsed, res.GasUsed)
+		}
+		t.Logf("%s at %d open offers: simulated gas %d equals committed gas %d", label, leases.MaxOpenOffersPerContent, info.GasUsed, res.GasUsed)
+		return res
 	}
 	closedEvents := func(label string, res *abci.ExecTxResult) {
 		t.Helper()
@@ -415,16 +458,14 @@ func TestWithdrawalAtCapGasInApp(t *testing.T) {
 	}
 
 	fill("c1")
-	res := n.sendWith(t, c, n.service, genesis.MaxGasPerTx, nil, n.withdrawContent(t, n.service, "wd-c1", "c1", 1, reasonDigest("c1")))
-	wantCode(t, "WithdrawContent c1", res, msgkit.OK)
+	res := simulateThenDeliver("WithdrawContent c1", n.service, n.withdrawContent(t, n.service, "wd-c1", "c1", 1, reasonDigest("c1")))
 	closedEvents("WithdrawContent", res)
 
 	fill("c2")
 	n.councilReady(t, c, "prop-withdraw-c2", "withdraw-c2", forceWithdrawPayload("c2", 1, reasonDigest("c2")))
-	res = n.sendWith(t, c, n.authority, genesis.MaxGasPerTx, nil, &authorityv1.MsgExecuteChange{Signer: n.authority.addr, BusinessId: "ex-prop-withdraw-c2", ProposalId: "prop-withdraw-c2"})
-	wantCode(t, "council force-withdraw c2", res, msgkit.OK)
-	if authorityResult(res) != "" {
-		t.Fatalf("force-withdraw kept with %s", authorityResult(res))
+	res = simulateThenDeliver("council force-withdraw c2", n.authority, &authorityv1.MsgExecuteChange{Signer: n.authority.addr, BusinessId: "ex-prop-withdraw-c2", ProposalId: "prop-withdraw-c2"})
+	if authorityResultCode(res) != "" {
+		t.Fatalf("force-withdraw kept with %s", authorityResultCode(res))
 	}
 	n.policy++
 	closedEvents("council ForceWithdraw", res)

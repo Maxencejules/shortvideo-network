@@ -119,8 +119,8 @@ func runLeaseFlow(t *testing.T, n *regNet, c *cluster) leaseFlowRecord {
 	reject("renewal with other bytes", n.broadcaster, n.renewMsg(t, n.broadcaster, "rn-l1-3x", "l1", "p1", "c1", sizeC1+1, 3, deadline+2*leaseTerm), msgkit.Conflict)
 
 	// Provider end and authority end release exactly once.
-	ok("provider end l2", n.provider2, n.endMsg(t, n.provider2, "en-l2", "l2", "p2"), evEnded)
-	reject("second end of l2", n.provider2, n.endMsg(t, n.provider2, "en-l2-again", "l2", "p2"), msgkit.Underflow)
+	ok("provider end l2", n.provider2, n.endMsg(t, n.provider2, "en-l2", "l2", "p2", 1), evEnded)
+	reject("second end of l2", n.provider2, n.endMsg(t, n.provider2, "en-l2-again", "l2", "p2", 1), msgkit.Underflow)
 	ok("authority end l3", n.authority, n.authorityEndMsg("en-l3", "l3"), evEnded)
 
 	// Expiry by header time: o6 is never accepted; l5 runs to its deadline.

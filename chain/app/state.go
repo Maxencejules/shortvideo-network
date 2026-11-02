@@ -15,6 +15,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
+	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
@@ -256,14 +257,27 @@ func role(name string) typesv1.SubmitterRole {
 	}
 }
 
+// authGenesis creates one auth account, with no public key and sequence 0,
+// for each submitter address and each council seat address. A seat has no
+// submitter row (DR-06-06); its account exists so the seat key can sign
+// council messages. Account numbers follow the lower-case hex order of the
+// addresses. The document is validated, so no address is both.
 func authGenesis(cdc codec.Codec, doc genesis.Document) (json.RawMessage, error) {
-	rows := slices.Clone(doc.Submitters)
-	slices.SortFunc(rows, func(a, b genesis.Submitter) int {
-		return strings.Compare(strings.ToLower(a.AddressHex), strings.ToLower(b.AddressHex))
-	})
-	accounts := make([]authtypes.GenesisAccount, 0, len(rows))
-	for i, row := range rows {
-		raw, err := hex.DecodeString(row.AddressHex)
+	addrs := make([]string, 0, len(doc.Submitters)+len(doc.DevnetTestSeats))
+	for _, row := range doc.Submitters {
+		addrs = append(addrs, strings.ToLower(row.AddressHex))
+	}
+	for _, seat := range doc.DevnetTestSeats {
+		pub, err := hex.DecodeString(seat.PublicKeyHex)
+		if err != nil {
+			return nil, fmt.Errorf("seat %s: %w", seat.SeatID, err)
+		}
+		addrs = append(addrs, hex.EncodeToString(genesis.SeatAddress(pub)))
+	}
+	slices.Sort(addrs)
+	accounts := make([]authtypes.GenesisAccount, 0, len(addrs))
+	for i, addr := range addrs {
+		raw, err := hex.DecodeString(addr)
 		if err != nil {
 			return nil, err
 		}
@@ -271,6 +285,26 @@ func authGenesis(cdc codec.Codec, doc genesis.Document) (json.RawMessage, error)
 	}
 	state := authtypes.NewGenesisState(authtypes.DefaultParams(), accounts)
 	return cdc.MarshalJSON(state)
+}
+
+// ValidateAuthorityGenesis runs the authority rules on the authority module
+// genesis: no genesis proposals, an empty approved council, quorum loss
+// UNSET, well-formed seats and submitters, the validator power invariant,
+// and every pending validator change projected on the genesis set and
+// activating at or after the first block (authority.ValidateGenesisState).
+// DocumentFromModules does not carry pending entries, proposals, or the
+// approved council, so genesis.Validate cannot check them. InitChain and
+// `svnd genesis validate` both call this, so the command refuses every
+// authority genesis InitChain refuses.
+func ValidateAuthorityGenesis(modules map[string]json.RawMessage, initialHeight, genesisUnixSeconds int64) error {
+	var state authorityv1.GenesisState
+	if err := protojson.Unmarshal(modules[authority.ModuleName], &state); err != nil {
+		return fmt.Errorf("authority genesis: %w", err)
+	}
+	return authority.ValidateGenesisState(&state, &authority.GenesisPoint{
+		InitialHeight:      max(initialHeight, 1),
+		GenesisUnixSeconds: genesisUnixSeconds,
+	})
 }
 
 // DocumentFromModules rebuilds the inventory from module genesis JSON.

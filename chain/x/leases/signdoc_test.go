@@ -90,13 +90,13 @@ func buildVectors(t testing.TB) []signVector {
 			return b, c, err
 		}
 	}
-	end := func(leaseID, providerID string) func() ([]byte, string, error) {
+	end := func(leaseID, providerID string, tv uint64) func() ([]byte, string, error) {
 		return func() ([]byte, string, error) {
-			b, err := leases.EndSignBytes(leaseID, providerID)
+			b, err := leases.EndSignBytes(leaseID, providerID, tv)
 			if err != nil {
 				return nil, "", err
 			}
-			c, err := leases.EndCanonicalForTest(leaseID, providerID)
+			c, err := leases.EndCanonicalForTest(leaseID, providerID, tv)
 			return b, c, err
 		}
 	}
@@ -106,7 +106,8 @@ func buildVectors(t testing.TB) []signVector {
 		{"renew", typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW, "p1", renew("l1", 2, 1767232900, manifestOf("c1"), 1000, "")},
 		{"renew-with-evidence", typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW, "p1", renew("l1", 3, 1767236500, manifestOf("c1"), 1000, "ev-1")},
 		{"renew-out-of-range", typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW, "p1", renew("l1", math.MaxUint64, -5, manifestOf("c1"), math.MaxUint64, "")},
-		{"end", typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END, "p1", end("l1", "p1")},
+		{"end", typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END, "p1", end("l1", "p1", 1)},
+		{"end-after-renewal", typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END, "p1", end("l1", "p1", 2)},
 	}
 	var out []signVector
 	for _, in := range inputs {
@@ -182,6 +183,18 @@ func TestSignBytesVectors(t *testing.T) {
 		if !strings.Contains(accept, `"`+key+`":`) {
 			t.Fatalf("acceptance payload lacks %s: %s", key, accept)
 		}
+	}
+	// The end payload binds the lease's term version (D-12): the vectors at
+	// term 1 and term 2 differ.
+	ends := map[string]string{}
+	for _, v := range want.Vectors {
+		if v.Domain == "SVN-PROVIDER-END-1" {
+			ends[v.Name] = v.Canonical
+		}
+	}
+	if len(ends) != 2 || ends["end"] == ends["end-after-renewal"] ||
+		!strings.Contains(ends["end"], `"termVersion":"1"`) || !strings.Contains(ends["end-after-renewal"], `"termVersion":"2"`) {
+		t.Fatalf("end payloads do not bind the term version: %v", ends)
 	}
 }
 

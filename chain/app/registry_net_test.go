@@ -117,8 +117,8 @@ type regNet struct {
 }
 
 // newRegNet builds the devnet document: authority, two services, two
-// providers, one broadcaster, four council seats, and the
-// DEC-001/002/003/005/008 devnet test parameters. drop removes devnet
+// providers, one broadcaster, four council seats (no submitter row,
+// DR-06-06), and the DEC-001/002/003/005/008 devnet test parameters. drop removes devnet
 // parameters by decision id.
 func newRegNet(drop ...string) *regNet {
 	n := &regNet{
@@ -151,7 +151,6 @@ func newRegNet(drop ...string) *regNet {
 			SeatID:       seat.name,
 			PublicKeyHex: hex.EncodeToString(seat.key.PubKey().Bytes()),
 		}
-		doc.Submitters = append(doc.Submitters, genesis.Submitter{AddressHex: seat.hexAddr(), Role: genesis.RoleBroadcaster})
 	}
 	params := []genesis.DevnetTestParameter{
 		{Label: genesis.DevnetTestLabel, DecisionID: "DEC-001", RoleName: "DEVNET_TEST_ONLY"},
@@ -568,15 +567,17 @@ func (n *regNet) council(t *testing.T, c *cluster, id, parameterKey string, payl
 	n.councilReady(t, c, id, parameterKey, payload)
 	res := n.execute(t, c, id)
 	wantCode(t, "execute "+id, res, msgkit.OK)
-	if authorityResult(res) != "" {
-		t.Fatalf("execute %s kept with %s", id, authorityResult(res))
+	if authorityResultCode(res) != "" {
+		t.Fatalf("execute %s kept with %s", id, authorityResultCode(res))
 	}
 	n.policy++
 	return res
 }
 
-// authorityResult is the code of a kept execution (REJECTED or EXPIRED).
-func authorityResult(res *abci.ExecTxResult) string {
+// authorityResultCode is the code of a kept execution (REJECTED or
+// EXPIRED). authorityResult (authority_outcomes_test.go) returns every
+// attribute of the event.
+func authorityResultCode(res *abci.ExecTxResult) string {
 	for _, ev := range res.Events {
 		if ev.Type != "authority_result" {
 			continue

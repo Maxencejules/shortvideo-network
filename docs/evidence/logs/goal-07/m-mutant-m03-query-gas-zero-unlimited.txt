@@ -1,0 +1,27 @@
+COMMAND bash docs/evidence/goal-07/mutants/run_mutant.sh m03-query-gas-zero-unlimited
+DATE 2026-11-02T04:32:39Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+mutant m03-query-gas-zero-unlimited: target chain/app/querygas.go, package ./app/, tests ^(TestQueryGasLimit|TestQueryGasLimitOption)$
+--- /home/user/shortvideo-network/chain/app/querygas.go	2026-11-01 09:27:53.467136961 +0000
++++ /home/user/shortvideo-network/docs/evidence/goal-07/mutants/m03-query-gas-zero-unlimited.go.txt	2026-11-01 09:36:29.683059593 +0000
+@@ -76,8 +76,5 @@
+ 	default:
+ 		return 0, fmt.Errorf("%s has type %T, want an integer", QueryGasLimitOption, v)
+ 	}
+-	if limit == 0 {
+-		return DefaultQueryGasLimit, nil
+-	}
+ 	return limit, nil
+ }
+overlay /tmp/svn-goal07-m03-query-gas-zero-unlimited.overlay.json: {"Replace":{"/home/user/shortvideo-network/chain/app/querygas.go":"/home/user/shortvideo-network/docs/evidence/goal-07/mutants/m03-query-gas-zero-unlimited.go.txt"}}
+--- FAIL: TestQueryGasLimitOption (0.00s)
+    registry_bounds_test.go:194: no option: 0 <nil>, want 20000000
+    registry_bounds_test.go:194: zero: 0 <nil>, want 20000000
+    registry_bounds_test.go:194: empty string: 0 <nil>, want 20000000
+FAIL
+FAIL	github.com/Maxencejules/shortvideo-network/chain/app	0.114s
+FAIL
+mutant m03-query-gas-zero-unlimited: go test exit 1 (non-zero = killed, 0 = survived)
+EXIT:1

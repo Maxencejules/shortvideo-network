@@ -57,20 +57,34 @@ const (
 	// without it every offer and renewal is DECISION_BLOCKED.
 	TermDecisionID = "DEC-005"
 
-	// MaxOpenOffersPerContent bounds the open offers of one content id. It
-	// is a chain safety constant, not a rule of the v0 spec machine:
-	// PROPOSED, decision request DR-08-02. It bounds the work of the
-	// withdrawal hook, which voids every open offer of the content inside
-	// the withdrawal transaction (WithdrawContent or a council
-	// force-withdraw). It counts OPEN offers: a slot frees when its offer is
-	// accepted, expires, or is voided.
+	// MaxOpenOffersPerContent bounds the open offers of one content id,
+	// whoever sent them (deviation D-6). It is a chain safety constant, not
+	// a rule of the v0 spec machine: PROPOSED, decision request DR-08-02. It
+	// bounds the work of the withdrawal hook, which voids every open offer
+	// of the content inside the withdrawal transaction (WithdrawContent or a
+	// council force-withdraw). It counts OPEN offers: a slot frees when its
+	// offer is accepted, expires, or is voided.
 	MaxOpenOffersPerContent = 256
 
+	// MaxOpenOffersPerContentPerScheduler bounds the open offers one
+	// scheduler (the outer signer of OfferLease) holds for one content id
+	// (deviation D-10): half of MaxOpenOffersPerContent, so one admitted
+	// service alone can never fill a content's D-6 slots. Two admitted
+	// services together can. It does not stop one service from filling
+	// every provider's shared max_open_offers slots, which blocks other
+	// schedulers' offers of every content (DR-08-13). PROPOSED, decision
+	// request DR-08-02. It counts OPEN offers.
+	MaxOpenOffersPerContentPerScheduler = MaxOpenOffersPerContent / 2
+
 	// MaxOfferLifetimeSeconds bounds expiry_unix_seconds - committed time of
-	// a new offer. It is a chain safety constant, not a DEC-005 duration:
-	// PROPOSED, decision request DR-08-03. v0 has no decline or cancel
-	// message, so without it one scheduler could hold a provider's open-offer
-	// slots indefinitely.
+	// a new offer (deviation D-5). It is a chain safety constant, not a
+	// DEC-005 duration: PROPOSED, decision request DR-08-03. It bounds how
+	// long ONE offer holds a slot. It does not bound how long one scheduler
+	// keeps the shared caps occupied: v0 has no decline or cancel message,
+	// and an admitted service can send a new offer each time a slot frees.
+	// What it does bound: once a scheduler sends no new offers (its role
+	// moved by the engine-only service rotation, or the chain upgraded), its
+	// open offers are gone within this many seconds of committed time.
 	MaxOfferLifetimeSeconds int64 = 86400
 )
 
@@ -126,9 +140,12 @@ type Providers interface {
 //   - CheckOfferable: NOT_FOUND, WITHDRAWN, CONFLICT (not PENDING or another
 //     version), INTEGRITY (digest or bytes differ), in op_offer order
 //   - CheckNotWithdrawn: NOT_FOUND, WITHDRAWN
+//   - CheckPackage: the record of (content, version) in any state: absent
+//     NOT_FOUND, digest or bytes differ INTEGRITY (InitGenesis, leases)
 type Content interface {
 	CheckOfferable(ctx sdk.Context, contentID string, version uint64, manifestSHA256 []byte, packageBytes uint64) msgkit.Code
 	CheckNotWithdrawn(ctx sdk.Context, contentID string) msgkit.Code
+	CheckPackage(ctx sdk.Context, contentID string, version uint64, manifestSHA256 []byte, packageBytes uint64) msgkit.Code
 }
 
 // Evidence reads one evidence record for the renewal check of op_renew.

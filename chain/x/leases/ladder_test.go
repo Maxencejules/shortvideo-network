@@ -40,9 +40,6 @@ type fault[M any] struct {
 	name  string
 	want  msgkit.Code
 	apply func(e *env, c *call[M])
-	// cumulativeOnly skips the isolated step (the fault needs a later fault
-	// to reach its branch; the reason is in the fault's comment).
-	cumulativeOnly bool
 }
 
 type ladder[M any] struct {
@@ -85,9 +82,7 @@ func (l ladder[M]) run(t *testing.T) {
 			cumulative = append(cumulative, j)
 		}
 		t.Run("cumulative/"+f.name, func(t *testing.T) { l.step(t, cumulative, f.want) })
-		if !f.cumulativeOnly {
-			t.Run("isolated/"+f.name, func(t *testing.T) { l.step(t, []int{i}, f.want) })
-		}
+		t.Run("isolated/"+f.name, func(t *testing.T) { l.step(t, []int{i}, f.want) })
 	}
 	t.Run("no-fault", func(t *testing.T) { l.step(t, nil, msgkit.OK) })
 }

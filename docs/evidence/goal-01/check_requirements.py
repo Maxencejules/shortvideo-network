@@ -164,6 +164,10 @@ PY_ALLOW = (
     "docs/evidence/goal-00/",
     "docs/evidence/goal-01/",
     "docs/evidence/goal-02/",
+    # The goal 06 mutation runner is evidence like the goal 00-02 scripts.
+    "docs/evidence/goal-06/mutants.py",
+    # The goal 07 mutation runner, likewise.
+    "docs/evidence/goal-07/mutants.py",
     "scripts/",
     "tests/",
     "services/",

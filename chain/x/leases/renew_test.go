@@ -280,3 +280,39 @@ func TestDecisionBlockedWithoutDEC005(t *testing.T) {
 	e.requireOK(e.offer(e.fresh(), offer), "offer with the devnet number")
 	e.requireOK(e.renew(e.fresh(), renew), "renew with the devnet number")
 }
+
+// TestRetryAfterKeyRotation: RenewLease and EndLease verify the provider
+// signature against the provider's CURRENT key before the business gate
+// (spec_machine.py order). A renewal or an end that committed and is
+// resubmitted under the same business id after the provider rotated its
+// key is therefore UNAUTHORIZED, with the state unchanged, not an
+// idempotent success (DR-08-12). AcceptLease runs its gate first, so its
+// retry stays idempotent. A broadcaster outbox reads the committed result
+// by transaction hash or lease state instead of resubmitting.
+func TestRetryAfterKeyRotation(t *testing.T) {
+	e := newEnv(t)
+	e.mustOffer(e.offerMsg("o-l1", "c1", "p1"))
+	accept := e.acceptMsg("o-l1", "l1")
+	e.requireOK(e.accept(e.fresh(), accept), "accept")
+	e.mustLease("l2", "c2", "p1")
+	renew := e.renewMsg("l1", "ren-l1")
+	e.requireOK(e.renew(e.fresh(), renew), "renew")
+	end := e.endMsg("l2", "end-l2")
+	e.requireOK(e.end(e.fresh(), end), "end")
+	e.requireIdempotent(e.renew(e.fresh(), renew), "renew retry before rotation")
+	e.requireIdempotent(e.end(e.fresh(), end), "end retry before rotation")
+
+	e.editProvider("p1", func(p *providersv1.Provider) {
+		p.SigningPubkey, p.SigningKeyId, p.KeyGeneration = pub("p1-new"), "key-p1b", 2
+	})
+	e.requireReject(e.renew(e.fresh(), renew), msgkit.Unauthorized, "renew retry after rotation")
+	e.requireReject(e.end(e.fresh(), end), msgkit.Unauthorized, "end retry after rotation")
+	e.requireIdempotent(e.accept(e.fresh(), accept), "accept retry after rotation")
+	if got := e.storedLease("l1"); got.GetTermVersion() != 2 || got.GetState() != leasesv1.LeaseState_LEASE_STATE_RENEWED {
+		t.Fatalf("l1 after the refused retry: %v", got)
+	}
+	if got := e.storedLease("l2"); got.GetState() != leasesv1.LeaseState_LEASE_STATE_ENDED {
+		t.Fatalf("l2 after the refused retry: %v", got)
+	}
+	e.requireInvariants(nil)
+}

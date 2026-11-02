@@ -1,0 +1,9 @@
+COMMAND bash -c bash\ scripts/gofmt_check.sh\;\ a=\$\?\;\ l=\"\$\(gofmt\ -l\ chain\ proto\ agents\)\"\;\ echo\ \"gofmt\ -l\ chain\ proto\ agents:\ \$\{l:-\<empty\>\}\"\;\ test\ -z\ \"\$l\"\;\ b=\$\?\;\ go\ vet\ ./chain/...\;\ c=\$\?\;\ go\ vet\ ./proto/...\;\ d=\$\?\;\ go\ vet\ ./agents/provider/...\;\ e=\$\?\;\ echo\ \"gofmt_check=\$a\ gofmt_l=\$b\ vet_chain=\$c\ vet_proto=\$d\ vet_agents_provider=\$e\"\;\ test\ \"\$a\$b\$c\$d\$e\"\ =\ 00000
+DATE 2026-11-02T04:07:22Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+gofmt ok files 193
+gofmt -l chain proto agents: <empty>
+gofmt_check=0 gofmt_l=0 vet_chain=0 vet_proto=0 vet_agents_provider=0
+EXIT:0

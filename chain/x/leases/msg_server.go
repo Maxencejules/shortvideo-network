@@ -17,14 +17,19 @@ import (
 // first, then the presence rule (an empty string, empty bytes, or a nil
 // message field the spec requires is MALFORMED; an integer 0 is a value and
 // goes through its range check), then the check order of
-// docs/evidence/goal-02/spec_machine.py, then the chain-only checks
-// (deviations D-1 to D-6, README), and writes only after every check
-// passed. A failure returns the protocol code as an svnerr error (codespace
-// "svn", code = svn.types.v1.ErrorCode) and leaves every store untouched. A
-// business-id replay of the same payload is an idempotent success: no
-// write, no typed event, one leases_result idempotent=true event. Committed
-// time is the block header time, in whole seconds; no other clock exists
-// in this module.
+// docs/evidence/goal-02/spec_machine.py, then the chain-only checks (D-2
+// to D-6 and D-10) at the tail, and writes only after every check passed.
+// D-1 and D-8 change the order of spec checks, D-12 is part of the end
+// signature check, and D-11 and D-13 run at the business gate on an
+// idempotent hit (README, "Deviations from the spec machine"). A failure
+// returns the protocol code as an svnerr error (codespace "svn", code =
+// svn.types.v1.ErrorCode) and leaves every store untouched. A business-id
+// replay of the same payload is an idempotent success: no write, no typed
+// event, one leases_result idempotent=true event (an OfferLease replay only
+// for the scheduler that sent the offer, D-11; an AcceptLease replay by an
+// ADMITTED_PROVIDER account only for the lease's provider account, D-13).
+// Committed time is the block header time, in whole seconds; no other
+// clock exists in this module.
 
 // OfferLease is op_offer (spec_machine.py:583).
 func (k Keeper) OfferLease(goCtx context.Context, msg *leasesv1.MsgOfferLease) (*leasesv1.MsgOfferLeaseResponse, error) {
@@ -175,6 +180,17 @@ func (k Keeper) verify(ctx sdk.Context, providerID string, domain typesv1.Signat
 	return k.deps.Providers.VerifyProviderSignature(ctx, providerID, domain, canonical, sig)
 }
 
+// sentBy reports whether the used-offer marker of offerID records signer
+// as the scheduler. An idempotent OfferLease gate hit always finds the
+// marker: the business id and the marker commit in the same transaction.
+// A marker InitGenesis rebuilt for a lease records no scheduler and matches
+// no signer, but no business id survives an export (DR-07-03), so the gate
+// cannot hit for such an offer id.
+func (k Keeper) sentBy(ctx sdk.Context, offerID string, signer []byte) bool {
+	recorded := k.kv(ctx).Get(UsedOfferKey(offerID))
+	return len(recorded) == msgkit.AccountBytes && bytes.Equal(recorded, signer)
+}
+
 // providerAccount returns the 20-byte account of a provider record, or nil
 // when there is no record. Callers compare it with a 20-byte signer, which
 // never equals nil. The callers run after VerifyProviderSignature passed,
@@ -195,7 +211,8 @@ func (k Keeper) providerAccount(ctx sdk.Context, providerID string) []byte {
 //  5. start, deadline, expiry outside [1, 253402300799]: BOUNDS
 //  6. package_bytes outside 1..effective max_package_bytes: BOUNDS
 //  7. business gate: business_id outside the id pattern BOUNDS, MALFORMED
-//     (an integer above 2^53-1), REPLAY, idempotent
+//     (an integer above 2^53-1), REPLAY, idempotent; D-11 an idempotent
+//     replay whose signer is not the offer's scheduler: FORBIDDEN
 //  8. offer_id is an open offer: DUPLICATE_ID
 //  9. content: NOT_FOUND, WITHDRAWN, CONFLICT, INTEGRITY (Content.CheckOfferable)
 //  10. provider: NOT_FOUND, FORBIDDEN unless ADMITTED
@@ -209,6 +226,8 @@ func (k Keeper) providerAccount(ctx sdk.Context, providerID string) []byte {
 //  18. D-4 offer_id used before: DUPLICATE_ID
 //  19. D-5 expiry - committed time > MaxOfferLifetimeSeconds: BOUNDS
 //  20. D-6 content open offers >= MaxOpenOffersPerContent: BOUNDS
+//  21. D-10 open offers of the content by the signer >= half the D-6 cap
+//     (MaxOpenOffersPerContentPerScheduler): BOUNDS
 func (k Keeper) offerLease(ctx sdk.Context, msg *leasesv1.MsgOfferLease) msgkit.Outcome {
 	if code := msgkit.Enforce(ctx, msg.GetSigner()); code != msgkit.OK {
 		return fail(code)
@@ -256,7 +275,19 @@ func (k Keeper) offerLease(ctx sdk.Context, msg *leasesv1.MsgOfferLease) msgkit.
 		"term_version":          businessUint(msg.GetTermVersion()),
 		"terms_digest":          msgkit.DigestObject(msg.GetTermsDigest()),
 	})
-	if gate.Code != msgkit.OK || gate.Idempotent {
+	if gate.Code != msgkit.OK {
+		return gate
+	}
+	if gate.Idempotent {
+		// D-11: the business digest (the spec's field set) does not cover
+		// the signer, so another admitted service can commit a copy of a
+		// pending offer under its own account first. The idempotent success
+		// goes only to the scheduler the used-offer marker records; any
+		// other signer is FORBIDDEN, as DR-07-08 rules for providers. The
+		// marker is never deleted, so this holds after the offer closed.
+		if !k.sentBy(ctx, msg.GetOfferId(), msg.GetSigner()) {
+			return fail(msgkit.Forbidden)
+		}
 		return gate
 	}
 	if _, open := k.mustLoadOffer(ctx, msg.GetOfferId()); open {
@@ -299,7 +330,7 @@ func (k Keeper) offerLease(ctx sdk.Context, msg *leasesv1.MsgOfferLease) msgkit.
 		return fail(msgkit.DuplicateID) // D-4: offer ids are never reused
 	}
 	if expiry-MaxOfferLifetimeSeconds > now {
-		return fail(msgkit.Bounds) // D-5: open offers cannot be held indefinitely
+		return fail(msgkit.Bounds) // D-5: bounds one offer's lifetime (not re-offering)
 	}
 	contentOffers, err := k.count(ctx, ContentOfferCountKey(msg.GetContentId()))
 	if err != nil {
@@ -307,6 +338,13 @@ func (k Keeper) offerLease(ctx sdk.Context, msg *leasesv1.MsgOfferLease) msgkit.
 	}
 	if contentOffers >= MaxOpenOffersPerContent {
 		return fail(msgkit.Bounds) // D-6: bounds the withdrawal hook's work
+	}
+	schedulerOffers, err := k.count(ctx, SchedulerOfferCountKey(msg.GetContentId(), msg.GetSigner()))
+	if err != nil {
+		panic(err.Error())
+	}
+	if schedulerOffers >= MaxOpenOffersPerContentPerScheduler {
+		return fail(msgkit.Bounds) // D-10: one scheduler cannot fill a content's slots
 	}
 
 	offer := &leasesv1.Offer{
@@ -340,7 +378,8 @@ func (k Keeper) offerLease(ctx sdk.Context, msg *leasesv1.MsgOfferLease) msgkit.
 //  4. acceptance structure (msgkit.CheckInnerSignature, PROVIDER_ACCEPT):
 //     MALFORMED, WRONG_DOMAIN, OUT_OF_RANGE, BOUNDS
 //  5. business gate: business_id outside the id pattern BOUNDS, REPLAY,
-//     idempotent
+//     idempotent (D-13: for an ADMITTED_PROVIDER signer only when it is
+//     the account of the committed lease's provider, else FORBIDDEN)
 //  6. no open offer: NOT_FOUND
 //  7. acceptance by the provider's current key over the stored offer and
 //     lease_id (key id, public key, ed25519): UNAUTHORIZED (D-1)
@@ -381,7 +420,22 @@ func (k Keeper) acceptLease(ctx sdk.Context, msg *leasesv1.MsgAcceptLease) msgki
 		"offer_id":            msg.GetOfferId(),
 		"provider_acceptance": msgkit.SignatureObject(acceptance),
 	})
-	if gate.Code != msgkit.OK || gate.Idempotent {
+	if gate.Code != msgkit.OK {
+		return gate
+	}
+	if gate.Idempotent {
+		// D-13: the business digest (the spec's field set) does not cover
+		// the signer. A BROADCASTER relays for any provider, so its replay
+		// stays idempotent; an ADMITTED_PROVIDER account gets the
+		// idempotent success only for its own provider's lease, as a fresh
+		// acceptance requires (row 8). The lease committed with the
+		// business id, so it exists; a missing lease is also FORBIDDEN.
+		if role == typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER {
+			lease, found := k.mustLoadLease(ctx, msg.GetLeaseId())
+			if !found || !bytes.Equal(msg.GetSigner(), k.providerAccount(ctx, lease.GetProviderId())) {
+				return fail(msgkit.Forbidden)
+			}
+		}
 		return gate
 	}
 	offer, open := k.mustLoadOffer(ctx, msg.GetOfferId())
@@ -596,9 +650,11 @@ func (k Keeper) checkRelayer(ctx sdk.Context, signer []byte, providerID string, 
 //  3. authority_end true: signer role none UNAUTHORIZED, not AUTHORITY
 //     FORBIDDEN; a provider_signature is UNKNOWN_FIELD.
 //     authority_end false: no provider_signature MALFORMED; the signature
-//     (PROVIDER_END, current key): MALFORMED, WRONG_DOMAIN, OUT_OF_RANGE,
-//     BOUNDS, UNAUTHORIZED; signer neither BROADCASTER nor the provider's
-//     own ADMITTED_PROVIDER account: FORBIDDEN
+//     (PROVIDER_END, current key, over the lease id, the provider id, and
+//     the lease's current term version): MALFORMED, WRONG_DOMAIN,
+//     OUT_OF_RANGE, BOUNDS, UNAUTHORIZED (an end signed for an earlier
+//     term is UNAUTHORIZED, deviation D-12); signer neither BROADCASTER
+//     nor the provider's own ADMITTED_PROVIDER account: FORBIDDEN
 //  4. business gate: business_id outside the id pattern BOUNDS, REPLAY,
 //     idempotent
 //  5. reservation not held: UNDERFLOW (a second end, or an end after expiry)
@@ -632,7 +688,7 @@ func (k Keeper) endLease(ctx sdk.Context, msg *leasesv1.MsgEndLease) msgkit.Outc
 		if msg.GetProviderSignature() == nil {
 			return fail(msgkit.Malformed)
 		}
-		canonical, canonErr := endCanonical(msg.GetLeaseId(), lease.GetProviderId())
+		canonical, canonErr := endCanonical(msg.GetLeaseId(), lease.GetProviderId(), lease.GetTermVersion())
 		if code := k.verify(ctx, lease.GetProviderId(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END, canonical, canonErr, msg.GetProviderSignature()); code != msgkit.OK {
 			return fail(code)
 		}

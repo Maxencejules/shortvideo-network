@@ -11,18 +11,20 @@
 //	I4  at most one held lease per (provider, content, version); the pair rows are exactly the held leases
 //	I5  the deadline, content, and provider rows are exactly the held leases
 //	I6  the expiry and content rows are exactly the open offers; the counters equal the
-//	    per-provider and per-content open-offer counts; a content id has at most
-//	    MaxOpenOffersPerContent open offers
+//	    per-provider, per-content, and per-(content, scheduler) open-offer counts; a
+//	    content id has at most MaxOpenOffersPerContent open offers, and at most
+//	    MaxOpenOffersPerContentPerScheduler from one scheduler
 //	I7  (single-state part) a stored lease has a valid record: ids in the pattern,
 //	    term_version >= 1, ACTIVE at term 1, RENEWED at term >= 2
 //	I10 every open offer and every lease's offer_id has a used-offer marker; an open
-//	    offer id is not a lease's offer_id; leases name distinct offer ids
+//	    offer's marker holds its scheduler, every other marker a 20-byte scheduler or
+//	    Marker; an open offer id is not a lease's offer_id; leases name distinct offer ids
 //
 // The layout key must hold version 2, and no row may sit under an unknown
 // prefix. I8 (one release per lease) and the history part of I7 are
 // properties of transitions; I11 and I12 are properties of the code and the
 // business-id ledger: the tests that name them check them. CheckOfferIntegrity
-// checks I9 against the content registry.
+// checks I9 (open offers and leases) against the content registry.
 package leasestest
 
 import (
@@ -75,8 +77,11 @@ func CheckInvariants(ctx sdk.Context, k leases.Keeper, providers ProviderReader,
 
 // CheckOfferIntegrity is I9: every open offer names a PENDING content
 // record with the offer's version, manifest digest, and package bytes
-// (content.CheckOfferable is OK). Withdrawal voids the offers of the
-// content, so no open offer may name withdrawn content.
+// (content.CheckOfferable is OK), and every lease, in any state, names a
+// content record of its version, in any state, with the lease's manifest
+// digest and package bytes (content.CheckPackage is OK). Withdrawal voids
+// the offers of the content, so no open offer may name withdrawn content;
+// a lease of withdrawn content keeps its committed package.
 func CheckOfferIntegrity(ctx sdk.Context, k leases.Keeper, content leases.Content) error {
 	rows, err := readRows(ctx, k.StoreKey())
 	if err != nil {
@@ -91,6 +96,13 @@ func CheckOfferIntegrity(ctx sdk.Context, k leases.Keeper, content leases.Conten
 		code := content.CheckOfferable(ctx, offer.GetContentId(), offer.GetContentVersion(), offer.GetManifestDigest().GetValue(), offer.GetPackageBytes())
 		if code != msgkit.OK {
 			return fmt.Errorf("I9: offer %q: content check %s", id, code)
+		}
+	}
+	for _, id := range sortedKeys(view.leases) {
+		lease := view.leases[id]
+		code := content.CheckPackage(ctx, lease.GetContentId(), lease.GetContentVersion(), lease.GetManifestDigest().GetValue(), lease.GetPackageBytes())
+		if code != msgkit.OK {
+			return fmt.Errorf("I9: lease %q: content check %s", id, code)
 		}
 	}
 	return nil
@@ -182,7 +194,7 @@ func decodeRecords(rows map[string][]byte) (*view, error) {
 			}
 		case leases.PairPrefix, leases.OfferExpiryPrefix, leases.LeaseDeadlinePrefix, leases.ContentOfferPrefix,
 			leases.ContentLeasePrefix, leases.ProviderLeasePrefix, leases.ProviderOfferCountPrefix,
-			leases.ContentOfferCountPrefix, leases.UsedOfferPrefix:
+			leases.ContentOfferCountPrefix, leases.UsedOfferPrefix, leases.SchedulerOfferCountPrefix:
 			// Compared with the derived rows below.
 		default:
 			return nil, fmt.Errorf("layout: row %x under unknown prefix 0x%02x", key, key[0])
@@ -262,6 +274,7 @@ func (v *view) checkDerivedRows(rows map[string][]byte) error {
 	offerRows := map[string][]byte{}
 	perProvider := map[string]uint64{}
 	perContent := map[string]uint64{}
+	perScheduler := map[string]uint64{}
 	for _, id := range sortedKeys(v.offers) {
 		o := v.offers[id]
 		if lease, taken := usedByLeases[id]; taken {
@@ -271,6 +284,7 @@ func (v *view) checkDerivedRows(rows map[string][]byte) error {
 		offerRows[string(leases.ContentOfferKey(o.GetContentId(), id))] = leases.Marker
 		perProvider[o.GetProviderId()]++
 		perContent[o.GetContentId()]++
+		perScheduler[string(leases.SchedulerOfferCountKey(o.GetContentId(), o.GetScheduler()))]++
 	}
 	if err := sameRows("I6", rows, []byte{leases.OfferExpiryPrefix, leases.ContentOfferPrefix}, offerRows); err != nil {
 		return err
@@ -285,16 +299,36 @@ func (v *view) checkDerivedRows(rows map[string][]byte) error {
 		}
 		counters[string(leases.ContentOfferCountKey(id))] = be(n)
 	}
-	if err := sameRows("I6", rows, []byte{leases.ProviderOfferCountPrefix, leases.ContentOfferCountPrefix}, counters); err != nil {
+	for _, key := range sortedKeys(perScheduler) {
+		n := perScheduler[key]
+		if n > leases.MaxOpenOffersPerContentPerScheduler {
+			return fmt.Errorf("I6: scheduler counter %x counts %d open offers, bound %d", key, n, leases.MaxOpenOffersPerContentPerScheduler)
+		}
+		counters[key] = be(n)
+	}
+	if err := sameRows("I6", rows, []byte{leases.ProviderOfferCountPrefix, leases.ContentOfferCountPrefix, leases.SchedulerOfferCountPrefix}, counters); err != nil {
 		return err
 	}
 
 	for _, key := range sortedKeys(rows) {
-		if key[0] == leases.UsedOfferPrefix && (!msgkit.ValidID(key[1:]) || !bytes.Equal(rows[key], leases.Marker)) {
+		if key[0] != leases.UsedOfferPrefix {
+			continue
+		}
+		value := rows[key]
+		if !msgkit.ValidID(key[1:]) || (len(value) != msgkit.AccountBytes && !bytes.Equal(value, leases.Marker)) {
 			return fmt.Errorf("I10: used-offer row %x is malformed", key)
 		}
 	}
-	for _, id := range append(sortedKeys(v.offers), sortedKeys(usedByLeases)...) {
+	for _, id := range sortedKeys(v.offers) {
+		marker, found := rows[string(leases.UsedOfferKey(id))]
+		if !found {
+			return fmt.Errorf("I10: offer id %q has no used-offer marker", id)
+		}
+		if !bytes.Equal(marker, v.offers[id].GetScheduler()) {
+			return fmt.Errorf("I10: the used-offer marker of open offer %q holds %x, not its scheduler", id, marker)
+		}
+	}
+	for _, id := range sortedKeys(usedByLeases) {
 		if _, found := rows[string(leases.UsedOfferKey(id))]; !found {
 			return fmt.Errorf("I10: offer id %q has no used-offer marker", id)
 		}

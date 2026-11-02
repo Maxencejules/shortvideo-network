@@ -1,0 +1,248 @@
+COMMAND .venv/bin/python docs/evidence/goal-06/mutants.py
+DATE 2026-11-01T20:48:51Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+revision HEAD commit fb4cde2087269fb9a93900b9a4d11fd24779ced2 tree 7d07a6d632acaa54da9f71d4f16a63d73052df38
+copy /tmp/goal06-mutants-ftsfaqy2/tree (git archive)
+mutants 116 of 116
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+command chain: SVN_SKIP_DEVNET=1 go test -count=1 -timeout 10m ./chain/x/authority/ ./chain/app/ ./chain/genesis/ ./chain/cmd/svnd/
+command devnet-init: SVN_SKIP_DEVNET=1 go test -count=1 -timeout 10m -run ^(TestInitPower.*|TestQuorumModelVectors)$ ./chain/devnet/
+CONTROL chain PASS exit=0 secs=110.4
+CONTROL devnet-init PASS exit=0 secs=4.4
+KILLED algo-gone exit=1 secs=15.4 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: Propose must reject a payload digest whose algorithm is not SHA-256 (MALFORMED)
+KILLED ceiling-gone exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach
+    reason: A limit value above its bounds ceiling must be rejected
+KILLED council-open exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestCouncilGateIsDecisionBlocked TestCouncilIsDecisionBlockedOffDevnet
+    reason: The DEC-008 council gate must refuse council messages while the decision is open
+KILLED expiry-bounds-gone exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: A proposal expiry outside the unix-time bounds must be rejected
+KILLED halt-writes exit=1 secs=15.5 file=chain/x/authority/msg.go failing=TestApplyDueHaltsOnDamagedEntries TestPendingOverCapIsIntegrity TestRemovalBindHaltLeavesTheSnapshot
+    reason: A halting ApplyDue must leave the authority store as it was (no write, no delete)
+KILLED halt-writes2 exit=1 secs=15.4 file=chain/x/authority/msg.go failing=TestApplyDueHaltsOnDamagedEntries TestPendingOverCapIsIntegrity TestRemovalBindHaltLeavesTheSnapshot
+    reason: A halting ApplyDue must not write any key
+KILLED paramkey-gone exit=1 secs=15.7 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: The proposal parameter key must be bound to the payload
+KILLED samekey-gone exit=1 secs=16.9 file=chain/x/authority/engine.go failing=TestSameActivationGroupConflicts TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: Two changes with one consensus key in one activation group must CONFLICT
+KILLED samenode-gone exit=1 secs=15.7 file=chain/x/authority/engine.go failing=TestSameActivationGroupConflicts TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: Two changes for one node id in one activation group must CONFLICT
+KILLED sched-future-gone exit=1 secs=15.7 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach FuzzStateTransitions FuzzStateTransitions/seed#15
+    reason: An activation point that is not in the future must be rejected
+KILLED stale-gone exit=1 secs=15.7 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach TestMessageKeySets TestStaleAndConflictingExecutes TestStaleProposalsStopCounting TestRejectedMessagesLeaveTheFullAuthorityState TestSeatQuotaBoundaryCommitted
+    reason: Execute must reject a proposal built on a stale policy version
+KILLED stale-swap exit=1 secs=17.7 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach TestMessageKeySets TestStaleAndConflictingExecutes TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: A different digest at the same version must be CONFLICT, not STALE
+KILLED unknown-limit-ok exit=1 secs=16.5 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach
+    reason: An unknown limit key must be rejected
+KILLED version-overflow-gone exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestPolicyVersionOverflow
+    reason: Executing at policy version 2^64-1 must give OVERFLOW
+KILLED open-count-per-seat-only exit=1 secs=15.3 file=chain/x/authority/store.go failing=TestStaleProposalsStopCounting TestRejectedMessagesLeaveTheFullAuthorityState TestSeatQuotaBoundaryCommitted
+    reason: Open-proposal counts are keyed by base policy version, so stale proposals stop counting
+KILLED propose-reads-base-1-count exit=1 secs=14.8 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach TestMessageKeySets TestStaleProposalsStopCounting TestRejectedMessagesLeaveTheFullAuthorityState TestSeatQuotaBoundaryCommitted
+    reason: Propose must read the open count of the current policy version
+KILLED seat-rotation-keeps-admission exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestSeatRotationMovesAdmission
+    reason: Council seat rotation must move the admission row off the old address
+KILLED seat-rotation-no-submitter-dup exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestSeatRotationMovesAdmission
+    reason: Seat rotation onto an address that is already a submitter must be DUPLICATE_ID
+KILLED height-int64-compare exit=1 secs=15.8 file=chain/x/authority/payload.go failing=TestActivationHeightBounds
+    reason: Activation height must be compared as uint64, so 2^63 and above are rejected
+KILLED evidenceitem-unregistered exit=1 secs=14.4 file=chain/app/encoding.go failing=TestEveryProtocolMessageDecodes
+    reason: svn.evidence.v1.EvidenceItem must stay registered so every protocol message decodes
+KILLED svnd-skips-authority-rules exit=1 secs=12.4 file=chain/cmd/svnd/main.go failing=TestValidateGenesisAppliesAuthorityRules
+    reason: svnd genesis validation must apply the authority genesis rules
+KILLED initchain-skips-authority-rules exit=1 secs=9.4 file=chain/app/app.go failing=TestInitChainRejectsUnprojectableGenesis TestInitChainRejectsUnprojectableGenesis/removal_that_leaves_three_validators
+    reason: InitChain must reject an authority genesis that fails the authority rules
+KILLED seat-bounds exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestEngineOnlyRotationRejects
+    reason: RotateCouncilSeat with a bad seat id or key length must be BOUNDS
+KILLED seat-notfound exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestEngineOnlyRotationRejects
+    reason: RotateCouncilSeat for an unknown seat must be NOT_FOUND
+KILLED service-bounds exit=1 secs=15.0 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach TestEngineOnlyRotationRejects
+    reason: RotateServiceSubmitter with a bad or unchanged address must be BOUNDS
+KILLED service-duplicate exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestEngineOnlyRotationRejects
+    reason: RotateServiceSubmitter onto an existing submitter must be DUPLICATE_ID
+KILLED applydue-dupkey-gone exit=1 secs=15.3 file=chain/x/authority/engine.go failing=TestApplyDueHaltsOnDamagedEntries
+    reason: ApplyDue must halt when two validator rows share a consensus key
+KILLED applydue-notfound exit=1 secs=15.1 file=chain/x/authority/engine.go failing=TestApplyDueHaltsOnDamagedEntries
+    reason: ApplyDue must halt with NOT_FOUND when a due removal names an unknown validator
+KILLED oldlayout-gone exit=1 secs=15.3 file=chain/x/authority/store.go failing=TestOldLayoutConfigIsIntegrity
+    reason: A config that still carries the old in-document layout is an integrity error
+KILLED export-role-presence exit=1 secs=15.2 file=chain/x/authority/store.go failing=TestExportStateChecksAdmissionRows
+    reason: Export must check each admission row's role against its submitter
+KILLED readpending-cap-gone exit=1 secs=14.9 file=chain/x/authority/store.go failing=TestPendingOverCapIsIntegrity
+    reason: Reading more than MaxPendingChanges pending entries must be an integrity error
+KILLED export-pending-cap-gone exit=1 secs=16.7 file=chain/x/authority/store.go failing=TestPendingOverCapIsIntegrity
+    reason: Export must refuse more than MaxPendingChanges pending entries
+KILLED approve-reads-open exit=1 secs=15.8 file=chain/x/authority/engine.go failing=TestMessageKeySets
+    reason: Approve must not read open-count keys, so its key set stays fixed
+KILLED propose-skips-open-read exit=1 secs=15.1 file=chain/x/authority/engine.go failing=TestSeatQuotaIsPerSeat TestFuzzCorpusReach TestMessageKeySets TestStaleProposalsStopCounting FuzzStateTransitions FuzzStateTransitions/seed#11 TestRejectedMessagesLeaveTheFullAuthorityState TestSeatQuotaBoundaryCommitted TestCommittedGasDoesNotGrowWithHistory
+    reason: Propose must read the seat's open-proposal count before it accepts
+KILLED canonical-truncates-key exit=1 secs=15.7 file=chain/x/authority/payload.go failing=TestDelayAndForbiddenRemoval TestTerminalProposalsDoNotBlock TestOpenCountBookkeeping TestDuplicateConsensusKey TestPowerOnlyChange TestFuzzCorpusReach TestRejectedMessagesLeaveTheFullAuthorityState TestKeepOutcomesReportTheirCode TestPowerOnlyChangeCommitted
+    reason: The validator canonical form must carry the full 32-byte consensus key
+KILLED init-power-ceiling-gone exit=1 secs=4.4 file=chain/devnet/init.go failing=TestInitPowerRejects
+    reason: Init must refuse a per-validator power whose total exceeds safe_integer_max
+KILLED init-negative-power-ok exit=1 secs=5.5 file=chain/devnet/init.go failing=TestInitPowerRejects
+    reason: Init must refuse a negative validator power
+KILLED init-default-power-2 exit=1 secs=4.2 file=chain/devnet/init.go failing=TestInitPowerDefaultIsOne TestInitPowerTopology
+    reason: Power 0 must mean the default power 1
+KILLED init-document-power-1 exit=1 secs=4.6 file=chain/devnet/init.go failing=TestInitPowerDefaultIsOne TestInitPowerRejects
+    reason: The genesis document must carry the requested validator power
+KILLED init-comet-power-1 exit=1 secs=4.1 file=chain/devnet/init.go failing=TestInitPowerDefaultIsOne TestInitPowerRejects TestInitPowerTopology
+    reason: The CometBFT genesis validators must carry the requested power
+KILLED init-topology-power-1 exit=1 secs=4.7 file=chain/devnet/init.go failing=TestInitPowerTopology
+    reason: The topology file must record the requested power
+KILLED swap-engine-124 exit=1 secs=16.0 file=chain/x/authority/engine.go failing=TestCouncilGateIsDecisionBlocked TestCouncilIsDecisionBlockedOffDevnet
+    reason: council: the DecisionBlocked reject after `if param == nil || param.GetNumericValue() != ApprovedThreshold || param.GetDelaySecond...` must keep its exact code
+KILLED swap-engine-127 exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestCouncilGateIsDecisionBlocked
+    reason: council: the DecisionBlocked reject after `if len(s.auth().GetDevnetTestSeats()) != ApprovedSeats` must keep its exact code
+KILLED swap-engine-155 exit=1 secs=14.9 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach FuzzStateTransitions FuzzStateTransitions/seed#13
+    reason: business: the Bounds reject after `if !idPattern.MatchString(id)` must keep its exact code
+KILLED swap-engine-165 exit=1 secs=16.3 file=chain/x/authority/engine.go failing=TestDamagedRecordIsIntegrity
+    reason: business: the Integrity reject after `if len(prev) != sha256.Size` must keep its exact code
+KILLED swap-engine-170 exit=1 secs=15.9 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestFuzzCorpusReach TestTransitionOutcomes TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: business: the Replay reject after `if bytes.Equal(prev, digest)` must keep its exact code
+KILLED swap-engine-177 exit=1 secs=15.4 file=chain/x/authority/engine.go failing=TestCheckOrderMatchesSpec
+    reason: record: the NotFound reject after `if !idPattern.MatchString(id)` must keep its exact code
+KILLED swap-engine-181 exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestFuzzCorpusReach TestRejectedMessagesLeaveTheFullAuthorityState TestCommittedGasDoesNotGrowWithHistory
+    reason: record: the NotFound reject after `if raw == nil` must keep its exact code
+KILLED swap-engine-185 exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestDamagedRecordIsIntegrity
+    reason: record: the Integrity reject after `if err != nil` must keep its exact code
+KILLED swap-engine-224 exit=1 secs=16.4 file=chain/x/authority/engine.go failing=TestOpenCountBookkeeping
+    reason: release: the Integrity reject after `case 0:` must keep its exact code
+KILLED swap-engine-258 exit=1 secs=14.9 file=chain/x/authority/engine.go failing=TestCheckOrderMatchesSpec TestExportRefusesSideState TestRejectedMessagesLeaveTheFullAuthorityState TestAnteRejectsNonAdmittedAccount
+    reason: ProposeChange: the Malformed reject after `if msg == nil || len(msg.GetSigner()) != 20 || msg.GetBusinessId() == "" || msg.GetProp...` must keep its exact code
+KILLED swap-engine-265 exit=1 secs=14.6 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestFuzzCorpusReach FuzzStateTransitions FuzzStateTransitions/seed#9 FuzzStateTransitions/seed#13 TestExportRefusesSideState TestRejectedMessagesLeaveTheFullAuthorityState TestEveryProtocolMessageDecodes
+    reason: ProposeChange: the Unauthorized reject after `if seat == nil { // 1411` must keep its exact code
+KILLED swap-engine-268 exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the Bounds reject after `if !idPattern.MatchString(msg.GetProposalId()) || !idPattern.MatchString(msg.GetParamet...` must keep its exact code
+KILLED swap-engine-271 exit=1 secs=16.0 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the Forbidden reject after `if strings.HasPrefix(msg.GetParameterKey(), "dec-") { // 1417` must keep its exact code
+KILLED swap-engine-279 exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the Malformed reject after `if msg.GetPayloadDigest().GetAlgorithm() != typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SH...` must keep its exact code
+KILLED swap-engine-282 exit=1 secs=15.8 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the Malformed reject after `if msg.GetParameterKey() != parameterKey(kind, change.NodeID, limitKey(msg), providerID...` must keep its exact code
+KILLED swap-engine-285 exit=1 secs=15.9 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestCheckOrderMatchesSpec TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the OutOfRange reject after `if kind == kindValidatorPower && !activationFuture(activationPoint(change), s.Height, s...` must keep its exact code
+KILLED swap-engine-288 exit=1 secs=15.0 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the Bounds reject after `if msg.GetExpiryUnixSeconds() < unixMin || msg.GetExpiryUnixSeconds() > unixMax { // ch...` must keep its exact code
+KILLED swap-engine-301 exit=1 secs=15.1 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestFuzzCorpusReach TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the Duplicate reject after `if s.kv.Has(proposalKey(msg.GetProposalId())) { // 1432` must keep its exact code
+KILLED swap-engine-304 exit=1 secs=15.3 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the Expired reject after `if msg.GetExpiryUnixSeconds() <= s.Time { // 1434` must keep its exact code
+KILLED swap-engine-311 exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ProposeChange: the Stale reject after `if msg.GetBasePolicyVersion() != version { // 1436` must keep its exact code
+KILLED swap-engine-321 exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestSeatQuotaIsPerSeat TestFuzzCorpusReach TestStaleProposalsStopCounting TestRejectedMessagesLeaveTheFullAuthorityState TestSeatQuotaBoundaryCommitted
+    reason: ProposeChange: the Bounds reject after `if open >= MaxOpenProposalsPerSeat` must keep its exact code
+KILLED swap-engine-350 exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestCheckOrderMatchesSpec
+    reason: ApproveChange: the Malformed reject after `if msg == nil || len(msg.GetSigner()) != 20 || msg.GetBusinessId() == "" || msg.GetProp...` must keep its exact code
+KILLED swap-engine-357 exit=1 secs=14.9 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestApprovalDedupesBySeatAfterRotation TestFuzzCorpusReach TestCheckOrderMatchesSpec FuzzStateTransitions FuzzStateTransitions/seed#9 FuzzStateTransitions/seed#13 TestRejectedMessagesLeaveTheFullAuthorityState TestEveryProtocolMessageDecodes
+    reason: ApproveChange: the Unauthorized reject after `if seat == nil { // 1460` must keep its exact code
+KILLED swap-engine-371 exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestRejectedMessagesLeaveTheFullAuthorityState TestKeepOutcomesReportTheirCode
+    reason: ApproveChange: the Conflict reject after `if rec.state() != authorityv1.ProposalState_PROPOSAL_STATE_OPEN { // 1468` must keep its exact code
+KILLED swap-engine-377 exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestApprovalDedupesBySeatAfterRotation TestFuzzCorpusReach TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ApproveChange: the Replay reject after `if slices.Contains(rec.Approvers, seat.GetSeatId()) { // 1473` must keep its exact code
+KILLED swap-engine-382 exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestApproveThresholdOverflow
+    reason: ApproveChange: the Overflow reject after `if len(rec.Approvers)+1 >= ApprovedThreshold && s.Time > unixMax-delay` must keep its exact code
+KILLED swap-engine-405 exit=1 secs=15.3 file=chain/x/authority/engine.go failing=TestCheckOrderMatchesSpec
+    reason: ExecuteChange: the Malformed reject after `if msg == nil || len(msg.GetSigner()) != 20 || msg.GetBusinessId() == "" || msg.GetProp...` must keep its exact code
+KILLED swap-engine-409 exit=1 secs=15.0 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestFuzzCorpusReach FuzzStateTransitions FuzzStateTransitions/seed#13
+    reason: ExecuteChange: the Unauthorized reject after `if role == typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED` must keep its exact code
+KILLED swap-engine-411 exit=1 secs=15.1 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestFuzzCorpusReach FuzzStateTransitions FuzzStateTransitions/seed#9 FuzzStateTransitions/seed#13 TestRejectedMessagesLeaveTheFullAuthorityState TestEveryProtocolMessageDecodes
+    reason: ExecuteChange: the Forbidden reject after `if role == typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED` must keep its exact code
+KILLED swap-engine-429 exit=1 secs=14.8 file=chain/x/authority/engine.go failing=TestProposalPathsDoNotMutateOnReject TestFuzzCorpusReach TestRejectedMessagesLeaveTheFullAuthorityState TestKeepOutcomesReportTheirCode
+    reason: ExecuteChange: the Conflict reject after `if rec.state() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED` must keep its exact code
+KILLED swap-engine-432 exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestDelayAndForbiddenRemoval TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ExecuteChange: the OutOfRange reject after `if s.Time < rec.ExecuteAfterUnixSeconds` must keep its exact code
+KILLED swap-engine-441 exit=1 secs=15.3 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach TestMessageKeySets TestStaleAndConflictingExecutes TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: ExecuteChange: the Conflict reject after `if prev != nil && !bytes.Equal(prev, rec.PayloadDigest)` must keep its exact code
+KILLED swap-engine-443 exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach TestStaleAndConflictingExecutes TestStaleProposalsStopCounting TestRejectedMessagesLeaveTheFullAuthorityState TestSeatQuotaBoundaryCommitted
+    reason: ExecuteChange: the Stale reject after `if prev != nil && !bytes.Equal(prev, rec.PayloadDigest)` must keep its exact code
+KILLED swap-engine-453 exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestPolicyVersionOverflow
+    reason: ExecuteChange: the Overflow reject after `if version == math.MaxUint64` must keep its exact code
+KILLED swap-engine-482 exit=1 secs=15.0 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach
+    reason: applyPayload: the Bounds reject after `if !known || decoded.LimitValue < 1 || decoded.LimitValue > ceiling` must keep its exact code
+KILLED swap-engine-492 exit=1 secs=15.1 file=chain/x/authority/engine.go failing=TestAdmitAndDisableRows TestFuzzCorpusReach
+    reason: applyPayload: the NotFound reject after `case kindForceWithdraw:` must keep its exact code
+KILLED swap-engine-503 exit=1 secs=15.3 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach
+    reason: schedule: the OutOfRange reject after `if !activationFuture(point, s.Height, s.Time)` must keep its exact code
+KILLED swap-engine-524 exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestPendingKeyCollisionConflicts
+    reason: schedule: the Conflict reject after `if item.GetProposalId() == proposalID` must keep its exact code
+KILLED swap-engine-532 exit=1 secs=15.7 file=chain/x/authority/engine.go failing=TestPendingCap
+    reason: schedule: the Bounds reject after `if len(pending) >= MaxPendingChanges` must keep its exact code
+KILLED swap-engine-548 exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestAdmitAndDisableRows TestFuzzCorpusReach
+    reason: provider: the NotFound reject after `if raw == nil` must keep its exact code
+KILLED swap-engine-575 exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestAdmitAndDisableRows
+    reason: admit: the DecisionBlocked reject after `if param == nil || param.GetRoleName() != "DEVNET_TEST_ONLY"` must keep its exact code
+KILLED swap-engine-578 exit=1 secs=15.1 file=chain/x/authority/engine.go failing=TestAdmitAndDisableRows
+    reason: admit: the Forbidden reject after `if row.OperatorGroup != "devnet-test-only" || row.State != "APPLIED"` must keep its exact code
+KILLED swap-engine-591 exit=1 secs=15.1 file=chain/x/authority/engine.go failing=TestAdmitAndDisableRows
+    reason: disable: the Conflict reject after `if row.State != "ADMITTED" && row.State != "DRAINING"` must keep its exact code
+KILLED swap-engine-640 exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestMixedActivationConflicts TestFuzzCorpusReach TestValidateGenesisState TestInitChainRejectsUnprojectableGenesis TestInitChainRejectsUnprojectableGenesis/height_and_time_entries_mixed TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: projectAll: the Conflict reject after `if kind != firstKind { // DEC-012` must keep its exact code
+KILLED swap-engine-660 exit=1 secs=15.4 file=chain/x/authority/engine.go failing=TestSameActivationGroupConflicts TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: projectAll: the Conflict reject after `if _, dup := nodes[item.GetNodeId()]; dup` must keep its exact code
+KILLED swap-engine-667 exit=1 secs=15.2 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach TestValidateGenesisState TestInitChainRejectsUnprojectableGenesis TestInitChainRejectsUnprojectableGenesis/removal_with_the_wrong_key TestValidateGenesisAppliesAuthorityRules
+    reason: projectAll: the Conflict reject after `if !have || !bytes.Equal(current.pub, item.GetConsensusPubkey())` must keep its exact code
+KILLED swap-engine-671 exit=1 secs=14.8 file=chain/x/authority/engine.go failing=TestSameActivationGroupConflicts TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: projectAll: the Conflict reject after `if _, dup := keys[string(item.GetConsensusPubkey())]; dup` must keep its exact code
+KILLED swap-engine-682 exit=1 secs=14.8 file=chain/x/authority/engine.go failing=TestDuplicateConsensusKey TestFuzzCorpusReach TestValidateGenesisState TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: projectAll: the Duplicate reject after `if node != item.GetNodeId() && bytes.Equal(row.pub, item.GetConsensusPubkey())` must keep its exact code
+KILLED swap-engine-717 exit=1 secs=14.9 file=chain/x/authority/engine.go failing=TestDelayAndForbiddenRemoval TestTerminalProposalsDoNotBlock TestOpenCountBookkeeping TestApplyDueHaltsOnBrokenSet TestFuzzCorpusReach TestCouncilGasDoesNotGrowWithHistory TestMessageKeySets TestValidateGenesisState TestInitChainRejectsUnprojectableGenesis TestInitChainRejectsUnprojectableGenesis/re
+    reason: powerInvariant: the Forbidden reject after `if len(vals) < genesis.MinValidators` must keep its exact code
+KILLED swap-engine-722 exit=1 secs=15.5 file=chain/x/authority/engine.go failing=TestPowerTotalAboveSafeMax TestValidateGenesisState
+    reason: powerInvariant: the Forbidden reject after `if row.power <= 0 || row.power > safeMax-total` must keep its exact code
+KILLED swap-engine-728 exit=1 secs=16.1 file=chain/x/authority/engine.go failing=TestShareCapRejects TestFuzzCorpusReach TestValidateGenesisState TestInitChainRejectsUnprojectableGenesis TestInitChainRejectsUnprojectableGenesis/power_change_that_breaks_the_share_cap
+    reason: powerInvariant: the Forbidden reject after `if maxPower*3 >= total` must keep its exact code
+KILLED swap-engine-771 exit=1 secs=15.3 file=chain/x/authority/engine.go failing=TestRemovalBindHaltsAndRotationsStaySeparate TestRemovalBindHaltLeavesTheSnapshot
+    reason: ApplyDue: the Conflict reject after `if !bytes.Equal(current.GetConsensusPubkey(), item.GetConsensusPubkey())` must keep its exact code
+KILLED swap-engine-841 exit=1 secs=15.8 file=chain/x/authority/engine.go failing=TestRemovalBindHaltsAndRotationsStaySeparate TestFuzzCorpusReach
+    reason: RotateCouncilSeat: the Duplicate reject after `if bytes.Equal(row.GetPublicKey(), newPub)` must keep its exact code
+KILLED swap-engine-848 exit=1 secs=15.6 file=chain/x/authority/engine.go failing=TestRemovalBindHaltsAndRotationsStaySeparate TestFuzzCorpusReach
+    reason: RotateCouncilSeat: the Conflict reject after `if bytes.Equal(seat.GetPublicKey(), newPub) || s.kv.Has(retiredCouncilKey(newPub))` must keep its exact code
+KILLED swap-engine-855 exit=1 secs=15.9 file=chain/x/authority/engine.go failing=TestSeatRotationMovesAdmission
+    reason: RotateCouncilSeat: the Duplicate reject after `if bytes.Equal(row.GetAddress(), newAddr)` must keep its exact code
+KILLED swap-engine-886 exit=1 secs=12.3 file=chain/x/authority/engine.go failing=TestFuzzCorpusReach TestEngineOnlyRotationRejects
+    reason: RotateServiceSubmitter: the Bounds reject after `if len(oldAddr) != 20 || len(newAddr) != 20 || bytes.Equal(oldAddr, newAddr)` must keep its exact code
+KILLED swap-engine-899 exit=1 secs=15.8 file=chain/x/authority/engine.go failing=TestRemovalBindHaltsAndRotationsStaySeparate
+    reason: RotateServiceSubmitter: the NotFound reject after `if found == nil || found.GetRole() != typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SER...` must keep its exact code
+KILLED swap-engine-902 exit=1 secs=15.4 file=chain/x/authority/engine.go failing=TestRemovalBindHaltsAndRotationsStaySeparate TestFuzzCorpusReach
+    reason: RotateServiceSubmitter: the Conflict reject after `if s.kv.Has(retiredServiceKey(newAddr))` must keep its exact code
+KILLED swap-genesis-40 exit=1 secs=15.6 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: ValidateGenesisState: the Malformed reject after `if auth == nil` must keep its exact code
+KILLED swap-genesis-43 exit=1 secs=15.0 file=chain/x/authority/genesis.go failing=TestValidateGenesisState TestInitChainRejectsUnprojectableGenesis TestInitChainRejectsUnprojectableGenesis/genesis_proposal TestValidateGenesisAppliesAuthorityRules
+    reason: ValidateGenesisState: the Malformed reject after `if len(auth.GetProposals()) != 0` must keep its exact code
+KILLED swap-genesis-46 exit=1 secs=15.2 file=chain/x/authority/genesis.go failing=TestValidateGenesisState TestInitChainRejectsUnprojectableGenesis TestInitChainRejectsUnprojectableGenesis/approved_council TestValidateGenesisAppliesAuthorityRules
+    reason: ValidateGenesisState: the Forbidden reject after `if len(auth.GetApprovedCouncil()) != 0` must keep its exact code
+KILLED swap-genesis-49 exit=1 secs=15.2 file=chain/x/authority/genesis.go failing=TestValidateGenesisState TestValidateGenesisAppliesAuthorityRules
+    reason: ValidateGenesisState: the Forbidden reject after `if auth.GetQuorumLoss() != authorityv1.QuorumLossBehavior_QUORUM_LOSS_BEHAVIOR_UNSET` must keep its exact code
+KILLED swap-genesis-62 exit=1 secs=15.4 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: ValidateGenesisState: the Bounds reject after `if len(pending) > MaxPendingChanges` must keep its exact code
+KILLED swap-genesis-70 exit=1 secs=15.4 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: ValidateGenesisState: the Duplicate reject after `if _, dup := ids[entry.GetProposalId()]; dup` must keep its exact code
+KILLED swap-genesis-81 exit=1 secs=15.5 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: ValidateGenesisState: the Malformed reject after `if at.InitialHeight < 1` must keep its exact code
+KILLED swap-genesis-85 exit=1 secs=15.4 file=chain/x/authority/genesis.go failing=TestValidateGenesisState TestInitChainRejectsUnprojectableGenesis TestInitChainRejectsUnprojectableGenesis/height_before_the_initial_height TestInitChainRejectsUnprojectableGenesis/time_not_after_genesis_time TestValidateGenesisAppliesAuthorityRules
+    reason: ValidateGenesisState: the OutOfRange reject after `if !activationFuture(entry.GetActivation(), at.InitialHeight-1, at.GenesisUnixSeconds)` must keep its exact code
+KILLED swap-genesis-93 exit=1 secs=15.0 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateSeats: the Bounds reject after `if len(seats) != 0 && len(seats) != ApprovedSeats` must keep its exact code
+KILLED swap-genesis-102 exit=1 secs=15.2 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateSeats: the Duplicate reject after `if _, dup := ids[seat.GetSeatId()]; dup` must keep its exact code
+KILLED swap-genesis-106 exit=1 secs=16.1 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateSeats: the Duplicate reject after `if _, dup := keys[string(seat.GetPublicKey())]; dup` must keep its exact code
+KILLED swap-genesis-117 exit=1 secs=15.6 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateSubmitters: the Bounds reject after `if len(row.GetAddress()) != 20` must keep its exact code
+KILLED swap-genesis-120 exit=1 secs=15.1 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateSubmitters: the Malformed reject after `if !roleKnown(row.GetRole())` must keep its exact code
+KILLED swap-genesis-123 exit=1 secs=15.5 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateSubmitters: the Duplicate reject after `if _, dup := seen[string(row.GetAddress())]; dup` must keep its exact code
+KILLED swap-genesis-135 exit=1 secs=15.4 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateGenesisValidators: the Bounds reject after `if !idPattern.MatchString(row.GetNodeId()) || len(row.GetConsensusPubkey()) != 32` must keep its exact code
+KILLED swap-genesis-138 exit=1 secs=15.7 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateGenesisValidators: the Duplicate reject after `if _, dup := nodes[row.GetNodeId()]; dup` must keep its exact code
+KILLED swap-genesis-142 exit=1 secs=15.6 file=chain/x/authority/genesis.go failing=TestValidateGenesisState
+    reason: validateGenesisValidators: the Duplicate reject after `if _, dup := keys[string(row.GetConsensusPubkey())]; dup` must keep its exact code
+RESULT mutants=116 killed=116
+EXIT:0

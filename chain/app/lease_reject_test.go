@@ -9,6 +9,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
@@ -29,14 +30,17 @@ type leaseRejectState struct {
 	setupNow int64
 	// Open offers by role.
 	open, pairB, capacity, pastDeadline, drained *leasesv1.MsgOfferLease
+	// accepted is o1, accepted as l1 by the broadcaster under "ac-l1".
+	accepted *leasesv1.MsgOfferLease
 }
 
 // leaseRejectSetup commits:
 //
 //   - p1 ADMITTED (1 GiB), p2 DRAINING, p3 APPLIED, p4 ADMITTED (10 MB)
-//   - c1 c2 c3 c6 c7 c8 cw (4 MB), c5 (9 MB) PENDING; c9 and cw WITHDRAWN
+//   - c1 c2 c3 c6 c7 c8 cr cw (4 MB), c5 (9 MB) PENDING; c9 and cw WITHDRAWN
 //   - l1 (c1 on p1) and lw (cw on p1) held, l2 (c2 on p1) held, l3 (c3 on
-//     p1) ended, l4 (c5 on p4, 9 MB of 10 MB) held
+//     p1) ended, l4 (c5 on p4, 9 MB of 10 MB) held, lr (cr on p1) held and
+//     renewed to term 2
 //   - open offers: o7 (c7 on p1), o2b (c2 on p1, its pair held by l2),
 //     ocap (c1 on p4, 4 MB, does not fit next to l4), od3 (c6 on p1,
 //     deadline setupNow+5), od (c8 on p2, accepted before the drain)
@@ -50,7 +54,7 @@ func leaseRejectSetup(t *testing.T, n *regNet, c *cluster) leaseRejectState {
 	n.registerAdmit(t, c, n.provider2, "p2", capacity1)
 	n.registerAdmit(t, c, n.provider2, "p4", capacitySmall)
 	wantCode(t, "register p3", n.send(t, c, n.provider1, n.registerProvider(t, n.provider1, "reg-p3", "p3", groupDevnet, capacity1)), msgkit.OK)
-	for _, id := range []string{"c1", "c2", "c3", "c6", "c7", "c8", "c9", "cw"} {
+	for _, id := range []string{"c1", "c2", "c3", "c6", "c7", "c8", "c9", "cr", "cw"} {
 		wantCode(t, "register "+id, n.send(t, c, n.service, n.registerContent(t, n.service, "reg-"+id, id, 1, packageManifest(id), sizeSmall)), msgkit.OK)
 	}
 	wantCode(t, "register c5", n.send(t, c, n.service, n.registerContent(t, n.service, "reg-c5", "c5", 1, packageManifest("c5"), sizeC2)), msgkit.OK)
@@ -68,7 +72,9 @@ func leaseRejectSetup(t *testing.T, n *regNet, c *cluster) leaseRejectState {
 		}
 		return offer
 	}
-	offerAccept("o1", "c1", "p1", sizeSmall, "l1")
+	st.accepted = offerAccept("o1", "c1", "p1", sizeSmall, "l1")
+	offerAccept("or", "cr", "p1", sizeSmall, "lr")
+	wantCode(t, "renew lr", n.send(t, c, n.broadcaster, n.renewMsg(t, n.broadcaster, "rn-lr", "lr", "p1", "cr", sizeSmall, 2, deadline+leaseTerm)), msgkit.OK)
 	// Two open offers for one pair; the first acceptance holds the pair.
 	o2 := offerAccept("o2", "c2", "p1", sizeSmall, "")
 	st.pairB = offerAccept("o2b", "c2", "p1", sizeSmall, "")
@@ -91,19 +97,37 @@ func leaseRejectSetup(t *testing.T, n *regNet, c *cluster) leaseRejectState {
 	return st
 }
 
-// TestRejectedLeaseMessagesLeaveTheFullState: every reject class of the
-// four lease handlers that a committed transaction can reach in the app,
-// in the handler's check order, through FinalizeBlock. Each case asserts
-// its exact svn code, that the ante handler committed (the handler ran),
-// that the full non-account state is byte-identical, and that no lease
-// event was emitted. Ante rejections leave the account store unchanged
-// too. Classes no app transaction can reach are covered at keeper level
-// and named in the README: OVERFLOW (needs reserved bytes near 2^64),
-// accept WITHDRAWN (withdrawal voids the offers first), accept EXPIRED of
-// an unswept offer and renew EXPIRED of an unswept lease (need an expiry
-// backlog: TestLargeExpiringCatalogue), the per-content offer cap
-// (TestWithdrawalAtCapGasInApp), and signer-size MALFORMED (the ante
-// handler refuses such a signer first).
+// TestRejectedLeaseMessagesLeaveTheFullState: through FinalizeBlock, at
+// least one case for every row of the four check tables of
+// chain/x/leases/README.md ("Messages: check order and negative cases")
+// that a committed transaction can reach in this app, in check order,
+// except the rows listed below. Each case asserts its exact svn code, that
+// the ante handler committed (the handler ran), that the full non-account
+// state is byte-identical, and that no lease event was emitted. Ante
+// rejections leave the account store unchanged too.
+//
+// Rows no case here reaches, and where they are tested:
+//   - Enforce (gas limit, transaction size, signer size): the ante handler
+//     applies the same bounds first (the ante cases below); the keeper
+//     ladders reach the handler rows.
+//   - signer without a role (UNAUTHORIZED, and FORBIDDEN for a provider
+//     end): the ante admits only submitter rows and council seats, and it
+//     refuses a lease message from a seat (DR-06-06,
+//     TestSeatKeysSignOnlyCouncilMessages); keeper ladders role-none.
+//   - offer DECISION_BLOCKED: this chain has the DEC-005 devnet number
+//     (TestDevnetTermDecisionBlocked).
+//   - offer and accept OVERFLOW: need reserved bytes near 2^64 (keeper
+//     ladders reserve-overflow, the differential near-max family).
+//   - offer D-6 and D-10: TestWithdrawalAtCapGasInApp.
+//   - accept WITHDRAWN: withdrawal voids the content's open offers first
+//     (keeper ladder content-withdrawn, with fakes).
+//   - accept EXPIRED of an unswept expired offer and renew D-2 EXPIRED:
+//     need an expiry backlog (TestLargeExpiringCatalogue).
+//   - renew evidence EXPIRED and FORBIDDEN: Evidence is nil until Goal 09,
+//     so every evidence_id is NOT_FOUND (keeper TestEvidenceCannotExtendLease).
+//   - end Release UNDERFLOW: needs reserved bytes below a held lease's
+//     bytes, an invariant violation no transaction produces (keeper ladder
+//     release-underflow; TestExpiryInvariantViolationHalts for expiry).
 func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)
@@ -123,7 +147,7 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 		return n.renewMsg(t, who, bid, "l1", "p1", "c1", sizeSmall, 2, d1+leaseTerm)
 	}
 	baseEnd := func(who *actor, bid string) *leasesv1.MsgEndLease {
-		return n.endMsg(t, who, bid, "l1", "p1")
+		return n.endMsg(t, who, bid, "l1", "p1", 1)
 	}
 	// The base messages are valid: a dry run on a cached branch of the
 	// committed state (Simulate) must succeed for each.
@@ -151,8 +175,8 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 		}
 		return innerSig(domain, key, signBytes)
 	}
-	endSig := func(leaseID, providerID string, key signingKey) *typesv1.InnerSignature {
-		signBytes, err := leases.EndSignBytes(leaseID, providerID)
+	endSig := func(leaseID, providerID string, termVersion uint64, key signingKey) *typesv1.InnerSignature {
+		signBytes, err := leases.EndSignBytes(leaseID, providerID, termVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -190,7 +214,13 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 			m.PackageBytes = genesis.MaxPackageBytes + 1
 			return m
 		}, msgkit.Bounds},
+		{"offer: business_id outside the id pattern", n.service, func() sdk.Msg { return baseOffer("X-OF-BP", "o-x-bp") }, msgkit.Bounds},
 		{"offer: business id of a provider registration", n.service, func() sdk.Msg { return baseOffer("reg-p1", "o-x12") }, msgkit.Replay},
+		{"offer: copy of another scheduler's committed offer (D-11)", n.service2, func() sdk.Msg {
+			m := proto.Clone(st.open).(*leasesv1.MsgOfferLease)
+			m.Signer = n.service2.addr
+			return m
+		}, msgkit.Forbidden},
 		{"offer: content_version above 2^53-1", n.service, func() sdk.Msg { m := baseOffer("x-of-13", "o-x13"); m.ContentVersion = 1 << 60; return m }, msgkit.Malformed},
 		{"offer: id of an open offer", n.service, func() sdk.Msg { return baseOffer("x-of-14", "o7") }, msgkit.DuplicateID},
 		{"offer: unknown content", n.service, func() sdk.Msg {
@@ -254,6 +284,11 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 			m.LeaseId = "L-NEW"
 			return m
 		}, msgkit.Bounds},
+		{"accept: signature domain unspecified", n.broadcaster, func() sdk.Msg {
+			m := baseAccept(n.broadcaster, "x-ac-3b")
+			m.ProviderAcceptance.Domain = typesv1.SignatureDomain_SIGNATURE_DOMAIN_UNSPECIFIED
+			return m
+		}, msgkit.Malformed},
 		{"accept: signature in the renew domain", n.broadcaster, func() sdk.Msg {
 			m := baseAccept(n.broadcaster, "x-ac-4")
 			m.ProviderAcceptance.Domain = domainRenew
@@ -264,12 +299,21 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 			m.ProviderAcceptance.CanonicalProfileVersion = 2
 			return m
 		}, msgkit.OutOfRange},
+		{"accept: empty key_id", n.broadcaster, func() sdk.Msg {
+			m := baseAccept(n.broadcaster, "x-ac-5b")
+			m.ProviderAcceptance.KeyId = ""
+			return m
+		}, msgkit.Malformed},
 		{"accept: 31-byte public key", n.broadcaster, func() sdk.Msg {
 			m := baseAccept(n.broadcaster, "x-ac-6")
 			m.ProviderAcceptance.PublicKey = m.ProviderAcceptance.PublicKey[:31]
 			return m
 		}, msgkit.Bounds},
+		{"accept: business_id outside the id pattern", n.broadcaster, func() sdk.Msg { return baseAccept(n.broadcaster, "X-AC-BP") }, msgkit.Bounds},
 		{"accept: business id of a content registration", n.broadcaster, func() sdk.Msg { return baseAccept(n.broadcaster, "reg-c1") }, msgkit.Replay},
+		{"accept: copy of the broadcaster's committed acceptance of a p1 offer, sent by p2's account (D-13)", n.provider2, func() sdk.Msg {
+			return n.acceptMsg(t, n.provider2, "ac-l1", st.accepted, "l1")
+		}, msgkit.Forbidden},
 		{"accept: unknown offer", n.broadcaster, func() sdk.Msg {
 			m := baseAccept(n.broadcaster, "x-ac-8")
 			m.OfferId = "o404"
@@ -317,6 +361,7 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 			m.ProviderSignature = renewSig("l1", 2, d1+leaseTerm, m.ManifestDigest, sizeSmall, "", domainRenew, n.signing["p1"])
 			return m
 		}, msgkit.Bounds},
+		{"renew: business_id outside the id pattern", n.broadcaster, func() sdk.Msg { return baseRenew(n.broadcaster, "X-RN-BP") }, msgkit.Bounds},
 		{"renew: business id of a lease offer", n.broadcaster, func() sdk.Msg { return baseRenew(n.broadcaster, "of-o7") }, msgkit.Replay},
 		{"renew: deadline above 2^53-1", n.broadcaster, func() sdk.Msg {
 			m := baseRenew(n.broadcaster, "x-rn-9")
@@ -351,7 +396,7 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 
 		// EndLease, in op_end order.
 		{"end: empty lease_id", n.broadcaster, func() sdk.Msg { m := baseEnd(n.broadcaster, "x-en-1"); m.LeaseId = ""; return m }, msgkit.Malformed},
-		{"end: unknown lease", n.broadcaster, func() sdk.Msg { return n.endMsg(t, n.broadcaster, "x-en-2", "l404", "p1") }, msgkit.NotFound},
+		{"end: unknown lease", n.broadcaster, func() sdk.Msg { return n.endMsg(t, n.broadcaster, "x-en-2", "l404", "p1", 1) }, msgkit.NotFound},
 		{"end: authority_end from the service account", n.service, func() sdk.Msg {
 			m := n.authorityEndMsg("x-en-3", "l1")
 			m.Signer = n.service.addr
@@ -359,19 +404,28 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 		}, msgkit.Forbidden},
 		{"end: authority_end with a provider signature", n.authority, func() sdk.Msg {
 			m := n.authorityEndMsg("x-en-4", "l1")
-			m.ProviderSignature = endSig("l1", "p1", n.signing["p1"])
+			m.ProviderSignature = endSig("l1", "p1", 1, n.signing["p1"])
 			return m
 		}, msgkit.UnknownField},
 		{"end: no provider signature", n.broadcaster, func() sdk.Msg { m := baseEnd(n.broadcaster, "x-en-5"); m.ProviderSignature = nil; return m }, msgkit.Malformed},
+		{"end: signature in the renew domain", n.broadcaster, func() sdk.Msg {
+			m := baseEnd(n.broadcaster, "x-en-5b")
+			m.ProviderSignature.Domain = domainRenew
+			return m
+		}, msgkit.WrongDomain},
 		{"end: service key", n.broadcaster, func() sdk.Msg {
 			m := baseEnd(n.broadcaster, "x-en-6")
-			m.ProviderSignature = endSig("l1", "p1", serviceKey)
+			m.ProviderSignature = endSig("l1", "p1", 1, serviceKey)
 			return m
+		}, msgkit.Unauthorized},
+		{"end: signed for term 1, relayed after the renewal to term 2 (D-12)", n.broadcaster, func() sdk.Msg {
+			return n.endMsg(t, n.broadcaster, "x-en-6b", "lr", "p1", 1)
 		}, msgkit.Unauthorized},
 		{"end: service account as relay", n.service, func() sdk.Msg { return baseEnd(n.service, "x-en-7") }, msgkit.Forbidden},
 		{"end: another provider's account as relay", n.provider2, func() sdk.Msg { return baseEnd(n.provider2, "x-en-8") }, msgkit.Forbidden},
+		{"end: business_id outside the id pattern", n.broadcaster, func() sdk.Msg { return baseEnd(n.broadcaster, "X-EN-BP") }, msgkit.Bounds},
 		{"end: business id of a lease acceptance", n.broadcaster, func() sdk.Msg { return baseEnd(n.broadcaster, "ac-l1") }, msgkit.Replay},
-		{"end: ended lease, new business id", n.broadcaster, func() sdk.Msg { return n.endMsg(t, n.broadcaster, "x-en-10", "l3", "p1") }, msgkit.Underflow},
+		{"end: ended lease, new business id", n.broadcaster, func() sdk.Msg { return n.endMsg(t, n.broadcaster, "x-en-10", "l3", "p1", 1) }, msgkit.Underflow},
 	}
 	run := func(tc rejectCase) {
 		t.Helper()

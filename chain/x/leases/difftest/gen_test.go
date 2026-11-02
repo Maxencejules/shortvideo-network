@@ -652,10 +652,12 @@ func (g *gen) end(v *view, business string) *step {
 	business = g.business(business)
 	leaseID, lease := g.pickLease(v, 60, 30, 10, clean)
 	providerID := "p0"
+	termVersion := uint64(1)
 	if lease != nil {
 		providerID = lease.GetProviderId()
+		termVersion = lease.GetTermVersion()
 	}
-	signBytes := endSignBytes(leaseID, providerID)
+	signBytes := endSignBytes(leaseID, providerID, termVersion)
 	current := g.currentKey(v, providerID)
 	if pick(g.c, 75, 25) == 1 {
 		signer := [][]byte{authorityAcct, broadcasterAcct, outsiderAcct}[vary(80, 10, 10)]
@@ -665,18 +667,18 @@ func (g *gen) end(v *view, business string) *step {
 				typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW, signBytes, nil, current, "", "")
 			s.variant = "authority end with signature"
 		}
-		return buildEnd(signer, business, leaseID, true, s)
+		return buildEnd(signer, business, leaseID, true, s, termVersion)
 	}
 	signer := g.relaySigner(v, providerID, clean, 60, 22, 6, 0, 0, 6, 6)
 	if vary(97, 3) == 1 {
-		return buildEnd(signer, business, leaseID, false, signed{variant: "no signature"})
+		return buildEnd(signer, business, leaseID, false, signed{variant: "no signature"}, termVersion)
 	}
 	variant := []string{sigValid, sigRetired, sigOtherProvider, sigMutated, sigWrongDomain}[vary(82, 4, 4, 5, 5)]
 	s := providerSig(variant, typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END,
-		typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW, signBytes, endSignBytes("l-other", providerID),
+		typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW, signBytes, endSignBytes("l-other", providerID, termVersion),
 		current, g.retiredKey(v, providerID), g.otherKey(v, providerID))
 	mustAbstract(s, signBytes)
-	return buildEnd(signer, business, leaseID, false, s)
+	return buildEnd(signer, business, leaseID, false, s, termVersion)
 }
 
 // retry resends an earlier transaction exactly (same business id and
@@ -722,6 +724,15 @@ func (g *gen) update(v *view) *step {
 	if p, ok := v.providers[providerID]; ok {
 		reserved = p.GetReservedBytes()
 	}
+	// Generator restriction, not an adapter rule: x/providers encodes
+	// declared_capacity_bytes as a decimal string in its business payload
+	// and accepts any capacity >= 1, while spec_machine.py canonicalizes the
+	// raw integer, so a capacity above 2^53-1 is MALFORMED there only
+	// (decision request DR-08-10). The generator keeps every
+	// RegisterProvider and UpdateProvider capacity at or below 2^53-1;
+	// TestGeneratorRestrictionsHideKnownDivergences shows the divergence it
+	// avoids. The near-max family seeds larger reserved bytes and
+	// capacities through SeedProvider, which has no business payload.
 	const safeMax = 1<<53 - 1
 	var capacity uint64
 	switch {

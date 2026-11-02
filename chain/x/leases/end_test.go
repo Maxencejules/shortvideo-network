@@ -29,7 +29,7 @@ func endEnv(name string, want msgkit.Code, edit func(e *env)) endFault {
 func endLadderSetup(e *env) { e.seedLease(e.leaseRecord("l1", "c1", "p1")) }
 
 func signEndCall(e *env, c *call[*leasesv1.MsgEndLease]) {
-	e.signEnd(c.msg, "p1", "p1", "key-p1")
+	e.signEnd(c.msg, "p1", "p1", "key-p1", 1)
 	c.editSignature(c.msg.ProviderSignature)
 }
 
@@ -59,6 +59,12 @@ func TestEndCheckOrder(t *testing.T) {
 	faults = append(faults, shapeFaults[*leasesv1.MsgEndLease](typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW)...)
 	faults = append(faults,
 		sigFault[*leasesv1.MsgEndLease]("signature-ed25519-mismatch", msgkit.Unauthorized, func(s *typesv1.InnerSignature) { s.Signature[0] ^= 1 }),
+		// D-12: the end is signed for term 1; the stored lease is at term 2.
+		endEnv("signature-earlier-term-version", msgkit.Unauthorized, func(e *env) {
+			renewed := e.storedLease("l1")
+			renewed.TermVersion = 2
+			e.k.SeedLeaseForTest(e.unmetered(), renewed)
+		}),
 		// op_end returns FORBIDDEN for a signer without a role (:893).
 		endEdit("role-none", msgkit.Forbidden, func(m *leasesv1.MsgEndLease) { m.Signer = outsiderAcct }),
 		endEdit("role-service", msgkit.Forbidden, func(m *leasesv1.MsgEndLease) { m.Signer = serviceAcct }),
@@ -89,7 +95,7 @@ func TestAuthorityEndCheckOrder(t *testing.T) {
 		endEdit("role-none", msgkit.Unauthorized, func(m *leasesv1.MsgEndLease) { m.Signer = outsiderAcct }),
 		endEdit("role-broadcaster", msgkit.Forbidden, func(m *leasesv1.MsgEndLease) { m.Signer = broadcasterAcct }),
 		{name: "provider-signature-present", want: msgkit.UnknownField, apply: func(e *env, c *call[*leasesv1.MsgEndLease]) {
-			e.signEnd(c.msg, "p1", "p1", "key-p1")
+			e.signEnd(c.msg, "p1", "p1", "key-p1", 1)
 		}},
 	}
 	faults = append(faults, endAccountingFaults()...)
@@ -177,5 +183,40 @@ func TestEndReleasesOnce(t *testing.T) {
 		t.Fatal("expiry did not release l3")
 	}
 	e.requireReject(e.end(e.fresh(), e.endMsg("l3", "end-l3")), msgkit.Underflow, "end after expiry")
+	e.requireInvariants(nil)
+}
+
+// TestEndSignedForEarlierTermD12: the end payload binds the lease's term
+// version (DR-08-04, deviation D-12). An end the provider signed at term 1
+// does not end the lease after the provider renewed it to term 2, even
+// when it was already public (here: committed in a transaction the
+// handler rejected with REPLAY). Relayed by the broadcaster under a fresh
+// business id it is UNAUTHORIZED with the trial state unchanged; the
+// renewal stays in force. An end signed for term 2 then ends the lease,
+// and its idempotent retry still verifies (an end changes no term
+// version).
+func TestEndSignedForEarlierTermD12(t *testing.T) {
+	e := newEnv(t)
+	e.mustLease("l1", "c1", "p1")
+	stale := &leasesv1.MsgEndLease{Signer: broadcasterAcct, BusinessId: "acc-l1", LeaseId: "l1"}
+	e.signEnd(stale, "p1", "p1", "key-p1", 1)
+	e.requireReject(e.end(e.fresh(), stale), msgkit.Replay, "term-1 end under a used business id")
+	e.requireOK(e.renew(e.fresh(), e.renewMsg("l1", "renew-l1")), "renew to term 2")
+	if got := e.storedLease("l1").GetTermVersion(); got != 2 {
+		t.Fatalf("term version %d", got)
+	}
+	reserved := e.provider("p1").GetReservedBytes()
+	stale.BusinessId = "end-stale"
+	e.requireReject(e.end(e.fresh(), stale), msgkit.Unauthorized, "term-1 end after renewal to term 2")
+	byProvider := proto.Clone(stale).(*leasesv1.MsgEndLease)
+	byProvider.Signer = providerAcct
+	e.requireReject(e.end(e.fresh(), byProvider), msgkit.Unauthorized, "term-1 end sent by the provider's account")
+	if l := e.storedLease("l1"); l.GetState() != leasesv1.LeaseState_LEASE_STATE_RENEWED || !l.GetReservationHeld() ||
+		e.provider("p1").GetReservedBytes() != reserved {
+		t.Fatalf("renewed lease changed: %v reserved %d", l, e.provider("p1").GetReservedBytes())
+	}
+	current := e.endMsg("l1", "end-current")
+	e.requireOK(e.end(e.fresh(), current), "term-2 end")
+	e.requireIdempotent(e.end(e.fresh(), current), "term-2 end retry")
 	e.requireInvariants(nil)
 }

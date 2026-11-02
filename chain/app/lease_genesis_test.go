@@ -3,6 +3,7 @@ package app_test
 import (
 	"bytes"
 	"encoding/binary"
+	"strings"
 	"testing"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
@@ -44,18 +45,41 @@ func snapshotPairs(t *testing.T, snapshot []byte, prefix byte, drop map[string]b
 	return out, keys
 }
 
-// leasesRoundTrip exports chainApp's committed state, imports providers,
-// content, and leases into fresh bare module stores (ValidateGenesis, then
+// pairValues reads every (key, value) pair of a msgkit.StoreSnapshot.
+func pairValues(t *testing.T, snapshot []byte) map[string][]byte {
+	t.Helper()
+	out := map[string][]byte{}
+	for len(snapshot) > 0 {
+		keyLen := binary.BigEndian.Uint64(snapshot[:8])
+		key := snapshot[8 : 8+keyLen]
+		rest := snapshot[8+keyLen:]
+		valueLen := binary.BigEndian.Uint64(rest[:8])
+		out[string(key)] = append([]byte(nil), rest[8:8+valueLen]...)
+		snapshot = snapshot[8+keyLen+8+valueLen:]
+	}
+	return out
+}
+
+// leasesRoundTrip exports the providers, content, and leases modules of
+// chainApp's committed state (the module manager's ExportGenesis: App.Export
+// refuses after council messages, DR-06-01, and App.Export itself must
+// refuse here), imports them into fresh bare module stores (ValidateGenesis, then
 // InitGenesis in genesis order), exports leases again, and compares the
 // imported leases store row by row with the committed one. The rows may
-// differ in exactly two ways, both recorded restrictions of the v0 genesis
-// schema: business ids (prefix 0x03, DR-07-03) are not exported, and the
+// differ in exactly three ways, all recorded restrictions of the v0 genesis
+// schema: business ids (prefix 0x03, DR-07-03) are not exported; the
 // used-offer markers (prefix 0x0C, DR-08-06) of offers that expired or
-// were voided are not exported. closed is the offer ids whose markers must
-// be missing. It returns the number of open offers and leases exported.
+// were voided are not exported; and the used-offer marker of an accepted
+// offer holds its scheduler when committed but Marker when imported (a
+// Lease has no scheduler field, DR-08-06). An open offer's marker holds
+// its scheduler in both. closed is the offer ids whose markers must be
+// missing. It returns the number of open offers and leases exported.
 func leasesRoundTrip(t *testing.T, chainApp *app.App, closed []string) (int, int) {
 	t.Helper()
-	exported, err := chainApp.Export()
+	if _, err := chainApp.Export(); err == nil || !strings.HasPrefix(err.Error(), "export refused:") {
+		t.Fatalf("App.Export with council state and a non-empty catalogue: %v", err)
+	}
+	exported, err := chainApp.ExportModulesForTest(app.ModuleProviders, app.ModuleContent, app.ModuleLeases)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,8 +125,8 @@ func leasesRoundTrip(t *testing.T, chainApp *app.App, closed []string) (int, int
 	}
 	imported := msgkit.StoreSnapshot(ctx.KVStore(keys[leases.ModuleName]))
 
-	for prefix := 0x00; prefix <= 0x0B; prefix++ {
-		if prefix == int(leases.BusinessPrefix) {
+	for prefix := 0x00; prefix <= int(leases.SchedulerOfferCountPrefix); prefix++ {
+		if prefix == int(leases.BusinessPrefix) || prefix == int(leases.UsedOfferPrefix) {
 			continue
 		}
 		if !bytes.Equal(prefixPairs(t, committed, byte(prefix)), prefixPairs(t, imported, byte(prefix))) {
@@ -127,9 +151,23 @@ func leasesRoundTrip(t *testing.T, chainApp *app.App, closed []string) (int, int
 	if len(all)-len(wantKeys) != len(closed) {
 		t.Fatalf("committed markers %q do not hold every closed offer %v", all, closed)
 	}
-	gotPairs, gotKeys := snapshotPairs(t, imported, leases.UsedOfferPrefix, nil)
-	if !bytes.Equal(gotPairs, wantPairs) {
+	_, gotKeys := snapshotPairs(t, imported, leases.UsedOfferPrefix, nil)
+	if strings.Join(gotKeys, "|") != strings.Join(wantKeys, "|") {
 		t.Fatalf("imported used-offer markers %q, want %q", gotKeys, wantKeys)
+	}
+	open := map[string]bool{}
+	for _, o := range leaseState.GetOffers() {
+		open[string(leases.UsedOfferKey(o.GetOfferId()))] = true
+	}
+	committedMarkers, importedMarkers := pairValues(t, wantPairs), pairValues(t, imported)
+	for _, key := range wantKeys {
+		was, now := committedMarkers[key], importedMarkers[key]
+		if len(was) != 20 {
+			t.Fatalf("committed marker %q holds %x, not a 20-byte scheduler", key, was)
+		}
+		if open[key] && !bytes.Equal(now, was) || !open[key] && !bytes.Equal(now, leases.Marker) {
+			t.Fatalf("imported marker %q holds %x (open offer %t, committed %x)", key, now, open[key], was)
+		}
 	}
 	return len(leaseState.GetOffers()), len(leaseState.GetLeases())
 }
@@ -138,10 +176,11 @@ func leasesRoundTrip(t *testing.T, chainApp *app.App, closed []string) (int, int
 // trip of committed lease state, at two points of the lease flow: the
 // height where l1, l4, and l7 are held (a fresh application replays the
 // committed blocks up to it), and the end of the flow (every lease
-// terminal, offer o13 open). It is not an app export/import: InitChain
-// refuses a non-empty catalogue (TestLaunchGenesisRejectsNonEmptyCatalog),
-// so the app-level round trip stays BLOCKED on DR-07-02, DR-07-03, and
-// DR-08-06.
+// terminal, offer o13 open). It is not an app export/import: App.Export
+// refuses after council messages (DR-06-01) and with a non-empty catalogue,
+// and InitChain refuses a non-empty catalogue
+// (TestLaunchGenesisRejectsNonEmptyCatalog), so the app-level round trip
+// stays BLOCKED on DR-07-02, DR-07-03, and DR-08-06.
 func TestLeasesGenesisRoundTripFromCommittedState(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)

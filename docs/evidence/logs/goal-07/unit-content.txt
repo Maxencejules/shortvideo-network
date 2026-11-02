@@ -1,0 +1,432 @@
+COMMAND env -C chain go test -count=1 -v ./x/content/...
+DATE 2026-11-01T09:32:22Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+=== RUN   TestForceWithdrawByCouncilOrder
+=== RUN   TestForceWithdrawByCouncilOrder/reason-31-bytes
+=== RUN   TestForceWithdrawByCouncilOrder/reason-nil
+=== RUN   TestForceWithdrawByCouncilOrder/not-found
+=== RUN   TestForceWithdrawByCouncilOrder/not-found-before-decision-blocked
+=== RUN   TestForceWithdrawByCouncilOrder/not-found-id-pattern
+=== RUN   TestForceWithdrawByCouncilOrder/decision-blocked-without-dec-003
+=== RUN   TestForceWithdrawByCouncilOrder/decision-blocked-before-withdrawn
+=== RUN   TestForceWithdrawByCouncilOrder/withdrawn
+=== RUN   TestForceWithdrawByCouncilOrder/withdrawn-before-stale
+=== RUN   TestForceWithdrawByCouncilOrder/stale-version
+--- PASS: TestForceWithdrawByCouncilOrder (0.01s)
+    --- PASS: TestForceWithdrawByCouncilOrder/reason-31-bytes (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/reason-nil (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/not-found (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/not-found-before-decision-blocked (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/not-found-id-pattern (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/decision-blocked-without-dec-003 (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/decision-blocked-before-withdrawn (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/withdrawn (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/withdrawn-before-stale (0.00s)
+    --- PASS: TestForceWithdrawByCouncilOrder/stale-version (0.00s)
+=== RUN   TestExecuteForceWithdraw
+--- PASS: TestExecuteForceWithdraw (0.00s)
+=== RUN   TestForceWithdrawHookFailure
+=== RUN   TestForceWithdrawHookFailure/svn-forbidden
+=== RUN   TestForceWithdrawHookFailure/svn-bounds
+=== RUN   TestForceWithdrawHookFailure/plain-error
+--- PASS: TestForceWithdrawHookFailure (0.00s)
+    --- PASS: TestForceWithdrawHookFailure/svn-forbidden (0.00s)
+    --- PASS: TestForceWithdrawHookFailure/svn-bounds (0.00s)
+    --- PASS: TestForceWithdrawHookFailure/plain-error (0.00s)
+=== RUN   TestCodeOfMapsEverySvnCode
+--- PASS: TestCodeOfMapsEverySvnCode (0.00s)
+=== RUN   TestContentProgramSeedsReachEveryTransition
+--- PASS: TestContentProgramSeedsReachEveryTransition (0.01s)
+=== RUN   TestValidateGenesisAcceptsEmptyAndSample
+--- PASS: TestValidateGenesisAcceptsEmptyAndSample (0.00s)
+=== RUN   TestValidateGenesisRejects
+=== RUN   TestValidateGenesisRejects/nil-row
+=== RUN   TestValidateGenesisRejects/empty-id
+=== RUN   TestValidateGenesisRejects/id-pattern
+=== RUN   TestValidateGenesisRejects/id-65
+=== RUN   TestValidateGenesisRejects/repeated-id
+=== RUN   TestValidateGenesisRejects/version-0
+=== RUN   TestValidateGenesisRejects/version-2
+=== RUN   TestValidateGenesisRejects/digest-nil
+=== RUN   TestValidateGenesisRejects/digest-algorithm
+=== RUN   TestValidateGenesisRejects/digest-31
+=== RUN   TestValidateGenesisRejects/package-0
+=== RUN   TestValidateGenesisRejects/package-cap-plus-1
+=== RUN   TestValidateGenesisRejects/host-19
+=== RUN   TestValidateGenesisRejects/host-empty
+=== RUN   TestValidateGenesisRejects/state-unspecified
+=== RUN   TestValidateGenesisRejects/state-reserved-3
+=== RUN   TestValidateGenesisRejects/withdrawn-without-tombstone
+=== RUN   TestValidateGenesisRejects/tombstone-for-pending
+=== RUN   TestValidateGenesisRejects/tombstone-for-absent
+=== RUN   TestValidateGenesisRejects/tombstone-version-mismatch
+=== RUN   TestValidateGenesisRejects/second-tombstone
+=== RUN   TestValidateGenesisRejects/nil-tombstone
+=== RUN   TestValidateGenesisRejects/tombstone-id-pattern
+=== RUN   TestValidateGenesisRejects/tombstone-time-0
+=== RUN   TestValidateGenesisRejects/tombstone-time-max-plus-1
+=== RUN   TestValidateGenesisRejects/tombstone-reason-nil
+=== RUN   TestValidateGenesisRejects/tombstone-reason-33
+=== RUN   TestValidateGenesisRejects/history-erased
+=== RUN   TestValidateGenesisRejects/retention-decision
+=== RUN   TestValidateGenesisRejects/retention-version
+--- PASS: TestValidateGenesisRejects (0.00s)
+    --- PASS: TestValidateGenesisRejects/nil-row (0.00s)
+    --- PASS: TestValidateGenesisRejects/empty-id (0.00s)
+    --- PASS: TestValidateGenesisRejects/id-pattern (0.00s)
+    --- PASS: TestValidateGenesisRejects/id-65 (0.00s)
+    --- PASS: TestValidateGenesisRejects/repeated-id (0.00s)
+    --- PASS: TestValidateGenesisRejects/version-0 (0.00s)
+    --- PASS: TestValidateGenesisRejects/version-2 (0.00s)
+    --- PASS: TestValidateGenesisRejects/digest-nil (0.00s)
+    --- PASS: TestValidateGenesisRejects/digest-algorithm (0.00s)
+    --- PASS: TestValidateGenesisRejects/digest-31 (0.00s)
+    --- PASS: TestValidateGenesisRejects/package-0 (0.00s)
+    --- PASS: TestValidateGenesisRejects/package-cap-plus-1 (0.00s)
+    --- PASS: TestValidateGenesisRejects/host-19 (0.00s)
+    --- PASS: TestValidateGenesisRejects/host-empty (0.00s)
+    --- PASS: TestValidateGenesisRejects/state-unspecified (0.00s)
+    --- PASS: TestValidateGenesisRejects/state-reserved-3 (0.00s)
+    --- PASS: TestValidateGenesisRejects/withdrawn-without-tombstone (0.00s)
+    --- PASS: TestValidateGenesisRejects/tombstone-for-pending (0.00s)
+    --- PASS: TestValidateGenesisRejects/tombstone-for-absent (0.00s)
+    --- PASS: TestValidateGenesisRejects/tombstone-version-mismatch (0.00s)
+    --- PASS: TestValidateGenesisRejects/second-tombstone (0.00s)
+    --- PASS: TestValidateGenesisRejects/nil-tombstone (0.00s)
+    --- PASS: TestValidateGenesisRejects/tombstone-id-pattern (0.00s)
+    --- PASS: TestValidateGenesisRejects/tombstone-time-0 (0.00s)
+    --- PASS: TestValidateGenesisRejects/tombstone-time-max-plus-1 (0.00s)
+    --- PASS: TestValidateGenesisRejects/tombstone-reason-nil (0.00s)
+    --- PASS: TestValidateGenesisRejects/tombstone-reason-33 (0.00s)
+    --- PASS: TestValidateGenesisRejects/history-erased (0.00s)
+    --- PASS: TestValidateGenesisRejects/retention-decision (0.00s)
+    --- PASS: TestValidateGenesisRejects/retention-version (0.00s)
+=== RUN   TestGenesisRoundTrip
+--- PASS: TestGenesisRoundTrip (0.00s)
+=== RUN   TestInitGenesisSortsAndRecords
+--- PASS: TestInitGenesisSortsAndRecords (0.00s)
+=== RUN   TestGenesisJSONIsStrict
+--- PASS: TestGenesisJSONIsStrict (0.00s)
+=== RUN   TestGenesisDigestAlgorithmOnly
+--- PASS: TestGenesisDigestAlgorithmOnly (0.00s)
+=== RUN   TestPackageIdentity
+--- PASS: TestPackageIdentity (0.00s)
+=== RUN   TestCheckOfferableOrder
+--- PASS: TestCheckOfferableOrder (0.00s)
+=== RUN   TestWithdrawalBlocksOfferAndRevival
+--- PASS: TestWithdrawalBlocksOfferAndRevival (0.00s)
+=== RUN   TestServicesThroughSDKRouters
+--- PASS: TestServicesThroughSDKRouters (0.00s)
+=== RUN   TestHandlersRejectWrongRequestType
+--- PASS: TestHandlersRejectWrongRequestType (0.00s)
+=== RUN   TestRunMigrationsAtCurrentVersionIsANoOp
+--- PASS: TestRunMigrationsAtCurrentVersionIsANoOp (0.00s)
+=== RUN   TestNoMigrationFromScaffoldLayout
+--- PASS: TestNoMigrationFromScaffoldLayout (0.00s)
+=== RUN   TestMigrationStepsCoverConsensusVersion
+--- PASS: TestMigrationStepsCoverConsensusVersion (0.00s)
+=== RUN   TestRegisterMigrationsPath
+--- PASS: TestRegisterMigrationsPath (0.00s)
+=== RUN   TestNoValidatorUpdates
+--- PASS: TestNoValidatorUpdates (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+=== RUN   TestModuleImportsStayNarrow
+--- PASS: TestModuleImportsStayNarrow (0.00s)
+=== RUN   TestModuleIdentity
+--- PASS: TestModuleIdentity (0.00s)
+=== RUN   TestContentStoresOnlyDigests
+--- PASS: TestContentStoresOnlyDigests (0.00s)
+=== RUN   TestStateSchemaBytesFieldsAreBounded
+--- PASS: TestStateSchemaBytesFieldsAreBounded (0.00s)
+=== RUN   TestQueryContent
+--- PASS: TestQueryContent (0.00s)
+=== RUN   TestRegisterContentChecksInSpecOrder
+=== RUN   TestRegisterContentChecksInSpecOrder/signer-19-bytes
+=== RUN   TestRegisterContentChecksInSpecOrder/missing-business-id
+=== RUN   TestRegisterContentChecksInSpecOrder/missing-content-id
+=== RUN   TestRegisterContentChecksInSpecOrder/missing-manifest-digest
+=== RUN   TestRegisterContentChecksInSpecOrder/missing-hosting-intent
+=== RUN   TestRegisterContentChecksInSpecOrder/outsider-signer
+=== RUN   TestRegisterContentChecksInSpecOrder/provider-signer
+=== RUN   TestRegisterContentChecksInSpecOrder/authority-signer
+=== RUN   TestRegisterContentChecksInSpecOrder/content-id-pattern
+=== RUN   TestRegisterContentChecksInSpecOrder/boundary-id-65
+=== RUN   TestRegisterContentChecksInSpecOrder/content-version-0
+=== RUN   TestRegisterContentChecksInSpecOrder/content-version-2
+=== RUN   TestRegisterContentChecksInSpecOrder/package-bytes-0
+=== RUN   TestRegisterContentChecksInSpecOrder/package-bytes-cap-plus-1
+=== RUN   TestRegisterContentChecksInSpecOrder/package-bytes-governed-plus-1
+=== RUN   TestRegisterContentChecksInSpecOrder/manifest-algorithm-unspecified
+=== RUN   TestRegisterContentChecksInSpecOrder/manifest-algorithm-unknown
+=== RUN   TestRegisterContentChecksInSpecOrder/manifest-31-bytes
+=== RUN   TestRegisterContentChecksInSpecOrder/manifest-33-bytes
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-domain-unspecified
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-profile-0
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-profile-2
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-key-id-empty
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-key-id-pattern
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-pubkey-31
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-signature-63
+=== RUN   TestRegisterContentChecksInSpecOrder/host-custody-not-assumed
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-wrong-domain
+=== RUN   TestRegisterContentChecksInSpecOrder/production-chain-no-dec-001
+=== RUN   TestRegisterContentChecksInSpecOrder/dec-001-other-role
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-bad-signature
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-other-role
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-for-another-host
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-over-other-bytes
+=== RUN   TestRegisterContentChecksInSpecOrder/intent-key-swapped
+=== RUN   TestRegisterContentChecksInSpecOrder/business-id-pattern
+=== RUN   TestRegisterContentChecksInSpecOrder/replay-other-payload
+=== RUN   TestRegisterContentChecksInSpecOrder/replay-peer-business-id
+=== RUN   TestRegisterContentChecksInSpecOrder/duplicate-id
+=== RUN   TestRegisterContentChecksInSpecOrder/duplicate-id-withdrawn
+=== RUN   TestRegisterContentChecksInSpecOrder/gas-limit-0
+=== RUN   TestRegisterContentChecksInSpecOrder/tx-bytes-above-max
+--- PASS: TestRegisterContentChecksInSpecOrder (0.02s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/signer-19-bytes (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/missing-business-id (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/missing-content-id (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/missing-manifest-digest (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/missing-hosting-intent (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/outsider-signer (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/provider-signer (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/authority-signer (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/content-id-pattern (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/boundary-id-65 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/content-version-0 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/content-version-2 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/package-bytes-0 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/package-bytes-cap-plus-1 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/package-bytes-governed-plus-1 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/manifest-algorithm-unspecified (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/manifest-algorithm-unknown (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/manifest-31-bytes (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/manifest-33-bytes (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-domain-unspecified (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-profile-0 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-profile-2 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-key-id-empty (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-key-id-pattern (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-pubkey-31 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-signature-63 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/host-custody-not-assumed (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-wrong-domain (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/production-chain-no-dec-001 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/dec-001-other-role (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-bad-signature (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-other-role (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-for-another-host (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-over-other-bytes (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/intent-key-swapped (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/business-id-pattern (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/replay-other-payload (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/replay-peer-business-id (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/duplicate-id (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/duplicate-id-withdrawn (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/gas-limit-0 (0.00s)
+    --- PASS: TestRegisterContentChecksInSpecOrder/tx-bytes-above-max (0.00s)
+=== RUN   TestRegisterContentEnforceBounds
+--- PASS: TestRegisterContentEnforceBounds (0.00s)
+=== RUN   TestRegisterContentMultiFaultOrder
+=== RUN   TestRegisterContentMultiFaultOrder/wrong-role-before-bad-digest
+=== RUN   TestRegisterContentMultiFaultOrder/outsider-before-bad-id
+=== RUN   TestRegisterContentMultiFaultOrder/bad-id-before-version
+=== RUN   TestRegisterContentMultiFaultOrder/version-before-package-bytes
+=== RUN   TestRegisterContentMultiFaultOrder/package-bytes-before-digest-algorithm
+=== RUN   TestRegisterContentMultiFaultOrder/digest-before-intent-domain
+=== RUN   TestRegisterContentMultiFaultOrder/delegate-before-wrong-domain
+=== RUN   TestRegisterContentMultiFaultOrder/delegate-before-decision-blocked
+=== RUN   TestRegisterContentMultiFaultOrder/wrong-domain-before-decision-blocked
+=== RUN   TestRegisterContentMultiFaultOrder/decision-blocked-before-bad-signature
+=== RUN   TestRegisterContentMultiFaultOrder/bad-signature-before-business-bounds
+=== RUN   TestRegisterContentMultiFaultOrder/business-bounds-before-duplicate
+=== RUN   TestRegisterContentMultiFaultOrder/replay-before-duplicate
+--- PASS: TestRegisterContentMultiFaultOrder (0.01s)
+    --- PASS: TestRegisterContentMultiFaultOrder/wrong-role-before-bad-digest (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/outsider-before-bad-id (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/bad-id-before-version (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/version-before-package-bytes (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/package-bytes-before-digest-algorithm (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/digest-before-intent-domain (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/delegate-before-wrong-domain (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/delegate-before-decision-blocked (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/wrong-domain-before-decision-blocked (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/decision-blocked-before-bad-signature (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/bad-signature-before-business-bounds (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/business-bounds-before-duplicate (0.00s)
+    --- PASS: TestRegisterContentMultiFaultOrder/replay-before-duplicate (0.00s)
+=== RUN   TestRegisterContentSuccessBoundaries
+--- PASS: TestRegisterContentSuccessBoundaries (0.00s)
+=== RUN   TestContentRecordFields
+--- PASS: TestContentRecordFields (0.00s)
+=== RUN   TestRegisterContentCreatesNoHostingClaim
+--- PASS: TestRegisterContentCreatesNoHostingClaim (0.00s)
+=== RUN   TestRegisterContentIdempotent
+--- PASS: TestRegisterContentIdempotent (0.00s)
+=== RUN   TestWithdrawalWithoutHook
+--- PASS: TestWithdrawalWithoutHook (0.00s)
+=== RUN   TestNewKeeperRejectsMissingDependencies
+--- PASS: TestNewKeeperRejectsMissingDependencies (0.00s)
+=== RUN   TestRejectedContentMessagesLeaveTheStore
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-unauthorized
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-forbidden
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-forbidden-delegate
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-replay
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-duplicate
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-malformed
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-out-of-range
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-bounds-digest
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-bounds-package
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-wrong-domain
+=== RUN   TestRejectedContentMessagesLeaveTheStore/register-decision-blocked
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-unauthorized
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-forbidden-cross-owner
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-replay
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-stale
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-withdrawn
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-not-found
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-malformed
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-out-of-range
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-wrong-domain
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-decision-blocked
+=== RUN   TestRejectedContentMessagesLeaveTheStore/withdraw-bounds
+=== RUN   TestRejectedContentMessagesLeaveTheStore/force-not-found
+=== RUN   TestRejectedContentMessagesLeaveTheStore/force-decision-blocked
+=== RUN   TestRejectedContentMessagesLeaveTheStore/force-withdrawn
+=== RUN   TestRejectedContentMessagesLeaveTheStore/force-stale
+--- PASS: TestRejectedContentMessagesLeaveTheStore (0.03s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-unauthorized (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-forbidden (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-forbidden-delegate (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-replay (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-duplicate (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-malformed (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-out-of-range (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-bounds-digest (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-bounds-package (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-wrong-domain (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/register-decision-blocked (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-unauthorized (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-forbidden-cross-owner (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-replay (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-stale (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-withdrawn (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-not-found (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-malformed (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-out-of-range (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-wrong-domain (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-decision-blocked (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/withdraw-bounds (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/force-not-found (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/force-decision-blocked (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/force-withdrawn (0.00s)
+    --- PASS: TestRejectedContentMessagesLeaveTheStore/force-stale (0.00s)
+=== RUN   TestWithdrawContentChecksInSpecOrder
+=== RUN   TestWithdrawContentChecksInSpecOrder/signer-21-bytes
+=== RUN   TestWithdrawContentChecksInSpecOrder/missing-business-id
+=== RUN   TestWithdrawContentChecksInSpecOrder/missing-content-id
+=== RUN   TestWithdrawContentChecksInSpecOrder/missing-reason-digest
+=== RUN   TestWithdrawContentChecksInSpecOrder/missing-hosting-intent
+=== RUN   TestWithdrawContentChecksInSpecOrder/outsider-signer
+=== RUN   TestWithdrawContentChecksInSpecOrder/provider-signer
+=== RUN   TestWithdrawContentChecksInSpecOrder/reason-algorithm-unspecified
+=== RUN   TestWithdrawContentChecksInSpecOrder/reason-31-bytes
+=== RUN   TestWithdrawContentChecksInSpecOrder/intent-profile-2
+=== RUN   TestWithdrawContentChecksInSpecOrder/intent-signature-65
+=== RUN   TestWithdrawContentChecksInSpecOrder/host-custody-not-assumed
+=== RUN   TestWithdrawContentChecksInSpecOrder/intent-wrong-domain
+=== RUN   TestWithdrawContentChecksInSpecOrder/production-chain-no-dec-001
+=== RUN   TestWithdrawContentChecksInSpecOrder/intent-register-payload
+=== RUN   TestWithdrawContentChecksInSpecOrder/intent-other-reason
+=== RUN   TestWithdrawContentChecksInSpecOrder/business-id-pattern
+=== RUN   TestWithdrawContentChecksInSpecOrder/replay-other-payload
+=== RUN   TestWithdrawContentChecksInSpecOrder/not-found
+=== RUN   TestWithdrawContentChecksInSpecOrder/not-found-id-pattern
+=== RUN   TestWithdrawContentChecksInSpecOrder/not-found-terminator-in-id
+=== RUN   TestWithdrawContentChecksInSpecOrder/cross-owner
+=== RUN   TestWithdrawContentChecksInSpecOrder/second-withdraw
+=== RUN   TestWithdrawContentChecksInSpecOrder/stale-version-2
+=== RUN   TestWithdrawContentChecksInSpecOrder/stale-version-0
+=== RUN   TestWithdrawContentChecksInSpecOrder/cross-owner-before-withdrawn
+=== RUN   TestWithdrawContentChecksInSpecOrder/withdrawn-before-stale-version
+=== RUN   TestWithdrawContentChecksInSpecOrder/replay-before-not-found
+--- PASS: TestWithdrawContentChecksInSpecOrder (0.03s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/signer-21-bytes (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/missing-business-id (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/missing-content-id (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/missing-reason-digest (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/missing-hosting-intent (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/outsider-signer (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/provider-signer (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/reason-algorithm-unspecified (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/reason-31-bytes (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/intent-profile-2 (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/intent-signature-65 (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/host-custody-not-assumed (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/intent-wrong-domain (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/production-chain-no-dec-001 (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/intent-register-payload (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/intent-other-reason (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/business-id-pattern (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/replay-other-payload (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/not-found (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/not-found-id-pattern (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/not-found-terminator-in-id (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/cross-owner (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/second-withdraw (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/stale-version-2 (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/stale-version-0 (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/cross-owner-before-withdrawn (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/withdrawn-before-stale-version (0.00s)
+    --- PASS: TestWithdrawContentChecksInSpecOrder/replay-before-not-found (0.00s)
+=== RUN   TestWithdrawContentWritesTombstone
+--- PASS: TestWithdrawContentWritesTombstone (0.00s)
+=== RUN   TestWithdrawnBlocksRevival
+--- PASS: TestWithdrawnBlocksRevival (0.00s)
+=== RUN   TestSecondWithdraw
+--- PASS: TestSecondWithdraw (0.00s)
+=== RUN   TestWithdrawContentIdempotent
+--- PASS: TestWithdrawContentIdempotent (0.00s)
+=== RUN   TestWithdrawHookFailureWritesNothing
+=== RUN   TestWithdrawHookFailureWritesNothing/svn-forbidden
+=== RUN   TestWithdrawHookFailureWritesNothing/svn-capacity
+=== RUN   TestWithdrawHookFailureWritesNothing/plain-error
+--- PASS: TestWithdrawHookFailureWritesNothing (0.00s)
+    --- PASS: TestWithdrawHookFailureWritesNothing/svn-forbidden (0.00s)
+    --- PASS: TestWithdrawHookFailureWritesNothing/svn-capacity (0.00s)
+    --- PASS: TestWithdrawHookFailureWritesNothing/plain-error (0.00s)
+=== RUN   TestWithdrawBlockTimeOutsideRange
+--- PASS: TestWithdrawBlockTimeOutsideRange (0.00s)
+=== RUN   FuzzContentTransitions
+=== RUN   FuzzContentTransitions/seed#0
+=== RUN   FuzzContentTransitions/seed#1
+=== RUN   FuzzContentTransitions/seed#2
+=== RUN   FuzzContentTransitions/seed#3
+--- PASS: FuzzContentTransitions (0.01s)
+    --- PASS: FuzzContentTransitions/seed#0 (0.01s)
+    --- PASS: FuzzContentTransitions/seed#1 (0.00s)
+    --- PASS: FuzzContentTransitions/seed#2 (0.00s)
+    --- PASS: FuzzContentTransitions/seed#3 (0.00s)
+=== RUN   FuzzContentGenesisJSON
+=== RUN   FuzzContentGenesisJSON/seed#0
+=== RUN   FuzzContentGenesisJSON/seed#1
+=== RUN   FuzzContentGenesisJSON/seed#2
+=== RUN   FuzzContentGenesisJSON/seed#3
+=== RUN   FuzzContentGenesisJSON/seed#4
+=== RUN   FuzzContentGenesisJSON/seed#5
+=== RUN   FuzzContentGenesisJSON/seed#6
+--- PASS: FuzzContentGenesisJSON (0.00s)
+    --- PASS: FuzzContentGenesisJSON/seed#0 (0.00s)
+    --- PASS: FuzzContentGenesisJSON/seed#1 (0.00s)
+    --- PASS: FuzzContentGenesisJSON/seed#2 (0.00s)
+    --- PASS: FuzzContentGenesisJSON/seed#3 (0.00s)
+    --- PASS: FuzzContentGenesisJSON/seed#4 (0.00s)
+    --- PASS: FuzzContentGenesisJSON/seed#5 (0.00s)
+    --- PASS: FuzzContentGenesisJSON/seed#6 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	0.185s
+EXIT:0

@@ -1,0 +1,6 @@
+COMMAND bash -c \(cd\ chain\ \&\&\ go\ mod\ tidy\)\ \&\&\ git\ diff\ --exit-code\ chain/go.mod\ chain/go.sum
+DATE 2026-11-01T21:20:47Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+EXIT:0

@@ -17,12 +17,13 @@ import (
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 )
 
-// registerApplicationMessages wires the x/authority council messages and
-// keeps the evidence message closed until Goal 09. The
-// svn.providers.v1.Msg, svn.content.v1.Msg, and svn.leases.v1.Msg services
-// are registered by their modules (RegisterServices). There is no
-// MsgCreateValidator and no single-signer admit, disable, or force-withdraw
-// message (DEC-009).
+// registerApplicationMessages wires the x/authority council messages here.
+// x/providers, x/content, and x/leases register svn.providers.v1.Msg,
+// svn.content.v1.Msg, and svn.leases.v1.Msg themselves (RegisterServices).
+// The evidence message decodes, with every field set (the nested types are
+// registered in encoding.go), and is rejected with ERROR_CODE_FORBIDDEN until
+// Goal 09 (TestEveryProtocolMessageDecodes). There is no MsgCreateValidator
+// and no single-signer admit, disable, or force-withdraw message (DEC-009).
 func registerApplicationMessages(router *baseapp.MsgServiceRouter, keeper authority.Keeper) {
 	registerAuthority(router, keeper)
 	register(router, "svn.evidence.v1.Msg", []methodSpec{

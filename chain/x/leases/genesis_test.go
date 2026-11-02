@@ -140,21 +140,45 @@ func testValidateGenesisRejects(t *testing.T) {
 	if leases.ValidateGenesis(nil) == nil {
 		t.Fatal("nil state accepted")
 	}
-	// Open-offer caps.
-	g := &leasesv1.GenesisState{}
-	for i := 0; i <= leases.MaxOpenOffersPerContent; i++ {
-		o := e.offerRecord(maxID("o", i), "c1", []string{"p1", "p2"}[i%2])
-		g.Offers = append(g.Offers, o)
+	// Open-offer caps. Each document is valid one offer below its cap, and
+	// one offer more fails with exactly that cap's error: no other cap is
+	// reached by the same document.
+	capped := func(n int, record func(i int) *leasesv1.Offer) (below, at *leasesv1.GenesisState) {
+		below, at = &leasesv1.GenesisState{}, &leasesv1.GenesisState{}
+		for i := 0; i <= n; i++ {
+			if i < n {
+				below.Offers = append(below.Offers, record(i))
+			}
+			at.Offers = append(at.Offers, record(i))
+		}
+		return below, at
 	}
-	if err := leases.ValidateGenesis(g); err == nil || !strings.Contains(err.Error(), "open offers") {
-		t.Fatalf("content cap: %v", err)
-	}
-	g = &leasesv1.GenesisState{}
-	for i := 0; i <= int(genesis.MaxOpenOffersPerProvider); i++ {
-		g.Offers = append(g.Offers, e.offerRecord(maxID("o", i), maxID("c", i/200), "p1"))
-	}
-	if err := leases.ValidateGenesis(g); err == nil || !strings.Contains(err.Error(), "provider") {
-		t.Fatalf("provider cap: %v", err)
+	for _, c := range []struct {
+		name, want string
+		n          int
+		record     func(i int) *leasesv1.Offer
+	}{
+		// Three schedulers (at most 86 offers each of 257), so the
+		// per-scheduler cap (128) cannot be what fires.
+		{"content cap", `leases genesis: content "c1" has more than 256 open offers`, leases.MaxOpenOffersPerContent, func(i int) *leasesv1.Offer {
+			return e.offerRecordBy([][]byte{serviceAcct, service2Acct, service3Acct}[i%3], maxID("o", i), "c1", []string{"p1", "p2"}[(i/3)%2])
+		}},
+		{"scheduler cap", `leases genesis: scheduler 3333333333333333333333333333333333333333 has more than 128 open offers of content "c1"`,
+			leases.MaxOpenOffersPerContentPerScheduler, func(i int) *leasesv1.Offer {
+				return e.offerRecord(maxID("o", i), "c1", []string{"p1", "p2"}[i%2])
+			}},
+		// 100 offers per content id, below both content caps.
+		{"provider cap", `leases genesis: provider "p1" has more than 1024 open offers`, int(genesis.MaxOpenOffersPerProvider), func(i int) *leasesv1.Offer {
+			return e.offerRecord(maxID("o", i), maxID("c", i/100), "p1")
+		}},
+	} {
+		below, at := capped(c.n, c.record)
+		if err := leases.ValidateGenesis(below); err != nil {
+			t.Fatalf("%s: %d offers: %v", c.name, c.n, err)
+		}
+		if err := leases.ValidateGenesis(at); err == nil || err.Error() != c.want {
+			t.Fatalf("%s: %d offers: %v, want %q", c.name, c.n+1, err, c.want)
+		}
 	}
 }
 
@@ -173,6 +197,19 @@ func testGenesisImportChecksRegistries(t *testing.T) {
 			g.Leases[3].ProviderId = "p-none" // l3, ENDED
 		},
 		"lease-content-absent": func(_ *env, g *leasesv1.GenesisState) { g.Leases[2].ContentId = "c-none" },
+		// I9 for leases: the committed package must equal the content
+		// record's, in any state (l1 holds c3, l3 the withdrawn-able c2).
+		"lease-manifest-differs": func(_ *env, g *leasesv1.GenesisState) {
+			g.Leases[1].ManifestDigest = manifestOf("c-other") // l1, ACTIVE
+		},
+		"lease-package-bytes-differ": func(_ *env, g *leasesv1.GenesisState) {
+			g.Leases[3].PackageBytes = packageSize + 1 // l3, ENDED, does not reserve
+		},
+		"withdrawn-content-lease-manifest-differs": func(e *env, g *leasesv1.GenesisState) {
+			e.setContentState("c3", contentv1.ContentState_CONTENT_STATE_WITHDRAWN)
+			g.Offers = nil
+			g.Leases[1].ManifestDigest = manifestOf("c-other") // l1 of c3
+		},
 		"reserved-too-low": func(e *env, _ *leasesv1.GenesisState) {
 			e.editProvider("p1", func(p *providersv1.Provider) { p.ReservedBytes = 0 })
 		},
@@ -289,9 +326,11 @@ func testGenesisRoundTrip(t *testing.T) {
 // testGenesisRoundTripFromCommittedTransitions: the export of a store
 // built by messages and expiry re-imports into fresh stores to the same
 // export. The re-imported lease store equals the committed one except
-// exactly the business-id rows (not in the v0 genesis schema, DR-07-03)
-// and the used-offer markers of offers that expired or were voided
-// (DR-08-06): the restriction is asserted, not hidden.
+// exactly the business-id rows (not in the v0 genesis schema, DR-07-03),
+// the used-offer markers of offers that expired or were voided, and the
+// scheduler in the used-offer markers of accepted offers, which the
+// import replaces with Marker (DR-08-06): the restriction is asserted,
+// not hidden.
 func testGenesisRoundTripFromCommittedTransitions(t *testing.T) {
 	a := newEnv(t)
 	a.mustLease("l1", "c1", "p1")
@@ -334,15 +373,26 @@ func testGenesisRoundTripFromCommittedTransitions(t *testing.T) {
 	b.requireInvariants(nil)
 	committed := rows(a.leaseStore())
 	imported := rows(b.leaseStore())
-	var dropped []string
+	var dropped, changed []string
 	for key, value := range committed {
 		if got, ok := imported[key]; ok {
 			if !bytes.Equal(got, value) {
-				t.Fatalf("row %x differs", key)
+				// Only the used-offer marker of an accepted offer may
+				// differ: committed it holds the scheduler, imported it
+				// holds Marker (a Lease has no scheduler field).
+				if !bytes.Equal(value, serviceAcct) || !bytes.Equal(got, leases.Marker) {
+					t.Fatalf("row %x differs: committed %x, imported %x", key, value, got)
+				}
+				changed = append(changed, key)
 			}
 			continue
 		}
 		dropped = append(dropped, key)
+	}
+	sort.Strings(changed)
+	wantChanged := []string{string(leases.UsedOfferKey("o-l1")), string(leases.UsedOfferKey("o-l2")), string(leases.UsedOfferKey("o-l3"))}
+	if strings.Join(changed, "|") != strings.Join(wantChanged, "|") {
+		t.Fatalf("rows whose value the export did not carry: %q\nwant %q", changed, wantChanged)
 	}
 	for key := range imported {
 		if _, ok := committed[key]; !ok {

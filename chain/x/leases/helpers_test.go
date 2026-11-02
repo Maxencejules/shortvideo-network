@@ -43,6 +43,7 @@ var (
 	provider2Acct   = bytes.Repeat([]byte{0x22}, 20) // p2
 	serviceAcct     = bytes.Repeat([]byte{0x33}, 20)
 	service2Acct    = bytes.Repeat([]byte{0x34}, 20)
+	service3Acct    = bytes.Repeat([]byte{0x35}, 20)
 	broadcasterAcct = bytes.Repeat([]byte{0x44}, 20)
 	outsiderAcct    = bytes.Repeat([]byte{0x55}, 20)
 	authorityAcct   = bytes.Repeat([]byte{0x66}, 20)
@@ -205,7 +206,8 @@ func (f *fakeProviders) Release(ctx sdk.Context, id string, amount uint64) msgki
 }
 
 // fakeContent keeps svn.content.v1.Content records in the "content" store
-// and implements CheckOfferable and CheckNotWithdrawn as x/content does.
+// and implements CheckOfferable, CheckNotWithdrawn, and CheckPackage as
+// x/content does.
 type fakeContent struct{ key *storetypes.KVStoreKey }
 
 func contentKey(id string) []byte { return append([]byte{0x01}, id...) }
@@ -240,6 +242,17 @@ func (f *fakeContent) CheckOfferable(ctx sdk.Context, id string, version uint64,
 	}
 	if c.GetState() != contentv1.ContentState_CONTENT_STATE_PENDING || c.GetContentVersion() != version {
 		return msgkit.Conflict
+	}
+	if !bytes.Equal(c.GetManifestDigest().GetValue(), manifest) || c.GetPackageBytes() != packageBytes {
+		return msgkit.Integrity
+	}
+	return msgkit.OK
+}
+
+func (f *fakeContent) CheckPackage(ctx sdk.Context, id string, version uint64, manifest []byte, packageBytes uint64) msgkit.Code {
+	c, found := f.load(ctx, id)
+	if !found || c.GetContentVersion() != version {
+		return msgkit.NotFound
 	}
 	if !bytes.Equal(c.GetManifestDigest().GetValue(), manifest) || c.GetPackageBytes() != packageBytes {
 		return msgkit.Integrity
@@ -304,6 +317,7 @@ func newEnv(t testing.TB) *env {
 			string(provider2Acct):   typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER,
 			string(serviceAcct):     typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE,
 			string(service2Acct):    typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE,
+			string(service3Acct):    typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE,
 			string(broadcasterAcct): typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER,
 			string(authorityAcct):   typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY,
 			string(auditorAcct):     typesv1.SubmitterRole_SUBMITTER_ROLE_AUDITOR,
@@ -646,8 +660,10 @@ func (e *env) renewMsg(leaseID, businessID string) *leasesv1.MsgRenewLease {
 	return msg
 }
 
-func (e *env) signEnd(msg *leasesv1.MsgEndLease, providerID, label, keyID string) {
-	signBytes, err := leases.EndSignBytes(msg.GetLeaseId(), providerID)
+// signEnd signs msg's end payload for termVersion (the lease's term
+// version when the provider signs).
+func (e *env) signEnd(msg *leasesv1.MsgEndLease, providerID, label, keyID string, termVersion uint64) {
+	signBytes, err := leases.EndSignBytes(msg.GetLeaseId(), providerID, termVersion)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -658,7 +674,7 @@ func (e *env) signEnd(msg *leasesv1.MsgEndLease, providerID, label, keyID string
 func (e *env) endMsg(leaseID, businessID string) *leasesv1.MsgEndLease {
 	lease := e.storedLease(leaseID)
 	msg := &leasesv1.MsgEndLease{Signer: broadcasterAcct, BusinessId: businessID, LeaseId: leaseID}
-	e.signEnd(msg, lease.GetProviderId(), lease.GetProviderId(), "key-"+lease.GetProviderId())
+	e.signEnd(msg, lease.GetProviderId(), lease.GetProviderId(), "key-"+lease.GetProviderId(), lease.GetTermVersion())
 	return msg
 }
 
@@ -698,6 +714,20 @@ func (e *env) seedLease(lease *leasesv1.Lease) {
 	if lease.GetReservationHeld() {
 		e.editProvider(lease.GetProviderId(), func(p *providersv1.Provider) { p.ReservedBytes += lease.GetPackageBytes() })
 	}
+}
+
+// offerBy is offerMsg sent by another scheduler.
+func (e *env) offerBy(scheduler []byte, offerID, contentID, providerID string) *leasesv1.MsgOfferLease {
+	msg := e.offerMsg(offerID, contentID, providerID)
+	msg.Signer = scheduler
+	return msg
+}
+
+// offerRecordBy is offerRecord with another scheduler.
+func (e *env) offerRecordBy(scheduler []byte, offerID, contentID, providerID string) *leasesv1.Offer {
+	o := e.offerRecord(offerID, contentID, providerID)
+	o.Scheduler = append([]byte(nil), scheduler...)
+	return o
 }
 
 // offerRecord is the stored offer the default offerMsg would write.

@@ -77,29 +77,34 @@ func TestGovernedLimitsReachTheRegistries(t *testing.T) {
 	assertQueryCode(t, c.app(), "/svn.providers.v1.Query/Providers", &providersv1.QueryProvidersRequest{Page: &typesv1.PageRequest{Limit: pageLimit + 1}}, msgkit.Bounds)
 }
 
-// TestGovernedLimitFailsClosed: when the authority side document does not
-// decode, x/authority GovernedLimit panics instead of reporting no limit.
-// The Providers query (which reads max_page_limit) fails with the SDK's
-// recovered-panic result and the node keeps answering: Query/Provider,
-// which reads no governed limit, still returns the record. A
-// RegisterContent message (which reads max_package_bytes) fails the same
-// way instead of running against the protocol ceiling; it is run through
-// Simulate, which executes the handler without a block, because the next
-// block's authority EndBlock halts on the corrupt document by design.
+// TestGovernedLimitFailsClosed: when a stored governed limit (authority
+// key 0x13 || limit key) is not an 8-byte value in 1..ceiling, x/authority
+// GovernedLimit panics instead of reporting no limit. The test first sets
+// max_page_limit and max_package_bytes through executed council
+// GovernedLimitChange proposals, then damages both values. The Providers
+// query (which reads max_page_limit) fails with the SDK's recovered-panic
+// result and the node keeps answering: Query/Provider, which reads no
+// governed limit, still returns the record. A RegisterContent message (which
+// reads max_package_bytes) fails the same way instead of running against the
+// protocol ceiling. It runs through Simulate, which executes the handler
+// without a block: the test hook commits store versions outside ABCI, so
+// this app cannot finalize another block. Neither changes state.
 func TestGovernedLimitFailsClosed(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)
 	chainApp := c.app()
 	wantCode(t, "register p1", n.send(t, c, n.provider1, n.registerProvider(t, n.provider1, "reg-p1", "p1", groupDevnet, capacity1)), msgkit.OK)
-	// A committed council message writes the side document.
-	wantCode(t, "propose admit p1", n.send(t, c, n.seats[0], n.proposal(t, "prop-admit-p1", "admit-p1", admitPayload("p1"))), msgkit.OK)
-	if err := chainApp.CorruptAuthoritySideDocumentForTest(); err != nil {
-		t.Fatal(err)
+	n.council(t, c, "prop-lim-pkg", msgkit.LimitMaxPackageBytes, governedPayload(msgkit.LimitMaxPackageBytes, 1000))
+	n.council(t, c, "prop-lim-page", msgkit.LimitMaxPageLimit, governedPayload(msgkit.LimitMaxPageLimit, 2))
+	for _, key := range []string{msgkit.LimitMaxPageLimit, msgkit.LimitMaxPackageBytes} {
+		if err := chainApp.CorruptGovernedLimitForTest(key); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	_, res := query(t, chainApp, "/svn.providers.v1.Query/Providers", &providersv1.QueryProvidersRequest{}, 0)
 	if res.Codespace != errorsmod.UndefinedCodespace || res.Code != errorsmod.ErrPanic.ABCICode() {
-		t.Fatalf("Providers on a corrupt side document: %s/%d %s", res.Codespace, res.Code, res.Log)
+		t.Fatalf("Providers on a damaged governed limit: %s/%d %s", res.Codespace, res.Code, res.Log)
 	}
 	if record, _ := queryProvider(t, chainApp, "p1", 0); record.GetProviderId() != "p1" {
 		t.Fatalf("Query/Provider after the failed query: %v", record)
@@ -109,7 +114,7 @@ func TestGovernedLimitFailsClosed(t *testing.T) {
 	raw := n.signed(t, c, n.service, registryGas, nil, n.registerContent(t, n.service, "reg-c1", "c1", 1, packageManifest("c1"), sizeC1))
 	_, _, err := chainApp.Simulate(raw)
 	if codespace, code, _ := errorsmod.ABCIInfo(err, false); codespace != errorsmod.UndefinedCodespace || code != errorsmod.ErrPanic.ABCICode() {
-		t.Fatalf("RegisterContent on a corrupt side document: %s/%d %v", codespace, code, err)
+		t.Fatalf("simulated RegisterContent on a damaged governed limit: %s/%d %v", codespace, code, err)
 	}
 	if !bytes.Equal(before, chainApp.FullSnapshot()) {
 		t.Fatal("the failed message changed state")

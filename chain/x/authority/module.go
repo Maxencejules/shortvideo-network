@@ -59,10 +59,15 @@ func (AppModule) DefaultGenesis(codec.JSONCodec) json.RawMessage {
 	return json.RawMessage(`{}`)
 }
 
+// ValidateGenesis runs ValidateGenesisState without a chain start point; the
+// app InitChainer checks the start point.
 func (AppModule) ValidateGenesis(_ codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var state authorityv1.GenesisState
 	if err := protojson.Unmarshal(bz, &state); err != nil {
 		return fmt.Errorf("authority genesis: %w", err)
+	}
+	if err := ValidateGenesisState(&state, nil); err != nil {
+		return err
 	}
 	if _, err := InitialUpdates(state.GetAuthority().GetValidators()); err != nil {
 		return err
@@ -86,6 +91,10 @@ func (am AppModule) InitGenesis(ctx sdk.Context, _ codec.JSONCodec, bz json.RawM
 	return updates
 }
 
+// ExportGenesis panics with the ExportState error (wrapping ErrExportRefused)
+// while the store holds state the genesis proto cannot carry. The SDK
+// interface has no error result, so a caller that needs the error calls
+// Keeper.Export before the module manager export.
 func (am AppModule) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) json.RawMessage {
 	state, err := am.keeper.Export(ctx)
 	if err != nil {

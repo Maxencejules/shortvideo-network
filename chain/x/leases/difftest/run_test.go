@@ -3,8 +3,10 @@ package difftest
 import (
 	"fmt"
 	"math/rand/v2"
+	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
@@ -17,14 +19,13 @@ import (
 // Sequence sizes. The seeded run is diffSeeds sequences per family, each
 // with diffOps random operations after its setup steps (plan section
 // 14.3: 4 families x 64 seeds x 80 steps). A fuzz input runs at most
-// fuzzOps operations. reachSeeds is the seeded batch per family of
-// TestFuzzReachesStates: locally every required class was first reached
-// by seed 15, so 32 leaves a factor-two margin (TestFuzzReachesStates
-// fails if a class is missed).
+// fuzzOps operations, as many as a seeded sequence, so a recorded seeded
+// sequence replays whole as a fuzz input. reachSeeds is the number of PCG
+// seeds per family that -difftest.search-reach searches for reachCorpus.
 const (
 	diffSeeds  = 64
 	diffOps    = 80
-	fuzzOps    = 48
+	fuzzOps    = diffOps
 	reachSeeds = 32
 )
 
@@ -106,9 +107,90 @@ func runSequence(tb testing.TB, c chooser, opt seqOptions) (map[string]int, bool
 	return classes, true
 }
 
+// recordingChooser draws from a seeded PCG and records every choice in
+// byteChooser format (one byte when n <= 256, two big-endian bytes when n
+// is larger), so a byteChooser over the record makes the same choices.
+type recordingChooser struct {
+	rand randChooser
+	data []byte
+}
+
+func (c *recordingChooser) intn(n int) int {
+	if n <= 1 {
+		return 0
+	}
+	if n > 1<<16 {
+		panic(fmt.Sprintf("difftest: intn(%d) has no byteChooser encoding", n))
+	}
+	v := c.rand.intn(n)
+	if n > 256 {
+		c.data = append(c.data, byte(v>>8))
+	}
+	c.data = append(c.data, byte(v))
+	return v
+}
+
+func (*recordingChooser) exhausted() bool { return false }
+
+// reachCorpus is the seeded (family, seed) sequences whose recorded choice
+// streams join the fuzz seed corpus (fuzzSeeds), so the corpus that
+// FuzzLeaseTransitions and FuzzLeaseDifferential start from reaches every
+// required class by itself (TestFuzzReachesStates). The list is a greedy
+// cover of requiredClasses over seeds 0..reachSeeds-1 of every family;
+// go test -run TestFuzzReachesStates -difftest.search-reach logs a new
+// cover when the generator changes.
+var reachCorpus = []reachSeed{
+	{family: famTight, seed: 8},
+	{family: famTight, seed: 31},
+	{family: famTight, seed: 15},
+	{family: famNearMax, seed: 16},
+	{family: famNearMax, seed: 0},
+	{family: famTight, seed: 11},
+	{family: famNoTerm, seed: 0},
+}
+
+type reachSeed struct{ family, seed int }
+
+// recorded is one recorded seeded sequence: the fuzz input that replays it
+// and the classes the seeded run reached.
+type recorded struct {
+	input   []byte
+	classes map[string]int
+}
+
+var (
+	recordedMu    sync.Mutex
+	recordedCache = map[reachSeed]recorded{}
+)
+
+// record runs seeded sequence r on the Go keepers (no oracle) through a
+// recordingChooser, once per test process, and returns it as a fuzz input
+// (the family byte, then the recorded choices) with its classes.
+func record(tb testing.TB, r reachSeed) recorded {
+	tb.Helper()
+	recordedMu.Lock()
+	defer recordedMu.Unlock()
+	if out, ok := recordedCache[r]; ok {
+		return out
+	}
+	c := &recordingChooser{rand: newRandChooser(uint64(r.family), uint64(r.seed))}
+	classes, ok := runSequence(tb, c, seqOptions{
+		family: r.family, ops: diffOps,
+		label: fmt.Sprintf("family %s seed %d (recorded)", familyNames[r.family], r.seed),
+	})
+	if !ok {
+		tb.Fatalf("recording family %s seed %d failed", familyNames[r.family], r.seed)
+	}
+	out := recorded{input: append([]byte{byte(r.family)}, c.data...), classes: classes}
+	recordedCache[r] = out
+	return out
+}
+
 // fuzzSeeds is the seed corpus of both fuzz targets: the first byte picks
-// the family, the rest are choices.
-func fuzzSeeds() [][]byte {
+// the family, the rest are choices. It holds 8 random inputs and the
+// recorded streams of reachCorpus.
+func fuzzSeeds(tb testing.TB) [][]byte {
+	tb.Helper()
 	var seeds [][]byte
 	for i := 0; i < 8; i++ {
 		r := rand.New(rand.NewPCG(0xf0220008, uint64(i)))
@@ -118,6 +200,9 @@ func fuzzSeeds() [][]byte {
 			data[j] = byte(r.Uint32())
 		}
 		seeds = append(seeds, data)
+	}
+	for _, r := range reachCorpus {
+		seeds = append(seeds, record(tb, r).input)
 	}
 	return seeds
 }
@@ -223,6 +308,9 @@ func classify(s *step, pre, post *view, out outcome) []string {
 	case opEnd:
 		m := s.msg.(*leasesv1.MsgEndLease)
 		lease := pre.leases[m.GetLeaseId()]
+		if out.code == msgkit.Unauthorized && staleEnd(s, pre, lease) {
+			label += "(D-12)"
+		}
 		if out.code == msgkit.Underflow && lease != nil {
 			switch lease.GetState() {
 			case leasesv1.LeaseState_LEASE_STATE_ENDED:
@@ -281,14 +369,40 @@ func offerDetail(m *leasesv1.MsgOfferLease, pre *view, code msgkit.Code, tag str
 			return "(D-5)"
 		case pre.contentOpen[m.GetContentId()] >= leases.MaxOpenOffersPerContent:
 			return "(D-6)"
+		case pre.schedulerOpen(m.GetContentId(), m.GetSigner()) >= leases.MaxOpenOffersPerContentPerScheduler:
+			return "(D-10)"
 		}
 		return "(unexplained)"
+	case msgkit.Forbidden:
+		// A committed business id ends every offer at the gate (REPLAY or
+		// idempotent), before the provider check, so an admitted service's
+		// FORBIDDEN under a committed business id is D-11: an idempotent
+		// replay of another scheduler's offer.
+		if roleTable()[string(m.GetSigner())] == typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE &&
+			slices.Contains(pre.businessIDs, m.GetBusinessId()) {
+			return "(D-11)"
+		}
 	case msgkit.Malformed:
 		if tag == "huge int" {
 			return "(huge int)"
 		}
 	}
 	return ""
+}
+
+// staleEnd reports a provider end whose signature passes every check of
+// the abstract signature (domain, valid, the provider's current key id)
+// but binds another term version than the lease's current one (D-12).
+func staleEnd(s *step, pre *view, lease *leasesv1.Lease) bool {
+	m := s.msg.(*leasesv1.MsgEndLease)
+	abstract, ok := s.spec["provider_signature"].(map[string]any)
+	if m.GetAuthorityEnd() || !ok || lease == nil {
+		return false
+	}
+	return abstract["term_version"] != lease.GetTermVersion() &&
+		abstract["domain"] == domainName(typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END) &&
+		abstract["valid"] == true &&
+		abstract["key_id"] == pre.providers[lease.GetProviderId()].GetSigningKeyId()
 }
 
 func acceptDetail(s *step, pre *view, code msgkit.Code) string {
@@ -306,6 +420,12 @@ func acceptDetail(s *step, pre *view, code msgkit.Code) string {
 		switch {
 		case !relay:
 			return "(role)"
+		case role == typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER && slices.Contains(pre.businessIDs, m.GetBusinessId()):
+			// A committed business id ends every acceptance at the gate
+			// (REPLAY or idempotent) before the offer lookup, so a
+			// provider account's FORBIDDEN under it is D-13: an
+			// idempotent replay of another provider's acceptance.
+			return "(D-13)"
 		case role == typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER && offer != nil &&
 			string(m.GetSigner()) != string(pre.providers[offer.GetProviderId()].GetAccount()):
 			return "(account)"
@@ -368,10 +488,15 @@ func blockDetail(pre, post *view, out outcome) string {
 	return "idle"
 }
 
+// deviationRules are the chain deviations the oracle adapter applies
+// (chain/x/leases README). The others are not adapter rules: D-1 and D-8
+// are generator rules, D-7 and D-9 change no outcome the comparison sees.
+var deviationRules = []string{"D-2", "D-3", "D-4", "D-5", "D-6", "D-10", "D-11", "D-12", "D-13"}
+
 // classDeviation is the deviation rule a step's classes name, or "".
 func classDeviation(classes []string) string {
 	for _, class := range classes {
-		for _, rule := range []string{"D-2", "D-3", "D-4", "D-5", "D-6"} {
+		for _, rule := range deviationRules {
 			if strings.HasSuffix(class, "("+rule+")") {
 				return rule
 			}

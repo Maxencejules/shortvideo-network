@@ -1,0 +1,45 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh go test -count=1 -v -timeout 20m -run \^TestDevnetQuorumFollowsVotingPower\$ ./chain/devnet/
+DATE 2026-11-01T20:35:32Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+=== RUN   TestDevnetQuorumFollowsVotingPower
+phase=power-plan height=3 activation=103 effective=105
+phase=power-executed height=16 activation=103
+phase=power-set effective-1=104 powers=v1:10,v2:10,v3:10,v4:10 effective=105 powers=v1:10,v2:10,v3:2,v4:10,v5:1
+phase=power-case-X stopped=v3 running=v1,v2,v4 height_from=105
+phase=power-commit height=107 signers=v1,v2,v4 signed_power=30 total_power=33
+phase=power-commit height=108 signers=v1,v2,v4 signed_power=30 total_power=33
+phase=power-vs-count case=X offline=v3,v5 online_power=30 total_power=33 online_validators=3 validators=5 count_rule=stall power_rule=progress observed=progress height_from=105 height_to=108 set_height=108 online_from=commit-signers
+phase=power-vs-count-recovery case=X nodes=4 up=120 reached=122
+phase=power-vs-count-live case=X heights=121..122 signed=v1,v2,v3,v4
+phase=power-case-Y stopped=v1 running=v2,v3,v4 height_from=122
+phase=power-case-Y probe=no-agreement-above from=122 target=125 window=30s
+phase=power-case-Y sample=0 node=0 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=0 node=1 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=0 node=2 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=1 node=0 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=1 node=1 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=1 node=2 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=2 node=0 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=2 node=1 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=2 node=2 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=3 node=0 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=3 node=1 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=3 node=2 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=4 node=0 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=4 node=1 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=4 node=2 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=5 node=0 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=5 node=1 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y sample=5 node=2 height=122 app_hash=30D7D7F3FF60533F062309854DD4F82911FBE2B2A7EF4B3CF69C33006D2DD986
+phase=power-case-Y-voters node=0 height=123 round=0 voters=v2,v3,v4 stopped=v1 stopped_vote=false voter_power=22 total_power=33
+phase=power-case-Y-voters node=1 height=123 round=0 voters=v2,v3,v4 stopped=v1 stopped_vote=false voter_power=22 total_power=33
+phase=power-case-Y-voters node=2 height=123 round=0 voters=v2,v3,v4 stopped=v1 stopped_vote=false voter_power=22 total_power=33
+phase=power-vs-count case=Y offline=v1,v5 online_power=22 total_power=33 online_validators=3 validators=5 count_rule=stall power_rule=stall observed=stall height_from=122 height_to=122 set_height=123 online_from=stuck-height-votes
+phase=power-vs-count-recovery case=Y nodes=4 up=123 reached=125
+phase=power-vs-count-live case=Y heights=124..125 signed=v1,v2,v3,v4
+--- PASS: TestDevnetQuorumFollowsVotingPower (77.92s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	77.954s
+EXIT:0

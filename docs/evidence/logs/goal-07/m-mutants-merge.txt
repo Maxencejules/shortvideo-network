@@ -1,0 +1,42 @@
+COMMAND .venv/bin/python docs/evidence/goal-07/mutants.py --group merge
+DATE 2026-11-02T04:35:19Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+revision HEAD commit b782e0149e1a70758b81b29929d12eab0da8a006 tree f07ac7f6113f45a97167cf9c8139fb712227490e
+copy /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/tmp/goal07-mutants-h61x2ykq/tree (git archive)
+mutants 14 of 19 (goal07=0, merge=14)
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+command merge: SVN_SKIP_DEVNET=1 go test -count=1 -timeout 10m ./chain/x/authority/ ./chain/app/ ./chain/genesis/ ./chain/x/content/ ./chain/x/providers/ ./chain/cmd/svnd/
+CONTROL merge PASS exit=0 secs=129.2
+KILLED doc-seat-rule-off group=merge exit=1 secs=23.2 file=chain/genesis/document.go failing=TestSeatAddressIsBroadcasterOnly TestSeatAddressIsBroadcasterOnly/document_AUTHORITY TestSeatAddressIsBroadcasterOnly/InitChain_AUTHORITY TestSeatAddressIsBroadcasterOnly/document_ADMITTED_SERVICE TestSeatAddressIsBroadcasterOnly/InitChain_ADMITTED_SERVICE TestSeatAddressIsBroadcasterOnly/document_A
+    reason: genesis.Validate must refuse a seat address listed with a role other than BROADCASTER
+KILLED auth-seat-rule-off group=merge exit=1 secs=22.1 file=chain/x/authority/genesis.go failing=TestValidateGenesisState TestSeatAddressIsBroadcasterOnly TestSeatAddressIsBroadcasterOnly/InitChain_AUTHORITY TestSeatAddressIsBroadcasterOnly/InitChain_ADMITTED_SERVICE TestSeatAddressIsBroadcasterOnly/InitChain_ADMITTED_PROVIDER TestSeatAddressIsBroadcasterOnly/InitChain_AUDITOR
+    reason: authority ValidateGenesisState must refuse a seat address with a role other than BROADCASTER
+KILLED auth-seat-rule-allows-auditor group=merge exit=1 secs=22.7 file=chain/x/authority/genesis.go failing=TestValidateGenesisState TestSeatAddressIsBroadcasterOnly TestSeatAddressIsBroadcasterOnly/InitChain_AUDITOR
+    reason: authority ValidateGenesisState must refuse a seat address listed as AUDITOR
+KILLED doc-seat-rule-case-sensitive group=merge exit=1 secs=23.8 file=chain/genesis/document.go failing=TestSeatAddressRole TestSeatAddressRole/AUTHORITY_upper-case_address TestSeatAddressRole/ADMITTED_SERVICE_upper-case_address TestSeatAddressRole/ADMITTED_PROVIDER_upper-case_address TestSeatAddressRole/AUDITOR_upper-case_address
+    reason: genesis.Validate must match a seat address case-insensitively
+KILLED doc-seat-address-wrong group=merge exit=1 secs=22.9 file=chain/genesis/document.go failing=TestSeatAddressMatchesGenesis TestSeatAddressIsBroadcasterOnly TestSeatAddressIsBroadcasterOnly/document_AUTHORITY TestSeatAddressIsBroadcasterOnly/InitChain_AUTHORITY TestSeatAddressIsBroadcasterOnly/document_ADMITTED_SERVICE TestSeatAddressIsBroadcasterOnly/InitChain_ADMITTED_SERVICE TestSeatAddre
+    reason: genesis.SeatAddress must derive the same address as the authority engine
+KILLED export-no-catalogue-check group=merge exit=1 secs=20.9 file=chain/app/state.go failing=TestLaunchGenesisRejectsNonEmptyCatalog TestExportRefusesANonEmptyCatalogue TestExportRefusesANonEmptyCatalogue/provider_only TestExportRefusesANonEmptyCatalogue/content_only
+    reason: App.Export must refuse a non-empty provider or content catalogue
+KILLED peer-integrity-to-replay group=merge exit=1 secs=21.0 file=chain/x/authority/engine.go failing=TestDamagedRecordIsIntegrity TestKeeperMalformedPeerBusinessDigestIsIntegrity TestKeeperMalformedPeerBusinessDigestIsIntegrity/31_bytes TestKeeperMalformedPeerBusinessDigestIsIntegrity/33_bytes TestKeeperMalformedPeerBusinessDigestIsIntegrity/empty TestKeeperMalformedPeerBusinessDigestIsIntegrity/ni
+    reason: a business-id value that is not 32 bytes must be INTEGRITY, not REPLAY
+KILLED peer-empty-is-free group=merge exit=1 secs=22.3 file=chain/x/authority/engine.go failing=TestKeeperMalformedPeerBusinessDigestIsIntegrity TestKeeperMalformedPeerBusinessDigestIsIntegrity/nil
+    reason: a nil peer business-id value must be INTEGRITY, not a free id
+KILLED content-accepts-broadcaster group=merge exit=1 secs=20.7 file=chain/x/content/msg_server.go failing=TestRegistryMessagesRejectOtherRoles
+    reason: RegisterContent and WithdrawContent must be FORBIDDEN to a BROADCASTER signer
+KILLED msg-keep-writes-registry group=merge exit=1 secs=21.5 file=chain/x/authority/msg.go failing=TestKeeperRegistryForbiddenKeepsTheRejection TestKeeperRegistryForbiddenKeepsTheRejection/admit TestKeeperRegistryForbiddenKeepsTheRejection/disable TestKeeperRegistryForbiddenKeepsTheRejection/force_withdraw
+    reason: a keep outcome (EXPIRED or REJECTED mark) must drop the registry branch
+KILLED msg-hooks-on-message-branch group=merge exit=1 secs=20.5 file=chain/x/authority/msg.go failing=TestKeeperRegistryForbiddenKeepsTheRejection TestKeeperRegistryForbiddenKeepsTheRejection/admit TestKeeperRegistryForbiddenKeepsTheRejection/disable TestKeeperRegistryForbiddenKeepsTheRejection/force_withdraw
+    reason: the registry hooks must write to a cache nested in the message branch, not the message branch
+KILLED msg-hooks-on-tx-context group=merge exit=1 secs=20.2 file=chain/x/authority/msg.go failing=TestKeeperRegistryForbiddenKeepsTheRejection TestKeeperRegistryForbiddenKeepsTheRejection/admit TestKeeperRegistryForbiddenKeepsTheRejection/disable TestKeeperRegistryForbiddenKeepsTheRejection/force_withdraw TestKeeperRegistryFailureWritesNothing TestKeeperRegistryFailureWritesNothing/admit/ERROR_C
+    reason: the registry hooks must not write to the transaction context
+KILLED msg-success-skips-registry-write group=merge exit=1 secs=20.6 file=chain/x/authority/msg.go failing=TestKeeperRegistryHookCommitsOnlyOnSuccess TestKeeperForceWithdrawArgumentsSurviveTheRecord TestMigrationsNoOpInApp TestRegistryMigrationPathInApp TestRegistryMigrationPathInApp/providers TestRegistryMigrationPathInApp/content TestRegistryEventSchemas TestNoPrivateDataInStateOrEvents TestRegistryFlo
+    reason: a successful execute must write the registry branch
+KILLED msg-simulate-skip-removed group=merge exit=1 secs=20.8 file=chain/x/authority/msg.go failing=TestEnforceCommitted TestHandlerMeterCheckByMode TestSimulateEstimatesGas
+    reason: simulation must skip the meter-limit check so a client can estimate gas
+RESULT mutants=14 killed=14
+EXIT:0

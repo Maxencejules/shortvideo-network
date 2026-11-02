@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -18,7 +19,9 @@ import (
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	cmttypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/store/v2/rootmulti"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -107,9 +110,11 @@ func (d *demo) renewMsg(who loaded, bid, leaseID, providerID, contentID string, 
 	}
 }
 
-func (d *demo) endMsg(who loaded, bid, leaseID, providerID string) *leasesv1.MsgEndLease {
+// endMsg is a provider-signed end; termVersion is the lease's term version
+// when the provider signs (the payload binds it, D-12).
+func (d *demo) endMsg(who loaded, bid, leaseID, providerID string, termVersion uint64) *leasesv1.MsgEndLease {
 	d.t.Helper()
-	signBytes, err := leases.EndSignBytes(leaseID, providerID)
+	signBytes, err := leases.EndSignBytes(leaseID, providerID, termVersion)
 	if err != nil {
 		d.t.Fatal(err)
 	}
@@ -565,6 +570,20 @@ func TestDevnetLeaseLifecycle(t *testing.T) {
 		ack1.Hash, r1.Height, ev1, ack2.Hash, r2.Height, ev2, sizeOne)
 	d.reject("changed-payload-same-business-id", d.broadcaster, d.acceptMsg(d.broadcaster, "ac-la", oa, "la-2", d.keys["p1"]), msgkit.Replay)
 
+	// A council seat key is not a relay (DR-06-06). Its acceptance, with a
+	// valid provider signature, is refused by CheckTx on the node with
+	// ERROR_CODE_FORBIDDEN, so it never enters a block; the seat's sequence
+	// does not move.
+	seatRaw := d.signMulti(d.seats[0], 2_000_000, d.acceptMsg(d.seats[0], "ac-seat", oa, "l-seat", d.keys["p1"]))
+	seatAck, err := d.broadcastSync(d.clients[0], seatRaw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if seatAck.Codespace != "svn" || seatAck.Code != uint32(typesv1.ErrorCode_ERROR_CODE_FORBIDDEN) || !strings.Contains(seatAck.Log, "a council seat key may sign only") {
+		t.Fatalf("seat-signed acceptance: CheckTx %s/%d %s", seatAck.Codespace, seatAck.Code, seatAck.Log)
+	}
+	fmt.Printf("phase=seat-relay-refused seat=seat-1 checktx=%s/%d\n", seatAck.Codespace, seatAck.Code)
+
 	// Phase 4: the client's node is down. The broadcast to v4 fails, the
 	// same signed bytes commit once through v1, a later rebroadcast is
 	// refused, and v4 catches up after its restart.
@@ -625,14 +644,14 @@ func TestDevnetLeaseLifecycle(t *testing.T) {
 		d.acceptMsg(d.broadcaster, "ac-lb", ob, "lb", d.keys["p1"]),
 		d.acceptMsg(d.broadcaster, "ac-lc", oc, "lc", d.keys["p1"]),
 		d.acceptMsg(d.broadcaster, "ac-lw", ow, "lw", d.keys["p1"]))
-	end := d.endMsg(d.provider1, "en-lb", "lb", "p1")
+	end := d.endMsg(d.provider1, "en-lb", "lb", "p1", 1)
 	d.commit("provider-end-lb", d.provider1, end)
 	endRetry := d.send(d.provider1, end)
 	if endRetry.deliver.Code != 0 || fmt.Sprint(eventTypes(endRetry.deliver)) != "[leases_result]" {
 		t.Fatalf("end retry: %d %v", endRetry.deliver.Code, eventTypes(endRetry.deliver))
 	}
 	fmt.Printf("phase=end-retry height=%d code=0 events=[leases_result]\n", endRetry.height)
-	d.reject("end-again-new-business-id", d.provider1, d.endMsg(d.provider1, "en-lb-2", "lb", "p1"), msgkit.Underflow)
+	d.reject("end-again-new-business-id", d.provider1, d.endMsg(d.provider1, "en-lb-2", "lb", "p1", 1), msgkit.Underflow)
 	d.commit("authority-end-lc", d.authority, d.authorityEndMsg("en-lc", "lc"))
 	d.reject("duplicate-replica", d.service, d.offerMsg("of-dup", "o-dup", "c1", "p1", sizeOne, far, offerExpiry), msgkit.DuplicateID)
 	serviceKey := ed25519Key{id: d.keys["p2"].id, priv: d.intent.priv}
@@ -799,6 +818,28 @@ func TestDevnetLeaseLifecycle(t *testing.T) {
 	d.scanEvents(fixed)
 }
 
+// lastCommittedHeight is the highest committed application version in the
+// stores of the stopped validators (rootmulti.GetLatestVersion of each
+// application.db; svnd node.Start opens it under <home>/data). Every
+// validator must be stopped.
+func lastCommittedHeight(t *testing.T, layout devnet.Layout) int64 {
+	t.Helper()
+	var highest int64
+	for _, v := range layout.Topology.Validators {
+		db, err := dbm.NewDB("application", dbm.GoLevelDBBackend, filepath.Join(v.Home, "data"))
+		if err != nil {
+			t.Fatalf("open %s application store: %v", v.Name, err)
+		}
+		height := rootmulti.GetLatestVersion(db)
+		if err := db.Close(); err != nil {
+			t.Fatalf("close %s application store: %v", v.Name, err)
+		}
+		fmt.Printf("phase=halt-stored validator=%s committed_height=%d\n", v.Name, height)
+		highest = max(highest, height)
+	}
+	return highest
+}
+
 func firstLine(s string) string {
 	if i := strings.IndexByte(s, '\n'); i >= 0 {
 		return s[:i]
@@ -836,10 +877,9 @@ func TestDevnetLeaseHaltRestart(t *testing.T) {
 	offline := d.renewMsg(d.broadcaster, "rn-l1-offline", "l1", "p1", "c1", sizeOne, 2, deadline+devnetTerm)
 	fmt.Printf("phase=offline-renewal-signed lease=l1 deadline=%d broadcast=false\n", deadline)
 
-	haltHeight := d.height()
-	haltTime := d.blockTime(haltHeight)
-	if haltTime >= deadline || !contains(d.heldOn(d.clients[0], "p1", haltHeight), "l1") {
-		t.Fatalf("at the halt height %d (header time %d) l1 must be held before its deadline %d", haltHeight, haltTime, deadline)
+	stopBegan := d.height()
+	if d.blockTime(stopBegan) >= deadline || !contains(d.heldOn(d.clients[0], "p1", stopBegan), "l1") {
+		t.Fatalf("at height %d, when the stops begin, l1 must be held before its deadline %d", stopBegan, deadline)
 	}
 	for i, stop := range stops {
 		if err := stop(); err != nil {
@@ -847,7 +887,15 @@ func TestDevnetLeaseHaltRestart(t *testing.T) {
 		}
 		stops[i] = nil
 	}
-	fmt.Printf("phase=halt stopped=4 last_height=%d header_time=%d deadline=%d\n", haltHeight, haltTime, deadline)
+	// Blocks can still commit while the first validators stop (three of
+	// four keep a quorum), so the last pre-halt height is measured after
+	// all four stopped: the highest committed application version in the
+	// validators' stores. Its header time is read after the restart.
+	haltHeight := lastCommittedHeight(t, layout)
+	if haltHeight < stopBegan {
+		t.Fatalf("stored height %d is below the height %d seen before the stops", haltHeight, stopBegan)
+	}
+	fmt.Printf("phase=halt stopped=4 height_before_stop_began=%d last_committed_height=%d deadline=%d\n", stopBegan, haltHeight, deadline)
 	for time.Now().Unix() <= deadline+5 {
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -860,6 +908,10 @@ func TestDevnetLeaseHaltRestart(t *testing.T) {
 	}
 	if _, _, err := devnet.WaitEqual(rpcs, haltHeight+3, 90*time.Second); err != nil {
 		t.Fatal(tail(layout, err))
+	}
+	haltTime := d.blockTime(haltHeight)
+	if haltTime >= deadline || !contains(d.heldOn(d.clients[0], "p1", haltHeight), "l1") {
+		t.Fatalf("at the last pre-halt height %d (header time %d) l1 must be held before its deadline %d", haltHeight, haltTime, deadline)
 	}
 	d.waitChainTime(deadline, 60*time.Second)
 	effective := d.effectiveExpiry(acceptHeight, deadline, []expiryItem{{"lease", "l1"}})

@@ -22,8 +22,9 @@ on stdout.
 reset config: chain_time, term_seconds (an integer, or null for a chain
 without the DEC-005 devnet number), governed (governed limit values),
 submitters (lowercase hex account -> role name),
-max_offer_lifetime_seconds and max_open_offers_per_content (the chain
-constants of deviations D-5 and D-6).
+max_offer_lifetime_seconds, max_open_offers_per_content, and
+max_open_offers_per_content_per_scheduler (the chain constants of deviations
+D-5, D-6, and D-10).
 
 A transaction step is a spec_machine step dict (OfferLease, AcceptLease,
 RenewLease, EndLease, RegisterProvider, UpdateProvider, RotateProviderKey,
@@ -34,14 +35,25 @@ ExpireDue with the max_expiry_steps ceiling), CouncilAdmit, CouncilDisable,
 CouncilForceWithdraw (apply_proposal_payload, kept only on success), and
 SeedProvider (a direct provider record insert, like cases.py seed_admitted).
 
+An EndLease provider_signature may carry "term_version", the lease term
+version the Go side's signature binds (chain/x/leases payload
+SVN-PROVIDER-END-1). It is not a spec_machine.py field: the adapter always
+removes it before the step reaches spec_machine.py.
+
 The step response is {"code", "idempotent", "events", "deviation",
 "projection"}. code is "ok" or an ERROR_CODE_* name. events lists the
 svn.events.v1 events of the step as {"type", "id"}. deviation names the chain
-deviation rule (D-2 to D-6 of chain/x/leases/README.md) that turned a spec
-success into the chain's rejection, or null. The rules apply only to a
-non-idempotent spec success, in the chain's order, and discard the step. No
-other semantics live in this adapter. A request it cannot read returns
-{"error": "..."}.
+deviation rule (D-2 to D-6 and D-10 to D-13 of chain/x/leases/README.md) that
+changed the spec's outcome into the chain's rejection, or null. D-2 to D-6 and
+D-10 apply only to a non-idempotent spec success, in the chain's order; D-11
+applies only to an idempotent OfferLease success whose signer is not the
+scheduler that committed the offer; D-13 only to an idempotent AcceptLease
+success whose ADMITTED_PROVIDER signer is not the account of the lease's
+provider. D-12 marks a provider EndLease signature that spec_machine.py's
+check_signature would accept but that binds another term version than the
+lease's current one as invalid, so the step is UNAUTHORIZED at the signature
+check. Every rule discards the step. No other semantics live in this
+adapter. A request it cannot read returns {"error": "..."}.
 """
 
 from __future__ import annotations
@@ -90,6 +102,7 @@ CONFIG_KEYS: Final = frozenset(
         "submitters",
         "max_offer_lifetime_seconds",
         "max_open_offers_per_content",
+        "max_open_offers_per_content_per_scheduler",
     }
 )
 SEED_KEYS: Final = frozenset(
@@ -108,7 +121,9 @@ SEED_KEYS: Final = frozenset(
 )
 DUPLICATE_ID: Final = "ERROR_CODE_DUPLICATE_ID"
 BOUNDS_CODE: Final = "ERROR_CODE_BOUNDS"
+FORBIDDEN: Final = "ERROR_CODE_FORBIDDEN"
 EXPIRED: Final = "ERROR_CODE_EXPIRED"
+UNAUTHORIZED: Final = "ERROR_CODE_UNAUTHORIZED"
 
 
 class RequestError(ValueError):
@@ -257,14 +272,17 @@ def projection(state: JSON) -> JSON:
 
 
 class Oracle:
-    """spec_machine.py state plus the chain deviation rules D-2 to D-6."""
+    """spec_machine.py state plus the chain deviation rules D-2 to D-6, D-10 to D-13."""
 
     def __init__(self) -> None:
         self.state: JSON | None = None
-        self.used_offer_ids: set[str] = set()
+        # Every offer id an OfferLease committed, with its scheduler (the
+        # chain's used-offer marker).
+        self.used_offer_ids: dict[str, str] = {}
         self.deviations = True
         self.max_offer_lifetime = 0
         self.max_open_offers_per_content = 0
+        self.max_open_offers_per_content_per_scheduler = 0
 
     def reset(self, config: JSON, disable_deviations: bool) -> JSON:
         need_keys(config, CONFIG_KEYS, "config")
@@ -300,10 +318,16 @@ class Oracle:
         self.max_open_offers_per_content = need_int(
             config["max_open_offers_per_content"], "max_open_offers_per_content", 1, sm.SAFE_MAX
         )
+        self.max_open_offers_per_content_per_scheduler = need_int(
+            config["max_open_offers_per_content_per_scheduler"],
+            "max_open_offers_per_content_per_scheduler",
+            1,
+            sm.SAFE_MAX,
+        )
         if not isinstance(disable_deviations, bool):
             raise RequestError("disable_deviations must be a boolean")
         self.deviations = not disable_deviations
-        self.used_offer_ids = set()
+        self.used_offer_ids = {}
         self.state = state
         return {"ok": True, "projection": projection(state)}
 
@@ -338,25 +362,74 @@ class Oracle:
     def transaction(self, step: JSON) -> JSON:
         pre = self.current()
         before = len(pre["events"])
+        step, stale_end = self.end_binding(pre, step)
         trial = copy.deepcopy(pre)
         result = sm.dispatch_tx(trial, step)
         ok = bool(result["ok"])
         idempotent = bool(result["idempotent"])
         code = "ok" if ok else str(result["error"])
+        if stale_end:
+            if code != UNAUTHORIZED:
+                raise RequestError(f"D-12 signature reached {code}, not the signature check")
+            return self.respond(code, False, [], "D-12")
         deviation = None
         if ok and not idempotent and self.deviations:
             rule = self.deviation(pre, step)
             if rule is not None:
                 deviation, code = rule
+        if ok and idempotent and self.deviations and step["op"] == "OfferLease":
+            # D-11: the idempotent success goes only to the offer's scheduler.
+            if self.used_offer_ids.get(step["offer_id"]) != step["signer"]:
+                return self.respond(FORBIDDEN, False, [], "D-11")
+        if ok and idempotent and self.deviations and step["op"] == "AcceptLease":
+            # D-13: an ADMITTED_PROVIDER account gets the idempotent success
+            # only for its own provider's lease; a BROADCASTER relays for all.
+            if not self.accept_replay_allowed(pre, step):
+                return self.respond(FORBIDDEN, False, [], "D-13")
         if not result["keep"] or deviation is not None:
             return self.respond(code, False, [], deviation)
         self.state = trial
         if step["op"] == "OfferLease" and ok and not idempotent:
-            self.used_offer_ids.add(step["offer_id"])
+            self.used_offer_ids[step["offer_id"]] = step["signer"]
         return self.respond(code, idempotent, trial["events"][before:], None)
 
+    def end_binding(self, pre: JSON, step: JSON) -> tuple[JSON, bool]:
+        """D-12: a provider end signature binds the lease's term version.
+
+        Returns the step without the "term_version" signature field, and
+        whether the rule marked the signature invalid: rules on, a provider
+        end of an existing lease, a signature check_signature would accept,
+        and a term version other than the lease's current one.
+        """
+        sig = step.get("provider_signature")
+        if step.get("op") != "EndLease" or not isinstance(sig, dict) or "term_version" not in sig:
+            return step, False
+        signed = need_int(sig["term_version"], "term_version", 1, sm.SAFE_MAX)
+        plain = {name: value for name, value in sig.items() if name != "term_version"}
+        step = {**step, "provider_signature": plain}
+        if not self.deviations or step.get("authority_end") is not False:
+            return step, False
+        lease = pre["leases"].get(step.get("lease_id"))
+        if lease is None or signed == lease["term_version"]:
+            return step, False
+        provider = pre["providers"][lease["provider_id"]]
+        if sm.check_signature(plain, sm.END_DOMAIN, provider["signing_key_id"]) is not None:
+            return step, False
+        step["provider_signature"] = {**plain, "valid": False}
+        return step, True
+
+    def accept_replay_allowed(self, pre: JSON, step: JSON) -> bool:
+        """D-13: who gets an idempotent AcceptLease success."""
+        record = pre["submitters"].get(step["signer"])
+        if record is None or record["role"] != "ADMITTED_PROVIDER":
+            return True
+        lease = pre["leases"].get(step["lease_id"])
+        if lease is None:
+            return False
+        return bool(pre["providers"][lease["provider_id"]]["account"] == step["signer"])
+
     def deviation(self, pre: JSON, step: JSON) -> tuple[str, str] | None:
-        """The chain-only checks that run after every spec check (README D-2..D-6)."""
+        """The chain-only checks that run after every spec check (README D-2..D-6, D-10)."""
         now = pre["chain_time"]
         op = step["op"]
         if op == "OfferLease":
@@ -368,6 +441,13 @@ class Oracle:
             open_offers = sum(1 for o in pre["offers"].values() if o["content_id"] == content_id)
             if open_offers >= self.max_open_offers_per_content:
                 return "D-6", BOUNDS_CODE
+            own = sum(
+                1
+                for o in pre["offers"].values()
+                if o["content_id"] == content_id and o["scheduler"] == step["signer"]
+            )
+            if own >= self.max_open_offers_per_content_per_scheduler:
+                return "D-10", BOUNDS_CODE
         elif op == "AcceptLease":
             if pre["offers"][step["offer_id"]]["deadline_unix_seconds"] <= now:
                 return "D-3", EXPIRED
@@ -483,6 +563,10 @@ def stream() -> int:
 T = sm.CHAIN_TIME
 TERM = sm.TERM_SECONDS
 P1_KEY = "key-p1"
+# A second admitted service and a second provider account (not
+# spec_machine.py accounts).
+SERVICE2 = sm.addr(0x12)
+PROVIDER2_ACCOUNT = sm.addr(0x34)
 
 
 def self_config(max_expiry_steps: int) -> JSON:
@@ -492,20 +576,31 @@ def self_config(max_expiry_steps: int) -> JSON:
         "governed": {"max_expiry_steps": max_expiry_steps},
         "submitters": {
             sm.SERVICE: "ADMITTED_SERVICE",
+            SERVICE2: "ADMITTED_SERVICE",
             sm.BROADCASTER: "BROADCASTER",
             sm.PROVIDER_ACCOUNT: "ADMITTED_PROVIDER",
+            PROVIDER2_ACCOUNT: "ADMITTED_PROVIDER",
             sm.AUTHORITY: "AUTHORITY",
         },
         "max_offer_lifetime_seconds": 86400,
-        "max_open_offers_per_content": 2,
+        "max_open_offers_per_content": 3,
+        "max_open_offers_per_content_per_scheduler": 2,
     }
 
 
-def offer_step(offer_id: str, content_id: str, deadline: int, expiry: int, business: str) -> JSON:
+def offer_step(
+    offer_id: str,
+    content_id: str,
+    deadline: int,
+    expiry: int,
+    business: str,
+    signer: str = sm.SERVICE,
+) -> JSON:
     step = sm.offer(offer_id, content_id=content_id, expiry=expiry)
     step["start_unix_seconds"] = deadline - TERM
     step["deadline_unix_seconds"] = deadline
     step["business_id"] = business
+    step["signer"] = signer
     return step
 
 
@@ -523,14 +618,16 @@ def renew_step(lease_id: str, term_version: int, deadline: int, business: str) -
     }
 
 
-def end_step(lease_id: str, business: str) -> JSON:
+def end_step(lease_id: str, business: str, term_version: int) -> JSON:
+    signature = sm.signature(sm.END_DOMAIN, P1_KEY)
+    signature["term_version"] = term_version
     return {
         "op": "EndLease",
         "signer": sm.BROADCASTER,
         "business_id": business,
         "lease_id": lease_id,
         "authority_end": False,
-        "provider_signature": sm.signature(sm.END_DOMAIN, P1_KEY),
+        "provider_signature": signature,
     }
 
 
@@ -564,9 +661,15 @@ def self_trace() -> list[Case]:
         # D-5: an offer lives at most max_offer_lifetime_seconds.
         (offer_step("o9", "c2", T + TERM, T + 86401, "b-o9"), BOUNDS_CODE, "D-5"),
         (offer_step("o8", "c2", T + TERM, T + 86400, "b-o8"), "ok", None),
-        # D-6: at most max_open_offers_per_content (2 here) open offers.
+        # D-10: one scheduler holds at most 2 (here) open offers of a content.
         (offer_step("o2", "c2", T + TERM, T + 500, "b-o2"), "ok", None),
-        (offer_step("o3", "c2", T + TERM, T + 500, "b-o3"), BOUNDS_CODE, "D-6"),
+        (offer_step("o4", "c2", T + TERM, T + 500, "b-o4"), BOUNDS_CODE, "D-10"),
+        # D-6: at most max_open_offers_per_content (3 here) open offers.
+        (offer_step("o3", "c2", T + TERM, T + 500, "b-o3", SERVICE2), "ok", None),
+        (offer_step("o10", "c2", T + TERM, T + 500, "b-o10", SERVICE2), BOUNDS_CODE, "D-6"),
+        # D-11: an identical replay by another scheduler is not idempotent.
+        (offer_step("o3", "c2", T + TERM, T + 500, "b-o3"), FORBIDDEN, "D-11"),
+        (offer_step("o3", "c2", T + TERM, T + 500, "b-o3", SERVICE2), "ok", None),
         # D-3: an offer whose deadline passed cannot be accepted.
         (offer_step("o5", "c3", T + 10, T + 100, "b-o5"), "ok", None),
         (offer_step("o6", "c4", T + 20, T + 100, "b-o6"), "ok", None),
@@ -579,11 +682,18 @@ def self_trace() -> list[Case]:
         ({"op": "Block", "header_time": T + 20}, "ok", None),
         # D-2: a held lease past its deadline cannot renew, swept or not.
         (renew_step("l7", 2, T + 20 + TERM, "b-r7"), EXPIRED, "D-2"),
-        (end_step("l6", "b-e6"), "ERROR_CODE_UNDERFLOW", None),
-        (end_step("l1", "b-e1"), "ok", None),
-        (end_step("l1", "b-e1"), "ok", None),
-        (end_step("l1", "b-e1b"), "ERROR_CODE_UNDERFLOW", None),
+        (end_step("l6", "b-e6", 1), "ERROR_CODE_UNDERFLOW", None),
+        # D-12: an end signed for term 1 does not end l1, renewed to term 2.
+        (end_step("l1", "b-e1-stale", 1), UNAUTHORIZED, "D-12"),
+        (end_step("l1", "b-e1", 2), "ok", None),
+        (end_step("l1", "b-e1", 2), "ok", None),
+        (end_step("l1", "b-e1b", 2), "ERROR_CODE_UNDERFLOW", None),
         ({"op": "Block", "header_time": T + 30}, "ok", None),
+        # D-13: an acceptance replay goes to a BROADCASTER or the lease's
+        # provider account, not to another provider's account.
+        ({**accept_l1, "signer": PROVIDER2_ACCOUNT}, FORBIDDEN, "D-13"),
+        ({**accept_l1, "signer": sm.PROVIDER_ACCOUNT}, "ok", None),
+        (accept_l1, "ok", None),
     ]
 
 
@@ -598,6 +708,18 @@ def disabled_trace() -> list[Case]:
         # Due at T+20: l5 (T+10) and l6 (T+20); budget 1 sweeps l5 only.
         ({"op": "Block", "header_time": T + 20}, "ok", None),
         (renew_step("l6", 2, T + 20 + TERM, "b-r6"), "ok", None),
+    ]
+
+
+def disabled_binding_trace() -> list[Case]:
+    """D-12 and D-13 cases that a run without the rules accepts."""
+    accept_l1 = accept_step("o1", "l1")
+    return setup_trace() + [
+        (offer_step("o1", "c1", T + TERM, T + 500, "b-o1"), "ok", None),
+        (accept_l1, "ok", None),
+        ({**accept_l1, "signer": PROVIDER2_ACCOUNT}, "ok", None),
+        (renew_step("l1", 2, T + 2 * TERM, "b-r1"), "ok", None),
+        (end_step("l1", "b-e1-stale", 1), "ok", None),
     ]
 
 
@@ -643,7 +765,8 @@ def self_test() -> int:
         == ["EXPIRED"],
         "reserved released": p1["reserved_bytes"] == "0",
         "pairs empty": final["pairs"] == [],
-        "open offers": [x["offer_id"] for x in final["offers"]] == ["o2", "o5", "o8"],
+        "open offers": [x["offer_id"] for x in final["offers"]] == ["o2", "o3", "o5", "o8"],
+        "idempotent offer replay": responses[19]["idempotent"] is True,
     }
     failed = [name for name, held in checks.items() if not held]
     if failed:
@@ -653,17 +776,20 @@ def self_test() -> int:
     reset(oracle, self_config(1), disable=True)
     plain: list[Case] = [
         (step, "ok" if deviation is not None else code, None)
-        for step, code, deviation in trace[:16]
+        for step, code, deviation in trace[:20]
     ]
     run_trace(oracle, plain)
     oracle = Oracle()
     reset(oracle, self_config(1), disable=True)
     run_trace(oracle, disabled_trace())
+    oracle = Oracle()
+    reset(oracle, self_config(1), disable=True)
+    run_trace(oracle, disabled_binding_trace())
     # A bad request is an error response, not a code.
     bad = json.loads(handle_line(oracle, json.dumps({"cmd": "step", "step": {"op": "Nope"}})))
     if "error" not in bad:
         raise AssertionError("unknown op was not an error")
-    steps = len(trace) + len(plain) + len(disabled_trace())
+    steps = len(trace) + len(plain) + len(disabled_trace()) + len(disabled_binding_trace())
     print(f"spec_oracle self-test: PASS ({steps} steps)")
     return 0
 

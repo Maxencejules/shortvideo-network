@@ -6,6 +6,8 @@ import (
 	"slices"
 	"testing"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
+
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
@@ -70,66 +72,22 @@ func sha256Digest(value []byte) *typesv1.Digest {
 	return &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: value}
 }
 
-func payloadProposal(payload *authorityv1.ProposalPayload, key string) *authorityv1.MsgProposeChange {
-	digest, out := PayloadDigest(payload)
-	if !out.Success() {
-		panic(out.Code)
-	}
-	return &authorityv1.MsgProposeChange{ParameterKey: key, Payload: payload, PayloadDigest: sha256Digest(digest)}
-}
-
 func admitProposal(id string) *authorityv1.MsgProposeChange {
-	return payloadProposal(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_AdmitProvider{
+	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_AdmitProvider{
 		AdmitProvider: &authorityv1.AdmitProviderChange{ProviderId: id},
 	}}, "admit-"+id)
 }
 
 func disableProposal(id string) *authorityv1.MsgProposeChange {
-	return payloadProposal(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_DisableProvider{
+	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_DisableProvider{
 		DisableProvider: &authorityv1.DisableProviderChange{ProviderId: id},
 	}}, "disable-"+id)
 }
 
 func withdrawProposal(id string, version uint64, reason []byte) *authorityv1.MsgProposeChange {
-	return payloadProposal(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_ForceWithdraw{
+	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_ForceWithdraw{
 		ForceWithdraw: &authorityv1.ForceWithdrawChange{ContentId: id, ContentVersion: version, ReasonDigest: sha256Digest(reason)},
 	}}, "withdraw-"+id)
-}
-
-func devnetParam(decision, role string) *typesv1.DevnetTestParameter {
-	return &typesv1.DevnetTestParameter{Label: "PROPOSED_TEST_PARAMETER", DecisionId: decision, RoleName: role}
-}
-
-// queueProposal opens id and collects three seat approvals.
-func queueProposal(t *testing.T, st *State, seats [][]byte, id string, msg *authorityv1.MsgProposeChange) {
-	t.Helper()
-	if out := st.ProposeChange(propose(seats[0], id, st.PolicyVersion, msg)); !out.Success() {
-		t.Fatalf("propose %s: %+v", id, out)
-	}
-	for i := 0; i < ApprovedThreshold; i++ {
-		if out := st.ApproveChange(approve(seats[i], "ap-"+id+"-"+string(rune('a'+i)), id)); !out.Success() {
-			t.Fatalf("approve %s: %+v", id, out)
-		}
-	}
-	if st.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-		t.Fatalf("%s is %v", id, st.proposal(id).GetState())
-	}
-}
-
-// executeTrial runs ExecuteChange the way Keeper.transition does: on a
-// clone, committing the clone only on success or keep. It returns the
-// committed state, the clone the engine ran on, and the outcome. On a
-// failure the committed state is st itself, untouched by construction, so
-// a test of "a failure changes nothing" must look at the clone: it proves
-// the engine wrote nothing before it failed, not only that the keeper
-// discards the clone.
-func executeTrial(st *State, signer []byte, businessID, proposalID string) (committed, trial *State, out Outcome) {
-	trial = st.clone()
-	out = trial.ExecuteChange(execute(signer, businessID, proposalID))
-	if out.Success() || out.Keep {
-		return trial, trial, out
-	}
-	return st, trial, out
 }
 
 var reasonValue = func() []byte {
@@ -139,6 +97,25 @@ var reasonValue = func() []byte {
 	}
 	return out
 }()
+
+// registryKV is readyGenesis plus params, written by InitStore.
+func registryKV(t testing.TB, params ...*typesv1.DevnetTestParameter) (storetypes.KVStore, []testSeat, []byte) {
+	t.Helper()
+	gen, seats, authority := readyGenesis()
+	gen.DevnetTestParameters = append(gen.DevnetTestParameters, params...)
+	return storeFrom(t, gen), seats, authority
+}
+
+// executeWith runs ExecuteChange on kv at the test height and the given unix
+// time, with reg bound as Keeper.transition binds it (nil: no registry). The
+// engine writes kv only on a success or keep, so a test of "a failure writes
+// nothing" compares dumpKV(kv) before and after.
+func executeWith(t testing.TB, kv KV, reg Registry, unix int64, signer []byte, business, proposal string) Outcome {
+	t.Helper()
+	st := loadAt(t, kv, testHeight, unix)
+	st.Registry = reg
+	return st.ExecuteChange(execute(signer, business, proposal))
+}
 
 func TestAdmitPassesTheDEC002Flag(t *testing.T) {
 	cases := []struct {
@@ -156,58 +133,53 @@ func TestAdmitPassesTheDEC002Flag(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			st, seats, authoritySigner := readyState()
-			st.Params = append(st.Params, tc.params...)
+			kv, seats, authoritySigner := registryKV(t, tc.params...)
 			registry := &fakeRegistry{}
 			if !tc.devnet {
 				// x/providers answers DECISION_BLOCKED when the flag is false.
 				registry.out = map[string]Outcome{"admit": fail(CodeDecisionBlocked)}
 			}
-			st.Registry = registry
-			queueProposal(t, st, seats, "admit-p1", admitProposal("p1"))
-			before := canonicalBytes(t, st)
-			after, trial, out := executeTrial(st, authoritySigner, "ex-admit", "admit-p1")
+			queueAt(t, kv, seats, testHeight, testTime, "admit-p1", admitProposal("p1"))
+			before := dumpKV(kv)
+			out := executeWith(t, kv, registry, testTime, authoritySigner, "ex-admit", "admit-p1")
 			if !sameCalls(registry.calls, []registryCall{{Method: "admit", ID: "p1", Devnet: tc.devnet}}) {
 				t.Fatalf("calls %+v", registry.calls)
 			}
 			if tc.devnet {
-				if !out.Success() || after.proposal("admit-p1").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
-					t.Fatalf("%+v %v", out, after.proposal("admit-p1").GetState())
+				if !out.Success() || recordOf(t, kv, "admit-p1").state() != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
+					t.Fatalf("%+v %v", out, recordOf(t, kv, "admit-p1").state())
 				}
 				return
 			}
 			if out.Code != CodeDecisionBlocked || out.Keep {
 				t.Fatalf("%+v", out)
 			}
-			if !bytes.Equal(before, canonicalBytes(t, trial)) {
-				t.Fatal("blocked admission changed authority state")
-			}
-			if trial.proposal("admit-p1").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-				t.Fatal(trial.proposal("admit-p1").GetState())
+			wantUnchanged(t, kv, before, "blocked admission")
+			if got := recordOf(t, kv, "admit-p1").state(); got != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+				t.Fatal(got)
 			}
 		})
 	}
 }
 
 func TestDisablePassesTheProviderID(t *testing.T) {
-	st, seats, authoritySigner := readyState()
+	kv, seats, authoritySigner := registryKV(t)
 	registry := &fakeRegistry{}
-	st.Registry = registry
-	queueProposal(t, st, seats, "disable-p7", disableProposal("p7"))
-	validators := cloneValidators(st.Validators)
-	version := st.PolicyVersion
-	after, _, out := executeTrial(st, authoritySigner, "ex-disable", "disable-p7")
-	if !out.Success() {
+	queueAt(t, kv, seats, testHeight, testTime, "disable-p7", disableProposal("p7"))
+	st := loadAt(t, kv, testHeight, testTime)
+	validators, version := st.Validators(), st.PolicyVersion()
+	if out := executeWith(t, kv, registry, testTime, authoritySigner, "ex-disable", "disable-p7"); !out.Success() {
 		t.Fatal(out)
 	}
 	if !sameCalls(registry.calls, []registryCall{{Method: "disable", ID: "p7"}}) {
 		t.Fatalf("calls %+v", registry.calls)
 	}
-	if after.PolicyVersion != version+1 || !sameValidators(after.Validators, validators) || len(after.Pending) != 0 {
+	after := loadAt(t, kv, testHeight, testTime)
+	if after.PolicyVersion() != version+1 || !sameValidators(after.Validators(), validators) || countPrefix(kv, pendingPrefix) != 0 {
 		t.Fatal("disable changed the validator set or missed the policy version")
 	}
-	if after.proposal("disable-p7").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
-		t.Fatal(after.proposal("disable-p7").GetState())
+	if got := recordOf(t, kv, "disable-p7").state(); got != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
+		t.Fatal(got)
 	}
 }
 
@@ -224,24 +196,21 @@ func TestForceWithdrawPassesTheDecodedPayload(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			st, seats, authoritySigner := readyState()
-			st.Params = append(st.Params, tc.params...)
+			kv, seats, authoritySigner := registryKV(t, tc.params...)
 			registry := &fakeRegistry{}
-			st.Registry = registry
-			queueProposal(t, st, seats, "withdraw-c1", withdrawProposal("c1", 1, reasonValue))
-			stored := st.Decoded["withdraw-c1"]
-			if stored.Kind != "force_withdraw" || stored.ContentID != "c1" || stored.ContentVersion != 1 || !bytes.Equal(stored.Reason, reasonValue) {
+			queueAt(t, kv, seats, testHeight, testTime, "withdraw-c1", withdrawProposal("c1", 1, reasonValue))
+			stored := recordOf(t, kv, "withdraw-c1").Decoded
+			if stored.Kind != kindForceWithdraw || stored.ContentID != "c1" || stored.ContentVersion != 1 || !bytes.Equal(stored.Reason, reasonValue) {
 				t.Fatalf("stored %+v", stored)
 			}
-			after, _, out := executeTrial(st, authoritySigner, "ex-withdraw", "withdraw-c1")
-			if !out.Success() {
+			if out := executeWith(t, kv, registry, testTime, authoritySigner, "ex-withdraw", "withdraw-c1"); !out.Success() {
 				t.Fatal(out)
 			}
 			want := []registryCall{{Method: "force_withdraw", ID: "c1", Version: 1, Reason: reasonValue, Devnet: tc.devnet}}
 			if !sameCalls(registry.calls, want) {
 				t.Fatalf("calls %+v want %+v", registry.calls, want)
 			}
-			if !bytes.Equal(after.Decoded["withdraw-c1"].Reason, reasonValue) {
+			if !bytes.Equal(recordOf(t, kv, "withdraw-c1").Decoded.Reason, reasonValue) {
 				t.Fatal("the registry reached the stored reason digest")
 			}
 		})
@@ -251,45 +220,40 @@ func TestForceWithdrawPassesTheDecodedPayload(t *testing.T) {
 func TestForceWithdrawPassesTheProposedVersion(t *testing.T) {
 	// The payload version reaches the registry unchanged. x/content
 	// compares it with the record and answers STALE_VERSION.
-	st, seats, authoritySigner := readyState()
-	st.Params = append(st.Params, devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
+	kv, seats, authoritySigner := registryKV(t, devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
 	registry := &fakeRegistry{out: map[string]Outcome{"force_withdraw": fail(CodeStale)}}
-	st.Registry = registry
-	queueProposal(t, st, seats, "withdraw-c9", withdrawProposal("c9", 2, reasonValue))
-	before := canonicalBytes(t, st)
-	_, trial, out := executeTrial(st, authoritySigner, "ex-c9", "withdraw-c9")
+	queueAt(t, kv, seats, testHeight, testTime, "withdraw-c9", withdrawProposal("c9", 2, reasonValue))
+	before := dumpKV(kv)
+	out := executeWith(t, kv, registry, testTime, authoritySigner, "ex-c9", "withdraw-c9")
 	if out.Code != CodeStale || out.Keep {
 		t.Fatalf("%+v", out)
 	}
 	if !sameCalls(registry.calls, []registryCall{{Method: "force_withdraw", ID: "c9", Version: 2, Reason: reasonValue, Devnet: true}}) {
 		t.Fatalf("calls %+v", registry.calls)
 	}
-	if !bytes.Equal(before, canonicalBytes(t, trial)) {
-		t.Fatal("stale force-withdraw changed authority state")
-	}
+	wantUnchanged(t, kv, before, "stale force-withdraw")
 }
 
 func TestRegistryForbiddenRejectsAndKeeps(t *testing.T) {
 	for _, kind := range []string{"admit", "disable", "force_withdraw"} {
 		t.Run(kind, func(t *testing.T) {
-			st, seats, authoritySigner := readyState()
-			st.Params = append(st.Params, devnetParam("DEC-002", "DEVNET_TEST_ONLY"), devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
+			kv, seats, authoritySigner := registryKV(t, devnetParam("DEC-002", "DEVNET_TEST_ONLY"), devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
 			registry := &fakeRegistry{out: map[string]Outcome{kind: fail(CodeForbidden)}}
-			st.Registry = registry
 			id, msg := registryProposal(kind)
-			queueProposal(t, st, seats, id, msg)
-			version := st.PolicyVersion
-			after, _, out := executeTrial(st, authoritySigner, "ex-"+id, id)
+			queueAt(t, kv, seats, testHeight, testTime, id, msg)
+			version := loadAt(t, kv, testHeight, testTime).PolicyVersion()
+			out := executeWith(t, kv, registry, testTime, authoritySigner, "ex-"+id, id)
 			if out.Code != CodeForbidden || !out.Keep {
 				t.Fatalf("%+v", out)
 			}
-			if after.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_REJECTED {
-				t.Fatal(after.proposal(id).GetState())
+			rec := recordOf(t, kv, id)
+			if rec.state() != authorityv1.ProposalState_PROPOSAL_STATE_REJECTED {
+				t.Fatal(rec.state())
 			}
-			if after.PolicyVersion != version || after.Executed[after.proposal(id).GetParameterKey()] != nil {
+			if loadAt(t, kv, testHeight, testTime).PolicyVersion() != version || kv.Has(executedKey(rec.ParameterKey)) {
 				t.Fatal("a rejected proposal counted as executed")
 			}
-			if _, committed := after.Business["ex-"+id]; committed {
+			if kv.Has(businessKey("ex-" + id)) {
 				t.Fatal("a rejected execution committed its business id")
 			}
 			if len(registry.calls) != 1 {
@@ -297,10 +261,12 @@ func TestRegistryForbiddenRejectsAndKeeps(t *testing.T) {
 			}
 			// A second execute of a REJECTED proposal is a conflict and does
 			// not reach the registry.
-			_, _, again := executeTrial(after, authoritySigner, "ex2-"+id, id)
+			before := dumpKV(kv)
+			again := executeWith(t, kv, registry, testTime, authoritySigner, "ex2-"+id, id)
 			if again.Code != CodeConflict || len(registry.calls) != 1 {
 				t.Fatalf("again %+v calls %d", again, len(registry.calls))
 			}
+			wantUnchanged(t, kv, before, "execute of a REJECTED proposal")
 		})
 	}
 }
@@ -321,28 +287,26 @@ func TestRegistryFailureLeavesTheProposalQueued(t *testing.T) {
 	for _, kind := range []string{"admit", "disable", "force_withdraw"} {
 		for _, code := range codes {
 			t.Run(kind+"/"+code, func(t *testing.T) {
-				st, seats, authoritySigner := readyState()
-				st.Params = append(st.Params, devnetParam("DEC-002", "DEVNET_TEST_ONLY"), devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
+				kv, seats, authoritySigner := registryKV(t, devnetParam("DEC-002", "DEVNET_TEST_ONLY"), devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
 				registry := &fakeRegistry{out: map[string]Outcome{kind: fail(code)}}
-				st.Registry = registry
 				id, msg := registryProposal(kind)
-				queueProposal(t, st, seats, id, msg)
-				before := canonicalBytes(t, st)
-				after, trial, out := executeTrial(st, authoritySigner, "ex-"+id, id)
+				queueAt(t, kv, seats, testHeight, testTime, id, msg)
+				before := dumpKV(kv)
+				out := executeWith(t, kv, registry, testTime, authoritySigner, "ex-"+id, id)
 				if out.Code != code || out.Keep || out.Idempotent {
 					t.Fatalf("%+v", out)
 				}
-				if !bytes.Equal(before, canonicalBytes(t, trial)) {
-					t.Fatal("a registry failure changed authority state")
-				}
-				if trial.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-					t.Fatal(trial.proposal(id).GetState())
+				wantUnchanged(t, kv, before, "a registry failure")
+				if got := recordOf(t, kv, id).state(); got != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+					t.Fatal(got)
 				}
 				// The same proposal can execute once the registry accepts.
 				registry.out = nil
-				final, _, retry := executeTrial(after, authoritySigner, "ex-retry-"+id, id)
-				if !retry.Success() || final.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
+				if retry := executeWith(t, kv, registry, testTime, authoritySigner, "ex-retry-"+id, id); !retry.Success() {
 					t.Fatalf("retry %+v", retry)
+				}
+				if got := recordOf(t, kv, id).state(); got != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
+					t.Fatal(got)
 				}
 				if len(registry.calls) != 2 {
 					t.Fatalf("calls %+v", registry.calls)
@@ -353,76 +317,69 @@ func TestRegistryFailureLeavesTheProposalQueued(t *testing.T) {
 }
 
 func TestRegistryCannotAskForKeepOrIdempotent(t *testing.T) {
-	st, seats, authoritySigner := readyState()
-	st.Params = append(st.Params, devnetParam("DEC-002", "DEVNET_TEST_ONLY"))
+	kv, seats, authoritySigner := registryKV(t, devnetParam("DEC-002", "DEVNET_TEST_ONLY"))
 	registry := &fakeRegistry{out: map[string]Outcome{"admit": {Code: CodeConflict, Keep: true}}}
-	st.Registry = registry
-	queueProposal(t, st, seats, "admit-p1", admitProposal("p1"))
-	before := canonicalBytes(t, st)
-	_, trial, out := executeTrial(st, authoritySigner, "ex-1", "admit-p1")
+	queueAt(t, kv, seats, testHeight, testTime, "admit-p1", admitProposal("p1"))
+	before := dumpKV(kv)
+	out := executeWith(t, kv, registry, testTime, authoritySigner, "ex-1", "admit-p1")
 	if out.Code != CodeConflict || out.Keep {
 		t.Fatalf("a registry keep leaked: %+v", out)
 	}
-	if !bytes.Equal(before, canonicalBytes(t, trial)) {
-		t.Fatal("state changed")
-	}
+	wantUnchanged(t, kv, before, "a registry keep")
 	registry.out = map[string]Outcome{"admit": {Idempotent: true}}
-	final, _, out := executeTrial(st, authoritySigner, "ex-2", "admit-p1")
+	out = executeWith(t, kv, registry, testTime, authoritySigner, "ex-2", "admit-p1")
 	if !out.Success() || out.Idempotent {
 		t.Fatalf("a registry idempotent leaked: %+v", out)
 	}
-	if final.proposal("admit-p1").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
-		t.Fatal(final.proposal("admit-p1").GetState())
+	if got := recordOf(t, kv, "admit-p1").state(); got != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
+		t.Fatal(got)
 	}
 }
 
 func TestNilRegistryIsMalformed(t *testing.T) {
 	for _, kind := range []string{"admit", "disable", "force_withdraw"} {
 		t.Run(kind, func(t *testing.T) {
-			st, seats, authoritySigner := readyState()
-			st.Params = append(st.Params, devnetParam("DEC-002", "DEVNET_TEST_ONLY"), devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
+			kv, seats, authoritySigner := registryKV(t, devnetParam("DEC-002", "DEVNET_TEST_ONLY"), devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
 			id, msg := registryProposal(kind)
-			queueProposal(t, st, seats, id, msg)
-			before := canonicalBytes(t, st)
-			_, trial, out := executeTrial(st, authoritySigner, "ex-"+id, id)
+			queueAt(t, kv, seats, testHeight, testTime, id, msg)
+			before := dumpKV(kv)
+			out := executeWith(t, kv, nil, testTime, authoritySigner, "ex-"+id, id)
 			if out.Code != CodeMalformed || out.Keep {
 				t.Fatalf("%+v", out)
 			}
-			if !bytes.Equal(before, canonicalBytes(t, trial)) || trial.proposal(id).GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-				t.Fatal("a missing registry changed authority state")
+			wantUnchanged(t, kv, before, "a missing registry")
+			if got := recordOf(t, kv, id).state(); got != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+				t.Fatal(got)
 			}
 		})
 	}
 	// Validator and governed-limit payloads do not need a registry.
-	st, seats, authoritySigner := readyState()
-	queueProposal(t, st, seats, "p-add", powerMsg("v5", pub(9), 1, 20))
-	if _, _, out := executeTrial(st, authoritySigner, "ex-add", "p-add"); !out.Success() {
+	kv, seats, authoritySigner := registryKV(t)
+	queueAt(t, kv, seats, testHeight, testTime, "p-add", powerMsg("v5", pub(9), 1, 20))
+	if out := executeWith(t, kv, nil, testTime, authoritySigner, "ex-add", "p-add"); !out.Success() {
 		t.Fatal(out)
 	}
 }
 
 func TestExpiredRegistryProposalDoesNotCallTheRegistry(t *testing.T) {
-	st, seats, authoritySigner := readyState()
-	st.Params = append(st.Params, devnetParam("DEC-002", "DEVNET_TEST_ONLY"))
+	kv, seats, authoritySigner := registryKV(t, devnetParam("DEC-002", "DEVNET_TEST_ONLY"))
 	registry := &fakeRegistry{}
-	st.Registry = registry
-	msg := admitProposal("p1")
-	if out := st.ProposeChange(propose(seats[0], "admit-p1", 1, msg)); !out.Success() {
+	msg := propose(seats[0].Signer, "admit-p1", 1, admitProposal("p1"))
+	msg.ExpiryUnixSeconds = testTime + 5
+	if out := loadAt(t, kv, testHeight, testTime).ProposeChange(msg); !out.Success() {
 		t.Fatal(out)
 	}
-	st.proposal("admit-p1").ExpiryUnixSeconds = st.Time + 5
 	for i := 0; i < ApprovedThreshold; i++ {
-		if out := st.ApproveChange(approve(seats[i], "ap-"+string(rune('a'+i)), "admit-p1")); !out.Success() {
+		if out := loadAt(t, kv, testHeight, testTime).ApproveChange(approve(seats[i].Signer, "ap-"+string(rune('a'+i)), "admit-p1")); !out.Success() {
 			t.Fatal(out)
 		}
 	}
-	st.Time += 5
-	after, _, out := executeTrial(st, authoritySigner, "ex-late", "admit-p1")
+	out := executeWith(t, kv, registry, testTime+5, authoritySigner, "ex-late", "admit-p1")
 	if out.Code != CodeExpired || !out.Keep {
 		t.Fatalf("%+v", out)
 	}
-	if after.proposal("admit-p1").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED || len(registry.calls) != 0 {
-		t.Fatalf("state %v calls %+v", after.proposal("admit-p1").GetState(), registry.calls)
+	if got := recordOf(t, kv, "admit-p1").state(); got != authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED || len(registry.calls) != 0 {
+		t.Fatalf("state %v calls %+v", got, registry.calls)
 	}
 }
 
@@ -431,75 +388,80 @@ func TestExternalBusinessIDIsReplay(t *testing.T) {
 	external := func(lookups *[]string) func(string) ([]byte, bool) {
 		return func(id string) ([]byte, bool) {
 			*lookups = append(*lookups, id)
-			if id == "shared" {
+			switch id {
+			case "shared":
 				return append([]byte(nil), foreign...), true
+			case "short":
+				return bytes.Repeat([]byte{0x5a}, 31), true
+			case "empty":
+				return []byte{}, true
 			}
 			return nil, false
 		}
 	}
+	// at loads the engine on kv with the peer lookup bound.
+	at := func(t *testing.T, kv KV, lookups *[]string) *State {
+		st := loadAt(t, kv, testHeight, testTime)
+		st.External = external(lookups)
+		return st
+	}
 
 	t.Run("propose", func(t *testing.T) {
-		st, seats, _ := readyState()
+		kv, seats, _ := registryKV(t)
 		var lookups []string
-		st.External = external(&lookups)
-		before := canonicalBytes(t, st)
-		msg := propose(seats[0], "p-add", 1, powerMsg("v5", pub(9), 1, 20))
+		before := dumpKV(kv)
+		msg := propose(seats[0].Signer, "p-add", 1, powerMsg("v5", pub(9), 1, 20))
 		msg.BusinessId = "shared"
-		trial := st.clone()
-		if out := trial.ProposeChange(msg); out.Code != CodeReplay {
+		if out := at(t, kv, &lookups).ProposeChange(msg); out.Code != CodeReplay {
 			t.Fatalf("%+v", out)
 		}
-		if !bytes.Equal(before, canonicalBytes(t, trial)) || !slices.Equal(lookups, []string{"shared"}) {
+		wantUnchanged(t, kv, before, "a replayed propose")
+		if !slices.Equal(lookups, []string{"shared"}) {
 			t.Fatalf("lookups %v", lookups)
 		}
 	})
 
 	t.Run("approve", func(t *testing.T) {
-		st, seats, _ := readyState()
+		kv, seats, _ := registryKV(t)
 		var lookups []string
-		st.External = external(&lookups)
-		if out := st.ProposeChange(propose(seats[0], "p-add", 1, powerMsg("v5", pub(9), 1, 20))); !out.Success() {
+		if out := at(t, kv, &lookups).ProposeChange(propose(seats[0].Signer, "p-add", 1, powerMsg("v5", pub(9), 1, 20))); !out.Success() {
 			t.Fatal(out)
 		}
-		before := canonicalBytes(t, st)
-		trial := st.clone()
-		if out := trial.ApproveChange(approve(seats[1], "shared", "p-add")); out.Code != CodeReplay {
+		before := dumpKV(kv)
+		if out := at(t, kv, &lookups).ApproveChange(approve(seats[1].Signer, "shared", "p-add")); out.Code != CodeReplay {
 			t.Fatalf("%+v", out)
 		}
-		if len(trial.proposal("p-add").GetApproverKeys()) != 0 || !bytes.Equal(before, canonicalBytes(t, trial)) {
+		wantUnchanged(t, kv, before, "a replayed approval")
+		if len(recordOf(t, kv, "p-add").ApproverKeys) != 0 {
 			t.Fatal("a replayed approval was recorded")
 		}
 	})
 
 	t.Run("execute", func(t *testing.T) {
-		st, seats, authoritySigner := readyState()
+		kv, seats, authoritySigner := registryKV(t)
 		var lookups []string
-		st.External = external(&lookups)
-		queueProposal(t, st, seats, "p-add", powerMsg("v5", pub(9), 1, 20))
-		before := canonicalBytes(t, st)
-		_, trial, out := executeTrial(st, authoritySigner, "shared", "p-add")
-		if out.Code != CodeReplay || out.Keep {
+		queueAt(t, kv, seats, testHeight, testTime, "p-add", powerMsg("v5", pub(9), 1, 20))
+		before := dumpKV(kv)
+		if out := at(t, kv, &lookups).ExecuteChange(execute(authoritySigner, "shared", "p-add")); out.Code != CodeReplay || out.Keep {
 			t.Fatalf("%+v", out)
 		}
-		if !bytes.Equal(before, canonicalBytes(t, trial)) || trial.proposal("p-add").GetState() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-			t.Fatal("a replayed execute changed authority state")
+		wantUnchanged(t, kv, before, "a replayed execute")
+		if got := recordOf(t, kv, "p-add").state(); got != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+			t.Fatal(got)
 		}
 	})
 
 	t.Run("own ledger first", func(t *testing.T) {
-		st, seats, _ := readyState()
+		kv, seats, _ := registryKV(t)
 		var lookups []string
-		st.External = external(&lookups)
-		msg := propose(seats[0], "p-add", 1, powerMsg("v5", pub(9), 1, 20))
-		if out := st.ProposeChange(msg); !out.Success() {
+		if out := at(t, kv, &lookups).ProposeChange(propose(seats[0].Signer, "p-add", 1, powerMsg("v5", pub(9), 1, 20))); !out.Success() {
 			t.Fatal(out)
 		}
-		again := propose(seats[0], "p-add", 1, powerMsg("v5", pub(9), 1, 20))
-		if out := st.ProposeChange(again); !out.Idempotent {
+		if out := at(t, kv, &lookups).ProposeChange(propose(seats[0].Signer, "p-add", 1, powerMsg("v5", pub(9), 1, 20))); !out.Idempotent {
 			t.Fatalf("%+v", out)
 		}
 		// The first propose consulted peers once; the repeat found its own
-		// row and did not.
+		// row (0x11) and did not.
 		if !slices.Equal(lookups, []string{"b-p-add"}) {
 			t.Fatalf("lookups %v", lookups)
 		}
@@ -508,38 +470,52 @@ func TestExternalBusinessIDIsReplay(t *testing.T) {
 	t.Run("same digest is idempotent", func(t *testing.T) {
 		// One namespace: a peer row with the exact digest of this request
 		// is the same request already committed.
-		st, seats, _ := readyState()
-		if out := st.ProposeChange(propose(seats[0], "p-add", 1, powerMsg("v5", pub(9), 1, 20))); !out.Success() {
+		kv, seats, _ := registryKV(t)
+		if out := loadAt(t, kv, testHeight, testTime).ProposeChange(propose(seats[0].Signer, "p-add", 1, powerMsg("v5", pub(9), 1, 20))); !out.Success() {
 			t.Fatal(out)
 		}
-		want := businessDigest(map[string]any{"proposal_id": "p-add", "signer": hex.EncodeToString(seats[1])})
+		want := businessDigest(map[string]any{"proposal_id": "p-add", "signer": hex.EncodeToString(seats[1].Signer)})
+		st := loadAt(t, kv, testHeight, testTime)
 		st.External = func(id string) ([]byte, bool) {
 			if id == "elsewhere" {
 				return append([]byte(nil), want...), true
 			}
 			return nil, false
 		}
-		before := canonicalBytes(t, st)
-		out := st.ApproveChange(approve(seats[1], "elsewhere", "p-add"))
+		before := dumpKV(kv)
+		out := st.ApproveChange(approve(seats[1].Signer, "elsewhere", "p-add"))
 		if !out.Idempotent || out.Code != "" {
 			t.Fatalf("%+v", out)
 		}
-		if !bytes.Equal(before, canonicalBytes(t, st)) {
-			t.Fatal("an idempotent approval wrote")
+		wantUnchanged(t, kv, before, "an idempotent approval")
+	})
+
+	t.Run("malformed peer value is integrity", func(t *testing.T) {
+		// A peer value that is not a 32-byte digest is damaged state, like
+		// a damaged 0x11 value: INTEGRITY, never a free id.
+		for _, id := range []string{"short", "empty"} {
+			kv, seats, _ := registryKV(t)
+			var lookups []string
+			before := dumpKV(kv)
+			msg := propose(seats[0].Signer, "p-add", 1, powerMsg("v5", pub(9), 1, 20))
+			msg.BusinessId = id
+			if out := at(t, kv, &lookups).ProposeChange(msg); out.Code != CodeIntegrity || out.Keep {
+				t.Fatalf("%s: %+v", id, out)
+			}
+			wantUnchanged(t, kv, before, "a malformed peer value")
 		}
 	})
 
 	t.Run("malformed id never reaches peers", func(t *testing.T) {
-		st, seats, _ := readyState()
+		kv, seats, _ := registryKV(t)
 		var lookups []string
-		st.External = external(&lookups)
-		msg := propose(seats[0], "p-add", 1, powerMsg("v5", pub(9), 1, 20))
+		msg := propose(seats[0].Signer, "p-add", 1, powerMsg("v5", pub(9), 1, 20))
 		msg.BusinessId = "Shared"
-		if out := st.ProposeChange(msg); out.Code != CodeBounds {
+		if out := at(t, kv, &lookups).ProposeChange(msg); out.Code != CodeBounds {
 			t.Fatalf("%+v", out)
 		}
 		msg.BusinessId = ""
-		if out := st.ProposeChange(msg); out.Code != CodeMalformed {
+		if out := at(t, kv, &lookups).ProposeChange(msg); out.Code != CodeMalformed {
 			t.Fatalf("%+v", out)
 		}
 		if len(lookups) != 0 {
@@ -548,14 +524,30 @@ func TestExternalBusinessIDIsReplay(t *testing.T) {
 	})
 }
 
+// devnetRole applies the State.devnet rule: a devnet chain id, the
+// PROPOSED_TEST_PARAMETER label, approved_policy false, and the role
+// DEVNET_TEST_ONLY. The State comes from LoadState on a stored config.
 func TestDevnetRoleRule(t *testing.T) {
-	st, _, _ := readyState()
-	st.Params = append(st.Params, devnetParam("DEC-002", "DEVNET_TEST_ONLY"), devnetParam("DEC-003", "OTHER"))
-	if !st.devnetRole("DEC-002") || st.devnetRole("DEC-003") || st.devnetRole("DEC-001") {
-		t.Fatal("devnet role rule")
+	kv, _, _ := registryKV(t,
+		devnetParam("DEC-002", "DEVNET_TEST_ONLY"),
+		devnetParam("DEC-003", "OTHER"),
+		&typesv1.DevnetTestParameter{Label: "APPROVED", DecisionId: "DEC-004", RoleName: "DEVNET_TEST_ONLY"},
+		&typesv1.DevnetTestParameter{Label: "PROPOSED_TEST_PARAMETER", DecisionId: "DEC-005", RoleName: "DEVNET_TEST_ONLY", ApprovedPolicy: true},
+	)
+	st := loadAt(t, kv, testHeight, testTime)
+	if !st.devnetRole("DEC-002") {
+		t.Fatal("DEC-002 devnet test role not found")
 	}
-	st.ChainID = "shortvideo-beta-1"
-	if st.devnetRole("DEC-002") {
+	for _, id := range []string{"DEC-003", "DEC-004", "DEC-005", "DEC-001", ""} {
+		if st.devnetRole(id) {
+			t.Fatalf("%q counted as the devnet test role", id)
+		}
+	}
+	beta, err := LoadState(kv, "shortvideo-beta-1", testHeight, testTime)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if beta.devnetRole("DEC-002") {
 		t.Fatal("a non-devnet chain id used a devnet test parameter")
 	}
 }

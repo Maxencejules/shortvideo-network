@@ -17,6 +17,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest"
+	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 )
 
@@ -242,7 +243,10 @@ func TestLeaseEventSchemas(t *testing.T) {
 }
 
 // TestNoPrivateDataInLeaseStateOrEvents runs the lease flow and scans every
-// store, every committed transaction, the export, and every event for the
+// store, every committed transaction, the genesis export of every module
+// except authority (App.Export refuses after council messages, DR-06-01;
+// authority's state is scanned through the dump of every store), and every
+// event for the
 // synthetic canaries (an endpoint URL, an email, a username, a watch
 // event, a complaint narrative, media bytes) and URL schemes, and the
 // leases export keys and every event key for the forbidden-name patterns.
@@ -277,9 +281,21 @@ func TestNoPrivateDataInLeaseStateOrEvents(t *testing.T) {
 	for i, tx := range c.txs {
 		clean(fmt.Sprintf("committed transaction %d", i), tx)
 	}
-	exported, err := chainApp.Export()
+	var names []string
+	for _, name := range chainApp.ModuleNames() {
+		if name != authority.ModuleName {
+			names = append(names, name)
+		}
+	}
+	if len(names) != 7 {
+		t.Fatalf("modules %v", names)
+	}
+	exported, err := chainApp.ExportModulesForTest(names...)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(exported) != len(names) {
+		t.Fatalf("exported %d of %d modules", len(exported), len(names))
 	}
 	for _, name := range sortedNames(exported) {
 		clean("export of "+name, exported[name])

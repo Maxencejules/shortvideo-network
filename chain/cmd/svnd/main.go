@@ -30,9 +30,10 @@ func root() *cobra.Command {
 		Long: `svnd is the shortvideo-network application chain.
 
 x/authority runs the devnet council and is the only validator-set writer.
-x/providers and x/content are the provider and content registries. Lease,
-evidence, and policy execution are Goals 08-10. There is no token, mint,
-distribution, slashing, or staking module.
+x/providers and x/content are the provider and content registries. x/leases
+holds lease offers, leases, and their capacity reservations. Evidence and
+policy execution are Goals 09-10. There is no token, mint, distribution,
+slashing, or staking module.
 
 Public launch is disabled. This binary is not a release.`,
 	}
@@ -123,12 +124,17 @@ func validateGenesisFile(raw []byte) error {
 			pubs[i] = hex.EncodeToString(validator.PubKey.Bytes())
 			powers[i] = validator.Power
 		}
-		return genesis.Validate(doc, genesis.CometIdentity{
+		if err := genesis.Validate(doc, genesis.CometIdentity{
 			ChainID:            genDoc.ChainID,
 			GenesisUnixSeconds: genDoc.GenesisTime.Unix(),
 			ValidatorPubkeyHex: pubs,
 			ValidatorPowers:    powers,
-		})
+		}); err != nil {
+			return err
+		}
+		// The authority rules InitChain applies: pending entries, genesis
+		// proposals, approved council, quorum loss, the start point.
+		return app.ValidateAuthorityGenesis(modules, genDoc.InitialHeight, genDoc.GenesisTime.Unix())
 	}
 	doc, err := genesis.Parse(raw)
 	if err != nil {

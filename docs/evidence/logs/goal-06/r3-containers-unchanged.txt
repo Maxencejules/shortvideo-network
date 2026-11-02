@@ -1,0 +1,145 @@
+COMMAND bash scripts/devnet/prove-containers.sh
+DATE 2026-11-01T21:20:19Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+COMMAND bash scripts/devnet/prove-containers.sh
+DATE 2026-11-01T21:20:19+00:00
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY yes
+DOCKER_HOST=<unset>
+NOTE empty blocks only. No application transaction is submitted, so the hash is the genesis application state.
+NOTE bridge networking is BLOCKED. This run uses host networking.
+docker context default endpoint unix:///var/run/docker.sock
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 723B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e
+#3 DONE 0.8s
+
+#2 [internal] load metadata for docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949
+#2 DONE 0.8s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 136B done
+#4 DONE 0.0s
+
+#5 [stage-1 1/3] FROM docker.io/library/debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e
+#5 resolve docker.io/library/debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e 0.0s done
+#5 DONE 0.0s
+
+#6 [stage-1 2/3] RUN useradd --create-home --uid 65532 svn
+#6 CACHED
+
+#7 [build 1/6] FROM docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949
+#7 resolve docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 1.14MB 0.0s done
+#8 DONE 0.0s
+
+#9 [build 2/6] WORKDIR /src
+#9 CACHED
+
+#10 [build 3/6] COPY chain ./chain
+#10 DONE 0.5s
+
+#11 [build 4/6] COPY proto ./proto
+#11 DONE 0.0s
+
+#12 [build 5/6] WORKDIR /src/chain
+#12 DONE 0.0s
+
+#13 [build 6/6] RUN go build -o /out/svnd ./cmd/svnd
+#13 4.461 go: downloading github.com/cometbft/cometbft v0.40.0
+#13 4.461 go: downloading github.com/spf13/cobra v1.10.2
+#13 5.410 go: downloading cosmossdk.io/core v1.1.0
+#13 5.652 go: downloading cosmossdk.io/log/v2 v2.1.0
+#13 5.654 go: downloading github.com/cosmos/cosmos-db v1.1.3
+#13 5.655 go: downloading github.com/cosmos/cosmos-sdk v0.55.0
+#13 5.660 go: downloading github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+#13 5.661 go: downloading github.com/cosmos/gogoproto v1.7.2
+#13 5.661 go: downloading github.com/grpc-ecosystem/grpc-gateway v1.16.0
+#13 5.661 go: downloading google.golang.org/grpc v1.82.1
+#13 5.665 go: downloading google.golang.org/protobuf v1.36.12
+#13 7.830 go: downloading cosmossdk.io/errors v1.1.0
+#13 14.97 app/authmodule.go:8:2: cosmossdk.io/core@v1.1.0: Get "https://proxy.golang.org/cosmossdk.io/core/@v/v1.1.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/kvservice.go:6:2: cosmossdk.io/core@v1.1.0: Get "https://proxy.golang.org/cosmossdk.io/core/@v/v1.1.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:12:2: cosmossdk.io/log/v2@v2.1.0: Get "https://proxy.golang.org/cosmossdk.io/log/v2/@v/v2.1.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 address/prefix.go:7:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 cometwrap/wrap.go:11:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 cometwrap/wrap.go:13:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 svnerr/errors.go:7:8: cosmossdk.io/errors@v1.1.0: Get "https://proxy.golang.org/cosmossdk.io/errors/@v/v1.1.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 ../proto/svn/types/v1/types.pb.go:15:2: google.golang.org/protobuf@v1.36.12: Get "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.12.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 ../proto/svn/types/v1/types.pb.go:16:2: google.golang.org/protobuf@v1.36.12: Get "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.12.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/engine.go:12:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/updates.go:11:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/module.go:14:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/module.go:15:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/module.go:16:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/keeper.go:7:2: github.com/cosmos/cosmos-sdk/store/v2@v2.0.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/store/v2/@v/v2.0.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/module.go:18:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/module.go:9:2: github.com/grpc-ecosystem/grpc-gateway@v1.16.0: Get "https://proxy.golang.org/github.com/grpc-ecosystem/grpc-gateway/@v/v1.16.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/module.go:10:2: google.golang.org/protobuf@v1.36.12: Get "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.12.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 x/authority/clone.go:4:2: google.golang.org/protobuf@v1.36.12: Get "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.12.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:8:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:9:2: github.com/cosmos/cosmos-db@v1.1.3: Get "https://proxy.golang.org/github.com/cosmos/cosmos-db/@v/v1.1.3.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:14:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:16:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:17:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:18:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:19:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:20:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/encoding.go:16:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/encoding.go:18:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/ante.go:5:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:25:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/ante.go:6:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:26:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/app.go:27:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/ante.go:7:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/encoding.go:6:2: github.com/cosmos/gogoproto@v1.7.2: Get "https://proxy.golang.org/github.com/cosmos/gogoproto/@v/v1.7.2.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 app/services.go:8:2: google.golang.org/grpc@v1.82.1: Get "https://proxy.golang.org/google.golang.org/grpc/@v/v1.82.1.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 node/start.go:15:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 node/start.go:16:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 node/start.go:17:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 node/start.go:18:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 node/start.go:19:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 node/start.go:20:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 node/start.go:27:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 devnet/init.go:21:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 devnet/init.go:22:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 devnet/init.go:23:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 14.97 cmd/svnd/main.go:11:2: github.com/spf13/cobra@v1.10.2: Get "https://proxy.golang.org/github.com/spf13/cobra/@v/v1.10.2.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+#13 ERROR: process "/bin/sh -c go build -o /out/svnd ./cmd/svnd" did not complete successfully: exit code: 1
+------
+ > [build 6/6] RUN go build -o /out/svnd ./cmd/svnd:
+14.97 node/start.go:16:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 node/start.go:17:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 node/start.go:18:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 node/start.go:19:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 node/start.go:20:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 node/start.go:27:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 devnet/init.go:21:2: github.com/cometbft/cometbft@v0.40.0: Get "https://proxy.golang.org/github.com/cometbft/cometbft/@v/v0.40.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 devnet/init.go:22:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 devnet/init.go:23:2: github.com/cosmos/cosmos-sdk@v0.55.0: Get "https://proxy.golang.org/github.com/cosmos/cosmos-sdk/@v/v0.55.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+14.97 cmd/svnd/main.go:11:2: github.com/spf13/cobra@v1.10.2: Get "https://proxy.golang.org/github.com/spf13/cobra/@v/v1.10.2.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+------
+Dockerfile:9
+--------------------
+   7 |     COPY proto ./proto
+   8 |     WORKDIR /src/chain
+   9 | >>> RUN go build -o /out/svnd ./cmd/svnd
+  10 |     
+  11 |     FROM debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c go build -o /out/svnd ./cmd/svnd" did not complete successfully: exit code: 1
+EXIT:1
+EXIT:1

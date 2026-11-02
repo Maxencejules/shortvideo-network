@@ -109,9 +109,18 @@ func TestOfferCheckOrder(t *testing.T) {
 			offerEdit("d5-lifetime-86401", msgkit.Bounds, func(m *leasesv1.MsgOfferLease) {
 				m.ExpiryUnixSeconds = t0 + leases.MaxOfferLifetimeSeconds + 1
 			}),
+			// Two other schedulers fill c1; the signer has no open offer of
+			// c1, so only D-6 can reject.
 			offerEnv("d6-content-open-offer-cap", msgkit.Bounds, func(e *env) {
 				for i := 0; i < leases.MaxOpenOffersPerContent; i++ {
-					e.seedOffer(e.offerRecord(fmt.Sprintf("o-cap-%03d", i), "c1", "p2"))
+					scheduler := [][]byte{service2Acct, service3Acct}[i%2]
+					e.seedOffer(e.offerRecordBy(scheduler, fmt.Sprintf("o-cap-%03d", i), "c1", "p2"))
+				}
+			}),
+			// The signer holds its quota of c1; the content has free slots.
+			offerEnv("d10-scheduler-content-open-offer-cap", msgkit.Bounds, func(e *env) {
+				for i := 0; i < leases.MaxOpenOffersPerContentPerScheduler; i++ {
+					e.seedOffer(e.offerRecord(fmt.Sprintf("o-own-%03d", i), "c1", "p2"))
 				}
 			}),
 		},
@@ -157,13 +166,18 @@ func TestOfferWritesRecordAndEvent(t *testing.T) {
 		t.Fatal("an offer reserved bytes")
 	}
 	for _, key := range [][]byte{
-		leases.OfferExpiryKey(msg.GetExpiryUnixSeconds(), "o1"), leases.ContentOfferKey("c1", "o1"), leases.UsedOfferKey("o1"),
+		leases.OfferExpiryKey(msg.GetExpiryUnixSeconds(), "o1"), leases.ContentOfferKey("c1", "o1"),
 	} {
 		if !bytes.Equal(e.leaseStore().Get(key), leases.Marker) {
 			t.Fatalf("row %x missing", key)
 		}
 	}
-	for _, key := range [][]byte{leases.ProviderOfferCountKey("p1"), leases.ContentOfferCountKey("c1")} {
+	if !bytes.Equal(e.leaseStore().Get(leases.UsedOfferKey("o1")), serviceAcct) {
+		t.Fatalf("used-offer marker %x, want the scheduler", e.leaseStore().Get(leases.UsedOfferKey("o1")))
+	}
+	for _, key := range [][]byte{
+		leases.ProviderOfferCountKey("p1"), leases.ContentOfferCountKey("c1"), leases.SchedulerOfferCountKey("c1", serviceAcct),
+	} {
 		if !bytes.Equal(e.leaseStore().Get(key), []byte{0, 0, 0, 0, 0, 0, 0, 1}) {
 			t.Fatalf("counter %x = %x", key, e.leaseStore().Get(key))
 		}
@@ -236,25 +250,99 @@ func TestOfferLifetimeBoundD5(t *testing.T) {
 }
 
 // TestOpenOffersPerContentCapD6: a content id holds at most
-// MaxOpenOffersPerContent (256, PROPOSED) open offers. The 257th is BOUNDS;
-// when one closes (accepted or expired) a new offer fits again: the cap
-// counts open offers, it is not a lifetime cap.
+// MaxOpenOffersPerContent (256, PROPOSED) open offers, whoever sent them.
+// Two schedulers fill it (one alone cannot, D-10); the 257th is BOUNDS for
+// any scheduler, a third included; when one closes (accepted or expired) a
+// new offer fits again: the cap counts open offers, it is not a lifetime
+// cap.
 func TestOpenOffersPerContentCapD6(t *testing.T) {
 	e := newEnv(t)
 	for i := 0; i < leases.MaxOpenOffersPerContent; i++ {
 		provider := []string{"p1", "p2"}[i%2]
-		e.mustOffer(e.offerMsg(fmt.Sprintf("o%03d", i), "c1", provider))
+		scheduler := [][]byte{serviceAcct, service2Acct}[(i/2)%2]
+		e.mustOffer(e.offerBy(scheduler, fmt.Sprintf("o%03d", i), "c1", provider))
 	}
 	// p2: accepting o000 below makes the pair (p1, c1) live.
-	over := e.offerMsg("o-over", "c1", "p2")
+	over := e.offerBy(service3Acct, "o-over", "c1", "p2")
 	e.requireReject(e.offer(e.fresh(), over), msgkit.Bounds, "257th")
 	// Another content id is unaffected.
 	e.requireOK(e.offer(e.fresh(), e.offerMsg("o-c2", "c2", "p1")), "other content")
 	// Accepting one offer frees one slot.
 	e.requireOK(e.accept(e.fresh(), e.acceptMsg("o000", "l1")), "accept")
 	e.requireOK(e.offer(e.fresh(), over), "after accept")
-	over2 := e.offerMsg("o-over2", "c1", "p2")
+	over2 := e.offerBy(service3Acct, "o-over2", "c1", "p2")
 	e.requireReject(e.offer(e.fresh(), over2), msgkit.Bounds, "full again")
+	e.requireInvariants(nil)
+}
+
+// TestOpenOffersPerSchedulerCapD10: one scheduler holds at most
+// MaxOpenOffersPerContentPerScheduler (128, PROPOSED) open offers of one
+// content id. Its 129th is BOUNDS after every spec check (deviation D-10),
+// while a second scheduler can still offer that content and the first can
+// still offer another content. When one of its offers closes, it can offer
+// again. Both together fill the content's 256 slots (D-6, the residual of
+// DR-08-02).
+func TestOpenOffersPerSchedulerCapD10(t *testing.T) {
+	e := newEnv(t)
+	for i := 0; i < leases.MaxOpenOffersPerContentPerScheduler; i++ {
+		e.mustOffer(e.offerMsg(fmt.Sprintf("o%03d", i), "c1", []string{"p1", "p2"}[i%2]))
+	}
+	over := e.offerMsg("o-over", "c1", "p2")
+	e.requireReject(e.offer(e.fresh(), over), msgkit.Bounds, "129th of one scheduler")
+	e.requireOK(e.offer(e.fresh(), e.offerBy(service2Acct, "o-s2", "c1", "p2")), "a second scheduler, same content")
+	e.requireOK(e.offer(e.fresh(), e.offerMsg("o-c2", "c2", "p1")), "the first scheduler, other content")
+	e.requireOK(e.accept(e.fresh(), e.acceptMsg("o000", "l1")), "accept frees one of its slots")
+	e.requireOK(e.offer(e.fresh(), over), "after accept")
+	e.requireReject(e.offer(e.fresh(), e.offerMsg("o-over2", "c1", "p2")), msgkit.Bounds, "at its quota again")
+	if got := e.leaseStore().Get(leases.SchedulerOfferCountKey("c1", serviceAcct)); !bytes.Equal(got, []byte{0, 0, 0, 0, 0, 0, 0, 128}) {
+		t.Fatalf("scheduler counter %x", got)
+	}
+	e.requireInvariants(nil)
+	// The second scheduler fills the rest: the content is full for everyone.
+	// (The pair (p1, c1) is live since o000 was accepted, so it offers p2.)
+	for i := 1; i < leases.MaxOpenOffersPerContentPerScheduler; i++ {
+		e.mustOffer(e.offerBy(service2Acct, fmt.Sprintf("o-s2-%03d", i), "c1", "p2"))
+	}
+	e.requireReject(e.offer(e.fresh(), e.offerBy(service3Acct, "o-s3", "c1", "p2")), msgkit.Bounds, "content full (D-6)")
+	e.requireInvariants(nil)
+}
+
+// TestOfferReplayByAnotherSchedulerD11: the OfferLease business digest
+// (the spec's field set) does not cover the signer. A second admitted
+// service that commits a copy of a pending offer first becomes its
+// scheduler; the original sender's identical message is then FORBIDDEN
+// with the state unchanged, not an idempotent success (deviation D-11,
+// DR-08-11, as DR-07-08 rules for providers). The committing scheduler's
+// own retry stays idempotent. The used-offer marker keeps the scheduler,
+// so the rule holds after the offer is accepted, expired, or voided.
+func TestOfferReplayByAnotherSchedulerD11(t *testing.T) {
+	e := newEnv(t)
+	msg := e.offerMsg("o1", "c1", "p1")
+	copied := proto.Clone(msg).(*leasesv1.MsgOfferLease)
+	copied.Signer = service2Acct
+	e.requireOK(e.offer(e.fresh(), copied), "the copy commits first")
+	if got := e.storedOffer("o1").GetScheduler(); !bytes.Equal(got, service2Acct) {
+		t.Fatalf("scheduler %x", got)
+	}
+	e.requireReject(e.offer(e.fresh(), msg), msgkit.Forbidden, "original sender, offer open")
+	e.requireIdempotent(e.offer(e.fresh(), copied), "committing scheduler, offer open")
+	e.requireOK(e.accept(e.fresh(), e.acceptMsg("o1", "l1")), "accept")
+	e.requireReject(e.offer(e.fresh(), msg), msgkit.Forbidden, "original sender, offer accepted")
+	e.requireIdempotent(e.offer(e.fresh(), copied), "committing scheduler, offer accepted")
+	// An offer that expired keeps its scheduler too.
+	e.mustOffer(e.offerMsg("o2", "c2", "p1"))
+	if err := e.expire(e.blockCtx(t0 + 600)); err != nil {
+		t.Fatal(err)
+	}
+	other := e.offerMsg("o2", "c2", "p1")
+	other.Signer = service3Acct
+	e.requireReject(e.offer(e.at(t0+600), other), msgkit.Forbidden, "another scheduler, offer expired")
+	e.requireIdempotent(e.offer(e.at(t0+600), e.offerMsg("o2", "c2", "p1")), "its scheduler, offer expired")
+	// The role check runs before the gate: a non-service signer is FORBIDDEN
+	// by role, as before.
+	byBroadcaster := e.offerMsg("o2", "c2", "p1")
+	byBroadcaster.Signer = broadcasterAcct
+	e.requireReject(e.offer(e.at(t0+600), byBroadcaster), msgkit.Forbidden, "broadcaster")
 	e.requireInvariants(nil)
 }
 
@@ -271,5 +359,39 @@ func TestOfferProviderCapCountsOpenOffers(t *testing.T) {
 	e.requireOK(e.offer(e.fresh(), e.offerMsg("o-p2", "c3", "p2")), "other provider")
 	e.requireOK(e.accept(e.fresh(), e.acceptMsg("o1", "l1")), "accept frees a slot")
 	e.requireOK(e.offer(e.fresh(), third), "after accept")
+	e.requireInvariants(nil)
+}
+
+// TestOneSchedulerRefillsProviderSlots shows a residual risk instead of
+// asserting it in prose (DR-08-13). The per-provider open-offer cap
+// (effective max_open_offers, here governed to 2) is shared by every
+// scheduler, as in the v0 spec, and counts open offers. One admitted
+// service fills p1's slots; a second service's offer to p1 is BOUNDS. When
+// the offers expire (D-5 bounds each offer's lifetime), the first service
+// refills the slots in the same block, before the second service, which is
+// BOUNDS again. Nothing in v0 stops the cycle: there is no cancel or
+// decline message and no message that removes a service role.
+func TestOneSchedulerRefillsProviderSlots(t *testing.T) {
+	e := newEnv(t)
+	e.auth.limits[msgkit.LimitMaxOpenOffers] = 2
+	e.mustOffer(e.offerMsg("o1", "c1", "p1"))
+	e.mustOffer(e.offerMsg("o2", "c2", "p1"))
+	e.requireReject(e.offer(e.fresh(), e.offerBy(service2Acct, "o-s2", "c3", "p1")), msgkit.Bounds, "second service, slots full")
+	for round, now := range []int64{t0 + 600, t0 + 1200} {
+		if err := e.expire(e.blockCtx(now)); err != nil {
+			t.Fatal(err)
+		}
+		if e.leaseStore().Has(leases.ProviderOfferCountKey("p1")) {
+			t.Fatalf("round %d: p1's offers did not expire", round)
+		}
+		for i, content := range []string{"c1", "c2"} {
+			id := fmt.Sprintf("o-r%d-%d", round, i)
+			e.requireOK(e.offer(e.at(now), e.offerMsgAt(id, content, "p1", now)), "the first service refills")
+		}
+		e.requireReject(e.offer(e.at(now), e.offerMsgAt(fmt.Sprintf("o-third-r%d", round), "c3", "p1", now)), msgkit.Bounds, "the first service, a third offer")
+		late := e.offerMsgAt(fmt.Sprintf("o-s2b-r%d", round), "c3", "p1", now)
+		late.Signer = service2Acct
+		e.requireReject(e.offer(e.at(now), late), msgkit.Bounds, "second service after the refill")
+	}
 	e.requireInvariants(nil)
 }

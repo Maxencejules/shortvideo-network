@@ -9,15 +9,20 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
+	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 )
 
 // NewAnteHandler chains the SDK signature and sequence decorators with the
 // beta bounds. Fee amounts are rejected. There is no coin denomination.
 // envelopeDecorator rejects the envelope fields protocol v0 does not use
 // (memo, fee payer, fee granter, tip), so no submitter-chosen text rides in
-// the transaction envelope.
-func NewAnteHandler(ak authante.AccountKeeper, signatures *txsigning.HandlerMap, admitted func(ctx sdk.Context, addr []byte) bool) (sdk.AnteHandler, error) {
-	if ak == nil || signatures == nil || admitted == nil {
+// the transaction envelope. admission is x/authority's AdmissionOf for the
+// signer: admittedDecorator refuses a signer that is neither a submitter nor
+// a council seat account, and a seat-signed transaction that carries any
+// message but a council propose or approve (DR-06-06).
+func NewAnteHandler(ak authante.AccountKeeper, signatures *txsigning.HandlerMap, admission func(ctx sdk.Context, addr []byte) authority.Admission) (sdk.AnteHandler, error) {
+	if ak == nil || signatures == nil || admission == nil {
 		return nil, svnerr.ErrMalformed.Wrap("ante dependencies")
 	}
 	return sdk.ChainAnteDecorators(
@@ -34,7 +39,7 @@ func NewAnteHandler(ak authante.AccountKeeper, signatures *txsigning.HandlerMap,
 		authante.NewValidateSigCountDecorator(ak),
 		authante.NewSigGasConsumeDecorator(ak, authante.DefaultSigVerificationGasConsumer),
 		authante.NewSigVerificationDecorator(ak, signatures),
-		admittedDecorator{admitted: admitted},
+		admittedDecorator{admission: admission},
 		authante.NewIncrementSequenceDecorator(ak),
 	), nil
 }
@@ -115,8 +120,20 @@ func (feeRejectDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, 
 	return next(ctx, tx, simulate)
 }
 
+// admittedDecorator admits each signer from x/authority state. It runs
+// after signature verification and before the sequence moves, so a refused
+// transaction changes no store, the account sequence included:
+//
+//   - a signer with no admission row that is not a council seat account:
+//     ERROR_CODE_UNAUTHORIZED
+//   - a transaction that a council seat account signs and that carries any
+//     message other than MsgProposeChange or MsgApproveChange:
+//     ERROR_CODE_FORBIDDEN. A seat account has no submitter row and no role
+//     (DR-06-06), so it never reaches a registry, lease, evidence or execute
+//     handler. CheckTx runs this decorator too, so such a transaction is not
+//     admitted to the mempool.
 type admittedDecorator struct {
-	admitted func(ctx sdk.Context, addr []byte) bool
+	admission func(ctx sdk.Context, addr []byte) authority.Admission
 }
 
 func (d admittedDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
@@ -131,10 +148,33 @@ func (d admittedDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool,
 	if len(signers) == 0 {
 		return ctx, svnerr.ErrUnauthorized.Wrap("missing signer")
 	}
+	seat := false
 	for _, signer := range signers {
-		if !d.admitted(ctx, signer) {
+		switch d.admission(ctx, signer) {
+		case authority.AdmittedSubmitter:
+		case authority.AdmittedSeat:
+			seat = true
+		default:
 			return ctx, svnerr.ErrUnauthorized.Wrap("signer is not an admitted application account")
 		}
 	}
+	if seat {
+		for _, msg := range tx.GetMsgs() {
+			if !councilMessage(msg) {
+				return ctx, svnerr.ErrForbidden.Wrapf("a council seat key may sign only MsgProposeChange and MsgApproveChange, not %s", sdk.MsgTypeURL(msg))
+			}
+		}
+	}
 	return next(ctx, tx, simulate)
+}
+
+// councilMessage reports whether msg is one a council seat key may sign.
+// MsgExecuteChange is not: the AUTHORITY account executes.
+func councilMessage(msg sdk.Msg) bool {
+	switch msg.(type) {
+	case *authorityv1.MsgProposeChange, *authorityv1.MsgApproveChange:
+		return true
+	default:
+		return false
+	}
 }

@@ -82,7 +82,7 @@ At height 192 that run reported app hash `9242B71A92C248E317788251EFCF52FDF33811
 
 | Check | Status | Command |
 | --- | --- | --- |
-| Genesis validation, init order, import/export, chain-id mismatch | VERIFIED | `go test ./chain/app` |
+| Genesis validation, init order, fresh-state import/export (no authority side state; see the [authority export rule](../architecture/authority-authorization.md#export)), chain-id mismatch | VERIFIED | `go test ./chain/app` |
 | Unknown message, outsider, fee amount, gas 0, no end-block power change | VERIFIED | same package, `TestMessagesAreRejected` |
 | One `abci.ValidatorUpdate` constructor, no economic imports | VERIFIED | `TestValidatorUpdatesHaveOneConstructor`, `TestChainSourcesDoNotImportEconomicModules` |
 | Four processes, same hash, restart, one stopped, two stopped, resume | VERIFIED | [devnet-process-r2d.txt](logs/goal-05/devnet-process-r2d.txt) on tree `1c48fc02d3a4004c98cdc53f1dd8251da1b3753b`. Exit 0. Stall held at 12. Recovery reached 14. App hash `7AFE302F17F9E46DA33684CE3B5C21477B1FA349E6C7F41F4E1E3419162FE7E5`. No transaction was submitted, so the hash is the genesis application state. [devnet-process-r2.txt](logs/goal-05/devnet-process-r2.txt) and [devnet-process-r2c.txt](logs/goal-05/devnet-process-r2c.txt) are earlier trees. They are not this row. |

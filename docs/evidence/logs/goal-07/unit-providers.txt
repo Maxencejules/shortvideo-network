@@ -1,0 +1,717 @@
+COMMAND env -C chain go test -count=1 -v ./x/providers/...
+DATE 2026-11-01T09:32:19Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+=== RUN   TestRetiredKeyBoundsFitAPage
+--- PASS: TestRetiredKeyBoundsFitAPage (0.00s)
+=== RUN   TestRotationCap
+=== RUN   TestRotationCap/one_rotation_past_the_bound
+=== RUN   TestRotationCap/stale_generation_at_the_bound
+=== RUN   TestRotationCap/same_key_at_the_bound
+--- PASS: TestRotationCap (0.03s)
+    --- PASS: TestRotationCap/one_rotation_past_the_bound (0.00s)
+    --- PASS: TestRotationCap/stale_generation_at_the_bound (0.00s)
+    --- PASS: TestRotationCap/same_key_at_the_bound (0.00s)
+=== RUN   TestGenesisRetiredKeyCap
+--- PASS: TestGenesisRetiredKeyCap (0.04s)
+=== RUN   TestStoredRecordAboveTheCap
+=== RUN   TestStoredRecordAboveTheCap/0
+=== RUN   TestStoredRecordAboveTheCap/1026
+=== RUN   TestStoredRecordAboveTheCap/18446744073709551615
+=== RUN   TestStoredRecordAboveTheCap/rows_past_the_claimed_count
+--- PASS: TestStoredRecordAboveTheCap (0.00s)
+    --- PASS: TestStoredRecordAboveTheCap/0 (0.00s)
+    --- PASS: TestStoredRecordAboveTheCap/1026 (0.00s)
+    --- PASS: TestStoredRecordAboveTheCap/18446744073709551615 (0.00s)
+    --- PASS: TestStoredRecordAboveTheCap/rows_past_the_claimed_count (0.00s)
+=== RUN   TestQueryResponseSizeBound
+    bounds_test.go:223: largest Query/Provider response: 47300 bytes (bound 65536)
+    bounds_test.go:251: largest Providers page: 79147 bytes over 2 pages (bound 131072)
+    bounds_test.go:268: largest exported record: 122426 bytes (bound 196608)
+--- PASS: TestQueryResponseSizeBound (0.09s)
+=== RUN   TestAdmitByCouncil
+=== RUN   TestAdmitByCouncil/absent-and-not-devnet
+=== RUN   TestAdmitByCouncil/invalid-id
+=== RUN   TestAdmitByCouncil/admit-payload-blocked-by-dec-002
+=== RUN   TestAdmitByCouncil/admit-non-devnet-group
+=== RUN   TestAdmitByCouncil/admitted-again
+=== RUN   TestAdmitByCouncil/draining
+=== RUN   TestAdmitByCouncil/disabled-cannot-return
+=== RUN   TestAdmitByCouncil/execute-admit-provider
+--- PASS: TestAdmitByCouncil (0.00s)
+    --- PASS: TestAdmitByCouncil/absent-and-not-devnet (0.00s)
+    --- PASS: TestAdmitByCouncil/invalid-id (0.00s)
+    --- PASS: TestAdmitByCouncil/admit-payload-blocked-by-dec-002 (0.00s)
+    --- PASS: TestAdmitByCouncil/admit-non-devnet-group (0.00s)
+    --- PASS: TestAdmitByCouncil/admitted-again (0.00s)
+    --- PASS: TestAdmitByCouncil/draining (0.00s)
+    --- PASS: TestAdmitByCouncil/disabled-cannot-return (0.00s)
+    --- PASS: TestAdmitByCouncil/execute-admit-provider (0.00s)
+=== RUN   TestDisableByCouncil
+=== RUN   TestDisableByCouncil/absent
+=== RUN   TestDisableByCouncil/disable-applied-conflict
+=== RUN   TestDisableByCouncil/disable-disabled-conflict
+=== RUN   TestDisableByCouncil/execute-disable-provider
+=== RUN   TestDisableByCouncil/disable-draining
+--- PASS: TestDisableByCouncil (0.00s)
+    --- PASS: TestDisableByCouncil/absent (0.00s)
+    --- PASS: TestDisableByCouncil/disable-applied-conflict (0.00s)
+    --- PASS: TestDisableByCouncil/disable-disabled-conflict (0.00s)
+    --- PASS: TestDisableByCouncil/execute-disable-provider (0.00s)
+    --- PASS: TestDisableByCouncil/disable-draining (0.00s)
+=== RUN   TestProviderDisabledSpecCase
+=== RUN   TestProviderDisabledSpecCase/provider-disabled
+--- PASS: TestProviderDisabledSpecCase (0.00s)
+    --- PASS: TestProviderDisabledSpecCase/provider-disabled (0.00s)
+=== RUN   TestHandoffAPI
+=== RUN   TestHandoffAPI/check-new-obligation
+=== RUN   TestHandoffAPI/provider-returns-a-copy
+=== RUN   TestHandoffAPI/verify-provider-signature
+--- PASS: TestHandoffAPI (0.00s)
+    --- PASS: TestHandoffAPI/check-new-obligation (0.00s)
+    --- PASS: TestHandoffAPI/provider-returns-a-copy (0.00s)
+    --- PASS: TestHandoffAPI/verify-provider-signature (0.00s)
+=== RUN   TestDrainProviderCheckOrder
+=== RUN   TestDrainProviderCheckOrder/enforce-gas-limit-0
+=== RUN   TestDrainProviderCheckOrder/enforce-tx-65537-bytes
+=== RUN   TestDrainProviderCheckOrder/enforce-signer-19-bytes
+=== RUN   TestDrainProviderCheckOrder/presence-signature
+=== RUN   TestDrainProviderCheckOrder/provider-not-found
+=== RUN   TestDrainProviderCheckOrder/sig-domain-0
+=== RUN   TestDrainProviderCheckOrder/sig-wrong-domain
+=== RUN   TestDrainProviderCheckOrder/sig-profile-3
+=== RUN   TestDrainProviderCheckOrder/sig-key-id-pattern
+=== RUN   TestDrainProviderCheckOrder/sig-pubkey-31
+=== RUN   TestDrainProviderCheckOrder/sig-key-id-not-current
+=== RUN   TestDrainProviderCheckOrder/sig-forged
+=== RUN   TestDrainProviderCheckOrder/cross-owner
+=== RUN   TestDrainProviderCheckOrder/business-id-pattern
+=== RUN   TestDrainProviderCheckOrder/business-id-replay-across-modules
+=== RUN   TestDrainProviderCheckOrder/state-not-admitted
+=== RUN   TestDrainProviderCheckOrder/no-fault
+--- PASS: TestDrainProviderCheckOrder (0.01s)
+    --- PASS: TestDrainProviderCheckOrder/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/presence-signature (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/provider-not-found (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/sig-domain-0 (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/sig-wrong-domain (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/sig-profile-3 (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/sig-key-id-pattern (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/sig-pubkey-31 (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/sig-key-id-not-current (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/sig-forged (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/cross-owner (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/business-id-pattern (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/business-id-replay-across-modules (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/state-not-admitted (0.00s)
+    --- PASS: TestDrainProviderCheckOrder/no-fault (0.00s)
+=== RUN   TestDrainProviderPresence
+=== RUN   TestDrainProviderPresence/business_id
+=== RUN   TestDrainProviderPresence/provider_id
+=== RUN   TestDrainProviderPresence/provider_signature
+--- PASS: TestDrainProviderPresence (0.00s)
+    --- PASS: TestDrainProviderPresence/business_id (0.00s)
+    --- PASS: TestDrainProviderPresence/provider_id (0.00s)
+    --- PASS: TestDrainProviderPresence/provider_signature (0.00s)
+=== RUN   TestDrainProviderSpecCases
+=== RUN   TestDrainProviderSpecCases/drain-stops-new-offers
+=== RUN   TestDrainProviderSpecCases/drain-keeps-reserved-bytes
+=== RUN   TestDrainProviderSpecCases/second-drain-conflict
+=== RUN   TestDrainProviderSpecCases/broadcaster-relay-forbidden
+=== RUN   TestDrainProviderSpecCases/signature-names-the-key-generation
+=== RUN   TestDrainProviderSpecCases/rotation-signature-reused-for-drain
+--- PASS: TestDrainProviderSpecCases (0.00s)
+    --- PASS: TestDrainProviderSpecCases/drain-stops-new-offers (0.00s)
+    --- PASS: TestDrainProviderSpecCases/drain-keeps-reserved-bytes (0.00s)
+    --- PASS: TestDrainProviderSpecCases/second-drain-conflict (0.00s)
+    --- PASS: TestDrainProviderSpecCases/broadcaster-relay-forbidden (0.00s)
+    --- PASS: TestDrainProviderSpecCases/signature-names-the-key-generation (0.00s)
+    --- PASS: TestDrainProviderSpecCases/rotation-signature-reused-for-drain (0.00s)
+=== RUN   TestValidateGenesisRejects
+=== RUN   TestValidateGenesisRejects/previous-nil
+=== RUN   TestValidateGenesisRejects/digest-missing
+=== RUN   TestValidateGenesisRejects/state-unknown
+=== RUN   TestValidateGenesisRejects/genesis-unknown-field
+=== RUN   TestValidateGenesisRejects/pubkey-33
+=== RUN   TestValidateGenesisRejects/previous-generation-order
+=== RUN   TestValidateGenesisRejects/previous-pubkey-31
+=== RUN   TestValidateGenesisRejects/previous-retired-decreasing
+=== RUN   TestValidateGenesisRejects/capacity-0
+=== RUN   TestValidateGenesisRejects/digest-31
+=== RUN   TestValidateGenesisRejects/reserved-above
+=== RUN   TestValidateGenesisRejects/previous-retired-year-10000
+=== RUN   TestValidateGenesisRejects/state-unspecified
+=== RUN   TestValidateGenesisRejects/id-pattern
+=== RUN   TestValidateGenesisRejects/account-empty
+=== RUN   TestValidateGenesisRejects/digest-algorithm-0
+=== RUN   TestValidateGenesisRejects/group-pattern
+=== RUN   TestValidateGenesisRejects/duplicate-id
+=== RUN   TestValidateGenesisRejects/id-empty
+=== RUN   TestValidateGenesisRejects/key-id-empty
+=== RUN   TestValidateGenesisRejects/generation-0
+=== RUN   TestValidateGenesisRejects/previous-count-short
+=== RUN   TestValidateGenesisRejects/previous-count-long
+=== RUN   TestValidateGenesisRejects/previous-retired-negative
+=== RUN   TestValidateGenesisRejects/previous-unknown-field
+=== RUN   TestValidateGenesisRejects/nil-record
+=== RUN   TestValidateGenesisRejects/id-65
+=== RUN   TestValidateGenesisRejects/previous-generation-gap
+=== RUN   TestValidateGenesisRejects/previous-retired-0
+=== RUN   TestValidateGenesisRejects/digest-unknown-field
+=== RUN   TestValidateGenesisRejects/record-unknown-field
+=== RUN   TestValidateGenesisRejects/account-19
+=== RUN   TestValidateGenesisRejects/key-id-pattern
+=== RUN   TestValidateGenesisRejects/group-empty
+--- PASS: TestValidateGenesisRejects (0.01s)
+    --- PASS: TestValidateGenesisRejects/previous-nil (0.00s)
+    --- PASS: TestValidateGenesisRejects/digest-missing (0.00s)
+    --- PASS: TestValidateGenesisRejects/state-unknown (0.00s)
+    --- PASS: TestValidateGenesisRejects/genesis-unknown-field (0.00s)
+    --- PASS: TestValidateGenesisRejects/pubkey-33 (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-generation-order (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-pubkey-31 (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-retired-decreasing (0.00s)
+    --- PASS: TestValidateGenesisRejects/capacity-0 (0.00s)
+    --- PASS: TestValidateGenesisRejects/digest-31 (0.00s)
+    --- PASS: TestValidateGenesisRejects/reserved-above (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-retired-year-10000 (0.00s)
+    --- PASS: TestValidateGenesisRejects/state-unspecified (0.00s)
+    --- PASS: TestValidateGenesisRejects/id-pattern (0.00s)
+    --- PASS: TestValidateGenesisRejects/account-empty (0.00s)
+    --- PASS: TestValidateGenesisRejects/digest-algorithm-0 (0.00s)
+    --- PASS: TestValidateGenesisRejects/group-pattern (0.00s)
+    --- PASS: TestValidateGenesisRejects/duplicate-id (0.00s)
+    --- PASS: TestValidateGenesisRejects/id-empty (0.00s)
+    --- PASS: TestValidateGenesisRejects/key-id-empty (0.00s)
+    --- PASS: TestValidateGenesisRejects/generation-0 (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-count-short (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-count-long (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-retired-negative (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-unknown-field (0.00s)
+    --- PASS: TestValidateGenesisRejects/nil-record (0.00s)
+    --- PASS: TestValidateGenesisRejects/id-65 (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-generation-gap (0.00s)
+    --- PASS: TestValidateGenesisRejects/previous-retired-0 (0.00s)
+    --- PASS: TestValidateGenesisRejects/digest-unknown-field (0.00s)
+    --- PASS: TestValidateGenesisRejects/record-unknown-field (0.00s)
+    --- PASS: TestValidateGenesisRejects/account-19 (0.00s)
+    --- PASS: TestValidateGenesisRejects/key-id-pattern (0.00s)
+    --- PASS: TestValidateGenesisRejects/group-empty (0.00s)
+=== RUN   TestGenesisRoundTrip
+--- PASS: TestGenesisRoundTrip (0.00s)
+=== RUN   TestGenesisRoundTripFromCommittedTransitions
+--- PASS: TestGenesisRoundTripFromCommittedTransitions (0.00s)
+=== RUN   TestGenesisDocumentRules
+=== RUN   TestGenesisDocumentRules/default-is-empty-and-valid
+=== RUN   TestGenesisDocumentRules/empty-document
+=== RUN   TestGenesisDocumentRules/unknown-json-field
+=== RUN   TestGenesisDocumentRules/init-panics-on-invalid
+=== RUN   TestGenesisDocumentRules/init-into-occupied-store
+=== RUN   TestGenesisDocumentRules/export-rejects-corrupt-record
+--- PASS: TestGenesisDocumentRules (0.00s)
+    --- PASS: TestGenesisDocumentRules/default-is-empty-and-valid (0.00s)
+    --- PASS: TestGenesisDocumentRules/empty-document (0.00s)
+    --- PASS: TestGenesisDocumentRules/unknown-json-field (0.00s)
+    --- PASS: TestGenesisDocumentRules/init-panics-on-invalid (0.00s)
+    --- PASS: TestGenesisDocumentRules/init-into-occupied-store (0.00s)
+    --- PASS: TestGenesisDocumentRules/export-rejects-corrupt-record (0.00s)
+=== RUN   TestWritesDoNotGrowWithRotations
+--- PASS: TestWritesDoNotGrowWithRotations (0.06s)
+=== RUN   TestRetiredKeyRowsAreTheHistory
+=== RUN   TestRetiredKeyRowsAreTheHistory/missing_row
+=== RUN   TestRetiredKeyRowsAreTheHistory/undecodable_row
+=== RUN   TestRetiredKeyRowsAreTheHistory/row_under_another_generation
+=== RUN   TestRetiredKeyRowsAreTheHistory/extra_row
+--- PASS: TestRetiredKeyRowsAreTheHistory (0.00s)
+    --- PASS: TestRetiredKeyRowsAreTheHistory/missing_row (0.00s)
+    --- PASS: TestRetiredKeyRowsAreTheHistory/undecodable_row (0.00s)
+    --- PASS: TestRetiredKeyRowsAreTheHistory/row_under_another_generation (0.00s)
+    --- PASS: TestRetiredKeyRowsAreTheHistory/extra_row (0.00s)
+=== RUN   TestProvidersPageRetiredKeyBudget
+--- PASS: TestProvidersPageRetiredKeyBudget (0.05s)
+=== RUN   TestCorruptStoredRecord
+=== RUN   TestCorruptStoredRecord/undecodable
+=== RUN   TestCorruptStoredRecord/names_another_id
+=== RUN   TestCorruptStoredRecord/retired_keys_inline
+--- PASS: TestCorruptStoredRecord (0.00s)
+    --- PASS: TestCorruptStoredRecord/undecodable (0.00s)
+    --- PASS: TestCorruptStoredRecord/names_another_id (0.00s)
+    --- PASS: TestCorruptStoredRecord/retired_keys_inline (0.00s)
+=== RUN   TestServicesOnRealRouters
+--- PASS: TestServicesOnRealRouters (0.00s)
+=== RUN   TestServiceDescriptorsMatchTheProtocol
+--- PASS: TestServiceDescriptorsMatchTheProtocol (0.00s)
+=== RUN   TestUnaryHandlerInterceptor
+--- PASS: TestUnaryHandlerInterceptor (0.00s)
+=== RUN   TestRunMigrationsAtCurrentVersionIsANoOp
+--- PASS: TestRunMigrationsAtCurrentVersionIsANoOp (0.00s)
+=== RUN   TestNoMigrationFromScaffoldLayout
+--- PASS: TestNoMigrationFromScaffoldLayout (0.00s)
+=== RUN   TestScaffoldStoreIsNotAProvider
+--- PASS: TestScaffoldStoreIsNotAProvider (0.00s)
+=== RUN   TestMigrationTable
+--- PASS: TestMigrationTable (0.00s)
+=== RUN   TestNoValidatorUpdates
+--- PASS: TestNoValidatorUpdates (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+=== RUN   TestKeeperImports
+--- PASS: TestKeeperImports (0.00s)
+=== RUN   TestNewKeeperRejectsMissingDependencies
+=== RUN   TestNewKeeperRejectsMissingDependencies/nil-key
+=== RUN   TestNewKeeperRejectsMissingDependencies/nil-roles
+=== RUN   TestNewKeeperRejectsMissingDependencies/nil-limits
+--- PASS: TestNewKeeperRejectsMissingDependencies (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/nil-key (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/nil-roles (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/nil-limits (0.00s)
+=== RUN   TestStateNames
+--- PASS: TestStateNames (0.00s)
+=== RUN   TestSignBytes
+--- PASS: TestSignBytes (0.00s)
+=== RUN   TestProviderRecordFields
+--- PASS: TestProviderRecordFields (0.00s)
+=== RUN   TestQueryProviderErrors
+=== RUN   TestQueryProviderErrors/nil-request
+=== RUN   TestQueryProviderErrors/empty-id
+=== RUN   TestQueryProviderErrors/id-65
+=== RUN   TestQueryProviderErrors/id-pattern
+=== RUN   TestQueryProviderErrors/absent
+--- PASS: TestQueryProviderErrors (0.00s)
+    --- PASS: TestQueryProviderErrors/nil-request (0.00s)
+    --- PASS: TestQueryProviderErrors/empty-id (0.00s)
+    --- PASS: TestQueryProviderErrors/id-65 (0.00s)
+    --- PASS: TestQueryProviderErrors/id-pattern (0.00s)
+    --- PASS: TestQueryProviderErrors/absent (0.00s)
+=== RUN   TestProvidersPaginationBoundaries
+=== RUN   TestProvidersPaginationBoundaries/providers-0
+=== RUN   TestProvidersPaginationBoundaries/providers-1
+=== RUN   TestProvidersPaginationBoundaries/providers-2
+=== RUN   TestProvidersPaginationBoundaries/providers-100
+=== RUN   TestProvidersPaginationBoundaries/providers-101
+=== RUN   TestProvidersPaginationBoundaries/page-keys
+=== RUN   TestProvidersPaginationBoundaries/governed-page-limit
+=== RUN   TestProvidersPaginationBoundaries/nil-page
+=== RUN   TestProvidersPaginationBoundaries/lists-every-state
+--- PASS: TestProvidersPaginationBoundaries (0.03s)
+    --- PASS: TestProvidersPaginationBoundaries/providers-0 (0.00s)
+    --- PASS: TestProvidersPaginationBoundaries/providers-1 (0.00s)
+    --- PASS: TestProvidersPaginationBoundaries/providers-2 (0.00s)
+    --- PASS: TestProvidersPaginationBoundaries/providers-100 (0.01s)
+    --- PASS: TestProvidersPaginationBoundaries/providers-101 (0.01s)
+    --- PASS: TestProvidersPaginationBoundaries/page-keys (0.00s)
+    --- PASS: TestProvidersPaginationBoundaries/governed-page-limit (0.00s)
+    --- PASS: TestProvidersPaginationBoundaries/nil-page (0.00s)
+    --- PASS: TestProvidersPaginationBoundaries/lists-every-state (0.00s)
+=== RUN   TestRegisterProviderCheckOrder
+=== RUN   TestRegisterProviderCheckOrder/enforce-gas-limit-0
+=== RUN   TestRegisterProviderCheckOrder/enforce-tx-65537-bytes
+=== RUN   TestRegisterProviderCheckOrder/enforce-signer-19-bytes
+=== RUN   TestRegisterProviderCheckOrder/presence-business-id
+=== RUN   TestRegisterProviderCheckOrder/role-none
+=== RUN   TestRegisterProviderCheckOrder/role-service
+=== RUN   TestRegisterProviderCheckOrder/provider-id-65
+=== RUN   TestRegisterProviderCheckOrder/signing-key-id-pattern
+=== RUN   TestRegisterProviderCheckOrder/operator-group-pattern
+=== RUN   TestRegisterProviderCheckOrder/signing-pubkey-31
+=== RUN   TestRegisterProviderCheckOrder/digest-algorithm-0
+=== RUN   TestRegisterProviderCheckOrder/digest-31-bytes
+=== RUN   TestRegisterProviderCheckOrder/capacity-0
+=== RUN   TestRegisterProviderCheckOrder/business-id-pattern
+=== RUN   TestRegisterProviderCheckOrder/business-id-replay
+=== RUN   TestRegisterProviderCheckOrder/duplicate-provider-id
+=== RUN   TestRegisterProviderCheckOrder/no-fault
+--- PASS: TestRegisterProviderCheckOrder (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/presence-business-id (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/role-none (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/role-service (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/provider-id-65 (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/signing-key-id-pattern (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/operator-group-pattern (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/signing-pubkey-31 (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/digest-algorithm-0 (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/digest-31-bytes (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/capacity-0 (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/business-id-pattern (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/business-id-replay (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/duplicate-provider-id (0.00s)
+    --- PASS: TestRegisterProviderCheckOrder/no-fault (0.00s)
+=== RUN   TestRegisterProviderPresence
+=== RUN   TestRegisterProviderPresence/signer
+=== RUN   TestRegisterProviderPresence/business_id
+=== RUN   TestRegisterProviderPresence/provider_id
+=== RUN   TestRegisterProviderPresence/signing_pubkey
+=== RUN   TestRegisterProviderPresence/signing_key_id
+=== RUN   TestRegisterProviderPresence/endpoint_manifest_digest
+=== RUN   TestRegisterProviderPresence/operator_group_id
+=== RUN   TestRegisterProviderPresence/nil-message
+--- PASS: TestRegisterProviderPresence (0.00s)
+    --- PASS: TestRegisterProviderPresence/signer (0.00s)
+    --- PASS: TestRegisterProviderPresence/business_id (0.00s)
+    --- PASS: TestRegisterProviderPresence/provider_id (0.00s)
+    --- PASS: TestRegisterProviderPresence/signing_pubkey (0.00s)
+    --- PASS: TestRegisterProviderPresence/signing_key_id (0.00s)
+    --- PASS: TestRegisterProviderPresence/endpoint_manifest_digest (0.00s)
+    --- PASS: TestRegisterProviderPresence/operator_group_id (0.00s)
+    --- PASS: TestRegisterProviderPresence/nil-message (0.00s)
+=== RUN   TestRegisterProviderSpecCases
+=== RUN   TestRegisterProviderSpecCases/boundary-id-64
+=== RUN   TestRegisterProviderSpecCases/boundary-id-65
+=== RUN   TestRegisterProviderSpecCases/malformed-missing-field
+=== RUN   TestRegisterProviderSpecCases/digest-algorithm-unknown
+=== RUN   TestRegisterProviderSpecCases/digest-33-bytes
+=== RUN   TestRegisterProviderSpecCases/broadcaster-cannot-register
+--- PASS: TestRegisterProviderSpecCases (0.00s)
+    --- PASS: TestRegisterProviderSpecCases/boundary-id-64 (0.00s)
+    --- PASS: TestRegisterProviderSpecCases/boundary-id-65 (0.00s)
+    --- PASS: TestRegisterProviderSpecCases/malformed-missing-field (0.00s)
+    --- PASS: TestRegisterProviderSpecCases/digest-algorithm-unknown (0.00s)
+    --- PASS: TestRegisterProviderSpecCases/digest-33-bytes (0.00s)
+    --- PASS: TestRegisterProviderSpecCases/broadcaster-cannot-register (0.00s)
+=== RUN   TestRegisterProviderWritesRecordAndEvent
+--- PASS: TestRegisterProviderWritesRecordAndEvent (0.00s)
+=== RUN   TestRegisterProviderNormalizesTheDigest
+--- PASS: TestRegisterProviderNormalizesTheDigest (0.00s)
+=== RUN   TestRegisterReplayByAnotherAccountIsForbidden
+=== RUN   TestRegisterReplayByAnotherAccountIsForbidden/owner_first,_copy_second
+=== RUN   TestRegisterReplayByAnotherAccountIsForbidden/copy_front-runs_the_original
+--- PASS: TestRegisterReplayByAnotherAccountIsForbidden (0.00s)
+    --- PASS: TestRegisterReplayByAnotherAccountIsForbidden/owner_first,_copy_second (0.00s)
+    --- PASS: TestRegisterReplayByAnotherAccountIsForbidden/copy_front-runs_the_original (0.00s)
+=== RUN   TestRejectedProviderMessagesLeaveTheStore
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/register-outsider
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/register-by-service
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/update-cross-owner
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/register-replay
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/register-duplicate-id
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/rotate-stale
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/register-missing-field
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/register-digest-algorithm
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/rotate-profile-version
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/register-oversized-id
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/register-digest-31
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/drain-wrong-domain
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/update-below-reserved
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/drain-not-admitted
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/update-not-found
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/rotate-overflow
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/rotate-forged
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/admit-decision-blocked
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/admit-wrong-group
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/disable-applied
+=== RUN   TestRejectedProviderMessagesLeaveTheStore/admit-not-found
+--- PASS: TestRejectedProviderMessagesLeaveTheStore (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/register-outsider (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/register-by-service (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/update-cross-owner (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/register-replay (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/register-duplicate-id (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/rotate-stale (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/register-missing-field (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/register-digest-algorithm (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/rotate-profile-version (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/register-oversized-id (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/register-digest-31 (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/drain-wrong-domain (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/update-below-reserved (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/drain-not-admitted (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/update-not-found (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/rotate-overflow (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/rotate-forged (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/admit-decision-blocked (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/admit-wrong-group (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/disable-applied (0.00s)
+    --- PASS: TestRejectedProviderMessagesLeaveTheStore/admit-not-found (0.00s)
+=== RUN   TestIdempotentReplayWritesNothing
+=== RUN   TestIdempotentReplayWritesNothing/register
+=== RUN   TestIdempotentReplayWritesNothing/update
+=== RUN   TestIdempotentReplayWritesNothing/drain
+=== RUN   TestIdempotentReplayWritesNothing/rotate-retry-after-commit-is-unauthorized
+=== RUN   TestIdempotentReplayWritesNothing/same-id-other-payload-is-replay
+--- PASS: TestIdempotentReplayWritesNothing (0.00s)
+    --- PASS: TestIdempotentReplayWritesNothing/register (0.00s)
+    --- PASS: TestIdempotentReplayWritesNothing/update (0.00s)
+    --- PASS: TestIdempotentReplayWritesNothing/drain (0.00s)
+    --- PASS: TestIdempotentReplayWritesNothing/rotate-retry-after-commit-is-unauthorized (0.00s)
+    --- PASS: TestIdempotentReplayWritesNothing/same-id-other-payload-is-replay (0.00s)
+=== RUN   TestBusinessIdsShareOneNamespace
+--- PASS: TestBusinessIdsShareOneNamespace (0.00s)
+=== RUN   TestRotateProviderKeyCheckOrder
+=== RUN   TestRotateProviderKeyCheckOrder/enforce-gas-limit-0
+=== RUN   TestRotateProviderKeyCheckOrder/enforce-tx-65537-bytes
+=== RUN   TestRotateProviderKeyCheckOrder/enforce-signer-19-bytes
+=== RUN   TestRotateProviderKeyCheckOrder/presence-signature
+=== RUN   TestRotateProviderKeyCheckOrder/provider-not-found
+=== RUN   TestRotateProviderKeyCheckOrder/sig-domain-unknown
+=== RUN   TestRotateProviderKeyCheckOrder/sig-wrong-domain
+=== RUN   TestRotateProviderKeyCheckOrder/sig-profile-2
+=== RUN   TestRotateProviderKeyCheckOrder/sig-signature-63
+=== RUN   TestRotateProviderKeyCheckOrder/sig-key-id-not-current
+=== RUN   TestRotateProviderKeyCheckOrder/sig-pubkey-not-current
+=== RUN   TestRotateProviderKeyCheckOrder/sig-forged
+=== RUN   TestRotateProviderKeyCheckOrder/cross-owner
+=== RUN   TestRotateProviderKeyCheckOrder/new-key-id-pattern
+=== RUN   TestRotateProviderKeyCheckOrder/new-pubkey-31
+=== RUN   TestRotateProviderKeyCheckOrder/business-id-pattern
+=== RUN   TestRotateProviderKeyCheckOrder/business-id-replay-across-modules
+=== RUN   TestRotateProviderKeyCheckOrder/rotate-key-stale-generation
+=== RUN   TestRotateProviderKeyCheckOrder/same-key-id
+=== RUN   TestRotateProviderKeyCheckOrder/no-fault
+--- PASS: TestRotateProviderKeyCheckOrder (0.01s)
+    --- PASS: TestRotateProviderKeyCheckOrder/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/presence-signature (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/provider-not-found (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/sig-domain-unknown (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/sig-wrong-domain (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/sig-profile-2 (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/sig-signature-63 (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/sig-key-id-not-current (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/sig-pubkey-not-current (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/sig-forged (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/cross-owner (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/new-key-id-pattern (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/new-pubkey-31 (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/business-id-pattern (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/business-id-replay-across-modules (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/rotate-key-stale-generation (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/same-key-id (0.00s)
+    --- PASS: TestRotateProviderKeyCheckOrder/no-fault (0.00s)
+=== RUN   TestRotateProviderKeyPresence
+=== RUN   TestRotateProviderKeyPresence/current_key_signature
+=== RUN   TestRotateProviderKeyPresence/business_id
+=== RUN   TestRotateProviderKeyPresence/provider_id
+=== RUN   TestRotateProviderKeyPresence/new_signing_pubkey
+=== RUN   TestRotateProviderKeyPresence/new_signing_key_id
+--- PASS: TestRotateProviderKeyPresence (0.00s)
+    --- PASS: TestRotateProviderKeyPresence/current_key_signature (0.00s)
+    --- PASS: TestRotateProviderKeyPresence/business_id (0.00s)
+    --- PASS: TestRotateProviderKeyPresence/provider_id (0.00s)
+    --- PASS: TestRotateProviderKeyPresence/new_signing_pubkey (0.00s)
+    --- PASS: TestRotateProviderKeyPresence/new_signing_key_id (0.00s)
+=== RUN   TestRotateProviderKeySpecCases
+=== RUN   TestRotateProviderKeySpecCases/rotate-key-stale-generation
+=== RUN   TestRotateProviderKeySpecCases/rotate-then-old-key-fails
+=== RUN   TestRotateProviderKeySpecCases/same-pubkey-conflict
+=== RUN   TestRotateProviderKeySpecCases/overflow
+=== RUN   TestRotateProviderKeySpecCases/broadcaster-relay-forbidden
+=== RUN   TestRotateProviderKeySpecCases/drain-signature-reused-for-rotation
+=== RUN   TestRotateProviderKeySpecCases/oversized-payload-has-no-canonical-form
+--- PASS: TestRotateProviderKeySpecCases (0.01s)
+    --- PASS: TestRotateProviderKeySpecCases/rotate-key-stale-generation (0.00s)
+    --- PASS: TestRotateProviderKeySpecCases/rotate-then-old-key-fails (0.00s)
+    --- PASS: TestRotateProviderKeySpecCases/same-pubkey-conflict (0.00s)
+    --- PASS: TestRotateProviderKeySpecCases/overflow (0.00s)
+    --- PASS: TestRotateProviderKeySpecCases/broadcaster-relay-forbidden (0.00s)
+    --- PASS: TestRotateProviderKeySpecCases/drain-signature-reused-for-rotation (0.00s)
+    --- PASS: TestRotateProviderKeySpecCases/oversized-payload-has-no-canonical-form (0.00s)
+=== RUN   TestRotateProviderKeyRecordsHistory
+--- PASS: TestRotateProviderKeyRecordsHistory (0.00s)
+=== RUN   TestRotationTouchesOnlyTheProvidersStore
+--- PASS: TestRotationTouchesOnlyTheProvidersStore (0.00s)
+=== RUN   TestUpdateProviderCheckOrder
+=== RUN   TestUpdateProviderCheckOrder/enforce-gas-limit-0
+=== RUN   TestUpdateProviderCheckOrder/enforce-tx-65537-bytes
+=== RUN   TestUpdateProviderCheckOrder/enforce-signer-19-bytes
+=== RUN   TestUpdateProviderCheckOrder/presence-business-id
+=== RUN   TestUpdateProviderCheckOrder/provider-not-found
+=== RUN   TestUpdateProviderCheckOrder/cross-owner
+=== RUN   TestUpdateProviderCheckOrder/capacity-0
+=== RUN   TestUpdateProviderCheckOrder/digest-algorithm-0
+=== RUN   TestUpdateProviderCheckOrder/digest-33-bytes
+=== RUN   TestUpdateProviderCheckOrder/business-id-pattern
+=== RUN   TestUpdateProviderCheckOrder/business-id-replay
+=== RUN   TestUpdateProviderCheckOrder/capacity-below-reserved
+=== RUN   TestUpdateProviderCheckOrder/no-fault
+--- PASS: TestUpdateProviderCheckOrder (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/presence-business-id (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/provider-not-found (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/cross-owner (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/capacity-0 (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/digest-algorithm-0 (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/digest-33-bytes (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/business-id-pattern (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/business-id-replay (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/capacity-below-reserved (0.00s)
+    --- PASS: TestUpdateProviderCheckOrder/no-fault (0.00s)
+=== RUN   TestUpdateProviderPresence
+=== RUN   TestUpdateProviderPresence/business_id
+=== RUN   TestUpdateProviderPresence/provider_id
+=== RUN   TestUpdateProviderPresence/endpoint_manifest_digest
+--- PASS: TestUpdateProviderPresence (0.00s)
+    --- PASS: TestUpdateProviderPresence/business_id (0.00s)
+    --- PASS: TestUpdateProviderPresence/provider_id (0.00s)
+    --- PASS: TestUpdateProviderPresence/endpoint_manifest_digest (0.00s)
+=== RUN   TestUpdateProviderSpecCases
+=== RUN   TestUpdateProviderSpecCases/update-provider
+=== RUN   TestUpdateProviderSpecCases/update-provider-below-reserved
+=== RUN   TestUpdateProviderSpecCases/unauthorized-update-by-service
+=== RUN   TestUpdateProviderSpecCases/unknown-provider-id-65
+=== RUN   TestUpdateProviderSpecCases/allowed-in-every-state
+--- PASS: TestUpdateProviderSpecCases (0.00s)
+    --- PASS: TestUpdateProviderSpecCases/update-provider (0.00s)
+    --- PASS: TestUpdateProviderSpecCases/update-provider-below-reserved (0.00s)
+    --- PASS: TestUpdateProviderSpecCases/unauthorized-update-by-service (0.00s)
+    --- PASS: TestUpdateProviderSpecCases/unknown-provider-id-65 (0.00s)
+    --- PASS: TestUpdateProviderSpecCases/allowed-in-every-state (0.00s)
+=== RUN   FuzzProviderTransitions
+=== RUN   FuzzProviderTransitions/seed#0
+=== RUN   FuzzProviderTransitions/seed#1
+=== RUN   FuzzProviderTransitions/seed#2
+=== RUN   FuzzProviderTransitions/seed#3
+=== RUN   FuzzProviderTransitions/seed#4
+--- PASS: FuzzProviderTransitions (0.01s)
+    --- PASS: FuzzProviderTransitions/seed#0 (0.00s)
+    --- PASS: FuzzProviderTransitions/seed#1 (0.00s)
+    --- PASS: FuzzProviderTransitions/seed#2 (0.00s)
+    --- PASS: FuzzProviderTransitions/seed#3 (0.00s)
+    --- PASS: FuzzProviderTransitions/seed#4 (0.00s)
+=== RUN   FuzzProvidersGenesisJSON
+=== RUN   FuzzProvidersGenesisJSON/seed#0
+=== RUN   FuzzProvidersGenesisJSON/seed#1
+=== RUN   FuzzProvidersGenesisJSON/seed#2
+=== RUN   FuzzProvidersGenesisJSON/seed#3
+=== RUN   FuzzProvidersGenesisJSON/seed#4
+=== RUN   FuzzProvidersGenesisJSON/seed#5
+=== RUN   FuzzProvidersGenesisJSON/seed#6
+--- PASS: FuzzProvidersGenesisJSON (0.00s)
+    --- PASS: FuzzProvidersGenesisJSON/seed#0 (0.00s)
+    --- PASS: FuzzProvidersGenesisJSON/seed#1 (0.00s)
+    --- PASS: FuzzProvidersGenesisJSON/seed#2 (0.00s)
+    --- PASS: FuzzProvidersGenesisJSON/seed#3 (0.00s)
+    --- PASS: FuzzProvidersGenesisJSON/seed#4 (0.00s)
+    --- PASS: FuzzProvidersGenesisJSON/seed#5 (0.00s)
+    --- PASS: FuzzProvidersGenesisJSON/seed#6 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	0.419s
+=== RUN   TestParseValidManifest
+--- PASS: TestParseValidManifest (0.00s)
+=== RUN   TestEncodeMatchesParse
+--- PASS: TestEncodeMatchesParse (0.00s)
+=== RUN   TestParseRejects
+=== RUN   TestParseRejects/endpoint-http
+=== RUN   TestParseRejects/extra-key
+=== RUN   TestParseRejects/schema-version-2
+=== RUN   TestParseRejects/capacity-zero
+=== RUN   TestParseRejects/capacity-21-chars
+=== RUN   TestParseRejects/oversized-input
+=== RUN   TestParseRejects/provider-id-number
+=== RUN   TestParseRejects/capacity-above-uint64
+=== RUN   TestParseRejects/endpoints-empty
+=== RUN   TestParseRejects/top-level-string
+=== RUN   TestParseRejects/null-value
+=== RUN   TestParseRejects/capacity-leading-zero
+=== RUN   TestParseRejects/endpoints-9
+=== RUN   TestParseRejects/endpoints-not-array
+=== RUN   TestParseRejects/endpoint-url-2049-chars
+=== RUN   TestParseRejects/endpoint-name-65-chars
+=== RUN   TestParseRejects/endpoint-extra-key
+=== RUN   TestParseRejects/trailing-data
+=== RUN   TestParseRejects/missing-key
+=== RUN   TestParseRejects/profile-other
+=== RUN   TestParseRejects/endpoint-url-7-chars
+=== RUN   TestParseRejects/not-json
+=== RUN   TestParseRejects/bom
+=== RUN   TestParseRejects/invalid-utf8
+=== RUN   TestParseRejects/duplicate-key
+=== RUN   TestParseRejects/schema-version-fraction
+=== RUN   TestParseRejects/provider-id-65
+=== RUN   TestParseRejects/signing-key-id-empty
+=== RUN   TestParseRejects/top-level-array
+=== RUN   TestParseRejects/endpoint-name-empty
+=== RUN   TestParseRejects/endpoint-missing-url
+=== RUN   TestParseRejects/endpoint-url-number
+=== RUN   TestParseRejects/case-variant-key
+=== RUN   TestParseRejects/schema-version-string
+=== RUN   TestParseRejects/provider-id-pattern
+=== RUN   TestParseRejects/capacity-sign
+=== RUN   TestParseRejects/endpoint-not-object
+=== RUN   TestParseRejects/endpoint-https-uppercase
+=== RUN   TestParseRejects/empty
+=== RUN   TestParseRejects/capacity-number
+--- PASS: TestParseRejects (0.01s)
+    --- PASS: TestParseRejects/endpoint-http (0.00s)
+    --- PASS: TestParseRejects/extra-key (0.00s)
+    --- PASS: TestParseRejects/schema-version-2 (0.00s)
+    --- PASS: TestParseRejects/capacity-zero (0.00s)
+    --- PASS: TestParseRejects/capacity-21-chars (0.00s)
+    --- PASS: TestParseRejects/oversized-input (0.00s)
+    --- PASS: TestParseRejects/provider-id-number (0.00s)
+    --- PASS: TestParseRejects/capacity-above-uint64 (0.00s)
+    --- PASS: TestParseRejects/endpoints-empty (0.00s)
+    --- PASS: TestParseRejects/top-level-string (0.00s)
+    --- PASS: TestParseRejects/null-value (0.00s)
+    --- PASS: TestParseRejects/capacity-leading-zero (0.00s)
+    --- PASS: TestParseRejects/endpoints-9 (0.00s)
+    --- PASS: TestParseRejects/endpoints-not-array (0.00s)
+    --- PASS: TestParseRejects/endpoint-url-2049-chars (0.00s)
+    --- PASS: TestParseRejects/endpoint-name-65-chars (0.00s)
+    --- PASS: TestParseRejects/endpoint-extra-key (0.00s)
+    --- PASS: TestParseRejects/trailing-data (0.00s)
+    --- PASS: TestParseRejects/missing-key (0.00s)
+    --- PASS: TestParseRejects/profile-other (0.00s)
+    --- PASS: TestParseRejects/endpoint-url-7-chars (0.00s)
+    --- PASS: TestParseRejects/not-json (0.00s)
+    --- PASS: TestParseRejects/bom (0.00s)
+    --- PASS: TestParseRejects/invalid-utf8 (0.00s)
+    --- PASS: TestParseRejects/duplicate-key (0.00s)
+    --- PASS: TestParseRejects/schema-version-fraction (0.00s)
+    --- PASS: TestParseRejects/provider-id-65 (0.00s)
+    --- PASS: TestParseRejects/signing-key-id-empty (0.00s)
+    --- PASS: TestParseRejects/top-level-array (0.00s)
+    --- PASS: TestParseRejects/endpoint-name-empty (0.00s)
+    --- PASS: TestParseRejects/endpoint-missing-url (0.00s)
+    --- PASS: TestParseRejects/endpoint-url-number (0.00s)
+    --- PASS: TestParseRejects/case-variant-key (0.00s)
+    --- PASS: TestParseRejects/schema-version-string (0.00s)
+    --- PASS: TestParseRejects/provider-id-pattern (0.00s)
+    --- PASS: TestParseRejects/capacity-sign (0.00s)
+    --- PASS: TestParseRejects/endpoint-not-object (0.00s)
+    --- PASS: TestParseRejects/endpoint-https-uppercase (0.00s)
+    --- PASS: TestParseRejects/empty (0.00s)
+    --- PASS: TestParseRejects/capacity-number (0.00s)
+=== RUN   TestParseBoundaries
+=== RUN   TestParseBoundaries/provider-id-64
+=== RUN   TestParseBoundaries/endpoints-1
+=== RUN   TestParseBoundaries/endpoints-8
+=== RUN   TestParseBoundaries/endpoint-url-8-chars
+=== RUN   TestParseBoundaries/endpoint-url-2048-chars
+=== RUN   TestParseBoundaries/endpoint-name-64-chars
+=== RUN   TestParseBoundaries/endpoint-name-64-runes
+=== RUN   TestParseBoundaries/capacity-uint64-max
+--- PASS: TestParseBoundaries (0.00s)
+    --- PASS: TestParseBoundaries/provider-id-64 (0.00s)
+    --- PASS: TestParseBoundaries/endpoints-1 (0.00s)
+    --- PASS: TestParseBoundaries/endpoints-8 (0.00s)
+    --- PASS: TestParseBoundaries/endpoint-url-8-chars (0.00s)
+    --- PASS: TestParseBoundaries/endpoint-url-2048-chars (0.00s)
+    --- PASS: TestParseBoundaries/endpoint-name-64-chars (0.00s)
+    --- PASS: TestParseBoundaries/endpoint-name-64-runes (0.00s)
+    --- PASS: TestParseBoundaries/capacity-uint64-max (0.00s)
+=== RUN   TestSignAndVerify
+--- PASS: TestSignAndVerify (0.00s)
+=== RUN   TestSchemaKeywordCheck
+--- PASS: TestSchemaKeywordCheck (0.00s)
+=== RUN   TestValidatorMatchesSchemaFile
+--- PASS: TestValidatorMatchesSchemaFile (0.00s)
+=== RUN   FuzzCapabilityParse
+=== RUN   FuzzCapabilityParse/seed#0
+=== RUN   FuzzCapabilityParse/seed#1
+=== RUN   FuzzCapabilityParse/seed#2
+--- PASS: FuzzCapabilityParse (0.00s)
+    --- PASS: FuzzCapabilityParse/seed#0 (0.00s)
+    --- PASS: FuzzCapabilityParse/seed#1 (0.00s)
+    --- PASS: FuzzCapabilityParse/seed#2 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	0.034s
+EXIT:0

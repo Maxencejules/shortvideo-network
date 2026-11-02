@@ -74,8 +74,11 @@ const (
 
 // Synthetic 20-byte accounts. No real keys or addresses.
 var (
-	serviceAcct     = account(0x31)
-	service2Acct    = account(0x32)
+	serviceAcct  = account(0x31)
+	service2Acct = account(0x32)
+	// service3Acct sends only fixture offers (TestDeviationRulesAreLoadBearing
+	// D-6, TestWithdrawalAtContentCapGas); the generator never picks it.
+	service3Acct    = account(0x33)
 	broadcasterAcct = account(0x41)
 	authorityAcct   = account(0x51)
 	auditorAcct     = account(0x61)
@@ -98,6 +101,7 @@ func roleTable() map[string]typesv1.SubmitterRole {
 	roles := map[string]typesv1.SubmitterRole{
 		string(serviceAcct):     typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE,
 		string(service2Acct):    typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE,
+		string(service3Acct):    typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE,
 		string(broadcasterAcct): typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER,
 		string(authorityAcct):   typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY,
 		string(auditorAcct):     typesv1.SubmitterRole_SUBMITTER_ROLE_AUDITOR,
@@ -579,6 +583,19 @@ type view struct {
 	businessIDs   []string
 	maxOpenOffers uint64
 	maxExpiry     uint64
+}
+
+// schedulerOpen is the number of open offers of contentID whose scheduler
+// is scheduler (deviation D-10).
+func (v *view) schedulerOpen(contentID string, scheduler []byte) uint64 {
+	var n uint64
+	for _, id := range v.offerIDs {
+		o := v.offers[id]
+		if o.GetContentId() == contentID && bytes.Equal(o.GetScheduler(), scheduler) {
+			n++
+		}
+	}
+	return n
 }
 
 func pairKey(providerID, contentID string, version uint64) string {

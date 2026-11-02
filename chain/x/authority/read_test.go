@@ -34,19 +34,16 @@ func numericParams() []*typesv1.DevnetTestParameter {
 	}
 }
 
-// numericKeeper writes a genesis state holding params into a fresh real
-// IAVL store.
+// numericKeeper writes the unit-test genesis (readyGenesis) with params as
+// its devnet test parameters into a fresh real IAVL store.
 func numericKeeper(t *testing.T, params []*typesv1.DevnetTestParameter) (sdk.Context, Keeper, *storetypes.KVStoreKey) {
 	t.Helper()
 	ctx, keys := msgkittest.NewContext(t, ModuleName)
 	ctx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
-	st, _, _ := readyState()
+	gen, _, _ := readyGenesis()
+	gen.DevnetTestParameters = params
 	k := NewKeeper(keys[ModuleName])
-	genesis := &authorityv1.GenesisState{
-		Authority:            &authorityv1.AuthorityState{Validators: st.Validators, Submitters: st.Submitters, DevnetTestSeats: st.Seats},
-		DevnetTestParameters: params,
-	}
-	if err := k.Init(ctx, genesis); err != nil {
+	if err := k.Init(ctx, gen); err != nil {
 		t.Fatal(err)
 	}
 	return ctx, k, keys[ModuleName]
@@ -56,9 +53,9 @@ func numericKeeper(t *testing.T, params []*typesv1.DevnetTestParameter) (sdk.Con
 // DevnetRole rule (chain id prefix "shortvideo-dev-", label
 // PROPOSED_TEST_PARAMETER, approved_policy false). It is not found on any
 // other chain id, for a row with another label or approved policy, for a
-// missing row, on an empty store, and when the stored state does not
-// decode. It agrees with the engine's State.devnet and with DevnetRole on
-// every case, and it writes nothing.
+// missing row, on an empty store, and when the config key (0x01) does not
+// decode or has the old layout. It agrees with the engine's State.devnet and
+// with DevnetRole on every case, and it writes nothing.
 func TestDevnetNumeric(t *testing.T) {
 	ctx, k, key := numericKeeper(t, numericParams())
 	if ctx.ChainID() != msgkittest.ChainID {
@@ -95,7 +92,7 @@ func TestDevnetNumeric(t *testing.T) {
 	before := msgkit.StoreSnapshot(ctx.KVStore(key))
 	for chain, devnet := range chains {
 		c := ctx.WithChainID(chain)
-		view := State{ChainID: chain, Params: numericParams()}
+		view := State{ChainID: chain, config: &authorityv1.GenesisState{DevnetTestParameters: numericParams()}}
 		for id, w := range ids {
 			if !devnet {
 				w = want{}
@@ -124,14 +121,28 @@ func TestDevnetNumeric(t *testing.T) {
 		}
 	})
 
-	t.Run("state does not decode", func(t *testing.T) {
-		c, kk, kkey := numericKeeper(t, numericParams())
-		c.KVStore(kkey).Set([]byte{stateKey}, []byte{0xff, 0xff, 0xff})
-		if value, found := kk.DevnetNumeric(c, "DEC-005"); found || value != 0 {
-			t.Fatalf("undecodable state: (%d, %v)", value, found)
-		}
-		if _, found := kk.DevnetRole(c, "DEC-002"); found {
-			t.Fatal("undecodable state: DevnetRole found")
+	// An undecodable config and an old-layout config (a proposal in the
+	// config key) fail LoadState; both read surfaces then report not found.
+	t.Run("config does not load", func(t *testing.T) {
+		for name, edit := range map[string]func(storetypes.KVStore){
+			"undecodable": func(kv storetypes.KVStore) { kv.Set([]byte{configKey}, []byte{0xff, 0xff, 0xff}) },
+			"old layout": func(kv storetypes.KVStore) {
+				mutateConfig(t, kv, func(cfg *authorityv1.GenesisState) {
+					cfg.Authority.Proposals = []*authorityv1.Proposal{{ProposalId: "old"}}
+				})
+			},
+		} {
+			c, kk, kkey := numericKeeper(t, numericParams())
+			edit(c.KVStore(kkey))
+			if _, err := LoadState(c.KVStore(kkey), c.ChainID(), 1, 1); err == nil {
+				t.Fatalf("%s: LoadState accepted the config", name)
+			}
+			if value, found := kk.DevnetNumeric(c, "DEC-005"); found || value != 0 {
+				t.Fatalf("%s config: (%d, %v)", name, value, found)
+			}
+			if _, found := kk.DevnetRole(c, "DEC-002"); found {
+				t.Fatalf("%s config: DevnetRole found", name)
+			}
 		}
 	})
 
@@ -140,10 +151,8 @@ func TestDevnetNumeric(t *testing.T) {
 	// string (protojson's uint64 form). The devnet harness writes the same
 	// row (chain/devnet/init.go).
 	t.Run("DEC-005 from a genesis document", func(t *testing.T) {
-		st, _, _ := readyState()
-		base, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&authorityv1.GenesisState{
-			Authority: &authorityv1.AuthorityState{Validators: st.Validators, Submitters: st.Submitters, DevnetTestSeats: st.Seats},
-		})
+		gen, _, _ := readyGenesis()
+		base, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&authorityv1.GenesisState{Authority: gen.GetAuthority()})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,13 +185,13 @@ func TestDevnetNumeric(t *testing.T) {
 }
 
 // TestPolicyVersionRead: PolicyVersion is the committed policy version the
-// engine loads. It is 1 on an empty store and after InitGenesis (no side
-// document yet), stays 1 while a proposal is only proposed and approved
-// (the side document now exists), becomes 2 after the first executed
-// proposal and 3 after the second, and does not move on a rejected
-// execution. A side document holding 0 or no policy_version reads 1, as
-// load does. A side document that does not decode panics (fail closed),
-// exactly where load fails. The read writes nothing.
+// engine loads (State.policy, key 0x04). It is 1 on an empty store and after
+// InitGenesis (no 0x04 key yet), stays 1 while a proposal is only proposed
+// and approved, becomes 2 after the first executed proposal and 3 after the
+// second, and does not move on a rejected execution. A stored value reads as
+// the engine reads it, and panics (fail closed) exactly where the engine's
+// read is ERROR_CODE_INTEGRITY: a value that is not 8 bytes or is below 2.
+// The read writes nothing.
 func TestPolicyVersionRead(t *testing.T) {
 	t.Run("empty store", func(t *testing.T) {
 		empty, keys := msgkittest.NewContext(t, ModuleName)
@@ -192,103 +201,90 @@ func TestPolicyVersionRead(t *testing.T) {
 	})
 
 	t.Run("executed proposals", func(t *testing.T) {
-		e := newKeeperEnv(t)
-		store := e.ctx.KVStore(e.keys[ModuleName])
-		if store.Has([]byte{sideKey}) {
-			t.Fatal("side document before any message")
+		e := readyKeeper(t)
+		store := e.kv()
+		if store.Has([]byte{policyKey}) {
+			t.Fatal("policy version key before any message")
 		}
 		requireVersion := func(want uint64, when string) {
 			t.Helper()
-			before := e.snapshot(ModuleName)
-			if got := e.keeper.PolicyVersion(e.ctx); got != want {
+			before := dumpKV(store)
+			if got := e.keeper.PolicyVersion(e.blockCtx()); got != want {
 				t.Fatalf("%s: PolicyVersion %d, want %d", when, got, want)
 			}
-			if loaded := e.policyVersion(t); loaded != want {
-				t.Fatalf("%s: load sees %d, want %d", when, loaded, want)
+			if loaded := e.policy(t); loaded != want {
+				t.Fatalf("%s: the engine sees %d, want %d", when, loaded, want)
 			}
-			if !bytes.Equal(before, e.snapshot(ModuleName)) {
-				t.Fatalf("%s: PolicyVersion wrote to the store", when)
-			}
+			wantUnchanged(t, store, before, when+": PolicyVersion")
 		}
 		requireVersion(1, "after InitGenesis")
 
-		limit := func(value uint64) *authorityv1.MsgProposeChange {
-			return payloadProposal(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_GovernedLimit{
-				GovernedLimit: &authorityv1.GovernedLimitChange{LimitKey: msgkit.LimitMaxPageLimit, Value: value},
-			}}, msgkit.LimitMaxPageLimit)
-		}
-		e.queue(t, e.keeper, "pv-1", limit(50))
-		if !store.Has([]byte{sideKey}) {
-			t.Fatal("no side document after propose and approve")
-		}
-		if side := e.side(t); side.PolicyVersion != 1 {
-			t.Fatalf("side document policy_version %d", side.PolicyVersion)
+		e.queue(t, "pv-1", governedMsg(msgkit.LimitMaxPageLimit, 50))
+		if store.Has([]byte{policyKey}) {
+			t.Fatal("policy version key after propose and approve")
 		}
 		requireVersion(1, "queued, not executed")
 
 		// A rejected execution (unknown proposal) changes nothing.
-		before := e.snapshot(ModuleName)
-		if _, err := e.keeper.Execute(e.tx(), execute(e.authority, "ex-none", "pv-none")); err == nil {
+		before := dumpKV(store)
+		if _, err := e.keeper.Execute(e.txCtx(), execute(e.authority, "ex-none", "pv-none")); err == nil {
 			t.Fatal("executing an unknown proposal succeeded")
 		}
-		if !bytes.Equal(before, e.snapshot(ModuleName)) {
-			t.Fatal("rejected execution wrote")
-		}
+		wantUnchanged(t, store, before, "rejected execution")
 		requireVersion(1, "after a rejected execution")
 
-		if _, err := e.keeper.Execute(e.tx(), execute(e.authority, "ex-pv-1", "pv-1")); err != nil {
+		if _, err := e.keeper.Execute(e.txCtx(), execute(e.authority, "ex-pv-1", "pv-1")); err != nil {
 			t.Fatal(err)
 		}
 		requireVersion(2, "after the first executed proposal")
-		if side := e.side(t); side.PolicyVersion != 2 {
-			t.Fatalf("side document policy_version %d", side.PolicyVersion)
+		if raw := store.Get([]byte{policyKey}); !bytes.Equal(raw, encodeU64(2)) {
+			t.Fatalf("stored policy version %x", raw)
 		}
 
-		e.queue(t, e.keeper, "pv-2", limit(40))
+		e.queue(t, "pv-2", governedMsg(msgkit.LimitMaxPageLimit, 40))
 		requireVersion(2, "second proposal queued")
-		if _, err := e.keeper.Execute(e.tx(), execute(e.authority, "ex-pv-2", "pv-2")); err != nil {
+		if _, err := e.keeper.Execute(e.txCtx(), execute(e.authority, "ex-pv-2", "pv-2")); err != nil {
 			t.Fatal(err)
 		}
 		requireVersion(3, "after the second executed proposal")
 	})
 
-	t.Run("stored documents", func(t *testing.T) {
+	t.Run("stored values", func(t *testing.T) {
 		cases := []struct {
 			name  string
-			doc   string
+			value []byte
 			want  uint64
 			panic bool
 		}{
-			{"no policy_version", `{}`, 1, false},
-			{"policy_version 0", `{"policy_version":0}`, 1, false},
-			{"policy_version 1", `{"policy_version":1}`, 1, false},
-			{"policy_version 7 with other rows", `{"policy_version":7,"governed":[{"id":"max_page_limit","value":5}],"providers":[]}`, 7, false},
-			{"largest", `{"policy_version":18446744073709551615}`, 1<<64 - 1, false},
-			{"truncated", `{`, 0, true},
-			{"not an object", `[]`, 0, true},
-			{"string version", `{"policy_version":"2"}`, 0, true},
-			{"negative version", `{"policy_version":-1}`, 0, true},
-			{"version above uint64", `{"policy_version":18446744073709551616}`, 0, true},
-			{"fractional version", `{"policy_version":1.5}`, 0, true},
-			{"binary", "\xff\x00", 0, true},
+			{"2", encodeU64(2), 2, false},
+			{"7", encodeU64(7), 7, false},
+			{"largest", encodeU64(1<<64 - 1), 1<<64 - 1, false},
+			{"0", encodeU64(0), 0, true},
+			{"1 stored", encodeU64(1), 0, true},
+			{"7 bytes", make([]byte, 7), 0, true},
+			{"9 bytes", append(encodeU64(2), 0), 0, true},
+			{"1 byte", []byte{2}, 0, true},
+			{"text", []byte("2"), 0, true},
 		}
 		for _, c := range cases {
 			t.Run(c.name, func(t *testing.T) {
-				e := newKeeperEnv(t)
-				e.ctx.KVStore(e.keys[ModuleName]).Set([]byte{sideKey}, []byte(c.doc))
-				st, loadErr := e.keeper.load(e.ctx)
-				if (loadErr != nil) != c.panic {
-					t.Fatalf("load error %v, want failure %v", loadErr, c.panic)
+				e := readyKeeper(t)
+				e.kv().Set([]byte{policyKey}, c.value)
+				engine, out := loadAt(t, e.kv(), e.height, e.unix).policy()
+				if engineFails := !out.Success(); engineFails != c.panic || (engineFails && out.Code != CodeIntegrity) {
+					t.Fatalf("engine read: %d %v, want failure %v", engine, out, c.panic)
 				}
-				got, panicked := policyVersionOrPanic(e.keeper, e.ctx)
+				before := dumpKV(e.kv())
+				got, panicked := policyVersionOrPanic(e.keeper, e.blockCtx())
 				if panicked != c.panic {
 					t.Fatalf("panicked %v, want %v", panicked, c.panic)
 				}
+				wantUnchanged(t, e.kv(), before, "PolicyVersion")
 				if c.panic {
 					return
 				}
-				if got != c.want || st.PolicyVersion != c.want {
-					t.Fatalf("PolicyVersion %d, load %d, want %d", got, st.PolicyVersion, c.want)
+				if got != c.want || engine != c.want {
+					t.Fatalf("PolicyVersion %d, engine %d, want %d", got, engine, c.want)
 				}
 			})
 		}

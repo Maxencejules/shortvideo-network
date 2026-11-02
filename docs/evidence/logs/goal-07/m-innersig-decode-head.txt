@@ -1,0 +1,11 @@
+COMMAND bash -c git\ archive\ HEAD\ chain\ proto\ \|\ tar\ -x\ -C\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/decode-head\ \&\&\ cp\ docs/evidence/goal-07/innersig_decode_probe_test.go.txt\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/decode-head/chain/app/zz_probe_innersig_test.go\ \&\&\ cd\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/decode-head/chain\ \&\&\ go\ test\ -count=1\ -v\ -run\ \'\^TestProbeRotateDecode\$\'\ ./app/
+DATE 2026-11-02T04:09:47Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+=== RUN   TestProbeRotateDecode
+    zz_probe_innersig_test.go:65: probe result: decoded 1 message(s) of type *providersv1.MsgRotateProviderKey
+--- PASS: TestProbeRotateDecode (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	0.036s
+EXIT:0

@@ -1,0 +1,28 @@
+COMMAND go test -count=1 -v -run \^\(TestCouncilRegistrySeedsReachEveryPath\|TestContentProgramSeedsReachEveryTransition\)\$ ./chain/x/authority/ ./chain/x/content/
+DATE 2026-11-02T04:08:55Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+=== RUN   TestCouncilRegistrySeedsReachEveryPath
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/admit_then_disable
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/force_withdraw_then_withdrawn
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/admit_without_DEC-002_stays_queued
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/admit_of_another_group_is_rejected
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/expired_before_execute
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/rejected_then_expired
+=== RUN   TestCouncilRegistrySeedsReachEveryPath/disable_of_a_draining_provider
+--- PASS: TestCouncilRegistrySeedsReachEveryPath (0.01s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/admit_then_disable (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/force_withdraw_then_withdrawn (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/admit_without_DEC-002_stays_queued (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/admit_of_another_group_is_rejected (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/expired_before_execute (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/rejected_then_expired (0.00s)
+    --- PASS: TestCouncilRegistrySeedsReachEveryPath/disable_of_a_draining_provider (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	0.052s
+=== RUN   TestContentProgramSeedsReachEveryTransition
+--- PASS: TestContentProgramSeedsReachEveryTransition (0.02s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	0.052s
+EXIT:0

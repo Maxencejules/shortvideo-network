@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha256"
 	"fmt"
+	"maps"
 
 	"google.golang.org/protobuf/proto"
 
@@ -240,7 +241,11 @@ func buildRenew(p renewParams, s signed, tag string) *step {
 }
 
 // buildEnd builds an EndLease. s.sig nil means no provider signature.
-func buildEnd(signer []byte, business, leaseID string, authorityEnd bool, s signed) *step {
+// buildEnd builds an EndLease step. termVersion is the term version the
+// provider signature binds; the abstract signature carries it as
+// "term_version" for the oracle's D-12 rule (the oracle removes it before
+// spec_machine.py sees the step).
+func buildEnd(signer []byte, business, leaseID string, authorityEnd bool, s signed, termVersion uint64) *step {
 	msg := &leasesv1.MsgEndLease{
 		Signer: signer, BusinessId: business, LeaseId: leaseID, ProviderSignature: s.sig, AuthorityEnd: authorityEnd,
 	}
@@ -249,7 +254,9 @@ func buildEnd(signer []byte, business, leaseID string, authorityEnd bool, s sign
 		"authority_end": authorityEnd,
 	}
 	if s.sig != nil {
-		spec["provider_signature"] = s.abstract
+		abstract := maps.Clone(s.abstract)
+		abstract["term_version"] = termVersion
+		spec["provider_signature"] = abstract
 	}
 	return &step{op: opEnd, tag: s.variant, msg: msg, spec: spec}
 }
@@ -464,8 +471,10 @@ func acceptSignBytes(offer *leasesv1.Offer, leaseID string) []byte {
 	return out
 }
 
-func endSignBytes(leaseID, providerID string) []byte {
-	out, err := leases.EndSignBytes(leaseID, providerID)
+// endSignBytes is the end payload for the lease's term version at signing
+// time (the payload binds it, deviation D-12).
+func endSignBytes(leaseID, providerID string, termVersion uint64) []byte {
+	out, err := leases.EndSignBytes(leaseID, providerID, termVersion)
 	if err != nil {
 		panic(fmt.Sprintf("difftest: end sign bytes: %v", err))
 	}

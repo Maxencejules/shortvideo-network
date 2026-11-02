@@ -51,9 +51,18 @@
       "domain": "SVN-PROVIDER-END-1",
       "key_label": "p1",
       "public_key": "58cd5672b855e597a3e784d82ee968a031201b64a0bdc27c149bd93a6b7a306e",
-      "canonical": "{\"leaseId\":\"l1\",\"providerId\":\"p1\"}",
-      "sign_bytes_sha256": "4dd969c53816588d68188683094b05cd618876c4639408a6ada4dae2df229477",
-      "signature": "d430447af5961a509c988505941a77a3d9a8e2391eef59320bc04dbf7bf91a9ce5572e67d6d6af230763d830c8486a143a8ef3f2dcf25243ec424f970d62970c"
+      "canonical": "{\"leaseId\":\"l1\",\"providerId\":\"p1\",\"termVersion\":\"1\"}",
+      "sign_bytes_sha256": "8e36362c641fee36a3b16f411d2ec8fcea5d6151af20daad9eed98f91bb7822f",
+      "signature": "7c5df56cb699fe9790acba3f1436e790d1537181849b322bbde0676e2dfbb7b37ee18656e07c2f91bf2f0d13865ee8200885d16731c3ff2fb40adc0c708e010d"
+    },
+    {
+      "name": "end-after-renewal",
+      "domain": "SVN-PROVIDER-END-1",
+      "key_label": "p1",
+      "public_key": "58cd5672b855e597a3e784d82ee968a031201b64a0bdc27c149bd93a6b7a306e",
+      "canonical": "{\"leaseId\":\"l1\",\"providerId\":\"p1\",\"termVersion\":\"2\"}",
+      "sign_bytes_sha256": "3993b2fd41ec11b14a1c6d2a04e0743cba009e38ab01cdffcbaaf4dd3aff1bde",
+      "signature": "96067b14b150f0b01032ac1781dccaaa8ceca5e4da047f8061bf648b9ab66a66c97f4d0641cf2632ccf57d93aa3463ac5d7a66bd7fda656f220145a8f3eb5b0e"
     }
   ]
 }

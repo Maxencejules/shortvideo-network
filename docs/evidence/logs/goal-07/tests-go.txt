@@ -1,0 +1,34 @@
+COMMAND .venv/bin/python scripts/run_tests.py --only go
+DATE 2026-11-01T09:38:45Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/chain/address	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	11.802s
+?   	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/chain/cometwrap	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	100.289s
+?   	github.com/Maxencejules/shortvideo-network/chain/genesis	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/chain/jcs	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	0.061s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	0.038s
+ok  	github.com/Maxencejules/shortvideo-network/chain/node	0.059s
+ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	0.089s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	0.234s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	0.605s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	0.049s
+?   	github.com/Maxencejules/shortvideo-network/chain/x/scaffold	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/protocol/check	(cached)
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/app/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/events/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/offchain/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider	(cached)
+EXIT:0

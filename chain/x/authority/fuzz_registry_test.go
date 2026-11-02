@@ -7,20 +7,27 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/store/v2/cachekv"
+
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
+	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
 // specRegistry is a deterministic unit-test double of the x/providers and
 // x/content council hooks. It follows apply_proposal_payload in the frozen
-// spec machine and writes only after every check passed.
+// spec machine and writes only after every check passed. It records every
+// call, including the ones that fail.
 type specRegistry struct {
 	providers map[string]string
 	groups    map[string]string
 	contents  map[string]uint64
 	withdrawn map[string]bool
 	effects   int
+	calls     []registryCall
 }
 
+// newSpecRegistry has providers p1, p2 (devnet-test-only) and p3
+// (other-group), all APPLIED, and content c1 and c2 at version 1.
 func newSpecRegistry() *specRegistry {
 	return &specRegistry{
 		providers: map[string]string{"p1": "APPLIED", "p2": "APPLIED", "p3": "APPLIED"},
@@ -30,22 +37,37 @@ func newSpecRegistry() *specRegistry {
 	}
 }
 
-func (r *specRegistry) copy() *specRegistry {
+// emptySpecRegistry has no provider and no content: every payload is
+// NOT_FOUND.
+func emptySpecRegistry() *specRegistry {
+	return &specRegistry{
+		providers: map[string]string{},
+		groups:    map[string]string{},
+		contents:  map[string]uint64{},
+		withdrawn: map[string]bool{},
+	}
+}
+
+// clone is an independent copy, the registry side of one cache branch.
+func (r *specRegistry) clone() *specRegistry {
 	return &specRegistry{
 		providers: maps.Clone(r.providers),
 		groups:    maps.Clone(r.groups),
 		contents:  maps.Clone(r.contents),
 		withdrawn: maps.Clone(r.withdrawn),
 		effects:   r.effects,
+		calls:     slices.Clone(r.calls),
 	}
 }
 
+// equal compares the registry state. Calls are not state.
 func (r *specRegistry) equal(o *specRegistry) bool {
-	return maps.Equal(r.providers, o.providers) && maps.Equal(r.contents, o.contents) &&
-		maps.Equal(r.withdrawn, o.withdrawn) && r.effects == o.effects
+	return maps.Equal(r.providers, o.providers) && maps.Equal(r.groups, o.groups) &&
+		maps.Equal(r.contents, o.contents) && maps.Equal(r.withdrawn, o.withdrawn) && r.effects == o.effects
 }
 
 func (r *specRegistry) Admit(id string, devnet bool) Outcome {
+	r.calls = append(r.calls, registryCall{Method: "admit", ID: id, Devnet: devnet})
 	state, found := r.providers[id]
 	if !found {
 		return fail(CodeNotFound)
@@ -62,6 +84,7 @@ func (r *specRegistry) Admit(id string, devnet bool) Outcome {
 }
 
 func (r *specRegistry) Disable(id string) Outcome {
+	r.calls = append(r.calls, registryCall{Method: "disable", ID: id})
 	state, found := r.providers[id]
 	if !found {
 		return fail(CodeNotFound)
@@ -75,6 +98,9 @@ func (r *specRegistry) Disable(id string) Outcome {
 }
 
 func (r *specRegistry) ForceWithdraw(id string, version uint64, reason []byte, devnet bool) Outcome {
+	r.calls = append(r.calls, registryCall{
+		Method: "force_withdraw", ID: id, Version: version, Reason: bytes.Clone(reason), Devnet: devnet,
+	})
 	have, found := r.contents[id]
 	if !found {
 		return fail(CodeNotFound)
@@ -95,18 +121,23 @@ func (r *specRegistry) ForceWithdraw(id string, version uint64, reason []byte, d
 
 // FuzzCouncilRegistryPayloads runs bounded sequences of admit, disable, and
 // force-withdraw proposals through propose, approve, and execute against a
-// spec registry. It mirrors Keeper.transition: a failure discards both the
-// authority trial and the registry writes; a keep saves the authority trial
-// and discards the registry writes.
+// spec registry, on the per-object store. It mirrors Keeper.transition: each
+// operation runs on a cache branch (cachekv) of the committed store and on a
+// clone of the registry; a success writes both back; a keep writes the
+// authority branch and drops the registry clone; any other outcome drops
+// both.
 //
-// Invariants: a failure leaves the trial's canonical authority bytes equal
-// to the state before the operation and writes nothing to the registry
-// (the engine writes nothing before it fails); a keep writes nothing to
-// the registry; the registry changed exactly once
-// per proposal that ever executed; the policy version is one plus that
-// count; the validator set and pending set never change; DISABLED
-// providers and withdrawn content stay terminal; a proposal never returns
-// to OPEN or QUEUED once it is EXECUTED, REJECTED, or EXPIRED.
+// Invariants after every operation: a failure or an idempotent retry leaves
+// the branch byte-identical to the committed store (dumpKV) and the registry
+// clone equal to the registry before the operation (the engine and the
+// registry write nothing before they fail); a keep writes nothing to the
+// registry; the registry changed exactly once per proposal that ever
+// executed; the policy version is one plus that count; the validator set
+// never changes and no pending entry (0x03) exists; DISABLED providers and
+// withdrawn content stay terminal; a proposal never returns to OPEN or QUEUED
+// once it is EXECUTED, REJECTED, or EXPIRED; and the round 3 store invariants
+// of fuzzHarness.checkInvariants hold (open counts per seat and base equal
+// the OPEN and QUEUED records, records well formed, admission rows).
 //
 // An EXECUTED or REJECTED proposal can later read EXPIRED: op_execute in
 // the frozen spec machine tests expiry before QUEUED and marks the
@@ -182,7 +213,7 @@ var councilRegistrySeeds = []struct {
 func TestCouncilRegistrySeedsReachEveryPath(t *testing.T) {
 	for _, seed := range councilRegistrySeeds {
 		t.Run(seed.name, func(t *testing.T) {
-			st, registry := runCouncilRegistrySequence(t, seed.raw)
+			kv, registry, ids := runCouncilRegistrySequence(t, seed.raw)
 			if !maps.Equal(registry.providers, seed.providers) {
 				t.Fatalf("providers %v", registry.providers)
 			}
@@ -190,8 +221,8 @@ func TestCouncilRegistrySeedsReachEveryPath(t *testing.T) {
 				t.Fatalf("withdrawn %v", registry.withdrawn)
 			}
 			var states []authorityv1.ProposalState
-			for _, p := range st.Proposals {
-				states = append(states, p.GetState())
+			for _, id := range ids {
+				states = append(states, recordOf(t, kv, id).state())
 			}
 			if !slices.Equal(states, seed.states) {
 				t.Fatalf("states %v", states)
@@ -201,82 +232,102 @@ func TestCouncilRegistrySeedsReachEveryPath(t *testing.T) {
 }
 
 // runCouncilRegistrySequence applies raw as described on
-// FuzzCouncilRegistryPayloads and checks the invariants after every op.
-func runCouncilRegistrySequence(t *testing.T, raw []byte) (*State, *specRegistry) {
+// FuzzCouncilRegistryPayloads and checks the invariants after every op. It
+// returns the committed store, the registry and the accepted proposal ids in
+// order.
+func runCouncilRegistrySequence(t testing.TB, raw []byte) (KV, *specRegistry, []string) {
 	t.Helper()
-	st, seats, authoritySigner := readyState()
+	gen, seats, authoritySigner := readyGenesis()
 	registry := newSpecRegistry()
 	if len(raw) == 0 {
-		return st, registry
+		return storeFrom(t, gen), registry, nil
 	}
 	if raw[0]&1 != 0 {
-		st.Params = append(st.Params, devnetParam("DEC-002", "DEVNET_TEST_ONLY"))
+		gen.DevnetTestParameters = append(gen.DevnetTestParameters, devnetParam("DEC-002", "DEVNET_TEST_ONLY"))
 	}
 	if raw[0]&2 != 0 {
-		st.Params = append(st.Params, devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
+		gen.DevnetTestParameters = append(gen.DevnetTestParameters, devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
 	}
-	validators := canonicalValidators(st)
+	base := storeFrom(t, gen)
+	// h reuses the round 3 store invariants (checkInvariants). The registry
+	// payloads never schedule a validator change, so h.executes is the
+	// number of proposals that ever executed.
+	h := &fuzzHarness{
+		t: t, base: base, seats: slices.Clone(seats), authority: authoritySigner, service: bytes20(2),
+		height: testHeight, unix: testTime, executed: map[string]bool{}, records: map[string]fuzzRecord{},
+	}
+	h.vals = h.validatorBytes(h.load(base, h.height, h.unix).Validators())
+	validators := h.vals
 	var ids []string
 	terminal := map[string]authorityv1.ProposalState{}
 	executedEver := map[string]bool{}
 
 	for i, b := range raw[1:] {
-		before := canonicalBytes(t, st)
-		saved := registry.copy()
-		trial := st.clone()
-		trial.Registry = registry
-		var out Outcome
-		var created []string
-		if b%8 == 5 {
+		h.c.Ops++
+		before := dumpKV(base)
+		saved := registry.clone()
+		switch b % 8 {
+		case 5:
 			// A DrainProvider in x/providers, outside authority: ADMITTED
 			// to DRAINING. It writes no authority state.
 			target := fuzzProviders[int(b>>3)%len(fuzzProviders)]
 			if registry.providers[target] == "ADMITTED" {
 				registry.providers[target] = "DRAINING"
 			}
-		} else {
-			out, created = applyRegistryOp(trial, seats, authoritySigner, ids, b, i)
-		}
-		switch {
-		case out.Success():
-			st = trial
-			ids = append(ids, created...)
-		case out.Keep:
-			if !registry.equal(saved) {
-				t.Fatalf("op %d code %s: a keep wrote to the registry", i, out.Code)
-			}
-			st = trial
+		case 6:
+			// Time passes; no message.
+			h.unix += int64(b>>3) + 1
 		default:
-			if !registry.equal(saved) {
-				t.Fatalf("op %d code %s: a failure wrote to the registry", i, out.Code)
-			}
-			registry = saved
-			if !bytes.Equal(before, canonicalBytes(t, trial)) {
-				t.Fatalf("op %d code %s mutated the authority state before it failed", i, out.Code)
+			trial := cachekv.NewStore(base)
+			reg := registry.clone()
+			st := loadAt(t, trial, h.height, h.unix)
+			st.Registry = reg
+			out, created, executed := applyRegistryOp(st, seats, authoritySigner, ids, b, i)
+			switch {
+			case out.Idempotent || (!out.Success() && !out.Keep):
+				if !reg.equal(saved) {
+					t.Fatalf("op %d %+v wrote to the registry", i, out)
+				}
+				if got := dumpKV(trial); !bytes.Equal(got, before) {
+					t.Fatalf("op %d %+v wrote to the authority store before it failed", i, out)
+				}
+			case out.Keep:
+				if !reg.equal(saved) {
+					t.Fatalf("op %d code %s: a keep wrote to the registry", i, out.Code)
+				}
+				trial.Write()
+			default:
+				trial.Write()
+				registry = reg
+				ids = append(ids, created...)
+				if executed != "" {
+					executedEver[executed] = true
+					h.executed[executed] = true
+				}
 			}
 		}
-		for _, p := range st.Proposals {
-			id, state := p.GetProposalId(), p.GetState()
+		for _, id := range ids {
+			state := recordOf(t, base, id).state()
 			if prev, seen := terminal[id]; seen && prev != state && state != authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED {
 				t.Fatalf("proposal %s went from %v to %v", id, prev, state)
 			}
 			switch state {
-			case authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED:
-				executedEver[id] = true
-				terminal[id] = state
-			case authorityv1.ProposalState_PROPOSAL_STATE_REJECTED, authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED:
+			case authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED, authorityv1.ProposalState_PROPOSAL_STATE_REJECTED,
+				authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED:
 				terminal[id] = state
 			}
 		}
+		h.executes = uint64(len(executedEver))
 		if registry.effects != len(executedEver) {
 			t.Fatalf("registry effects %d, executed registry proposals %d", registry.effects, len(executedEver))
 		}
-		if st.PolicyVersion != uint64(1+len(executedEver)) {
-			t.Fatalf("policy version %d, executed %d", st.PolicyVersion, len(executedEver))
+		if got := loadAt(t, base, h.height, h.unix).PolicyVersion(); got != uint64(1+len(executedEver)) {
+			t.Fatalf("policy version %d, executed %d", got, len(executedEver))
 		}
-		if !bytes.Equal(validators, canonicalValidators(st)) || len(st.Pending) != 0 {
-			t.Fatal("a registry payload changed the validator set")
+		if countPrefix(base, pendingPrefix) != 0 {
+			t.Fatal("a registry payload scheduled a validator change")
 		}
+		h.checkInvariants(i, validators, false)
 		for id, state := range saved.providers {
 			if state == "DISABLED" && registry.providers[id] != "DISABLED" {
 				t.Fatalf("provider %s left DISABLED", id)
@@ -288,7 +339,7 @@ func runCouncilRegistrySequence(t *testing.T, raw []byte) (*State, *specRegistry
 			}
 		}
 	}
-	return st, registry
+	return base, registry, ids
 }
 
 var (
@@ -296,7 +347,12 @@ var (
 	fuzzContents  = []string{"c1", "c2", "c9"}
 )
 
-func applyRegistryOp(st *State, seats [][]byte, authoritySigner []byte, ids []string, b byte, i int) (Outcome, []string) {
+// applyRegistryOp decodes one byte: 0 admit, 1 disable, 2 force-withdraw
+// proposals (seat b>>6, near expiry), 3 an approval, 4 and 7 an execute by
+// the authority account. It returns the outcome, the proposal id a propose
+// opened, and the proposal an execute named (empty for other ops). Bytes 5
+// and 6 are handled by the caller.
+func applyRegistryOp(st *State, seats []testSeat, authoritySigner []byte, ids []string, b byte, i int) (Outcome, []string, string) {
 	id := "q" + strconv.Itoa(i)
 	pick := func() string {
 		if len(ids) == 0 {
@@ -304,10 +360,10 @@ func applyRegistryOp(st *State, seats [][]byte, authoritySigner []byte, ids []st
 		}
 		return ids[int(b>>3)%len(ids)]
 	}
-	open := func(msg *authorityv1.MsgProposeChange) (Outcome, []string) {
-		msg = propose(seats[int(b>>6)%len(seats)], id, st.PolicyVersion, msg)
+	open := func(msg *authorityv1.MsgProposeChange) (Outcome, []string, string) {
+		msg = propose(seats[int(b>>6)%len(seats)].Signer, id, st.PolicyVersion(), msg)
 		msg.ExpiryUnixSeconds = st.Time + 1 + int64(b%16)
-		return st.ProposeChange(msg), []string{id}
+		return st.ProposeChange(msg), []string{id}, ""
 	}
 	switch b % 8 {
 	case 0:
@@ -318,25 +374,17 @@ func applyRegistryOp(st *State, seats [][]byte, authoritySigner []byte, ids []st
 		return open(withdrawProposal(fuzzContents[int(b>>3)%len(fuzzContents)], 1+uint64(b>>5)%2, reasonValue))
 	case 3:
 		target := pick()
-		return st.ApproveChange(approve(seats[int(b>>5)%len(seats)], "ap-"+target+"-"+strconv.Itoa(int(b>>5)%4), target)), nil
+		return st.ApproveChange(approve(seats[int(b>>5)%len(seats)].Signer, "ap-"+target+"-"+strconv.Itoa(int(b>>5)%4), target)), nil, ""
 	case 4:
 		target := pick()
-		return st.ExecuteChange(execute(authoritySigner, "ex-"+target+"-"+strconv.Itoa(i%2), target)), nil
-	case 6:
-		st.Time += int64(b>>3) + 1
-		return ok(), nil
+		return st.ExecuteChange(execute(authoritySigner, "ex-"+target+"-"+strconv.Itoa(i%2), target)), nil, target
 	default:
 		target := pick()
-		return st.ExecuteChange(execute(authoritySigner, "ex-"+target+"-0", target)), nil
+		return st.ExecuteChange(execute(authoritySigner, "ex-"+target+"-0", target)), nil, target
 	}
 }
 
-func canonicalValidators(st *State) []byte {
-	var buf bytes.Buffer
-	for _, row := range st.Validators {
-		buf.WriteString(row.GetNodeId())
-		buf.Write(row.GetConsensusPubkey())
-		buf.WriteString(strconv.FormatInt(row.GetPower(), 10))
-	}
-	return buf.Bytes()
+// devnetParam is a labelled devnet test parameter that names role.
+func devnetParam(decision, role string) *typesv1.DevnetTestParameter {
+	return &typesv1.DevnetTestParameter{Label: "PROPOSED_TEST_PARAMETER", DecisionId: decision, RoleName: role}
 }

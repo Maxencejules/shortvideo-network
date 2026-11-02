@@ -1,0 +1,86 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh go test -count=1 -timeout 900s -v -run TestDevnetRegistryDemo ./chain/devnet/
+DATE 2026-11-02T04:22:22Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+=== RUN   TestDevnetRegistryDemo
+label=single-machine four-process devnet (not independent operators)
+phase=start height=3 chain_id=shortvideo-dev-827fe311ec26d445 accounts=5
+phase=register-p1 height=5 code=0 txhash=32CF2379B31D799BC26BAC4EC000CBFD21FF6651A31873AD9A249543CAA96EA7
+phase=register-p2 height=7 code=0 txhash=B61FA7DA2D8368731995EA8423FCA8C310DE742373C5370530A434183AC37880
+phase=admit-p1-propose height=8 code=0 txhash=5C0EF237CD5B170210D3565F9A74193182DBAD231BEA2100ABBB176B61A52559
+phase=admit-p1-approve-1 height=9 code=0 txhash=3D578650E812A6E18D9E8E27ADADE861DFB68138BCE8A5BBC4F3162282F5C965
+phase=admit-p1-approve-2 height=10 code=0 txhash=6FBB7C571601BDACAF9E2A63B5F9301B99AAB9A266448C1AE1CAB959DA80CCC3
+phase=admit-p1-approve-3 height=11 code=0 txhash=C3D8A5278E2581FA9D1AF9ABC49620D1C24B0B60B3ECAE46200313179F27DBDC
+phase=admit-p1 height=13 code=0 txhash=1CEF8D0C520483180B049D9058828DD68688534EAC7ED57B5B3BD11F3E7EE236 policy_version=2
+phase=admit-p2-propose height=14 code=0 txhash=7CEA6B18A10F445B6FD3249734AB9FBB1127FBEFE6E0017D50489BF9321F6839
+phase=admit-p2-approve-1 height=15 code=0 txhash=0E5B4389B820C032CFF14E0C17275730768E8A86551B6949D55C5CAE05E6FA51
+phase=admit-p2-approve-2 height=17 code=0 txhash=86872AB3018A2587625235C2A4D5D15026FD0DD7CAA5F1BBBBC7E9EC41D259DD
+phase=admit-p2-approve-3 height=18 code=0 txhash=5BA2CD2D1680E1673BC0745DBE21D62295167CDE1D3D86C9A308BA3BA7864C28
+phase=admit-p2 height=19 code=0 txhash=FCA09AA396B0511FC0A149BF247FC517C3835D5D539B41A69DBA2421EDB86B39 policy_version=3
+phase=update-p1 height=21 code=0 txhash=644B907B5647279B5CECF067ABA7A04265AE76834C1FAC024814DDFE0436DD20
+phase=rotate-p1 height=22 code=0 txhash=47B1273CED8A03F033A8BBE71EBBE2A36DBA68A7AD147F3467A2582AC9158EFB
+phase=drain-p2 height=23 code=0 txhash=9F1802EF99AA0F1D906384E627FB3B904AB8397B0418367AB4265B0CCBEF5279
+phase=disable-p2-propose height=24 code=0 txhash=C17CD01A31E057336E352F017AD686426E14AC60D33003DC9074CA044944D3FA
+phase=disable-p2-approve-1 height=26 code=0 txhash=F505883F5266FA1E4B842F6954A042E9914D617D21A51233AA38017CFDE2FB4D
+phase=disable-p2-approve-2 height=27 code=0 txhash=C87245011442D5D2FCA96AC316ED9F187823E477232BC8F41C53F90B8000A361
+phase=disable-p2-approve-3 height=28 code=0 txhash=DBF82303DCCF0131CC7B9AC4EBCD2AD1ECFC0E538E2B97D89BCA62DEFDE10AFE
+phase=disable-p2 height=30 code=0 txhash=3BAF0DD3588824464D64A4749695AB64038716E7A8D12A0CB187665C09F6B6B4 policy_version=4
+phase=register-c1 height=31 code=0 txhash=C007F67567A9C00466A24D7226B654C5A9501C18C71CF76DDAEC61A38A4D027E
+phase=register-c2 height=33 code=0 txhash=46084CAFC7FCF7A8FFB1B48185F211202B9C371FF7BB70E6906C1FE829CE9FD3
+phase=withdraw-c1 height=35 code=0 txhash=7D0409F525EAAB5DF5B379CB0981721972C500CB026FA3D51F6166A712C24311
+phase=force-withdraw-c2-propose height=37 code=0 txhash=79D6C390882DC6AA6D1B66F7BE3B790C95DA912E712C0CB26E62F8E61A172A37
+phase=force-withdraw-c2-approve-1 height=39 code=0 txhash=4F426C0DDD86C7B2C07327FA323FD56BE56344C49D1120811E65032B8128662F
+phase=force-withdraw-c2-approve-2 height=40 code=0 txhash=966FCF811AB1B5BCFE684C258749A056E38916BFEC1CD86766F7698F26A3B483
+phase=force-withdraw-c2-approve-3 height=41 code=0 txhash=46962B18606132E1A1A2799C186F34162DF1E0432852B79E719FDA1360E1FC7D
+phase=force-withdraw-c2 height=42 code=0 txhash=B13203F16D4B89DE8F508263AC18C43CD56793794AEEAD9CAD5E76FC4D8C3CBD policy_version=5
+phase=idempotent-replay-c1 height=43 code=0 txhash=76A67FED698E8BDC0421D9A177675A1EE1B0358D3E9AAF3961D2EF5D43C2307E
+phase=reject name=cross-owner-update height=44 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=3ADE9CC128C6242BBADA23D44810D6EEF43AE210096A87395E3943BE8CA0736B
+phase=reject name=service-updates-provider height=45 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=F61A9891F9D175C196D0413F26B2B05BDB97C492F32A379AB645D030EB7DC601
+phase=reject name=duplicate-version-c1 height=47 codespace=svn code=4 (ERROR_CODE_DUPLICATE_ID) included=true txhash=136DDCBAE075960C19C93A8B2849DE5859E9EB18811E1DBA27295184B8BCC47D
+phase=reject name=digest-31-bytes height=48 codespace=svn code=19 (ERROR_CODE_BOUNDS) included=true txhash=672D276EFEDC550BE4FBFA5C7AA88D48520162FA3997653B21B0C816CE790795
+phase=reject name=digest-algorithm-0 height=50 codespace=svn code=7 (ERROR_CODE_MALFORMED) included=true txhash=DC7872BD350F7BDAD7EBDF838749C419FA0514F7DE8CFDD1DB49B47419F8422C
+phase=reject name=provider-id-65-bytes height=51 codespace=svn code=19 (ERROR_CODE_BOUNDS) included=true txhash=917E8E86BCA5DFD9EDAF384F3CCDE6DFA6D2D7EFCBFA23D8300154A9BABF20B6
+phase=reject name=package-bytes-cap-plus-1 height=53 codespace=svn code=19 (ERROR_CODE_BOUNDS) included=true txhash=C55598210D5F641B8D23D3F95F682583D837CE9FB101CE824827C488AA96A800
+phase=reject name=replayed-business-id height=54 codespace=svn code=3 (ERROR_CODE_REPLAY) included=true txhash=89CB9F20E56ED72EB197B8FD7EF041264926B45F7B3083FF5EC5E70AF4F7BDD4
+phase=reject name=cross-owner-withdraw height=55 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=EFA22C977FF3C8C1CBF477F399B77F001C75B89CE4FF88FE3BAD3BC82026FD4F
+phase=reject name=second-withdraw height=56 codespace=svn code=15 (ERROR_CODE_WITHDRAWN) included=true txhash=92A8C2E19B4693A49AD91C9D1EB60C285655DF884002C66433CD3869E57F5CD1
+phase=reject name=stale-rotation height=57 codespace=svn code=5 (ERROR_CODE_STALE_VERSION) included=true txhash=20979C19D537D6FC29C901AE587EAECD5BE4297DB77D971CA27DDD7E80EE182A
+phase=reject name=wrong-domain-drain height=58 codespace=svn code=12 (ERROR_CODE_WRONG_DOMAIN) included=true txhash=4C11EF53BFD7F0CF0F35C7DC5760DA6E1FCED7C00013D2A1A4679732719EC34D
+phase=checktx-reject name=outsider codespace=sdk code=9 included=false (not included)
+phase=checktx-reject name=fee codespace=svn code=21 included=false (not included)
+phase=checktx-reject name=tx-70-KiB codespace=svn code=19 included=false (not included)
+phase=checktx-reject name=same-signed-bytes check_tx=sdk/32 broadcast="mempool ErrTxInCache" original_height=5 included_again=false (not included)
+phase=page height=58 page=1 provider=p1 next_page_key="p2"
+phase=page height=58 page=2 provider=p2 next_page_key=""
+phase=query height=58 name=content-c1 nodes=4 equal=true bytes=136 sha256=25472d373b863789c4460083e88286d5aca12289b6178735fdbf41a7f240a6ff
+phase=query height=58 name=content-c2 nodes=4 equal=true bytes=136 sha256=d9be15d0cc1253e039ec50b441a42b214f6211d200461f85134e147ecc241c1c
+phase=query height=58 name=provider-p1 nodes=4 equal=true bytes=183 sha256=368e61c11bdc56225402ec44222c2bc24dfe9ed86a43f023c4e42f987c35115a
+phase=query height=58 name=provider-p2 nodes=4 equal=true bytes=139 sha256=2825de0e59e5d54bbb646edc4b80f67a2ac05fe6af29779977ac6287ae84465c
+phase=query height=58 name=providers-page-1 nodes=4 equal=true bytes=189 sha256=44cdab9aeebce57f57281762a1c46f73d1bd7bf27ac00e79d77e12fba09af2f1
+phase=query height=58 name=providers-page-2 nodes=4 equal=true bytes=141 sha256=b0ad220ee37c12a6ec4f2a586946bb80a8c29e7f3206ba39f7e4804955baaa36
+phase=history nodes=4 height=34 c1=PENDING tombstone=false; height=35 c1=WITHDRAWN tombstone=true committed_unix_seconds=1793593355
+phase=grpc node=v1 height=58 path=/svn.providers.v1.Query/Provider equal_to_abci=true
+phase=grpc-reject node=v1 height=58 path=/svn.providers.v1.Query/Provider detail=ERROR_CODE_NOT_FOUND
+phase=grpc-reject node=v1 height=58 path=/svn.providers.v1.Query/Providers detail=ERROR_CODE_BOUNDS
+phase=grpc-reject node=v1 height=58 path=/svn.content.v1.Query/Content detail=ERROR_CODE_NOT_FOUND
+phase=validators rotation_height=22 from=21 to=24 count=4 unchanged=true
+phase=replay-reject name=cross-owner-update height=44 full_state_unchanged=true
+phase=replay-reject name=service-updates-provider height=45 full_state_unchanged=true
+phase=replay-reject name=duplicate-version-c1 height=47 full_state_unchanged=true
+phase=replay-reject name=digest-31-bytes height=48 full_state_unchanged=true
+phase=replay-reject name=digest-algorithm-0 height=50 full_state_unchanged=true
+phase=replay-reject name=provider-id-65-bytes height=51 full_state_unchanged=true
+phase=replay-reject name=package-bytes-cap-plus-1 height=53 full_state_unchanged=true
+phase=replay-reject name=replayed-business-id height=54 full_state_unchanged=true
+phase=replay-reject name=cross-owner-withdraw height=55 full_state_unchanged=true
+phase=replay-reject name=second-withdraw height=56 full_state_unchanged=true
+phase=replay-reject name=stale-rotation height=57 full_state_unchanged=true
+phase=replay-reject name=wrong-domain-drain height=58 full_state_unchanged=true
+phase=replay height=58 app_hash=5597D2725A3AEBD97C0841DA8129B6F47ACA9805530BD45F896B9E95621B257F nodes=4 equal=true
+phase=replay-queries height=58 count=6 equal=true
+phase=events heights=1..58 block_txs=41 events=123 typed=11 typed_parsed_with_msg_index=11 canaries=0 forbidden_names=0
+--- PASS: TestDevnetRegistryDemo (16.45s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	16.491s
+EXIT:0

@@ -1,0 +1,11 @@
+COMMAND bash -c git\ archive\ 3853e3430217096c3e65664bc799859942ea451e\ chain\ proto\ \|\ tar\ -x\ -C\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/decode-base\ \&\&\ cp\ docs/evidence/goal-07/innersig_decode_probe_test.go.txt\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/decode-base/chain/app/zz_probe_innersig_test.go\ \&\&\ cd\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/decode-base/chain\ \&\&\ go\ test\ -count=1\ -v\ -run\ \'\^TestProbeRotateDecode\$\'\ ./app/
+DATE 2026-11-02T04:10:00Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+=== RUN   TestProbeRotateDecode
+    zz_probe_innersig_test.go:62: probe result: decode error: failed to retrieve the message of type "svn.types.v1.InnerSignature": tx parse error [cosmos/cosmos-sdk@v0.55.0/x/auth/tx/decoder.go:44]
+--- PASS: TestProbeRotateDecode (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	0.034s
+EXIT:0

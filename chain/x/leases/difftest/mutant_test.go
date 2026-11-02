@@ -58,11 +58,16 @@ func (f *fixture) business() string {
 	return fmt.Sprintf("bf%d", f.n)
 }
 
-// offer appends a valid OfferLease of contentID on p0 and returns the
-// record the chain stores for it.
+// offer appends a valid OfferLease of contentID on p0 by serviceAcct and
+// returns the record the chain stores for it.
 func (f *fixture) offer(offerID, contentID string, deadline, expiry int64) *leasesv1.Offer {
+	return f.offerBy(serviceAcct, f.business(), offerID, contentID, deadline, expiry)
+}
+
+// offerBy is offer with a given scheduler and business id.
+func (f *fixture) offerBy(scheduler []byte, business, offerID, contentID string, deadline, expiry int64) *leasesv1.Offer {
 	p := offerParams{
-		signer: serviceAcct, business: f.business(), offerID: offerID, contentID: contentID, providerID: "p0",
+		signer: scheduler, business: business, offerID: offerID, contentID: contentID, providerID: "p0",
 		version: 1, size: 1000, termVersion: 1, manifest: manifestFor(contentID), terms: termsFor(1),
 		start: deadline - termSeconds, deadline: deadline, expiry: expiry,
 	}
@@ -71,16 +76,30 @@ func (f *fixture) offer(offerID, contentID string, deadline, expiry int64) *leas
 		OfferId: offerID, ContentId: contentID, ContentVersion: 1, ProviderId: "p0",
 		ManifestDigest: digest(p.manifest), PackageBytes: p.size, TermsDigest: digest(p.terms),
 		StartUnixSeconds: p.start, DeadlineUnixSeconds: deadline, ExpiryUnixSeconds: expiry,
-		TermVersion: 1, Scheduler: serviceAcct,
+		TermVersion: 1, Scheduler: append([]byte(nil), scheduler...),
 	}
 }
 
 // accept appends a broadcaster-relayed acceptance signed by p0's key.
 func (f *fixture) accept(offer *leasesv1.Offer, leaseID string) {
+	f.acceptBy(broadcasterAcct, f.business(), offer, leaseID)
+}
+
+// acceptBy is accept with a given signer and business id.
+func (f *fixture) acceptBy(signer []byte, business string, offer *leasesv1.Offer, leaseID string) {
 	signBytes := acceptSignBytes(offer, leaseID)
 	s := providerSig(sigValid, typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,
 		typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW, signBytes, nil, "p0-k1", "", "")
-	f.add(buildAccept(broadcasterAcct, f.business(), offer.GetOfferId(), leaseID, s))
+	f.add(buildAccept(signer, business, offer.GetOfferId(), leaseID, s))
+}
+
+// end appends a broadcaster-relayed end of a p0 lease, signed by p0's key
+// for termVersion.
+func (f *fixture) end(leaseID string, termVersion uint64) {
+	signBytes := endSignBytes(leaseID, "p0", termVersion)
+	s := providerSig(sigValid, typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_END,
+		typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_RENEW, signBytes, nil, "p0-k1", "", "")
+	f.add(buildEnd(broadcasterAcct, f.business(), leaseID, false, s, termVersion))
 }
 
 // renew appends a valid renewal of a 1000-byte lease of contentID.
@@ -163,25 +182,64 @@ func ruleFixtures() map[string]func() (*fixture, int) {
 			return f, len(f.steps) - 1
 		},
 		"D-6": func() (*fixture, int) {
+			// Two schedulers fill c0 (one alone stops at D-10); the 257th
+			// offer comes from a third one with no offer of c0, so D-10
+			// cannot reject it and only D-6 does.
 			f := newFixture(nil)
-			for i := 0; i <= leases.MaxOpenOffersPerContent; i++ {
+			for i := 0; i < leases.MaxOpenOffersPerContent; i++ {
+				scheduler := [][]byte{serviceAcct, service2Acct}[i%2]
+				f.offerBy(scheduler, f.business(), fmt.Sprintf("o%03d", i), "c0", f.now+termSeconds, f.now+600)
+			}
+			f.offerBy(service3Acct, f.business(), "o-third", "c0", f.now+termSeconds, f.now+600)
+			return f, len(f.steps) - 1
+		},
+		"D-10": func() (*fixture, int) {
+			f := newFixture(nil)
+			for i := 0; i <= leases.MaxOpenOffersPerContentPerScheduler; i++ {
 				f.offer(fmt.Sprintf("o%03d", i), "c0", f.now+termSeconds, f.now+600)
 			}
+			return f, len(f.steps) - 1
+		},
+		"D-11": func() (*fixture, int) {
+			// service2 commits a copy of serviceAcct's offer first; the
+			// original's identical message is then not idempotent.
+			f := newFixture(nil)
+			f.offerBy(service2Acct, "b-copied", "o1", "c0", f.now+termSeconds, f.now+600)
+			f.offerBy(serviceAcct, "b-copied", "o1", "c0", f.now+termSeconds, f.now+600)
+			return f, len(f.steps) - 1
+		},
+		"D-12": func() (*fixture, int) {
+			// An end signed for term 1, relayed after the renewal to term 2.
+			f := newFixture(nil)
+			f.accept(f.offer("o1", "c0", f.now+termSeconds, f.now+600), "l1")
+			f.renew("l1", "c0", 2, f.now+2*termSeconds)
+			f.end("l1", 1)
+			return f, len(f.steps) - 1
+		},
+		"D-13": func() (*fixture, int) {
+			// p1's account replays the broadcaster's acceptance of a p0
+			// offer under its business id and payload.
+			f := newFixture(nil)
+			f.add(buildRegisterProvider(providerAccount(1), "reg-p1", "p1", "p1-k1", 1_000_000), admitStep("p1"))
+			offer := f.offer("o1", "c0", f.now+termSeconds, f.now+600)
+			f.acceptBy(broadcasterAcct, "b-accepted", offer, "l1")
+			f.acceptBy(providerAccount(1), "b-accepted", offer, "l1")
 			return f, len(f.steps) - 1
 		},
 	}
 }
 
-// TestDeviationRulesAreLoadBearing runs one trace per chain deviation
-// (D-2 to D-6). With the oracle's rules on, every step agrees and the rule
-// step carries its rule. With the rules off (disable_deviations), the
-// first divergence is exactly the rule step, where spec_machine.py alone
-// says ok. So each rule is needed, and nothing else in the adapter hides a
-// difference.
+// TestDeviationRulesAreLoadBearing runs one trace per adapter rule
+// (deviationRules: D-2 to D-6, D-10 to D-13). With the oracle's rules on,
+// every step agrees and the rule step carries its rule. With the rules off
+// (disable_deviations), the first divergence is exactly the rule step,
+// where spec_machine.py alone says ok. So each rule is needed, and no
+// other adapter rule hides a difference. The generator's own restrictions
+// (TestGeneratorRestrictionsHideKnownDivergences) are not adapter rules.
 func TestDeviationRulesAreLoadBearing(t *testing.T) {
 	o := getOracle(t)
 	fixtures := ruleFixtures()
-	for _, rule := range []string{"D-2", "D-3", "D-4", "D-5", "D-6"} {
+	for _, rule := range deviationRules {
 		t.Run(rule, func(t *testing.T) {
 			f, at := fixtures[rule]()
 			on := runFixture(t, t, f, o, false)
@@ -205,6 +263,48 @@ func TestDeviationRulesAreLoadBearing(t *testing.T) {
 				t.Fatalf("with the rules off, the spec says %s at step %d (recorded %d errors)", off.specs[at].Code, at, len(rec.errors))
 			}
 			t.Logf("%s: chain %s at step %d; spec_machine.py alone: ok", rule, on.outs[at].code, at)
+		})
+	}
+}
+
+// TestGeneratorRestrictionsHideKnownDivergences shows that two generator
+// restrictions hide real chain/spec differences that are not lease rules
+// and have no adapter rule: with every adapter rule on, the first
+// divergence of each trace is its last step.
+//
+//   - DR-08-10: RegisterProvider with a capacity of 2^53. x/providers
+//     accepts it (decimal-string payload); spec_machine.py says MALFORMED.
+//   - DR-07-08: a provider registration replayed by another provider
+//     account. x/providers says FORBIDDEN; spec_machine.py says idempotent.
+func TestGeneratorRestrictionsHideKnownDivergences(t *testing.T) {
+	o := getOracle(t)
+	for _, c := range []struct {
+		name       string
+		last       *step
+		chain      msgkit.Code
+		spec       string
+		idempotent bool
+	}{
+		{"DR-08-10 capacity 2^53", buildRegisterProvider(providerAccount(1), "reg-p9", "p9", "p9-k1", 1<<53),
+			msgkit.OK, string(msgkit.Malformed), false},
+		{"DR-07-08 registration replay by another account", buildRegisterProvider(providerAccount(1), "reg-p0", "p0", "p0-k1", 1_000_000),
+			msgkit.Forbidden, "ok", true},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := newFixture(nil)
+			f.add(c.last)
+			at := len(f.steps) - 1
+			rec := &recorder{TB: t}
+			run := runFixture(t, rec, f, o, false)
+			if run.firstMismatch != at || len(rec.errors) == 0 {
+				t.Fatalf("first divergence at step %d, want %d (reports %v)", run.firstMismatch, at, rec.errors)
+			}
+			out, spec := run.outs[at], run.specs[at]
+			if out.code != c.chain || spec.Code != c.spec || spec.Idempotent != c.idempotent {
+				t.Fatalf("chain %s, spec %s idempotent %t; want chain %s, spec %s idempotent %t",
+					out.code, spec.Code, spec.Idempotent, c.chain, c.spec, c.idempotent)
+			}
+			t.Logf("%s: chain %s, spec_machine.py %s (idempotent %t)", c.name, out.codeName(), spec.Code, spec.Idempotent)
 		})
 	}
 }

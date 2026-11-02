@@ -1,0 +1,194 @@
+COMMAND bash docs/evidence/goal-07/mutants/run_mutant.sh m01-simulate-extra-gas
+DATE 2026-11-01T09:48:17Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+mutant m01-simulate-extra-gas: target chain/msgkit/enforce.go, package ./app/, tests ^TestSimulateEstimatesGas$
+--- /home/user/shortvideo-network/chain/msgkit/enforce.go	2026-11-01 09:27:53.468446047 +0000
++++ /home/user/shortvideo-network/docs/evidence/goal-07/mutants/m01-simulate-extra-gas.go.txt	2026-11-01 09:36:29.677400991 +0000
+@@ -41,6 +41,9 @@
+ 		return Bounds
+ 	}
+ 	ctx.GasMeter().ConsumeGas(FixedMessageGas, "svn registry message")
++	if ctx.ExecMode() == sdk.ExecModeSimulate {
++		ctx.GasMeter().ConsumeGas(1, "mutant m01")
++	}
+ 	if len(signer) != AccountBytes {
+ 		return Malformed
+ 	}
+overlay /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07/svn-goal07-m01-simulate-extra-gas.overlay.json: {"Replace":{"/home/user/shortvideo-network/chain/msgkit/enforce.go":"/home/user/shortvideo-network/docs/evidence/goal-07/mutants/m01-simulate-extra-gas.go.txt"}}
+--- FAIL: TestSimulateEstimatesGas (0.05s)
+    buffer.go:279: baseapp.go:231: <nil> WRN error validating merged proto registry annotations error="service svn.leases.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.content.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.providers.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.evidence.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.authority.v1.Msg does not have cosmos.msg.v1.service proto annotation"
+    buffer.go:279: store.go:219: <nil> DBG loadVersion ver=0
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08d4b060, leases}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08d4b060, leases}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08d4b070, evidence}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08d4b070, evidence}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08d4b080, authority}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08d4b080, authority}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08d4b010, acc}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08d4b010, acc}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08d4b020, svn}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08d4b020, svn}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08d4b030, policy}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08d4b030, policy}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08d4b040, providers}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08d4b040, providers}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08d4b050, content}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08d4b050, content}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: baseapp.go:231: <nil> WRN error validating merged proto registry annotations error="service svn.authority.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.providers.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.content.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.leases.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.evidence.v1.Msg does not have cosmos.msg.v1.service proto annotation"
+    buffer.go:279: store.go:219: <nil> DBG loadVersion ver=0
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08e7ebc0, acc}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08e7ebc0, acc}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08e7ebd0, svn}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08e7ebd0, svn}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08e7ebe0, policy}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08e7ebe0, policy}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08e7ebf0, providers}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08e7ebf0, providers}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08e7ec00, content}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08e7ec00, content}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08e7ec10, leases}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08e7ec10, leases}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08e7ec20, evidence}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08e7ec20, evidence}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: store.go:257: <nil> DBG loadVersion commitID hash= key="KVStoreKey{0x168b08e7ec30, authority}" ver=0
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x168b08e7ec30, authority}" version=1
+    buffer.go:279: store.go:83: <nil> DBG Finished loading IAVL tree
+    buffer.go:279: abci.go:55: <nil> INF InitChain chainID=shortvideo-dev-registry initialHeight=1 module=baseapp
+    buffer.go:279: module.go:491: <nil> INF initializing blockchain state from genesis.json module=baseapp
+    buffer.go:279: module.go:512: <nil> DBG running initialization for module module=auth
+    buffer.go:279: module.go:512: <nil> DBG running initialization for module module=svn
+    buffer.go:279: module.go:512: <nil> DBG running initialization for module module=policy
+    buffer.go:279: module.go:512: <nil> DBG running initialization for module module=providers
+    buffer.go:279: module.go:512: <nil> DBG running initialization for module module=content
+    buffer.go:279: module.go:512: <nil> DBG running initialization for module module=leases
+    buffer.go:279: module.go:512: <nil> DBG running initialization for module module=evidence
+    buffer.go:279: module.go:515: <nil> DBG running initialization for module module=authority
+    buffer.go:279: abci.go:1131: <nil> DBG hash of all writes module=baseapp workingHash=7E2E7E820AB17D28E0A29710B47C92FCCAC660C494A834509EECF27B64A2444D
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=1
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x00:\b@ (1, 5):- 1-0 ec56a02ac4bf3217c60c5584783e6718af6e16f39d5626a005b9fa95edee722a}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 6):- 1-0 91047cc4e9790f7a1b39963dc6c0d8a8d878934e5161c66a201991dc510c41aa}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 4):000000000000000100000005-000000000000000100000006 2-1 1aaf6f1013eeb96d6cb4f7ca31d6af34dbe20536529c5cb608e67998eedeb3d9}#{left (1, 5)}{right (1, 6)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 8):- 1-0 7080fe2835ddccd2b7b9792f9fb886de16e49d735e6efd80d1a9e6f9f1de3b7a}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 9):- 1-0 309be9eb45fc9ef7aedb25813a1b2bd1c9b0d57a33f6c6419b2b780d1f77febb}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 7):000000000000000100000008-000000000000000100000009 2-1 f13ed375fd4907a5fd8d84fcc7bd7e1d14360358a87c6b4cf7c360e075a3958d}#{left (1, 8)}{right (1, 9)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 3):000000000000000100000004-000000000000000100000007 4-2 0a5d22a1bf3ecea1edad8b9db73c3d0b50d2e497ac6a96db5a48982c06a4a020}#{left (1, 4)}{right (1, 7)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 12):- 1-0 9ca4c830c95707a74f80317cc57b5047c8271a2a8fd68fcd057fc525541df6fb}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 13):- 1-0 d2ef2ad06dba2eabdc5e4c43289d1b93bc689417d4723bd9b177905e5c360f73}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 11):00000000000000010000000c-00000000000000010000000d 2-1 24f39b8f7be02a8585274b80f44a43ed0a5b8fef4ad0287c6a4afd4cef52d790}#{left (1, 12)}{right (1, 13)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 15):- 1-0 0bce117e10a55c04af2dc6999af7c6dacb312a8100e5ba6dbacbf1fa5892ea54}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 16):- 1-0 d55e6330544f7400aaa4b8641725744da3810e0b3cd8d452ffa70117b97a38ce}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 14):00000000000000010000000f-000000000000000100000010 2-1 1242566fe2faf3f5c802b6c4b141643ffee1656c685b98800893abb22ef7ab85}#{left (1, 15)}{right (1, 16)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 10):00000000000000010000000b-00000000000000010000000e 4-2 4a169a49c8f0a8d296c56d564c9a7f9897544a85def07e48cf7bfdcd520582c5}#{left (1, 11)}{right (1, 14)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 2):000000000000000100000003-00000000000000010000000a 8-3 f76786fdf35d1e174f61f725acb258b62205a6a46fd634f539926a00bfa811c4}#{left (1, 3)}{right (1, 10)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 20):- 1-0 3749458a1fd916301521b09f032820c2e543b2d1c5f1b041118f89a9dc5ac101}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 21):- 1-0 6edccb54b63df5d81e7d7dc53fb16711bd72d798eca5099a56ce22d6f8d2da4e}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 19):000000000000000100000014-000000000000000100000015 2-1 15764d79070248ed50ff4b69f485d9b97c9be2f4650698f4ee9acabf3719917d}#{left (1, 20)}{right (1, 21)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:\x12@ (1, 23):- 1-0 be2efbf8aa9fc46055518f3f64f89538eea49694b2d50113897f6ed350928351}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:\x13@ (1, 24):- 1-0 160f864ece206b376f0a17d0726e08b7b8eaf89cad93488d1addcd1aaac665dd}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 22):000000000000000100000017-000000000000000100000018 2-1 709bbaa1c5e8488dbe88e65abc7660cd23e66b2267f7808dedd465499dbb7447}#{left (1, 23)}{right (1, 24)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 18):000000000000000100000013-000000000000000100000016 4-2 d72c7c8358b855ae73b5e0096168c1ad76fba75fd1cfc9d10dfa8989cfc9d2a0}#{left (1, 19)}{right (1, 22)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:/@ (1, 28):- 1-0 f5c9d85dc1d51c83325d239965c4bdff8a82ef785f657032049221023883e9fc}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:j@ (1, 29):- 1-0 80813ef72ed1ab5e72305d1a59dc3cc724ed016a6ad83ffd885e2375cf2a847e}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 27):00000000000000010000001c-00000000000000010000001d 2-1 2a692302c9bf5e90190e85379e0086650ef034f0e0709de8ad45cbe1eb2d6332}#{left (1, 28)}{right (1, 29)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:\u0092@ (1, 31):- 1-0 f490aafdd10c2e3b9f94ff66ab272cb0bcd542fa72c9c95cd232189e82455b2e}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:¤@ (1, 32):- 1-0 ef662b1af43117947278606b822ca41ab41d7f3d65a4af206c73d250a75193e8}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 30):00000000000000010000001f-000000000000000100000020 2-1 c0a4444b9a8ed797fa02e1d02a55256f29edd20bf06f003936b0ea74602b2152}#{left (1, 31)}{right (1, 32)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 26):00000000000000010000001b-00000000000000010000001e 4-2 25382836485c4d4edecdc8a07a978f6c197188a5552e10028874f684267bd7f6}#{left (1, 27)}{right (1, 30)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:µ@ (1, 34):- 1-0 25e886d15bf89820040b1eed267046e6fa7ec60a5cc68c8bbd004a911163806f}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:¹@ (1, 36):- 1-0 d474586139c56da332e11ecdc43d20fe259ab9f2812b07dd5ce82044ba70b393}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:ú@ (1, 37):- 1-0 915d4e7bdcfdca7e41abd07c259bf758c14c1ee82c05ba51b4d405589a92881a}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 35):000000000000000100000024-000000000000000100000025 2-1 c9eedf8d0b24e55560fd443086ef2466be58bf83e8f3cb46d3ec182401cc8d3d}#{left (1, 36)}{right (1, 37)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 33):000000000000000100000022-000000000000000100000023 3-2 25031606cb179ccf6b6b5df665128309bff0db445dd1002aabae10b23b11bba0}#{left (1, 34)}{right (1, 35)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 25):00000000000000010000001a-000000000000000100000021 7-3 611176cfe5436d97d7786e56481e5f1b0527edb8c36b454b354ccd470fbfcf9c}#{left (1, 26)}{right (1, 33)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (1, 17):000000000000000100000012-000000000000000100000019 11-4 25a32c8374c20659b2b51035c780915937fe7521d302536c9daea39ff0f85c62}#{left (1, 18)}{right (1, 25)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (1, 1):000000000000000100000002-000000000000000100000011 19-5 80747c7753f505085e8b93807103a2dab31677aca981b988fe5125e2d83f88f0}#{left (1, 2)}{right (1, 17)}\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=1
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (1, 4):- 1-0 57b9e71f9d5a52ac19858e0454480504976e541f5990aa965e6c19c3d2a9dbb2}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x04@ (1, 5):- 1-0 5f8e7ebd4709a4949a4f266a9fea7d8b7bb6d9d99f01ec42949807a8d9510d72}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 3):000000000000000100000004-000000000000000100000005 2-1 2a19ba8689415d057ff1e95e6dc1457fa827b86bed17076292901523776a694c}#{left (1, 4)}{right (1, 5)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x02@ (1, 7):- 1-0 e1398a50f109e199f99b02392a4350cd3b8bdfbeab21a2c74a4bfce4e5be2f65}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x02@ (1, 8):- 1-0 e09ff328b5cd34d8e3a8b30f191d5ff44c404ecf1528ad0c7a2ff862c573c4d2}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 6):000000000000000100000007-000000000000000100000008 2-1 cbedc25f2198506c4c10162d887424c4eb5e97f2c943c15d26f8bff12d2ce5ea}#{left (1, 7)}{right (1, 8)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 2):000000000000000100000003-000000000000000100000006 4-2 0ab5bad84eb1d48d1b73fa91f7d678934319b1ecd2012a4306fa7e293cd39abf}#{left (1, 3)}{right (1, 6)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x04@ (1, 11):- 1-0 7a5a0eba9834fe7fa064969d5a1a66ac2a4b8110d7a8a524332ac6de8a4dcd0e}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x03@ (1, 12):- 1-0 eb8e75509dbda455bb9cb2ca73b7def4ef32ce6c4f12780473bd6bf2538197a0}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 10):00000000000000010000000b-00000000000000010000000c 2-1 3b4387d0fc2024648b037a8de473db7cc4692059c8180907ad1fc3d91c2ba901}#{left (1, 11)}{right (1, 12)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x04@ (1, 15):- 1-0 3af0c4475b4485b0f07ae670e92aedcb86a381235b63f460439e5fc9e67fdaac}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x04@ (1, 16):- 1-0 294a0eaccae727bf73fdf04012c4e1c2f84a6106e5db6cc32b3071cb30f425cf}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 14):00000000000000010000000f-000000000000000100000010 2-1 a0e46e1560c22114c5f39609573289a11e815721eeadeac534079ed582c5e801}#{left (1, 15)}{right (1, 16)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x01@ (1, 18):- 1-0 92c48a388a08fb6193899a0cc0a8f63799fb124dd05837984f4f1b099e8ef0f6}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:\x03@ (1, 19):- 1-0 e8208c2c8ebe868f3d5a9fd97d37fc1e178aa37af07527484567c1ddbeed67fd}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 17):000000000000000100000012-000000000000000100000013 2-1 58b7d708ea49a38f565699bc1639b9cd9f615ce994f825404c186aca2669f9ed}#{left (1, 18)}{right (1, 19)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 13):00000000000000010000000e-000000000000000100000011 4-2 8ec566bf78017359e28984df0f90c2e28806e4e6646cc956d9d2c6fdadf0f5a8}#{left (1, 14)}{right (1, 17)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 9):00000000000000010000000a-00000000000000010000000d 6-3 1e09dd9cbf403a49425fafdac9549d4f18ab4c605e7068a3e77d4c6c205847e9}#{left (1, 10)}{right (1, 13)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (1, 1):000000000000000100000002-000000000000000100000009 10-4 668da388410b0f6a01e7b1d12a5011514a6e43d2d99455b343e40b79af57a8ec}#{left (1, 2)}{right (1, 9)}\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=1
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x00:\x00@ (1, 1):- 1-0 8751ae282b864ab85fcb5e4e94a1f09d3d9697a3798a15b73a0cf1f2900a426f}#\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=1
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:{@ (1, 1):- 1-0 75e3b2915108023febc92662e8c4c06cd35144441e1f5fa2cf5eba3b9ff965c7}#\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=1
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:{@ (1, 1):- 1-0 75e3b2915108023febc92662e8c4c06cd35144441e1f5fa2cf5eba3b9ff965c7}#\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=1
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:{@ (1, 1):- 1-0 aea5372e41809ab1432cda9efec478bb4a8e4e0839554c5621248d21f6424b75}#\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=1
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x00:\x00@ (1, 1):- 1-0 8751ae282b864ab85fcb5e4e94a1f09d3d9697a3798a15b73a0cf1f2900a426f}#\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=1
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:{@ (1, 2):- 1-0 ffb50503b23fabbff2a7812adf7c35dc3e9a062515c42e3b1f5cb5be4b4f84ca}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x03:\n@ (1, 3):- 1-0 ecd1776f8a3fe1117641d5ecfcd4e45e354c83e1a1cf41cd9e44e22131017c7d}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x03:@ (1, 1):000000000000000100000002-000000000000000100000003 2-1 301cb493c0d9da823cabb6c115a5302d34033ad3836a6fd20334de179e3a8946}#{left (1, 2)}{right (1, 3)}\n"
+    buffer.go:279: store.go:672: <nil> DBG prune start height=1
+    buffer.go:279: store.go:680: <nil> DBG pruning skipped, height is less than or equal to 0
+    buffer.go:279: store.go:674: <nil> DBG prune end height=1
+    buffer.go:279: store.go:1142: <nil> DBG flushing metadata height=1
+    buffer.go:279: store.go:1159: <nil> DBG flushing metadata finished height=1
+    buffer.go:279: abci.go:1131: <nil> DBG hash of all writes module=baseapp workingHash=E35740618F04549A6330AD648E0CA595EB62E265477E32DC60329D57E145D5E6
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=2
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (2, 5):- 1-0 5685fc8251460e3525cb94881e787748cf31999a79008a38fd76c10a14c23266}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (2, 4):00000000000000010000000c-000000000000000200000005 2-1 ba72e029374b8613b805b034dd5163a48cdd6a89032a8a28b40de49289dde242}#{left (1, 12)}{right (2, 5)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (2, 3):000000000000000200000004-00000000000000010000000e 4-2 fbedb6787934dc8189500e8ec2615b9a6171294c97c1c880bb5c6d91bf1da805}#{left (2, 4)}{right (1, 14)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (2, 2):000000000000000100000003-000000000000000200000003 8-3 8d72089ca9c8e9850a1460a49886ee3f323a3cf6ca64ba7c7a9364121f044828}#{left (1, 3)}{right (2, 3)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:\u0092@ (2, 10):- 1-0 a3f3aa8b68abe9a0ebd05f17f8e6fd728211948bd652d539eba216e8ac5b5543}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (2, 9):00000000000000020000000a-000000000000000100000020 2-1 c1abb4242b051d648f6942b83bf03212b9b96631ec36e15c5bdb28fd8e98a328}#{left (2, 10)}{right (1, 32)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (2, 8):00000000000000010000001b-000000000000000200000009 4-2 5636455dd48106fb2314b9b4817c87b7ae1008f12ad6fe45acfe6deb7a5494c0}#{left (1, 27)}{right (2, 9)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (2, 7):000000000000000200000008-000000000000000100000021 7-3 72267d5ff59a7549ffe42dddcd45f9abd3f8f9dddddae9703d1b30de6de0d815}#{left (2, 8)}{right (1, 33)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{a:@ (2, 6):000000000000000100000012-000000000000000200000007 11-4 3055bac7ad2442880e3af09411211db39f157aaff37f95e45a4a71ce6e759cfa}#{left (1, 18)}{right (2, 7)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (2, 1):000000000000000200000002-000000000000000200000006 19-5 2ba40262a677c3bef7ce3a296e6f14b4d117c699c6bd40ded325fca253d384cb}#{left (2, 2)}{right (2, 6)}\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=2
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=2
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=2
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=2
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=2
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=2
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:\n@ (2, 3):- 1-0 17c629e2ee4ab170543f96686982932ca1c2b10f7a233b230c53b23384c0c8b8}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:i@ (2, 4):- 1-0 c13ef0dd41b23e4ddcbeaf36749cab96b8847cd1a7850b44867c609791336b29}#\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x02:@ (2, 2):000000000000000200000003-000000000000000200000004 2-1 722435351578feead0fdc64591d7157ccfc2019d7ac69760cffa7e481ee43d7e}#{left (2, 3)}{right (2, 4)}\n"
+    buffer.go:279: nodedb.go:257: <nil> DBG BATCH SAVE node="Node{\x01:@ (2, 1):000000000000000100000001-000000000000000200000002 3-2 a8ca3935ce12590fc91ac14a5e1fc4e3b026f410491fa5caf81aa03104d0a3ea}#{left (1, 1)}{right (2, 2)}\n"
+    buffer.go:279: mutable_tree.go:738: <nil> DBG SAVE TREE version=2
+    buffer.go:279: store.go:672: <nil> DBG prune start height=2
+    buffer.go:279: store.go:680: <nil> DBG pruning skipped, height is less than or equal to 0
+    buffer.go:279: store.go:674: <nil> DBG prune end height=2
+    buffer.go:279: store.go:1142: <nil> DBG flushing metadata height=2
+    buffer.go:279: store.go:1159: <nil> DBG flushing metadata finished height=2
+    registry_simulate_test.go:55: register p1: simulated gas 106772, committed gas 106771
+FAIL
+FAIL	github.com/Maxencejules/shortvideo-network/chain/app	0.087s
+FAIL
+mutant m01-simulate-extra-gas: go test exit 1 (non-zero = killed, 0 = survived)
+EXIT:1

@@ -24,10 +24,12 @@ import (
 // can be checked and imported into fresh stores.
 //
 // Export carries the open offers and every lease. It does not carry the
-// business-id ledger (the v0 genesis schema has no field for it; DR-07-03)
-// or the used-offer markers of offers that expired or were voided
-// (DR-08-06): a chain started from an export forgets those ids. Index rows
-// and counters are derived state that InitGenesis rebuilds.
+// business-id ledger (the v0 genesis schema has no field for it; DR-07-03),
+// the used-offer markers of offers that expired or were voided, or the
+// scheduler recorded in the used-offer marker of an accepted offer
+// (svn.leases.v1.Lease has no scheduler field) (DR-08-06): a chain started
+// from an export forgets those ids and those sponsors. Index rows and
+// counters are derived state that InitGenesis rebuilds.
 
 // exportJSON is the export encoding, the same options the other modules use.
 var exportJSON = protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true}
@@ -65,8 +67,9 @@ func MarshalGenesis(state *leasesv1.GenesisState) (json.RawMessage, error) {
 //   - package_bytes in 1..268435456 (the protocol package cap)
 //   - start, deadline, and expiry in [1, 253402300799]; deadline > start
 //   - term_version 1; scheduler 20 bytes
-//   - at most 1024 open offers per provider (the max_open_offers ceiling)
-//     and at most MaxOpenOffersPerContent per content id
+//   - at most 1024 open offers per provider (the max_open_offers ceiling),
+//     at most MaxOpenOffersPerContent per content id, and at most
+//     MaxOpenOffersPerContentPerScheduler per (content id, scheduler)
 //
 // Leases:
 //   - lease_id, offer_id, content_id, provider_id in the id pattern;
@@ -93,6 +96,7 @@ func ValidateGenesis(state *leasesv1.GenesisState) error {
 	offerIDs := make(map[string]bool, len(state.GetOffers()))
 	perProvider := map[string]int{}
 	perContent := map[string]int{}
+	perScheduler := map[string]int{}
 	for i, offer := range state.GetOffers() {
 		if err := validateOffer(offer); err != nil {
 			return fmt.Errorf("leases genesis: offer %d: %w", i, err)
@@ -108,6 +112,12 @@ func ValidateGenesis(state *leasesv1.GenesisState) error {
 		perContent[offer.GetContentId()]++
 		if perContent[offer.GetContentId()] > MaxOpenOffersPerContent {
 			return fmt.Errorf("leases genesis: content %q has more than %d open offers", offer.GetContentId(), MaxOpenOffersPerContent)
+		}
+		scope := string(SchedulerOfferCountKey(offer.GetContentId(), offer.GetScheduler()))
+		perScheduler[scope]++
+		if perScheduler[scope] > MaxOpenOffersPerContentPerScheduler {
+			return fmt.Errorf("leases genesis: scheduler %x has more than %d open offers of content %q",
+				offer.GetScheduler(), MaxOpenOffersPerContentPerScheduler, offer.GetContentId())
 		}
 	}
 	leaseIDs := make(map[string]bool, len(state.GetLeases()))
@@ -259,8 +269,9 @@ func validateLease(l *leasesv1.Lease) error {
 //   - every open offer: Content.CheckOfferable(content, version, manifest,
 //     bytes) is OK (a PENDING record with the same version, digest, and
 //     bytes) and its provider exists
-//   - every lease: its provider exists, and its content exists
-//     (Content.CheckNotWithdrawn is OK or WITHDRAWN)
+//   - every lease: its provider exists, and the content record of its
+//     content id and version, in any state, has the lease's manifest digest
+//     and package bytes (Content.CheckPackage is OK; invariant I9)
 //   - every provider named by an offer or a lease: reserved_bytes equals
 //     the sum of package_bytes of its held leases
 //
@@ -269,9 +280,11 @@ func validateLease(l *leasesv1.Lease) error {
 //
 // Writes, in id byte order: the layout version (msgkit.LayoutVersionKey),
 // the open offers with their expiry and content rows, counters, and
-// used-offer markers, then the leases with the pair, deadline, content, and
-// provider rows of every held lease and a used-offer marker for every
-// lease's offer_id.
+// used-offer markers (holding the offer's scheduler), then the leases with
+// the pair, deadline, content, and provider rows of every held lease and a
+// used-offer marker for every lease's offer_id. A lease record has no
+// scheduler, so that marker holds Marker (0x01): the sponsor of an imported
+// lease is not known (DR-08-06).
 func (k Keeper) InitGenesis(ctx sdk.Context, state *leasesv1.GenesisState) error {
 	if err := ValidateGenesis(state); err != nil {
 		return err
@@ -326,7 +339,8 @@ func (k Keeper) checkGenesisRegistries(ctx sdk.Context, offers []*leasesv1.Offer
 		}
 	}
 	for _, lease := range leases {
-		if code := k.deps.Content.CheckNotWithdrawn(ctx, lease.GetContentId()); code != msgkit.OK && code != msgkit.Withdrawn {
+		if code := k.deps.Content.CheckPackage(ctx, lease.GetContentId(), lease.GetContentVersion(),
+			lease.GetManifestDigest().GetValue(), lease.GetPackageBytes()); code != msgkit.OK {
 			return fmt.Errorf("leases genesis: lease %q: content check %s", lease.GetLeaseId(), code)
 		}
 		if _, found := k.deps.Providers.Provider(ctx, lease.GetProviderId()); !found {
