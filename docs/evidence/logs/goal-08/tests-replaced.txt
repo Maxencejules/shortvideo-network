@@ -1,0 +1,20 @@
+COMMAND bash -c git\ grep\ -n\ -E\ \'\^func\ \(TestAdmitAndDisableRows\|TestMixedActivationConflicts\|TestQuorumModelVectors\|TestLegacySideDocumentHalts\|TestOldLayoutConfigIsIntegrity\|TestAppRefusesScaffoldLayout\|TestKeeperForceWithdrawArgumentsSurviveTheRecord\|TestSeatAddressIsNotASubmitter\|TestAdmissionOf\|TestSeatRotationMovesSeatAdmission\|TestSeatRotationMovesAnteAdmission\|TestSeatKeysSignOnlyCouncilMessages\|TestDevnetSeatsHaveNoSubmitterRow\)\\\(\'\ HEAD\ --\ chain
+DATE 2026-11-02T15:28:46Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+HEAD:chain/app/registry_roles_test.go:125:func TestSeatAddressIsNotASubmitter(t *testing.T) {
+HEAD:chain/app/restart_test.go:80:func TestAppRefusesScaffoldLayout(t *testing.T) {
+HEAD:chain/app/seat_admission_test.go:42:func TestSeatKeysSignOnlyCouncilMessages(t *testing.T) {
+HEAD:chain/app/seat_admission_test.go:192:func TestSeatRotationMovesAnteAdmission(t *testing.T) {
+HEAD:chain/devnet/lifecycle_test.go:498:func TestQuorumModelVectors(t *testing.T) {
+HEAD:chain/devnet/lifecycle_test.go:611:func TestDevnetSeatsHaveNoSubmitterRow(t *testing.T) {
+HEAD:chain/genesis/document_test.go:311:func TestSeatAddressIsNotASubmitter(t *testing.T) {
+HEAD:chain/x/authority/engine_test.go:271:func TestMixedActivationConflicts(t *testing.T) {
+HEAD:chain/x/authority/engine_test.go:750:func TestAdmitAndDisableRows(t *testing.T) {
+HEAD:chain/x/authority/gates_test.go:269:func TestSeatRotationMovesSeatAdmission(t *testing.T) {
+HEAD:chain/x/authority/gates_test.go:330:func TestAdmissionOf(t *testing.T) {
+HEAD:chain/x/authority/keeper_registry_test.go:289:func TestKeeperForceWithdrawArgumentsSurviveTheRecord(t *testing.T) {
+HEAD:chain/x/authority/keeper_test.go:281:func TestLegacySideDocumentHalts(t *testing.T) {
+HEAD:chain/x/authority/keeper_test.go:324:func TestOldLayoutConfigIsIntegrity(t *testing.T) {
+EXIT:0

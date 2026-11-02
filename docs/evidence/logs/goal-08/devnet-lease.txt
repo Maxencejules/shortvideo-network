@@ -1,0 +1,128 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh go test -count=1 -v -timeout 30m -run \^TestDevnetLease ./chain/devnet/
+DATE 2026-11-02T15:46:26Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+=== RUN   TestDevnetLeaseLifecycle
+label=single-machine four-process devnet (not independent operators)
+phase=start height=4 chain_id=shortvideo-dev-1e457eb78904ee81 accounts=6
+phase=register-p1 height=6 code=0 txhash=AE92338C840AC2E39F737111986B9A7EBA385F51D1941E240EC5491B8DEAFCA0
+phase=register-p2 height=7 code=0 txhash=BDAF3259ACA663DE9E73776B565D219EA5AEFC9E1C9DC3CDA45683E097EB9736
+phase=register-p3 height=8 code=0 txhash=EAC22F291BBB77966F55CB1D3A7E2AE76A62C51A72A2B7C5F15FB4F93691DB2A
+phase=admit-p1-propose height=9 code=0 txhash=69A671A6F2A5A8B336BD865ED91532DE1025F0DFA1AFAABAD28B9F8978B9E3E6
+phase=admit-p1-approve-1 height=11 code=0 txhash=D78A4EA2388FA8555494673AAD64591E816646AB22BE4E98FDB3D2F6F0E4696A
+phase=admit-p1-approve-2 height=12 code=0 txhash=551851A3A9B0F9C53D791C0005FD09F73B6CAA15487E87322F0F9423E455F6EB
+phase=admit-p1-approve-3 height=13 code=0 txhash=78865EF6E56A203608E56DE195E41031DBB1BCB74BA4D9661713C2BB3B3F3F6F
+phase=admit-p1 height=15 code=0 txhash=28AA31E30266FCA9A517847D4761BC6B4111AE6F34F9D1842D1183DB9CD64C06 policy_version=2
+phase=admit-p2-propose height=16 code=0 txhash=FBD4CD67FB15F40193ACF8D007EE7AAB24265FC7DFF17CC110231F6A80EEE6D0
+phase=admit-p2-approve-1 height=17 code=0 txhash=4806A3C6BA9EED03839862F802F4E524B579031ADBAABA63D650D8067929E29C
+phase=admit-p2-approve-2 height=18 code=0 txhash=AA86B17AE1BEA51D48153FD79CE1205D13CBF7EE3A268946BB3935A63427F75C
+phase=admit-p2-approve-3 height=20 code=0 txhash=F39458FE3F8E49D295384CBAD13EE9DC812544A9A8B87C5644049489A0EEDE31
+phase=admit-p2 height=21 code=0 txhash=1BFB1467359ACD89F85E8378D29CBC27BEAFDD4BB2C955314D438C2E8D77C9A4 policy_version=3
+phase=admit-p3-propose height=23 code=0 txhash=88438EF44D9DB4902B1D632D029EF8DF354D4114BE94B3C734AB795748A66433
+phase=admit-p3-approve-1 height=24 code=0 txhash=2F882B6F377A175D239A96C03C5A89259B3AB08025845940E960095BF9E6486E
+phase=admit-p3-approve-2 height=25 code=0 txhash=758CC313DCEF0D6FA64E504A784CCC1166038CD617C63857A663CE1D5D14B593
+phase=admit-p3-approve-3 height=26 code=0 txhash=FF90B7AA8302F74713582205163F2060A5889B48F59A8FF50E6A8C49A79A87E3
+phase=admit-p3 height=27 code=0 txhash=0628DFAC44198305E3D7B9F277D6F9601E793189DFB010719436397C1829F14D policy_version=4
+phase=register-contents height=29 code=0 messages=6 gas_used=459697 txhash=EE737DF18714F368D83FEE1C34D3D2C68826877C372F4CE38B47213CF293FFCE
+phase=offers-p3 height=30 code=0 messages=2 gas_used=226726 txhash=DCD357E01E6BC54C5C58A66C0DFCBD08E871F180BD18A6E01F85816D4C5446AB
+phase=accept-big height=31 code=0 txhash=6E368196DDF8C4C43AFA67EF76AE512441924EFA996A38D5423FBA3B09C7A1B4
+phase=ack-vs-commit txhash=B1697BFCE95B1507A5B9D42E6970948CF4D2F26336B187FB8F9BF569335A4EA1 ack=0 committed=svn/13 height=32 p3_reserved=9000000
+phase=offer-oa height=34 code=0 txhash=90A63C4994E06604799ADCD6CF27962D229A1C230AC509C56018C49E3AF8DD99
+phase=timeout-retry first=D63D61DCF883AFFD44BDA73D87A7CF14B3D67979C40518094A0E8EEBF7FA8E07 height=35 events=[svn.events.v1.LeaseAccepted] retry=5FF756F8FE2D7A08F6988F6AF709633F1E67E5145B5EC53A13CCBAA2B9E878C6 height=35 events=[leases_result] p1_reserved=4000000 leases=1
+phase=reject name=changed-payload-same-business-id height=38 codespace=svn code=3 (ERROR_CODE_REPLAY) included=true txhash=B7BABBAFA568429A556CFFB041E59A7E0BBF2A50CE9BA197575419F9513ADCB6
+phase=seat-relay-refused seat=seat-1 checktx=svn/2
+phase=node-down node=v4 broadcast_error="post failed: Post \"http://127.0.0.1:26957\": dial tcp 127.0.0.1:26957: connect: connection refused"
+phase=node-down-retry node=v1 height=40 code=0 events=[svn.events.v1.LeaseRenewed] txhash=FAB186341404CFD3417B01767C2E6A69780ED1D0AE1A3636D127A6AFE7889DFF
+phase=node-down-rebroadcast check_tx=sdk/32 broadcast="mempool ErrTxInCache" original_height=40 included_again=false
+phase=node-restart node=v4 common_height=44 queries_equal_v1=true
+phase=renew-retry height=46 code=0 events=[leases_result]
+phase=reject name=stale-renewal height=47 codespace=svn code=5 (ERROR_CODE_STALE_VERSION) included=true txhash=0A408E23842D5E4276EE6036860C13B05CDA05742B54F10F42238855B9E16D3B
+phase=reject name=renewal-other-bytes height=49 codespace=svn code=14 (ERROR_CODE_CONFLICT) included=true txhash=AA09D0B04707CC48CCCC93137ED8093A3ED84E0C3B10666A90A31520C370E465
+phase=offers-phase-5 height=51 code=0 messages=4 gas_used=424120 txhash=BFE2FC147F770B7D9A85B9955947C6697F5598BB2CF14258D1E01FAD71AB1FB3
+phase=accepts-phase-5 height=53 code=0 messages=3 gas_used=336135 txhash=53C2E3BD8119BC36E7DA75687E3A5E539CC8E4245F0590164B0624550BA7E657
+phase=provider-end-lb height=54 code=0 txhash=8F3CA319916E0489C4B5EFDF238A116D569D0294D04CC93D9DE920B578114AA8
+phase=end-retry height=56 code=0 events=[leases_result]
+phase=reject name=end-again-new-business-id height=57 codespace=svn code=11 (ERROR_CODE_UNDERFLOW) included=true txhash=149E4EDD2F859DBD8E591E212E515029595A4139EDF3CFF29214EB43A00A584A
+phase=authority-end-lc height=58 code=0 txhash=7DFADDB18BD6535E8D66CA1D653AACDCB385325B878B66EDFE6DFF69FD7188DA
+phase=reject name=duplicate-replica height=60 codespace=svn code=4 (ERROR_CODE_DUPLICATE_ID) included=true txhash=F676B6FDC23F7E149D9854FF3E93F95F83B9CB3CB3B7F89338B5CFE3098A6639
+phase=reject name=service-key-acceptance height=62 codespace=svn code=1 (ERROR_CODE_UNAUTHORIZED) included=true txhash=F78A53E3809DD90CDE81E6043B63AC4562521E1AAE683C73B127B97B8F6BB6B6
+phase=reject name=service-outer-signer height=64 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=DE41CAE52EDB5C07C22F0FA59795F152BC26ED44E1F8ACE406E3ECA7A47E8102
+phase=offer-oe height=66 code=0 txhash=0938ABC5DA65281B82151972CB7F273B7B52D5E68F5EC8995D7FA5E5F540A3F3
+phase=accept-le height=67 code=0 txhash=A6971FEED06396F7DC87DF1A76E9BC3B43E698BB4E32E5815DC52A7F41937A72
+phase=expiry deadline=1793634432 effective_minus_1=182 header_time=1793634431 held=true effective=183 header_time=1793634432 held=false released=4000000
+phase=expiry-steps-4-propose height=190 code=0 txhash=C380C5BED7C9D04F16F2E4269240DBF0DD973049ECEA1567E799F1F529591C88
+phase=expiry-steps-4-approve-1 height=191 code=0 txhash=7F54895E8045E16B2EE7DB99A1A24A1049DEA74F5F1AB74586086A015EB0D2E9
+phase=expiry-steps-4-approve-2 height=192 code=0 txhash=8F591F62DE1EDE5C9327CA3B4846E9EAC5630D16528D6086CCA4E13E10AFAEA6
+phase=expiry-steps-4-approve-3 height=194 code=0 txhash=E2AD66C7FC549EA687598CA47AD87499864095FC8655DE0E6A33A528B9088B23
+phase=expiry-steps-4 height=195 code=0 txhash=36661D985F6886BC415EF97B45018645450C1AA2688E99720C33025B9366D5F4 policy_version=5
+phase=register-drain-contents height=196 code=0 messages=12 gas_used=865904 txhash=88C80D6338C2CC8F86003DDA9FE2D8FF93E7FD99089712D8D61186D23B91BB05
+phase=drain-offers height=198 code=0 messages=30 gas_used=3034340 txhash=4B8FDDFAF4B7FA838D6745C551B75FF0725342446996747A8AC0D3C3943FC452
+phase=drain-accepts height=200 code=0 messages=24 gas_used=2579732 txhash=DD78BF6146A75A1AF338DA8AAC6307312501F57302B41CCF248FD6D96EAA1B82
+phase=bounded-drain max_expiry_steps=4 shared_deadline=1793634479 heights=400..407 effective_minus_1=399 header_time=1793634478 counts=[4 4 4 4 4 4 4 2] order=(time,kind,id)
+phase=withdraw-c4 height=410 code=0 voided_offers=1 txhash=B46BD261B3E3AC9D1497DCD742ECB2E6F4A2ED2FBA3E31D9C82450F05EBE298C
+phase=reject name=accept-voided-offer height=412 codespace=svn code=16 (ERROR_CODE_NOT_FOUND) included=true txhash=3EA9089E67FA88C8D44E7F04E8C8D2AAD4949164D428087E6ABC77BBAC703B9B
+phase=reject name=offer-withdrawn-content height=414 codespace=svn code=15 (ERROR_CODE_WITHDRAWN) included=true txhash=EAA86A2FF0266B335C427718CE4D519CCA3B80B6BBE09F690C2CF2A1EAD2D333
+phase=reject name=renew-withdrawn-content height=415 codespace=svn code=15 (ERROR_CODE_WITHDRAWN) included=true txhash=7A82D1753E9B922806033CE0F030496BCFD8EB65A92A0249866FB28664723AF6
+phase=authority-end-lw height=416 code=0 txhash=C0A549ABA12680F8C888C60179A608FA3CB748F93F160968E3C48E36634E779D
+phase=offers-p2 height=418 code=0 messages=2 gas_used=225871 txhash=056B1D331D979E484386685BC5B7B5DAA9B9D66CECD7D2426D1FF6EE32D4B49E
+phase=accept-l6 height=420 code=0 txhash=D9CFEDE3A52BD8C80C6A63FA0A0E07D86815234B1B024E5D7EA1D0E58E83DBF4
+phase=disable-p2-propose height=422 code=0 txhash=2DE47F82328DC20C467EEB73C4BB1837460597B11159B5CFF688B5FE5143E9DC
+phase=disable-p2-approve-1 height=424 code=0 txhash=25DE3E2C634A5E5BC4EEAF38EAC3381FEBCAD366A39C17D5C79AAABF79719E57
+phase=disable-p2-approve-2 height=426 code=0 txhash=2C0D479F7E8EB9EEEDE3D7BE2BF8AC7E4669C9104FABC4D233978158593E368C
+phase=disable-p2-approve-3 height=427 code=0 txhash=22D0C143D379C2293F98C861B19221C1C8B8B05720609E4968FA76A108A80874
+phase=disable-p2 height=428 code=0 txhash=3FEC137013F02718C9F92FA6305D752964037E895E9AF9D2DE52ED787BECB7C5 policy_version=6
+phase=reject name=offer-disabled-provider height=429 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=A36DE6F648E2BEE818FCAB66CD86BA1AA845BA2DA6A87794759A05768D106E20
+phase=reject name=accept-disabled-provider height=430 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=29ED245A9ADBF98EF25C71E3012BDE3CB4B754F06E736D655AF271ABB2B3EF07
+phase=renew-on-disabled-provider height=431 code=0 txhash=45BFFBF5F542947C8A8F08D7FEF5851A95E49B2047434E97B5C8333A92E971B7
+phase=repair-offer height=432 code=0 txhash=B86E125BA78ACB11C8E685AD765AEE968BD2A9919C5C01D71F52CEAD1EEC3821
+phase=repair-accept height=433 code=0 txhash=08B9FC396A12CBF9EEEE809F01F336D33B53E784057E205537E129AC7DD88597
+phase=authority-end-l6 height=434 code=0 txhash=BCCB7499F0C5566794C1BAAFD4FAB990937ECBB0B6004939B637EC09C98DC596
+phase=query height=434 name=active-c1 nodes=4 equal=true bytes=123 sha256=3a91ea679ea70d9b5da255076992339abebd348213a6fa7f2a210cee0619e987
+phase=query height=434 name=active-p1 nodes=4 equal=true bytes=251 sha256=2a605a924d618c1fd275de3187f190dde147fa440a6593ddf1e5cd36e2e37bfc
+phase=query height=434 name=deadlines-all nodes=4 equal=true bytes=666 sha256=fc26e6453c1b0cba1291ca0bf319e4258ec89971291d4b770e49e5e0b69bef40
+phase=query height=434 name=provider-p1 nodes=4 equal=true bytes=144 sha256=a29bed0d50185a01eea5abd91001a086e8be41388239b3c56c0b290dd3d4f086
+phase=query height=434 name=provider-p2 nodes=4 equal=true bytes=139 sha256=10c217457e27c3357b08787e102af87b1aef2e2e0be40f07b7818b9dd8285633
+phase=query height=434 name=provider-p3 nodes=4 equal=true bytes=143 sha256=9ad981ab263c84b35eef7a868ed6e2ec724c8741fae0f4a76563c1551f5de341
+phase=replay-reject name=changed-payload-same-business-id height=38 full_state_unchanged=true
+phase=replay-reject name=stale-renewal height=47 full_state_unchanged=true
+phase=replay-reject name=renewal-other-bytes height=49 full_state_unchanged=true
+phase=replay-reject name=end-again-new-business-id height=57 full_state_unchanged=true
+phase=replay-reject name=duplicate-replica height=60 full_state_unchanged=true
+phase=replay-reject name=service-key-acceptance height=62 full_state_unchanged=true
+phase=replay-reject name=service-outer-signer height=64 full_state_unchanged=true
+phase=replay-reject name=accept-voided-offer height=412 full_state_unchanged=true
+phase=replay-reject name=offer-withdrawn-content height=414 full_state_unchanged=true
+phase=replay-reject name=renew-withdrawn-content height=415 full_state_unchanged=true
+phase=replay-reject name=offer-disabled-provider height=429 full_state_unchanged=true
+phase=replay-reject name=accept-disabled-provider height=430 full_state_unchanged=true
+phase=replay height=434 app_hash=59FB238D8D6E58B3CB86C117A23B453F5BD41D15B97E19FAD7AF713D48649B01 nodes=4 equal=true
+phase=replay-queries height=434 count=6 equal=true
+phase=events heights=1..434 block_txs=67 events=403 typed=130 typed_tx_parsed_with_msg_index=105 typed_block_parsed_with_mode=25 canaries=0 forbidden_names=0
+--- PASS: TestDevnetLeaseLifecycle (97.70s)
+=== RUN   TestDevnetLeaseHaltRestart
+label=single-machine four-process devnet (not independent operators)
+phase=register-p1 height=5 code=0 txhash=21EF501C759B3206D2146F892FF6D2008A1DF80B36DE99AEC7E9A6C4F258EAAF
+phase=admit-p1-propose height=6 code=0 txhash=7DCD3DFDFC3F0A1F04957F05B104DCE5F0555AEBD3090AFABD18CE9D27CB06BA
+phase=admit-p1-approve-1 height=8 code=0 txhash=D37F98E44E8E5F424E4A477CFAC90519AD6B0BA3AD100E5321648B5A8102A6B0
+phase=admit-p1-approve-2 height=9 code=0 txhash=60713327D4386AC31DD0E0137B4B4FFCE1BC4779FE54635DA4468B96CBD42B89
+phase=admit-p1-approve-3 height=10 code=0 txhash=E483E0979938AB73DC2DA9C528DC50C65A8226E3D3E2A167AABFD29ECCD4AA52
+phase=admit-p1 height=12 code=0 txhash=DE8E457E4A89E9DC61E1562FEF32F42F5B93E52CB5A10BFE36C88DD7712964CA policy_version=2
+phase=register-c1 height=13 code=0 txhash=B5C6595BA7CF56B9B5726BEB393A8D8FA483FF1429C3B38FD38F9E83F7CA3B74
+phase=offer-o1 height=14 code=0 txhash=37AC1398EF1F8F199A9F6E3E691E6B99DE059973412EFD54BE3168927BC92426
+phase=accept-l1 height=15 code=0 txhash=7A8655C59CB4633EE8AA6DED30F091AB9823C59F3C7C1937713B14ABAB210C90
+phase=offline-renewal-signed lease=l1 deadline=1793634512 broadcast=false
+phase=halt-stored validator=v1 committed_height=15
+phase=halt-stored validator=v2 committed_height=14
+phase=halt-stored validator=v3 committed_height=14
+phase=halt-stored validator=v4 committed_height=15
+phase=halt stopped=4 height_before_stop_began=15 last_committed_height=15 deadline=1793634512
+phase=restart-expiry last_pre_halt_height=15 header_time=1793634493 effective_minus_1=16 header_time=1793634493 held=true effective=17 header_time=1793634519 held=false released=4000000
+phase=reject name=offline-renewal-after-restart height=20 codespace=svn code=14 (ERROR_CODE_CONFLICT) included=true txhash=C80C12CCF11F893E87CCC611DE83AEC43A4C281BE0331EE83C1E435D82DC9225
+phase=replay-reject name=offline-renewal-after-restart height=20 full_state_unchanged=true
+phase=replay height=20 app_hash=759B9F765FEFF323F2AD40A2C796F7E5A93D03837C3F1FE883D22DF73E319064 nodes=4 equal=true
+phase=events heights=1..20 block_txs=10 events=35 typed=6 typed_tx_parsed_with_msg_index=5 typed_block_parsed_with_mode=1 canaries=0 forbidden_names=0
+--- PASS: TestDevnetLeaseHaltRestart (32.75s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	130.495s
+EXIT:0

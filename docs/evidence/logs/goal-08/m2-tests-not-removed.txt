@@ -1,0 +1,21 @@
+COMMAND bash -c $'base=acfe14ecaf79aa45021baf61f937391b43d2d310\nnames() { git grep -h -E \'^func (Test|Fuzz)\' "$1" -- chain | sed \'s/(.*//; s/^func //\' | sort -u; }\npairs() { git grep -E \'^func (Test|Fuzz)\' "$1" -- chain | sed "s/^$1://; s/:func /:/; s/(.*//" | sort -u; }\nb="$(names "$base")"; h="$(names HEAD)"\necho "base $base: $(grep -c . <<<"$b") test/fuzz function names under chain/"\necho "HEAD $(git rev-parse HEAD): $(grep -c . <<<"$h") test/fuzz function names under chain/"\ngone="$(comm -23 <(echo "$b") <(echo "$h"))"\necho "base names missing from HEAD: $(grep -c . <<<"$gone")"\ngrep . <<<"$gone" || true\nnew="$(comm -13 <(echo "$b") <(echo "$h"))"\necho "HEAD names not in base: $(grep -c . <<<"$new")"\ngrep . <<<"$new" || true\nbp="$(pairs "$base")"; hp="$(pairs HEAD)"\necho "base (file, name) pairs: $(grep -c . <<<"$bp"); HEAD pairs: $(grep -c . <<<"$hp")"\ngp="$(comm -23 <(echo "$bp") <(echo "$hp"))"\necho "base (file, name) pairs missing from HEAD: $(grep -c . <<<"$gp")"\ngrep . <<<"$gp" || true\nnp="$(comm -13 <(echo "$bp") <(echo "$hp"))"\necho "HEAD (file, name) pairs not in base: $(grep -c . <<<"$np")"\ngrep . <<<"$np" || true\ntest -z "$gone" && test -z "$gp"'
+DATE 2026-11-02T18:39:11Z
+HEAD ea29169196d862867a0e270fada1fda74b1214c6
+TREE eabf7cef6fc24f9afdd07a8f95470ad1f85ba375
+DIRTY no
+base acfe14ecaf79aa45021baf61f937391b43d2d310: 417 test/fuzz function names under chain/
+HEAD ea29169196d862867a0e270fada1fda74b1214c6: 421 test/fuzz function names under chain/
+base names missing from HEAD: 0
+HEAD names not in base: 4
+TestCapacityBoundaryAgainstSpecMachine
+TestCapacityBoundaryInApp
+TestCapacityBoundaryThroughAccept
+TestDamagedExpiryLimitHalts
+base (file, name) pairs: 439; HEAD pairs: 443
+base (file, name) pairs missing from HEAD: 0
+HEAD (file, name) pairs not in base: 4
+chain/app/lease_expiry_test.go:TestDamagedExpiryLimitHalts
+chain/app/lease_reject_test.go:TestCapacityBoundaryInApp
+chain/x/leases/accept_test.go:TestCapacityBoundaryThroughAccept
+chain/x/leases/difftest/capacity_test.go:TestCapacityBoundaryAgainstSpecMachine
+EXIT:0

@@ -1,0 +1,9 @@
+COMMAND bash -c export\ PATH=\"\$PWD/.toolchains/bin:\$PATH\"\;\ protoc\ --version\;\ bash\ scripts/gen_proto.sh\ \&\&\ u=\"\$\(git\ ls-files\ --others\ --exclude-standard\ --\ proto/svn\ proto/gen/python\)\"\;\ if\ \[\ -n\ \"\$u\"\ \]\;\ then\ echo\ \"\$u\"\;\ exit\ 1\;\ fi\;\ git\ diff\ --exit-code\ --\ proto/svn\ proto/gen/python\ \&\&\ echo\ \"proto\ regeneration\ diff\ empty\"
+DATE 2026-11-02T16:12:01Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+libprotoc 36.2
+generated 28 proto files
+proto regeneration diff empty
+EXIT:0

@@ -1,0 +1,22 @@
+COMMAND bash -c $'fail=0\necho "git ls-remote origin refs/heads/main refs/heads/goal-07 refs/heads/goal-08:"\ngit ls-remote origin refs/heads/main refs/heads/goal-07 refs/heads/goal-08 || fail=1\nfor c in 2fc93e5b40050e54341cbdb4cc2275ed4bc4839a 7c79c298ee9036bee017987d0ab045e00ac9b2a8 4f7073384093e28d8cdc985ca1407ea66b9b99d5; do\n  if git merge-base --is-ancestor "$c" HEAD; then echo "$c is an ancestor of HEAD"; else echo "$c is NOT an ancestor of HEAD"; fail=1; fi\ndone\nm=$(git rev-parse \'2fc93e5b40050e54341cbdb4cc2275ed4bc4839a^{tree}\')\ng=$(git rev-parse \'7c79c298ee9036bee017987d0ab045e00ac9b2a8^{tree}\')\ni=$(git rev-parse \'HEAD^1^2^{tree}\')\ns=$(git rev-parse \'HEAD^2^{tree}\')\np=$(git rev-parse \'HEAD^1^{tree}\')\nh=$(git rev-parse \'HEAD^{tree}\')\necho "tree of main 2fc93e5:                                  $m"\necho "tree of goal-07 7c79c29:                               $g"\necho "tree of HEAD^1^2 $(git rev-parse \'HEAD^1^2\') (merged into HEAD^1): $i"\necho "tree of HEAD^2 $(git rev-parse \'HEAD^2\') (merged into HEAD with -s ours): $s"\necho "tree of HEAD^1 $(git rev-parse \'HEAD^1\'):        $p"\necho "tree of HEAD $(git rev-parse HEAD):          $h"\nif [ "$m" = "$g" ] && [ "$g" = "$i" ] && [ "$i" = "$s" ]; then echo "main 2fc93e5, goal-07 7c79c29, HEAD^1^2 and HEAD^2 have the same tree"; else echo "merged-in trees differ"; fail=1; fi\nif [ "$h" = "$p" ]; then echo "HEAD (merge with -s ours) has the tree of HEAD^1"; else echo "HEAD tree differs from HEAD^1 tree"; fail=1; fi\nif git diff --quiet 7c79c298ee9036bee017987d0ab045e00ac9b2a8 2fc93e5b40050e54341cbdb4cc2275ed4bc4839a; then echo "git diff 7c79c29 2fc93e5: empty"; else echo "git diff 7c79c29 2fc93e5: not empty"; fail=1; fi\nexit $fail'
+DATE 2026-11-02T15:28:44Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+git ls-remote origin refs/heads/main refs/heads/goal-07 refs/heads/goal-08:
+7c79c298ee9036bee017987d0ab045e00ac9b2a8	refs/heads/goal-07
+acfe14ecaf79aa45021baf61f937391b43d2d310	refs/heads/goal-08
+2fc93e5b40050e54341cbdb4cc2275ed4bc4839a	refs/heads/main
+2fc93e5b40050e54341cbdb4cc2275ed4bc4839a is an ancestor of HEAD
+7c79c298ee9036bee017987d0ab045e00ac9b2a8 is an ancestor of HEAD
+4f7073384093e28d8cdc985ca1407ea66b9b99d5 is an ancestor of HEAD
+tree of main 2fc93e5:                                  3ac4bed9b4904c0aae8473e7d1b2754fecf16135
+tree of goal-07 7c79c29:                               3ac4bed9b4904c0aae8473e7d1b2754fecf16135
+tree of HEAD^1^2 7c79c298ee9036bee017987d0ab045e00ac9b2a8 (merged into HEAD^1): 3ac4bed9b4904c0aae8473e7d1b2754fecf16135
+tree of HEAD^2 2fc93e5b40050e54341cbdb4cc2275ed4bc4839a (merged into HEAD with -s ours): 3ac4bed9b4904c0aae8473e7d1b2754fecf16135
+tree of HEAD^1 210bfb78d65f7b1cb910b5e24ebc8d8ce9d17f56:        6e81d0c948847af933b25e02be1f1bf2a34a62f2
+tree of HEAD acfe14ecaf79aa45021baf61f937391b43d2d310:          6e81d0c948847af933b25e02be1f1bf2a34a62f2
+main 2fc93e5, goal-07 7c79c29, HEAD^1^2 and HEAD^2 have the same tree
+HEAD (merge with -s ours) has the tree of HEAD^1
+git diff 7c79c29 2fc93e5: empty
+EXIT:0

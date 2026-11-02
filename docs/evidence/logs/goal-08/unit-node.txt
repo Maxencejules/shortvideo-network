@@ -1,0 +1,24 @@
+COMMAND env -C chain go test -count=1 -v ./node/...
+DATE 2026-11-02T15:31:04Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+=== RUN   TestStartUsesCloseSafeDBProvider
+--- PASS: TestStartUsesCloseSafeDBProvider (0.01s)
+=== RUN   TestCloseSafeDBBeforeClose
+--- PASS: TestCloseSafeDBBeforeClose (0.00s)
+=== RUN   TestCloseSafeDBAfterClose
+--- PASS: TestCloseSafeDBAfterClose (0.00s)
+=== RUN   TestBlockStoreReadAfterClose
+--- PASS: TestBlockStoreReadAfterClose (0.01s)
+=== RUN   TestCloseSafeDBConcurrentClose
+--- PASS: TestCloseSafeDBConcurrentClose (0.09s)
+=== RUN   TestCloseSafeDBReadRacingClose
+--- PASS: TestCloseSafeDBReadRacingClose (0.00s)
+=== RUN   TestCloseSafeDBAfterCloseMemDB
+--- PASS: TestCloseSafeDBAfterCloseMemDB (0.00s)
+=== RUN   TestNodeFileQueryGasLimit
+--- PASS: TestNodeFileQueryGasLimit (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/node	0.149s
+EXIT:0

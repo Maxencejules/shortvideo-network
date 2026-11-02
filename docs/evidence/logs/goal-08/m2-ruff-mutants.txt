@@ -1,0 +1,449 @@
+COMMAND .venv/bin/ruff check docs/evidence/goal-08/mutants.py
+DATE 2026-11-02T18:39:45Z
+HEAD ea29169196d862867a0e270fada1fda74b1214c6
+TREE eabf7cef6fc24f9afdd07a8f95470ad1f85ba375
+DIRTY no
+E501 Line too long (102 > 100)
+   --> docs/evidence/goal-08/mutants.py:117:101
+    |
+115 |     def argv(self) -> list[str]:
+116 |         run = "^(" + "|".join(self.tests) + ")$"
+117 |         return ["go", "test", "-count=1", "-v", "-timeout", self.timeout, "-run", run, *self.packages]
+    |                                                                                                     ^^
+
+E501 Line too long (108 > 100)
+   --> docs/evidence/goal-08/mutants.py:225:101
+    |
+223 |     # Group seat: DR-06-06 seat-only admission.
+224 |     one("ante-seat-admission-removed", SEAT, ASTORE,
+225 |         "\tif seatAt(cfg.GetAuthority().GetDevnetTestSeats(), addr) != nil {\n\t\treturn AdmittedSeat\n\t}",
+    |                                                                                                     ^^^^^^^^
+226 |         "\tif seatAt(cfg.GetAuthority().GetDevnetTestSeats(), addr) != nil {\n\t\treturn NotAdmitted\n\t}",
+227 |         "AdmissionOf must admit a council seat account from the seat list in the authority config"),
+    |
+
+E501 Line too long (107 > 100)
+   --> docs/evidence/goal-08/mutants.py:226:101
+    |
+224 |     one("ante-seat-admission-removed", SEAT, ASTORE,
+225 |         "\tif seatAt(cfg.GetAuthority().GetDevnetTestSeats(), addr) != nil {\n\t\treturn AdmittedSeat\n\t}",
+226 |         "\tif seatAt(cfg.GetAuthority().GetDevnetTestSeats(), addr) != nil {\n\t\treturn NotAdmitted\n\t}",
+    |                                                                                                     ^^^^^^^
+227 |         "AdmissionOf must admit a council seat account from the seat list in the authority config"),
+228 |     one("ante-seat-gate-removed", SEAT, ANTE,
+    |
+
+E501 Line too long (101 > 100)
+   --> docs/evidence/goal-08/mutants.py:233:101
+    |
+231 |         "the ante must refuse a seat-signed transaction that carries a non-council message"),
+232 |     one("auth-genesis-allows-seat-row", SEAT, AGEN,
+233 |         "\t\t\tif bytes.Equal(row.GetAddress(), addr) {\n\t\t\t\treturn genesisError(CodeForbidden,",
+    |                                                                                                     ^
+234 |         "\t\t\tif bytes.Equal(row.GetAddress(), addr) && false {\n\t\t\t\treturn genesisError(CodeForbidden,",
+235 |         "authority ValidateGenesisState must refuse a seat address in the submitter list"),
+    |
+
+E501 Line too long (110 > 100)
+   --> docs/evidence/goal-08/mutants.py:234:101
+    |
+232 |     one("auth-genesis-allows-seat-row", SEAT, AGEN,
+233 |         "\t\t\tif bytes.Equal(row.GetAddress(), addr) {\n\t\t\t\treturn genesisError(CodeForbidden,",
+234 |         "\t\t\tif bytes.Equal(row.GetAddress(), addr) && false {\n\t\t\t\treturn genesisError(CodeForbidden,",
+    |                                                                                                     ^^^^^^^^^^
+235 |         "authority ValidateGenesisState must refuse a seat address in the submitter list"),
+236 |     one("doc-genesis-allows-seat-row", SEAT, DOC,
+    |
+
+E501 Line too long (110 > 100)
+   --> docs/evidence/goal-08/mutants.py:244:101
+    |
+242 |         (
+243 |             Edit(AGEN,
+244 |                  "\t\t\tif bytes.Equal(row.GetAddress(), addr) {\n\t\t\t\treturn genesisError(CodeForbidden,",
+    |                                                                                                     ^^^^^^^^^^
+245 |                  "\t\t\tif bytes.Equal(row.GetAddress(), addr)"
+246 |                  " && row.GetRole() != typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER {\n"
+    |
+
+E501 Line too long (102 > 100)
+   --> docs/evidence/goal-08/mutants.py:250:101
+    |
+248 |             Edit(DOC,
+249 |                  "\t\t\tif strings.ToLower(row.AddressHex) == addr {",
+250 |                  "\t\t\tif strings.ToLower(row.AddressHex) == addr && row.Role != RoleBroadcaster {"),
+    |                                                                                                     ^^
+251 |         ),
+252 |         "both genesis validators must refuse a seat address listed as BROADCASTER (DR-06-06 supersedes DR-07-11)",
+    |
+
+E501 Line too long (114 > 100)
+   --> docs/evidence/goal-08/mutants.py:252:101
+    |
+250 |                  "\t\t\tif strings.ToLower(row.AddressHex) == addr && row.Role != RoleBroadcaster {"),
+251 |         ),
+252 |         "both genesis validators must refuse a seat address listed as BROADCASTER (DR-06-06 supersedes DR-07-11)",
+    |                                                                                                     ^^^^^^^^^^^^^^
+253 |     ),
+254 |     Mutant(
+    |
+
+E501 Line too long (120 > 100)
+   --> docs/evidence/goal-08/mutants.py:261:101
+    |
+259 |                  "\t\treturn true\n\tdefault:\n\t\treturn false",
+260 |                  "\tcase *authorityv1.MsgProposeChange, *authorityv1.MsgApproveChange:\n"
+261 |                  "\t\treturn true\n\tdefault:\n\t\treturn strings.HasPrefix(sdk.MsgTypeURL(msg), \"/svn.leases.v1.\")"),
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^
+262 |             Edit(ANTE, "import (\n", "import (\n\t\"strings\"\n"),
+263 |         ),
+    |
+
+E501 Line too long (116 > 100)
+   --> docs/evidence/goal-08/mutants.py:273:101
+    |
+271 |         "\tb.set(retiredCouncilKey(old), []byte(seatID))\n",
+272 |         "\tb.set(retiredCouncilKey(old), []byte(seatID))\n"
+273 |         "\tb.set(AdmissionKey(SeatAddress(old)), []byte{byte(typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER)})\n",
+    |                                                                                                     ^^^^^^^^^^^^^^^^
+274 |         "RotateCouncilSeat must write no admission row; the retired key must not stay admitted"),
+275 |     one("rotation-onto-submitter-allowed", SEAT, ENGINE,
+    |
+
+E501 Line too long (118 > 100)
+   --> docs/evidence/goal-08/mutants.py:289:101
+    |
+287 |         "genesis must create an auth account for every seat address"),
+288 |     one("carried-ante-extra-admission", SEAT, APP,
+289 |         "func(ctx sdk.Context, addr []byte) authority.Admission {\n\t\treturn authorityKeeper.Admission(ctx, addr)\n",
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^
+290 |         "func(ctx sdk.Context, addr []byte) authority.Admission {\n"
+291 |         "\t\tctx.KVStore(keys[authority.ModuleName]).Set("
+    |
+
+E501 Line too long (103 > 100)
+   --> docs/evidence/goal-08/mutants.py:294:101
+    |
+292 |         "authority.AdmissionKey(append([]byte(nil), addr[:19]...)), []byte{9})\n"
+293 |         "\t\treturn authorityKeeper.Admission(ctx, addr)\n",
+294 |         "goal 06 ante-extra-admission (B1): an extra 0x02 admission row written in the ante must fail "
+    |                                                                                                     ^^^
+295 |         "the full authority-store compare"),
+296 |     one("carried-doc-seat-match-case-sensitive", SEAT, DOC,
+    |
+
+E501 Line too long (111 > 100)
+   --> docs/evidence/goal-08/mutants.py:299:101
+    |
+297 |         "\t\t\tif strings.ToLower(row.AddressHex) == addr {",
+298 |         "\t\t\tif row.AddressHex == addr {",
+299 |         "goal 07 doc-seat-rule-case-sensitive: genesis.Validate must match a seat address case-insensitively"),
+    |                                                                                                     ^^^^^^^^^^^
+300 |     # Group review: goal 08 review-round mutants.
+301 |     one("m1-genesis-content-cap-off", REVIEW, LGEN,
+    |
+
+E501 Line too long (107 > 100)
+   --> docs/evidence/goal-08/mutants.py:304:101
+    |
+302 |         "\t\tif perContent[offer.GetContentId()] > MaxOpenOffersPerContent {\n",
+303 |         "\t\tif false && perContent[offer.GetContentId()] > MaxOpenOffersPerContent {\n",
+304 |         "leases ValidateGenesis must refuse more than MaxOpenOffersPerContent open offers of one content"),
+    |                                                                                                     ^^^^^^^
+305 |     one("m2-offer-d6-off", REVIEW, LMSG,
+306 |         "\tif contentOffers >= MaxOpenOffersPerContent {\n",
+    |
+
+E501 Line too long (106 > 100)
+   --> docs/evidence/goal-08/mutants.py:312:101
+    |
+310 |         "\tif schedulerOffers >= MaxOpenOffersPerContentPerScheduler {\n",
+311 |         "\tif false && schedulerOffers >= MaxOpenOffersPerContentPerScheduler {\n",
+312 |         "OfferLease past MaxOpenOffersPerContentPerScheduler open offers of one content by one scheduler "
+    |                                                                                                     ^^^^^^
+313 |         "must be BOUNDS (D-10)"),
+314 |     one("m5-end-payload-drops-term-version", REVIEW, LMSG,
+    |
+
+E501 Line too long (117 > 100)
+   --> docs/evidence/goal-08/mutants.py:315:101
+    |
+313 |         "must be BOUNDS (D-10)"),
+314 |     one("m5-end-payload-drops-term-version", REVIEW, LMSG,
+315 |         "\t\tcanonical, canonErr := endCanonical(msg.GetLeaseId(), lease.GetProviderId(), lease.GetTermVersion())\n",
+    |                                                                                                     ^^^^^^^^^^^^^^^^^
+316 |         "\t\tcanonical, canonErr := endCanonical(msg.GetLeaseId(), lease.GetProviderId(), 1)\n",
+317 |         "an END signed for an earlier term version must be UNAUTHORIZED after a renewal (D-12)"),
+    |
+
+E501 Line too long (110 > 100)
+   --> docs/evidence/goal-08/mutants.py:319:101
+    |
+317 |         "an END signed for an earlier term version must be UNAUTHORIZED after a renewal (D-12)"),
+318 |     one("m6-accept-replay-owner-check-off", REVIEW, LMSG,
+319 |         "\t\t\tif !found || !bytes.Equal(msg.GetSigner(), k.providerAccount(ctx, lease.GetProviderId())) {\n",
+    |                                                                                                     ^^^^^^^^^^
+320 |         "\t\t\tif false && (!found || !bytes.Equal(msg.GetSigner(), k.providerAccount(ctx, lease.GetProviderId()))) {\n",
+321 |         "an AcceptLease replay by an ADMITTED_PROVIDER account that is not the lease provider's must be "
+    |
+
+E501 Line too long (121 > 100)
+   --> docs/evidence/goal-08/mutants.py:320:101
+    |
+318 |     one("m6-accept-replay-owner-check-off", REVIEW, LMSG,
+319 |         "\t\t\tif !found || !bytes.Equal(msg.GetSigner(), k.providerAccount(ctx, lease.GetProviderId())) {\n",
+320 |         "\t\t\tif false && (!found || !bytes.Equal(msg.GetSigner(), k.providerAccount(ctx, lease.GetProviderId()))) {\n",
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^
+321 |         "an AcceptLease replay by an ADMITTED_PROVIDER account that is not the lease provider's must be "
+322 |         "FORBIDDEN (D-13)"),
+    |
+
+E501 Line too long (105 > 100)
+   --> docs/evidence/goal-08/mutants.py:321:101
+    |
+319 |         "\t\t\tif !found || !bytes.Equal(msg.GetSigner(), k.providerAccount(ctx, lease.GetProviderId())) {\n",
+320 |         "\t\t\tif false && (!found || !bytes.Equal(msg.GetSigner(), k.providerAccount(ctx, lease.GetProviderId()))) {\n",
+321 |         "an AcceptLease replay by an ADMITTED_PROVIDER account that is not the lease provider's must be "
+    |                                                                                                     ^^^^^
+322 |         "FORBIDDEN (D-13)"),
+323 |     # Group leases: capacity accounting and lease lifecycle.
+    |
+
+E501 Line too long (109 > 100)
+   --> docs/evidence/goal-08/mutants.py:325:101
+    |
+323 |     # Group leases: capacity accounting and lease lifecycle.
+324 |     one("capacity-off-by-one", LEASES, PHANDOFF,
+325 |         "\tif reserved+amount > record.GetAdmittedCapacityBytes() {\n\t\treturn nil, msgkit.Capacity\n\t}\n",
+    |                                                                                                     ^^^^^^^^^
+326 |         "\tif reserved+amount-1 > record.GetAdmittedCapacityBytes() {\n\t\treturn nil, msgkit.Capacity\n\t}\n",
+327 |         "a reservation that ends one byte above the admitted capacity must be CAPACITY at offer and accept"),
+    |
+
+E501 Line too long (111 > 100)
+   --> docs/evidence/goal-08/mutants.py:326:101
+    |
+324 |     one("capacity-off-by-one", LEASES, PHANDOFF,
+325 |         "\tif reserved+amount > record.GetAdmittedCapacityBytes() {\n\t\treturn nil, msgkit.Capacity\n\t}\n",
+326 |         "\tif reserved+amount-1 > record.GetAdmittedCapacityBytes() {\n\t\treturn nil, msgkit.Capacity\n\t}\n",
+    |                                                                                                     ^^^^^^^^^^^
+327 |         "a reservation that ends one byte above the admitted capacity must be CAPACITY at offer and accept"),
+328 |     one("end-releases-twice", LEASES, LMSG,
+    |
+
+E501 Line too long (109 > 100)
+   --> docs/evidence/goal-08/mutants.py:327:101
+    |
+325 |         "\tif reserved+amount > record.GetAdmittedCapacityBytes() {\n\t\treturn nil, msgkit.Capacity\n\t}\n",
+326 |         "\tif reserved+amount-1 > record.GetAdmittedCapacityBytes() {\n\t\treturn nil, msgkit.Capacity\n\t}\n",
+327 |         "a reservation that ends one byte above the admitted capacity must be CAPACITY at offer and accept"),
+    |                                                                                                     ^^^^^^^^^
+328 |     one("end-releases-twice", LEASES, LMSG,
+329 |         "\tk.dropIndexes(ctx, lease)\n\tlease.State = leasesv1.LeaseState_LEASE_STATE_ENDED\n",
+    |
+
+E501 Line too long (111 > 100)
+   --> docs/evidence/goal-08/mutants.py:343:101
+    |
+341 |         "expiry must release an expiring lease's reservation exactly once"),
+342 |     one("accept-duplicate-copy-allowed", LEASES, LMSG,
+343 |         "\tif k.has(ctx, PairKey(offer.GetProviderId(), offer.GetContentId(), offer.GetContentVersion())) {\n",
+    |                                                                                                     ^^^^^^^^^^^
+344 |         "\tif false && k.has(ctx, PairKey(offer.GetProviderId(), offer.GetContentId(), offer.GetContentVersion())) {\n",
+345 |         "AcceptLease of a second offer for a held (provider, content, version) pair must be DUPLICATE_ID "
+    |
+
+E501 Line too long (120 > 100)
+   --> docs/evidence/goal-08/mutants.py:344:101
+    |
+342 |     one("accept-duplicate-copy-allowed", LEASES, LMSG,
+343 |         "\tif k.has(ctx, PairKey(offer.GetProviderId(), offer.GetContentId(), offer.GetContentVersion())) {\n",
+344 |         "\tif false && k.has(ctx, PairKey(offer.GetProviderId(), offer.GetContentId(), offer.GetContentVersion())) {\n",
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^
+345 |         "AcceptLease of a second offer for a held (provider, content, version) pair must be DUPLICATE_ID "
+346 |         "(REQ-INV-001)"),
+    |
+
+E501 Line too long (106 > 100)
+   --> docs/evidence/goal-08/mutants.py:345:101
+    |
+343 |         "\tif k.has(ctx, PairKey(offer.GetProviderId(), offer.GetContentId(), offer.GetContentVersion())) {\n",
+344 |         "\tif false && k.has(ctx, PairKey(offer.GetProviderId(), offer.GetContentId(), offer.GetContentVersion())) {\n",
+345 |         "AcceptLease of a second offer for a held (provider, content, version) pair must be DUPLICATE_ID "
+    |                                                                                                     ^^^^^^
+346 |         "(REQ-INV-001)"),
+347 |     one("offer-duplicate-copy-allowed", LEASES, LMSG,
+    |
+
+E501 Line too long (105 > 100)
+   --> docs/evidence/goal-08/mutants.py:348:101
+    |
+346 |         "(REQ-INV-001)"),
+347 |     one("offer-duplicate-copy-allowed", LEASES, LMSG,
+348 |         "\tif k.has(ctx, PairKey(msg.GetProviderId(), msg.GetContentId(), msg.GetContentVersion())) {\n",
+    |                                                                                                     ^^^^^
+349 |         "\tif false && k.has(ctx, PairKey(msg.GetProviderId(), msg.GetContentId(), msg.GetContentVersion())) {\n",
+350 |         "OfferLease for a (provider, content, version) pair that a lease holds must be DUPLICATE_ID (REQ-INV-001)"),
+    |
+
+E501 Line too long (114 > 100)
+   --> docs/evidence/goal-08/mutants.py:349:101
+    |
+347 |     one("offer-duplicate-copy-allowed", LEASES, LMSG,
+348 |         "\tif k.has(ctx, PairKey(msg.GetProviderId(), msg.GetContentId(), msg.GetContentVersion())) {\n",
+349 |         "\tif false && k.has(ctx, PairKey(msg.GetProviderId(), msg.GetContentId(), msg.GetContentVersion())) {\n",
+    |                                                                                                     ^^^^^^^^^^^^^^
+350 |         "OfferLease for a (provider, content, version) pair that a lease holds must be DUPLICATE_ID (REQ-INV-001)"),
+351 |     one("service-key-signs-acceptance", LEASES, LMSG,
+    |
+
+E501 Line too long (116 > 100)
+   --> docs/evidence/goal-08/mutants.py:350:101
+    |
+348 |         "\tif k.has(ctx, PairKey(msg.GetProviderId(), msg.GetContentId(), msg.GetContentVersion())) {\n",
+349 |         "\tif false && k.has(ctx, PairKey(msg.GetProviderId(), msg.GetContentId(), msg.GetContentVersion())) {\n",
+350 |         "OfferLease for a (provider, content, version) pair that a lease holds must be DUPLICATE_ID (REQ-INV-001)"),
+    |                                                                                                     ^^^^^^^^^^^^^^^^
+351 |     one("service-key-signs-acceptance", LEASES, LMSG,
+352 |         "\tif code := k.verify(ctx, offer.GetProviderId(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+    |
+
+E501 Line too long (117 > 100)
+   --> docs/evidence/goal-08/mutants.py:352:101
+    |
+350 |         "OfferLease for a (provider, content, version) pair that a lease holds must be DUPLICATE_ID (REQ-INV-001)"),
+351 |     one("service-key-signs-acceptance", LEASES, LMSG,
+352 |         "\tif code := k.verify(ctx, offer.GetProviderId(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+    |                                                                                                     ^^^^^^^^^^^^^^^^^
+353 |         " canonical, canonErr, acceptance); code != msgkit.OK {\n",
+354 |         "\tif code := k.verify(ctx, offer.GetProviderId(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+    |
+
+E501 Line too long (117 > 100)
+   --> docs/evidence/goal-08/mutants.py:354:101
+    |
+352 |         "\tif code := k.verify(ctx, offer.GetProviderId(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+353 |         " canonical, canonErr, acceptance); code != msgkit.OK {\n",
+354 |         "\tif code := k.verify(ctx, offer.GetProviderId(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+    |                                                                                                     ^^^^^^^^^^^^^^^^^
+355 |         " canonical, canonErr, acceptance); code != msgkit.OK &&\n"
+356 |         "\t\t!msgkit.VerifyWithKey(acceptance.GetPublicKey(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+    |
+
+E501 Line too long (120 > 100)
+   --> docs/evidence/goal-08/mutants.py:356:101
+    |
+354 |         "\tif code := k.verify(ctx, offer.GetProviderId(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+355 |         " canonical, canonErr, acceptance); code != msgkit.OK &&\n"
+356 |         "\t\t!msgkit.VerifyWithKey(acceptance.GetPublicKey(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^
+357 |         " canonical, acceptance.GetSignature()) {\n",
+358 |         "an acceptance signed by any key it carries (a service key) must be UNAUTHORIZED; only the provider's "
+    |
+
+E501 Line too long (111 > 100)
+   --> docs/evidence/goal-08/mutants.py:358:101
+    |
+356 |         "\t\t!msgkit.VerifyWithKey(acceptance.GetPublicKey(), typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ACCEPT,"
+357 |         " canonical, acceptance.GetSignature()) {\n",
+358 |         "an acceptance signed by any key it carries (a service key) must be UNAUTHORIZED; only the provider's "
+    |                                                                                                     ^^^^^^^^^^^
+359 |         "current registered key counts (REQ-CHAIN-012)"),
+360 |     one("expiry-budget-ignored", LEASES, LEXP,
+    |
+
+E501 Line too long (101 > 100)
+   --> docs/evidence/goal-08/mutants.py:379:101
+    |
+377 | ]
+378 |
+379 | BUILD_FAILURE = re.compile(r"\[(build|setup) failed\]|^# \S+$|cannot find package|undefined: ", re.M)
+    |                                                                                                     ^
+380 | TOP_FAIL = re.compile(r"^--- FAIL: (\S+)", re.M)
+381 | TOP_PASS = re.compile(r"^--- PASS: (\S+)", re.M)
+    |
+
+E501 Line too long (117 > 100)
+   --> docs/evidence/goal-08/mutants.py:394:101
+    |
+393 | def git(root: pathlib.Path, *args: str) -> str:
+394 |     return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=True).stdout.strip()
+    |                                                                                                     ^^^^^^^^^^^^^^^^^
+
+E501 Line too long (116 > 100)
+   --> docs/evidence/goal-08/mutants.py:439:101
+    |
+437 |         n = texts[e.path].count(e.old)
+438 |         if n != 1:
+439 |             problems.append(f"{'NOT_FOUND' if n == 0 else 'NOT_UNIQUE'} {m.name} edit={i} {e.path} occurrences={n}")
+    |                                                                                                     ^^^^^^^^^^^^^^^^
+440 |             continue
+441 |         if e.old == e.new:
+    |
+
+E501 Line too long (106 > 100)
+   --> docs/evidence/goal-08/mutants.py:472:101
+    |
+472 | def run(copy: pathlib.Path, group: str, env: dict[str, str], timeout: int) -> tuple[str, int, str, float]:
+    |                                                                                                     ^^^^^^
+473 |     t0 = time.monotonic()
+474 |     try:
+    |
+
+E501 Line too long (101 > 100)
+   --> docs/evidence/goal-08/mutants.py:475:101
+    |
+473 |     t0 = time.monotonic()
+474 |     try:
+475 |         p = subprocess.run(COMMANDS[group].argv(), cwd=copy, env=env, capture_output=True, text=True,
+    |                                                                                                     ^
+476 |                            timeout=timeout)
+477 |     except subprocess.TimeoutExpired as exc:
+    |
+
+E501 Line too long (113 > 100)
+   --> docs/evidence/goal-08/mutants.py:524:101
+    |
+522 |         print(f"unknown mutant names: {sorted(unknown)}")
+523 |         return 2
+524 |     selected = [m for m in MUTANTS if (not only or m.name in only) and (not args.group or m.group == args.group)]
+    |                                                                                                     ^^^^^^^^^^^^^
+525 |     if not selected:
+526 |         print("no mutant selected")
+    |
+
+E501 Line too long (102 > 100)
+   --> docs/evidence/goal-08/mutants.py:573:101
+    |
+571 |         if not env.get("SVN_SPEC_PYTHON") and venv.is_file():
+572 |             env["SVN_SPEC_PYTHON"] = str(venv)
+573 |         version = subprocess.run(["go", "version"], cwd=copy, capture_output=True, text=True, env=env)
+    |                                                                                                     ^^
+574 |         print(f"go {version.stdout.strip()} {version.stderr.strip()}".rstrip())
+575 |         print(f"SVN_SPEC_PYTHON={env.get('SVN_SPEC_PYTHON', '')}")
+    |
+
+E501 Line too long (102 > 100)
+   --> docs/evidence/goal-08/mutants.py:619:101
+    |
+617 |             panic = " panic=yes" if PANIC.search(out) else ""
+618 |             files = ",".join(dict.fromkeys(e.path for e in m.edits))
+619 |             print(f"{verdict} {m.name} group={m.group} exit={rc} secs={secs:.1f} file={files}{panic} "
+    |                                                                                                     ^^
+620 |                   f"failing={fails or '-'}", flush=True)
+621 |             print(f"    reason: {m.reason}", flush=True)
+    |
+
+E501 Line too long (113 > 100)
+   --> docs/evidence/goal-08/mutants.py:624:101
+    |
+622 |             if verdict != "KILLED":
+623 |                 bad.append(m.name)
+624 |                 print("    output tail:\n" + "\n".join("    " + line for line in out.strip().splitlines()[-25:]),
+    |                                                                                                     ^^^^^^^^^^^^^
+625 |                       flush=True)
+626 |         for group in used:
+    |
+
+Found 41 errors.
+EXIT:1

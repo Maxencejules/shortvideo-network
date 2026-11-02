@@ -1,0 +1,26 @@
+COMMAND .venv/bin/python docs/evidence/goal-08/mutants.py --group review
+DATE 2026-11-02T15:58:52Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+revision HEAD commit acfe14ecaf79aa45021baf61f937391b43d2d310 tree 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+copy /tmp/goal08-mutants-ewvsknri/tree (git archive)
+mutants 5 of 27 (seat=0, review=5, leases=0)
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+SVN_SPEC_PYTHON=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-08/.venv/bin/python
+command review: go test -count=1 -v -timeout 15m -run ^(TestGenesisValidateImportExport|TestOfferCheckOrder|TestOpenOffersPerContentCapD6|TestOpenOffersPerSchedulerCapD10|TestEndCheckOrder|TestEndSignedForEarlierTermD12|TestAcceptReplayByAnotherProviderD13|TestDeviationRulesAreLoadBearing|TestWithdrawalAtContentCapGas|TestWithdrawalAtCapGasInApp|TestRejectedLeaseMessagesLeaveTheFullState)$ ./chain/x/leases/ ./chain/x/leases/difftest/ ./chain/app/
+CONTROL review PASS exit=0 secs=113.5 named_tests_passed=11/11
+KILLED m1-genesis-content-cap-off group=review exit=1 secs=13.8 file=chain/x/leases/genesis.go failing=TestGenesisValidateImportExport
+    reason: leases ValidateGenesis must refuse more than MaxOpenOffersPerContent open offers of one content
+KILLED m2-offer-d6-off group=review exit=1 secs=11.7 file=chain/x/leases/msg_server.go failing=TestOfferCheckOrder TestOpenOffersPerContentCapD6 TestOpenOffersPerSchedulerCapD10 TestDeviationRulesAreLoadBearing TestWithdrawalAtContentCapGas TestWithdrawalAtCapGasInApp
+    reason: OfferLease past MaxOpenOffersPerContent open offers of one content must be BOUNDS (D-6)
+KILLED m4-offer-d10-off group=review exit=1 secs=12.4 file=chain/x/leases/msg_server.go failing=TestOfferCheckOrder TestOpenOffersPerSchedulerCapD10 TestDeviationRulesAreLoadBearing TestWithdrawalAtCapGasInApp
+    reason: OfferLease past MaxOpenOffersPerContentPerScheduler open offers of one content by one scheduler must be BOUNDS (D-10)
+KILLED m5-end-payload-drops-term-version group=review exit=1 secs=13.3 file=chain/x/leases/msg_server.go failing=TestEndCheckOrder TestEndSignedForEarlierTermD12 TestDeviationRulesAreLoadBearing TestRejectedLeaseMessagesLeaveTheFullState
+    reason: an END signed for an earlier term version must be UNAUTHORIZED after a renewal (D-12)
+KILLED m6-accept-replay-owner-check-off group=review exit=1 secs=13.4 file=chain/x/leases/msg_server.go failing=TestAcceptReplayByAnotherProviderD13 TestDeviationRulesAreLoadBearing TestRejectedLeaseMessagesLeaveTheFullState
+    reason: an AcceptLease replay by an ADMITTED_PROVIDER account that is not the lease provider's must be FORBIDDEN (D-13)
+GROUP_SECS review 178.2
+RESULT mutants=5 killed=5
+EXIT:0

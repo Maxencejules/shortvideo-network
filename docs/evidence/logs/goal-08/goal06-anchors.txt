@@ -1,0 +1,19 @@
+COMMAND .venv/bin/python docs/evidence/goal-06/mutants.py --check
+DATE 2026-11-02T15:28:49Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+revision HEAD commit acfe14ecaf79aa45021baf61f937391b43d2d310 tree 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+copy /tmp/goal06-mutants-62t4q8dz/tree (git archive)
+mutants 119 of 119
+NOT_FOUND seat-rotation-keeps-admission chain/x/authority/engine.go occurrences=0
+NOT_FOUND seat-rotation-no-submitter-dup chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-492 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-548 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-575 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-578 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-591 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-855 chain/x/authority/engine.go occurrences=0
+NOT_FOUND ante-extra-admission chain/app/app.go occurrences=0
+RESULT search-string problems=9; no test was run
+EXIT:1

@@ -1,0 +1,1360 @@
+COMMAND env -C chain go test -count=1 -timeout 900s -v ./x/leases/...
+DATE 2026-11-02T15:28:50Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+=== RUN   TestAcceptCheckOrder
+=== RUN   TestAcceptCheckOrder/cumulative/enforce-gas-limit-0
+=== RUN   TestAcceptCheckOrder/isolated/enforce-gas-limit-0
+=== RUN   TestAcceptCheckOrder/cumulative/enforce-tx-65537-bytes
+=== RUN   TestAcceptCheckOrder/isolated/enforce-tx-65537-bytes
+=== RUN   TestAcceptCheckOrder/cumulative/enforce-signer-19-bytes
+=== RUN   TestAcceptCheckOrder/isolated/enforce-signer-19-bytes
+=== RUN   TestAcceptCheckOrder/cumulative/presence-business-id
+=== RUN   TestAcceptCheckOrder/isolated/presence-business-id
+=== RUN   TestAcceptCheckOrder/cumulative/role-none
+=== RUN   TestAcceptCheckOrder/isolated/role-none
+=== RUN   TestAcceptCheckOrder/cumulative/role-service
+=== RUN   TestAcceptCheckOrder/isolated/role-service
+=== RUN   TestAcceptCheckOrder/cumulative/offer-id-pattern
+=== RUN   TestAcceptCheckOrder/isolated/offer-id-pattern
+=== RUN   TestAcceptCheckOrder/cumulative/lease-id-pattern
+=== RUN   TestAcceptCheckOrder/isolated/lease-id-pattern
+=== RUN   TestAcceptCheckOrder/cumulative/sig-domain-unspecified
+=== RUN   TestAcceptCheckOrder/isolated/sig-domain-unspecified
+=== RUN   TestAcceptCheckOrder/cumulative/sig-domain-unknown-99
+=== RUN   TestAcceptCheckOrder/isolated/sig-domain-unknown-99
+=== RUN   TestAcceptCheckOrder/cumulative/sig-wrong-domain
+=== RUN   TestAcceptCheckOrder/isolated/sig-wrong-domain
+=== RUN   TestAcceptCheckOrder/cumulative/sig-profile-0
+=== RUN   TestAcceptCheckOrder/isolated/sig-profile-0
+=== RUN   TestAcceptCheckOrder/cumulative/sig-profile-2
+=== RUN   TestAcceptCheckOrder/isolated/sig-profile-2
+=== RUN   TestAcceptCheckOrder/cumulative/sig-key-id-empty
+=== RUN   TestAcceptCheckOrder/isolated/sig-key-id-empty
+=== RUN   TestAcceptCheckOrder/cumulative/sig-key-id-pattern
+=== RUN   TestAcceptCheckOrder/isolated/sig-key-id-pattern
+=== RUN   TestAcceptCheckOrder/cumulative/sig-public-key-31
+=== RUN   TestAcceptCheckOrder/isolated/sig-public-key-31
+=== RUN   TestAcceptCheckOrder/cumulative/sig-signature-63
+=== RUN   TestAcceptCheckOrder/isolated/sig-signature-63
+=== RUN   TestAcceptCheckOrder/cumulative/gate-business-id-pattern
+=== RUN   TestAcceptCheckOrder/isolated/gate-business-id-pattern
+=== RUN   TestAcceptCheckOrder/cumulative/gate-replay-other-module
+=== RUN   TestAcceptCheckOrder/isolated/gate-replay-other-module
+=== RUN   TestAcceptCheckOrder/cumulative/offer-not-open
+=== RUN   TestAcceptCheckOrder/isolated/offer-not-open
+=== RUN   TestAcceptCheckOrder/cumulative/d1-ed25519-mismatch
+=== RUN   TestAcceptCheckOrder/isolated/d1-ed25519-mismatch
+=== RUN   TestAcceptCheckOrder/cumulative/provider-signer-not-the-provider
+=== RUN   TestAcceptCheckOrder/isolated/provider-signer-not-the-provider
+=== RUN   TestAcceptCheckOrder/cumulative/lease-id-exists
+=== RUN   TestAcceptCheckOrder/isolated/lease-id-exists
+=== RUN   TestAcceptCheckOrder/cumulative/offer-expired
+=== RUN   TestAcceptCheckOrder/isolated/offer-expired
+=== RUN   TestAcceptCheckOrder/cumulative/content-withdrawn
+=== RUN   TestAcceptCheckOrder/isolated/content-withdrawn
+=== RUN   TestAcceptCheckOrder/cumulative/provider-draining
+=== RUN   TestAcceptCheckOrder/isolated/provider-draining
+=== RUN   TestAcceptCheckOrder/cumulative/live-pair
+=== RUN   TestAcceptCheckOrder/isolated/live-pair
+=== RUN   TestAcceptCheckOrder/cumulative/reserve-overflow
+=== RUN   TestAcceptCheckOrder/isolated/reserve-overflow
+=== RUN   TestAcceptCheckOrder/cumulative/reserve-capacity
+=== RUN   TestAcceptCheckOrder/isolated/reserve-capacity
+=== RUN   TestAcceptCheckOrder/cumulative/d3-offer-deadline-passed
+=== RUN   TestAcceptCheckOrder/isolated/d3-offer-deadline-passed
+=== RUN   TestAcceptCheckOrder/no-fault
+--- PASS: TestAcceptCheckOrder (0.05s)
+    --- PASS: TestAcceptCheckOrder/cumulative/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/presence-business-id (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/presence-business-id (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/role-none (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/role-none (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/role-service (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/role-service (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/offer-id-pattern (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/offer-id-pattern (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/lease-id-pattern (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/lease-id-pattern (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-domain-unspecified (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-domain-unspecified (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-domain-unknown-99 (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-domain-unknown-99 (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-wrong-domain (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-wrong-domain (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-profile-0 (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-profile-0 (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-profile-2 (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-profile-2 (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-key-id-empty (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-key-id-empty (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-key-id-pattern (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-key-id-pattern (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-public-key-31 (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-public-key-31 (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/sig-signature-63 (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/sig-signature-63 (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/gate-business-id-pattern (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/gate-business-id-pattern (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/gate-replay-other-module (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/gate-replay-other-module (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/offer-not-open (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/offer-not-open (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/d1-ed25519-mismatch (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/d1-ed25519-mismatch (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/provider-signer-not-the-provider (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/provider-signer-not-the-provider (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/lease-id-exists (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/lease-id-exists (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/offer-expired (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/offer-expired (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/content-withdrawn (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/content-withdrawn (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/provider-draining (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/provider-draining (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/live-pair (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/live-pair (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/reserve-overflow (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/reserve-overflow (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/reserve-capacity (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/reserve-capacity (0.00s)
+    --- PASS: TestAcceptCheckOrder/cumulative/d3-offer-deadline-passed (0.00s)
+    --- PASS: TestAcceptCheckOrder/isolated/d3-offer-deadline-passed (0.00s)
+    --- PASS: TestAcceptCheckOrder/no-fault (0.00s)
+=== RUN   TestAcceptPresence
+=== RUN   TestAcceptPresence/business-id
+=== RUN   TestAcceptPresence/offer-id
+=== RUN   TestAcceptPresence/lease-id
+=== RUN   TestAcceptPresence/provider-acceptance
+--- PASS: TestAcceptPresence (0.01s)
+    --- PASS: TestAcceptPresence/business-id (0.00s)
+    --- PASS: TestAcceptPresence/offer-id (0.00s)
+    --- PASS: TestAcceptPresence/lease-id (0.00s)
+    --- PASS: TestAcceptPresence/provider-acceptance (0.00s)
+=== RUN   TestAcceptCheckOrderDeviationD1
+--- PASS: TestAcceptCheckOrderDeviationD1 (0.00s)
+=== RUN   TestAcceptPastOfferDeadlineIsExpiredD3
+--- PASS: TestAcceptPastOfferDeadlineIsExpiredD3 (0.00s)
+=== RUN   TestServiceKeyCannotSignAcceptance
+--- PASS: TestServiceKeyCannotSignAcceptance (0.00s)
+=== RUN   TestAcceptReservesOnceAndBindsTerms
+--- PASS: TestAcceptReservesOnceAndBindsTerms (0.01s)
+=== RUN   TestDuplicateReplicaRejected
+--- PASS: TestDuplicateReplicaRejected (0.01s)
+=== RUN   TestCapacityAndOverflow
+--- PASS: TestCapacityAndOverflow (0.01s)
+=== RUN   TestAcceptReplayByAnotherProviderD13
+--- PASS: TestAcceptReplayByAnotherProviderD13 (0.00s)
+=== RUN   TestEndCheckOrder
+=== RUN   TestEndCheckOrder/cumulative/enforce-gas-limit-0
+=== RUN   TestEndCheckOrder/isolated/enforce-gas-limit-0
+=== RUN   TestEndCheckOrder/cumulative/enforce-tx-65537-bytes
+=== RUN   TestEndCheckOrder/isolated/enforce-tx-65537-bytes
+=== RUN   TestEndCheckOrder/cumulative/enforce-signer-19-bytes
+=== RUN   TestEndCheckOrder/isolated/enforce-signer-19-bytes
+=== RUN   TestEndCheckOrder/cumulative/presence-business-id
+=== RUN   TestEndCheckOrder/isolated/presence-business-id
+=== RUN   TestEndCheckOrder/cumulative/lease-not-found
+=== RUN   TestEndCheckOrder/isolated/lease-not-found
+=== RUN   TestEndCheckOrder/cumulative/provider-signature-absent
+=== RUN   TestEndCheckOrder/isolated/provider-signature-absent
+=== RUN   TestEndCheckOrder/cumulative/sig-domain-unspecified
+=== RUN   TestEndCheckOrder/isolated/sig-domain-unspecified
+=== RUN   TestEndCheckOrder/cumulative/sig-domain-unknown-99
+=== RUN   TestEndCheckOrder/isolated/sig-domain-unknown-99
+=== RUN   TestEndCheckOrder/cumulative/sig-wrong-domain
+=== RUN   TestEndCheckOrder/isolated/sig-wrong-domain
+=== RUN   TestEndCheckOrder/cumulative/sig-profile-0
+=== RUN   TestEndCheckOrder/isolated/sig-profile-0
+=== RUN   TestEndCheckOrder/cumulative/sig-profile-2
+=== RUN   TestEndCheckOrder/isolated/sig-profile-2
+=== RUN   TestEndCheckOrder/cumulative/sig-key-id-empty
+=== RUN   TestEndCheckOrder/isolated/sig-key-id-empty
+=== RUN   TestEndCheckOrder/cumulative/sig-key-id-pattern
+=== RUN   TestEndCheckOrder/isolated/sig-key-id-pattern
+=== RUN   TestEndCheckOrder/cumulative/sig-public-key-31
+=== RUN   TestEndCheckOrder/isolated/sig-public-key-31
+=== RUN   TestEndCheckOrder/cumulative/sig-signature-63
+=== RUN   TestEndCheckOrder/isolated/sig-signature-63
+=== RUN   TestEndCheckOrder/cumulative/signature-ed25519-mismatch
+=== RUN   TestEndCheckOrder/isolated/signature-ed25519-mismatch
+=== RUN   TestEndCheckOrder/cumulative/signature-earlier-term-version
+=== RUN   TestEndCheckOrder/isolated/signature-earlier-term-version
+=== RUN   TestEndCheckOrder/cumulative/role-none
+=== RUN   TestEndCheckOrder/isolated/role-none
+=== RUN   TestEndCheckOrder/cumulative/role-service
+=== RUN   TestEndCheckOrder/isolated/role-service
+=== RUN   TestEndCheckOrder/cumulative/provider-signer-not-the-provider
+=== RUN   TestEndCheckOrder/isolated/provider-signer-not-the-provider
+=== RUN   TestEndCheckOrder/cumulative/gate-business-id-pattern
+=== RUN   TestEndCheckOrder/isolated/gate-business-id-pattern
+=== RUN   TestEndCheckOrder/cumulative/gate-replay-other-module
+=== RUN   TestEndCheckOrder/isolated/gate-replay-other-module
+=== RUN   TestEndCheckOrder/cumulative/not-held
+=== RUN   TestEndCheckOrder/isolated/not-held
+=== RUN   TestEndCheckOrder/cumulative/release-underflow
+=== RUN   TestEndCheckOrder/isolated/release-underflow
+=== RUN   TestEndCheckOrder/no-fault
+--- PASS: TestEndCheckOrder (0.02s)
+    --- PASS: TestEndCheckOrder/cumulative/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/presence-business-id (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/presence-business-id (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/lease-not-found (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/lease-not-found (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/provider-signature-absent (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/provider-signature-absent (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-domain-unspecified (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-domain-unspecified (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-domain-unknown-99 (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-domain-unknown-99 (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-wrong-domain (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-wrong-domain (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-profile-0 (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-profile-0 (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-profile-2 (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-profile-2 (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-key-id-empty (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-key-id-empty (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-key-id-pattern (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-key-id-pattern (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-public-key-31 (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-public-key-31 (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/sig-signature-63 (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/sig-signature-63 (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/signature-ed25519-mismatch (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/signature-ed25519-mismatch (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/signature-earlier-term-version (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/signature-earlier-term-version (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/role-none (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/role-none (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/role-service (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/role-service (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/provider-signer-not-the-provider (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/provider-signer-not-the-provider (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/gate-business-id-pattern (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/gate-business-id-pattern (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/gate-replay-other-module (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/gate-replay-other-module (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/not-held (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/not-held (0.00s)
+    --- PASS: TestEndCheckOrder/cumulative/release-underflow (0.00s)
+    --- PASS: TestEndCheckOrder/isolated/release-underflow (0.00s)
+    --- PASS: TestEndCheckOrder/no-fault (0.00s)
+=== RUN   TestAuthorityEndCheckOrder
+=== RUN   TestAuthorityEndCheckOrder/cumulative/enforce-gas-limit-0
+=== RUN   TestAuthorityEndCheckOrder/isolated/enforce-gas-limit-0
+=== RUN   TestAuthorityEndCheckOrder/cumulative/enforce-tx-65537-bytes
+=== RUN   TestAuthorityEndCheckOrder/isolated/enforce-tx-65537-bytes
+=== RUN   TestAuthorityEndCheckOrder/cumulative/enforce-signer-19-bytes
+=== RUN   TestAuthorityEndCheckOrder/isolated/enforce-signer-19-bytes
+=== RUN   TestAuthorityEndCheckOrder/cumulative/presence-business-id
+=== RUN   TestAuthorityEndCheckOrder/isolated/presence-business-id
+=== RUN   TestAuthorityEndCheckOrder/cumulative/lease-not-found
+=== RUN   TestAuthorityEndCheckOrder/isolated/lease-not-found
+=== RUN   TestAuthorityEndCheckOrder/cumulative/role-none
+=== RUN   TestAuthorityEndCheckOrder/isolated/role-none
+=== RUN   TestAuthorityEndCheckOrder/cumulative/role-broadcaster
+=== RUN   TestAuthorityEndCheckOrder/isolated/role-broadcaster
+=== RUN   TestAuthorityEndCheckOrder/cumulative/provider-signature-present
+=== RUN   TestAuthorityEndCheckOrder/isolated/provider-signature-present
+=== RUN   TestAuthorityEndCheckOrder/cumulative/gate-business-id-pattern
+=== RUN   TestAuthorityEndCheckOrder/isolated/gate-business-id-pattern
+=== RUN   TestAuthorityEndCheckOrder/cumulative/gate-replay-other-module
+=== RUN   TestAuthorityEndCheckOrder/isolated/gate-replay-other-module
+=== RUN   TestAuthorityEndCheckOrder/cumulative/not-held
+=== RUN   TestAuthorityEndCheckOrder/isolated/not-held
+=== RUN   TestAuthorityEndCheckOrder/cumulative/release-underflow
+=== RUN   TestAuthorityEndCheckOrder/isolated/release-underflow
+=== RUN   TestAuthorityEndCheckOrder/no-fault
+--- PASS: TestAuthorityEndCheckOrder (0.01s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/presence-business-id (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/presence-business-id (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/lease-not-found (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/lease-not-found (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/role-none (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/role-none (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/role-broadcaster (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/role-broadcaster (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/provider-signature-present (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/provider-signature-present (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/gate-business-id-pattern (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/gate-business-id-pattern (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/gate-replay-other-module (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/gate-replay-other-module (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/not-held (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/not-held (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/cumulative/release-underflow (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/isolated/release-underflow (0.00s)
+    --- PASS: TestAuthorityEndCheckOrder/no-fault (0.00s)
+=== RUN   TestEndPresence
+=== RUN   TestEndPresence/business-id
+=== RUN   TestEndPresence/lease-id
+--- PASS: TestEndPresence (0.00s)
+    --- PASS: TestEndPresence/business-id (0.00s)
+    --- PASS: TestEndPresence/lease-id (0.00s)
+=== RUN   TestEndReleasesOnce
+--- PASS: TestEndReleasesOnce (0.01s)
+=== RUN   TestEndSignedForEarlierTermD12
+--- PASS: TestEndSignedForEarlierTermD12 (0.00s)
+=== RUN   TestExpiryOrderAndBudget
+=== RUN   TestExpiryOrderAndBudget/budget-1
+=== RUN   TestExpiryOrderAndBudget/budget-2
+=== RUN   TestExpiryOrderAndBudget/budget-3
+=== RUN   TestExpiryOrderAndBudget/budget-128
+--- PASS: TestExpiryOrderAndBudget (0.00s)
+    --- PASS: TestExpiryOrderAndBudget/budget-1 (0.00s)
+    --- PASS: TestExpiryOrderAndBudget/budget-2 (0.00s)
+    --- PASS: TestExpiryOrderAndBudget/budget-3 (0.00s)
+    --- PASS: TestExpiryOrderAndBudget/budget-128 (0.00s)
+=== RUN   TestExpiryUsesHeaderTimeOnly
+--- PASS: TestExpiryUsesHeaderTimeOnly (0.00s)
+=== RUN   TestExpiryInvariantErrors
+=== RUN   TestExpiryInvariantErrors/deadline-row-value
+=== RUN   TestExpiryInvariantErrors/expiry-row-without-offer
+=== RUN   TestExpiryInvariantErrors/counter-zero
+=== RUN   TestExpiryInvariantErrors/counter-malformed
+=== RUN   TestExpiryInvariantErrors/deadline-row-without-lease
+=== RUN   TestExpiryInvariantErrors/deadline-row-stale-time
+=== RUN   TestExpiryInvariantErrors/deadline-row-of-ended-lease
+=== RUN   TestExpiryInvariantErrors/pair-row-missing
+=== RUN   TestExpiryInvariantErrors/expiry-row-stale-time
+=== RUN   TestExpiryInvariantErrors/release-underflow
+--- PASS: TestExpiryInvariantErrors (0.01s)
+    --- PASS: TestExpiryInvariantErrors/deadline-row-value (0.00s)
+    --- PASS: TestExpiryInvariantErrors/expiry-row-without-offer (0.00s)
+    --- PASS: TestExpiryInvariantErrors/counter-zero (0.00s)
+    --- PASS: TestExpiryInvariantErrors/counter-malformed (0.00s)
+    --- PASS: TestExpiryInvariantErrors/deadline-row-without-lease (0.00s)
+    --- PASS: TestExpiryInvariantErrors/deadline-row-stale-time (0.00s)
+    --- PASS: TestExpiryInvariantErrors/deadline-row-of-ended-lease (0.00s)
+    --- PASS: TestExpiryInvariantErrors/pair-row-missing (0.00s)
+    --- PASS: TestExpiryInvariantErrors/expiry-row-stale-time (0.00s)
+    --- PASS: TestExpiryInvariantErrors/release-underflow (0.00s)
+=== RUN   TestExpiryWorkIsBounded
+    expiry_test.go:300: backlog 200: one block expired 128 leases with 2602732 store gas
+    expiry_test.go:300: backlog 600: one block expired 128 leases with 2602732 store gas
+--- PASS: TestExpiryWorkIsBounded (0.08s)
+=== RUN   TestGenesisValidateImportExport
+=== RUN   TestGenesisValidateImportExport/validate-rejects
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-active-term-2
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-deadline-at-start
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-content-id
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-content-version-2
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-provider-id
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-content-version-0
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-offer-id-reused
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-package-0
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-ended-held
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-pair-held-twice
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-id-duplicate
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-content-id
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-term-version-2
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-scheduler-19
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-manifest
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-deadline-at-start
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-renewed-term-1
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-manifest-unknown
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-package-0
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-start-0
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-id-of-a-lease
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-id-duplicate
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-manifest-size
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-package-above-cap
+=== RUN   TestGenesisValidateImportExport/validate-rejects/nil-lease
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-id-pattern
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-state-unknown
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-ended-term-0
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-policy-version
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-deadline-above-9999
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-offer-id-pattern
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-start-negative
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-state-offered
+=== RUN   TestGenesisValidateImportExport/validate-rejects/state-unknown-field
+=== RUN   TestGenesisValidateImportExport/validate-rejects/nil-offer
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-unknown-field
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-id-pattern
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-content-version-2
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-manifest-nil
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-manifest-algorithm
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-expiry-0
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-unknown-field
+=== RUN   TestGenesisValidateImportExport/validate-rejects/offer-terms-size
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-provider-id
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-terms
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-state-unspecified
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-state-6-at-risk
+=== RUN   TestGenesisValidateImportExport/validate-rejects/lease-active-not-held
+=== RUN   TestGenesisValidateImportExport/import-checks-registries
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/offer-content-withdrawn
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/offer-content-integrity
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/offer-provider-absent
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/lease-manifest-differs
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/lease-package-bytes-differ
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/reserved-too-low
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/lease-provider-absent
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/lease-content-absent
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/withdrawn-content-lease-manifest-differs
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/reserved-too-high
+=== RUN   TestGenesisValidateImportExport/import-checks-registries/offer-content-absent
+=== RUN   TestGenesisValidateImportExport/requires-an-empty-store
+=== RUN   TestGenesisValidateImportExport/requires-an-empty-store/scaffold-key
+=== RUN   TestGenesisValidateImportExport/requires-an-empty-store/layout-key
+=== RUN   TestGenesisValidateImportExport/requires-an-empty-store/business-row
+=== RUN   TestGenesisValidateImportExport/round-trip
+=== RUN   TestGenesisValidateImportExport/round-trip-from-committed-transitions
+=== RUN   TestGenesisValidateImportExport/document-rules
+--- PASS: TestGenesisValidateImportExport (0.03s)
+    --- PASS: TestGenesisValidateImportExport/validate-rejects (0.01s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-active-term-2 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-deadline-at-start (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-content-id (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-content-version-2 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-provider-id (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-content-version-0 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-offer-id-reused (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-package-0 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-ended-held (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-pair-held-twice (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-id-duplicate (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-content-id (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-term-version-2 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-scheduler-19 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-manifest (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-deadline-at-start (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-renewed-term-1 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-manifest-unknown (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-package-0 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-start-0 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-id-of-a-lease (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-id-duplicate (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-manifest-size (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-package-above-cap (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/nil-lease (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-id-pattern (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-state-unknown (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-ended-term-0 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-policy-version (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-deadline-above-9999 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-offer-id-pattern (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-start-negative (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-state-offered (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/state-unknown-field (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/nil-offer (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-unknown-field (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-id-pattern (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-content-version-2 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-manifest-nil (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-manifest-algorithm (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-expiry-0 (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-unknown-field (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/offer-terms-size (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-provider-id (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-terms (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-state-unspecified (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-state-6-at-risk (0.00s)
+        --- PASS: TestGenesisValidateImportExport/validate-rejects/lease-active-not-held (0.00s)
+    --- PASS: TestGenesisValidateImportExport/import-checks-registries (0.01s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/offer-content-withdrawn (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/offer-content-integrity (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/offer-provider-absent (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/lease-manifest-differs (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/lease-package-bytes-differ (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/reserved-too-low (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/lease-provider-absent (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/lease-content-absent (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/withdrawn-content-lease-manifest-differs (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/reserved-too-high (0.00s)
+        --- PASS: TestGenesisValidateImportExport/import-checks-registries/offer-content-absent (0.00s)
+    --- PASS: TestGenesisValidateImportExport/requires-an-empty-store (0.00s)
+        --- PASS: TestGenesisValidateImportExport/requires-an-empty-store/scaffold-key (0.00s)
+        --- PASS: TestGenesisValidateImportExport/requires-an-empty-store/layout-key (0.00s)
+        --- PASS: TestGenesisValidateImportExport/requires-an-empty-store/business-row (0.00s)
+    --- PASS: TestGenesisValidateImportExport/round-trip (0.00s)
+    --- PASS: TestGenesisValidateImportExport/round-trip-from-committed-transitions (0.01s)
+    --- PASS: TestGenesisValidateImportExport/document-rules (0.00s)
+=== RUN   TestWithdrawalVoidsOffers
+--- PASS: TestWithdrawalVoidsOffers (0.00s)
+=== RUN   TestWithdrawalAtContentCap
+    hooks_test.go:142: withdrawal hook at 256 open offers: 3905240 gas (keeper level, fake content store)
+--- PASS: TestWithdrawalAtContentCap (0.02s)
+=== RUN   TestWithdrawalHookInvariantErrors
+=== RUN   TestWithdrawalHookInvariantErrors/scheduler-counter-missing
+=== RUN   TestWithdrawalHookInvariantErrors/above-cap
+=== RUN   TestWithdrawalHookInvariantErrors/counter-missing
+=== RUN   TestWithdrawalHookInvariantErrors/row-without-offer
+=== RUN   TestWithdrawalHookInvariantErrors/counter-malformed
+=== RUN   TestWithdrawalHookInvariantErrors/counter-high
+=== RUN   TestWithdrawalHookInvariantErrors/row-of-other-content
+=== RUN   TestWithdrawalHookInvariantErrors/row-value
+=== RUN   TestWithdrawalHookInvariantErrors/provider-counter-missing
+--- PASS: TestWithdrawalHookInvariantErrors (0.01s)
+    --- PASS: TestWithdrawalHookInvariantErrors/scheduler-counter-missing (0.00s)
+    --- PASS: TestWithdrawalHookInvariantErrors/above-cap (0.00s)
+    --- PASS: TestWithdrawalHookInvariantErrors/counter-missing (0.00s)
+    --- PASS: TestWithdrawalHookInvariantErrors/row-without-offer (0.00s)
+    --- PASS: TestWithdrawalHookInvariantErrors/counter-malformed (0.00s)
+    --- PASS: TestWithdrawalHookInvariantErrors/counter-high (0.00s)
+    --- PASS: TestWithdrawalHookInvariantErrors/row-of-other-content (0.00s)
+    --- PASS: TestWithdrawalHookInvariantErrors/row-value (0.00s)
+    --- PASS: TestWithdrawalHookInvariantErrors/provider-counter-missing (0.00s)
+=== RUN   TestTrialSnapshotDetectsEarlyWrite
+--- PASS: TestTrialSnapshotDetectsEarlyWrite (0.00s)
+=== RUN   TestModule
+--- PASS: TestModule (0.00s)
+=== RUN   TestBeginBlockRunsExpireDue
+--- PASS: TestBeginBlockRunsExpireDue (0.00s)
+=== RUN   TestModuleGenesis
+--- PASS: TestModuleGenesis (0.00s)
+=== RUN   TestServicesOnRealRouters
+--- PASS: TestServicesOnRealRouters (0.00s)
+=== RUN   TestServiceDescriptorsMatchTheProtocol
+--- PASS: TestServiceDescriptorsMatchTheProtocol (0.00s)
+=== RUN   TestUnaryHandlerInterceptor
+--- PASS: TestUnaryHandlerInterceptor (0.00s)
+=== RUN   TestRunMigrationsAtCurrentVersionIsANoOp
+--- PASS: TestRunMigrationsAtCurrentVersionIsANoOp (0.00s)
+=== RUN   TestNoMigrationFromScaffoldLayout
+--- PASS: TestNoMigrationFromScaffoldLayout (0.00s)
+=== RUN   TestMigrationTable
+--- PASS: TestMigrationTable (0.00s)
+=== RUN   TestNewKeeperRejectsMissingDependencies
+=== RUN   TestNewKeeperRejectsMissingDependencies/content
+=== RUN   TestNewKeeperRejectsMissingDependencies/roles
+=== RUN   TestNewKeeperRejectsMissingDependencies/limits
+=== RUN   TestNewKeeperRejectsMissingDependencies/params
+=== RUN   TestNewKeeperRejectsMissingDependencies/policy
+=== RUN   TestNewKeeperRejectsMissingDependencies/providers
+=== RUN   TestNewKeeperRejectsMissingDependencies/nil-key
+--- PASS: TestNewKeeperRejectsMissingDependencies (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/content (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/roles (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/limits (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/params (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/policy (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/providers (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/nil-key (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+=== RUN   TestKeeperImports
+--- PASS: TestKeeperImports (0.02s)
+=== RUN   TestNoForbiddenNames
+--- PASS: TestNoForbiddenNames (0.00s)
+=== RUN   TestLeaseStateHasNoAtRisk
+--- PASS: TestLeaseStateHasNoAtRisk (0.00s)
+=== RUN   TestStateNames
+--- PASS: TestStateNames (0.00s)
+=== RUN   TestOfferCheckOrder
+=== RUN   TestOfferCheckOrder/cumulative/enforce-gas-limit-0
+=== RUN   TestOfferCheckOrder/isolated/enforce-gas-limit-0
+=== RUN   TestOfferCheckOrder/cumulative/enforce-tx-65537-bytes
+=== RUN   TestOfferCheckOrder/isolated/enforce-tx-65537-bytes
+=== RUN   TestOfferCheckOrder/cumulative/enforce-signer-19-bytes
+=== RUN   TestOfferCheckOrder/isolated/enforce-signer-19-bytes
+=== RUN   TestOfferCheckOrder/cumulative/presence-business-id
+=== RUN   TestOfferCheckOrder/isolated/presence-business-id
+=== RUN   TestOfferCheckOrder/cumulative/role-none
+=== RUN   TestOfferCheckOrder/isolated/role-none
+=== RUN   TestOfferCheckOrder/cumulative/role-broadcaster
+=== RUN   TestOfferCheckOrder/isolated/role-broadcaster
+=== RUN   TestOfferCheckOrder/cumulative/offer-id-pattern
+=== RUN   TestOfferCheckOrder/isolated/offer-id-pattern
+=== RUN   TestOfferCheckOrder/cumulative/content-id-pattern
+=== RUN   TestOfferCheckOrder/isolated/content-id-pattern
+=== RUN   TestOfferCheckOrder/cumulative/provider-id-pattern
+=== RUN   TestOfferCheckOrder/isolated/provider-id-pattern
+=== RUN   TestOfferCheckOrder/cumulative/manifest-algorithm-0
+=== RUN   TestOfferCheckOrder/isolated/manifest-algorithm-0
+=== RUN   TestOfferCheckOrder/cumulative/manifest-31-bytes
+=== RUN   TestOfferCheckOrder/isolated/manifest-31-bytes
+=== RUN   TestOfferCheckOrder/cumulative/terms-algorithm-7
+=== RUN   TestOfferCheckOrder/isolated/terms-algorithm-7
+=== RUN   TestOfferCheckOrder/cumulative/terms-33-bytes
+=== RUN   TestOfferCheckOrder/isolated/terms-33-bytes
+=== RUN   TestOfferCheckOrder/cumulative/start-0
+=== RUN   TestOfferCheckOrder/isolated/start-0
+=== RUN   TestOfferCheckOrder/cumulative/deadline-above-9999
+=== RUN   TestOfferCheckOrder/isolated/deadline-above-9999
+=== RUN   TestOfferCheckOrder/cumulative/expiry-negative
+=== RUN   TestOfferCheckOrder/isolated/expiry-negative
+=== RUN   TestOfferCheckOrder/cumulative/package-bytes-0
+=== RUN   TestOfferCheckOrder/isolated/package-bytes-0
+=== RUN   TestOfferCheckOrder/cumulative/package-above-governed-limit
+=== RUN   TestOfferCheckOrder/isolated/package-above-governed-limit
+=== RUN   TestOfferCheckOrder/cumulative/gate-business-id-pattern
+=== RUN   TestOfferCheckOrder/isolated/gate-business-id-pattern
+=== RUN   TestOfferCheckOrder/cumulative/gate-content-version-2^60
+=== RUN   TestOfferCheckOrder/isolated/gate-content-version-2^60
+=== RUN   TestOfferCheckOrder/cumulative/gate-term-version-2^60
+=== RUN   TestOfferCheckOrder/isolated/gate-term-version-2^60
+=== RUN   TestOfferCheckOrder/cumulative/gate-term-version-max-uint64
+=== RUN   TestOfferCheckOrder/isolated/gate-term-version-max-uint64
+=== RUN   TestOfferCheckOrder/cumulative/gate-replay-other-module
+=== RUN   TestOfferCheckOrder/isolated/gate-replay-other-module
+=== RUN   TestOfferCheckOrder/cumulative/open-offer-id
+=== RUN   TestOfferCheckOrder/isolated/open-offer-id
+=== RUN   TestOfferCheckOrder/cumulative/content-not-found
+=== RUN   TestOfferCheckOrder/isolated/content-not-found
+=== RUN   TestOfferCheckOrder/cumulative/content-withdrawn
+=== RUN   TestOfferCheckOrder/isolated/content-withdrawn
+=== RUN   TestOfferCheckOrder/cumulative/content-version-2
+=== RUN   TestOfferCheckOrder/isolated/content-version-2
+=== RUN   TestOfferCheckOrder/cumulative/manifest-differs
+=== RUN   TestOfferCheckOrder/isolated/manifest-differs
+=== RUN   TestOfferCheckOrder/cumulative/package-bytes-differ
+=== RUN   TestOfferCheckOrder/isolated/package-bytes-differ
+=== RUN   TestOfferCheckOrder/cumulative/provider-not-found
+=== RUN   TestOfferCheckOrder/isolated/provider-not-found
+=== RUN   TestOfferCheckOrder/cumulative/provider-draining
+=== RUN   TestOfferCheckOrder/isolated/provider-draining
+=== RUN   TestOfferCheckOrder/cumulative/expiry-at-committed-time
+=== RUN   TestOfferCheckOrder/isolated/expiry-at-committed-time
+=== RUN   TestOfferCheckOrder/cumulative/deadline-at-start
+=== RUN   TestOfferCheckOrder/isolated/deadline-at-start
+=== RUN   TestOfferCheckOrder/cumulative/dec005-absent
+=== RUN   TestOfferCheckOrder/isolated/dec005-absent
+=== RUN   TestOfferCheckOrder/cumulative/dec005-zero
+=== RUN   TestOfferCheckOrder/isolated/dec005-zero
+=== RUN   TestOfferCheckOrder/cumulative/term-plus-one-second
+=== RUN   TestOfferCheckOrder/isolated/term-plus-one-second
+=== RUN   TestOfferCheckOrder/cumulative/term-version-2
+=== RUN   TestOfferCheckOrder/isolated/term-version-2
+=== RUN   TestOfferCheckOrder/cumulative/live-pair
+=== RUN   TestOfferCheckOrder/isolated/live-pair
+=== RUN   TestOfferCheckOrder/cumulative/provider-open-offer-cap
+=== RUN   TestOfferCheckOrder/isolated/provider-open-offer-cap
+=== RUN   TestOfferCheckOrder/cumulative/reserve-overflow
+=== RUN   TestOfferCheckOrder/isolated/reserve-overflow
+=== RUN   TestOfferCheckOrder/cumulative/reserve-capacity
+=== RUN   TestOfferCheckOrder/isolated/reserve-capacity
+=== RUN   TestOfferCheckOrder/cumulative/d4-offer-id-used
+=== RUN   TestOfferCheckOrder/isolated/d4-offer-id-used
+=== RUN   TestOfferCheckOrder/cumulative/d5-lifetime-86401
+=== RUN   TestOfferCheckOrder/isolated/d5-lifetime-86401
+=== RUN   TestOfferCheckOrder/cumulative/d6-content-open-offer-cap
+=== RUN   TestOfferCheckOrder/isolated/d6-content-open-offer-cap
+=== RUN   TestOfferCheckOrder/cumulative/d10-scheduler-content-open-offer-cap
+=== RUN   TestOfferCheckOrder/isolated/d10-scheduler-content-open-offer-cap
+=== RUN   TestOfferCheckOrder/no-fault
+--- PASS: TestOfferCheckOrder (0.62s)
+    --- PASS: TestOfferCheckOrder/cumulative/enforce-gas-limit-0 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/enforce-tx-65537-bytes (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/enforce-signer-19-bytes (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/presence-business-id (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/presence-business-id (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/role-none (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/role-none (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/role-broadcaster (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/role-broadcaster (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/offer-id-pattern (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/offer-id-pattern (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/content-id-pattern (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/content-id-pattern (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/provider-id-pattern (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/provider-id-pattern (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/manifest-algorithm-0 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/manifest-algorithm-0 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/manifest-31-bytes (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/manifest-31-bytes (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/terms-algorithm-7 (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/terms-algorithm-7 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/terms-33-bytes (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/terms-33-bytes (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/start-0 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/start-0 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/deadline-above-9999 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/deadline-above-9999 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/expiry-negative (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/expiry-negative (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/package-bytes-0 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/package-bytes-0 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/package-above-governed-limit (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/package-above-governed-limit (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/gate-business-id-pattern (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/gate-business-id-pattern (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/gate-content-version-2^60 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/gate-content-version-2^60 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/gate-term-version-2^60 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/gate-term-version-2^60 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/gate-term-version-max-uint64 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/gate-term-version-max-uint64 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/gate-replay-other-module (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/gate-replay-other-module (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/open-offer-id (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/open-offer-id (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/content-not-found (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/content-not-found (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/content-withdrawn (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/content-withdrawn (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/content-version-2 (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/content-version-2 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/manifest-differs (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/manifest-differs (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/package-bytes-differ (0.02s)
+    --- PASS: TestOfferCheckOrder/isolated/package-bytes-differ (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/provider-not-found (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/provider-not-found (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/provider-draining (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/provider-draining (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/expiry-at-committed-time (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/expiry-at-committed-time (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/deadline-at-start (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/deadline-at-start (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/dec005-absent (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/dec005-absent (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/dec005-zero (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/dec005-zero (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/term-plus-one-second (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/term-plus-one-second (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/term-version-2 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/term-version-2 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/live-pair (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/live-pair (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/provider-open-offer-cap (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/provider-open-offer-cap (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/reserve-overflow (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/reserve-overflow (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/reserve-capacity (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/reserve-capacity (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/d4-offer-id-used (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/d4-offer-id-used (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/d5-lifetime-86401 (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/d5-lifetime-86401 (0.00s)
+    --- PASS: TestOfferCheckOrder/cumulative/d6-content-open-offer-cap (0.01s)
+    --- PASS: TestOfferCheckOrder/isolated/d6-content-open-offer-cap (0.01s)
+    --- PASS: TestOfferCheckOrder/cumulative/d10-scheduler-content-open-offer-cap (0.00s)
+    --- PASS: TestOfferCheckOrder/isolated/d10-scheduler-content-open-offer-cap (0.01s)
+    --- PASS: TestOfferCheckOrder/no-fault (0.00s)
+=== RUN   TestOfferPresence
+=== RUN   TestOfferPresence/terms-digest
+=== RUN   TestOfferPresence/business-id
+=== RUN   TestOfferPresence/offer-id
+=== RUN   TestOfferPresence/content-id
+=== RUN   TestOfferPresence/provider-id
+=== RUN   TestOfferPresence/manifest-digest
+--- PASS: TestOfferPresence (0.00s)
+    --- PASS: TestOfferPresence/terms-digest (0.00s)
+    --- PASS: TestOfferPresence/business-id (0.00s)
+    --- PASS: TestOfferPresence/offer-id (0.00s)
+    --- PASS: TestOfferPresence/content-id (0.00s)
+    --- PASS: TestOfferPresence/provider-id (0.00s)
+    --- PASS: TestOfferPresence/manifest-digest (0.00s)
+=== RUN   TestOfferWritesRecordAndEvent
+--- PASS: TestOfferWritesRecordAndEvent (0.00s)
+=== RUN   TestOfferIDNeverReusedD4
+--- PASS: TestOfferIDNeverReusedD4 (0.00s)
+=== RUN   TestOfferLifetimeBoundD5
+--- PASS: TestOfferLifetimeBoundD5 (0.00s)
+=== RUN   TestOpenOffersPerContentCapD6
+--- PASS: TestOpenOffersPerContentCapD6 (0.28s)
+=== RUN   TestOpenOffersPerSchedulerCapD10
+--- PASS: TestOpenOffersPerSchedulerCapD10 (0.29s)
+=== RUN   TestOfferReplayByAnotherSchedulerD11
+--- PASS: TestOfferReplayByAnotherSchedulerD11 (0.01s)
+=== RUN   TestOfferProviderCapCountsOpenOffers
+--- PASS: TestOfferProviderCapCountsOpenOffers (0.00s)
+=== RUN   TestOneSchedulerRefillsProviderSlots
+--- PASS: TestOneSchedulerRefillsProviderSlots (0.00s)
+=== RUN   TestActiveLeasesPagination
+--- PASS: TestActiveLeasesPagination (0.00s)
+=== RUN   TestDeadlinesPagination
+--- PASS: TestDeadlinesPagination (0.00s)
+=== RUN   TestLeaseQueryResponseSizeBound
+    query_test.go:415: ActiveLeases page of 100 widest leases: 40968 bytes (bound 65536)
+    query_test.go:436: largest Deadlines page: 40968 bytes over 3 pages (bound 65536)
+--- PASS: TestLeaseQueryResponseSizeBound (0.01s)
+=== RUN   TestRenewCheckOrder
+=== RUN   TestRenewCheckOrder/cumulative/enforce-gas-limit-0
+=== RUN   TestRenewCheckOrder/isolated/enforce-gas-limit-0
+=== RUN   TestRenewCheckOrder/cumulative/enforce-tx-65537-bytes
+=== RUN   TestRenewCheckOrder/isolated/enforce-tx-65537-bytes
+=== RUN   TestRenewCheckOrder/cumulative/enforce-signer-19-bytes
+=== RUN   TestRenewCheckOrder/isolated/enforce-signer-19-bytes
+=== RUN   TestRenewCheckOrder/cumulative/presence-business-id
+=== RUN   TestRenewCheckOrder/isolated/presence-business-id
+=== RUN   TestRenewCheckOrder/cumulative/lease-not-found
+=== RUN   TestRenewCheckOrder/isolated/lease-not-found
+=== RUN   TestRenewCheckOrder/cumulative/sig-domain-unspecified
+=== RUN   TestRenewCheckOrder/isolated/sig-domain-unspecified
+=== RUN   TestRenewCheckOrder/cumulative/sig-domain-unknown-99
+=== RUN   TestRenewCheckOrder/isolated/sig-domain-unknown-99
+=== RUN   TestRenewCheckOrder/cumulative/sig-wrong-domain
+=== RUN   TestRenewCheckOrder/isolated/sig-wrong-domain
+=== RUN   TestRenewCheckOrder/cumulative/sig-profile-0
+=== RUN   TestRenewCheckOrder/isolated/sig-profile-0
+=== RUN   TestRenewCheckOrder/cumulative/sig-profile-2
+=== RUN   TestRenewCheckOrder/isolated/sig-profile-2
+=== RUN   TestRenewCheckOrder/cumulative/sig-key-id-empty
+=== RUN   TestRenewCheckOrder/isolated/sig-key-id-empty
+=== RUN   TestRenewCheckOrder/cumulative/sig-key-id-pattern
+=== RUN   TestRenewCheckOrder/isolated/sig-key-id-pattern
+=== RUN   TestRenewCheckOrder/cumulative/sig-public-key-31
+=== RUN   TestRenewCheckOrder/isolated/sig-public-key-31
+=== RUN   TestRenewCheckOrder/cumulative/sig-signature-63
+=== RUN   TestRenewCheckOrder/isolated/sig-signature-63
+=== RUN   TestRenewCheckOrder/cumulative/signature-ed25519-mismatch
+=== RUN   TestRenewCheckOrder/isolated/signature-ed25519-mismatch
+=== RUN   TestRenewCheckOrder/cumulative/role-none
+=== RUN   TestRenewCheckOrder/isolated/role-none
+=== RUN   TestRenewCheckOrder/cumulative/role-service
+=== RUN   TestRenewCheckOrder/isolated/role-service
+=== RUN   TestRenewCheckOrder/cumulative/provider-signer-not-the-provider
+=== RUN   TestRenewCheckOrder/isolated/provider-signer-not-the-provider
+=== RUN   TestRenewCheckOrder/cumulative/manifest-algorithm-0
+=== RUN   TestRenewCheckOrder/isolated/manifest-algorithm-0
+=== RUN   TestRenewCheckOrder/cumulative/manifest-31-bytes
+=== RUN   TestRenewCheckOrder/isolated/manifest-31-bytes
+=== RUN   TestRenewCheckOrder/cumulative/gate-business-id-pattern
+=== RUN   TestRenewCheckOrder/isolated/gate-business-id-pattern
+=== RUN   TestRenewCheckOrder/cumulative/gate-term-version-2^60
+=== RUN   TestRenewCheckOrder/isolated/gate-term-version-2^60
+=== RUN   TestRenewCheckOrder/cumulative/gate-deadline-2^60
+=== RUN   TestRenewCheckOrder/isolated/gate-deadline-2^60
+=== RUN   TestRenewCheckOrder/cumulative/gate-package-bytes-max-uint64
+=== RUN   TestRenewCheckOrder/isolated/gate-package-bytes-max-uint64
+=== RUN   TestRenewCheckOrder/cumulative/gate-replay-other-module
+=== RUN   TestRenewCheckOrder/isolated/gate-replay-other-module
+=== RUN   TestRenewCheckOrder/cumulative/lease-not-held
+=== RUN   TestRenewCheckOrder/isolated/lease-not-held
+=== RUN   TestRenewCheckOrder/cumulative/content-withdrawn
+=== RUN   TestRenewCheckOrder/isolated/content-withdrawn
+=== RUN   TestRenewCheckOrder/cumulative/term-version-stale
+=== RUN   TestRenewCheckOrder/isolated/term-version-stale
+=== RUN   TestRenewCheckOrder/cumulative/package-bytes-change
+=== RUN   TestRenewCheckOrder/isolated/package-bytes-change
+=== RUN   TestRenewCheckOrder/cumulative/manifest-change
+=== RUN   TestRenewCheckOrder/isolated/manifest-change
+=== RUN   TestRenewCheckOrder/cumulative/deadline-above-9999
+=== RUN   TestRenewCheckOrder/isolated/deadline-above-9999
+=== RUN   TestRenewCheckOrder/cumulative/dec005-absent
+=== RUN   TestRenewCheckOrder/isolated/dec005-absent
+=== RUN   TestRenewCheckOrder/cumulative/term-plus-one-second
+=== RUN   TestRenewCheckOrder/isolated/term-plus-one-second
+=== RUN   TestRenewCheckOrder/cumulative/evidence-not-found
+=== RUN   TestRenewCheckOrder/isolated/evidence-not-found
+=== RUN   TestRenewCheckOrder/cumulative/evidence-expired
+=== RUN   TestRenewCheckOrder/isolated/evidence-expired
+=== RUN   TestRenewCheckOrder/cumulative/evidence-expiry-passed
+=== RUN   TestRenewCheckOrder/isolated/evidence-expiry-passed
+=== RUN   TestRenewCheckOrder/cumulative/evidence-cannot-extend
+=== RUN   TestRenewCheckOrder/isolated/evidence-cannot-extend
+=== RUN   TestRenewCheckOrder/cumulative/d2-deadline-passed
+=== RUN   TestRenewCheckOrder/isolated/d2-deadline-passed
+=== RUN   TestRenewCheckOrder/no-fault
+--- PASS: TestRenewCheckOrder (0.05s)
+    --- PASS: TestRenewCheckOrder/cumulative/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/presence-business-id (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/presence-business-id (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/lease-not-found (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/lease-not-found (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-domain-unspecified (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-domain-unspecified (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-domain-unknown-99 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-domain-unknown-99 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-wrong-domain (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-wrong-domain (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-profile-0 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-profile-0 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-profile-2 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-profile-2 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-key-id-empty (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-key-id-empty (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-key-id-pattern (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-key-id-pattern (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-public-key-31 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-public-key-31 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/sig-signature-63 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/sig-signature-63 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/signature-ed25519-mismatch (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/signature-ed25519-mismatch (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/role-none (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/role-none (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/role-service (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/role-service (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/provider-signer-not-the-provider (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/provider-signer-not-the-provider (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/manifest-algorithm-0 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/manifest-algorithm-0 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/manifest-31-bytes (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/manifest-31-bytes (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/gate-business-id-pattern (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/gate-business-id-pattern (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/gate-term-version-2^60 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/gate-term-version-2^60 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/gate-deadline-2^60 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/gate-deadline-2^60 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/gate-package-bytes-max-uint64 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/gate-package-bytes-max-uint64 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/gate-replay-other-module (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/gate-replay-other-module (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/lease-not-held (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/lease-not-held (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/content-withdrawn (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/content-withdrawn (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/term-version-stale (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/term-version-stale (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/package-bytes-change (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/package-bytes-change (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/manifest-change (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/manifest-change (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/deadline-above-9999 (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/deadline-above-9999 (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/dec005-absent (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/dec005-absent (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/term-plus-one-second (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/term-plus-one-second (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/evidence-not-found (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/evidence-not-found (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/evidence-expired (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/evidence-expired (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/evidence-expiry-passed (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/evidence-expiry-passed (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/evidence-cannot-extend (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/evidence-cannot-extend (0.00s)
+    --- PASS: TestRenewCheckOrder/cumulative/d2-deadline-passed (0.00s)
+    --- PASS: TestRenewCheckOrder/isolated/d2-deadline-passed (0.00s)
+    --- PASS: TestRenewCheckOrder/no-fault (0.00s)
+=== RUN   TestRenewPresence
+=== RUN   TestRenewPresence/business-id
+=== RUN   TestRenewPresence/lease-id
+=== RUN   TestRenewPresence/manifest-digest
+=== RUN   TestRenewPresence/provider-signature
+--- PASS: TestRenewPresence (0.00s)
+    --- PASS: TestRenewPresence/business-id (0.00s)
+    --- PASS: TestRenewPresence/lease-id (0.00s)
+    --- PASS: TestRenewPresence/manifest-digest (0.00s)
+    --- PASS: TestRenewPresence/provider-signature (0.00s)
+=== RUN   TestRenewPastDeadlineIsExpiredD2
+--- PASS: TestRenewPastDeadlineIsExpiredD2 (0.00s)
+=== RUN   TestRenewKeepsCommittedBytes
+--- PASS: TestRenewKeepsCommittedBytes (0.00s)
+=== RUN   TestEvidenceCannotExtendLease
+--- PASS: TestEvidenceCannotExtendLease (0.00s)
+=== RUN   TestDecisionBlockedWithoutDEC005
+--- PASS: TestDecisionBlockedWithoutDEC005 (0.00s)
+=== RUN   TestRetryAfterKeyRotation
+--- PASS: TestRetryAfterKeyRotation (0.00s)
+=== RUN   TestSignBytesVectors
+--- PASS: TestSignBytesVectors (0.00s)
+=== RUN   TestSignPayloadNeverFails
+--- PASS: TestSignPayloadNeverFails (0.01s)
+=== RUN   FuzzLeasesGenesisJSON
+=== RUN   FuzzLeasesGenesisJSON/seed#0
+=== RUN   FuzzLeasesGenesisJSON/seed#1
+=== RUN   FuzzLeasesGenesisJSON/seed#2
+=== RUN   FuzzLeasesGenesisJSON/seed#3
+=== RUN   FuzzLeasesGenesisJSON/seed#4
+=== RUN   FuzzLeasesGenesisJSON/seed#5
+=== RUN   FuzzLeasesGenesisJSON/seed#6
+=== RUN   FuzzLeasesGenesisJSON/seed#7
+=== RUN   FuzzLeasesGenesisJSON/seed#8
+--- PASS: FuzzLeasesGenesisJSON (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#0 (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#1 (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#2 (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#3 (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#4 (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#5 (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#6 (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#7 (0.00s)
+    --- PASS: FuzzLeasesGenesisJSON/seed#8 (0.00s)
+=== RUN   FuzzDeadlinesPageKey
+=== RUN   FuzzDeadlinesPageKey/seed#0
+=== RUN   FuzzDeadlinesPageKey/seed#1
+=== RUN   FuzzDeadlinesPageKey/seed#2
+=== RUN   FuzzDeadlinesPageKey/seed#3
+=== RUN   FuzzDeadlinesPageKey/seed#4
+=== RUN   FuzzDeadlinesPageKey/seed#5
+=== RUN   FuzzDeadlinesPageKey/seed#6
+=== RUN   FuzzDeadlinesPageKey/seed#7
+=== RUN   FuzzDeadlinesPageKey/seed#8
+=== RUN   FuzzDeadlinesPageKey/seed#9
+=== RUN   FuzzDeadlinesPageKey/seed#10
+--- PASS: FuzzDeadlinesPageKey (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#0 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#1 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#2 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#3 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#4 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#5 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#6 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#7 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#8 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#9 (0.00s)
+    --- PASS: FuzzDeadlinesPageKey/seed#10 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases	1.668s
+=== RUN   TestDifferentialAgainstSpecMachine
+=== RUN   TestDifferentialAgainstSpecMachine/default
+=== RUN   TestDifferentialAgainstSpecMachine/tight
+=== RUN   TestDifferentialAgainstSpecMachine/near-max
+=== RUN   TestDifferentialAgainstSpecMachine/no-dec005
+=== NAME  TestDifferentialAgainstSpecMachine
+    diff_test.go:79: 256 sequences, 22862 compared steps, 0 divergences
+--- PASS: TestDifferentialAgainstSpecMachine (43.07s)
+    --- PASS: TestDifferentialAgainstSpecMachine/default (12.25s)
+    --- PASS: TestDifferentialAgainstSpecMachine/tight (11.66s)
+    --- PASS: TestDifferentialAgainstSpecMachine/near-max (11.03s)
+    --- PASS: TestDifferentialAgainstSpecMachine/no-dec005 (8.13s)
+=== RUN   TestDifferentialCoverage
+    diff_test.go:89: differential coverage (113 classes):
+          AcceptLease CAPACITY                                             86
+          AcceptLease DUPLICATE_ID(lease)                                 106
+          AcceptLease DUPLICATE_ID(pair)                                  136
+          AcceptLease EXPIRED(D-3)                                        229
+          AcceptLease EXPIRED(backlog)                                     22
+          AcceptLease FORBIDDEN(account)                                   45
+          AcceptLease FORBIDDEN(provider state)                           278
+          AcceptLease FORBIDDEN(role)                                     180
+          AcceptLease NOT_FOUND                                          1774
+          AcceptLease OVERFLOW                                             20
+          AcceptLease REPLAY                                               43
+          AcceptLease UNAUTHORIZED(mutated terms)                          97
+          AcceptLease UNAUTHORIZED(other provider key)                     75
+          AcceptLease UNAUTHORIZED(retired key)                            10
+          AcceptLease UNAUTHORIZED(retry)                                   4
+          AcceptLease UNAUTHORIZED(role)                                  134
+          AcceptLease UNAUTHORIZED(service key, own key id)                63
+          AcceptLease UNAUTHORIZED(service key, provider key id)           81
+          AcceptLease WRONG_DOMAIN                                        191
+          AcceptLease idempotent                                           53
+          AcceptLease ok                                                 1149
+          Block backlog left                                               41
+          Block drained                                                   402
+          Block idle                                                     1418
+          CouncilAdmit FORBIDDEN                                          113
+          CouncilAdmit NOT_FOUND                                           20
+          CouncilAdmit ok                                                 653
+          CouncilDisable CONFLICT                                          14
+          CouncilDisable NOT_FOUND                                          5
+          CouncilDisable ok                                               164
+          CouncilForceWithdraw NOT_FOUND                                    7
+          CouncilForceWithdraw STALE_VERSION                               22
+          CouncilForceWithdraw WITHDRAWN                                   13
+          CouncilForceWithdraw ok                                         176
+          DrainProvider CONFLICT                                           17
+          DrainProvider FORBIDDEN                                          13
+          DrainProvider NOT_FOUND                                           8
+          DrainProvider idempotent                                          7
+          DrainProvider ok                                                167
+          EndLease FORBIDDEN                                               98
+          EndLease MALFORMED                                               21
+          EndLease NOT_FOUND                                              291
+          EndLease REPLAY                                                  23
+          EndLease UNAUTHORIZED                                            69
+          EndLease UNDERFLOW(after expiry)                                 83
+          EndLease UNDERFLOW(repeat)                                      252
+          EndLease UNKNOWN_FIELD                                           12
+          EndLease WRONG_DOMAIN                                            25
+          EndLease idempotent                                              19
+          EndLease ok                                                     665
+          EndLease ok(provider not admitted)                               75
+          OfferLease BOUNDS(D-5)                                           54
+          OfferLease BOUNDS(provider cap)                                 105
+          OfferLease CAPACITY                                             370
+          OfferLease CONFLICT                                             123
+          OfferLease DECISION_BLOCKED                                    1638
+          OfferLease DUPLICATE_ID(D-4)                                     67
+          OfferLease DUPLICATE_ID(open id)                                 69
+          OfferLease DUPLICATE_ID(pair)                                   441
+          OfferLease EXPIRED                                              131
+          OfferLease FORBIDDEN                                            607
+          OfferLease INTEGRITY                                            434
+          OfferLease MALFORMED                                              9
+          OfferLease MALFORMED(huge int)                                  215
+          OfferLease NOT_FOUND                                            246
+          OfferLease OUT_OF_RANGE                                         164
+          OfferLease OVERFLOW                                             148
+          OfferLease REPLAY                                                66
+          OfferLease STALE_VERSION                                         60
+          OfferLease UNAUTHORIZED                                         138
+          OfferLease WITHDRAWN                                            180
+          OfferLease idempotent                                           108
+          OfferLease ok                                                  2220
+          RegisterContent DUPLICATE_ID                                     12
+          RegisterContent idempotent                                        1
+          RegisterContent ok                                             1415
+          RegisterProvider DUPLICATE_ID                                     1
+          RegisterProvider idempotent                                       6
+          RegisterProvider ok                                             823
+          RenewLease BOUNDS                                                14
+          RenewLease CONFLICT(bytes)                                       28
+          RenewLease CONFLICT(state)                                      419
+          RenewLease EXPIRED(D-2)                                          17
+          RenewLease FORBIDDEN                                             66
+          RenewLease MALFORMED                                              3
+          RenewLease MALFORMED(huge int)                                   76
+          RenewLease NOT_FOUND(evidence)                                   16
+          RenewLease NOT_FOUND(lease)                                     331
+          RenewLease OUT_OF_RANGE                                          37
+          RenewLease REPLAY                                                18
+          RenewLease STALE_VERSION                                         35
+          RenewLease UNAUTHORIZED                                         195
+          RenewLease WITHDRAWN                                             64
+          RenewLease WRONG_DOMAIN                                          71
+          RenewLease idempotent                                            13
+          RenewLease ok                                                   580
+          RenewLease ok(provider not admitted)                             52
+          RotateProviderKey CONFLICT                                       30
+          RotateProviderKey NOT_FOUND                                      13
+          RotateProviderKey STALE_VERSION                                  75
+          RotateProviderKey UNAUTHORIZED                                    7
+          RotateProviderKey ok                                            301
+          UpdateProvider CAPACITY                                         123
+          UpdateProvider FORBIDDEN                                         51
+          UpdateProvider NOT_FOUND                                         16
+          UpdateProvider idempotent                                        12
+          UpdateProvider ok                                               380
+          WithdrawContent FORBIDDEN                                        57
+          WithdrawContent NOT_FOUND                                        24
+          WithdrawContent STALE_VERSION                                    19
+          WithdrawContent WITHDRAWN                                         7
+          WithdrawContent idempotent                                       12
+          WithdrawContent ok                                              307
+--- PASS: TestDifferentialCoverage (0.00s)
+=== RUN   TestFuzzReachesStates
+    diff_test.go:150: fuzz seed corpus (15 inputs) coverage (93 classes):
+          AcceptLease CAPACITY                                             15
+          AcceptLease DUPLICATE_ID(lease)                                   9
+          AcceptLease DUPLICATE_ID(pair)                                   19
+          AcceptLease EXPIRED(D-3)                                         13
+          AcceptLease EXPIRED(backlog)                                      2
+          AcceptLease FORBIDDEN(account)                                    6
+          AcceptLease FORBIDDEN(provider state)                            13
+          AcceptLease FORBIDDEN(role)                                       7
+          AcceptLease NOT_FOUND                                            81
+          AcceptLease OVERFLOW                                              1
+          AcceptLease REPLAY                                                2
+          AcceptLease UNAUTHORIZED(mutated terms)                           9
+          AcceptLease UNAUTHORIZED(other provider key)                      9
+          AcceptLease UNAUTHORIZED(retired key)                             1
+          AcceptLease UNAUTHORIZED(role)                                    8
+          AcceptLease UNAUTHORIZED(service key, own key id)                 4
+          AcceptLease UNAUTHORIZED(service key, provider key id)            3
+          AcceptLease WRONG_DOMAIN                                         10
+          AcceptLease idempotent                                            2
+          AcceptLease ok                                                   75
+          Block backlog left                                                6
+          Block drained                                                    14
+          Block idle                                                       61
+          CouncilAdmit FORBIDDEN                                           10
+          CouncilAdmit ok                                                  38
+          CouncilDisable ok                                                 6
+          CouncilForceWithdraw STALE_VERSION                                1
+          CouncilForceWithdraw ok                                           9
+          DrainProvider FORBIDDEN                                           2
+          DrainProvider NOT_FOUND                                           2
+          DrainProvider ok                                                  5
+          EndLease FORBIDDEN                                                3
+          EndLease MALFORMED                                                1
+          EndLease NOT_FOUND                                               10
+          EndLease REPLAY                                                   1
+          EndLease UNAUTHORIZED                                             2
+          EndLease UNDERFLOW(after expiry)                                  4
+          EndLease UNDERFLOW(repeat)                                       11
+          EndLease UNKNOWN_FIELD                                            1
+          EndLease WRONG_DOMAIN                                             2
+          EndLease idempotent                                               1
+          EndLease ok                                                      32
+          EndLease ok(provider not admitted)                                2
+          OfferLease BOUNDS(D-5)                                            1
+          OfferLease BOUNDS(provider cap)                                  11
+          OfferLease CAPACITY                                              15
+          OfferLease CONFLICT                                              12
+          OfferLease DECISION_BLOCKED                                      65
+          OfferLease DUPLICATE_ID(D-4)                                      5
+          OfferLease DUPLICATE_ID(open id)                                  7
+          OfferLease DUPLICATE_ID(pair)                                    25
+          OfferLease EXPIRED                                                9
+          OfferLease FORBIDDEN                                             17
+          OfferLease INTEGRITY                                             15
+          OfferLease MALFORMED(huge int)                                    4
+          OfferLease NOT_FOUND                                             11
+          OfferLease OUT_OF_RANGE                                          12
+          OfferLease OVERFLOW                                              18
+          OfferLease REPLAY                                                 5
+          OfferLease STALE_VERSION                                          5
+          OfferLease UNAUTHORIZED                                           8
+          OfferLease WITHDRAWN                                              4
+          OfferLease idempotent                                             5
+          OfferLease ok                                                   133
+          RegisterContent ok                                               79
+          RegisterProvider ok                                              44
+          RenewLease BOUNDS                                                 3
+          RenewLease CONFLICT(bytes)                                        3
+          RenewLease CONFLICT(state)                                       25
+          RenewLease EXPIRED(D-2)                                           2
+          RenewLease FORBIDDEN                                              5
+          RenewLease MALFORMED(huge int)                                    4
+          RenewLease NOT_FOUND(evidence)                                    1
+          RenewLease NOT_FOUND(lease)                                      11
+          RenewLease OUT_OF_RANGE                                           2
+          RenewLease STALE_VERSION                                          1
+          RenewLease UNAUTHORIZED                                          10
+          RenewLease WITHDRAWN                                              2
+          RenewLease WRONG_DOMAIN                                           6
+          RenewLease idempotent                                             3
+          RenewLease ok                                                    53
+          RenewLease ok(provider not admitted)                              1
+          RotateProviderKey NOT_FOUND                                       1
+          RotateProviderKey UNAUTHORIZED                                    1
+          RotateProviderKey ok                                             13
+          UpdateProvider CAPACITY                                           7
+          UpdateProvider FORBIDDEN                                          5
+          UpdateProvider NOT_FOUND                                          2
+          UpdateProvider ok                                                17
+          WithdrawContent FORBIDDEN                                         1
+          WithdrawContent NOT_FOUND                                         1
+          WithdrawContent idempotent                                        1
+          WithdrawContent ok                                               13
+--- PASS: TestFuzzReachesStates (2.15s)
+=== RUN   TestDeviationRulesAreLoadBearing
+=== RUN   TestDeviationRulesAreLoadBearing/D-2
+    mutant_test.go:265: D-2: chain ERROR_CODE_EXPIRED at step 11; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-3
+    mutant_test.go:265: D-3: chain ERROR_CODE_EXPIRED at step 8; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-4
+    mutant_test.go:265: D-4: chain ERROR_CODE_DUPLICATE_ID at step 8; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-5
+    mutant_test.go:265: D-5: chain ERROR_CODE_BOUNDS at step 6; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-6
+    mutant_test.go:265: D-6: chain ERROR_CODE_BOUNDS at step 262; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-10
+    mutant_test.go:265: D-10: chain ERROR_CODE_BOUNDS at step 134; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-11
+    mutant_test.go:265: D-11: chain ERROR_CODE_FORBIDDEN at step 7; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-12
+    mutant_test.go:265: D-12: chain ERROR_CODE_UNAUTHORIZED at step 9; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-13
+    mutant_test.go:265: D-13: chain ERROR_CODE_FORBIDDEN at step 10; spec_machine.py alone: ok
+--- PASS: TestDeviationRulesAreLoadBearing (6.73s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-2 (0.03s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-3 (0.02s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-4 (0.02s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-5 (0.02s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-6 (5.12s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-10 (1.44s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-11 (0.03s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-12 (0.03s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-13 (0.03s)
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences/DR-08-10_capacity_2^53
+    mutant_test.go:307: DR-08-10 capacity 2^53: chain ok, spec_machine.py ERROR_CODE_MALFORMED (idempotent false)
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences/DR-07-08_registration_replay_by_another_account
+    mutant_test.go:307: DR-07-08 registration replay by another account: chain ERROR_CODE_FORBIDDEN, spec_machine.py ok (idempotent true)
+--- PASS: TestGeneratorRestrictionsHideKnownDivergences (0.02s)
+    --- PASS: TestGeneratorRestrictionsHideKnownDivergences/DR-08-10_capacity_2^53 (0.01s)
+    --- PASS: TestGeneratorRestrictionsHideKnownDivergences/DR-07-08_registration_replay_by_another_account (0.01s)
+=== RUN   TestComparatorDetectsMismatch
+    mutant_test.go:371: 18 spec mutants and 1 Go mutant detected
+--- PASS: TestComparatorDetectsMismatch (0.01s)
+=== RUN   TestTrialSnapshotDetectsEarlyWrite
+--- PASS: TestTrialSnapshotDetectsEarlyWrite (0.01s)
+=== RUN   TestExpiryWorkIndependentOfBacklog
+    scale_test.go:230: 1,024 leases + 256 offers: 10 blocks; items per block [128 128 128 128 128 128 128 128 128 128]
+    scale_test.go:231: 1,024 leases + 256 offers: store gas per block [2596919 2596919 2596919 2596919 2596919 2596919 2596679 2591975 1922407 1911767]
+    scale_test.go:230: 4,096 leases + 256 offers: 34 blocks; items per block [128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128]
+    scale_test.go:231: 4,096 leases + 256 offers: store gas per block [2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596679 2591975 1922407 1911767]
+    scale_test.go:236: first full block (128 lease expiries): store gas 2596919 at backlog 1,280 and at backlog 4,352
+--- PASS: TestExpiryWorkIndependentOfBacklog (9.58s)
+=== RUN   TestWithdrawalAtContentCapGas
+    scale_test.go:296: WithdrawContent (message path) at 256 open offers: gas 3975642 (ceiling 10000000)
+    scale_test.go:296: ForceWithdrawByCouncil (council path) at 256 open offers: gas 3906553 (ceiling 10000000)
+--- PASS: TestWithdrawalAtContentCapGas (0.11s)
+=== RUN   FuzzLeaseDifferential
+=== RUN   FuzzLeaseDifferential/seed#0
+=== RUN   FuzzLeaseDifferential/seed#1
+=== RUN   FuzzLeaseDifferential/seed#2
+=== RUN   FuzzLeaseDifferential/seed#3
+=== RUN   FuzzLeaseDifferential/seed#4
+=== RUN   FuzzLeaseDifferential/seed#5
+=== RUN   FuzzLeaseDifferential/seed#6
+=== RUN   FuzzLeaseDifferential/seed#7
+=== RUN   FuzzLeaseDifferential/seed#8
+=== RUN   FuzzLeaseDifferential/seed#9
+=== RUN   FuzzLeaseDifferential/seed#10
+=== RUN   FuzzLeaseDifferential/seed#11
+=== RUN   FuzzLeaseDifferential/seed#12
+=== RUN   FuzzLeaseDifferential/seed#13
+=== RUN   FuzzLeaseDifferential/seed#14
+--- PASS: FuzzLeaseDifferential (2.31s)
+    --- PASS: FuzzLeaseDifferential/seed#0 (0.17s)
+    --- PASS: FuzzLeaseDifferential/seed#1 (0.14s)
+    --- PASS: FuzzLeaseDifferential/seed#2 (0.16s)
+    --- PASS: FuzzLeaseDifferential/seed#3 (0.10s)
+    --- PASS: FuzzLeaseDifferential/seed#4 (0.17s)
+    --- PASS: FuzzLeaseDifferential/seed#5 (0.16s)
+    --- PASS: FuzzLeaseDifferential/seed#6 (0.09s)
+    --- PASS: FuzzLeaseDifferential/seed#7 (0.09s)
+    --- PASS: FuzzLeaseDifferential/seed#8 (0.21s)
+    --- PASS: FuzzLeaseDifferential/seed#9 (0.18s)
+    --- PASS: FuzzLeaseDifferential/seed#10 (0.18s)
+    --- PASS: FuzzLeaseDifferential/seed#11 (0.16s)
+    --- PASS: FuzzLeaseDifferential/seed#12 (0.18s)
+    --- PASS: FuzzLeaseDifferential/seed#13 (0.18s)
+    --- PASS: FuzzLeaseDifferential/seed#14 (0.14s)
+=== RUN   FuzzLeaseTransitions
+=== RUN   FuzzLeaseTransitions/seed#0
+=== RUN   FuzzLeaseTransitions/seed#1
+=== RUN   FuzzLeaseTransitions/seed#2
+=== RUN   FuzzLeaseTransitions/seed#3
+=== RUN   FuzzLeaseTransitions/seed#4
+=== RUN   FuzzLeaseTransitions/seed#5
+=== RUN   FuzzLeaseTransitions/seed#6
+=== RUN   FuzzLeaseTransitions/seed#7
+=== RUN   FuzzLeaseTransitions/seed#8
+=== RUN   FuzzLeaseTransitions/seed#9
+=== RUN   FuzzLeaseTransitions/seed#10
+=== RUN   FuzzLeaseTransitions/seed#11
+=== RUN   FuzzLeaseTransitions/seed#12
+=== RUN   FuzzLeaseTransitions/seed#13
+=== RUN   FuzzLeaseTransitions/seed#14
+--- PASS: FuzzLeaseTransitions (0.97s)
+    --- PASS: FuzzLeaseTransitions/seed#0 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#1 (0.05s)
+    --- PASS: FuzzLeaseTransitions/seed#2 (0.07s)
+    --- PASS: FuzzLeaseTransitions/seed#3 (0.03s)
+    --- PASS: FuzzLeaseTransitions/seed#4 (0.07s)
+    --- PASS: FuzzLeaseTransitions/seed#5 (0.08s)
+    --- PASS: FuzzLeaseTransitions/seed#6 (0.04s)
+    --- PASS: FuzzLeaseTransitions/seed#7 (0.03s)
+    --- PASS: FuzzLeaseTransitions/seed#8 (0.08s)
+    --- PASS: FuzzLeaseTransitions/seed#9 (0.09s)
+    --- PASS: FuzzLeaseTransitions/seed#10 (0.07s)
+    --- PASS: FuzzLeaseTransitions/seed#11 (0.08s)
+    --- PASS: FuzzLeaseTransitions/seed#12 (0.07s)
+    --- PASS: FuzzLeaseTransitions/seed#13 (0.07s)
+    --- PASS: FuzzLeaseTransitions/seed#14 (0.05s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest	65.005s
+=== RUN   TestCheckInvariantsDetectsEachViolation
+--- PASS: TestCheckInvariantsDetectsEachViolation (0.02s)
+=== RUN   TestStoreSnapshot
+--- PASS: TestStoreSnapshot (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest	0.078s
+EXIT:0

@@ -1,0 +1,44 @@
+COMMAND bash -c $'base=acfe14ecaf79aa45021baf61f937391b43d2d310\necho "branch: $(git branch --show-current)"\necho "== git log -3 --format=\'%H %T %P %s\'"\ngit log -3 --format=\'%H %T %P %s\'\necho "== git diff --stat $base HEAD"\ngit diff --stat "$base" HEAD\necho "== git diff --name-status $base HEAD"\ngit diff --name-status "$base" HEAD\necho "== production paths: git diff --name-only $base HEAD -- . \':(exclude)*_test.go\' \':(exclude)*.md\' \':(exclude)docs/\'"\np="$(git diff --name-only "$base" HEAD -- . \':(exclude)*_test.go\' \':(exclude)*.md\' \':(exclude)docs/\')"\necho "${p:-<none>}"\necho "== git ls-remote origin refs/heads/goal-08 refs/heads/main refs/heads/goal-07"\nremote="$(git ls-remote origin refs/heads/goal-08 refs/heads/main refs/heads/goal-07)"; r=$?\necho "$remote"\necho "ls-remote exit=$r"\ng08="$(awk \'$2=="refs/heads/goal-08"{print $1}\' <<<"$remote")"\nif [[ "$g08" == "$(git rev-parse HEAD)" ]]; then echo "origin goal-08 equals HEAD: yes"; else echo "origin goal-08 equals HEAD: no"; fi\ntest -z "$p" && test "$r" = 0 && test "$g08" = "$(git rev-parse HEAD)"'
+DATE 2026-11-02T18:03:48Z
+HEAD ea29169196d862867a0e270fada1fda74b1214c6
+TREE eabf7cef6fc24f9afdd07a8f95470ad1f85ba375
+DIRTY no
+branch: goal-08
+== git log -3 --format='%H %T %P %s'
+ea29169196d862867a0e270fada1fda74b1214c6 eabf7cef6fc24f9afdd07a8f95470ad1f85ba375 acfe14ecaf79aa45021baf61f937391b43d2d310 goal 08: pin the capacity boundary in x/leases and test the max_expiry_steps halt
+acfe14ecaf79aa45021baf61f937391b43d2d310 6e81d0c948847af933b25e02be1f1bf2a34a62f2 210bfb78d65f7b1cb910b5e24ebc8d8ce9d17f56 2fc93e5b40050e54341cbdb4cc2275ed4bc4839a Merge origin/main (2fc93e5, PR 10 squash) into goal-08 with -s ours
+210bfb78d65f7b1cb910b5e24ebc8d8ce9d17f56 6e81d0c948847af933b25e02be1f1bf2a34a62f2 4f7073384093e28d8cdc985ca1407ea66b9b99d5 7c79c298ee9036bee017987d0ab045e00ac9b2a8 Merge goal 07 (7c79c29) into goal 08: DR-06-06 seat-only admission and lease review fixes
+== git diff --stat acfe14ecaf79aa45021baf61f937391b43d2d310 HEAD
+ chain/app/export_test.go                    |  16 +
+ chain/app/lease_expiry_test.go              |  93 ++++
+ chain/app/lease_reject_test.go              |  70 +++
+ chain/x/authority/README.md                 |   2 +-
+ chain/x/leases/README.md                    |   9 +-
+ chain/x/leases/accept_test.go               |  68 +++
+ chain/x/leases/difftest/capacity_test.go    | 104 +++++
+ chain/x/leases/difftest/mutant_test.go      |  22 +-
+ docs/architecture/leases.md                 |   6 +-
+ docs/evidence/goal-01/check_requirements.py |   2 +
+ docs/evidence/goal-08/mutants.py            | 642 ++++++++++++++++++++++++++++
+ 11 files changed, 1023 insertions(+), 11 deletions(-)
+== git diff --name-status acfe14ecaf79aa45021baf61f937391b43d2d310 HEAD
+M	chain/app/export_test.go
+M	chain/app/lease_expiry_test.go
+M	chain/app/lease_reject_test.go
+M	chain/x/authority/README.md
+M	chain/x/leases/README.md
+M	chain/x/leases/accept_test.go
+A	chain/x/leases/difftest/capacity_test.go
+M	chain/x/leases/difftest/mutant_test.go
+M	docs/architecture/leases.md
+M	docs/evidence/goal-01/check_requirements.py
+A	docs/evidence/goal-08/mutants.py
+== production paths: git diff --name-only acfe14ecaf79aa45021baf61f937391b43d2d310 HEAD -- . ':(exclude)*_test.go' ':(exclude)*.md' ':(exclude)docs/'
+<none>
+== git ls-remote origin refs/heads/goal-08 refs/heads/main refs/heads/goal-07
+7c79c298ee9036bee017987d0ab045e00ac9b2a8	refs/heads/goal-07
+ea29169196d862867a0e270fada1fda74b1214c6	refs/heads/goal-08
+2fc93e5b40050e54341cbdb4cc2275ed4bc4839a	refs/heads/main
+ls-remote exit=0
+origin goal-08 equals HEAD: yes
+EXIT:0

@@ -1,0 +1,42 @@
+COMMAND .venv/bin/python docs/evidence/goal-08/mutants.py --group seat
+DATE 2026-11-02T18:23:39Z
+HEAD ea29169196d862867a0e270fada1fda74b1214c6
+TREE eabf7cef6fc24f9afdd07a8f95470ad1f85ba375
+DIRTY no
+revision HEAD commit ea29169196d862867a0e270fada1fda74b1214c6 tree eabf7cef6fc24f9afdd07a8f95470ad1f85ba375
+copy /tmp/goal08-mutants-08mfgnaq/tree (git archive)
+mutants 13 of 28 (seat=13, review=0, leases=0)
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+SVN_SPEC_PYTHON=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-08/.venv/bin/python
+command seat: go test -count=1 -v -timeout 15m -run ^(TestAdmissionOf|TestValidateGenesisState|TestSeatRotationMovesSeatAdmission|TestEngineOnlyRotationRejects|TestSeatAddressIsNotASubmitter|TestSeatKeysSignOnlyCouncilMessages|TestSeatRotationMovesAnteAdmission|TestRegistryMessagesRejectOtherRoles|TestRejectedMessagesLeaveTheFullAuthorityState|TestAnteRejectsNonAdmittedAccount|TestCommittedAuthorityFlowAndReplay)$ ./chain/x/authority/ ./chain/genesis/ ./chain/app/
+CONTROL seat PASS exit=0 secs=107.0 named_tests_passed=11/11
+KILLED ante-seat-admission-removed group=seat exit=1 secs=7.3 file=chain/x/authority/store.go failing=TestSeatRotationMovesSeatAdmission TestAdmissionOf TestCommittedAuthorityFlowAndReplay TestRejectedMessagesLeaveTheFullAuthorityState TestAnteRejectsNonAdmittedAccount TestRegistryMessagesRejectOtherRoles TestSeatAddressIsNotASubmitter TestSeatKeysSignOnlyCouncilMessages TestSeatRotationMovesAnteAdmission
+    reason: AdmissionOf must admit a council seat account from the seat list in the authority config
+KILLED ante-seat-gate-removed group=seat exit=1 secs=6.6 file=chain/app/ante.go failing=TestRejectedMessagesLeaveTheFullAuthorityState TestRegistryMessagesRejectOtherRoles TestSeatKeysSignOnlyCouncilMessages TestSeatRotationMovesAnteAdmission
+    reason: the ante must refuse a seat-signed transaction that carries a non-council message
+KILLED auth-genesis-allows-seat-row group=seat exit=1 secs=7.6 file=chain/x/authority/genesis.go failing=TestValidateGenesisState TestSeatAddressIsNotASubmitter
+    reason: authority ValidateGenesisState must refuse a seat address in the submitter list
+KILLED doc-genesis-allows-seat-row group=seat exit=1 secs=8.1 file=chain/genesis/document.go failing=TestSeatAddressIsNotASubmitter
+    reason: genesis.Validate must refuse a seat address in the submitter list
+KILLED doc-and-auth-allow-broadcaster-seat-row group=seat exit=1 secs=8.3 file=chain/x/authority/genesis.go,chain/genesis/document.go failing=TestValidateGenesisState TestSeatAddressIsNotASubmitter
+    reason: both genesis validators must refuse a seat address listed as BROADCASTER (DR-06-06 supersedes DR-07-11)
+KILLED seat-may-sign-lease-messages group=seat exit=1 secs=6.9 file=chain/app/ante.go failing=TestSeatKeysSignOnlyCouncilMessages TestSeatRotationMovesAnteAdmission
+    reason: a seat key must not sign any svn.leases.v1 message
+KILLED seat-gate-checks-first-message-only group=seat exit=1 secs=7.3 file=chain/app/ante.go failing=TestSeatKeysSignOnlyCouncilMessages
+    reason: the seat check must cover every message of the transaction, not the first only
+KILLED rotation-keeps-old-key-admitted group=seat exit=1 secs=7.9 file=chain/x/authority/engine.go failing=TestSeatRotationMovesSeatAdmission TestSeatRotationMovesAnteAdmission
+    reason: RotateCouncilSeat must write no admission row; the retired key must not stay admitted
+KILLED rotation-onto-submitter-allowed group=seat exit=1 secs=7.7 file=chain/x/authority/engine.go failing=TestSeatRotationMovesSeatAdmission
+    reason: a seat rotation onto an address that is a submitter must be DUPLICATE_ID
+KILLED service-rotation-onto-seat-allowed group=seat exit=1 secs=7.7 file=chain/x/authority/engine.go failing=TestEngineOnlyRotationRejects
+    reason: RotateServiceSubmitter onto a seat address must be DUPLICATE_ID
+KILLED auth-genesis-omits-seat-accounts group=seat exit=1 secs=6.9 file=chain/app/state.go failing=TestCommittedAuthorityFlowAndReplay TestRejectedMessagesLeaveTheFullAuthorityState TestAnteRejectsNonAdmittedAccount TestRegistryMessagesRejectOtherRoles TestSeatAddressIsNotASubmitter TestSeatKeysSignOnlyCouncilMessages TestSeatRotationMovesAnteAdmission
+    reason: genesis must create an auth account for every seat address
+KILLED carried-ante-extra-admission group=seat exit=1 secs=6.4 file=chain/app/app.go failing=TestRejectedMessagesLeaveTheFullAuthorityState TestRegistryMessagesRejectOtherRoles
+    reason: goal 06 ante-extra-admission (B1): an extra 0x02 admission row written in the ante must fail the full authority-store compare
+KILLED carried-doc-seat-match-case-sensitive group=seat exit=1 secs=8.8 file=chain/genesis/document.go failing=TestSeatAddressIsNotASubmitter
+    reason: goal 07 doc-seat-rule-case-sensitive: genesis.Validate must match a seat address case-insensitively
+GROUP_SECS seat 204.4
+RESULT mutants=13 killed=13
+EXIT:0
