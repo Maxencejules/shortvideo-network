@@ -30,7 +30,8 @@ func (r *recorder) Errorf(format string, args ...any) {
 func (r *recorder) Failed() bool { return len(r.errors) > 0 || r.TB.Failed() }
 
 // fixture is a hand-built trace on a fixed setup: provider p0 (account 0,
-// capacity 1,000,000, ADMITTED) and contents c0..c3 of 1000 bytes.
+// ADMITTED) and contents c0, c1, ... (newFixture: capacity 1,000,000 and
+// c0..c3 of 1000 bytes; newSizedFixture: a given capacity and sizes).
 type fixture struct {
 	cfg   *config
 	now   int64
@@ -39,14 +40,20 @@ type fixture struct {
 }
 
 func newFixture(governed map[string]uint64) *fixture {
+	return newSizedFixture(governed, 1_000_000, 1000, 1000, 1000, 1000)
+}
+
+// newSizedFixture registers and admits p0 with the given capacity and
+// registers content c<i> of sizes[i] bytes for each size.
+func newSizedFixture(governed map[string]uint64, capacity uint64, sizes ...uint64) *fixture {
 	f := &fixture{
 		cfg: &config{term: uint64(termSeconds), governed: governed, trialCheck: true, invariants: true},
 		now: startTime,
 	}
-	f.add(buildRegisterProvider(providerAccount(0), "reg-p0", "p0", "p0-k1", 1_000_000), admitStep("p0"))
-	for i := 0; i < 4; i++ {
+	f.add(buildRegisterProvider(providerAccount(0), "reg-p0", "p0", "p0-k1", capacity), admitStep("p0"))
+	for i, size := range sizes {
 		id := fmt.Sprintf("c%d", i)
-		f.add(buildRegisterContent(serviceAcct, "content-"+id, id, 1000))
+		f.add(buildRegisterContent(serviceAcct, "content-"+id, id, size))
 	}
 	return f
 }
@@ -66,9 +73,14 @@ func (f *fixture) offer(offerID, contentID string, deadline, expiry int64) *leas
 
 // offerBy is offer with a given scheduler and business id.
 func (f *fixture) offerBy(scheduler []byte, business, offerID, contentID string, deadline, expiry int64) *leasesv1.Offer {
+	return f.offerSized(scheduler, business, offerID, contentID, 1000, deadline, expiry)
+}
+
+// offerSized is offerBy for a content of size bytes.
+func (f *fixture) offerSized(scheduler []byte, business, offerID, contentID string, size uint64, deadline, expiry int64) *leasesv1.Offer {
 	p := offerParams{
 		signer: scheduler, business: business, offerID: offerID, contentID: contentID, providerID: "p0",
-		version: 1, size: 1000, termVersion: 1, manifest: manifestFor(contentID), terms: termsFor(1),
+		version: 1, size: size, termVersion: 1, manifest: manifestFor(contentID), terms: termsFor(1),
 		start: deadline - termSeconds, deadline: deadline, expiry: expiry,
 	}
 	f.add(buildOffer(p, ""))

@@ -222,7 +222,7 @@ seat list and refuses any lease message it signs with `FORBIDDEN` before the han
 | 16 | live pair (provider, content, version) | `DUPLICATE_ID` | live-pair; `TestDuplicateReplicaRejected` |
 | 17 | provider open offers >= effective max_open_offers | `BOUNDS` | provider-open-offer-cap; `TestOfferProviderCapCountsOpenOffers` |
 | 18 | reserve probe: reserved + bytes above 2^64-1 | `OVERFLOW` | reserve-overflow; `TestCapacityAndOverflow` |
-| 18 | reserve probe: reserved + bytes above capacity | `CAPACITY` | reserve-capacity; `TestCapacityAndOverflow` |
+| 18 | reserve probe: reserved + bytes above capacity | `CAPACITY` | reserve-capacity; `TestCapacityAndOverflow`, `TestCapacityBoundaryThroughAccept` |
 | 19 | D-4: offer_id used before | `DUPLICATE_ID` | d4-offer-id-used; `TestOfferIDNeverReusedD4` |
 | 20 | D-5: expiry - committed time > `MaxOfferLifetimeSeconds` | `BOUNDS` | d5-lifetime-86401; `TestOfferLifetimeBoundD5` |
 | 21 | D-6: content open offers (any scheduler) >= `MaxOpenOffersPerContent` | `BOUNDS` | d6-content-open-offer-cap; `TestOpenOffersPerContentCapD6` |
@@ -256,7 +256,7 @@ provider, content, and (content, scheduler) counters, the business id; event `Le
 | 12 | content WITHDRAWN | `WITHDRAWN` | content-withdrawn (fakes: in the real system withdrawal voids the offers first) |
 | 13 | provider not ADMITTED | `FORBIDDEN` | provider-draining |
 | 14 | live pair | `DUPLICATE_ID` | live-pair; `TestDuplicateReplicaRejected` |
-| 15 | reserve probe | `OVERFLOW` / `CAPACITY` | reserve-overflow, reserve-capacity; `TestCapacityAndOverflow` |
+| 15 | reserve probe | `OVERFLOW` / `CAPACITY` | reserve-overflow, reserve-capacity; `TestCapacityAndOverflow`, `TestCapacityBoundaryThroughAccept` |
 | 16 | D-3: offer deadline <= committed time | `EXPIRED` | d3-offer-deadline-passed; `TestAcceptPastOfferDeadlineIsExpiredD3` |
 
 Writes: `Providers.Reserve` (it repeats the probe that just passed in the same branch; a failure is an invariant
@@ -325,7 +325,9 @@ Writes (Release is the last check and the first write; it changes reserved bytes
 `ExpireDue(ctx)` is the module's BeginBlock. A held lease is due when its current deadline <= committed time; an open
 offer when its expiry <= committed time.
 
-1. `now` = header time; `budget` = effective `max_expiry_steps` (governed value, ceiling 128).
+1. `now` = header time; `budget` = effective `max_expiry_steps` (governed value, ceiling 128). A stored value that
+   is not 8 bytes in 1..ceiling panics in x/authority `GovernedLimit`, so FinalizeBlock panics on every node
+   (`TestDamagedExpiryLimitHalts`, chain/app, which calls FinalizeBlock directly).
 2. Read at most `budget`+1 rows of the deadline index (`0x06`) and of the expiry index (`0x05`) up to `now` inclusive,
    and merge them by (time, kind, id), a lease before an offer at an equal time (the spec's string order). Take at
    most `budget` items. A header time below 1 has nothing due.
@@ -557,6 +559,7 @@ and hosting intents with a role other than `DEVNET_TEST_ONLY`.
 | `TestDifferentialCoverage` | the seeded run reaches every class of `requiredClasses` (codes split by the check that produced them) |
 | `TestDeviationRulesAreLoadBearing` | one trace per adapter rule: with the rules on every step agrees; with them off the first divergence is exactly the rule step, where the spec alone says ok |
 | `TestGeneratorRestrictionsHideKnownDivergences` | the DR-08-10 (capacity 2^53) and DR-07-08 (registration replay by another account) divergences exist, so those generator restrictions hide real differences |
+| `TestCapacityBoundaryAgainstSpecMachine` | REQ-INV-002 at one byte, capacity 2001 on the real x/providers keeper: the exact fit commits; one byte over (accept and offer) is `CAPACITY` with the four stores byte-identical; a renewal keeps 2001; after an end the resent offer and acceptance commit; every step equals spec_machine.py (the seeded generator cannot reach this boundary: its sizes and capacity gaps are multiples of 100 bytes) |
 | `TestComparatorDetectsMismatch` | 18 one-field perturbations of a real oracle answer and one of the Go outcome are each reported |
 | `TestTrialSnapshotDetectsEarlyWrite` | a handler wrapper that writes before a rejection or an idempotent replay is reported |
 | `FuzzLeaseDifferential` | fuzz-chosen sequences compared with the oracle |

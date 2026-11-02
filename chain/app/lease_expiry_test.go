@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"strings"
 	"testing"
@@ -284,6 +285,98 @@ func TestExpiryInvariantViolationHalts(t *testing.T) {
 		}
 	}
 	t.Logf("FinalizeBlock error on both nodes: %s", errs[0])
+}
+
+// finalizeRecovering runs FinalizeBlock at node's next height and returns
+// what it panicked with, or nil and its result when it returned.
+func finalizeRecovering(node *running, when time.Time, txs ...[]byte) (panicked any, res *abci.ResponseFinalizeBlock, err error) {
+	defer func() { panicked = recover() }()
+	res, err = node.app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: node.height + 1,
+		Time:   when,
+		Hash:   bytes32(byte(node.height + 1)),
+		Txs:    txs,
+	})
+	return nil, res, err
+}
+
+// TestDamagedExpiryLimitHalts: x/leases BeginBlock reads the governed
+// max_expiry_steps (authority key 0x13 || "max_expiry_steps") in every
+// block, through x/authority GovernedLimit, which panics on a stored value
+// that is not 8 bytes in 1..ceiling. A council GovernedLimitChange sets
+// the value to 2 and a block commits with it. A test-only writer then
+// replaces the stored value in the uncommitted working state, outside any
+// transaction, with a value x/authority never writes: 3 bytes, the 8-byte
+// value 0, or the 8-byte value ceiling+1. On both nodes the next
+// FinalizeBlock, which carries a valid OfferLease and has nothing due,
+// panics with GovernedLimit's message instead of returning, and a second
+// attempt at the same height panics the same way. The test also checks
+// that LastCommitID, the full non-account state and the offer sender's
+// account sequence are unchanged, which follows from the panic:
+// FinalizeBlock writes the store only after it returns (SDK workingHash),
+// and nothing calls Commit. The test calls FinalizeBlock directly; it does
+// not run CometBFT, and it does not restart a node on a committed damaged
+// value.
+func TestDamagedExpiryLimitHalts(t *testing.T) {
+	ceiling, ok := msgkit.Ceiling(msgkit.LimitMaxExpirySteps)
+	if !ok {
+		t.Fatal("max_expiry_steps has no ceiling")
+	}
+	for _, damage := range []struct {
+		name string
+		raw  []byte
+	}{
+		{"3 bytes", []byte{1, 2, 3}},
+		{"value 0", binary.BigEndian.AppendUint64(nil, 0)},
+		{"ceiling+1", binary.BigEndian.AppendUint64(nil, ceiling+1)},
+	} {
+		t.Run(damage.name, func(t *testing.T) {
+			n := newRegNet()
+			c := n.start(t, 2)
+			leaseBasics(t, n, c)
+			n.council(t, c, "prop-expiry-2", msgkit.LimitMaxExpirySteps, governedPayload(msgkit.LimitMaxExpirySteps, 2))
+			c.block(t)
+			now := c.now()
+			raw := n.signed(t, c, n.service, registryGas, nil, n.offerMsg(n.service, "of-o1", "o1", "c1", "p1", sizeSmall, now+1800, now+600))
+			if _, _, err := c.app().Simulate(raw); err != nil {
+				t.Fatalf("the block's offer does not succeed on the undamaged state: %v", err)
+			}
+			for _, node := range c.nodes {
+				if err := node.app.WriteGovernedLimitForTest(msgkit.LimitMaxExpirySteps, damage.raw); err != nil {
+					t.Fatal(err)
+				}
+			}
+			want := fmt.Sprintf("authority: governed limit %q is not an 8-byte value in 1..ceiling (%d bytes stored)",
+				msgkit.LimitMaxExpirySteps, len(damage.raw))
+			for i, node := range c.nodes {
+				committed := node.app.LastCommitID()
+				before := node.app.FullSnapshot()
+				seq, known := node.app.AccountSequenceForTest(n.service.addr)
+				if !known {
+					t.Fatalf("node %d: no account for the service", i)
+				}
+				for attempt := 0; attempt < 2; attempt++ {
+					panicked, res, err := finalizeRecovering(node, node.when, raw)
+					if panicked == nil {
+						t.Fatalf("node %d attempt %d: FinalizeBlock returned (err %v, result %v) on a damaged max_expiry_steps", i, attempt, err, res)
+					}
+					if got := fmt.Sprint(panicked); got != want {
+						t.Fatalf("node %d attempt %d: panic %q, want %q", i, attempt, got, want)
+					}
+					if got := node.app.LastCommitID(); got.Version != committed.Version || !bytes.Equal(got.Hash, committed.Hash) {
+						t.Fatalf("node %d attempt %d: the commit moved to %d %X", i, attempt, got.Version, got.Hash)
+					}
+					if !bytes.Equal(before, node.app.FullSnapshot()) {
+						t.Fatalf("node %d attempt %d: the state changed", i, attempt)
+					}
+					if after, _ := node.app.AccountSequenceForTest(n.service.addr); after != seq {
+						t.Fatalf("node %d attempt %d: the sender's sequence moved from %d to %d", i, attempt, seq, after)
+					}
+				}
+			}
+			t.Logf("FinalizeBlock panic on both nodes, twice each: %s", want)
+		})
+	}
 }
 
 // openDiskApp opens (or reopens) an application on a goleveldb database

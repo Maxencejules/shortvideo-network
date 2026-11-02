@@ -490,3 +490,73 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 	}
 	c.checkInvariants(t, "after every rejection")
 }
+
+// TestCapacityBoundaryInApp (REQ-INV-002) runs the capacity boundary, one
+// byte on each side, through FinalizeBlock on the real x/providers keeper.
+// p1 declares capacity C = 2*sizeSmall + 1; c1 and c2 are sizeSmall, c3
+// and c4 one byte. Accepting c1, c2 and c3 brings reserved bytes to
+// exactly C, and the third acceptance commits. Accepting c4 (C+1) is
+// CAPACITY, and so is a one-byte offer of c4: each is a committed handler
+// rejection (the ante ran) with the full non-account state byte-identical
+// and no lease event. A renewal at full capacity commits and keeps the
+// reserved bytes. After a provider end releases sizeSmall, the rejected
+// offer and acceptance, resent unchanged with the same business ids, both
+// commit. Reserved bytes are read with Query/Provider after every step.
+func TestCapacityBoundaryInApp(t *testing.T) {
+	n := newRegNet()
+	c := n.start(t, 1)
+	const capacity = 2*sizeSmall + 1
+	n.registerAdmit(t, c, n.provider1, "p1", capacity)
+	sizes := map[string]uint64{"c1": sizeSmall, "c2": sizeSmall, "c3": 1, "c4": 1}
+	for _, id := range []string{"c1", "c2", "c3", "c4"} {
+		wantCode(t, "register "+id, n.send(t, c, n.service, n.registerContent(t, n.service, "reg-"+id, id, 1, packageManifest(id), sizes[id])), msgkit.OK)
+	}
+	now := c.now()
+	deadline, expiry := now+1800, now+600
+	offers := map[string]*leasesv1.MsgOfferLease{}
+	for _, id := range []string{"c1", "c2", "c3", "c4"} {
+		offers[id] = n.offerMsg(n.service, "of-"+id, "o-"+id, id, "p1", sizes[id], deadline, expiry)
+		wantCode(t, "offer "+id, n.send(t, c, n.service, offers[id]), msgkit.OK)
+	}
+	wantReserved := func(label string, want uint64) {
+		t.Helper()
+		record, _ := queryProvider(t, c.app(), "p1", 0)
+		if record.GetReservedBytes() != want || record.GetAdmittedCapacityBytes() != capacity {
+			t.Fatalf("%s: reserved %d of %d, want %d of %d", label, record.GetReservedBytes(), record.GetAdmittedCapacityBytes(), want, capacity)
+		}
+	}
+	ok := func(label string, who *actor, msg sdk.Msg, event string, reservedAfter uint64) {
+		t.Helper()
+		res := n.send(t, c, who, msg)
+		wantCode(t, label, res, msgkit.OK)
+		wantTxEvents(t, label, res, event)
+		wantReserved(label, reservedAfter)
+	}
+	reject := func(label string, who *actor, msg sdk.Msg) {
+		t.Helper()
+		before := c.app().FullSnapshot()
+		res := n.send(t, c, who, msg)
+		wantCode(t, label, res, msgkit.Capacity)
+		if !anteCommitted(res) {
+			t.Fatalf("%s: the ante did not commit, so the handler did not run", label)
+		}
+		unchanged(t, label, c.app(), before, res)
+		wantTxEvents(t, label, res)
+		wantReserved(label, capacity)
+	}
+
+	ok("accept l1", n.broadcaster, n.acceptMsg(t, n.broadcaster, "ac-l1", offers["c1"], "l1"), evAccepted, sizeSmall)
+	ok("accept l2", n.broadcaster, n.acceptMsg(t, n.broadcaster, "ac-l2", offers["c2"], "l2"), evAccepted, 2*sizeSmall)
+	ok("accept to exactly the capacity", n.broadcaster, n.acceptMsg(t, n.broadcaster, "ac-l3", offers["c3"], "l3"), evAccepted, capacity)
+	over := n.acceptMsg(t, n.broadcaster, "ac-l4", offers["c4"], "l4")
+	reject("accept one byte over the capacity", n.broadcaster, over)
+	overOffer := n.offerMsg(n.service, "of-c4-again", "o-c4-again", "c4", "p1", 1, deadline, expiry)
+	reject("offer one byte over the capacity", n.service, overOffer)
+	c.checkInvariants(t, "at full capacity")
+
+	ok("renewal at full capacity", n.broadcaster, n.renewMsg(t, n.broadcaster, "rn-l2", "l2", "p1", "c2", sizeSmall, 2, deadline+leaseTerm), evRenewed, capacity)
+	ok("provider end l1", n.provider1, n.endMsg(t, n.provider1, "en-l1", "l1", "p1", 1), evEnded, capacity-sizeSmall)
+	ok("the rejected offer, resent", n.service, overOffer, evOffered, capacity-sizeSmall)
+	ok("the rejected acceptance, resent", n.broadcaster, over, evAccepted, capacity-sizeSmall+1)
+	c.checkInvariants(t, "after the resent acceptance")
+}

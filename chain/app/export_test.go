@@ -118,6 +118,22 @@ func (app *App) CorruptGovernedLimitForTest(key string) error {
 	return nil
 }
 
+// WriteGovernedLimitForTest overwrites the governed limit key (key 0x13 ||
+// key of the authority store) with raw in the working state: it is not
+// committed and is not a consensus message. The next FinalizeBlock reads
+// it. It fails if no value is set, so a wrong key cannot pass silently.
+// Unlike CorruptGovernedLimitForTest it commits no store version outside
+// ABCI, so the app can still run FinalizeBlock at its next height.
+func (app *App) WriteGovernedLimitForTest(key string, raw []byte) error {
+	store := app.CommitMultiStore().GetKVStore(app.keys[authority.ModuleName])
+	full := append([]byte{0x13}, key...)
+	if store.Get(full) == nil {
+		return fmt.Errorf("no governed limit %q at %x", key, full)
+	}
+	store.Set(full, raw)
+	return nil
+}
+
 // ExportModulesForTest is the module manager's ExportGenesis for the named
 // modules only, without the App.Export checks. Tests use it for the registry
 // modules after council messages, when App.Export refuses (DR-06-01).

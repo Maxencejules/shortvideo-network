@@ -419,6 +419,74 @@ func TestCapacityAndOverflow(t *testing.T) {
 	e.requireInvariants(map[string]uint64{"p2": math.MaxUint64 - packageSize})
 }
 
+// TestCapacityBoundaryThroughAccept (REQ-INV-002) pins the capacity
+// boundary at one byte. p1 declares capacity C = 2*packageSize + 1. Two
+// 1000-byte acceptances and a 1-byte one bring reserved bytes to exactly
+// C, and that acceptance commits. A second 1-byte acceptance (C+1) is
+// CAPACITY, and so is a 1-byte offer: every store is byte-identical and no
+// event is emitted. A renewal at full capacity commits and keeps the
+// reserved bytes. After an EndLease releases 1000 bytes, the rejected
+// offer and acceptance, resent unchanged with the same business ids, both
+// commit. This runs on the provider fake, so it pins what x/leases asks
+// of the registry (exactly package_bytes, at offer and accept, never at
+// renewal), not the real x/providers Reserve: difftest
+// TestCapacityBoundaryAgainstSpecMachine and app TestCapacityBoundaryInApp
+// run the same boundary on the real keeper.
+func TestCapacityBoundaryThroughAccept(t *testing.T) {
+	e := newEnv(t)
+	const capacity = 2*packageSize + 1
+	e.editProvider("p1", func(p *providersv1.Provider) { p.AdmittedCapacityBytes = capacity })
+	e.putContent("c4", contentv1.ContentState_CONTENT_STATE_PENDING, 1)
+	e.putContent("c5", contentv1.ContentState_CONTENT_STATE_PENDING, 1)
+	oneByte := func(offerID, contentID string) *leasesv1.MsgOfferLease {
+		msg := e.offerMsg(offerID, contentID, "p1")
+		msg.PackageBytes = 1
+		return msg
+	}
+	wantReserved := func(what string, want uint64) {
+		t.Helper()
+		if got := e.provider("p1").GetReservedBytes(); got != want {
+			t.Fatalf("%s: reserved %d, want %d", what, got, want)
+		}
+	}
+	e.mustOffer(e.offerMsg("o-1", "c1", "p1"))
+	e.mustOffer(e.offerMsg("o-2", "c2", "p1"))
+	e.mustOffer(oneByte("o-3", "c4"))
+	e.mustOffer(oneByte("o-4", "c5"))
+	e.requireOK(e.accept(e.fresh(), e.acceptMsg("o-1", "l-1")), "accept l-1")
+	e.requireOK(e.accept(e.fresh(), e.acceptMsg("o-2", "l-2")), "accept l-2")
+	wantReserved("two leases", 2*packageSize)
+	e.requireOK(e.accept(e.fresh(), e.acceptMsg("o-3", "l-3")), "accept to exactly the capacity")
+	wantReserved("exact fit", capacity)
+
+	over := e.acceptMsg("o-4", "l-4")
+	overOffer := oneByte("o-5", "c5")
+	for _, reject := range []struct {
+		what string
+		run  func() result
+	}{
+		{"accept one byte over the capacity", func() result { return e.accept(e.fresh(), over) }},
+		{"offer one byte over the capacity", func() result { return e.offer(e.fresh(), overOffer) }},
+	} {
+		before := e.snapshot(e.unmetered())
+		e.requireReject(reject.run(), msgkit.Capacity, reject.what)
+		if !bytes.Equal(before, e.snapshot(e.unmetered())) {
+			t.Fatalf("%s: committed stores changed", reject.what)
+		}
+		wantReserved(reject.what, capacity)
+	}
+	e.requireInvariants(nil)
+
+	e.requireOK(e.renew(e.fresh(), e.renewMsg("l-2", "ren-l-2")), "renewal at full capacity")
+	wantReserved("renewal at full capacity", capacity)
+	e.requireOK(e.end(e.fresh(), e.endMsg("l-1", "end-l-1")), "end l-1")
+	wantReserved("after the end", capacity-packageSize)
+	e.requireOK(e.offer(e.fresh(), overOffer), "the rejected offer, resent")
+	e.requireOK(e.accept(e.fresh(), over), "the rejected acceptance, resent")
+	wantReserved("the rejected acceptance, resent", capacity-packageSize+1)
+	e.requireInvariants(nil)
+}
+
 // TestAcceptReplayByAnotherProviderD13: the AcceptLease business digest
 // (the spec's field set) does not cover the signer. A replay of a committed
 // acceptance (same business id and payload) by an ADMITTED_PROVIDER account
