@@ -1,0 +1,49 @@
+COMMAND env TMPDIR=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/tmp bash -c .venv/bin/python\ docs/evidence/goal-07/mutants.py\ --only\ msg-hooks-on-tx-context\ --logdir\ \"\$0\"\;\ rc=\$\?\;\ echo\ \"package\ results\ of\ the\ mutant\ run:\"\;\ grep\ -E\ \"\^\(ok\|FAIL\)\[\[:space:\]\]\"\ \"\$0/msg-hooks-on-tx-context.txt\"\;\ echo\ \"every\ FAIL\ line\ of\ the\ mutant\ run:\"\;\ grep\ -E\ \"\^\[\[:space:\]\]\*---\ FAIL:\ \"\ \"\$0/msg-hooks-on-tx-context.txt\"\;\ echo\ \"FAIL\ lines\ naming\ TestKeeperRegistryWriteDroppedOnLateFailure:\ \$\(grep\ -c\ --\ \"---\ FAIL:\ TestKeeperRegistryWriteDroppedOnLateFailure\"\ \"\$0/msg-hooks-on-tx-context.txt\"\)\"\;\ exit\ \$rc /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/txctx-out
+DATE 2026-11-02T05:23:12Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+revision HEAD commit b782e0149e1a70758b81b29929d12eab0da8a006 tree f07ac7f6113f45a97167cf9c8139fb712227490e
+copy /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/tmp/goal07-mutants-yd81qecn/tree (git archive)
+mutants 1 of 19 (goal07=0, merge=1)
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+command merge: SVN_SKIP_DEVNET=1 go test -count=1 -timeout 10m ./chain/x/authority/ ./chain/app/ ./chain/genesis/ ./chain/x/content/ ./chain/x/providers/ ./chain/cmd/svnd/
+CONTROL merge PASS exit=0 secs=130.9
+KILLED msg-hooks-on-tx-context group=merge exit=1 secs=20.8 file=chain/x/authority/msg.go failing=TestKeeperRegistryForbiddenKeepsTheRejection TestKeeperRegistryForbiddenKeepsTheRejection/admit TestKeeperRegistryForbiddenKeepsTheRejection/disable TestKeeperRegistryForbiddenKeepsTheRejection/force_withdraw TestKeeperRegistryFailureWritesNothing TestKeeperRegistryFailureWritesNothing/admit/ERROR_C
+    reason: the registry hooks must not write to the transaction context
+RESULT mutants=1 killed=1
+package results of the mutant run:
+FAIL	github.com/Maxencejules/shortvideo-network/chain/x/authority	6.180s
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	12.054s
+ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	0.068s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	0.246s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	0.502s
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	0.154s
+every FAIL line of the mutant run:
+--- FAIL: TestKeeperRegistryForbiddenKeepsTheRejection (0.00s)
+    --- FAIL: TestKeeperRegistryForbiddenKeepsTheRejection/admit (0.00s)
+    --- FAIL: TestKeeperRegistryForbiddenKeepsTheRejection/disable (0.00s)
+    --- FAIL: TestKeeperRegistryForbiddenKeepsTheRejection/force_withdraw (0.00s)
+--- FAIL: TestKeeperRegistryFailureWritesNothing (0.01s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_NOT_FOUND (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_CONFLICT (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_WITHDRAWN (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_STALE_VERSION (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/admit/ERROR_CODE_WRONG_DOMAIN (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_NOT_FOUND (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_CONFLICT (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_WITHDRAWN (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_STALE_VERSION (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/disable/ERROR_CODE_WRONG_DOMAIN (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_NOT_FOUND (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_DECISION_BLOCKED (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_CONFLICT (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_WITHDRAWN (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_STALE_VERSION (0.00s)
+    --- FAIL: TestKeeperRegistryFailureWritesNothing/force_withdraw/ERROR_CODE_WRONG_DOMAIN (0.00s)
+--- FAIL: TestKeeperRegistryWriteDroppedOnLateFailure (0.00s)
+FAIL lines naming TestKeeperRegistryWriteDroppedOnLateFailure: 1
+EXIT:0

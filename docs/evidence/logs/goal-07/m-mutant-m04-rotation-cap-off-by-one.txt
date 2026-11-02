@@ -1,0 +1,31 @@
+COMMAND bash docs/evidence/goal-07/mutants/run_mutant.sh m04-rotation-cap-off-by-one
+DATE 2026-11-02T04:32:44Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+mutant m04-rotation-cap-off-by-one: target chain/x/providers/msg_server.go, package ./x/providers/, tests ^TestRotationCap$
+--- /home/user/shortvideo-network/chain/x/providers/msg_server.go	2026-11-01 08:08:53.471114123 +0000
++++ /home/user/shortvideo-network/docs/evidence/goal-07/mutants/m04-rotation-cap-off-by-one.go.txt	2026-11-01 09:36:29.685737639 +0000
+@@ -277,7 +277,7 @@
+ 	// Chain safety bound after every spec check (not in spec_machine.py):
+ 	// a provider holds at most MaxRetiredKeysPerProvider retired keys, so
+ 	// its history stays readable in one query (DR-07-10).
+-	if record.GetKeyGeneration()-1 >= MaxRetiredKeysPerProvider {
++	if record.GetKeyGeneration()-1 > MaxRetiredKeysPerProvider {
+ 		return fail(msgkit.Bounds)
+ 	}
+ 	// The retired key is a row of its own, so the record keeps a constant
+overlay /tmp/svn-goal07-m04-rotation-cap-off-by-one.overlay.json: {"Replace":{"/home/user/shortvideo-network/chain/x/providers/msg_server.go":"/home/user/shortvideo-network/docs/evidence/goal-07/mutants/m04-rotation-cap-off-by-one.go.txt"}}
+--- FAIL: TestRotationCap (0.03s)
+    --- FAIL: TestRotationCap/one_rotation_past_the_bound (0.00s)
+        bounds_test.go:84: code , want ERROR_CODE_BOUNDS
+    --- FAIL: TestRotationCap/stale_generation_at_the_bound (0.00s)
+        bounds_test.go:84: code ERROR_CODE_UNAUTHORIZED, want ERROR_CODE_STALE_VERSION
+    --- FAIL: TestRotationCap/same_key_at_the_bound (0.00s)
+        bounds_test.go:84: code ERROR_CODE_UNAUTHORIZED, want ERROR_CODE_CONFLICT
+    bounds_test.go:94: drain at the bound: code ERROR_CODE_UNAUTHORIZED, want success
+FAIL
+FAIL	github.com/Maxencejules/shortvideo-network/chain/x/providers	0.062s
+FAIL
+mutant m04-rotation-cap-off-by-one: go test exit 1 (non-zero = killed, 0 = survived)
+EXIT:1

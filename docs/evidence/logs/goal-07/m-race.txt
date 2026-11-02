@@ -1,0 +1,22 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh go test -race -count=1 -timeout 20m ./chain/...
+DATE 2026-11-02T04:24:14Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/chain/address	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	78.670s
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	1.538s
+?   	github.com/Maxencejules/shortvideo-network/chain/cometwrap	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	276.465s
+ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	1.530s
+?   	github.com/Maxencejules/shortvideo-network/chain/jcs	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	1.439s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	1.154s
+ok  	github.com/Maxencejules/shortvideo-network/chain/node	1.364s
+ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	1.030s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	59.834s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	3.873s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	7.336s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	1.245s
+?   	github.com/Maxencejules/shortvideo-network/chain/x/scaffold	[no test files]
+EXIT:0
