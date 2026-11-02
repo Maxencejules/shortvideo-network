@@ -171,9 +171,10 @@ type powerCase struct {
 // The observation is the same in every case: progress is every running node
 // agreeing at a height at least from+3 within the window, with the commits of
 // from+2 and later signed without the validators that have no running
-// process. Stall is no such height, then no height move for six samples
-// (observeStall), at most one block past from; that block was in flight at
-// the stop, and its commit must carry the stopped validator's signature.
+// process. Stall is no such height, then six samples (observeStall) at or
+// below the high-water mark read immediately before the stop, except one
+// block above it that was in flight at the stop, whose commit must carry the
+// stopped validator's signature; and at most one block past from.
 //
 // The online set is what was observed voting during the case: the signers of
 // those commits for progress, the votes held at the stuck height for a stall
@@ -183,23 +184,18 @@ func runPowerCase(t *testing.T, layout devnet.Layout, rpcs []string, stops []fun
 	if _, _, err := devnet.WaitEqual(rpcs, 1, 45*time.Second); err != nil {
 		t.Fatal(tail(layout, err))
 	}
-	if err := stops[index](); err != nil {
-		t.Fatal(err)
+	phase := "power-case-" + name
+	// The stall threshold: the high-water mark of every process, the one
+	// about to stop included, read immediately before the stop.
+	at, err := stopForStall(phase+"-stop", layout, stops, index)
+	if err != nil {
+		t.Fatal(tail(layout, err))
 	}
-	stops[index] = nil
-	stopped := layout.Topology.Validators[index].Name
-	var running, names []string
-	for i, stop := range stops {
-		if stop != nil {
-			running = append(running, rpcs[i])
-			names = append(names, layout.Topology.Validators[i].Name)
-		}
-	}
+	stopped, running, names := at.stopped, at.running, at.names
 	from, err := devnet.HighWater(running)
 	if err != nil {
 		t.Fatal(tail(layout, err))
 	}
-	phase := "power-case-" + name
 	// observeStall numbers the running nodes 0.. in this order.
 	fmt.Printf("phase=%s stopped=%s running=%s height_from=%d\n", phase, stopped, strings.Join(names, ","), from.Height)
 	out := powerCase{name: name, from: from.Height}
@@ -211,7 +207,17 @@ func runPowerCase(t *testing.T, layout devnet.Layout, rpcs []string, stops []fun
 	} else {
 		fmt.Printf("phase=%s probe=no-agreement-above from=%d target=%d window=%s\n", phase, from.Height, from.Height+3, window)
 		out.observed = "stall"
-		out.to = observeStall(t, phase, running)
+		// observeStall bounds every sample by the threshold T, plus the one
+		// block at T+1 in flight at the stop, whose commit it requires to
+		// carry the stopped validator's signature (stoppedSigned). The bound
+		// on from and the commit check below stay and agree with it. from is
+		// read after the stop. In case Y the stopped v1 can precommit T+1
+		// only after a polka for it, 23 of 33 power. v5 has no process, so
+		// without v2 or without v4 at most 22 can prevote: both prevoted at
+		// height T+1, so both had committed T, and from >= T. Every commit
+		// in case Y needs v1 (22 of 33 without it), so a running node that
+		// catches up to a height at or below T passes the commit check too.
+		out.to = observeStall(t, phase, at, stoppedSigned(t, keys, at))
 		agreed, err := devnet.Agreed(running)
 		if err != nil || agreed.Height != out.to {
 			t.Fatalf("case %s stall: running nodes not agreed at %d: %+v %v", name, out.to, agreed, err)
@@ -575,9 +581,12 @@ func dumpRoundState(t *testing.T, rpc string) roundState {
 // the committed block.
 const blockIDFlagCommit = 2
 
+// commitSig is one signature of /commit. Timestamp stays text; only
+// precommitTime parses it.
 type commitSig struct {
-	Flag    int    `json:"block_id_flag"`
-	Address string `json:"validator_address"`
+	Flag      int    `json:"block_id_flag"`
+	Address   string `json:"validator_address"`
+	Timestamp string `json:"timestamp"`
 }
 
 // readCommit returns the commit signatures for one height from /commit.

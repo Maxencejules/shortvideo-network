@@ -103,12 +103,21 @@ func TestDevnetValidatorLifecycle(t *testing.T) {
 	if !quorumV5Down {
 		t.Fatal("4 of 5 power online is not quorum")
 	}
-	if err := stops[3](); err != nil {
-		t.Fatal(err)
+	// beforeStop was read before the RPC set query above, while 4 of 5 power
+	// still committed blocks, so it can be behind the chain at the stop. The
+	// stall threshold is the high-water mark that stopForStall reads
+	// immediately before it stops v4.
+	one, err := stopForStall("power-stop-one", layout, stops, 3)
+	if err != nil {
+		t.Fatal(tail(layout, err))
 	}
-	stops[3] = nil
-	stall := observeStall(t, "power-one-down", rpcs[:3])
-	fmt.Printf("phase=power-stall height=%d threshold=%d\n", stall, beforeStop.Height)
+	// v1, v2 and v3 hold 3 of 5 power, so a block above the threshold commits
+	// only with v4's precommit, cast before its process stopped. v5 has no
+	// process and signs nothing.
+	keys := consensusKeys(t, layout)
+	keys["v5"] = addKey
+	stall := observeStall(t, "power-one-down", one, stoppedSigned(t, keys, one))
+	fmt.Printf("phase=power-stall height=%d threshold=%d\n", stall, one.threshold.Height)
 	stallSet := validatorSet(t, rpcs[0], stall)
 	quorumAtStall := onlinePowerQuorum(stallSet, [][]byte{addKey, v4Key})
 	fmt.Printf("phase=power-quorum height=%d validators=%d offline=v5,v4 processes=%d model_quorum=%t\n", stall, len(stallSet), runningProcesses(stops), quorumAtStall)
