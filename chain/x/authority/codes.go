@@ -39,10 +39,34 @@ const RemovalBindCommit = "halt"
 const (
 	ApprovedSeats     = 4
 	ApprovedThreshold = 3
-	// MaxRecords is the deterministic write quota for proposals and pending
-	// power changes. It matches the expiry-step cap. Provider and content
-	// records live in x/providers and x/content, not here.
-	MaxRecords = 128
+)
+
+// Store quotas. The frozen spec machine has neither cap. Both are PROPOSED
+// values recorded as decision requests, not approved policy.
+const (
+	// MaxOpenProposalsPerSeat is PROPOSED (DR-06-03). It counts the OPEN
+	// and QUEUED proposals of one council seat on the current base policy
+	// version. EXECUTED, EXPIRED and REJECTED proposals never count, and a
+	// proposal on an older base, which can never execute, stops counting
+	// when an execute bumps the version. One seat cannot fill the quota of
+	// the others. A slot on the current version is freed when its proposal
+	// executes, is REJECTED, or is marked EXPIRED: an approve marks an
+	// expired OPEN proposal, and only an authority execute marks an expired
+	// QUEUED one (approve of a QUEUED proposal is CONFLICT before the expiry
+	// check, as in the spec). A current-version proposal that is never
+	// approved, or whose execute fails with any code other than FORBIDDEN
+	// (for example NOT_FOUND, OUT_OF_RANGE, CONFLICT, BOUNDS, DUPLICATE_ID),
+	// stays OPEN or QUEUED and holds its slot until any execute bumps the
+	// version, or until it is marked EXPIRED after its own expiry, which the
+	// proposer may set as late as unix_seconds_max.
+	MaxOpenProposalsPerSeat = 32
+	// MaxPendingChanges is PROPOSED (DR-06-04). It caps scheduled validator
+	// changes. It equals safety_max_expiry_steps_per_block (bounds.json), so
+	// one EndBlock never applies more than 128 entries. No message cancels a
+	// pending entry: 128 entries with far activation points, which take a
+	// council majority to schedule, block every later validator change,
+	// including a compromised-key replacement, until they apply.
+	MaxPendingChanges = 128
 )
 
 // Outcome is one authority transition.

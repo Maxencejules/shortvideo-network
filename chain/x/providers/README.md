@@ -111,9 +111,13 @@ first copy to commit owns the record. The spec reports the other copy as an idem
 it as `ERROR_CODE_FORBIDDEN` and writes nothing, because the signer does not own the record. The owner's own retry
 stays idempotent (`TestRegisterReplayByAnotherAccountIsForbidden`, and the app case "copy of another account's
 registration"). Registration does not prove possession of `signing_pubkey`: a front-runner can register another
-provider's key and manifest digest under its own account. The council sees the `account` in `Query/Provider` before
-it admits. Whether the business digest should cover the signer, and whether registration should carry a
-proof-of-possession signature by `signing_pubkey`, are protocol changes in DR-07-08.
+provider's key and manifest digest under its own account. An `AdmitProviderChange` binds only `provider_id`, and
+propose does not check that the record exists (neither does the spec's `validated_payload`): the council can approve
+`admit-<id>` before any record exists, and the execute admits whichever record holds that id at execution, with the
+account that registered it first. Seats should approve only after the record exists and its `account`, signing key
+and operator group were checked with `Query/Provider`. Whether the business digest should cover the signer, whether
+registration should carry a proof-of-possession signature by `signing_pubkey`, and whether `AdmitProviderChange`
+should bind the account (and key), are protocol changes in DR-07-08.
 
 A retry of a committed rotation is `ERROR_CODE_UNAUTHORIZED`, not idempotent. The spec checks the signature against
 the current key before the gate, and the retry was signed by the key it retired. A broadcaster must reconcile a
@@ -223,8 +227,9 @@ it as a provider record and fail to decode it (export and `Providers` failed on 
 upgradable in place: no step from version 1 is registered (`RunMigrations` from 1 fails,
 `TestNoMigrationFromScaffoldLayout`), `InitGenesis` refuses a store holding `[0x01]` (`TestScaffoldStoreIsNotAProvider`),
 and `app.New` refuses to load committed state whose providers or content store lacks the version-2 layout key
-(`TestAppRefusesScaffoldLayout` in `chain/app`). A goal-06 home must be initialized again; x/authority's side
-document also changed in goal 07 (goal-06 provider rows are ignored). No deployed chain exists.
+(`TestAppRefusesScaffoldLayout` in `chain/app`). A goal-06 home must be initialized again; x/authority's proposal
+records also gained two fields in goal 07, and its `0x17` provider-row prefix is reserved and never written. No
+deployed chain exists.
 
 The migration table is empty and covers versions 2 .. `ConsensusVersion`-1. `TestMigrationTable` is the evidence
 for the registration path: a test table entry from version 2 is registered with a real configurator (a second

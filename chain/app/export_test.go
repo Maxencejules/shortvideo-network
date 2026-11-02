@@ -1,7 +1,10 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
+
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -85,19 +88,28 @@ func (app *App) WriteLayoutVersionForTest(name string, version uint64) {
 	app.CommitMultiStore().Commit()
 }
 
-// CorruptAuthoritySideDocumentForTest overwrites the authority side
-// document (key 0x20 of the authority store) with bytes that do not decode
-// and commits a new version outside ABCI. It fails if the key is absent,
-// so a wrong key cannot pass silently.
-func (app *App) CorruptAuthoritySideDocumentForTest() error {
+// CorruptGovernedLimitForTest overwrites the governed limit key (key 0x13 ||
+// key of the authority store) with 3 bytes, which are not an 8-byte value,
+// and commits a new version outside ABCI. It fails if no value is set, so a
+// wrong key cannot pass silently. Authority EndBlock does not read 0x13, so
+// blocks still commit.
+func (app *App) CorruptGovernedLimitForTest(key string) error {
 	store := app.CommitMultiStore().GetKVStore(app.keys[authority.ModuleName])
-	key := []byte{0x20}
-	if store.Get(key) == nil {
-		return fmt.Errorf("no authority side document at %x", key)
+	raw := append([]byte{0x13}, key...)
+	if store.Get(raw) == nil {
+		return fmt.Errorf("no governed limit %q at %x", key, raw)
 	}
-	store.Set(key, []byte("{"))
+	store.Set(raw, []byte{1, 2, 3})
 	app.CommitMultiStore().Commit()
 	return nil
+}
+
+// ExportModulesForTest is the module manager's ExportGenesis for the named
+// modules only, without the App.Export checks. Tests use it for the registry
+// modules after council messages, when App.Export refuses (DR-06-01).
+func (app *App) ExportModulesForTest(names ...string) (map[string]json.RawMessage, error) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	return app.mm.ExportGenesisForModules(ctx, app.encoding.Codec, names)
 }
 
 // StoreKeyForTest is the mounted store key of one module.

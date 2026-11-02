@@ -123,12 +123,17 @@ func validateGenesisFile(raw []byte) error {
 			pubs[i] = hex.EncodeToString(validator.PubKey.Bytes())
 			powers[i] = validator.Power
 		}
-		return genesis.Validate(doc, genesis.CometIdentity{
+		if err := genesis.Validate(doc, genesis.CometIdentity{
 			ChainID:            genDoc.ChainID,
 			GenesisUnixSeconds: genDoc.GenesisTime.Unix(),
 			ValidatorPubkeyHex: pubs,
 			ValidatorPowers:    powers,
-		})
+		}); err != nil {
+			return err
+		}
+		// The authority rules InitChain applies: pending entries, genesis
+		// proposals, approved council, quorum loss, the start point.
+		return app.ValidateAuthorityGenesis(modules, genDoc.InitialHeight, genDoc.GenesisTime.Unix())
 	}
 	doc, err := genesis.Parse(raw)
 	if err != nil {

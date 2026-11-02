@@ -36,6 +36,8 @@ Both handlers run `msgkit.Enforce` first (gas meter limit and tx size `BOUNDS`, 
 
 `WithdrawContent` (spec `op_withdraw_content`, `withdraw_content`): presence of `business_id`, `content_id`, `reason_digest`, `hosting_intent`; signer role; reason digest; hosting intent; business gate; no record (`NOT_FOUND`); signer is not the submitting host (`FORBIDDEN`); already withdrawn (`WITHDRAWN`); version mismatch (`STALE_VERSION`). Success marks the record `WITHDRAWN` and writes the tombstone.
 
+Recorded deviation: the relay column of `docs/protocol.md` lets a broadcaster submit the outer transaction of both messages. This module follows `spec_machine.py` `check_role` instead: the outer signer must be an `ADMITTED_SERVICE` account, because it becomes `submitting_host` and both hosting intents sign the signer's address. A broadcaster outer signer, a council seat account included, is `FORBIDDEN` (`TestRegistryMessagesRejectOtherRoles` in `chain/app`). Adopting the relay column would give every `BROADCASTER` key, and so every council seat key, content reach (DR-06-06, DR-07-11).
+
 The protocol defines no direct force-withdraw message (DEC-009). Force-withdraw exists only as the council path below.
 
 Deviation from the protocol error table: `protocol.md` says a direct `ForceWithdraw` is `ERROR_CODE_FORBIDDEN` (codespace `svn`, code 2). No such message type is registered, so a transaction that names `/svn.content.v1.MsgForceWithdraw` fails transaction decoding: codespace `sdk`, code 2 (`ErrTxDecode`), in CheckTx and in a block (`TestDirectAdminMessagesDoNotExist`). The number is the same; the codespace is not.

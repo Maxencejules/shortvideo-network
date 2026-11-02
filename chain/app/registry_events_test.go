@@ -17,6 +17,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest"
+	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	eventsv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/events/v1"
 )
 
@@ -214,9 +215,24 @@ func TestNoPrivateDataInStateOrEvents(t *testing.T) {
 		}
 	}
 
-	exported, err := chainApp.Export()
+	// The genesis export of every module except authority. App.Export
+	// refuses after council messages (DR-06-01); authority's state is
+	// scanned above through the dump of every store.
+	var names []string
+	for _, name := range chainApp.ModuleNames() {
+		if name != authority.ModuleName {
+			names = append(names, name)
+		}
+	}
+	if len(names) != 7 {
+		t.Fatalf("modules %v", names)
+	}
+	exported, err := chainApp.ExportModulesForTest(names...)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(exported) != len(names) {
+		t.Fatalf("exported %d of %d modules", len(exported), len(names))
 	}
 	for _, name := range sortedNames(exported) {
 		if hit, found := msgkittest.FindCanary(exported[name], list...); found {

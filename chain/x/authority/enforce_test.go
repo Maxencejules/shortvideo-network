@@ -80,8 +80,8 @@ func runEnforceCommitted(ctx sdk.Context, signer []byte) (code string, panicked 
 // simulation passes it and reaches the engine, which reports the unknown
 // proposal (NOT_FOUND). Neither writes to the store.
 func TestHandlerMeterCheckByMode(t *testing.T) {
-	e := newKeeperEnv(t)
-	before := e.snapshot(ModuleName)
+	env := readyKeeper(t)
+	before := dumpKV(env.kv())
 	for _, c := range []struct {
 		mode sdk.ExecMode
 		want *errorsmod.Error
@@ -89,13 +89,12 @@ func TestHandlerMeterCheckByMode(t *testing.T) {
 		{sdk.ExecModeFinalize, svnerr.ErrBounds},
 		{sdk.ExecModeSimulate, svnerr.ErrNotFound},
 	} {
-		ctx := e.ctx.WithGasMeter(storetypes.NewInfiniteGasMeter()).WithEventManager(sdk.NewEventManager()).
-			WithTxBytes(make([]byte, 256)).WithExecMode(c.mode)
-		_, err := e.keeper.Approve(ctx, approve(e.seats[0], "ap-missing", "no-such-proposal"))
+		ctx := env.blockCtx().WithTxBytes(make([]byte, 256)).WithExecMode(c.mode)
+		_, err := env.keeper.Approve(ctx, approve(env.seats[0].Signer, "ap-missing", "no-such-proposal"))
 		if !c.want.Is(err) {
 			t.Errorf("mode %d: %v, want %v", c.mode, err, c.want)
 		}
-		if !bytes.Equal(before, e.snapshot(ModuleName)) {
+		if !bytes.Equal(before, dumpKV(env.kv())) {
 			t.Fatalf("mode %d: a rejected approval changed the store", c.mode)
 		}
 	}

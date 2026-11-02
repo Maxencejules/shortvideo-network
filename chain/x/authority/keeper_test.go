@@ -2,592 +2,438 @@ package authority
 
 import (
 	"bytes"
-	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
-	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/log/v2"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 
+	store "github.com/cosmos/cosmos-sdk/store/v2"
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
-	"github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest"
+	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
-	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-const registryStore = "registry"
-
-// keeperEnv is a real IAVL multistore with the authority store and a
-// second store the test hooks write to.
+// keeperEnv is a keeper on a real rootmulti store (IAVL over an in-memory
+// cosmos-db). Contexts read and write through the SDK gas store. registryKey
+// is a second IAVL store that the registry test hooks write to; it stays
+// empty unless a test uses it (keeper_registry_test.go).
 type keeperEnv struct {
-	ctx       sdk.Context
-	keeper    Keeper
-	keys      map[string]*storetypes.KVStoreKey
-	seats     [][]byte
-	authority []byte
-	service   []byte
-	provider  []byte
+	cms         storetypes.CommitMultiStore
+	key         *storetypes.KVStoreKey
+	registryKey *storetypes.KVStoreKey
+	keeper      Keeper
+	seats       []testSeat
+	authority   []byte
+	height      int64
+	unix        int64
 }
 
-func newKeeperEnv(t *testing.T) *keeperEnv {
+func newKeeperEnv(t testing.TB, gen *authorityv1.GenesisState, seats []testSeat, authority []byte) *keeperEnv {
 	t.Helper()
-	ctx, keys := msgkittest.NewContext(t, ModuleName, registryStore)
-	ctx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
-	st, seats, authoritySigner := readyState()
-	provider := bytes20(4)
-	genesis := &authorityv1.GenesisState{
-		Authority: &authorityv1.AuthorityState{
-			Validators: st.Validators,
-			Submitters: append(st.Submitters, &typesv1.Submitter{
-				Address: provider, Role: typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER,
-			}),
-			DevnetTestSeats: st.Seats,
-		},
-		DevnetTestParameters: append(st.Params,
-			devnetParam("DEC-002", "DEVNET_TEST_ONLY"),
-			devnetParam("DEC-003", "DEVNET_TEST_ONLY"),
-			&typesv1.DevnetTestParameter{Label: "PROPOSED_TEST_PARAMETER", DecisionId: "DEC-004", RoleName: "DEVNET_TEST_ONLY", ApprovedPolicy: true},
-			&typesv1.DevnetTestParameter{Label: "APPROVED", DecisionId: "DEC-005", RoleName: "DEVNET_TEST_ONLY"},
-		),
-	}
-	k := NewKeeper(keys[ModuleName])
-	if err := k.Init(ctx, genesis); err != nil {
+	cms := store.NewCommitMultiStore(dbm.NewMemDB(), log.NewNopLogger())
+	key := storetypes.NewKVStoreKey(ModuleName)
+	registryKey := storetypes.NewKVStoreKey("registry")
+	cms.MountStoreWithDB(key, storetypes.StoreTypeIAVL, nil)
+	cms.MountStoreWithDB(registryKey, storetypes.StoreTypeIAVL, nil)
+	if err := cms.LoadLatestVersion(); err != nil {
 		t.Fatal(err)
 	}
-	return &keeperEnv{
-		ctx: ctx, keeper: k, keys: keys, seats: seats,
-		authority: authoritySigner, service: bytes20(2), provider: provider,
+	env := &keeperEnv{cms: cms, key: key, registryKey: registryKey, keeper: NewKeeper(key), seats: seats, authority: authority, height: testHeight, unix: testTime}
+	if err := env.keeper.Init(env.blockCtx(), gen); err != nil {
+		t.Fatal(err)
 	}
+	return env
 }
 
-// tx is one message context: a finite gas meter inside the authority
-// bounds and a fresh event manager.
-func (e *keeperEnv) tx() sdk.Context {
-	return e.ctx.WithGasMeter(storetypes.NewGasMeter(5_000_000)).WithEventManager(sdk.NewEventManager())
-}
-
-func (e *keeperEnv) snapshot(name string) []byte {
-	return msgkit.StoreSnapshot(e.ctx.MultiStore().GetKVStore(e.keys[name]))
-}
-
-func (e *keeperEnv) queue(t *testing.T, k Keeper, id string, msg *authorityv1.MsgProposeChange) {
+func readyKeeper(t testing.TB) *keeperEnv {
 	t.Helper()
-	if _, err := k.Propose(e.tx(), propose(e.seats[0], id, e.policyVersion(t), msg)); err != nil {
+	gen, seats, authority := readyGenesis()
+	return newKeeperEnv(t, gen, seats, authority)
+}
+
+// blockCtx has an infinite gas meter, as InitChain and EndBlock do.
+func (e *keeperEnv) blockCtx() sdk.Context {
+	header := cmtproto.Header{ChainID: testChainID, Height: e.height, Time: time.Unix(e.unix, 0).UTC()}
+	return sdk.NewContext(e.cms, header, false, log.NewNopLogger()).
+		WithGasMeter(storetypes.NewInfiniteGasMeter()).
+		WithEventManager(sdk.NewEventManager()).
+		WithExecMode(sdk.ExecModeFinalize)
+}
+
+// txCtx is one message: a finite gas meter inside the authority bounds and a
+// fresh event manager.
+func (e *keeperEnv) txCtx() sdk.Context {
+	return e.blockCtx().WithGasMeter(storetypes.NewGasMeter(5_000_000))
+}
+
+// kv is the authority store without gas.
+func (e *keeperEnv) kv() storetypes.KVStore {
+	return e.cms.GetKVStore(e.key)
+}
+
+func (e *keeperEnv) policy(t testing.TB) uint64 {
+	t.Helper()
+	return loadAt(t, e.kv(), e.height, e.unix).PolicyVersion()
+}
+
+// queue proposes id from seats[0] and approves it with seats 0..2 through
+// the keeper handlers.
+func (e *keeperEnv) queue(t testing.TB, id string, msg *authorityv1.MsgProposeChange) {
+	t.Helper()
+	if _, err := e.keeper.Propose(e.txCtx(), propose(e.seats[0].Signer, id, e.policy(t), msg)); err != nil {
 		t.Fatalf("propose %s: %v", id, err)
 	}
 	for i := 0; i < ApprovedThreshold; i++ {
-		if _, err := k.Approve(e.tx(), approve(e.seats[i], "ap-"+id+"-"+string(rune('a'+i)), id)); err != nil {
+		if _, err := e.keeper.Approve(e.txCtx(), approve(e.seats[i].Signer, "ap-"+id+"-"+strconv.Itoa(i), id)); err != nil {
 			t.Fatalf("approve %s: %v", id, err)
 		}
 	}
-	if got := e.proposalState(t, id); got != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-		t.Fatalf("%s is %v", id, got)
-	}
 }
 
-func (e *keeperEnv) policyVersion(t *testing.T) uint64 {
+func resultCode(t testing.TB, ctx sdk.Context) (code string, idempotent bool) {
 	t.Helper()
-	st, err := e.keeper.load(e.ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return st.PolicyVersion
-}
-
-func (e *keeperEnv) proposalState(t *testing.T, id string) authorityv1.ProposalState {
-	t.Helper()
-	state, err := e.keeper.Export(e.ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, row := range state.GetAuthority().GetProposals() {
-		if row.GetProposalId() == id {
-			return row.GetState()
-		}
-	}
-	t.Fatalf("proposal %s missing", id)
-	return 0
-}
-
-func (e *keeperEnv) side(t *testing.T) sideDocument {
-	t.Helper()
-	var doc sideDocument
-	if err := json.Unmarshal(e.ctx.KVStore(e.keys[ModuleName]).Get([]byte{sideKey}), &doc); err != nil {
-		t.Fatal(err)
-	}
-	return doc
-}
-
-func assertCode(t *testing.T, err error, name string) {
-	t.Helper()
-	if err == nil {
-		t.Fatalf("want %s, got success", name)
-	}
-	codespace, code, _ := errorsmod.ABCIInfo(err, false)
-	if codespace != svnerr.ModuleName || code != uint32(typesv1.ErrorCode_value[name]) {
-		t.Fatalf("want %s, got %s/%d (%v)", name, codespace, code, err)
-	}
-}
-
-func eventCount(events sdk.Events, kind string) int {
-	n := 0
-	for _, ev := range events {
-		if ev.Type == kind {
-			n++
-		}
-	}
-	return n
-}
-
-func eventAttribute(events sdk.Events, kind, key string) (string, bool) {
-	for _, ev := range events {
-		if ev.Type != kind {
+	for _, event := range ctx.EventManager().Events() {
+		if event.Type != "authority_result" {
 			continue
 		}
-		for _, attr := range ev.Attributes {
-			if attr.Key == key {
-				return attr.Value, true
+		for _, attr := range event.Attributes {
+			switch attr.Key {
+			case "code":
+				code = attr.Value
+			case "idempotent":
+				idempotent = attr.Value == "true"
 			}
 		}
 	}
-	return "", false
+	return code, idempotent
 }
 
-// storeHooks is a unit-test double for the x/providers and x/content
-// hooks. It writes to its own store and emits an event before it returns
-// its configured code, the opposite of what a real registry does on a
-// failure, so a test can show authority discards a failed hook's writes.
-type storeHooks struct {
-	key   *storetypes.KVStoreKey
-	code  msgkit.Code
-	calls []registryCall
-}
-
-func (h *storeHooks) touch(ctx sdk.Context, record string) msgkit.Code {
-	ctx.KVStore(h.key).Set([]byte(record), []byte{1})
-	ctx.EventManager().EmitEvent(sdk.NewEvent("fake_registry", sdk.NewAttribute("record", record)))
-	return h.code
-}
-
-func (h *storeHooks) AdmitByCouncil(ctx sdk.Context, id string, devnet bool) msgkit.Code {
-	h.calls = append(h.calls, registryCall{Method: "admit", ID: id, Devnet: devnet})
-	return h.touch(ctx, "admit/"+id)
-}
-
-func (h *storeHooks) DisableByCouncil(ctx sdk.Context, id string) msgkit.Code {
-	h.calls = append(h.calls, registryCall{Method: "disable", ID: id})
-	return h.touch(ctx, "disable/"+id)
-}
-
-func (h *storeHooks) ForceWithdrawByCouncil(ctx sdk.Context, id string, version uint64, reason []byte, devnet bool) msgkit.Code {
-	h.calls = append(h.calls, registryCall{
-		Method: "force_withdraw", ID: id, Version: version, Reason: append([]byte(nil), reason...), Devnet: devnet,
-	})
-	return h.touch(ctx, "withdraw/"+id)
-}
-
-// fakeSource is another module's business ledger.
-type fakeSource map[string][]byte
-
-func (f fakeSource) BusinessDigest(_ sdk.Context, id string) ([]byte, bool) {
-	value, found := f[id]
-	return value, found
-}
-
-func TestKeeperRegistryHookCommitsOnlyOnSuccess(t *testing.T) {
-	e := newKeeperEnv(t)
-	hooks := &storeHooks{key: e.keys[registryStore]}
-	k := e.keeper.WithRegistry(hooks, hooks)
-	e.queue(t, k, "admit-p1", admitProposal("p1"))
-
-	ctx := e.tx()
-	if _, err := k.Execute(ctx, execute(e.authority, "ex-admit", "admit-p1")); err != nil {
-		t.Fatal(err)
+// The handler bounds transaction bytes and the gas limit before any store
+// read, and a non-20-byte signer is MALFORMED. Coverage for the round-2
+// checks that had no test (review NB13); fails if enforceCommitted drops a
+// bound.
+func TestHandlerChecksTxSizeAndGas(t *testing.T) {
+	env := readyKeeper(t)
+	msg := func(id string) *authorityv1.MsgProposeChange {
+		return propose(env.seats[0].Signer, id, 1, governedMsg("max_page_limit", 10))
 	}
-	if !sameCalls(hooks.calls, []registryCall{{Method: "admit", ID: "p1", Devnet: true}}) {
-		t.Fatalf("calls %+v", hooks.calls)
+	rows := []struct {
+		name string
+		ctx  sdk.Context
+		msg  *authorityv1.MsgProposeChange
+		err  error
+	}{
+		{"tx bytes over the bound", env.txCtx().WithTxBytes(make([]byte, genesis.MaxTxBytes+1)), msg("p-size"), svnerr.ErrBounds},
+		{"gas limit 0", env.txCtx().WithGasMeter(storetypes.NewGasMeter(0)), msg("p-gas0"), svnerr.ErrBounds},
+		{"gas limit over the bound", env.txCtx().WithGasMeter(storetypes.NewGasMeter(genesis.MaxGasPerTx + 1)), msg("p-gasmax"), svnerr.ErrBounds},
+		{"short signer", env.txCtx(), func() *authorityv1.MsgProposeChange { m := msg("p-short"); m.Signer = bytes20(1)[:19]; return m }(), svnerr.ErrMalformed},
 	}
-	if !e.ctx.KVStore(e.keys[registryStore]).Has([]byte("admit/p1")) {
-		t.Fatal("the successful hook write was not committed")
-	}
-	if eventCount(ctx.EventManager().Events(), "fake_registry") != 1 {
-		t.Fatal("the hook event was not emitted on success")
-	}
-	if got := e.proposalState(t, "admit-p1"); got != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
-		t.Fatal(got)
-	}
-
-	// The same business id again is idempotent. The registry is not called.
-	authorityBefore, registryBefore := e.snapshot(ModuleName), e.snapshot(registryStore)
-	again := e.tx()
-	if _, err := k.Execute(again, execute(e.authority, "ex-admit", "admit-p1")); err != nil {
-		t.Fatal(err)
-	}
-	if value, _ := eventAttribute(again.EventManager().Events(), "authority_result", "idempotent"); value != "true" || len(hooks.calls) != 1 {
-		t.Fatalf("idempotent %q calls %d", value, len(hooks.calls))
-	}
-	if !bytes.Equal(authorityBefore, e.snapshot(ModuleName)) || !bytes.Equal(registryBefore, e.snapshot(registryStore)) {
-		t.Fatal("an idempotent execute wrote")
-	}
-}
-
-func TestKeeperRegistryForbiddenKeepsTheRejection(t *testing.T) {
-	for _, kind := range []string{"admit", "disable", "force_withdraw"} {
-		t.Run(kind, func(t *testing.T) {
-			e := newKeeperEnv(t)
-			hooks := &storeHooks{key: e.keys[registryStore], code: msgkit.Forbidden}
-			k := e.keeper.WithRegistry(hooks, hooks)
-			id, msg := registryProposal(kind)
-			e.queue(t, k, id, msg)
-			registryBefore := e.snapshot(registryStore)
-			version := e.policyVersion(t)
-
-			ctx := e.tx()
-			if _, err := k.Execute(ctx, execute(e.authority, "ex-"+id, id)); err != nil {
-				t.Fatalf("a keep result is handler success: %v", err)
-			}
-			if code, _ := eventAttribute(ctx.EventManager().Events(), "authority_result", "code"); code != CodeForbidden {
-				t.Fatalf("result code %q", code)
-			}
-			if eventCount(ctx.EventManager().Events(), "fake_registry") != 0 {
-				t.Fatal("a rejected hook's event was emitted")
-			}
-			if !bytes.Equal(registryBefore, e.snapshot(registryStore)) {
-				t.Fatal("a rejected hook's write was committed")
-			}
-			if got := e.proposalState(t, id); got != authorityv1.ProposalState_PROPOSAL_STATE_REJECTED {
-				t.Fatal(got)
-			}
-			if e.policyVersion(t) != version {
-				t.Fatal("a rejected proposal moved the policy version")
-			}
-		})
-	}
-}
-
-func TestKeeperRegistryFailureWritesNothing(t *testing.T) {
-	codes := []msgkit.Code{msgkit.NotFound, msgkit.DecisionBlocked, msgkit.Conflict, msgkit.Withdrawn, msgkit.StaleVersion, msgkit.WrongDomain}
-	for _, kind := range []string{"admit", "disable", "force_withdraw"} {
-		for _, code := range codes {
-			t.Run(kind+"/"+string(code), func(t *testing.T) {
-				e := newKeeperEnv(t)
-				hooks := &storeHooks{key: e.keys[registryStore], code: code}
-				k := e.keeper.WithRegistry(hooks, hooks)
-				id, msg := registryProposal(kind)
-				e.queue(t, k, id, msg)
-				authorityBefore, registryBefore := e.snapshot(ModuleName), e.snapshot(registryStore)
-
-				ctx := e.tx()
-				_, err := k.Execute(ctx, execute(e.authority, "ex-"+id, id))
-				assertCode(t, err, string(code))
-				if len(hooks.calls) != 1 {
-					t.Fatalf("calls %+v", hooks.calls)
-				}
-				if !bytes.Equal(authorityBefore, e.snapshot(ModuleName)) {
-					t.Fatal("a registry failure changed the authority store")
-				}
-				if !bytes.Equal(registryBefore, e.snapshot(registryStore)) {
-					t.Fatal("a failed hook's write was committed")
-				}
-				if eventCount(ctx.EventManager().Events(), "fake_registry") != 0 {
-					t.Fatal("a failed hook's event was emitted")
-				}
-				if got := e.proposalState(t, id); got != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-					t.Fatal(got)
-				}
-			})
+	for _, row := range rows {
+		before := dumpKV(env.kv())
+		if _, err := env.keeper.Propose(row.ctx, row.msg); !errors.Is(err, row.err) {
+			t.Fatalf("%s: %v", row.name, err)
 		}
+		wantUnchanged(t, env.kv(), before, row.name)
 	}
-}
-
-func TestKeeperForceWithdrawArgumentsSurviveTheSideDocument(t *testing.T) {
-	e := newKeeperEnv(t)
-	hooks := &storeHooks{key: e.keys[registryStore]}
-	k := e.keeper.WithRegistry(hooks, hooks)
-	e.queue(t, k, "withdraw-c1", withdrawProposal("c1", 1, reasonValue))
-
-	var stored *decodedWire
-	for _, row := range e.side(t).Decoded {
-		if row.ID == "withdraw-c1" {
-			stored = &row
-		}
+	if _, err := env.keeper.Propose(env.txCtx().WithTxBytes(make([]byte, genesis.MaxTxBytes)), msg("p-edge")); err != nil {
+		t.Fatalf("tx bytes at the bound: %v", err)
 	}
-	if stored == nil || stored.Kind != "force_withdraw" || stored.ContentID != "c1" || stored.ContentVersion != 1 || !bytes.Equal(stored.Reason, reasonValue) {
-		t.Fatalf("side document row %+v", stored)
+	if _, err := env.keeper.Propose(env.txCtx().WithGasMeter(storetypes.NewGasMeter(genesis.MaxGasPerTx)), msg("p-gasedge")); err != nil {
+		t.Fatalf("gas limit at the bound: %v", err)
 	}
-
-	if _, err := k.Execute(e.tx(), execute(e.authority, "ex-withdraw", "withdraw-c1")); err != nil {
-		t.Fatal(err)
-	}
-	want := []registryCall{{Method: "force_withdraw", ID: "c1", Version: 1, Reason: reasonValue, Devnet: true}}
-	if !sameCalls(hooks.calls, want) {
-		t.Fatalf("calls %+v want %+v", hooks.calls, want)
-	}
-	if !e.ctx.KVStore(e.keys[registryStore]).Has([]byte("withdraw/c1")) {
-		t.Fatal("force-withdraw write missing")
-	}
-}
-
-func TestKeeperWithoutRegistryIsMalformed(t *testing.T) {
-	e := newKeeperEnv(t)
-	e.queue(t, e.keeper, "admit-p1", admitProposal("p1"))
-	before := e.snapshot(ModuleName)
-	_, err := e.keeper.Execute(e.tx(), execute(e.authority, "ex-admit", "admit-p1"))
-	assertCode(t, err, CodeMalformed)
-	if !bytes.Equal(before, e.snapshot(ModuleName)) {
-		t.Fatal("a missing registry changed the authority store")
-	}
-	if got := e.proposalState(t, "admit-p1"); got != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-		t.Fatal(got)
-	}
-}
-
-func TestWithRegistryRejectsNilHooks(t *testing.T) {
-	e := newKeeperEnv(t)
-	hooks := &storeHooks{key: e.keys[registryStore]}
-	for name, call := range map[string]func(){
-		"nil provider": func() { e.keeper.WithRegistry(nil, hooks) },
-		"nil content":  func() { e.keeper.WithRegistry(hooks, nil) },
-		"both nil":     func() { e.keeper.WithRegistry(nil, nil) },
-	} {
-		t.Run(name, func(t *testing.T) {
-			defer func() {
-				if recover() == nil {
-					t.Fatal("no panic")
-				}
-			}()
-			call()
-		})
-	}
-}
-
-func TestKeeperBusinessIDsAreOneNamespace(t *testing.T) {
-	e := newKeeperEnv(t)
-	foreign := bytes.Repeat([]byte{0x5a}, 32)
-	peers := msgkit.NewPeers()
-	k := e.keeper.WithPeers(peers)
-	peers.Add(ModuleName, k)
-	peers.Add("providers", fakeSource{"taken": foreign})
-
-	before := e.snapshot(ModuleName)
-	taken := propose(e.seats[0], "p-add", 1, powerMsg("v5", pub(9), 1, 20))
-	taken.BusinessId = "taken"
-	_, err := k.Propose(e.tx(), taken)
-	assertCode(t, err, CodeReplay)
-	if !bytes.Equal(before, e.snapshot(ModuleName)) {
-		t.Fatal("a replayed propose changed the authority store")
-	}
-
-	e.queue(t, k, "p-add", powerMsg("v5", pub(9), 1, 20))
-	before = e.snapshot(ModuleName)
-	_, err = k.Approve(e.tx(), approve(e.seats[3], "taken", "p-add"))
-	assertCode(t, err, CodeReplay)
-	_, err = k.Execute(e.tx(), execute(e.authority, "taken", "p-add"))
-	assertCode(t, err, CodeReplay)
-	if !bytes.Equal(before, e.snapshot(ModuleName)) || e.proposalState(t, "p-add") != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
-		t.Fatal("a replayed approve or execute changed the authority store")
-	}
-
-	// The other direction: providers and content see authority's ids.
-	own, found := k.BusinessDigest(e.ctx, "b-p-add")
-	if !found || len(own) != 32 {
-		t.Fatalf("authority business id %x %v", own, found)
-	}
-	seen, found := peers.Lookup(e.ctx, "b-p-add", "providers")
-	if !found || !bytes.Equal(seen, own) {
-		t.Fatal("a peer module does not see authority's business id")
-	}
-	if _, found := peers.Lookup(e.ctx, "b-p-add", ModuleName); found {
-		t.Fatal("authority's lookup consulted its own ledger through peers")
-	}
-
-	// Without peers, authority alone does not know the providers id.
-	plain := propose(e.seats[0], "p-other", 1, powerMsg("v6", pub(10), 1, 20))
-	plain.BusinessId = "taken"
-	plain.BasePolicyVersion = e.policyVersion(t)
-	if _, err := e.keeper.Propose(e.tx(), plain); err != nil {
-		t.Fatalf("without peers: %v", err)
-	}
-}
-
-func TestKeeperReadSurface(t *testing.T) {
-	e := newKeeperEnv(t)
-
-	t.Run("role", func(t *testing.T) {
-		cases := []struct {
-			name string
-			addr []byte
-			want typesv1.SubmitterRole
-		}{
-			{"authority", e.authority, typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY},
-			{"service", e.service, typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE},
-			{"provider", e.provider, typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER},
-			{"seat is not a submitter", e.seats[0], typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED},
-			{"unknown", bytes20(77), typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED},
-			{"short", e.authority[:19], typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED},
-			{"long", append(append([]byte(nil), e.authority...), 0), typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED},
-			{"nil", nil, typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED},
-		}
-		for _, tc := range cases {
-			if got := e.keeper.Role(e.ctx, tc.addr); got != tc.want {
-				t.Fatalf("%s: %v", tc.name, got)
-			}
-		}
-		odd := bytes20(78)
-		store := e.ctx.KVStore(e.keys[ModuleName])
-		store.Set(admitKeyBytes(odd), []byte{99})
-		if got := e.keeper.Role(e.ctx, odd); got != typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
-			t.Fatalf("value outside the enum: %v", got)
-		}
-		store.Set(admitKeyBytes(odd), []byte{1, 1})
-		if got := e.keeper.Role(e.ctx, odd); got != typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
-			t.Fatalf("two-byte value: %v", got)
-		}
-		store.Delete(admitKeyBytes(odd))
-	})
-
-	t.Run("devnet role", func(t *testing.T) {
-		if role, found := e.keeper.DevnetRole(e.ctx, "DEC-002"); !found || role != "DEVNET_TEST_ONLY" {
-			t.Fatalf("DEC-002 %q %v", role, found)
-		}
-		if role, found := e.keeper.DevnetRole(e.ctx, "DEC-003"); !found || role != "DEVNET_TEST_ONLY" {
-			t.Fatalf("DEC-003 %q %v", role, found)
-		}
-		for _, id := range []string{"DEC-004", "DEC-005", "DEC-001", ""} {
-			if role, found := e.keeper.DevnetRole(e.ctx, id); found {
-				t.Fatalf("%s %q", id, role)
-			}
-		}
-		beta := e.ctx.WithChainID("shortvideo-beta-1")
-		if role, found := e.keeper.DevnetRole(beta, "DEC-002"); found {
-			t.Fatalf("non-devnet chain id %q", role)
-		}
-		empty, keys := msgkittest.NewContext(t, ModuleName)
-		if _, found := NewKeeper(keys[ModuleName]).DevnetRole(empty, "DEC-002"); found {
-			t.Fatal("an empty store has a devnet role")
-		}
-	})
-
-	t.Run("governed limit", func(t *testing.T) {
-		if value, found := e.keeper.GovernedLimit(e.ctx, msgkit.LimitMaxPageLimit); found {
-			t.Fatalf("before %d", value)
-		}
-		limit := payloadProposal(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_GovernedLimit{
-			GovernedLimit: &authorityv1.GovernedLimitChange{LimitKey: msgkit.LimitMaxPageLimit, Value: 50},
-		}}, msgkit.LimitMaxPageLimit)
-		e.queue(t, e.keeper, "lim-1", limit)
-		if _, err := e.keeper.Execute(e.tx(), execute(e.authority, "ex-lim-1", "lim-1")); err != nil {
-			t.Fatal(err)
-		}
-		if value, found := e.keeper.GovernedLimit(e.ctx, msgkit.LimitMaxPageLimit); !found || value != 50 {
-			t.Fatalf("after %d %v", value, found)
-		}
-		if _, found := e.keeper.GovernedLimit(e.ctx, msgkit.LimitMaxPackageBytes); found {
-			t.Fatal("an unset limit was found")
-		}
-		empty, keys := msgkittest.NewContext(t, ModuleName)
-		if _, found := NewKeeper(keys[ModuleName]).GovernedLimit(empty, msgkit.LimitMaxPageLimit); found {
-			t.Fatal("an empty store has a governed limit")
-		}
-	})
-
-	t.Run("business digest", func(t *testing.T) {
-		e.queue(t, e.keeper, "p-bd", powerMsg("v7", pub(11), 1, 20))
-		msg := propose(e.seats[0], "p-bd", 0, powerMsg("v7", pub(11), 1, 20))
-		digest, found := e.keeper.BusinessDigest(e.ctx, msg.GetBusinessId())
-		if !found {
-			t.Fatal("committed business id not found")
-		}
-		row := e.side(t)
-		var stored []byte
-		for _, item := range row.Business {
-			if item.ID == msg.GetBusinessId() {
-				stored = item.Value
-			}
-		}
-		if !bytes.Equal(digest, stored) || len(digest) != 32 {
-			t.Fatalf("digest %x stored %x", digest, stored)
-		}
-		digest[0] ^= 0xff
-		if again, _ := e.keeper.BusinessDigest(e.ctx, msg.GetBusinessId()); !bytes.Equal(again, stored) {
-			t.Fatal("BusinessDigest returned the stored slice")
-		}
-		for _, id := range []string{"unknown", "", "Upper", string(make([]byte, 65))} {
-			if _, found := e.keeper.BusinessDigest(e.ctx, id); found {
-				t.Fatalf("%q found", id)
-			}
-		}
-		empty, keys := msgkittest.NewContext(t, ModuleName)
-		if _, found := NewKeeper(keys[ModuleName]).BusinessDigest(empty, "b-p-bd"); found {
-			t.Fatal("an empty store has a business id")
-		}
-	})
-
-	t.Run("corrupt side document", func(t *testing.T) {
-		ctx, keys := msgkittest.NewContext(t, ModuleName)
-		k := NewKeeper(keys[ModuleName])
-		ctx.KVStore(keys[ModuleName]).Set([]byte{sideKey}, []byte("{"))
-		// Both fail closed: neither reports "no value" on unreadable state.
-		func() {
-			defer func() {
-				if recover() == nil {
-					t.Fatal("GovernedLimit reported no limit on a corrupt document")
-				}
-			}()
-			k.GovernedLimit(ctx, msgkit.LimitMaxPageLimit)
-		}()
+	low := env.txCtx().WithGasMeter(storetypes.NewGasMeter(authorityGas - 1))
+	before := dumpKV(env.kv())
+	func() {
 		defer func() {
-			if recover() == nil {
-				t.Fatal("BusinessDigest reported an id free on a corrupt document")
+			if _, outOfGas := recover().(storetypes.ErrorOutOfGas); !outOfGas {
+				t.Fatal("a gas limit below the fixed charge did not run out of gas")
 			}
 		}()
-		k.BusinessDigest(ctx, "b-1")
-	})
+		_, _ = env.keeper.Propose(low, msg("p-low"))
+	}()
+	wantUnchanged(t, env.kv(), before, "out of gas")
 }
 
-func TestKeeperLoadsAnOlderSideDocument(t *testing.T) {
-	// A goal-06 document carries provider rows. They decode as unknown keys
-	// and the next save drops them; other rows survive.
-	e := newKeeperEnv(t)
-	older := map[string]any{
-		"policy_version": 1,
-		"business":       []map[string]any{{"id": "old-1", "value": bytes.Repeat([]byte{7}, 32)}},
-		"providers": []map[string]any{{
-			"id": "p1", "account": bytes20(4), "signing_pub": pub(4), "signing_key_id": "k1",
-			"generation": 1, "state": "APPLIED", "operator_group": "devnet-test-only", "endpoint": pub(8), "capacity": 1000,
-		}},
-		"prev_provider": []map[string]any{{"id": "p1", "value": [][]byte{pub(3)}}},
+// transition: success writes, an idempotent retry and a failure write
+// nothing, and a keep outcome writes and reports its code on an event (plan
+// 2.5). Round-2 behaviour was the same; fails if a keep is not written
+// (mutant keep-not-written).
+func TestTransitionOutcomes(t *testing.T) {
+	env := readyKeeper(t)
+	msg := func() *authorityv1.MsgProposeChange {
+		m := propose(env.seats[0].Signer, "p-t", 1, governedMsg("max_page_limit", 10))
+		m.ExpiryUnixSeconds = env.unix + 50
+		return m
 	}
-	raw, err := json.Marshal(older)
-	if err != nil {
+	if _, err := env.keeper.Propose(env.txCtx(), msg()); err != nil {
 		t.Fatal(err)
 	}
-	e.ctx.KVStore(e.keys[ModuleName]).Set([]byte{sideKey}, raw)
-	if digest, found := e.keeper.BusinessDigest(e.ctx, "old-1"); !found || !bytes.Equal(digest, bytes.Repeat([]byte{7}, 32)) {
-		t.Fatal("older business row unreadable")
-	}
-	if _, err := e.keeper.Propose(e.tx(), propose(e.seats[0], "p-add", 1, powerMsg("v5", pub(9), 1, 20))); err != nil {
+	before := dumpKV(env.kv())
+	retry := env.txCtx()
+	if _, err := env.keeper.Propose(retry, msg()); err != nil {
 		t.Fatal(err)
 	}
-	var keys map[string]json.RawMessage
-	if err := json.Unmarshal(e.ctx.KVStore(e.keys[ModuleName]).Get([]byte{sideKey}), &keys); err != nil {
-		t.Fatal(err)
+	if code, idem := resultCode(t, retry); code != "" || !idem {
+		t.Fatalf("retry event code %q idempotent %v", code, idem)
 	}
-	for _, gone := range []string{"providers", "prev_provider"} {
-		if _, present := keys[gone]; present {
-			t.Fatalf("%s survived a save", gone)
+	wantUnchanged(t, env.kv(), before, "idempotent retry")
+
+	replay := msg()
+	replay.ProposalId = "p-t2"
+	failed := env.txCtx()
+	if _, err := env.keeper.Propose(failed, replay); !errors.Is(err, svnerr.ErrReplay) {
+		t.Fatalf("replay %v", err)
+	}
+	if code, _ := resultCode(t, failed); code != CodeReplay {
+		t.Fatalf("replay event %q", code)
+	}
+	wantUnchanged(t, env.kv(), before, "replay")
+
+	env.unix += 50
+	kept := env.txCtx()
+	if _, err := env.keeper.Approve(kept, approve(env.seats[1].Signer, "a-late", "p-t")); err != nil {
+		t.Fatalf("keep returned %v", err)
+	}
+	if code, _ := resultCode(t, kept); code != CodeExpired {
+		t.Fatalf("keep event %q", code)
+	}
+	if recordOf(t, env.kv(), "p-t").state() != authorityv1.ProposalState_PROPOSAL_STATE_EXPIRED || openOf(t, env.kv(), env.seats[0].ID) != 0 {
+		t.Fatal("keep outcome was not written")
+	}
+}
+
+// 128 pending validator changes fill the cap; the 129th execute is BOUNDS
+// and stays QUEUED with the store unchanged; one EndBlock applies all 128.
+// Fails on the old code, which shared the 128 lifetime quota with proposals,
+// so the council could not even open the 129th proposal.
+func TestPendingCap(t *testing.T) {
+	env := readyKeeper(t)
+	key := func(n int) []byte {
+		out := pub(byte(n))
+		out[0] = 0xaa
+		out[1] = byte(n >> 8)
+		return out
+	}
+	for i := 0; i < MaxPendingChanges; i++ {
+		id := "add-" + strconv.Itoa(i)
+		env.queue(t, id, powerMsg("n"+strconv.Itoa(i), key(i), 1, uint64(100+i)))
+		if _, err := env.keeper.Execute(env.txCtx(), execute(env.authority, "ex-"+id, id)); err != nil {
+			t.Fatalf("execute %s: %v", id, err)
 		}
 	}
-	if _, found := e.keeper.BusinessDigest(e.ctx, "old-1"); !found {
-		t.Fatal("older business row lost on save")
+	if got := len(pendingOf(t, env.kv())); got != MaxPendingChanges {
+		t.Fatalf("%d pending", got)
 	}
-	if _, found := e.keeper.BusinessDigest(e.ctx, "b-p-add"); !found {
-		t.Fatal("new business row missing")
+	env.queue(t, "add-over", powerMsg("n-over", key(500), 1, 400))
+	before := dumpKV(env.kv())
+	if _, err := env.keeper.Execute(env.txCtx(), execute(env.authority, "ex-over", "add-over")); !errors.Is(err, svnerr.ErrBounds) {
+		t.Fatalf("129th pending change: %v", err)
+	}
+	wantUnchanged(t, env.kv(), before, "pending cap")
+	if recordOf(t, env.kv(), "add-over").state() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+		t.Fatal("cap reject moved the proposal")
+	}
+	env.height = 100 + MaxPendingChanges - 1
+	updates, err := env.keeper.EndBlock(env.blockCtx())
+	if err != nil || len(updates) != MaxPendingChanges {
+		t.Fatalf("one EndBlock applied %d: %v", len(updates), err)
+	}
+	if len(pendingOf(t, env.kv())) != 0 || len(loadAt(t, env.kv(), env.height, env.unix).Validators()) != 4+MaxPendingChanges {
+		t.Fatal("EndBlock left entries or missed validators")
 	}
 }
 
-func TestAuthoritySourcesAreDeterministic(t *testing.T) {
-	msgkittest.AssertDeterministicSources(t, ".")
+// A genesis pending entry is applied by EndBlock at its height, not before.
+// Round 2 applied it from the state key; this pins the 0x03 path and fails
+// if InitStore drops pending entries (mutant init-skips-pending).
+func TestGenesisPendingIsAppliedAtItsHeight(t *testing.T) {
+	gen, seats, authority := readyGenesis()
+	gen.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{heightEntry("gen-add", "v5", pub(9), 1, 5)}
+	if err := ValidateGenesisState(gen, &GenesisPoint{InitialHeight: 1, GenesisUnixSeconds: testTime}); err != nil {
+		t.Fatal(err)
+	}
+	env := newKeeperEnv(t, gen, seats, authority)
+	env.height = 4
+	if updates, err := env.keeper.EndBlock(env.blockCtx()); err != nil || len(updates) != 0 {
+		t.Fatalf("height 4: %v %v", updates, err)
+	}
+	env.height = 5
+	updates, err := env.keeper.EndBlock(env.blockCtx())
+	if err != nil || len(updates) != 1 || updates[0].Power != 1 || !bytes.Equal(updates[0].PubKey.GetEd25519(), pub(9)) {
+		t.Fatalf("height 5: %v %v", updates, err)
+	}
+	if len(pendingOf(t, env.kv())) != 0 {
+		t.Fatal("applied entry is still pending")
+	}
+}
+
+// A store with the round-2 side document halts EndBlock and is refused by
+// export. Fails on the old code, which loaded 0x20 and carried on.
+func TestLegacySideDocumentHalts(t *testing.T) {
+	env := readyKeeper(t)
+	env.kv().Set([]byte{legacySideKey}, []byte(`{"policy_version":1}`))
+	if _, err := env.keeper.EndBlock(env.blockCtx()); err == nil || !strings.Contains(err.Error(), "re-initialize") {
+		t.Fatalf("legacy store: %v", err)
+	}
+	if _, err := env.keeper.Export(env.blockCtx()); !errors.Is(err, ErrExportRefused) || !strings.Contains(err.Error(), "0x20") {
+		t.Fatalf("legacy export: %v", err)
+	}
+}
+
+// ExportGenesis returns the genesis for a fresh store and panics with the
+// ExportState error once a message has written side state. Fails on the old
+// code, which exported the state key and dropped the side document.
+func TestExportGenesisPanicsOnSideState(t *testing.T) {
+	env := readyKeeper(t)
+	module := NewAppModule(env.keeper, nil)
+	if raw := module.ExportGenesis(env.blockCtx(), nil); len(raw) == 0 {
+		t.Fatal("fresh export is empty")
+	}
+	if _, err := env.keeper.Propose(env.txCtx(), propose(env.seats[0].Signer, "p-x", 1, governedMsg("max_page_limit", 10))); err != nil {
+		t.Fatal(err)
+	}
+	var recovered any
+	func() {
+		defer func() { recovered = recover() }()
+		module.ExportGenesis(env.blockCtx(), nil)
+	}()
+	err, isErr := recovered.(error)
+	if !isErr || !errors.Is(err, ErrExportRefused) || !strings.Contains(fmt.Sprint(recovered), "proposal records") {
+		t.Fatalf("export with side state: %v", recovered)
+	}
+}
+
+// A config key that still holds pending entries, proposals or an approved
+// council is the round-2 layout. LoadState refuses it, so each council
+// message fails with ERROR_CODE_INTEGRITY through the keeper (svn error and
+// authority_result code) and the store is byte-identical. EndBlock never
+// applies the pending entries kept in the config: there is no 0x03 key, so
+// it returns no update at their height. ExportState refuses the config.
+// Pins README "No migration" and validator-lifecycle.md "Old devnet homes";
+// the second fix-round review found that deleting the old-layout check
+// passed every suite.
+func TestOldLayoutConfigIsIntegrity(t *testing.T) {
+	for _, row := range []struct {
+		name string
+		edit func(*authorityv1.GenesisState)
+	}{
+		{"pending entries", func(cfg *authorityv1.GenesisState) {
+			cfg.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{heightEntry("g1", "v5", pub(9), 1, 50)}
+		}},
+		{"proposals", func(cfg *authorityv1.GenesisState) {
+			cfg.Authority.Proposals = []*authorityv1.Proposal{{ProposalId: "p-old", ParameterKey: "max_page_limit"}}
+		}},
+		{"approved council", func(cfg *authorityv1.GenesisState) {
+			cfg.Authority.ApprovedCouncil = []*authorityv1.DevnetTestSeat{{SeatId: "seat-9", PublicKey: pub(50)}}
+		}},
+	} {
+		env := readyKeeper(t)
+		mutateConfig(t, env.kv(), row.edit)
+		if _, err := LoadState(env.kv(), testChainID, env.height, env.unix); err == nil || !strings.Contains(err.Error(), "old layout") {
+			t.Fatalf("%s: LoadState %v", row.name, err)
+		}
+		before := dumpKV(env.kv())
+		messages := []struct {
+			name string
+			run  func(sdk.Context) error
+		}{
+			{"propose", func(ctx sdk.Context) error {
+				_, err := env.keeper.Propose(ctx, propose(env.seats[0].Signer, "p-new", 1, governedMsg("max_page_limit", 10)))
+				return err
+			}},
+			{"approve", func(ctx sdk.Context) error {
+				_, err := env.keeper.Approve(ctx, approve(env.seats[1].Signer, "a-new", "p-new"))
+				return err
+			}},
+			{"execute", func(ctx sdk.Context) error {
+				_, err := env.keeper.Execute(ctx, execute(env.authority, "e-new", "p-new"))
+				return err
+			}},
+		}
+		for _, msg := range messages {
+			ctx := env.txCtx()
+			err := msg.run(ctx)
+			if !errors.Is(err, svnerr.ErrIntegrity) || !strings.Contains(err.Error(), CodeIntegrity) {
+				t.Fatalf("%s: %s got %v", row.name, msg.name, err)
+			}
+			wantUnchanged(t, env.kv(), before, row.name+": "+msg.name)
+		}
+		env.height = 50
+		if updates, err := env.keeper.EndBlock(env.blockCtx()); err != nil || len(updates) != 0 {
+			t.Fatalf("%s: EndBlock at 50: %v %v", row.name, updates, err)
+		}
+		wantUnchanged(t, env.kv(), before, row.name+": EndBlock")
+		if _, err := ExportState(env.kv()); err == nil || errors.Is(err, ErrExportRefused) || !strings.Contains(err.Error(), "old layout") {
+			t.Fatalf("%s: export %v", row.name, err)
+		}
+	}
+}
+
+// More than MaxPendingChanges keys under 0x03 is integrity damage; no
+// message or genesis stores them. readPending refuses the 129th entry, so
+// ApplyDue and a validator execute are INTEGRITY with the store unchanged
+// and the proposal still QUEUED, EndBlock halts with ErrIntegrity, and
+// ExportState refuses. At exactly 128 entries ApplyDue applies all of them
+// and ExportState returns them. The second fix-round review found both
+// bound checks unreached (coverage 0).
+func TestPendingOverCapIsIntegrity(t *testing.T) {
+	key := func(n int) []byte {
+		out := pub(byte(n))
+		out[0] = 0xbb
+		out[1] = byte(n >> 8)
+		return out
+	}
+	fill := func(kv KV, n int) {
+		for i := 0; i < n; i++ {
+			putPendingRaw(t, kv, heightEntry("over-"+strconv.Itoa(i), "n"+strconv.Itoa(i), key(i), 1, 1000))
+		}
+	}
+
+	at := readyKeeper(t)
+	fill(at.kv(), MaxPendingChanges)
+	exported, err := ExportState(at.kv())
+	if err != nil || len(exported.GetAuthority().GetPendingValidatorPower()) != MaxPendingChanges {
+		t.Fatalf("export of %d entries: %v", MaxPendingChanges, err)
+	}
+	at.height = 1000
+	if updates, err := at.keeper.EndBlock(at.blockCtx()); err != nil || len(updates) != MaxPendingChanges {
+		t.Fatalf("EndBlock with %d entries applied %d: %v", MaxPendingChanges, len(updates), err)
+	}
+
+	env := readyKeeper(t)
+	env.queue(t, "add-x", powerMsg("v5", pub(9), 1, 2000))
+	fill(env.kv(), MaxPendingChanges+1)
+	before := dumpKV(env.kv())
+	if _, err := env.keeper.Execute(env.txCtx(), execute(env.authority, "ex-x", "add-x")); !errors.Is(err, svnerr.ErrIntegrity) {
+		t.Fatalf("validator execute over the cap: %v", err)
+	}
+	wantUnchanged(t, env.kv(), before, "validator execute over the cap")
+	if recordOf(t, env.kv(), "add-x").state() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+		t.Fatal("integrity reject moved the proposal")
+	}
+	if _, changed, out := loadAt(t, env.kv(), 1000, env.unix).ApplyDue(); changed || out.Code != CodeIntegrity {
+		t.Fatalf("ApplyDue over the cap: %+v changed %v", out, changed)
+	}
+	wantUnchanged(t, env.kv(), before, "ApplyDue over the cap")
+	env.height = 1000
+	if updates, err := env.keeper.EndBlock(env.blockCtx()); !errors.Is(err, svnerr.ErrIntegrity) || len(updates) != 0 {
+		t.Fatalf("EndBlock over the cap: %v %v", updates, err)
+	}
+	wantUnchanged(t, env.kv(), before, "EndBlock over the cap")
+	// Export on a store that holds only config, admission and pending keys,
+	// so the 0x10 refusal cannot answer first.
+	over, _, _ := readyStore(t)
+	fill(over, MaxPendingChanges+1)
+	if _, err := ExportState(over); err == nil || errors.Is(err, ErrExportRefused) || !strings.Contains(err.Error(), "more than 128 pending") {
+		t.Fatalf("export over the cap: %v", err)
+	}
 }

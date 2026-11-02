@@ -1,0 +1,34 @@
+COMMAND bash -c .venv/bin/python\ docs/evidence/goal-01/check_requirements.py\ \&\&\ PATH=\$PWD/.toolchains/bin:\$PATH\ .venv/bin/python\ docs/evidence/goal-02/check_protocol.py
+DATE 2026-11-01T20:42:55Z
+HEAD fb4cde2087269fb9a93900b9a4d11fd24779ced2
+TREE 7d07a6d632acaa54da9f71d4f16a63d73052df38
+DIRTY no
+self_test duplicate id fail_as_expected
+self_test missing role fail_as_expected
+self_test bad goal fail_as_expected
+self_test deferred with a goal fail_as_expected
+self_test missing test or blocker fail_as_expected
+self_test missing blueprint page fail_as_expected
+self_test scenario list fail_as_expected
+self_test threat heading exact fail_as_expected
+self_test progress mismatch fail_as_expected
+self_test row goals fail_as_expected
+self_test extra column goal fail_as_expected
+self_test negation still names a goal fail_as_expected
+requirements 265
+in_scope 250
+with_test 216
+with_blocker 34
+deferred 9
+non_goal 6
+decisions 8
+threats 15
+scenarios 5
+contradictions 13
+self_test_cases 12
+self_test_problems 0
+page_coverage ok
+errors 1
+ERROR unexpected python: docs/evidence/goal-06/mutants.py
+result FAIL
+EXIT:1

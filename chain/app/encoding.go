@@ -91,10 +91,15 @@ func init() {
 	registerGogo("svn.authority.v1.ForceWithdrawChange", &authorityv1.ForceWithdrawChange{})
 	registerGogo("svn.authority.v1.ActivationPoint", &authorityv1.ActivationPoint{})
 	registerGogo("svn.types.v1.Digest", &typesv1.Digest{})
-	// MsgRotateProviderKey, MsgDrainProvider, MsgRegisterContent, and
-	// MsgWithdrawContent carry an InnerSignature. Without this registration
-	// the tx decoder fails on them before any handler runs.
+	// Every message with an InnerSignature field carries one:
+	// MsgRotateProviderKey, MsgDrainProvider, MsgRegisterContent,
+	// MsgWithdrawContent, MsgAcceptLease, MsgRenewLease, MsgEndLease, and
+	// MsgSubmitAuditBatch. MsgSubmitAuditBatch also carries repeated
+	// EvidenceItem. Without these registrations the tx decoder fails on such
+	// a message (codespace sdk, code 2) before any handler runs.
+	// TestEveryProtocolMessageDecodes sends each message with every field set.
 	registerGogo("svn.types.v1.InnerSignature", &typesv1.InnerSignature{})
+	registerGogo("svn.evidence.v1.EvidenceItem", &evidencev1.EvidenceItem{})
 }
 
 // strictTxDecoder is the SDK protobuf decoder plus one rule: the body bytes

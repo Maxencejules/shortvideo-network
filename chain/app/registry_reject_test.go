@@ -152,7 +152,12 @@ func TestRejectedRegistryMessagesLeaveTheFullState(t *testing.T) {
 		{"withdraw of an unknown id", n.service, func() sdk.Msg { return n.withdrawContent(t, n.service, "x-wd-3", "c404", 1, reasonDigest("x")) }, msgkit.NotFound},
 		{"withdraw of another version", n.service, func() sdk.Msg { return n.withdrawContent(t, n.service, "x-wd-4", "c1", 2, reasonDigest("x")) }, msgkit.StaleVersion},
 	}
+	// rows counts every reject row of this test: 30 handler rejects, 5 ante
+	// rejects, 1 undecodable transaction, 4 council executions whose
+	// registry call fails and 1 registry FORBIDDEN keep.
+	rows := 0
 	for _, tc := range cases {
+		rows++
 		before := chainApp.FullSnapshot()
 		res := n.send(t, c, tc.who, tc.msg())
 		wantCode(t, tc.name, res, tc.want)
@@ -195,6 +200,7 @@ func TestRejectedRegistryMessagesLeaveTheFullState(t *testing.T) {
 		}, msgkit.Bounds, nil},
 	}
 	for _, tc := range ante {
+		rows++
 		before := chainApp.FullSnapshot()
 		accBefore := accounts()
 		res := n.deliverRaw(t, c, n.provider1, tc.raw())
@@ -214,6 +220,7 @@ func TestRejectedRegistryMessagesLeaveTheFullState(t *testing.T) {
 		}
 	}
 	undecodable := directAdminTx(t, "/svn.providers.v1.MsgAdmitProvider", &providersv1.MsgRegisterProvider{Signer: n.provider1.addr})
+	rows++
 	before := chainApp.FullSnapshot()
 	res := n.deliverRaw(t, c, nil, undecodable)
 	if res.Codespace != sdkerrors.RootCodespace || res.Code != sdkerrors.ErrTxDecode.ABCICode() {
@@ -234,6 +241,7 @@ func TestRejectedRegistryMessagesLeaveTheFullState(t *testing.T) {
 		{"prop-withdraw-c1v2", "withdraw-c1", forceWithdrawPayload("c1", 2, reasonDigest("c1")), msgkit.StaleVersion},
 	} {
 		n.councilReady(t, c, tc.id, tc.key, tc.payload)
+		rows++
 		before := chainApp.FullSnapshot()
 		res := n.execute(t, c, tc.id)
 		wantCode(t, "execute "+tc.id, res, tc.want)
@@ -248,40 +256,39 @@ func TestRejectedRegistryMessagesLeaveTheFullState(t *testing.T) {
 	// registries are unchanged.
 	wantCode(t, "register p3", n.send(t, c, n.provider1, n.registerProvider(t, n.provider1, "reg-p3", "p3", "other-group", capacity1)), msgkit.OK)
 	n.councilReady(t, c, "prop-admit-p3", "admit-p3", admitPayload("p3"))
-	provBefore, contBefore, authBefore := chainApp.ModuleSnapshot(app.ModuleProviders), chainApp.ModuleSnapshot(app.ModuleContent), chainApp.AuthoritySnapshot()
+	rows++
+	provBefore, contBefore, authBefore := chainApp.ModuleSnapshot(app.ModuleProviders), chainApp.ModuleSnapshot(app.ModuleContent), chainApp.AuthoritySnapshotForTest()
 	res = n.execute(t, c, "prop-admit-p3")
 	wantCode(t, "execute admit p3", res, msgkit.OK)
-	if authorityResult(res) != string(msgkit.Forbidden) {
-		t.Fatalf("admit p3 authority_result %q", authorityResult(res))
+	if authorityResultCode(res) != string(msgkit.Forbidden) {
+		t.Fatalf("admit p3 authority_result %q", authorityResultCode(res))
 	}
 	if !bytes.Equal(provBefore, chainApp.ModuleSnapshot(app.ModuleProviders)) || !bytes.Equal(contBefore, chainApp.ModuleSnapshot(app.ModuleContent)) {
 		t.Fatal("a rejected admission changed a registry store")
 	}
-	if bytes.Equal(authBefore, chainApp.AuthoritySnapshot()) {
+	if bytes.Equal(authBefore, chainApp.AuthoritySnapshotForTest()) {
 		t.Fatal("the REJECTED mark was not saved")
 	}
 	if state := proposalState(t, chainApp, "prop-admit-p3"); state != authorityv1.ProposalState_PROPOSAL_STATE_REJECTED {
 		t.Fatalf("admit p3 proposal %v", state)
 	}
+	if rows != 41 {
+		t.Fatalf("%d reject rows, want 41", rows)
+	}
 }
 
+// proposalState is the committed state of one council proposal (its 0x10
+// record in the authority store).
 func proposalState(t *testing.T, chainApp *app.App, id string) authorityv1.ProposalState {
 	t.Helper()
-	raw, err := chainApp.AuthorityConsensusBytes()
+	state, found, err := chainApp.ProposalStateForTest(id)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var state authorityv1.GenesisState
-	if err := proto.Unmarshal(raw, &state); err != nil {
-		t.Fatal(err)
+	if !found {
+		t.Fatalf("proposal %s not found", id)
 	}
-	for _, p := range state.GetAuthority().GetProposals() {
-		if p.GetProposalId() == id {
-			return p.GetState()
-		}
-	}
-	t.Fatalf("proposal %s not found", id)
-	return 0
+	return state
 }
 
 func TestDecisionBlockedRegistryPaths(t *testing.T) {
@@ -398,7 +405,7 @@ func TestProviderKeyRotationIsNotAConsensusChange(t *testing.T) {
 	chainApp := c.app()
 	wantCode(t, "register p1", n.send(t, c, n.provider1, n.registerProvider(t, n.provider1, "reg-p1", "p1", groupDevnet, capacity1)), msgkit.OK)
 
-	authBefore := chainApp.AuthoritySnapshot()
+	authBefore := chainApp.AuthoritySnapshotForTest()
 	provBefore := chainApp.ModuleSnapshot(app.ModuleProviders)
 	next := newSigningKey("p1-key-2")
 	res := n.send(t, c, n.provider1, n.rotate(t, n.provider1, "rot-p1", "p1", 1, next))
@@ -406,7 +413,7 @@ func TestProviderKeyRotationIsNotAConsensusChange(t *testing.T) {
 	if len(c.blocks[len(c.blocks)-1].ValidatorUpdates) != 0 {
 		t.Fatal("a provider key rotation returned validator updates")
 	}
-	if !bytes.Equal(authBefore, chainApp.AuthoritySnapshot()) {
+	if !bytes.Equal(authBefore, chainApp.AuthoritySnapshotForTest()) {
 		t.Fatal("a provider key rotation changed authority state")
 	}
 	if bytes.Equal(provBefore, chainApp.ModuleSnapshot(app.ModuleProviders)) {

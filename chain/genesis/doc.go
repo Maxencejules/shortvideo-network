@@ -11,4 +11,8 @@
 // transactions.
 //
 // Private keys are rejected. This package does not generate them.
+//
+// Validate requires at least MinValidators validators with distinct node ids
+// and keys, equal positive powers, and a total power of at most
+// SafeIntegerMax. The power rules are the spec validate_genesis_view check.
 package genesis

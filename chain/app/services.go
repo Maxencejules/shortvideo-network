@@ -18,10 +18,12 @@ import (
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 )
 
-// registerApplicationMessages wires the x/authority council messages and
-// keeps the lease and evidence messages closed until Goals 08-09. The
-// svn.providers.v1.Msg and svn.content.v1.Msg services are registered by
-// their modules (RegisterServices). There is no MsgCreateValidator and no
+// registerApplicationMessages wires the x/authority council messages here.
+// x/providers and x/content register svn.providers.v1.Msg and
+// svn.content.v1.Msg themselves (RegisterServices). Lease and evidence
+// messages decode, with every field set (the nested types are registered in
+// encoding.go), and are rejected with ERROR_CODE_FORBIDDEN until Goals 08-09
+// (TestEveryProtocolMessageDecodes). There is no MsgCreateValidator and no
 // single-signer admit, disable, or force-withdraw message (DEC-009).
 func registerApplicationMessages(router *baseapp.MsgServiceRouter, keeper authority.Keeper) {
 	registerAuthority(router, keeper)

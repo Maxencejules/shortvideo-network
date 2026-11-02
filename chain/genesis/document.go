@@ -2,9 +2,12 @@ package genesis
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"slices"
 	"strings"
@@ -144,8 +147,13 @@ func Parse(raw []byte) (Document, error) {
 	if err := dec.Decode(&doc); err != nil {
 		return Document{}, fmt.Errorf("malformed genesis: %w", err)
 	}
-	var extra any
-	if err := dec.Decode(&extra); err != nil && err.Error() != "EOF" {
+	// Only whitespace may follow the document. A second JSON value is
+	// rejected too, so a file never validates as its first document alone.
+	var extra json.RawMessage
+	switch err := dec.Decode(&extra); {
+	case err == nil:
+		return Document{}, fmt.Errorf("malformed genesis trailing data: a second JSON value follows the document")
+	case !errors.Is(err, io.EOF):
 		return Document{}, fmt.Errorf("malformed genesis trailing data: %w", err)
 	}
 	return doc, nil
@@ -191,6 +199,9 @@ func Validate(doc Document, comet CometIdentity) error {
 		return err
 	}
 	if err := validateSubmitters(doc.Submitters); err != nil {
+		return err
+	}
+	if err := validateSeatRoles(doc.DevnetTestSeats, doc.Submitters); err != nil {
 		return err
 	}
 	if comet.ChainID != "" && comet.ChainID != doc.ChainID {
@@ -383,6 +394,11 @@ func validateValidators(rows []Validator) ([]string, []int64, error) {
 	if maxPower*3 >= total {
 		return nil, nil, fmt.Errorf("validator power share")
 	}
+	// Spec validate_genesis_view runs power_set_invariant, which rejects a
+	// total above safe_integer_max (spec_machine.py:337).
+	if total > SafeIntegerMax {
+		return nil, nil, fmt.Errorf("validator power total exceeds safe_integer_max")
+	}
 	return pubs, powers, nil
 }
 
@@ -411,6 +427,40 @@ func validateSubmitters(rows []Submitter) error {
 	}
 	if authority == 0 {
 		return fmt.Errorf("initial authority account is missing")
+	}
+	return nil
+}
+
+// SeatAddress is the 20-byte account address of a 32-byte ed25519 council
+// seat key: the first 20 bytes of its SHA-256, as CometBFT and the SDK derive
+// it. x/authority SeatAddress computes the same bytes.
+func SeatAddress(pub []byte) []byte {
+	sum := sha256.Sum256(pub)
+	return sum[:AccountBytes]
+}
+
+// validateSeatRoles fails closed when a council seat address is listed as a
+// submitter with any role other than BROADCASTER. The submitter row is how a
+// seat key passes the ante, and every other role names another key class
+// (REQ-SEC-002) with its own handlers: AUTHORITY executes council proposals,
+// ADMITTED_SERVICE registers and withdraws content, ADMITTED_PROVIDER
+// registers a provider. A seat with no submitter row is allowed; it cannot
+// send a transaction. Spec validate_genesis_view has no such rule: this is
+// the interim answer to decision request DR-07-11 (with DR-06-06).
+// Submitters are already well formed when it runs. validateDevnet checks the
+// seats only when the devnet flag is set, so the keys are decoded here.
+func validateSeatRoles(seats []DevnetTestSeat, rows []Submitter) error {
+	for _, seat := range seats {
+		raw, err := hex.DecodeString(seat.PublicKeyHex)
+		if err != nil || len(raw) != ConsensusKeyBytes {
+			return fmt.Errorf("seat key %s", seat.SeatID)
+		}
+		addr := hex.EncodeToString(SeatAddress(raw))
+		for _, row := range rows {
+			if strings.ToLower(row.AddressHex) == addr && row.Role != RoleBroadcaster {
+				return fmt.Errorf("seat %s address is a %s submitter; a seat address may only be %s", seat.SeatID, row.Role, RoleBroadcaster)
+			}
+		}
 	}
 	return nil
 }

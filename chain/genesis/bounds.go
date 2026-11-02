@@ -1,7 +1,11 @@
 package genesis
 
-// Protocol v0 denial-of-service bounds. They match docs/protocol/bounds.json.
-// A test reads that file and fails if these constants drift. They are not
+// Protocol v0 denial-of-service bounds. Each constant below that has a key in
+// docs/protocol/bounds.json matches that key, and TestBoundsMatchProtocolFile
+// reads the file and fails if one drifts. Three constants have no bounds.json
+// key: ProtocolVersion and MinValidators follow the spec machine
+// (protocol_version 1, MIN_VALIDATOR_COUNT 4), and MaxChainIDLen is the
+// CometBFT chain id limit, which the same test compares. They are not
 // sponsorship allowances. DEC-005 stays unset.
 const (
 	ProtocolVersion = 1
@@ -13,6 +17,10 @@ const (
 	MaxChainIDLen     = 50
 	UnixSecondsMin    = 1
 	UnixSecondsMax    = 253402300799
+
+	// SafeIntegerMax is bounds.json safe_integer_max, 2^53-1. The total
+	// validator power must not exceed it.
+	SafeIntegerMax int64 = 9007199254740991
 
 	MaxTxBytes  uint64 = 65536
 	MaxGasPerTx uint64 = 20000000

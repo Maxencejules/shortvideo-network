@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -136,8 +137,9 @@ func TestRegistryFlowReplayAndQueries(t *testing.T) {
 		t.Fatalf("pages with limit 1: %d, limit 100: %d", len(views[0].pages1), len(views[0].pages100))
 	}
 
-	// Query results equal the records decoded from Export.
-	exported, err := c.app().Export()
+	// Query results equal the records decoded from the registry modules'
+	// ExportGenesis. App.Export refuses after council messages (DR-06-01).
+	exported, err := c.app().ExportModulesForTest(app.ModuleProviders, app.ModuleContent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,18 +303,22 @@ func prefixPairs(t *testing.T, snapshot []byte, prefix byte) []byte {
 	return out
 }
 
-// TestGenesisRoundTripFromCommittedState is a module-level round trip: the
-// app's export of committed state goes through each registry's
+// TestGenesisRoundTripFromCommittedState is a module-level round trip: each
+// registry module's ExportGenesis of committed state goes through its
 // ValidateGenesis, InitGenesis into fresh bare module stores, and
-// ExportGenesis. It is not an app export/import: InitChain refuses a
-// non-empty catalogue (TestLaunchGenesisRejectsNonEmptyCatalog), so the
-// app-level round trip is BLOCKED on decision requests DR-07-02 and
+// ExportGenesis. It is not an app export/import: App.Export refuses after
+// council messages (DR-06-01) and with a non-empty catalogue, and InitChain
+// refuses a non-empty catalogue (TestLaunchGenesisRejectsNonEmptyCatalog),
+// so the app-level round trip is BLOCKED on decision requests DR-07-02 and
 // DR-07-03.
 func TestGenesisRoundTripFromCommittedState(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)
 	runRegistryFlow(t, n, c)
-	exported, err := c.app().Export()
+	if _, err := c.app().Export(); err == nil || !strings.HasPrefix(err.Error(), "export refused:") {
+		t.Fatalf("App.Export after the registry flow: %v", err)
+	}
+	exported, err := c.app().ExportModulesForTest(app.ModuleProviders, app.ModuleContent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,15 +384,24 @@ func TestGenesisRoundTripFromCommittedState(t *testing.T) {
 	}
 }
 
-// TestLaunchGenesisRejectsNonEmptyCatalog: the app's InitChain refuses its
-// own export once a provider or content record exists. This is the goal 05
-// launch rule, stricter than protocol v0 for providers; the app-level
-// export/import round trip is BLOCKED on DR-07-02 and DR-07-03.
+// TestLaunchGenesisRejectsNonEmptyCatalog: the app's InitChain refuses a
+// genesis whose provider or content catalogue is not empty, here the
+// registry modules' own export once a provider or content record exists.
+// This is the goal 05 launch rule, stricter than protocol v0 for providers;
+// the app-level export/import round trip is BLOCKED on DR-07-02 and
+// DR-07-03. The InitChain input is the original genesis document's module
+// map with the exported providers or content substituted: App.Export
+// refuses after council messages (DR-06-01), so authority state cannot be
+// exported.
 func TestLaunchGenesisRejectsNonEmptyCatalog(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)
 	runRegistryFlow(t, n, c)
-	exported, err := c.app().Export()
+	exported, err := c.app().ExportModulesForTest(app.ModuleProviders, app.ModuleContent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	original, err := app.AppStateFromDocument(codecFromApp(t, n.doc.ChainID), n.doc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -419,7 +434,7 @@ func TestLaunchGenesisRejectsNonEmptyCatalog(t *testing.T) {
 	}
 	with := func(providersRaw, contentRaw json.RawMessage) map[string]json.RawMessage {
 		out := map[string]json.RawMessage{}
-		for k, v := range exported {
+		for k, v := range original {
 			out[k] = v
 		}
 		out[app.ModuleProviders] = providersRaw
@@ -432,8 +447,8 @@ func TestLaunchGenesisRejectsNonEmptyCatalog(t *testing.T) {
 	if err := initChain(with(empty(app.ModuleProviders), exported[app.ModuleContent])); err == nil {
 		t.Fatal("InitChain accepted a non-empty content catalogue")
 	}
-	// The same exported state with an empty catalogue starts: the catalogue
-	// is the only reason for the two rejections above.
+	// The same genesis with an empty catalogue starts: the catalogue is the
+	// only reason for the two rejections above.
 	if err := initChain(with(empty(app.ModuleProviders), empty(app.ModuleContent))); err != nil {
 		t.Fatalf("exported state with an empty catalogue: %v", err)
 	}

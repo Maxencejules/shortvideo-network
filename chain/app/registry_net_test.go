@@ -548,15 +548,17 @@ func (n *regNet) council(t *testing.T, c *cluster, id, parameterKey string, payl
 	n.councilReady(t, c, id, parameterKey, payload)
 	res := n.execute(t, c, id)
 	wantCode(t, "execute "+id, res, msgkit.OK)
-	if authorityResult(res) != "" {
-		t.Fatalf("execute %s kept with %s", id, authorityResult(res))
+	if authorityResultCode(res) != "" {
+		t.Fatalf("execute %s kept with %s", id, authorityResultCode(res))
 	}
 	n.policy++
 	return res
 }
 
-// authorityResult is the code of a kept execution (REJECTED or EXPIRED).
-func authorityResult(res *abci.ExecTxResult) string {
+// authorityResultCode is the code of a kept execution (REJECTED or
+// EXPIRED). authorityResult (authority_outcomes_test.go) returns every
+// attribute of the event.
+func authorityResultCode(res *abci.ExecTxResult) string {
 	for _, ev := range res.Events {
 		if ev.Type != "authority_result" {
 			continue

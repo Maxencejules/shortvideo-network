@@ -61,7 +61,7 @@ func (k Keeper) registry(ctx sdk.Context) Registry {
 }
 
 // external is the global business-id lookup for the engine. It skips this
-// module's own ledger; the engine reads that from the side document.
+// module's own ledger; the engine reads authority's own id from 0x11.
 func (k Keeper) external(ctx sdk.Context) func(string) ([]byte, bool) {
 	if k.peers == nil {
 		return nil
