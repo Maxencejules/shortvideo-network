@@ -1,0 +1,80 @@
+COMMAND bash -c echo\ \"base\ 3853e34\ chain/x/authority/msg.go:\"\;\ git\ show\ 3853e3430217096c3e65664bc799859942ea451e:chain/x/authority/msg.go\ \|\ grep\ -n\ -B4\ -A14\ \"\^func\ enforceCommitted\"\;\ echo\;\ echo\ \"main\ f5916bd\ chain/x/authority/msg.go:\"\;\ git\ show\ f5916bd02ce49efa2481dd3a7749a00b2fe6f67e:chain/x/authority/msg.go\ \|\ grep\ -n\ -B8\ -A16\ \"\^func\ enforceCommitted\"\;\ echo\;\ echo\ \"head\ chain/x/authority/msg.go:\"\;\ grep\ -n\ -B8\ -A16\ \"\^func\ enforceCommitted\"\ chain/x/authority/msg.go
+DATE 2026-11-02T04:10:05Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+base 3853e34 chain/x/authority/msg.go:
+72-	}
+73-	return sdkError(out.Code)
+74-}
+75-
+76:func enforceCommitted(ctx sdk.Context, signer []byte) string {
+77-	limit := ctx.GasMeter().Limit()
+78-	if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+79-		return CodeBounds
+80-	}
+81-	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {
+82-		return CodeBounds
+83-	}
+84-	ctx.GasMeter().ConsumeGas(50_000, "authority")
+85-	if len(signer) != 20 {
+86-		return CodeMalformed
+87-	}
+88-	return ""
+89-}
+90-
+
+main f5916bd chain/x/authority/msg.go:
+92-	default:
+93-		sdkCtx.EventManager().EmitEvent(sdk.NewEvent("authority_result", sdk.NewAttribute("code", out.Code)))
+94-		return sdkError(out.Code)
+95-	}
+96-}
+97-
+98-// enforceCommitted bounds the transaction and charges the fixed gas before
+99-// any store read.
+100:func enforceCommitted(ctx sdk.Context, signer []byte) string {
+101-	limit := ctx.GasMeter().Limit()
+102-	if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+103-		return CodeBounds
+104-	}
+105-	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {
+106-		return CodeBounds
+107-	}
+108-	ctx.GasMeter().ConsumeGas(authorityGas, "authority")
+109-	if len(signer) != 20 {
+110-		return CodeMalformed
+111-	}
+112-	return ""
+113-}
+114-
+115-// EndBlock applies due validator changes on a cache branch and writes it only
+116-// when the set changed. A removal-bind failure halts: nothing is written,
+
+head chain/x/authority/msg.go:
+116-// enforceCommitted is the first check of every authority handler. It bounds
+117-// the transaction and charges the fixed gas before any store read. In
+118-// simulation (sdk.ExecModeSimulate) the SDK installs an infinite gas meter
+119-// whose limit is 2^64-1; the meter check is skipped there so a client can
+120-// estimate gas, and the ante handler still checks the declared gas limit (a
+121-// declared 0 is accepted only in simulation). The tx-bytes check, the fixed
+122-// charge and the signer check run in every mode. FinalizeBlock always runs
+123-// the meter check; CheckTx runs no message handler.
+124:func enforceCommitted(ctx sdk.Context, signer []byte) string {
+125-	if ctx.ExecMode() != sdk.ExecModeSimulate {
+126-		limit := ctx.GasMeter().Limit()
+127-		if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+128-			return CodeBounds
+129-		}
+130-	}
+131-	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {
+132-		return CodeBounds
+133-	}
+134-	ctx.GasMeter().ConsumeGas(authorityGas, "authority")
+135-	if len(signer) != 20 {
+136-		return CodeMalformed
+137-	}
+138-	return ""
+139-}
+140-
+EXIT:0

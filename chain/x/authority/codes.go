@@ -1,6 +1,9 @@
 package authority
 
-import "github.com/Maxencejules/shortvideo-network/chain/svnerr"
+import (
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
+)
 
 // Protocol error names. ABCI success is the empty code.
 const (
@@ -122,6 +125,11 @@ func sdkError(code string) error {
 	case CodeQuorum:
 		return svnerr.ErrQuorum.Wrap(code)
 	default:
+		// A registry hook can return a protocol code authority never
+		// produces itself. msgkit maps it; an unknown name is MALFORMED.
+		if err := msgkit.Code(code).Err(); err != nil {
+			return err
+		}
 		return svnerr.ErrMalformed.Wrap(code)
 	}
 }

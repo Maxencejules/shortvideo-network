@@ -1,0 +1,7 @@
+COMMAND go test -race -count=1 -timeout 2m ./agents/provider/...
+DATE 2026-11-02T04:29:18Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider	1.016s
+EXIT:0

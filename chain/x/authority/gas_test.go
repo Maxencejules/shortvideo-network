@@ -159,7 +159,10 @@ func hexKeys(set map[string]bool) []string {
 // and write the proposer's 0x14 at the record's base; the stale branch reads
 // the parameter's 0x12; a rejected execute writes nothing. The second
 // fix-round review found the comment and the table left out the 0x14 reads of
-// a propose, an approve keep and an execute.
+// a propose, an approve keep and an execute. An execute of an admit, disable
+// or force-withdraw payload reads and writes the keys of a governed execute
+// except 0x13: the registry hook writes x/providers or x/content, and no
+// authority key under the reserved 0x17 prefix is read or written.
 func TestMessageKeySets(t *testing.T) {
 	kv, seats, authority := readyStore(t)
 	cfg := []byte{configKey}
@@ -227,4 +230,30 @@ func TestMessageKeySets(t *testing.T) {
 		keySet(businessKey("e3"), proposalKey("p3"), policy, []byte("scan:\x03"), openKey(seat1, 3)),
 		keySet(openKey(seat1, 3), proposalKey("p3")),
 		func(st *State) Outcome { return st.ExecuteChange(execute(authority, "e3", "p3")) })
+
+	// Registry payloads: the hook (a fake here) is the only other effect.
+	// Each executes at the current version, so each one bumps it.
+	registry := &fakeRegistry{}
+	for i, row := range []struct {
+		id  string
+		msg *authorityv1.MsgProposeChange
+	}{
+		{"p6", admitProposal("p1")},
+		{"p7", disableProposal("p1")},
+		{"p8", withdrawProposal("c1", 1, reasonValue)},
+	} {
+		version := uint64(3 + i)
+		queueAt(t, kv, seats, testHeight, unix, row.id, row.msg)
+		param := recordOf(t, kv, row.id).ParameterKey
+		business := "e" + row.id[1:]
+		run("execute "+row.id, "", keySet(businessKey(business), proposalKey(row.id), policy, openKey(seat1, version)),
+			keySet(openKey(seat1, version), proposalKey(row.id), executedKey(param), policy, businessKey(business)),
+			func(st *State) Outcome {
+				st.Registry = registry
+				return st.ExecuteChange(execute(authority, business, row.id))
+			})
+	}
+	if len(registry.calls) != 3 {
+		t.Fatalf("registry calls %+v", registry.calls)
+	}
 }

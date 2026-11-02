@@ -1,0 +1,35 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ env\ -C\ chain\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzProposalPayloadProto\$\'\ -fuzztime=60s\ ./x/authority/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \"new\ or\ changed\ files\ under\ chain/\ after\ the\ run:\"\;\ git\ status\ --porcelain\ --untracked-files=all\ --\ chain\;\ echo\ \"\(end\ of\ list\)\"\;\ exit\ \$s
+DATE 2026-11-02T04:18:12Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+loadavg before: 5.40 4.88 3.08 1/195 14913
+fuzz: elapsed: 0s, gathering baseline coverage: 0/199 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 94/199 completed
+fuzz: elapsed: 6s, gathering baseline coverage: 189/199 completed
+fuzz: elapsed: 7s, gathering baseline coverage: 199/199 completed, now fuzzing with 4 workers
+fuzz: elapsed: 9s, execs: 5969 (1926/sec), new interesting: 0 (total: 199)
+fuzz: elapsed: 12s, execs: 18060 (4031/sec), new interesting: 1 (total: 200)
+fuzz: elapsed: 15s, execs: 32763 (4900/sec), new interesting: 2 (total: 201)
+fuzz: elapsed: 18s, execs: 41646 (2958/sec), new interesting: 3 (total: 202)
+fuzz: elapsed: 21s, execs: 56894 (5088/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 24s, execs: 62628 (1909/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 27s, execs: 65578 (984/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 30s, execs: 68099 (840/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 33s, execs: 68099 (0/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 36s, execs: 68099 (0/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 39s, execs: 68099 (0/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 42s, execs: 68099 (0/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 45s, execs: 68099 (0/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 48s, execs: 68099 (0/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 51s, execs: 68099 (0/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 54s, execs: 68099 (0/sec), new interesting: 5 (total: 204)
+fuzz: elapsed: 57s, execs: 126930 (19607/sec), new interesting: 6 (total: 205)
+fuzz: elapsed: 1m0s, execs: 129649 (906/sec), new interesting: 6 (total: 205)
+fuzz: elapsed: 1m1s, execs: 129649 (0/sec), new interesting: 6 (total: 205)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	61.265s
+loadavg after: 5.66 5.03 3.26 1/197 15089
+new or changed files under chain/ after the run:
+(end of list)
+EXIT:0

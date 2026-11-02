@@ -113,11 +113,20 @@ func populate(m protoreflect.Message, pick int, used map[protoreflect.FullName]b
 // TestEveryProtocolMessageDecodes sends every protocol message with every
 // field set, nested and repeated messages included, in enough variants to
 // set every oneof alternative that is a message. The admitted service account
-// signs each one. Each transaction must decode and reach its handler: the
-// three authority messages get their svn code (a service account is not a
-// seat, and is not the authority executor) and every other message gets
-// ERROR_CODE_FORBIDDEN from the router. The full authority store is
-// byte-identical after each. Fails without the EvidenceItem registration: a
+// signs each one. Each transaction must decode and reach its handler, which
+// returns its exact svn code:
+//   - authority: propose and approve UNAUTHORIZED (a service account is not a
+//     seat), execute FORBIDDEN (it is not the authority executor);
+//   - x/providers (Goal 07): register FORBIDDEN (the service account is not
+//     an ADMITTED_PROVIDER), update, rotate and drain NOT_FOUND (no provider
+//     "x1" exists);
+//   - x/content (Goal 07): register and withdraw BOUNDS (the populated ids,
+//     digests and sizes are outside the content bounds);
+//   - leases and evidence: ERROR_CODE_FORBIDDEN from the router until Goals
+//     08-09.
+//
+// The full authority store and the full non-account state are byte-identical
+// after each (council.reject). Fails without the EvidenceItem registration: a
 // MsgSubmitAuditBatch with one item fails decoding with codespace sdk, code 2.
 func TestEveryProtocolMessageDecodes(t *testing.T) {
 	c := newCouncil(t, nil)
@@ -147,6 +156,10 @@ func TestEveryProtocolMessageDecodes(t *testing.T) {
 		switch desc.FullName() {
 		case "svn.authority.v1.MsgProposeChange", "svn.authority.v1.MsgApproveChange":
 			code, protoCode = 1, authority.CodeUnauthorized
+		case "svn.providers.v1.MsgUpdateProvider", "svn.providers.v1.MsgRotateProviderKey", "svn.providers.v1.MsgDrainProvider":
+			code, protoCode = 16, authority.CodeNotFound
+		case "svn.content.v1.MsgRegisterContent", "svn.content.v1.MsgWithdrawContent":
+			code, protoCode = 19, authority.CodeBounds
 		}
 		var variants [][]byte
 		for pick := 0; pick < 8; pick++ {
@@ -182,6 +195,9 @@ func TestEveryProtocolMessageDecodes(t *testing.T) {
 		if !used[name] {
 			t.Errorf("no variant set a %s", name)
 		}
+	}
+	if sent != 19 {
+		t.Fatalf("%d transactions, want 19", sent)
 	}
 	t.Logf("%d transactions, %d nested message types", sent, len(want))
 }

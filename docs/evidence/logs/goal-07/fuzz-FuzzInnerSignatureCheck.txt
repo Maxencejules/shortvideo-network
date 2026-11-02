@@ -1,0 +1,25 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ env\ -C\ chain\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzInnerSignatureCheck\$\'\ -fuzztime=30s\ ./msgkit/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \"new\ or\ changed\ files\ under\ chain/\ after\ the\ run:\"\;\ git\ status\ --porcelain\ --untracked-files=all\ --\ chain\;\ echo\ \"\(end\ of\ list\)\"\;\ exit\ \$s
+DATE 2026-11-01T09:46:36Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+loadavg before: 6.01 5.50 3.60 1/197 21353
+fuzz: elapsed: 0s, gathering baseline coverage: 0/92 completed
+fuzz: elapsed: 2s, gathering baseline coverage: 92/92 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 4497 (1499/sec), new interesting: 0 (total: 92)
+fuzz: elapsed: 6s, execs: 21228 (5577/sec), new interesting: 2 (total: 94)
+fuzz: elapsed: 9s, execs: 37337 (5370/sec), new interesting: 3 (total: 95)
+fuzz: elapsed: 12s, execs: 55044 (5903/sec), new interesting: 6 (total: 98)
+fuzz: elapsed: 15s, execs: 74543 (6500/sec), new interesting: 8 (total: 100)
+fuzz: elapsed: 18s, execs: 90994 (5484/sec), new interesting: 8 (total: 100)
+fuzz: elapsed: 21s, execs: 108040 (5682/sec), new interesting: 8 (total: 100)
+fuzz: elapsed: 24s, execs: 125714 (5891/sec), new interesting: 9 (total: 101)
+fuzz: elapsed: 27s, execs: 144237 (6175/sec), new interesting: 9 (total: 101)
+fuzz: elapsed: 30s, execs: 161828 (5864/sec), new interesting: 9 (total: 101)
+fuzz: elapsed: 31s, execs: 161828 (0/sec), new interesting: 9 (total: 101)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	30.608s
+loadavg after: 5.80 5.50 3.66 1/192 21599
+new or changed files under chain/ after the run:
+(end of list)
+EXIT:0

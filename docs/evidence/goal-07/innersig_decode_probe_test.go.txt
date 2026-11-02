@@ -1,0 +1,66 @@
+package app_test
+
+// Evidence probe, not repository code. It is copied into a scratch archive
+// of a chain tree and decodes one MsgRotateProviderKey transaction with that
+// tree's own app.MakeEncoding TxDecoder. It reports the decode result and
+// does not assert it, so the same file runs on the base and the head tree.
+
+import (
+	"bytes"
+	"testing"
+
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/Maxencejules/shortvideo-network/chain/app"
+	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
+	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
+)
+
+func TestProbeRotateDecode(t *testing.T) {
+	enc, err := app.MakeEncoding()
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := &providersv1.MsgRotateProviderKey{
+		Signer:             bytes.Repeat([]byte{1}, 20),
+		BusinessId:         "rot-p1",
+		ProviderId:         "p1",
+		NewSigningPubkey:   bytes.Repeat([]byte{2}, 32),
+		NewSigningKeyId:    "key-p1b",
+		ExpectedGeneration: 1,
+		CurrentKeySignature: &typesv1.InnerSignature{
+			Domain:                  typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_ROTATE,
+			CanonicalProfileVersion: 1,
+			KeyId:                   "key-p1",
+			PublicKey:               bytes.Repeat([]byte{3}, 32),
+			Signature:               bytes.Repeat([]byte{4}, 64),
+		},
+	}
+	value, err := proto.Marshal(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := &txtypes.TxBody{Messages: []*codectypes.Any{{TypeUrl: "/svn.providers.v1.MsgRotateProviderKey", Value: value}}}
+	bodyBz, err := body.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth := &txtypes.AuthInfo{Fee: &txtypes.Fee{GasLimit: 100000}}
+	authBz, err := auth.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := &txtypes.TxRaw{BodyBytes: bodyBz, AuthInfoBytes: authBz, Signatures: [][]byte{make([]byte, 64)}}
+	rawBz, err := raw.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := enc.TxConfig.TxDecoder()(rawBz)
+	if err != nil {
+		t.Logf("probe result: decode error: %v", err)
+		return
+	}
+	t.Logf("probe result: decoded %d message(s) of type %T", len(decoded.GetMsgs()), decoded.GetMsgs()[0])
+}

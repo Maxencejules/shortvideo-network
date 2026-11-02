@@ -14,31 +14,19 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
-	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
-	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 )
 
-// registerApplicationMessages wires the three authority messages Goal 06
-// commits. Every other protocol message decodes, with every field set (the
-// nested types are registered in encoding.go), and is rejected with
-// ERROR_CODE_FORBIDDEN until its goal (TestEveryProtocolMessageDecodes). The
-// provider registry, with RegisterProvider and RotateProviderKey, is Goal 07.
-// There is no MsgCreateValidator and no single-signer admit, disable, or
-// force-withdraw.
+// registerApplicationMessages wires the x/authority council messages here.
+// x/providers and x/content register svn.providers.v1.Msg and
+// svn.content.v1.Msg themselves (RegisterServices). Lease and evidence
+// messages decode, with every field set (the nested types are registered in
+// encoding.go), and are rejected with ERROR_CODE_FORBIDDEN until Goals 08-09
+// (TestEveryProtocolMessageDecodes). There is no MsgCreateValidator and no
+// single-signer admit, disable, or force-withdraw message (DEC-009).
 func registerApplicationMessages(router *baseapp.MsgServiceRouter, keeper authority.Keeper) {
 	registerAuthority(router, keeper)
-	register(router, "svn.providers.v1.Msg", []methodSpec{
-		{name: "RegisterProvider", msg: &providersv1.MsgRegisterProvider{}, err: svnerr.ErrForbidden},
-		{name: "UpdateProvider", msg: &providersv1.MsgUpdateProvider{}, err: svnerr.ErrForbidden},
-		{name: "RotateProviderKey", msg: &providersv1.MsgRotateProviderKey{}, err: svnerr.ErrForbidden},
-		{name: "DrainProvider", msg: &providersv1.MsgDrainProvider{}, err: svnerr.ErrForbidden},
-	})
-	register(router, "svn.content.v1.Msg", []methodSpec{
-		{name: "RegisterContent", msg: &contentv1.MsgRegisterContent{}, err: svnerr.ErrForbidden},
-		{name: "WithdrawContent", msg: &contentv1.MsgWithdrawContent{}, err: svnerr.ErrForbidden},
-	})
 	register(router, "svn.leases.v1.Msg", []methodSpec{
 		{name: "OfferLease", msg: &leasesv1.MsgOfferLease{}, err: svnerr.ErrForbidden},
 		{name: "AcceptLease", msg: &leasesv1.MsgAcceptLease{}, err: svnerr.ErrForbidden},

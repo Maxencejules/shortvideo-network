@@ -1,0 +1,15 @@
+COMMAND bash -c git\ ls-remote\ origin\ refs/heads/goal-06\ refs/heads/goal-07\ refs/heads/main\;\ git\ merge-base\ --is-ancestor\ f5916bd02ce49efa2481dd3a7749a00b2fe6f67e\ HEAD\ \&\&\ echo\ \'main\ f5916bd\ is\ an\ ancestor\ of\ HEAD\'\;\ git\ merge-base\ --is-ancestor\ 0936332145252a00c041315370da8fda295a6dfb\ HEAD\ \&\&\ echo\ \'0936332\ \(goal-06\ round\ 3\ head\)\ is\ an\ ancestor\ of\ HEAD\'\;\ git\ merge-base\ --is-ancestor\ 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2\ HEAD\ \&\&\ echo\ \'43c1a10\ \(previous\ goal\ 07\ evidence\ commit\)\ is\ an\ ancestor\ of\ HEAD\'\;\ echo\ \'tree\ of\ f5916bd\ and\ of\ 0936332:\'\;\ git\ rev-parse\ f5916bd02ce49efa2481dd3a7749a00b2fe6f67e\^\{tree\}\ 0936332145252a00c041315370da8fda295a6dfb\^\{tree\}
+DATE 2026-11-02T04:07:21Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+0936332145252a00c041315370da8fda295a6dfb	refs/heads/goal-06
+b782e0149e1a70758b81b29929d12eab0da8a006	refs/heads/goal-07
+f5916bd02ce49efa2481dd3a7749a00b2fe6f67e	refs/heads/main
+main f5916bd is an ancestor of HEAD
+0936332 (goal-06 round 3 head) is an ancestor of HEAD
+43c1a10 (previous goal 07 evidence commit) is an ancestor of HEAD
+tree of f5916bd and of 0936332:
+ba701bb9e5234ba6172ca7674e82714a97cce4b7
+ba701bb9e5234ba6172ca7674e82714a97cce4b7
+EXIT:0

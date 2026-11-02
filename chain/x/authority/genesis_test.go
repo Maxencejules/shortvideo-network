@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
@@ -19,6 +20,14 @@ import (
 // accepted every pending, proposal, council and projection row below.
 func TestValidateGenesisState(t *testing.T) {
 	start := &GenesisPoint{InitialHeight: 1, GenesisUnixSeconds: testTime}
+	// seatRole lists seat-2's address as a submitter with role.
+	seatRole := func(role typesv1.SubmitterRole) func(*authorityv1.GenesisState) {
+		return func(g *authorityv1.GenesisState) {
+			g.Authority.Submitters = append(g.Authority.Submitters, &typesv1.Submitter{
+				Address: SeatAddress(g.Authority.DevnetTestSeats[1].GetPublicKey()), Role: role,
+			})
+		}
+	}
 	rows := []struct {
 		name string
 		edit func(*authorityv1.GenesisState)
@@ -47,6 +56,12 @@ func TestValidateGenesisState(t *testing.T) {
 			g.Authority.Submitters[1].Role = typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED
 		}, nil, CodeMalformed},
 		{"duplicate submitter", func(g *authorityv1.GenesisState) { g.Authority.Submitters[1].Address = bytes20(1) }, nil, CodeDuplicate},
+		// A seat address is a submitter only as BROADCASTER (DR-07-11).
+		{"seat address as BROADCASTER", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER), start, ""},
+		{"seat address as AUTHORITY", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY), nil, CodeForbidden},
+		{"seat address as ADMITTED_SERVICE", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE), nil, CodeForbidden},
+		{"seat address as ADMITTED_PROVIDER", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER), nil, CodeForbidden},
+		{"seat address as AUDITOR", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_AUDITOR), nil, CodeForbidden},
 		{"three validators", func(g *authorityv1.GenesisState) { g.Authority.Validators = g.Authority.Validators[:3] }, nil, CodeForbidden},
 		{"bad node id", func(g *authorityv1.GenesisState) { g.Authority.Validators[0].NodeId = "V1!" }, nil, CodeBounds},
 		{"duplicate node id", func(g *authorityv1.GenesisState) { g.Authority.Validators[1].NodeId = "v1" }, nil, CodeDuplicate},
@@ -147,6 +162,19 @@ func TestValidateGenesisState(t *testing.T) {
 	gen.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{heightEntry("g1", "v5", pub(9), 1, 4)}
 	if err := ValidateGenesisState(gen, nil); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestSeatAddressMatchesGenesis: the document check (genesis.SeatAddress)
+// and the engine (SeatAddress, CometBFT's ed25519 address) derive the same
+// seat account, so both genesis validators apply DR-07-11 to one address.
+func TestSeatAddressMatchesGenesis(t *testing.T) {
+	for i := 0; i < 64; i++ {
+		key := pub(byte(i))
+		key[0] = byte(255 - i)
+		if got, want := genesis.SeatAddress(key), SeatAddress(key); len(want) != 20 || !bytes.Equal(got, want) {
+			t.Fatalf("key %x: genesis %x engine %x", key, got, want)
+		}
 	}
 }
 

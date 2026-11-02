@@ -23,26 +23,31 @@ import (
 )
 
 // keeperEnv is a keeper on a real rootmulti store (IAVL over an in-memory
-// cosmos-db). Contexts read and write through the SDK gas store.
+// cosmos-db). Contexts read and write through the SDK gas store. registryKey
+// is a second IAVL store that the registry test hooks write to; it stays
+// empty unless a test uses it (keeper_registry_test.go).
 type keeperEnv struct {
-	cms       storetypes.CommitMultiStore
-	key       *storetypes.KVStoreKey
-	keeper    Keeper
-	seats     []testSeat
-	authority []byte
-	height    int64
-	unix      int64
+	cms         storetypes.CommitMultiStore
+	key         *storetypes.KVStoreKey
+	registryKey *storetypes.KVStoreKey
+	keeper      Keeper
+	seats       []testSeat
+	authority   []byte
+	height      int64
+	unix        int64
 }
 
 func newKeeperEnv(t testing.TB, gen *authorityv1.GenesisState, seats []testSeat, authority []byte) *keeperEnv {
 	t.Helper()
 	cms := store.NewCommitMultiStore(dbm.NewMemDB(), log.NewNopLogger())
 	key := storetypes.NewKVStoreKey(ModuleName)
+	registryKey := storetypes.NewKVStoreKey("registry")
 	cms.MountStoreWithDB(key, storetypes.StoreTypeIAVL, nil)
+	cms.MountStoreWithDB(registryKey, storetypes.StoreTypeIAVL, nil)
 	if err := cms.LoadLatestVersion(); err != nil {
 		t.Fatal(err)
 	}
-	env := &keeperEnv{cms: cms, key: key, keeper: NewKeeper(key), seats: seats, authority: authority, height: testHeight, unix: testTime}
+	env := &keeperEnv{cms: cms, key: key, registryKey: registryKey, keeper: NewKeeper(key), seats: seats, authority: authority, height: testHeight, unix: testTime}
 	if err := env.keeper.Init(env.blockCtx(), gen); err != nil {
 		t.Fatal(err)
 	}

@@ -18,10 +18,13 @@ import (
 
 // FuzzStateTransitions runs bounded sequences of authority operations
 // against the per-object store, the way the keeper runs messages: each
-// operation runs on a cache branch (cachekv) of the committed store; a
+// operation runs on a cache branch (cachekv) of the committed store and on a
+// clone of the harness registry (a specRegistry with no provider and no
+// content, as Keeper.transition binds the hooks to a nested branch); a
 // success or keep outcome is written back; any other outcome (a refusal, an
 // idempotent retry, an ApplyDue halt) must leave the branch byte-identical
-// to the committed store (dumpKV: every key and value). After every
+// to the committed store (dumpKV: every key and value) and the registry
+// clone equal to the registry. A keep never writes the registry. After every
 // committed operation the harness checks the invariants listed on
 // checkInvariants. An ApplyDue halt also fails the run: council messages
 // must never schedule a change that stops the chain. TestFuzzCorpusReach
@@ -160,6 +163,7 @@ type fuzzHarness struct {
 	vals      []byte                // validatorBytes of the committed set
 	c         fuzzCounters
 	trace     []string // one token per operation (traceToken)
+	registry  *specRegistry
 }
 
 // fuzzRecord is the part of a proposal record the harness uses.
@@ -228,6 +232,7 @@ func runFuzzTrace(t testing.TB, raw []byte) (fuzzCounters, []string) {
 		executed:  map[string]bool{},
 		records:   map[string]fuzzRecord{},
 		dump:      dumpKV(kv),
+		registry:  emptySpecRegistry(),
 	}
 	h.vals = h.validatorBytes(h.load(kv, h.height, h.unix).Validators())
 	for i := 0; i < len(raw) && h.c.Ops < fuzzMaxOps; i += 2 {
@@ -268,10 +273,16 @@ func (h *fuzzHarness) step(b, v byte) {
 		unix += fuzzTimeSteps[v%8]
 	}
 	trial := cachekv.NewStore(h.base)
-	r := h.run(h.load(trial, height, unix), op, int(b>>3)%4, b>>5, v)
+	st := h.load(trial, height, unix)
+	reg := h.registry.clone()
+	st.Registry = reg
+	r := h.run(st, op, int(b>>3)%4, b>>5, v)
 	h.trace = append(h.trace, traceToken(r))
 	if r.want != "" && r.out.Code != r.want {
 		t.Fatalf("op %d (%d/%d): wrong-role action got %+v, want %s", index, op, v, r.out, r.want)
+	}
+	if (!r.out.Success() || r.out.Idempotent) && !reg.equal(h.registry) {
+		t.Fatalf("op %d (%d) outcome %+v wrote to the registry", index, op, r.out)
 	}
 	switch {
 	case r.out.Idempotent:
@@ -290,6 +301,9 @@ func (h *fuzzHarness) step(b, v byte) {
 		return
 	}
 	trial.Write()
+	if r.out.Success() {
+		h.registry = reg
+	}
 	h.c.Committed++
 	h.height, h.unix = height, unix
 	if r.onCommit != nil {
@@ -667,8 +681,8 @@ func validatorFuzzMsg(st *State, node string, key []byte, power int64, x, v byte
 }
 
 // otherFuzzMsg is a governed limit (payload bits 0-5), an admit payload (6)
-// or a force-withdraw payload (7). The last two cannot execute in goal 06:
-// no provider row and no content registry exist.
+// or a force-withdraw payload (7). The last two execute to NOT_FOUND: no
+// provider or content record exists in the harness registry.
 func otherFuzzMsg(v byte) *authorityv1.MsgProposeChange {
 	switch index := int(v & 7); index {
 	case 6:

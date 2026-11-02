@@ -3,7 +3,6 @@ package app_test
 import (
 	"context"
 	"encoding/hex"
-	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -21,6 +21,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
+	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
 func TestMessagesAreRejected(t *testing.T) {
@@ -34,11 +35,23 @@ func TestMessagesAreRejected(t *testing.T) {
 	}
 	chainApp := boot(t, doc)
 	number := serviceAccountNumber(authorityKey.PubKey().Address(), serviceKey.PubKey().Address())
-	msg := &providersv1.MsgRegisterProvider{Signer: serviceKey.PubKey().Address()}
+	// Since Goal 07 the provider handler is real, so the message is complete
+	// and well formed: the service account is FORBIDDEN by its role, not by
+	// a closed stub or a missing field.
+	msg := &providersv1.MsgRegisterProvider{
+		Signer:                 serviceKey.PubKey().Address(),
+		BusinessId:             "reg-p1",
+		ProviderId:             "p1",
+		SigningPubkey:          bytes32(3),
+		SigningKeyId:           "p1-key-1",
+		EndpointManifestDigest: &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: bytes32(4)},
+		DeclaredCapacityBytes:  1 << 30,
+		OperatorGroupId:        "devnet-test-only",
+	}
 
 	forbidden := chainApp.deliver(t, signedTx(t, chainApp.app, doc.ChainID, serviceKey, number, 200000, nil, msg))
-	if forbidden.Code == 0 || !strings.Contains(forbidden.Log, "ERROR_CODE_FORBIDDEN") {
-		t.Fatalf("admitted scaffolding message code %d log %s", forbidden.Code, forbidden.Log)
+	if forbidden.Codespace != "svn" || forbidden.Code != uint32(typesv1.ErrorCode_ERROR_CODE_FORBIDDEN) {
+		t.Fatalf("service account registering a provider: %s/%d log %s", forbidden.Codespace, forbidden.Code, forbidden.Log)
 	}
 	checked, err := chainApp.app.CheckTx(&abci.RequestCheckTx{Tx: unknownEnvelope(t)})
 	if err != nil {
@@ -54,12 +67,12 @@ func TestMessagesAreRejected(t *testing.T) {
 		t.Fatal("outsider was accepted")
 	}
 	feeResult := chainApp.deliver(t, signedTx(t, chainApp.app, doc.ChainID, serviceKey, number, 200000, sdk.NewCoins(sdk.NewInt64Coin("reject", 1)), msg))
-	if feeResult.Code == 0 || !strings.Contains(feeResult.Log, "ERROR_CODE_FEE_REJECTED") {
-		t.Fatalf("fee code %d log %s", feeResult.Code, feeResult.Log)
+	if feeResult.Codespace != "svn" || feeResult.Code != uint32(typesv1.ErrorCode_ERROR_CODE_FEE_REJECTED) {
+		t.Fatalf("fee code %s/%d log %s", feeResult.Codespace, feeResult.Code, feeResult.Log)
 	}
 	gasResult := chainApp.deliver(t, signedTx(t, chainApp.app, doc.ChainID, serviceKey, number, 0, nil, msg))
-	if gasResult.Code == 0 || !strings.Contains(gasResult.Log, "ERROR_CODE_BOUNDS") {
-		t.Fatalf("gas code %d log %s", gasResult.Code, gasResult.Log)
+	if gasResult.Codespace != "svn" || gasResult.Code != uint32(typesv1.ErrorCode_ERROR_CODE_BOUNDS) {
+		t.Fatalf("gas code %s/%d log %s", gasResult.Codespace, gasResult.Code, gasResult.Log)
 	}
 	empty := chainApp.deliver(t, nil)
 	if len(empty.Log) != 0 && empty.Code != 0 {
@@ -80,11 +93,17 @@ type running struct {
 
 func boot(t *testing.T, doc genesis.Document) *running {
 	t.Helper()
+	return bootWith(t, doc, nil)
+}
+
+// bootWith is boot with node options (nil: none).
+func bootWith(t *testing.T, doc genesis.Document, opts servertypes.AppOptions) *running {
+	t.Helper()
 	modules, err := app.AppStateFromDocument(codecFromApp(t, doc.ChainID), doc)
 	if err != nil {
 		t.Fatal(err)
 	}
-	chainApp := newTestApp(t, doc.ChainID, nil)
+	chainApp := newTestAppWith(t, doc.ChainID, nil, opts)
 	params := consensusParams()
 	if _, err := chainApp.InitChain(&abci.RequestInitChain{
 		ChainId:         doc.ChainID,

@@ -102,7 +102,7 @@ func TestDevnetQuorumFollowsVotingPower(t *testing.T) {
 
 	enc := mustEncoding(t)
 	signers := loadSigners(t, home)
-	numbers := signerNumbers(signers)
+	numbers := genesisAccountNumbers(t, enc, layout.Genesis)
 	seq := map[string]uint64{}
 	heightNow := mustHeight(t, rpc)
 	activation := uint64(heightNow + 100)

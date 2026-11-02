@@ -1,0 +1,25 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ env\ -C\ chain\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzCouncilRegistryPayloads\$\'\ -fuzztime=30s\ ./x/authority/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \"new\ or\ changed\ files\ under\ chain/\ after\ the\ run:\"\;\ git\ status\ --porcelain\ --untracked-files=all\ --\ chain\;\ echo\ \"\(end\ of\ list\)\"\;\ exit\ \$s
+DATE 2026-11-02T04:15:53Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+loadavg before: 6.51 4.69 2.74 1/197 14199
+fuzz: elapsed: 0s, gathering baseline coverage: 0/306 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 80/306 completed
+fuzz: elapsed: 6s, gathering baseline coverage: 171/306 completed
+fuzz: elapsed: 9s, gathering baseline coverage: 257/306 completed
+fuzz: elapsed: 11s, gathering baseline coverage: 306/306 completed, now fuzzing with 4 workers
+fuzz: elapsed: 12s, execs: 913 (219/sec), new interesting: 3 (total: 309)
+fuzz: elapsed: 15s, execs: 2375 (487/sec), new interesting: 7 (total: 313)
+fuzz: elapsed: 18s, execs: 3386 (337/sec), new interesting: 11 (total: 317)
+fuzz: elapsed: 21s, execs: 4417 (344/sec), new interesting: 14 (total: 320)
+fuzz: elapsed: 24s, execs: 5246 (276/sec), new interesting: 16 (total: 322)
+fuzz: elapsed: 27s, execs: 6630 (461/sec), new interesting: 19 (total: 325)
+fuzz: elapsed: 30s, execs: 8671 (680/sec), new interesting: 23 (total: 329)
+fuzz: elapsed: 32s, execs: 8671 (0/sec), new interesting: 23 (total: 329)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	32.418s
+loadavg after: 5.63 4.66 2.80 1/195 14357
+new or changed files under chain/ after the run:
+(end of list)
+EXIT:0

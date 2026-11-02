@@ -6,9 +6,9 @@ Development procedure for the permissioned set. This is not a production runbook
 
 A new validator is a council proposal whose payload is `ValidatorPowerChange` with positive power, a distinct consensus public key, a node id, a reason digest, and an activation height or chain time strictly after execution. Four devnet seats and three approvals queue it. The authority submitter executes it. The set changes in EndBlock at the activation point and the new key signs blocks two heights later.
 
-Provider admission is a different record, and it is not open in Goal 06. `RegisterProvider` and `RotateProviderKey` are `ERROR_CODE_FORBIDDEN` at the router until Goal 07 owns the provider registry. No Goal 06 message creates a provider row, so an `AdmitProviderChange` through the council executes to `ERROR_CODE_NOT_FOUND`. Provider admission never changes voting power. Service admission is the genesis submitter role `ADMITTED_SERVICE`. Council seat rotation and service account rotation are engine operations, not transactions. None of those rotate a consensus key.
+Provider admission is a different record. `RegisterProvider` is an `x/providers` committed handler and creates `APPLIED`. `AdmitProviderChange` through the council moves it to `ADMITTED` when the devnet DEC-002 test role is present. That does not change voting power. Service admission is the genesis submitter role `ADMITTED_SERVICE`. `RotateProviderKey` is an `x/providers` committed handler and changes the provider signing key only. Council seat rotation and service account rotation are engine operations, not transactions. None of those rotate a consensus key.
 
-Council seats send their messages from accounts that genesis lists as `BROADCASTER` submitters. That row is the only way a seat account passes the ante (DR-06-06).
+Council seats send their messages from accounts that genesis lists as `BROADCASTER` submitters. That row is the only way a seat account passes the ante (DR-06-06). Genesis validation refuses a seat address listed with any other role (DR-07-11).
 
 ## Ordinary removal
 
@@ -20,7 +20,7 @@ A compromised endpoint is stopped on the machine that runs it: stop the process,
 
 ## Who pauses admissions
 
-Only the council, by not approving admissions. There is no pause switch, and no single message pauses admissions. Apart from genesis and the changes genesis schedules, a validator joins only through an executed council `ValidatorPowerChange`. A provider is admitted or disabled only through an executed council `AdmitProviderChange` or `DisableProviderChange` (DEC-009). In Goal 06 no message creates a provider row, so both execute to `ERROR_CODE_NOT_FOUND`. Submitter and service accounts, and their ante admission rows, come from genesis. The engine-only seat and service rotations can move a row to a new address, and no Goal 06 message adds one. DEC-009 selected no single-signature or emergency path. A local operator can stop only its own endpoint, as in the previous section. That pauses nothing for anyone else.
+Only the council, by not approving admissions. There is no pause switch, and no single message pauses admissions. Apart from genesis and the changes genesis schedules, a validator joins only through an executed council `ValidatorPowerChange`. A provider is admitted or disabled only through an executed council `AdmitProviderChange` or `DisableProviderChange` (DEC-009): the execute calls `x/providers`, which admits an `APPLIED` provider of the `devnet-test-only` group when the devnet DEC-002 test role is present, and disables an `ADMITTED` or `DRAINING` one. An unknown provider id is `ERROR_CODE_NOT_FOUND` and the proposal stays `QUEUED`. Submitter and service accounts, and their ante admission rows, come from genesis. The engine-only seat and service rotations can move a row to a new address, and no message adds one. DEC-009 selected no single-signature or emergency path. A local operator can stop only its own endpoint, as in the previous section. That pauses nothing for anyone else.
 
 ## Compromised or lost consensus key
 
@@ -47,7 +47,9 @@ The test reads the powers from the validator set over CometBFT RPC. It observes 
 
 ## Old devnet homes
 
-The authority store layout changed in the Goal 06 fix round. There is no migration: no live chain exists. The round-2 code wrote its side document when an authority message succeeded or was kept, and when a validator change applied. On a home where that happened, EndBlock halts with an error that says to re-initialize it, and export refuses it. A home where it never happened, such as a plain four-validator devnet, keeps running. If its genesis had pending validator changes, the old layout kept them in the config key: they never apply, and every council message fails with `ERROR_CODE_INTEGRITY`. Re-initialize every devnet home created before the fix round: delete the home and run `svnd devnet init` again.
+There is no migration: no live chain exists. This binary refuses every committed Goal 05 or Goal 06 devnet home at start, including a plain four-validator devnet: Goal 07 replaced the registry slots, and `app.New` finds the old scaffold layout and returns an error that says to initialize a new home (`checkRegistryLayouts`). Goal 07 also added two fields to proposal records. Re-initialize every such home: delete it and run `svnd devnet init` again.
+
+The authority store layout also changed in the Goal 06 fix round. The round-2 code wrote a side document when an authority message succeeded or was kept, and when a validator change applied. A home that passes the layout check and still holds that side document halts in EndBlock with an error that says to re-initialize it, and export refuses it.
 
 ## What an operator must not expect
 

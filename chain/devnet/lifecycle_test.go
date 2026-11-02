@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"sort"
 	"strings"
 	"testing"
 	"time"
 
+	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdked "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -21,6 +21,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/devnet"
@@ -59,7 +60,7 @@ func TestDevnetValidatorLifecycle(t *testing.T) {
 	}
 	enc := mustEncoding(t)
 	signers := loadSigners(t, home)
-	numbers := signerNumbers(signers)
+	numbers := genesisAccountNumbers(t, enc, layout.Genesis)
 	seq := map[string]uint64{}
 	rpc := rpcs[0]
 
@@ -216,15 +217,33 @@ func readHexFile(t *testing.T, path string) []byte {
 	return raw
 }
 
-func signerNumbers(rows []loaded) map[string]uint64 {
-	addrs := make([]string, len(rows))
-	for i, row := range rows {
-		addrs[i] = row.addr
+// genesisAccountNumbers reads the account number of every genesis account
+// (lowercase hex address -> number) from the typed auth genesis state. The
+// devnet genesis holds more accounts than any one test signs with.
+func genesisAccountNumbers(t *testing.T, enc app.Encoding, genesisPath string) map[string]uint64 {
+	t.Helper()
+	genDoc, err := cmttypes.GenesisDocFromFile(genesisPath)
+	if err != nil {
+		t.Fatal(err)
 	}
-	sort.Strings(addrs)
+	var modules map[string]json.RawMessage
+	if err := json.Unmarshal(genDoc.AppState, &modules); err != nil {
+		t.Fatal(err)
+	}
+	var state authtypes.GenesisState
+	if err := enc.Codec.UnmarshalJSON(modules[authtypes.ModuleName], &state); err != nil {
+		t.Fatal(err)
+	}
+	accounts, err := authtypes.UnpackAccounts(state.GetAccounts())
+	if err != nil {
+		t.Fatal(err)
+	}
 	out := map[string]uint64{}
-	for i, addr := range addrs {
-		out[addr] = uint64(i)
+	for _, account := range accounts {
+		out[hex.EncodeToString(account.GetAddress())] = account.GetAccountNumber()
+	}
+	if len(out) == 0 {
+		t.Fatal("genesis has no accounts")
 	}
 	return out
 }
@@ -512,9 +531,10 @@ func TestQuorumModelVectors(t *testing.T) {
 }
 
 // TestDevnetKeysAreDistinct (REQ-SEC-002) starts no process. Every key file
-// Init writes is distinct: four consensus keys, four p2p node keys, the
-// authority and service account keys, and four council seat keys. The
-// public keys and addresses of the three roles do not overlap.
+// Init writes is distinct: four consensus keys, four p2p node keys, the five
+// account keys (authority, service, service-2, provider-1, provider-2), and
+// four council seat keys. The public keys and addresses of the roles do not
+// overlap.
 func TestDevnetKeysAreDistinct(t *testing.T) {
 	home := t.TempDir()
 	layout, err := devnet.Init(devnet.Options{Home: home})
@@ -563,16 +583,22 @@ func TestDevnetKeysAreDistinct(t *testing.T) {
 		nodeKey := readJSON(node.Home + "/config/node_key.json")
 		note(private, nodeKey.PrivKey.Value, fmt.Sprintf("v%d node", i+1))
 	}
-	signers := loadSigners(t, home)
-	if len(signers) != 6 {
-		t.Fatalf("%d account keys", len(signers))
+	signers := make([]loaded, 0, len(layout.Topology.Accounts)+len(layout.Topology.Seats))
+	for _, account := range layout.Topology.Accounts {
+		signers = append(signers, loadSecp(t, home, account.Name))
+	}
+	for _, seat := range layout.Topology.Seats {
+		signers = append(signers, loadEd(t, home, seat.SeatID))
+	}
+	if len(layout.Topology.Accounts) != 5 || len(signers) != 9 {
+		t.Fatalf("%d accounts, %d account and seat keys", len(layout.Topology.Accounts), len(signers))
 	}
 	for _, signer := range signers {
 		note(private, signer.key.Bytes(), signer.name)
 		note(public, signer.key.PubKey().Bytes(), signer.name)
 		note(public, signer.key.PubKey().Address(), signer.name+" address")
 	}
-	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+6 {
+	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+9 {
 		t.Fatalf("%d validators, %d distinct private keys", len(layout.Topology.Validators), len(private))
 	}
 }

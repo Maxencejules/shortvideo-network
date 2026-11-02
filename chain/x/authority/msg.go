@@ -22,6 +22,11 @@ import (
 // None of these grows with past proposals. An execute of a validator payload
 // also scans the pending prefix (0x03), at most MaxPendingChanges entries, so
 // its gas is bounded but depends on how many changes are scheduled.
+//
+// A business gate whose id is absent from 0x11 also reads one key in each
+// peer ledger (x/providers 0x02, x/content 0x03). An execute of a registry
+// payload also runs the hook, which reads and writes a fixed key set of that
+// one provider or content record. Neither grows with past proposals.
 const authorityGas = 50_000
 
 // Propose, Approve, and Execute are the committed handlers.
@@ -29,10 +34,9 @@ const authorityGas = 50_000
 // CheckTx. This handler checks gas, transaction size, and that the message
 // carries a 20-byte signer. It does not verify the signature bytes again.
 //
-// RegisterProvider and RotateProviderKey are FORBIDDEN at the router until
-// Goal 07 owns the provider registry. This package has no handler for them,
-// so no message can grow provider rows or retired provider keys (review
-// round 2, non-blocking 9).
+// Provider and content messages are x/providers and x/content handlers; this
+// package has none. Council admit, disable and force-withdraw payloads reach
+// those registries only through MsgExecuteChange and the hooks (DEC-009).
 func (k Keeper) Propose(ctx context.Context, msg *authorityv1.MsgProposeChange) (*authorityv1.MsgProposeChangeResponse, error) {
 	if err := k.transition(ctx, msg.GetSigner(), func(st *State) Outcome { return st.ProposeChange(msg) }); err != nil {
 		return nil, err
@@ -58,15 +62,25 @@ func (k Keeper) Execute(ctx context.Context, msg *authorityv1.MsgExecuteChange) 
 // same gas meter. Reads and writes are charged once by the gas store; write()
 // flushes without more gas.
 //
-//   - idempotent retry: an authority_result event with idempotent=true; the
-//     branch is dropped (the engine wrote nothing).
-//   - success: the branch is written.
-//   - keep (EXPIRED or REJECTED mark, DR-06-05): the branch is written and the
-//     code goes on an authority_result event. Cosmos SDK v0.55 discards the
-//     message branch when the handler returns an error, so the handler
-//     returns success. The payload was not applied.
-//   - failure: an authority_result event and the svn error; the branch is
-//     dropped, so the authority store is byte-identical.
+// The registry hooks (council admit, disable and force-withdraw) write to
+// x/providers or x/content through a second cache nested in the message
+// branch, with its own event manager. Only a success writes it back, before
+// the message branch; a keep or a failure drops it with its events. So a
+// registry write never outlives the proposal outcome, even when a later
+// engine check (OVERFLOW, INTEGRITY) fails after the hook wrote. The business
+// gate reads the peer ledgers (External) through the message branch.
+//
+//   - idempotent retry: an authority_result event with idempotent=true; both
+//     branches are dropped (the engine wrote nothing and called no hook).
+//   - success: the registry branch, then the message branch, is written.
+//   - keep (EXPIRED or REJECTED mark, DR-06-05): the message branch is
+//     written, the registry branch is dropped, and the code goes on an
+//     authority_result event. Cosmos SDK v0.55 discards the message branch
+//     when the handler returns an error, so the handler returns success. The
+//     payload was not applied.
+//   - failure: an authority_result event and the svn error; both branches
+//     are dropped, so the authority store and the registry stores are
+//     byte-identical.
 func (k Keeper) transition(ctx context.Context, signer []byte, fn func(*State) Outcome) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if code := enforceCommitted(sdkCtx, signer); code != "" {
@@ -77,12 +91,16 @@ func (k Keeper) transition(ctx context.Context, signer []byte, fn func(*State) O
 	if err != nil {
 		return svnerr.ErrIntegrity.Wrapf("%s: %v", CodeIntegrity, err)
 	}
+	registryCtx, writeRegistry := cacheCtx.CacheContext()
+	st.Registry = k.registry(registryCtx)
+	st.External = k.external(cacheCtx)
 	out := fn(st)
 	switch {
 	case out.Idempotent:
 		sdkCtx.EventManager().EmitEvent(sdk.NewEvent("authority_result", sdk.NewAttribute("idempotent", "true")))
 		return nil
 	case out.Success():
+		writeRegistry()
 		write()
 		return nil
 	case out.Keep:
@@ -95,12 +113,20 @@ func (k Keeper) transition(ctx context.Context, signer []byte, fn func(*State) O
 	}
 }
 
-// enforceCommitted bounds the transaction and charges the fixed gas before
-// any store read.
+// enforceCommitted is the first check of every authority handler. It bounds
+// the transaction and charges the fixed gas before any store read. In
+// simulation (sdk.ExecModeSimulate) the SDK installs an infinite gas meter
+// whose limit is 2^64-1; the meter check is skipped there so a client can
+// estimate gas, and the ante handler still checks the declared gas limit (a
+// declared 0 is accepted only in simulation). The tx-bytes check, the fixed
+// charge and the signer check run in every mode. FinalizeBlock always runs
+// the meter check; CheckTx runs no message handler.
 func enforceCommitted(ctx sdk.Context, signer []byte) string {
-	limit := ctx.GasMeter().Limit()
-	if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
-		return CodeBounds
+	if ctx.ExecMode() != sdk.ExecModeSimulate {
+		limit := ctx.GasMeter().Limit()
+		if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+			return CodeBounds
+		}
 	}
 	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {
 		return CodeBounds

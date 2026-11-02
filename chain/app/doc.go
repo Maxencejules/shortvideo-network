@@ -1,6 +1,8 @@
 package app
 
-// Scaffold reports that Goals 07-10 have not filled the provider, content,
-// lease, evidence, and policy module slots. The binary, genesis, the
-// four-validator devnet, and x/authority (Goal 06) are implemented.
+// Scaffold reports that module slots are still placeholders. x/authority
+// (Goal 06) and x/providers and x/content (Goal 07) are real modules. The
+// svn header, policy, leases, and evidence slots stay scaffolding until
+// Goals 08-10. The binary, genesis, and four-validator devnet are
+// implemented.
 const Scaffold = true

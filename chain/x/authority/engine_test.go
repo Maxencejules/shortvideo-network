@@ -205,8 +205,9 @@ func TestDelayAndForbiddenRemoval(t *testing.T) {
 }
 
 // Ported from round 2: a due removal bound to the wrong key halts, and seat
-// and service rotations never touch consensus keys. Provider rotation is not
-// in goal 06 (D1).
+// and service rotations never touch consensus keys. Provider signing-key
+// rotation moved to x/providers in Goal 07 (TestRotationTouchesOnlyTheProvidersStore
+// there).
 func TestRemovalBindHaltsAndRotationsStaySeparate(t *testing.T) {
 	kv, seats, _ := readyStore(t)
 	putPendingRaw(t, kv, heightEntry("commit-bad-key", "v1", pub(9), 0, 1))
@@ -739,59 +740,66 @@ func TestPendingKeyCollisionConflicts(t *testing.T) {
 	}
 }
 
-// The council admit and disable payloads work over 0x17 rows (DEC-009). No
-// goal-06 message creates a row, so the test seeds them. Ported from the
-// round-2 admission test; fails if admit or disable stop reading the row or
-// write on a reject.
+// The council admit, disable and force-withdraw payloads run through the
+// registry hooks (DEC-009); x/providers and x/content own the records, so
+// this test uses the deterministic specRegistry. Every reject leaves the
+// whole authority store byte-identical (dumpKV) and the registry unchanged.
+// Ported from the round-2 admission test (TestAdmissionAndMixedActivation
+// in goal 07); fails if a payload stops calling the registry, passes the
+// wrong DEC-002 or DEC-003 flag, or writes on a reject.
 func TestAdmitAndDisableRows(t *testing.T) {
 	gen, seats, authority := readyGenesis()
-	gen.DevnetTestParameters = append(gen.DevnetTestParameters, &typesv1.DevnetTestParameter{
-		Label: "PROPOSED_TEST_PARAMETER", DecisionId: "DEC-002", RoleName: "DEVNET_TEST_ONLY",
-	})
+	gen.DevnetTestParameters = append(gen.DevnetTestParameters,
+		devnetParam("DEC-002", "DEVNET_TEST_ONLY"), devnetParam("DEC-003", "DEVNET_TEST_ONLY"))
 	kv := storeFrom(t, gen)
-	row := func(id, group, state string) *providerRecord {
-		return &providerRecord{
-			ID: id, Account: bytes20(4), SigningPub: pub(4), SigningKeyID: "k1", Generation: 1,
-			State: state, OperatorGroup: group, Endpoint: pub(8), Capacity: 1000,
-		}
+	newRegistry := func() *specRegistry {
+		r := emptySpecRegistry()
+		r.providers = map[string]string{"p1": "APPLIED", "p2": "APPLIED", "p3": "APPLIED"}
+		r.groups = map[string]string{"p1": "devnet-test-only", "p2": "other-group", "p3": "devnet-test-only"}
+		r.contents = map[string]uint64{"c1": 1}
+		return r
 	}
-	seedProvider(t, kv, row("p1", "devnet-test-only", "APPLIED"))
-	seedProvider(t, kv, row("p2", "other-group", "APPLIED"))
-	seedProvider(t, kv, row("p3", "devnet-test-only", "APPLIED"))
-	admit := func(id string) *authorityv1.MsgProposeChange {
-		return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_AdmitProvider{
-			AdmitProvider: &authorityv1.AdmitProviderChange{ProviderId: id},
-		}}, "admit-"+id)
-	}
-	disable := func(id string) *authorityv1.MsgProposeChange {
-		return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_DisableProvider{
-			DisableProvider: &authorityv1.DisableProviderChange{ProviderId: id},
-		}}, "disable-"+id)
-	}
-	providerState := func(id string) string {
-		raw := kv.Get(providerKey(id))
-		got, err := decodeProvider(id, raw)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return got.State
-	}
+	registry := newRegistry()
+	admit := func(id string) *authorityv1.MsgProposeChange { return admitProposal(id) }
+	disable := func(id string) *authorityv1.MsgProposeChange { return disableProposal(id) }
+	reason := pub(7)
+	withdraw := func(id string) *authorityv1.MsgProposeChange { return withdrawProposal(id, 1, reason) }
 	run := func(id string, msg *authorityv1.MsgProposeChange) Outcome {
 		queueAt(t, kv, seats, testHeight, testTime, id, msg)
-		return loadAt(t, kv, testHeight, testTime).ExecuteChange(execute(authority, "ex-"+id, id))
+		registry.calls = nil
+		return executeWith(t, kv, registry, testTime, authority, "ex-"+id, id)
+	}
+	validators := loadAt(t, kv, testHeight, testTime).Validators()
+	executed := func(id string) {
+		t.Helper()
+		if got := recordOf(t, kv, id).state(); got != authorityv1.ProposalState_PROPOSAL_STATE_EXECUTED {
+			t.Fatalf("%s is %v", id, got)
+		}
+		if !sameValidators(loadAt(t, kv, testHeight, testTime).Validators(), validators) || countPrefix(kv, pendingPrefix) != 0 {
+			t.Fatalf("%s changed the validator set or scheduled a power change", id)
+		}
 	}
 
-	if out := run("ad-p1", admit("p1")); !out.Success() || providerState("p1") != "ADMITTED" {
-		t.Fatalf("admit %+v %s", out, providerState("p1"))
+	if out := run("ad-p1", admit("p1")); !out.Success() || registry.providers["p1"] != "ADMITTED" {
+		t.Fatalf("admit %+v %s", out, registry.providers["p1"])
 	}
-	if out := run("di-p1", disable("p1")); !out.Success() || providerState("p1") != "DISABLED" {
-		t.Fatalf("disable %+v %s", out, providerState("p1"))
+	if !sameCalls(registry.calls, []registryCall{{Method: "admit", ID: "p1", Devnet: true}}) {
+		t.Fatalf("admit calls %+v", registry.calls)
 	}
-	if out := run("ad-p2", admit("p2")); out.Code != CodeForbidden || !out.Keep || providerState("p2") != "APPLIED" {
+	executed("ad-p1")
+	if out := run("di-p1", disable("p1")); !out.Success() || registry.providers["p1"] != "DISABLED" {
+		t.Fatalf("disable %+v %s", out, registry.providers["p1"])
+	}
+	if !sameCalls(registry.calls, []registryCall{{Method: "disable", ID: "p1"}}) {
+		t.Fatalf("disable calls %+v", registry.calls)
+	}
+	executed("di-p1")
+	saved := registry.clone()
+	if out := run("ad-p2", admit("p2")); out.Code != CodeForbidden || !out.Keep || registry.providers["p2"] != "APPLIED" {
 		t.Fatalf("group mismatch %+v", out)
 	}
-	if recordOf(t, kv, "ad-p2").state() != authorityv1.ProposalState_PROPOSAL_STATE_REJECTED {
-		t.Fatal("group mismatch was not REJECTED")
+	if recordOf(t, kv, "ad-p2").state() != authorityv1.ProposalState_PROPOSAL_STATE_REJECTED || !registry.equal(saved) {
+		t.Fatal("group mismatch was not REJECTED, or wrote to the registry")
 	}
 	rejects := []struct {
 		id   string
@@ -800,30 +808,45 @@ func TestAdmitAndDisableRows(t *testing.T) {
 	}{
 		{"ad-p9", admit("p9"), CodeNotFound},
 		{"di-p3", disable("p3"), CodeConflict},
-		{"fw-c1", payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_ForceWithdraw{
-			ForceWithdraw: &authorityv1.ForceWithdrawChange{ContentId: "c1", ContentVersion: 1, ReasonDigest: &typesv1.Digest{
-				Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: pub(7),
-			}},
-		}}, "withdraw-c1"), CodeNotFound},
+		{"fw-c404", withdraw("c404"), CodeNotFound},
 	}
 	for _, r := range rejects {
 		queueAt(t, kv, seats, testHeight, testTime, r.id, r.msg)
-		before := dumpKV(kv)
-		if out := loadAt(t, kv, testHeight, testTime).ExecuteChange(execute(authority, "ex-"+r.id, r.id)); out.Code != r.code || out.Keep {
+		before, saved := dumpKV(kv), registry.clone()
+		if out := executeWith(t, kv, registry, testTime, authority, "ex-"+r.id, r.id); out.Code != r.code || out.Keep {
 			t.Fatalf("%s: %+v", r.id, out)
 		}
 		wantUnchanged(t, kv, before, r.id)
+		if !registry.equal(saved) {
+			t.Fatalf("%s wrote to the registry", r.id)
+		}
+		if got := recordOf(t, kv, r.id).state(); got != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
+			t.Fatalf("%s is %v", r.id, got)
+		}
 	}
+	if out := run("fw-c1", withdraw("c1")); !out.Success() || !registry.withdrawn["c1"] {
+		t.Fatalf("force-withdraw %+v %v", out, registry.withdrawn)
+	}
+	if !sameCalls(registry.calls, []registryCall{{Method: "force_withdraw", ID: "c1", Version: 1, Reason: reason, Devnet: true}}) {
+		t.Fatalf("force-withdraw calls %+v", registry.calls)
+	}
+	executed("fw-c1")
 
 	blocked, seats2, authority2 := readyGenesis()
 	kv2 := storeFrom(t, blocked)
-	seedProvider(t, kv2, row("p1", "devnet-test-only", "APPLIED"))
+	registry2 := newRegistry()
 	queueAt(t, kv2, seats2, testHeight, testTime, "ad-p1", admit("p1"))
-	before := dumpKV(kv2)
-	if out := loadAt(t, kv2, testHeight, testTime).ExecuteChange(execute(authority2, "ex-ad", "ad-p1")); out.Code != CodeDecisionBlocked {
+	before, saved2 := dumpKV(kv2), registry2.clone()
+	if out := executeWith(t, kv2, registry2, testTime, authority2, "ex-ad", "ad-p1"); out.Code != CodeDecisionBlocked || out.Keep {
 		t.Fatalf("admit without DEC-002 %+v", out)
 	}
+	if !sameCalls(registry2.calls, []registryCall{{Method: "admit", ID: "p1", Devnet: false}}) {
+		t.Fatalf("admit without DEC-002 calls %+v", registry2.calls)
+	}
 	wantUnchanged(t, kv2, before, "admit without DEC-002")
+	if !registry2.equal(saved2) {
+		t.Fatal("admit without DEC-002 wrote to the registry")
+	}
 }
 
 // A stored value that does not decode is INTEGRITY inside a message, and

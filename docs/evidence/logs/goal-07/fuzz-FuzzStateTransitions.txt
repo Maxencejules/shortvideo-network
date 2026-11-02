@@ -1,0 +1,45 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ env\ -C\ chain\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzStateTransitions\$\'\ -fuzztime=90s\ ./x/authority/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \"new\ or\ changed\ files\ under\ chain/\ after\ the\ run:\"\;\ git\ status\ --porcelain\ --untracked-files=all\ --\ chain\;\ echo\ \"\(end\ of\ list\)\"\;\ exit\ \$s
+DATE 2026-11-01T09:40:44Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+loadavg before: 1.89 2.84 2.13 2/187 19295
+fuzz: elapsed: 0s, gathering baseline coverage: 0/281 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 75/281 completed
+fuzz: elapsed: 6s, gathering baseline coverage: 150/281 completed
+fuzz: elapsed: 9s, gathering baseline coverage: 226/281 completed
+fuzz: elapsed: 11s, gathering baseline coverage: 281/281 completed, now fuzzing with 4 workers
+fuzz: elapsed: 12s, execs: 1094 (290/sec), new interesting: 0 (total: 281)
+fuzz: elapsed: 15s, execs: 4844 (1251/sec), new interesting: 1 (total: 282)
+fuzz: elapsed: 18s, execs: 7463 (873/sec), new interesting: 1 (total: 282)
+fuzz: elapsed: 21s, execs: 12372 (1636/sec), new interesting: 3 (total: 284)
+fuzz: elapsed: 24s, execs: 15006 (878/sec), new interesting: 3 (total: 284)
+fuzz: elapsed: 27s, execs: 19645 (1546/sec), new interesting: 4 (total: 285)
+fuzz: elapsed: 30s, execs: 23283 (1212/sec), new interesting: 4 (total: 285)
+fuzz: elapsed: 33s, execs: 26313 (1010/sec), new interesting: 4 (total: 285)
+fuzz: elapsed: 36s, execs: 29248 (978/sec), new interesting: 4 (total: 285)
+fuzz: elapsed: 39s, execs: 33790 (1514/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 42s, execs: 36752 (987/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 45s, execs: 39504 (917/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 48s, execs: 43233 (1243/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 51s, execs: 45932 (899/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 54s, execs: 48288 (786/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 57s, execs: 50004 (572/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 1m0s, execs: 52118 (704/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 1m3s, execs: 53583 (488/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 1m6s, execs: 55306 (574/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 1m9s, execs: 60482 (1725/sec), new interesting: 5 (total: 286)
+fuzz: elapsed: 1m12s, execs: 66692 (2071/sec), new interesting: 6 (total: 287)
+fuzz: elapsed: 1m15s, execs: 69684 (997/sec), new interesting: 6 (total: 287)
+fuzz: elapsed: 1m18s, execs: 72402 (907/sec), new interesting: 6 (total: 287)
+fuzz: elapsed: 1m21s, execs: 74746 (781/sec), new interesting: 6 (total: 287)
+fuzz: elapsed: 1m24s, execs: 80294 (1849/sec), new interesting: 7 (total: 288)
+fuzz: elapsed: 1m27s, execs: 83729 (1145/sec), new interesting: 7 (total: 288)
+fuzz: elapsed: 1m30s, execs: 86437 (903/sec), new interesting: 7 (total: 288)
+fuzz: elapsed: 1m31s, execs: 86437 (0/sec), new interesting: 7 (total: 288)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	91.092s
+loadavg after: 5.14 3.72 2.52 1/187 19510
+new or changed files under chain/ after the run:
+(end of list)
+EXIT:0

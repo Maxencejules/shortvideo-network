@@ -1,0 +1,15 @@
+COMMAND .venv/bin/python docs/evidence/goal-06/mutants.py --check
+DATE 2026-11-02T04:10:06Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+revision HEAD commit b782e0149e1a70758b81b29929d12eab0da8a006 tree f07ac7f6113f45a97167cf9c8139fb712227490e
+copy /tmp/goal06-mutants-d172n_xn/tree (git archive)
+mutants 119 of 119
+NOT_FOUND swap-engine-492 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-548 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-575 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-578 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-591 chain/x/authority/engine.go occurrences=0
+RESULT search-string problems=5; no test was run
+EXIT:1

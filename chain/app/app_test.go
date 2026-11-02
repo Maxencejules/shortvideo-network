@@ -13,6 +13,7 @@ import (
 	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
@@ -218,11 +219,18 @@ func sampleDocument() genesis.Document {
 
 func newTestApp(t *testing.T, chainID string, order *authority.Order) *app.App {
 	t.Helper()
+	return newTestAppWith(t, chainID, order, nil)
+}
+
+// newTestAppWith builds an application with node options (nil: none).
+func newTestAppWith(t *testing.T, chainID string, order *authority.Order, opts servertypes.AppOptions) *app.App {
+	t.Helper()
 	application, err := app.New(app.Config{
-		Logger:  log.NewTestLogger(t),
-		DB:      dbm.NewMemDB(),
-		ChainID: chainID,
-		Order:   order,
+		Logger:     log.NewTestLogger(t),
+		DB:         dbm.NewMemDB(),
+		ChainID:    chainID,
+		Order:      order,
+		AppOptions: opts,
 	})
 	if err != nil {
 		t.Fatal(err)

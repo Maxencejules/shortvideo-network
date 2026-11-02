@@ -1,0 +1,37 @@
+COMMAND bash -c git\ log\ --oneline\ f5916bd02ce49efa2481dd3a7749a00b2fe6f67e..HEAD\ \|\ head\ -40\;\ git\ diff\ --stat\ f5916bd02ce49efa2481dd3a7749a00b2fe6f67e\ HEAD\ \|\ tail\ -1\;\ git\ rev-parse\ HEAD\ HEAD\^\{tree\}\ HEAD\^1\ HEAD\^2\;\ git\ merge-base\ --is-ancestor\ f5916bd02ce49efa2481dd3a7749a00b2fe6f67e\ HEAD\ \&\&\ echo\ main-is-ancestor\;\ git\ branch\ --show-current\;\ git\ status\ --porcelain\ --untracked-files=all
+DATE 2026-11-02T04:07:20Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+b782e01 Record main f5916bd (squash of goal 06, PR 9) as merged into goal 07
+70d55de Merge goal 06 round 3 (0936332, main f5916bd) into goal 07
+0936332 goal 06: evidence for the stall-check fix on 90652c6
+90652c6 goal 06: fix the devnet stall check's false failures
+c68113c goal 06: round 3 evidence on fb4cde2 (status VERIFIED)
+fb4cde2 goal 06: devnet test that quorum follows voting power, not node count
+2389948 goal 06: round 3 fixes for the PR 9 review
+ffd2ce9 goal 07: evidence on 43c1a10 (status BLOCKED)
+43c1a10 goal 07: fix second-round review findings
+2e0888d goal 07: provider and content registries (x/providers, x/content)
+a88453e goal 07: wip checkpoint (integration done, review/fix pending, not gated)
+b4282cb goal 07: wip checkpoint (in progress, not tested)
+5213a7c goal 07: wip checkpoint (in progress, not tested)
+4ba4168 goal 07: wip checkpoint (in progress, not tested)
+9ca725e goal 07: wip checkpoint (in progress, not tested)
+26454c1 goal 07: add evidence log capture helper
+3853e34 goal 06: round 2 evidence on tree eacc6b47
+4c87282 goal 06: full-state rejects, transition fuzz, and effective-1 sets
+a6a5273 goal 06: record CI run 41257591421
+54503ac goal 06: record authority evidence
+f38c6ef goal 06: authority and validator lifecycle
+ 221 files changed, 60986 insertions(+), 421 deletions(-)
+b782e0149e1a70758b81b29929d12eab0da8a006
+f07ac7f6113f45a97167cf9c8139fb712227490e
+70d55dec2db2b6ae1b8a9e0611521bfe69e76cea
+f5916bd02ce49efa2481dd3a7749a00b2fe6f67e
+main-is-ancestor
+goal-07
+ M docs/evidence/goal-01/check_requirements.py
+?? docs/evidence/goal-07/mutants.py
+?? docs/evidence/logs/goal-07/m-revision.txt
+EXIT:0

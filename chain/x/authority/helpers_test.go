@@ -324,16 +324,6 @@ func putPendingRaw(t testing.TB, kv KV, entry *authorityv1.PendingValidatorPower
 	kv.Set(PendingKey(entry), raw)
 }
 
-// seedProvider writes one provider row. No goal-06 message creates one.
-func seedProvider(t testing.TB, kv KV, row *providerRecord) {
-	t.Helper()
-	raw, err := encodeProvider(row)
-	if err != nil {
-		t.Fatal(err)
-	}
-	kv.Set(providerKey(row.ID), raw)
-}
-
 // wantUnchanged fails when the store differs from before.
 func wantUnchanged(t testing.TB, kv KV, before []byte, what string) {
 	t.Helper()

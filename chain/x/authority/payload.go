@@ -17,6 +17,10 @@ const (
 	unixMin  int64 = 1
 	unixMax  int64 = 253402300799
 	int64Max int64 = 1<<63 - 1
+
+	// devnetTestRole is the role name a devnet test parameter carries when
+	// it stands in for an unapproved decision on a devnet chain.
+	devnetTestRole = "DEVNET_TEST_ONLY"
 )
 
 // Payload kinds. They name the oneof alternative of ProposalPayload and are

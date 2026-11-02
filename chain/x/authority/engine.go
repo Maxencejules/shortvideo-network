@@ -31,16 +31,51 @@ func SeatAddress(pub []byte) []byte {
 // EndBlock. It holds the decoded config key; every other object is read from
 // the store when a message names it. Liveness is not a field.
 //
-// The engine writes only on a success or keep path, after every check that
-// can fail, through one batch flushed at the end. A rejected message performs
-// no Set and no Delete.
+// The engine writes the authority store only on a success or keep path,
+// after every check that can fail, through one batch flushed at the end. A
+// rejected message performs no Set and no Delete on it.
+//
+// A registry hook (Registry) writes x/providers or x/content state, not the
+// authority store. It runs inside applyPayload, before the engine's last
+// checks: a later OVERFLOW (policy version 2^64-1) or an INTEGRITY error from
+// the open count or the record encoding can still fail the message after the
+// hook wrote. That is why Keeper.transition binds Registry to a nested cache
+// that it writes only when the whole message succeeds.
+//
+// Registry and External are not stored. Keeper.transition binds them to one
+// transaction after LoadState; LoadState leaves them nil.
 type State struct {
 	ChainID string
 	Height  int64
 	Time    int64
 
+	// Registry applies the provider and content payloads of an executed
+	// proposal. nil means no registry is wired: those payloads are MALFORMED.
+	Registry Registry
+	// External returns the business digest another module committed for
+	// id. Business ids are one protocol namespace. nil means no peers.
+	External func(id string) ([]byte, bool)
+
 	kv     KV
 	config *authorityv1.GenesisState
+}
+
+// Registry is the provider and content registry as an executed council
+// proposal sees it. x/providers and x/content own the records; authority
+// only decides the devnet flag and passes the decoded payload. A method
+// runs every check before its first write, so a failure writes nothing.
+// FORBIDDEN marks the proposal REJECTED; any other failure leaves it QUEUED.
+type Registry interface {
+	// Admit moves an APPLIED provider to ADMITTED. devnet is true only when
+	// DEC-002 is the labelled devnet test parameter with role
+	// DEVNET_TEST_ONLY on a devnet chain id.
+	Admit(providerID string, devnet bool) Outcome
+	// Disable moves an ADMITTED or DRAINING provider to DISABLED.
+	Disable(providerID string) Outcome
+	// ForceWithdraw withdraws one content version and writes its tombstone
+	// with the 32-byte reason digest value. devnet follows the DEC-002 rule
+	// for DEC-003.
+	ForceWithdraw(contentID string, version uint64, reason []byte, devnet bool) Outcome
 }
 
 // LoadState decodes the config key and returns the engine view. A missing or
@@ -117,6 +152,13 @@ func (s *State) devnet(id string) *typesv1.DevnetTestParameter {
 	return nil
 }
 
+// devnetRole reports whether decision id is the labelled devnet test
+// parameter with role DEVNET_TEST_ONLY on this chain.
+func (s *State) devnetRole(id string) bool {
+	param := s.devnet(id)
+	return param != nil && param.GetRoleName() == devnetTestRole
+}
+
 // council is spec council_ready plus the approved DEC-008 shape.
 func (s *State) council() Outcome {
 	param := s.devnet("DEC-008")
@@ -147,9 +189,11 @@ func (s *State) role(signer []byte) typesv1.SubmitterRole {
 	return typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED
 }
 
-// business is spec business_gate. It reads only the message's own id. Each
-// caller has already refused an empty id as MALFORMED (require_fields), so a
-// non-matching id here is BOUNDS.
+// business is spec business_gate. It reads only the message's own id: first
+// authority's own row (0x11), then, when that is absent, the peer ledgers
+// through External (one protocol namespace). Each caller has already refused
+// an empty id as MALFORMED (require_fields), so a non-matching id here is
+// BOUNDS. A peer value that is not 32 bytes is INTEGRITY, like an own value.
 func (s *State) business(id string, digest []byte) Outcome {
 	if !idPattern.MatchString(id) {
 		return fail(CodeBounds)
@@ -158,6 +202,11 @@ func (s *State) business(id string, digest []byte) Outcome {
 		return fail(CodeMalformed)
 	}
 	prev := s.kv.Get(businessKey(id))
+	if prev == nil && s.External != nil {
+		if peer, found := s.External(id); found {
+			prev = append([]byte{}, peer...) // non-nil, so an empty peer value is INTEGRITY below
+		}
+	}
 	if prev == nil {
 		return ok()
 	}
@@ -466,8 +515,11 @@ func (s *State) ExecuteChange(msg *authorityv1.MsgExecuteChange) Outcome {
 	return ok()
 }
 
-// applyPayload checks the stored payload and adds its writes to b. It writes
-// nothing itself; a failure leaves b to be discarded.
+// applyPayload checks the stored payload and adds its authority writes to b.
+// It writes nothing to the authority store itself; a failure leaves b to be
+// discarded. A registry payload adds nothing to b: it calls Registry, which
+// writes to x/providers or x/content. The keeper binds Registry to a nested
+// cache that it writes only when the whole message succeeds (msg.go).
 func (s *State) applyPayload(b *batch, rec *proposalRecord) Outcome {
 	if rec.Payload == "" || !digestMatches(rec.Payload, rec.PayloadDigest) {
 		return fail(CodeIntegrity)
@@ -484,15 +536,33 @@ func (s *State) applyPayload(b *batch, rec *proposalRecord) Outcome {
 		b.set(governedKey(decoded.LimitKey), encodeU64(decoded.LimitValue))
 		return ok()
 	case kindAdmitProvider:
-		return s.admit(b, decoded.ProviderID)
+		if s.Registry == nil {
+			return fail(CodeMalformed)
+		}
+		return registryOutcome(s.Registry.Admit(decoded.ProviderID, s.devnetRole("DEC-002")))
 	case kindDisableProvider:
-		return s.disable(b, decoded.ProviderID)
+		if s.Registry == nil {
+			return fail(CodeMalformed)
+		}
+		return registryOutcome(s.Registry.Disable(decoded.ProviderID))
 	case kindForceWithdraw:
-		// No content registry until Goal 07.
-		return fail(CodeNotFound)
+		if s.Registry == nil {
+			return fail(CodeMalformed)
+		}
+		return registryOutcome(s.Registry.ForceWithdraw(decoded.ContentID, decoded.ContentVersion,
+			bytes.Clone(decoded.Reason), s.devnetRole("DEC-003")))
 	default:
 		return fail(CodeIntegrity)
 	}
+}
+
+// registryOutcome keeps only the code. A registry cannot ask for a keep or
+// an idempotent result; ExecuteChange decides those.
+func registryOutcome(out Outcome) Outcome {
+	if out.Success() {
+		return ok()
+	}
+	return fail(out.Code)
 }
 
 // schedule adds one pending validator change after projecting it with every
@@ -537,61 +607,6 @@ func (s *State) schedule(b *batch, proposalID string, change PowerChange) Outcom
 	}
 	b.set(PendingKey(entry), raw)
 	return ok()
-}
-
-func (s *State) provider(id string) (*providerRecord, Outcome) {
-	if !idPattern.MatchString(id) {
-		return nil, fail(CodeNotFound)
-	}
-	raw := s.kv.Get(providerKey(id))
-	if raw == nil {
-		return nil, fail(CodeNotFound)
-	}
-	row, err := decodeProvider(id, raw)
-	if err != nil {
-		return nil, fail(CodeIntegrity)
-	}
-	return row, ok()
-}
-
-func putProvider(b *batch, row *providerRecord) Outcome {
-	raw, err := encodeProvider(row)
-	if err != nil {
-		return fail(CodeIntegrity)
-	}
-	b.set(providerKey(row.ID), raw)
-	return ok()
-}
-
-// admit is the council admit payload (DEC-009). It needs an existing row; no
-// goal-06 message creates one, so on chain it executes to NOT_FOUND.
-func (s *State) admit(b *batch, id string) Outcome {
-	row, out := s.provider(id)
-	if !out.Success() {
-		return out
-	}
-	param := s.devnet("DEC-002")
-	if param == nil || param.GetRoleName() != "DEVNET_TEST_ONLY" {
-		return fail(CodeDecisionBlocked)
-	}
-	if row.OperatorGroup != "devnet-test-only" || row.State != "APPLIED" {
-		return fail(CodeForbidden)
-	}
-	row.State = "ADMITTED"
-	return putProvider(b, row)
-}
-
-// disable is the council disable payload (DEC-009).
-func (s *State) disable(b *batch, id string) Outcome {
-	row, out := s.provider(id)
-	if !out.Success() {
-		return out
-	}
-	if row.State != "ADMITTED" && row.State != "DRAINING" {
-		return fail(CodeConflict)
-	}
-	row.State = "DISABLED"
-	return putProvider(b, row)
 }
 
 // governedCeiling is the protocol ceiling of each governed limit.
@@ -970,6 +985,13 @@ func decodedFrom(kind string, change PowerChange, msg *authorityv1.MsgProposeCha
 		out.LimitValue = msg.GetPayload().GetGovernedLimit().GetValue()
 	case kindAdmitProvider, kindDisableProvider:
 		out.ProviderID = providerID(msg)
+	case kindForceWithdraw:
+		// withdrawCanonical has validated the id pattern, a version of at
+		// least 1 and a 32-byte SHA-256 reason digest.
+		body := msg.GetPayload().GetForceWithdraw()
+		out.ContentID = contentID(msg)
+		out.ContentVersion = body.GetContentVersion()
+		out.Reason = bytes.Clone(body.GetReasonDigest().GetValue())
 	}
 	return out
 }

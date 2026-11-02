@@ -92,6 +92,24 @@ func (app *App) InstallMismatchedRemovalForTest() error {
 	return nil
 }
 
+// ProposalStateForTest reads the committed state of one council proposal
+// from its record (prefix 0x10 || proposal id). The record is JSON; only its
+// state field is decoded, into a typed struct. found is false when no record
+// exists.
+func (app *App) ProposalStateForTest(id string) (state authorityv1.ProposalState, found bool, err error) {
+	raw := app.authorityStore().Get(append([]byte{0x10}, id...))
+	if raw == nil {
+		return 0, false, nil
+	}
+	var rec struct {
+		State int32 `json:"state"`
+	}
+	if err := json.Unmarshal(raw, &rec); err != nil {
+		return 0, true, fmt.Errorf("proposal %s record: %w", id, err)
+	}
+	return authorityv1.ProposalState(rec.State), true, nil
+}
+
 // RevokeAdmissionForTest deletes the ante admission row of addr. No message
 // does this. The ante must then refuse that account.
 func (app *App) RevokeAdmissionForTest(addr []byte) {

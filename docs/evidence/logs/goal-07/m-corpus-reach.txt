@@ -1,0 +1,13 @@
+COMMAND env SVN_SKIP_DEVNET=1 go test -count=1 -v -run \^TestFuzzCorpusReach\$ ./chain/x/authority/
+DATE 2026-11-02T04:08:46Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+=== RUN   TestFuzzCorpusReach
+    fuzz_reach_test.go:42: seeds:  {Ops:190 Committed:156 Queued:22 Executed:11 Rejected:2 Expired:4 ApplyDueChanged:6 Bounds:5 Idempotent:3 Refused:31}
+    fuzz_reach_test.go:43: random: {Ops:65105 Committed:41511 Queued:361 Executed:29 Rejected:15 Expired:2129 ApplyDueChanged:4 Bounds:1075 Idempotent:304 Refused:23290}
+    fuzz_reach_test.go:44: total:  {Ops:65295 Committed:41667 Queued:383 Executed:40 Rejected:17 Expired:2133 ApplyDueChanged:10 Bounds:1080 Idempotent:307 Refused:23321}
+--- PASS: TestFuzzCorpusReach (5.30s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	5.334s
+EXIT:0

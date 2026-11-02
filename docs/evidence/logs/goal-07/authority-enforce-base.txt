@@ -1,0 +1,51 @@
+COMMAND bash -c echo\ \"base\ 3853e34\ chain/x/authority/msg.go:\"\;\ git\ show\ 3853e3430217096c3e65664bc799859942ea451e:chain/x/authority/msg.go\ \|\ grep\ -n\ -B4\ -A14\ \"\^func\ enforceCommitted\"\;\ echo\;\ echo\ \"head\ chain/x/authority/msg.go:\"\;\ grep\ -n\ -B6\ -A16\ \"\^func\ enforceCommitted\"\ chain/x/authority/msg.go
+DATE 2026-11-01T09:40:49Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+base 3853e34 chain/x/authority/msg.go:
+72-	}
+73-	return sdkError(out.Code)
+74-}
+75-
+76:func enforceCommitted(ctx sdk.Context, signer []byte) string {
+77-	limit := ctx.GasMeter().Limit()
+78-	if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+79-		return CodeBounds
+80-	}
+81-	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {
+82-		return CodeBounds
+83-	}
+84-	ctx.GasMeter().ConsumeGas(50_000, "authority")
+85-	if len(signer) != 20 {
+86-		return CodeMalformed
+87-	}
+88-	return ""
+89-}
+90-
+
+head chain/x/authority/msg.go:
+87-// enforceCommitted is the first check of every authority handler. In
+88-// simulation (sdk.ExecModeSimulate) the SDK installs an infinite gas meter
+89-// whose limit is 2^64-1; the meter check is skipped there so a client can
+90-// estimate gas, and the ante handler still checks the declared gas limit
+91-// (a declared 0 is accepted only in simulation). FinalizeBlock always runs
+92-// the meter check; CheckTx runs no message handler.
+93:func enforceCommitted(ctx sdk.Context, signer []byte) string {
+94-	if ctx.ExecMode() != sdk.ExecModeSimulate {
+95-		limit := ctx.GasMeter().Limit()
+96-		if limit < genesis.MinGasPerTx || limit > genesis.MaxGasPerTx {
+97-			return CodeBounds
+98-		}
+99-	}
+100-	if uint64(len(ctx.TxBytes())) > genesis.MaxTxBytes {
+101-		return CodeBounds
+102-	}
+103-	ctx.GasMeter().ConsumeGas(50_000, "authority")
+104-	if len(signer) != 20 {
+105-		return CodeMalformed
+106-	}
+107-	return ""
+108-}
+109-
+EXIT:0

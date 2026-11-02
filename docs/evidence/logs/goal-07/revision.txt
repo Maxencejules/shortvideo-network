@@ -1,0 +1,18 @@
+COMMAND bash -c git\ rev-parse\ HEAD\;\ git\ rev-parse\ \"HEAD\^\{tree\}\"\;\ git\ branch\ --show-current\;\ git\ status\ --porcelain\ --untracked-files=all\;\ git\ log\ --oneline\ 3853e3430217096c3e65664bc799859942ea451e..HEAD
+DATE 2026-11-01T09:30:50Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+8d7bec054dc44e2e58b891452dae1c989998ffc6
+goal-07
+?? docs/evidence/logs/goal-07/revision.txt
+43c1a10 goal 07: fix second-round review findings
+2e0888d goal 07: provider and content registries (x/providers, x/content)
+a88453e goal 07: wip checkpoint (integration done, review/fix pending, not gated)
+b4282cb goal 07: wip checkpoint (in progress, not tested)
+5213a7c goal 07: wip checkpoint (in progress, not tested)
+4ba4168 goal 07: wip checkpoint (in progress, not tested)
+9ca725e goal 07: wip checkpoint (in progress, not tested)
+26454c1 goal 07: add evidence log capture helper
+EXIT:0

@@ -1,0 +1,35 @@
+COMMAND .venv/bin/python docs/evidence/goal-07/mutants.py --group goal07
+DATE 2026-11-02T04:32:49Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+revision HEAD commit b782e0149e1a70758b81b29929d12eab0da8a006 tree f07ac7f6113f45a97167cf9c8139fb712227490e
+copy /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-07-ev/tmp/goal07-mutants-irjb0_pm/tree (git archive)
+mutants 5 of 19 (goal07=5, merge=0)
+COPY_MATCH m01-simulate-extra-gas: chain/msgkit/enforce.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m01-simulate-extra-gas.go.txt; chain/msgkit/enforce.go unchanged since 43c1a10
+COPY_MATCH m02-ante-gas0-always: chain/app/ante.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m02-ante-gas0-always.go.txt; chain/app/ante.go unchanged since 43c1a10
+COPY_MATCH m03-query-gas-zero-unlimited: chain/app/querygas.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m03-query-gas-zero-unlimited.go.txt; chain/app/querygas.go unchanged since 43c1a10
+COPY_MATCH m04-rotation-cap-off-by-one: chain/x/providers/msg_server.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m04-rotation-cap-off-by-one.go.txt; chain/x/providers/msg_server.go unchanged since 43c1a10
+COPY_MATCH m05-authority-meter-finalize-only: chain/x/authority/msg.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m05-authority-meter-finalize-only.go.txt; chain/x/authority/msg.go changed since 43c1a10
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+command authority-meter: go test -count=1 -run ^(TestEnforceCommitted|TestHandlerMeterCheckByMode)$ ./chain/x/authority/
+command query-gas: go test -count=1 -run ^(TestQueryGasLimit|TestQueryGasLimitOption)$ ./chain/app/
+command rotation-cap: go test -count=1 -run ^TestRotationCap$ ./chain/x/providers/
+command sim-gas: go test -count=1 -run ^TestSimulateEstimatesGas$ ./chain/app/
+CONTROL authority-meter PASS exit=0 secs=100.0
+CONTROL query-gas PASS exit=0 secs=14.2
+CONTROL rotation-cap PASS exit=0 secs=4.1
+CONTROL sim-gas PASS exit=0 secs=3.6
+KILLED m01-simulate-extra-gas group=goal07 exit=1 secs=5.8 file=chain/msgkit/enforce.go failing=TestSimulateEstimatesGas
+    reason: msgkit.Enforce consumes 1 extra gas in simulation; simulated gas must equal committed gas
+KILLED m02-ante-gas0-always group=goal07 exit=1 secs=5.3 file=chain/app/ante.go failing=TestSimulateEstimatesGas
+    reason: the ante handler must accept a declared gas limit of 0 only in simulation
+KILLED m03-query-gas-zero-unlimited group=goal07 exit=1 secs=5.3 file=chain/app/querygas.go failing=TestQueryGasLimitOption
+    reason: an absent or zero query_gas_limit must select the default, never 0 (SDK unlimited)
+KILLED m04-rotation-cap-off-by-one group=goal07 exit=1 secs=4.2 file=chain/x/providers/msg_server.go failing=TestRotationCap TestRotationCap/one_rotation_past_the_bound TestRotationCap/stale_generation_at_the_bound TestRotationCap/same_key_at_the_bound
+    reason: a rotation past MaxRetiredKeysPerProvider retired keys must be BOUNDS
+KILLED m05-authority-meter-finalize-only group=goal07 exit=1 secs=4.8 file=chain/x/authority/msg.go failing=TestEnforceCommitted
+    reason: enforceCommitted must check the gas meter limit in every mode but simulation
+RESULT mutants=5 killed=5
+EXIT:0

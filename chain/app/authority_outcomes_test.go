@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
@@ -20,12 +21,16 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-// TestProviderMessagesAreForbiddenAndDecode: provider registration and key
-// rotation are FORBIDDEN at the router until Goal 07 (orchestrator decision
-// D1). A fully populated register and a signed rotation both decode (the
-// rotation carries an InnerSignature) and get ERROR_CODE_FORBIDDEN from the
-// svn codespace, and the authority store is byte-identical.
-func TestProviderMessagesAreForbiddenAndDecode(t *testing.T) {
+// TestProviderMessagesReachTheRegistryAndDecode: provider messages are
+// x/providers handlers (Goal 07 ended goal 06's router FORBIDDEN, D1). A
+// fully populated register from the provider account commits (code 0): the
+// providers store gains the record and the authority store is byte-identical.
+// A signed rotation decodes (it carries an InnerSignature) and reaches the
+// rotate handler, which checks the inner signature against the current key
+// (op_rotate order, chain/x/providers/README.md): the garbage signature is
+// ERROR_CODE_UNAUTHORIZED from the svn codespace, the authority store is
+// byte-identical, and the full non-account state is unchanged.
+func TestProviderMessagesReachTheRegistryAndDecode(t *testing.T) {
 	provider := sdksecp.GenPrivKey()
 	c := newCouncil(t, func(doc *genesis.Document) {
 		doc.Submitters = append(doc.Submitters, genesis.Submitter{
@@ -58,10 +63,21 @@ func TestProviderMessagesAreForbiddenAndDecode(t *testing.T) {
 			CanonicalProfileVersion: 1,
 		},
 	}
-	c.reject(t, rejectRow{name: "RegisterProvider", key: provider, msg: register,
-		space: "svn", code: 2, proto: authority.CodeForbidden, advances: true})
+	authorityBefore := c.snapshot()
+	providersBefore := c.run.app.ModuleSnapshot(app.ModuleProviders)
+	c.ok(t, provider, register)
+	if !bytes.Equal(authorityBefore, c.snapshot()) {
+		t.Fatal("RegisterProvider changed the authority store")
+	}
+	if bytes.Equal(providersBefore, c.run.app.ModuleSnapshot(app.ModuleProviders)) {
+		t.Fatal("RegisterProvider did not write the providers store")
+	}
+	full := c.run.app.FullSnapshot()
 	c.reject(t, rejectRow{name: "RotateProviderKey with an InnerSignature", key: provider, msg: rotate,
-		space: "svn", code: 2, proto: authority.CodeForbidden, advances: true})
+		space: "svn", code: 1, proto: authority.CodeUnauthorized, advances: true})
+	if !bytes.Equal(full, c.run.app.FullSnapshot()) {
+		t.Fatal("the rejected rotation changed the full state")
+	}
 }
 
 // authorityResult returns the attributes of the single authority_result

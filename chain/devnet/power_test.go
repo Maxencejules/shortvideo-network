@@ -22,12 +22,11 @@ import (
 
 // fixedNetwork is four prepared nodes and the account and seat keys, all
 // derived from fixed secrets, so two genesis builds can be compared byte for
-// byte. It writes nothing.
+// byte. The accounts follow accountSpec (Init's order). It writes nothing.
 type fixedNetwork struct {
-	nodes     []prepared
-	authority *sdksecp.PrivKey
-	service   *sdksecp.PrivKey
-	seats     []councilKey
+	nodes    []prepared
+	accounts []accountKey
+	seats    []councilKey
 }
 
 func newFixedNetwork() fixedNetwork {
@@ -47,11 +46,14 @@ func newFixedNetwork() fixedNetwork {
 		key := sdked.GenPrivKeyFromSecret([]byte(id))
 		seats[i] = councilKey{id: id, key: key, pub: key.PubKey().Bytes()}
 	}
+	accounts := make([]accountKey, len(accountSpec))
+	for i, spec := range accountSpec {
+		accounts[i] = accountKey{name: spec.name, role: spec.role, key: sdksecp.GenPrivKeyFromSecret([]byte(spec.name))}
+	}
 	return fixedNetwork{
-		nodes:     nodes,
-		authority: sdksecp.GenPrivKeyFromSecret([]byte("authority")),
-		service:   sdksecp.GenPrivKeyFromSecret([]byte("service")),
-		seats:     seats,
+		nodes:    nodes,
+		accounts: accounts,
+		seats:    seats,
 	}
 }
 
@@ -68,7 +70,7 @@ func (n fixedNetwork) build(t *testing.T, requested int64) ([]byte, []byte, *cmt
 		t.Fatal(err)
 	}
 	opts := fixedOptions(power)
-	genDoc, doc, err := genesisDoc(opts, n.nodes, n.authority, n.service, n.seats)
+	genDoc, doc, err := genesisDoc(opts, n.nodes, n.accounts, n.seats)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +153,7 @@ func TestInitPowerRejects(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	over := document(fixedOptions(largest+1), network.nodes, network.authority, network.service, network.seats)
+	over := document(fixedOptions(largest+1), network.nodes, network.accounts, network.seats)
 	if _, err := app.AppStateFromDocument(enc.Codec, over); err == nil {
 		t.Fatal("genesis accepted a total above safe_integer_max")
 	}

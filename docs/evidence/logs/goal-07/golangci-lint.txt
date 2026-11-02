@@ -1,0 +1,9 @@
+COMMAND bash -c golangci-lint\ version\;\ cd\ chain\ \&\&\ golangci-lint\ run\ ./...
+DATE 2026-11-01T09:31:30Z
+HEAD 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2
+TREE 8d7bec054dc44e2e58b891452dae1c989998ffc6
+DIRTY no
+golangci-lint has version 2.5.0 built with go1.25.1 from ff63786c on 2025-09-21T19:04:05Z
+Error: can't load config: the Go language version (go1.25) used to build golangci-lint is lower than the targeted Go version (1.26.10)
+The command is terminated due to an error: can't load config: the Go language version (go1.25) used to build golangci-lint is lower than the targeted Go version (1.26.10)
+EXIT:3

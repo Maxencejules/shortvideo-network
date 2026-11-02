@@ -1,4 +1,6 @@
-// Package scaffold holds the module slots that Goals 06-10 fill in.
+// Package scaffold holds the module slots that Goals 08-10 fill in: the svn
+// header, policy, leases, and evidence. x/authority, x/providers, and
+// x/content replaced their slots in Goals 06-07.
 //
 // Each module stores its genesis document and rejects application messages.
 // None of them returns validator updates. x/authority is the only writer.
@@ -24,8 +26,7 @@ import (
 
 const storeKeyByte = 0x01
 
-// Module is one empty registry slot: svn header, providers, content, leases,
-// evidence, or policy.
+// Module is one placeholder slot: svn header, leases, evidence, or policy.
 type Module struct {
 	name     string
 	storeKey *storetypes.KVStoreKey

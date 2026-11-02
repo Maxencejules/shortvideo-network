@@ -1,0 +1,12 @@
+COMMAND bash -c b=\$\(git\ grep\ -h\ -E\ \"\^func\ \(Test\|Fuzz\)\"\ 43c1a104d43ba55f2f58684a6f3790c0bb04c9f2\ --\ chain\ \|\ sed\ \"s/\(.\*//\"\ \|\ sort\)\;\ h=\$\(git\ grep\ -h\ -E\ \"\^func\ \(Test\|Fuzz\)\"\ HEAD\ --\ chain\ \|\ sed\ \"s/\(.\*//\"\ \|\ sort\)\;\ echo\ \"base\ test/fuzz\ functions:\ \$\(echo\ \"\$b\"\ \|\ wc\ -l\)\"\;\ echo\ \"head\ test/fuzz\ functions:\ \$\(echo\ \"\$h\"\ \|\ wc\ -l\)\"\;\ gone=\$\(comm\ -23\ \<\(echo\ \"\$b\"\)\ \<\(echo\ \"\$h\"\)\)\;\ echo\ \"removed\ since\ base:\ \$\{gone:-none\}\"\;\ test\ -z\ \"\$gone\"
+DATE 2026-11-02T04:07:22Z
+HEAD b782e0149e1a70758b81b29929d12eab0da8a006
+TREE f07ac7f6113f45a97167cf9c8139fb712227490e
+DIRTY no
+base test/fuzz functions: 242
+head test/fuzz functions: 324
+removed since base: func TestAdmissionAndMixedActivation
+func TestKeeperForceWithdrawArgumentsSurviveTheSideDocument
+func TestKeeperLoadsAnOlderSideDocument
+func TestQuorumUsesPowerNotCount
+EXIT:1

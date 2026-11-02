@@ -299,3 +299,63 @@ func TestParseRejectsTrailingData(t *testing.T) {
 		})
 	}
 }
+
+// TestSeatAddressRole: a council seat address may be a submitter only as
+// BROADCASTER (DR-07-11). Every other role at a seat address is refused, in
+// either hex case. A BROADCASTER row for every seat, and seats without a
+// row (the fixture), are accepted.
+func TestSeatAddressRole(t *testing.T) {
+	seatAddr := func(doc Document, i int) string {
+		raw, err := hex.DecodeString(doc.DevnetTestSeats[i].PublicKeyHex)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return hex.EncodeToString(SeatAddress(raw))
+	}
+	requireAccepted(t, validFixture())
+	for _, role := range []string{RoleAuthority, RoleAdmittedService, RoleAdmittedProvider, RoleAuditor} {
+		for _, upper := range []bool{false, true} {
+			name := role
+			if upper {
+				name += " upper-case address"
+			}
+			t.Run(name, func(t *testing.T) {
+				doc := validFixture()
+				addr := seatAddr(doc, 1)
+				if upper {
+					addr = strings.ToUpper(addr)
+				}
+				doc.Submitters = append(doc.Submitters, Submitter{AddressHex: addr, Role: role})
+				requireRejected(t, doc, "seat seat-2 address is a "+role+" submitter; a seat address may only be BROADCASTER")
+			})
+		}
+	}
+	t.Run("broadcaster", func(t *testing.T) {
+		doc := validFixture()
+		for i := range doc.DevnetTestSeats {
+			doc.Submitters = append(doc.Submitters, Submitter{AddressHex: seatAddr(doc, i), Role: RoleBroadcaster})
+		}
+		requireAccepted(t, doc)
+	})
+	// Without the devnet flag validateDevnet does not look at the seats, so
+	// the seat rule decodes the keys itself and applies the same rule.
+	flagOff := func() Document {
+		doc := validFixture()
+		doc.AllowDevnetTestParameters = false
+		doc.DevnetTestParameters = nil
+		return doc
+	}
+	t.Run("flag off, service role", func(t *testing.T) {
+		doc := flagOff()
+		requireAccepted(t, doc)
+		doc.Submitters = append(doc.Submitters, Submitter{AddressHex: seatAddr(doc, 1), Role: RoleAdmittedService})
+		requireRejected(t, doc, "seat seat-2 address is a ADMITTED_SERVICE submitter; a seat address may only be BROADCASTER")
+	})
+	t.Run("flag off, malformed seat key", func(t *testing.T) {
+		doc := flagOff()
+		doc.DevnetTestSeats[1].PublicKeyHex = strings.Repeat("zz", ConsensusKeyBytes)
+		requireRejected(t, doc, "seat key seat-2")
+		doc.DevnetTestSeats[1].PublicKeyHex = fixtureKey(0x02, 1)[:2*(ConsensusKeyBytes-1)]
+		requireRejected(t, doc, "seat key seat-2")
+	})
+}

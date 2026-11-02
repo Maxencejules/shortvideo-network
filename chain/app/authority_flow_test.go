@@ -330,8 +330,9 @@ func (c *council) queue(t *testing.T, proposer int, msg *authorityv1.MsgProposeC
 
 func (c *council) snapshot() []byte { return c.run.app.AuthoritySnapshotForTest() }
 
-// rejectRow is one rejected transaction. The full authority store must be
-// byte-identical after it.
+// rejectRow is one rejected transaction. The full authority store, and every
+// other module store except the account store, must be byte-identical after
+// it.
 type rejectRow struct {
 	name    string
 	key     cryptotypes.PrivKey
@@ -366,6 +367,7 @@ func (c *council) reject(t *testing.T, row rejectRow) {
 		raw[len(raw)-1] ^= 0xff
 	}
 	before := c.snapshot()
+	full := c.run.app.FullSnapshot()
 	result := c.run.deliver(t, raw)
 	if result.Codespace != row.space || result.Code != row.code {
 		t.Fatalf("%s: codespace %q code %d, want %q %d; log %s", row.name, result.Codespace, result.Code, row.space, row.code, result.Log)
@@ -375,6 +377,11 @@ func (c *council) reject(t *testing.T, row rejectRow) {
 	}
 	if after := c.snapshot(); !bytes.Equal(before, after) {
 		t.Fatalf("%s changed the authority store\nbefore % x\nafter  % x", row.name, before, after)
+	}
+	// Every row is a reject, so no registry or other module store changes
+	// either. The account store is excluded: the ante may move the sequence.
+	if !bytes.Equal(full, c.run.app.FullSnapshot()) {
+		t.Fatalf("%s changed a module store", row.name)
 	}
 	seqAfter, knownAfter := c.run.app.AccountSequenceForTest(addr)
 	if knownAfter != known {

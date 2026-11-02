@@ -22,7 +22,9 @@ import (
 // (0x14) at the current version; a keep from OPEN or QUEUED, or a successful
 // execute, reads and writes the proposer's open count at the record's base
 // version. A validator-payload execute also scans the pending prefix (0x03),
-// at most MaxPendingChanges entries. So gas is bounded and does not grow with
+// at most MaxPendingChanges entries; an execute of a registry payload reads no
+// authority key beyond the common set (its hook reads and writes a fixed key
+// set in x/providers or x/content). So gas is bounded and does not grow with
 // past proposals; a validator execute depends on the pending count.
 //
 // No live chain exists, so there is no migration from the round-2 layout
@@ -60,7 +62,9 @@ const (
 	retiredCouncilPrefix byte = 0x15
 	// retiredServicePrefix || old_addr(20) -> 0x01. Engine-only rotation.
 	retiredServicePrefix byte = 0x16
-	// providerPrefix || provider_id -> providerRecord JSON.
+	// providerPrefix is reserved: round 3 provider rows. No code writes it
+	// since Goal 07; provider records are x/providers state. ExportState
+	// still refuses it.
 	providerPrefix byte = 0x17
 	// legacySideKey is the round-2 side document. It is never written.
 	legacySideKey byte = 0x20
@@ -129,7 +133,6 @@ func proposalKey(id string) []byte    { return prefixed(proposalPrefix, id) }
 func businessKey(id string) []byte    { return prefixed(businessPrefix, id) }
 func executedKey(param string) []byte { return prefixed(executedPrefix, param) }
 func governedKey(limit string) []byte { return prefixed(governedPrefix, limit) }
-func providerKey(id string) []byte    { return prefixed(providerPrefix, id) }
 
 // openKey is the open count of one seat for proposals on one base version.
 func openKey(seatID string, version uint64) []byte {
@@ -198,19 +201,22 @@ func (r *proposalRecord) open() bool {
 }
 
 // decodedWire is the payload decoded at propose time. Execute uses it and
-// does not parse the canonical JSON again.
+// does not parse the canonical JSON again. A force_withdraw record keeps its
+// content id, version and the 32-byte reason digest value (in reason).
 type decodedWire struct {
-	Kind       string `json:"kind"`
-	NodeID     string `json:"node_id"`
-	PubKey     []byte `json:"pub_key"`
-	Power      int64  `json:"power"`
-	Reason     []byte `json:"reason"`
-	ByHeight   bool   `json:"by_height"`
-	Height     uint64 `json:"height"`
-	Unix       int64  `json:"unix"`
-	LimitKey   string `json:"limit_key"`
-	LimitValue uint64 `json:"limit_value"`
-	ProviderID string `json:"provider_id"`
+	Kind           string `json:"kind"`
+	NodeID         string `json:"node_id"`
+	PubKey         []byte `json:"pub_key"`
+	Power          int64  `json:"power"`
+	Reason         []byte `json:"reason"`
+	ByHeight       bool   `json:"by_height"`
+	Height         uint64 `json:"height"`
+	Unix           int64  `json:"unix"`
+	LimitKey       string `json:"limit_key"`
+	LimitValue     uint64 `json:"limit_value"`
+	ProviderID     string `json:"provider_id"`
+	ContentID      string `json:"content_id"`
+	ContentVersion uint64 `json:"content_version"`
 }
 
 func (d decodedWire) power() PowerChange {
@@ -218,22 +224,6 @@ func (d decodedWire) power() PowerChange {
 		NodeID: d.NodeID, PubKey: append([]byte(nil), d.PubKey...), Power: d.Power,
 		Reason: append([]byte(nil), d.Reason...), ByHeight: d.ByHeight, Height: d.Height, Unix: d.Unix,
 	}
-}
-
-// providerRecord is a provider admission row. Goal 07 replaces these rows
-// with x/providers. No goal-06 message creates one: the router returns
-// FORBIDDEN for RegisterProvider. The engine reaches a row only through the
-// council admit and disable payloads.
-type providerRecord struct {
-	ID            string `json:"id"`
-	Account       []byte `json:"account"`
-	SigningPub    []byte `json:"signing_pub"`
-	SigningKeyID  string `json:"signing_key_id"`
-	Generation    uint64 `json:"generation"`
-	State         string `json:"state"`
-	OperatorGroup string `json:"operator_group"`
-	Endpoint      []byte `json:"endpoint"`
-	Capacity      uint64 `json:"capacity"`
 }
 
 func normalizeRecord(rec *proposalRecord) {
@@ -293,30 +283,6 @@ func decodeRecord(id string, raw []byte) (*proposalRecord, error) {
 		return nil, fmt.Errorf("proposal %s: state %d", id, rec.State)
 	}
 	return &rec, nil
-}
-
-func encodeProvider(row *providerRecord) ([]byte, error) {
-	if row.Account == nil {
-		row.Account = []byte{}
-	}
-	if row.SigningPub == nil {
-		row.SigningPub = []byte{}
-	}
-	if row.Endpoint == nil {
-		row.Endpoint = []byte{}
-	}
-	return json.Marshal(row)
-}
-
-func decodeProvider(id string, raw []byte) (*providerRecord, error) {
-	var row providerRecord
-	if err := decodeStrict(raw, &row, func() ([]byte, error) { return encodeProvider(&row) }); err != nil {
-		return nil, fmt.Errorf("provider %s: %w", id, err)
-	}
-	if row.ID != id {
-		return nil, fmt.Errorf("provider %s: record does not match its key", id)
-	}
-	return &row, nil
 }
 
 func decodePending(key, raw []byte) (*authorityv1.PendingValidatorPower, error) {
@@ -462,8 +428,8 @@ func prefixName(prefix byte) string {
 // pending entries in key order. It refuses, with ErrExportRefused naming the
 // first such prefix, when the store holds anything else: the policy version,
 // proposal records and payloads, business ids, the executed set, governed
-// limits, open counts, retired keys, provider rows or the round-2 side
-// document. The genesis proto cannot carry them, and dropping them would
+// limits, open counts, retired keys, a key under the reserved provider-row
+// prefix (0x17) or the round-2 side document. The genesis proto cannot carry them, and dropping them would
 // lose replay protection and council state on import.
 func ExportState(kv KV) (*authorityv1.GenesisState, error) {
 	var cfg *authorityv1.GenesisState

@@ -26,7 +26,8 @@ func genesisError(code, format string, args ...any) error {
 //  1. Shape: the authority state exists; no proposals (the proto has no
 //     payload, so a genesis proposal could never execute); no approved
 //     council (spec guard_decisions); quorum loss UNSET (DEC-008); seats and
-//     submitters well formed.
+//     submitters well formed; a seat address is a submitter only as
+//     BROADCASTER (DR-07-11, stricter than spec).
 //  2. Validators: InitialUpdates rules, node ids, and the spec
 //     power_set_invariant (spec validate_genesis_view).
 //  3. Pending entries: at most MaxPendingChanges, each well formed, distinct
@@ -52,6 +53,9 @@ func ValidateGenesisState(state *authorityv1.GenesisState, at *GenesisPoint) err
 		return err
 	}
 	if err := validateSubmitters(auth.GetSubmitters()); err != nil {
+		return err
+	}
+	if err := validateSeatRoles(auth.GetDevnetTestSeats(), auth.GetSubmitters()); err != nil {
 		return err
 	}
 	if err := validateGenesisValidators(auth.GetValidators()); err != nil {
@@ -123,6 +127,23 @@ func validateSubmitters(rows []*typesv1.Submitter) error {
 			return genesisError(CodeDuplicate, "submitter %x appears twice", row.GetAddress())
 		}
 		seen[string(row.GetAddress())] = struct{}{}
+	}
+	return nil
+}
+
+// validateSeatRoles fails closed when a seat address is a submitter with
+// any role other than BROADCASTER. The row is how a seat key passes the ante;
+// AUTHORITY, ADMITTED_SERVICE and ADMITTED_PROVIDER would let a council key
+// execute, register content or register a provider. genesis.Validate applies
+// the same rule to the document. Interim answer to DR-07-11 (with DR-06-06).
+func validateSeatRoles(seats []*authorityv1.DevnetTestSeat, rows []*typesv1.Submitter) error {
+	for _, seat := range seats {
+		addr := SeatAddress(seat.GetPublicKey())
+		for _, row := range rows {
+			if bytes.Equal(row.GetAddress(), addr) && row.GetRole() != typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER {
+				return genesisError(CodeForbidden, "seat %q address is a %v submitter; a seat address may only be BROADCASTER", seat.GetSeatId(), row.GetRole())
+			}
+		}
 	}
 	return nil
 }
