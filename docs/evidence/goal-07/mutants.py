@@ -23,7 +23,7 @@ selected mutants before any test runs), or when any mutant SURVIVED,
 BUILD_FAILED or hit TIMEOUT.
 
 Usage:
-  python3 docs/evidence/goal-07/mutants.py [--rev REV] [--group goal07|merge]
+  python3 docs/evidence/goal-07/mutants.py [--rev REV] [--group goal07|merge|node]
                                             [--only a,b] [--check]
                                             [--logdir DIR] [--keep]
 
@@ -34,6 +34,9 @@ GOCACHE under the temporary directory, which is removed at the end unless
 --keep is given.
 
 Where the mutants come from.
+- Group node (eleven): mutants of chain/node/db.go, the shutdown fix of
+  commit 1e89e60 (CometBFT v0.40.0 "leveldb: closed" panic at SIGTERM). Each
+  removes one guard of closeSafeDB or the provider wiring.
 - Group goal07 (m01 to m05): the five fix-round mutants of the goal 07
   evidence on commit 43c1a10. There, each was a full copy of one source file
   with one small change, docs/evidence/goal-07/mutants/<name>.go.txt, run by
@@ -84,6 +87,7 @@ QUERY_GAS = "query-gas"
 ROTATION_CAP = "rotation-cap"
 AUTHORITY_METER = "authority-meter"
 MERGE = "merge"
+NODE = "node"
 
 # Named non-devnet test commands, run from the root of the copy. The first
 # four are the test selections of run_mutant.sh.
@@ -103,9 +107,14 @@ COMMANDS: dict[str, tuple[list[str], dict[str, str]]] = {
         ],
         {"SVN_SKIP_DEVNET": "1"},
     ),
+    NODE: (
+        ["go", "test", "-count=1", "-race", "-run",
+         "^(TestStartUsesCloseSafeDBProvider|TestCloseSafeDB.*|TestBlockStoreReadAfterClose)$", "./chain/node/"],
+        {},
+    ),
 }
 
-GROUPS = ("goal07", "merge")
+GROUPS = ("goal07", "merge", "node")
 
 
 @dataclass(frozen=True)
@@ -123,6 +132,7 @@ MSG = "chain/x/authority/msg.go"
 DOC = "chain/genesis/document.go"
 AGEN = "chain/x/authority/genesis.go"
 ENGINE = "chain/x/authority/engine.go"
+NODEDB = "chain/node/db.go"
 
 MUTANTS: list[Mutant] = [
     # Group goal07: the fix-round mutants of the 43c1a10 evidence.
@@ -251,6 +261,40 @@ MUTANTS: list[Mutant] = [
         "\tif true {\n",
         MERGE, "simulation must skip the meter-limit check so a client can estimate gas",
     ),
+    # Group node: chain/node/db.go, the close-safe CometBFT database (1e89e60).
+    Mutant("node-get-unguarded", "node", NODEDB,
+           "\tif d.closed.Load() {\n\t\treturn nil, nil\n\t}\n\tvalue, err := d.DB.Get(key)\n\tif err != nil && d.closed.Load() {\n\t\treturn nil, nil\n\t}\n",
+           "\tvalue, err := d.DB.Get(key)\n", NODE, "Get after Close must report not found, not the closed-database error"),
+    Mutant("node-get-no-flag", "node", NODEDB,
+           "func (d *closeSafeDB) Get(key []byte) ([]byte, error) {\n\tif d.closed.Load() {\n\t\treturn nil, nil\n\t}\n",
+           "func (d *closeSafeDB) Get(key []byte) ([]byte, error) {\n", NODE, "Get after Close must report not found even if the backend still answers"),
+    Mutant("node-get-no-errmap", "node", NODEDB,
+           "\tvalue, err := d.DB.Get(key)\n\tif err != nil && d.closed.Load() {\n\t\treturn nil, nil\n\t}\n",
+           "\tvalue, err := d.DB.Get(key)\n", NODE, "a Get that races Close must report not found"),
+    Mutant("node-has-no-flag", "node", NODEDB,
+           "func (d *closeSafeDB) Has(key []byte) (bool, error) {\n\tif d.closed.Load() {\n\t\treturn false, nil\n\t}\n",
+           "func (d *closeSafeDB) Has(key []byte) (bool, error) {\n", NODE, "Has after Close must report false"),
+    Mutant("node-has-no-errmap", "node", NODEDB,
+           "\tok, err := d.DB.Has(key)\n\tif err != nil && d.closed.Load() {\n\t\treturn false, nil\n\t}\n",
+           "\tok, err := d.DB.Has(key)\n", NODE, "a Has that races Close must report false"),
+    Mutant("node-iter-no-flag", "node", NODEDB,
+           "func (d *closeSafeDB) Iterator(start, end []byte) (cmtdb.Iterator, error) {\n\tif d.closed.Load() {\n\t\treturn emptyIterator{start: start, end: end}, nil\n\t}\n",
+           "func (d *closeSafeDB) Iterator(start, end []byte) (cmtdb.Iterator, error) {\n", NODE, "Iterator after Close must be an empty range"),
+    Mutant("node-iter-no-errmap", "node", NODEDB,
+           "\tit, err := d.DB.Iterator(start, end)\n\tif err != nil && d.closed.Load() {\n\t\treturn emptyIterator{start: start, end: end}, nil\n\t}\n",
+           "\tit, err := d.DB.Iterator(start, end)\n", NODE, "an Iterator that races Close must be an empty range"),
+    Mutant("node-riter-no-flag", "node", NODEDB,
+           "func (d *closeSafeDB) ReverseIterator(start, end []byte) (cmtdb.Iterator, error) {\n\tif d.closed.Load() {\n\t\treturn emptyIterator{start: start, end: end}, nil\n\t}\n",
+           "func (d *closeSafeDB) ReverseIterator(start, end []byte) (cmtdb.Iterator, error) {\n", NODE, "ReverseIterator after Close must be an empty range"),
+    Mutant("node-set-no-flag", "node", NODEDB,
+           "func (d *closeSafeDB) Set(key, value []byte) error {\n\tif d.closed.Load() {\n\t\treturn errDBClosed\n\t}\n",
+           "func (d *closeSafeDB) Set(key, value []byte) error {\n", NODE, "a write after Close must fail with errDBClosed"),
+    Mutant("node-provider-default", "node", NODEDB,
+           "var dbProvider cmtcfg.DBProvider = closeSafeDBProvider\n",
+           "var dbProvider cmtcfg.DBProvider = cmtcfg.DefaultDBProvider\n", NODE, "Start must open the CometBFT databases through closeSafeDBProvider"),
+    Mutant("node-close-no-flag", "node", NODEDB,
+           "\td.closed.Store(true)\n",
+           "\t_ = 0\n", NODE, "Close must mark the database closed before closing it"),
 ]
 
 BUILD_FAILURE = re.compile(r"\[(build|setup) failed\]|^# \S+$|cannot find package|undefined: ", re.M)

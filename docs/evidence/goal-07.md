@@ -77,6 +77,23 @@ The 74th, [m-mutant-tx-context-full.txt](logs/goal-07/m-mutant-tx-context-full.t
 
 [m-unit-app.txt](logs/goal-07/m-unit-app.txt) is 7.4 MB and [m-unit.txt](logs/goal-07/m-unit.txt) is 7.6 MB. Verbose app tests print the SDK debug logger. The size is the real output.
 
+### Second tested commit: `1e89e60` (node shutdown fix)
+
+After the evidence commits, `go` failed on `11b81a0` (CI run 41440148912): `TestDevnetValidatorLifecycle`, `lifecycle_test.go:113: power-stop-one: stop v4: exit status 2`. The stopped validator panicked during its SIGTERM shutdown with `panic: leveldb: closed`, in `store.(*BlockStore).LoadSeenCommit` called from `consensus.(*Reactor).queryMaj23Routine` (`cometbft@v0.40.0/consensus/reactor.go:785`).
+
+- **Cause.** CometBFT v0.40.0 `node.OnStop` stops the p2p switch and then closes the block store. The switch does not wait for the per-peer `queryMaj23Routine`. That routine sleeps `PeerQueryMaj23SleepDuration` and then calls `State.LoadCommit` without re-checking `IsRunning`, and `LoadSeenCommit` panics on any database error. v0.40.0 is the latest release, so there is no upstream fix to take. This is the cause of the intermittent "-race SIGTERM exit-2" devnet failure recorded since goal 06.
+- **Fix.** The owner asked for it in this pull request (2026-11-02). In `chain/node/db.go`, `Start` opens the CometBFT databases through `closeSafeDBProvider`, which wraps `cmtcfg.DefaultDBProvider`'s database in `closeSafeDB`. Until `Close`, every call passes through unchanged. After `Close`, which happens only at shutdown, reads report not found or an empty range, and writes fail with `errDBClosed`. The late goroutine gets nil and exits at its next running check. The fix does not depend on timing.
+- **What changed.** [m2-diff.txt](logs/goal-07/m2-diff.txt) shows the change from `11b81a0` outside `docs/`: `chain/go.mod` (`cometbft-db` becomes direct), `chain/node/db.go`, `chain/node/db_test.go` and `chain/node/start.go`, `4 files changed, 460 insertions(+), 2 deletions(-)`. Commit `1e89e6018cff31b39a4f7e6acca43df74ae0100c`, tree `894ec5282f3fa0344891cd89bf1fcda7a25562d0`.
+- **Logs on `1e89e60`.** Each `m2-` log prints HEAD `1e89e60`, TREE `894ec528` and DIRTY no.
+  - [m2-gofmt-vet.txt](logs/goal-07/m2-gofmt-vet.txt) EXIT 0.
+  - [m2-node-unit.txt](logs/goal-07/m2-node-unit.txt), with `-race -v`: 8 tests pass. They include `TestBlockStoreReadAfterClose`, which first checks that `LoadSeenCommit` on a raw closed block store panics (the upstream behaviour) and then that no panic occurs through `closeSafeDB`. The others are `TestCloseSafeDBReadRacingClose` (a read racing `Close`), `TestCloseSafeDBAfterCloseMemDB`, `TestCloseSafeDBConcurrentClose`, `TestCloseSafeDBBeforeClose`, `TestCloseSafeDBAfterClose`, `TestStartUsesCloseSafeDBProvider` and `TestNodeFileQueryGasLimit`.
+  - [m2-unit.txt](logs/goal-07/m2-unit.txt): every `./chain/...` package `ok`, EXIT 0.
+  - [m2-mutants-node.txt](logs/goal-07/m2-mutants-node.txt): `python3 docs/evidence/goal-07/mutants.py --group node`, `CONTROL node PASS`, `RESULT mutants=11 killed=11`, EXIT 0. Each of the eleven removes one guard of `closeSafeDB` or the provider wiring.
+  - [m2-devnet.txt](logs/goal-07/m2-devnet.txt): the devnet package, 20 tests `--- PASS`, `ok ... chain/devnet 179.099s`, with no `exit status 2` and no `leveldb: closed`.
+  - [m2-race.txt](logs/goal-07/m2-race.txt): `go test -race -count=1 -timeout 45m ./chain/...` through the network-namespace wrapper, every package `ok`, including `chain/devnet 293.600s` and `chain/node 1.659s`. EXIT 0 on the first attempt, with no `exit status 2`, no `leveldb: closed` and no `DATA RACE`.
+- **CI on `1e89e60`.** Run [41449162616](https://github.com/Maxencejules/shortvideo-network/actions/runs/41449162616): `go`, `python`, `devnet`, `contract` and `node` all `success`. This was read from PR 10's check runs through the GitHub API at about 13:10 UTC, not captured as a log.
+- **What still stands from `b782e01`.** Outside `chain/node` and `chain/go.mod`, the code is unchanged, so every other `m-` result stands for `1e89e60`. Only the `chain/node` and devnet results were rerun, plus the full `-race` suite, because the fix targets it.
+
 ### Merge of goal 06 round 3
 
 Goal 06 round 3 redesigned x/authority after goal 07 had built on round 2 (`3853e34`). The merge `70d55de` rebuilds goal 07's registry integration on the round 3 design. The summary below comes from the merge workflow's integration results: a plan, a resolution, three independent reviews and a fix round. Those are workflow outputs, not capture logs. Each test named here passes in [m-unit.txt](logs/goal-07/m-unit.txt), and the mutants named here are in [m-mutants-merge.txt](logs/goal-07/m-mutants-merge.txt).
@@ -637,6 +654,7 @@ Interim choices are reversible. They are not approvals. All requests below are O
 - The fourteen merge mutants are reconstructions of the merge workflow's scratch mutants, not the same text.
 - Events are not part of the app hash. An indexer must not treat them as consensus state.
 - The devnet is four processes on one machine. It is not an independent-operator result.
+- The node shutdown fix (`1e89e60`) works around a CometBFT v0.40.0 race in our database provider: after a database's `Close`, reads report not found. Only goroutines that outlived the shutdown can see that. The upstream race remains, so revisit the wrapper when CometBFT is upgraded.
 
 ## Changed files
 

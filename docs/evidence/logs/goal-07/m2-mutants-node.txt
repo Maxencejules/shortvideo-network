@@ -1,0 +1,36 @@
+COMMAND .venv/bin/python docs/evidence/goal-07/mutants.py --group node
+DATE 2026-11-02T13:00:52Z
+HEAD 1e89e6018cff31b39a4f7e6acca43df74ae0100c
+TREE 894ec5282f3fa0344891cd89bf1fcda7a25562d0
+DIRTY no
+revision HEAD commit 1e89e6018cff31b39a4f7e6acca43df74ae0100c tree 894ec5282f3fa0344891cd89bf1fcda7a25562d0
+copy /tmp/goal07-mutants-oa7vboru/tree (git archive)
+mutants 11 of 30 (goal07=0, merge=0, node=11)
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+command node: go test -count=1 -race -run ^(TestStartUsesCloseSafeDBProvider|TestCloseSafeDB.*|TestBlockStoreReadAfterClose)$ ./chain/node/
+CONTROL node PASS exit=0 secs=170.1
+KILLED node-get-unguarded group=node exit=1 secs=4.9 file=chain/node/db.go failing=TestCloseSafeDBAfterClose TestBlockStoreReadAfterClose
+    reason: Get after Close must report not found, not the closed-database error
+KILLED node-get-no-flag group=node exit=1 secs=5.3 file=chain/node/db.go failing=TestCloseSafeDBAfterCloseMemDB
+    reason: Get after Close must report not found even if the backend still answers
+KILLED node-get-no-errmap group=node exit=1 secs=5.5 file=chain/node/db.go failing=TestCloseSafeDBReadRacingClose
+    reason: a Get that races Close must report not found
+KILLED node-has-no-flag group=node exit=1 secs=4.7 file=chain/node/db.go failing=TestCloseSafeDBAfterCloseMemDB
+    reason: Has after Close must report false
+KILLED node-has-no-errmap group=node exit=1 secs=5.0 file=chain/node/db.go failing=TestCloseSafeDBReadRacingClose
+    reason: a Has that races Close must report false
+KILLED node-iter-no-flag group=node exit=1 secs=5.1 file=chain/node/db.go failing=TestCloseSafeDBAfterClose TestCloseSafeDBAfterCloseMemDB
+    reason: Iterator after Close must be an empty range
+KILLED node-iter-no-errmap group=node exit=1 secs=5.4 file=chain/node/db.go failing=TestCloseSafeDBReadRacingClose
+    reason: an Iterator that races Close must be an empty range
+KILLED node-riter-no-flag group=node exit=1 secs=5.6 file=chain/node/db.go failing=TestCloseSafeDBAfterClose TestCloseSafeDBAfterCloseMemDB
+    reason: ReverseIterator after Close must be an empty range
+KILLED node-set-no-flag group=node exit=1 secs=5.5 file=chain/node/db.go failing=TestCloseSafeDBAfterClose
+    reason: a write after Close must fail with errDBClosed
+KILLED node-provider-default group=node exit=1 secs=5.3 file=chain/node/db.go failing=TestStartUsesCloseSafeDBProvider
+    reason: Start must open the CometBFT databases through closeSafeDBProvider
+KILLED node-close-no-flag group=node exit=1 secs=4.9 file=chain/node/db.go failing=TestCloseSafeDBAfterClose TestBlockStoreReadAfterClose
+    reason: Close must mark the database closed before closing it
+RESULT mutants=11 killed=11
+EXIT:0

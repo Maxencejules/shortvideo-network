@@ -1,0 +1,22 @@
+COMMAND env SVN_SKIP_DEVNET=1 go test -count=1 ./chain/...
+DATE 2026-11-02T13:00:31Z
+HEAD 1e89e6018cff31b39a4f7e6acca43df74ae0100c
+TREE 894ec5282f3fa0344891cd89bf1fcda7a25562d0
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/chain/address	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	14.377s
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	0.164s
+?   	github.com/Maxencejules/shortvideo-network/chain/cometwrap	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	6.396s
+ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	0.047s
+?   	github.com/Maxencejules/shortvideo-network/chain/jcs	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	0.089s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	0.041s
+ok  	github.com/Maxencejules/shortvideo-network/chain/node	0.238s
+ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	0.007s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	7.767s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	0.236s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	0.620s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	0.058s
+?   	github.com/Maxencejules/shortvideo-network/chain/x/scaffold	[no test files]
+EXIT:0
