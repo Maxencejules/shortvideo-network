@@ -1,0 +1,929 @@
+{
+  "schema": "evidence-envelope.schema.json",
+  "valid": [
+    {
+      "file": "valid/provider-receipt.json",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "note": "Provider receipt labelled as an attestation."
+    },
+    {
+      "file": "valid/auditor-attestation.json",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "note": "Auditor attestation labelled as an attestation."
+    },
+    {
+      "file": "valid/receipt-lower-bounds.json",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "note": "Provider receipt at every lower bound: 1-character strings, content_version 1, epoch 0, expiry 1."
+    },
+    {
+      "file": "valid/attestation-upper-bounds.json",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "note": "Auditor attestation at every upper bound: 64-character strings, content_version and epoch 2^53-1, expiry 253402300799."
+    }
+  ],
+  "invalid": [
+    {
+      "file": "invalid/audit-kind-storage-proof.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "storage-proof-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "kind claims a storage proof; the only kinds are the two attestation kinds",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-claim-limit-storage-proof.json",
+      "base": "valid/provider-receipt.json",
+      "group": "storage-proof-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "claim_limit relabels a receipt as a storage proof",
+      "errors": [
+        {
+          "path": "/claim_limit",
+          "keyword": "const"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-claim-limit-storage-proof.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "storage-proof-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "claim_limit relabels an audit as a storage proof",
+      "errors": [
+        {
+          "path": "/claim_limit",
+          "keyword": "const"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-extra-storage-proof.json",
+      "base": "valid/provider-receipt.json",
+      "group": "storage-proof-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "a storage_proof flag is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "storage_proof"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-extra-storage-proof.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "storage-proof-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "a storage_proof flag is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "storage_proof"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-unique-replica-proof.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "unique-replica-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "kind claims proof of a unique replica",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-claim-limit-unique-replica-proof.json",
+      "base": "valid/provider-receipt.json",
+      "group": "unique-replica-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "claim_limit relabels a receipt as proof of a unique replica",
+      "errors": [
+        {
+          "path": "/claim_limit",
+          "keyword": "const"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-extra-independent.json",
+      "base": "valid/provider-receipt.json",
+      "group": "independence-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "an operator-independence flag is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "independent"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-extra-independent.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "independence-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "an operator-independence flag is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "independent"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-extra-lawful.json",
+      "base": "valid/provider-receipt.json",
+      "group": "legality-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "a lawful-content flag is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "lawful"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-extra-lawful.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "legality-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "a lawful-content flag is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "lawful"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-kind-future-delivery.json",
+      "base": "valid/provider-receipt.json",
+      "group": "future-quality-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "kind claims future delivery; a receipt is not proof of future delivery",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-extra-quality-guarantee.json",
+      "base": "valid/provider-receipt.json",
+      "group": "future-quality-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "a service-quality guarantee is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "quality_guarantee"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-extra-quality-guarantee.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "future-quality-label",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "a service-quality guarantee is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "quality_guarantee"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-merkle-inclusion-as-unique-replica-kind.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "merkle-inclusion-as-unique-replica",
+      "requirements": [
+        "REQ-EVID-001",
+        "REQ-EVID-007"
+      ],
+      "reason": "a Merkle root and inclusion path for the observation digest are presented, under kind UNIQUE_REPLICA_PROOF, as proof of a unique replica",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        },
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "inclusion_proof",
+            "merkle_root"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-merkle-inclusion-as-unique-replica-claim.json",
+      "base": "valid/provider-receipt.json",
+      "group": "merkle-inclusion-as-unique-replica",
+      "requirements": [
+        "REQ-EVID-001",
+        "REQ-EVID-007"
+      ],
+      "reason": "a Merkle root and inclusion path for the observation digest are presented, under claim_limit UNIQUE_REPLICA_PROOF, as proof of a unique replica",
+      "errors": [
+        {
+          "path": "/claim_limit",
+          "keyword": "const"
+        },
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "inclusion_proof",
+            "merkle_root"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-merkle-inclusion-fields.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "merkle-inclusion-as-unique-replica",
+      "requirements": [
+        "REQ-EVID-001",
+        "REQ-EVID-007"
+      ],
+      "reason": "a Merkle root and inclusion path attached to an attestation; the envelope has no field for them",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "inclusion_proof",
+            "merkle_root"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-claim-limit-missing.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "attestation-label-removed",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "claim_limit is required",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "required",
+          "names": [
+            "claim_limit"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-attestation-missing.json",
+      "base": "valid/provider-receipt.json",
+      "group": "attestation-label-removed",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "attestation is required",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "required",
+          "names": [
+            "attestation"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-attestation-false.json",
+      "base": "valid/provider-receipt.json",
+      "group": "attestation-label-removed",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "attestation must be true",
+      "errors": [
+        {
+          "path": "/attestation",
+          "keyword": "const"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-attestation-false.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "attestation-label-removed",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "attestation must be true",
+      "errors": [
+        {
+          "path": "/attestation",
+          "keyword": "const"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-attestation-string.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "attestation-label-removed",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "attestation is the JSON literal true, not a string",
+      "errors": [
+        {
+          "path": "/attestation",
+          "keyword": "const"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-extra-signature.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "unknown-field",
+      "requirements": [],
+      "reason": "the envelope has no signature field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "signature"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-extra-batch-id.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "unknown-field",
+      "requirements": [],
+      "reason": "the envelope has no batch_id field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "batch_id"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-extra-result.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "unknown-field",
+      "requirements": [],
+      "reason": "the envelope has no result field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "result"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-extra-reject.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "unknown-field",
+      "requirements": [],
+      "reason": "there is no submitter reject flag (DEC-010)",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "reject"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-extra-host-observed-unix.json",
+      "base": "valid/provider-receipt.json",
+      "group": "unknown-field",
+      "requirements": [],
+      "reason": "a host-observed time is not an envelope field",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "additionalProperties",
+          "names": [
+            "host_observed_unix"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-lowercase.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "kind names are upper case",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-proto-name.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "the envelope uses the short kind name, not the proto enum name",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-unspecified.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "the zero enum name is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-empty.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "an empty kind is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-null.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "a null kind is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-number-0.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "the zero enum number is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-kind-number-1.json",
+      "base": "valid/provider-receipt.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "the envelope uses kind names, not proto enum numbers",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-number-2.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "the envelope uses kind names, not proto enum numbers",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-kind-missing.json",
+      "base": "valid/provider-receipt.json",
+      "group": "wrong-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "kind is required",
+      "errors": [
+        {
+          "path": "",
+          "keyword": "required",
+          "names": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-reserved-3.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "reserved-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "kind number 3 is reserved and is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-reserved-4.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "reserved-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "kind number 4 is reserved and is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-reserved-5.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "reserved-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "kind number 5 is reserved and is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-reserved-name-storage-proof.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "reserved-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "EVIDENCE_KIND_STORAGE_PROOF is a reserved name and is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-reserved-name-unique-replica-proof.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "reserved-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "EVIDENCE_KIND_UNIQUE_REPLICA_PROOF is a reserved name and is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-kind-reserved-name-future-delivery.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "reserved-kind",
+      "requirements": [
+        "REQ-EVID-001"
+      ],
+      "reason": "EVIDENCE_KIND_FUTURE_DELIVERY is a reserved name and is not a kind",
+      "errors": [
+        {
+          "path": "/kind",
+          "keyword": "enum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-schema-version-2.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "schema_version is 1",
+      "errors": [
+        {
+          "path": "/schema_version",
+          "keyword": "const"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-profile-rfc8785.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "profile is SVN-JCS-1",
+      "errors": [
+        {
+          "path": "/profile",
+          "keyword": "const"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-evidence-id-uppercase.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "evidence_id is lower case",
+      "errors": [
+        {
+          "path": "/evidence_id",
+          "keyword": "pattern"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-evidence-id-65.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "evidence_id is at most 64 characters",
+      "errors": [
+        {
+          "path": "/evidence_id",
+          "keyword": "maxLength"
+        },
+        {
+          "path": "/evidence_id",
+          "keyword": "pattern"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-lease-id-empty.json",
+      "base": "valid/provider-receipt.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "lease_id is not empty",
+      "errors": [
+        {
+          "path": "/lease_id",
+          "keyword": "minLength"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-content-id-65.json",
+      "base": "valid/provider-receipt.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "content_id is at most 64 characters",
+      "errors": [
+        {
+          "path": "/content_id",
+          "keyword": "maxLength"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-content-version-0.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "content_version starts at 1",
+      "errors": [
+        {
+          "path": "/content_version",
+          "keyword": "minimum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-content-version-2pow53.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "content_version is at most 2^53-1",
+      "errors": [
+        {
+          "path": "/content_version",
+          "keyword": "maximum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-content-version-string.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "content_version is a JSON integer, not a string",
+      "errors": [
+        {
+          "path": "/content_version",
+          "keyword": "type"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-observation-uppercase.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "observation_sha256 is lower-case hex",
+      "errors": [
+        {
+          "path": "/observation_sha256",
+          "keyword": "pattern"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-observation-63.json",
+      "base": "valid/provider-receipt.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "observation_sha256 is 64 hex characters",
+      "errors": [
+        {
+          "path": "/observation_sha256",
+          "keyword": "minLength"
+        },
+        {
+          "path": "/observation_sha256",
+          "keyword": "pattern"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-epoch-negative.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "epoch is not negative",
+      "errors": [
+        {
+          "path": "/epoch",
+          "keyword": "minimum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-expiry-0.json",
+      "base": "valid/provider-receipt.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "expiry 0 is unset and is rejected",
+      "errors": [
+        {
+          "path": "/expiry_unix_seconds",
+          "keyword": "minimum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/audit-expiry-after-9999.json",
+      "base": "valid/auditor-attestation.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "expiry is at most 253402300799",
+      "errors": [
+        {
+          "path": "/expiry_unix_seconds",
+          "keyword": "maximum"
+        }
+      ]
+    },
+    {
+      "file": "invalid/receipt-signer-key-id-empty.json",
+      "base": "valid/provider-receipt.json",
+      "group": "bounds",
+      "requirements": [],
+      "reason": "signer_key_id is not empty",
+      "errors": [
+        {
+          "path": "/signer_key_id",
+          "keyword": "minLength"
+        }
+      ]
+    }
+  ]
+}

@@ -148,7 +148,7 @@ def run_node() -> int:
     return 0
 
 
-GO_MODULES = ("chain", "proto", "agents/provider")
+GO_MODULES = ("chain", "proto", "agents/provider", "agents/auditor")
 
 
 def run_go() -> int:

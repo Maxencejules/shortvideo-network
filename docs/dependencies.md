@@ -49,7 +49,8 @@ Hashes are also in `deployments/pins/checksums.txt`. The ffmpeg and amqp-tools l
 
 - `requirements.lock` is `pip-compile --generate-hashes --allow-unsafe` output. `--allow-unsafe` keeps `setuptools` hashed. Install with `pip install --require-hashes -r requirements.lock`.
 - `package-lock.json` is the npm lock for the workspace.
-- `chain/go.sum`, `proto/go.sum`, and `go.work.sum` are the Go locks.
+- `chain/go.sum`, `proto/go.sum`, `agents/auditor/go.sum`, and `go.work.sum` are the Go locks.
+- `agents/auditor` (goal 09) is a separate Go module. It requires only the chain module, through a `replace` to `../../chain` (and `../../proto` for the protocol module the chain requires). It adds no third-party module: every line of `agents/auditor/go.sum` is also in `chain/go.sum`. Its IANA special-purpose address table is data, not a dependency; the source and date are in `agents/auditor/README.md`.
 - `docs/sbom.cdx.json` is a CycloneDX 1.6 inventory generated from those lockfiles by `scripts/write_sbom.py`. It does not copy licences into every transitive row. Direct licences are the table above plus the package metadata recorded when the lockfiles were produced.
 
 Direct Python packages in `pyproject.toml`:

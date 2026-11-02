@@ -15,6 +15,7 @@ Protocol v0 is frozen for goals 03-18. Schema files under `docs/protocol/` are t
 | `chain` | SDK and CometBFT module pins. No chain binary. |
 | `proto` | Generated Go and Python stubs. Sources stay in `docs/protocol/proto`. |
 | `agents/provider` | Provider-agent slot. No process. |
+| `agents/auditor` | Audit producer for permitted test endpoints. Attestations, not proofs. |
 | `workers/media` | Media-worker slot. It does not run FFmpeg. The development-profile package pin is in `docs/dependencies.md`. |
 | `packages/protocol` | Loader for the frozen JSON schemas. |
 | `deployments` | Compose profile and checksum pins. No project image is published. |
