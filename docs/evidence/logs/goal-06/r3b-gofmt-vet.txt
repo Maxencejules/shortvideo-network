@@ -1,0 +1,6 @@
+COMMAND bash -c test\ -z\ \"\$\(gofmt\ -l\ chain/devnet\)\"\ \&\&\ go\ vet\ ./chain/devnet/
+DATE 2026-11-02T00:50:28Z
+HEAD 90652c6b6651a4fbdda1344bb91d3c803270c2c6
+TREE ad5cdcb9efb2f785dbd5eb7681a10bb71a45c467
+DIRTY no
+EXIT:0
