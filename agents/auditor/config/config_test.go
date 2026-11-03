@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Maxencejules/shortvideo-network/agents/auditor/batch"
 	"github.com/Maxencejules/shortvideo-network/agents/auditor/fetch"
 	"github.com/Maxencejules/shortvideo-network/agents/auditor/policy"
 	"github.com/Maxencejules/shortvideo-network/agents/auditor/verify"
@@ -43,6 +44,17 @@ func TestExampleConfig(t *testing.T) {
 		},
 		RunBudget: time.Hour,
 		Allowlist: []policy.Entry{{ProviderID: "p1", Host: "127.0.0.1", IP: netip.MustParseAddr("127.0.0.1"), Port: 8443}},
+		AuditorAddress: []byte{
+			0x79, 0xb7, 0x0b, 0x8d, 0x1f, 0x8f, 0x56, 0x06, 0xe9, 0xa8,
+			0x23, 0x19, 0x5b, 0x38, 0x53, 0x8b, 0xbe, 0xb9, 0xf1, 0x62,
+		},
+		KeyPath:       ".local/auditor/keys/auditor-1.hex",
+		KeyID:         "key-auditor-1",
+		Window:        batch.Window{Guard: 120, Inclusion: 60, Lifetime: 86400},
+		GasLimit:      2_000_000,
+		MaxBatchItems: 32,
+		StatusRetries: 3,
+		RPCTimeout:    10 * time.Second,
 		Audits: []Audit{
 			{
 				LeaseID: "lease-1", ProviderID: "p1", ContentID: "c1", EndpointIndex: 0,
@@ -91,6 +103,39 @@ func TestDefaults(t *testing.T) {
 	}
 	if c.Limits.Connect != 5*time.Second || c.Limits.Object != 5*time.Minute || c.RunBudget != time.Hour || c.CAFile != "" || len(c.Allowlist) != 0 {
 		t.Fatalf("%+v", c)
+	}
+}
+
+// The PROPOSED auditor defaults apply when the optional auditor fields are
+// absent; the required ones (auditor_address, key_path, key_id) stay.
+func TestAuditorDefaults(t *testing.T) {
+	var generic map[string]any
+	if err := json.Unmarshal(example(t), &generic); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{
+		"evidence_lifetime_seconds", "epoch_guard_seconds", "inclusion_timeout_seconds", "gas_limit",
+		"max_batch_items", "http_status_retries", "chain_rpc_timeout_ms",
+	} {
+		delete(generic, key)
+	}
+	raw, _ := json.Marshal(generic)
+	c, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := batch.Window{Guard: 120, Inclusion: 60, Lifetime: 86400}
+	if c.Window != want || c.GasLimit != 2_000_000 || c.MaxBatchItems != 32 || c.StatusRetries != 3 || c.RPCTimeout != 10*time.Second {
+		t.Fatalf("%+v", c)
+	}
+	// Bounds hold at their edges: lifetime 86400 and the smallest lifetime
+	// above guard + inclusion are accepted.
+	for _, lifetime := range []int64{86400, 181} {
+		generic["evidence_lifetime_seconds"] = lifetime
+		raw, _ := json.Marshal(generic)
+		if _, err := Parse(raw); err != nil {
+			t.Fatalf("lifetime %d: %v", lifetime, err)
+		}
 	}
 }
 
@@ -183,6 +228,31 @@ func TestRejects(t *testing.T) {
 		"allowlist port 0":       set(0, "allowlist", 0, "port"),
 		"allowlist port 70000":   set(70000, "allowlist", 0, "port"),
 		"allowlist extra field":  set(true, "allowlist", 0, "any_port"),
+		// Auditor fields (owner rulings on Q1, Q2, Q4).
+		"missing auditor_address": del("auditor_address"),
+		"auditor_address short":   set("79b70b8d1f8f5606e9a823195b38538bbeb9f1", "auditor_address"),
+		"auditor_address upper":   set("79B70B8D1F8F5606E9A823195B38538BBEB9F162", "auditor_address"),
+		"auditor_address bech32":  set("svn108ymzrclravqd6dgyvv4kwzn3wltnutzw6hhzx", "auditor_address"),
+		"missing key_path":        del("key_path"),
+		"empty key_path":          set("", "key_path"),
+		"missing key_id":          del("key_id"),
+		"key_id off pattern":      set("Key_Auditor", "key_id"),
+		"lifetime above 86400":    set(86401, "evidence_lifetime_seconds"),
+		"lifetime below 60":       set(59, "evidence_lifetime_seconds"),
+		"lifetime within window":  set(180, "evidence_lifetime_seconds"),
+		"guard below 30":          set(29, "epoch_guard_seconds"),
+		"guard above half epoch":  set(1801, "epoch_guard_seconds"),
+		"guard zero":              set(0, "epoch_guard_seconds"),
+		"inclusion below 5":       set(4, "inclusion_timeout_seconds"),
+		"inclusion above 600":     set(601, "inclusion_timeout_seconds"),
+		"gas zero":                set(0, "gas_limit"),
+		"gas above 20000000":      set(20000001, "gas_limit"),
+		"max_batch_items 0":       set(0, "max_batch_items"),
+		"max_batch_items 33":      set(33, "max_batch_items"),
+		"http_status_retries 0":   set(0, "http_status_retries"),
+		"http_status_retries 6":   set(6, "http_status_retries"),
+		"chain_rpc_timeout_ms 99": set(99, "chain_rpc_timeout_ms"),
+		"lifetime string":         set("86400", "evidence_lifetime_seconds"),
 	}
 	for name, raw := range cases {
 		_, err := Parse(raw)

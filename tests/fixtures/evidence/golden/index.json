@@ -1,0 +1,26 @@
+{
+  "comment": "Golden producer output (agents/auditor/batch, TestGoldenEnvelopeFixtures). TEST-ONLY key: ed25519 seed = sha256(\"svn-evidence-test-seed:\" + key_label); no private key is stored. Synthetic reports and leases; nothing was fetched. Envelope files are byte-identical to the producer's envelopes/\u003cevidence_id\u003e.json and to the envelopes inside canonical, which the signature covers under SVN-EVIDENCE-ATTESTATION-1.",
+  "key_label": "auditor-1",
+  "public_key": "a2a628f04a113484311fe57125590a208aa185a14790344a94d2ee8c984bfb67",
+  "signer": "79b70b8d1f8f5606e9a823195b38538bbeb9f162",
+  "batch_id": "79b70b8d1f8f5606.aec4bccd4d6085fcd0216246f55c12ef52f2ea978798a30",
+  "epoch": 490896,
+  "canonical": "{\"batch_id\":\"79b70b8d1f8f5606.aec4bccd4d6085fcd0216246f55c12ef52f2ea978798a30\",\"envelopes\":[{\"attestation\":true,\"claim_limit\":\"ATTESTATION_NOT_STORAGE_PROOF\",\"content_id\":\"content-golden-fail\",\"content_version\":1,\"epoch\":490896,\"evidence_id\":\"79b70b8d1f8f5606.6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1\",\"expiry_unix_seconds\":1767232800,\"kind\":\"AUDITOR_ATTESTATION\",\"lease_id\":\"lease-golden-fail\",\"observation_sha256\":\"6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1740723187291fbd86\",\"profile\":\"SVN-JCS-1\",\"schema_version\":1,\"signer_key_id\":\"key-auditor-1\"},{\"attestation\":true,\"claim_limit\":\"ATTESTATION_NOT_STORAGE_PROOF\",\"content_id\":\"content-golden-pass\",\"content_version\":1,\"epoch\":490896,\"evidence_id\":\"79b70b8d1f8f5606.902239dba2b2811932eacd29ea0cc95e742c196d220cb83\",\"expiry_unix_seconds\":1767232800,\"kind\":\"AUDITOR_ATTESTATION\",\"lease_id\":\"lease-golden-pass\",\"observation_sha256\":\"525422a4631431534623db84de66275122b0f8aeff78c16c9246d36af3c7bc92\",\"profile\":\"SVN-JCS-1\",\"schema_version\":1,\"signer_key_id\":\"key-auditor-1\"}],\"signer\":\"79b70b8d1f8f5606e9a823195b38538bbeb9f162\"}",
+  "signature": "c7fdcd7de3b1af2cca81ab210f6e1153eb3de3346b8f080026838f83319d8f3b3a0d729ff5358ec38bd9b20f23719ce67d5d5107df5427ac48958c474ef9010e",
+  "items": [
+    {
+      "evidence_id": "79b70b8d1f8f5606.6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1",
+      "result": "FAIL",
+      "report": "reports/6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1740723187291fbd86.json",
+      "envelope": "envelopes/79b70b8d1f8f5606.6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1.json",
+      "observation_sha256": "6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1740723187291fbd86"
+    },
+    {
+      "evidence_id": "79b70b8d1f8f5606.902239dba2b2811932eacd29ea0cc95e742c196d220cb83",
+      "result": "PASS",
+      "report": "reports/902239dba2b2811932eacd29ea0cc95e742c196d220cb8329eaa58ef80fdb879.json",
+      "envelope": "envelopes/79b70b8d1f8f5606.902239dba2b2811932eacd29ea0cc95e742c196d220cb83.json",
+      "observation_sha256": "525422a4631431534623db84de66275122b0f8aeff78c16c9246d36af3c7bc92"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-package auditor
+package main
 
 import (
 	"io/fs"

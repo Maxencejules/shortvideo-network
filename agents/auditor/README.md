@@ -2,23 +2,106 @@
 
 Off-chain audit producer for permitted test endpoints (goal 09). An audit result is an attestation by an auditor. It is not a storage proof, not a unique-replica proof, and not independent: every run in this repository is one operator on one machine.
 
-This module is a separate Go module (`github.com/Maxencejules/shortvideo-network/agents/auditor`, listed in `go.work`). It imports `chain/jcs` and `chain/genesis` from the chain module. The chain module never imports it, and the validator binary `svnd` does not carry an HTTP fetcher. Go placement is decision request DR-09-20.
+This module is a separate Go module (`github.com/Maxencejules/shortvideo-network/agents/auditor`, listed in `go.work`). It imports from the chain module `chain/jcs`, `chain/genesis`, `chain/msgkit`, `chain/x/evidence` (every signed byte), `chain/x/providers/capability`, and `chain/app` (only `MakeEncoding`, for the outer transaction), plus the CometBFT RPC client and the Cosmos SDK transaction builder at the chain's versions. The chain module never imports it, and the validator binary `svnd` does not carry an HTTP fetcher. Go placement is decision request DR-09-20.
 
 ## What exists
 
-Libraries with tests. There is no command yet.
+A command, `auditor` (`main.go`, built with `go build -C agents/auditor .`), and its libraries with tests. The commands separate network use from key use (owner rulings on Q1 to Q4, 2026-11-02):
+
+| Command | Network | Key | Does |
+| --- | --- | --- | --- |
+| `keygen --key PATH` | none | writes | a fresh dev-only ed25519 key, mode 0600, never over an existing file; prints the address and public key only |
+| `run --config FILE` | the chain RPC (reads) and provider endpoints (policy below) | never opens it | reads the latest header, each held lease, its content, and (with a capability manifest) the provider; fetches and checks; stores every report, INCOMPLETE ones included, and a pending run |
+| `sign --config FILE --run RUN_ID` | none | reads | builds one batch per provider from the run's PASS and FAIL audits, signs it, checks it with `evidence.VerifyAuditSignature`, and stores the batch and its envelopes |
+| `submit --config FILE --batch ID ...` | the chain RPC only | reads | broadcasts, waits for a committed result, reads the records back |
+| `status --config FILE --batch ID ...` | the chain RPC only | none | reports the submission state from committed results and records; broadcasts nothing |
+| `verify --evidence-id ID --store DIR (--node URL \| --record FILE)` | the given node only | none | the reviewer's check |
+
+Output is one JSON object per line on stdout. Exit codes: 0 done; 1 an input, store, chain-read, or key error; 2 usage; 3 finished but not final (a batch not recorded, or a review verdict other than CONSISTENT). No command prints key bytes; error text is printed quoted.
 
 | Package | Does |
 | --- | --- |
-| `config` | Strict JSON operator configuration: exact keys, no unknown or duplicate key, no null, at most 1 MiB. No field disables a check. |
+| `config` | Strict JSON operator configuration: exact keys, no unknown or duplicate key, no null, at most 1 MiB. No field disables a check. Auditor fields: `auditor_address`, `key_path`, `key_id`, `evidence_lifetime_seconds` (60 to 86400, default 86400), `epoch_guard_seconds` (30 to 1800, default 120), `inclusion_timeout_seconds` (5 to 600, default 60), `gas_limit` (default 2,000,000), `max_batch_items` (1 to 32), `http_status_retries` (1 to 5, default 3), `chain_rpc_timeout_ms`. The lifetime must exceed guard + inclusion. Every default is PROPOSED. |
 | `policy` | Destination policy (PROPOSED, DR-09-10). URL rules, the address rule against the pinned IANA table, the allowlist. |
 | `fetch` | HTTPS requests to vetted addresses. Typed outcomes. |
 | `fetch/fetchtest` | Loopback test endpoints for tests. Only tests import it. |
 | `verify` | Manifest parsing and digest, interim package layout, segment checks, sample selection. It returns observations. |
+| `classify` | PASS, FAIL, or INCOMPLETE under the owner's Q3 ruling (table below). |
 | `report` | Canonical report encoding, format `svn-audit-report-proposed-v0` (DR-09-22). |
 | `store` | Content-addressed report store and append-only index. |
+| `keys` | Dev-only ed25519 key files (owner's Q1 ruling). |
+| `batch` | Eligibility, evidence ids, batches, envelopes, signing, and the stored run and batch formats, through `chain/x/evidence` (owner's Q2 and Q4 rulings). |
+| `chainclient` | Chain reads, the outer transaction, and submission states. |
+| `chainclient/chaintest` | An in-memory fake of the RPC methods for unit tests only ("unit-test fake chain RPC; not a node, not end-to-end evidence"). Only tests import it. |
+| `review` | The reviewer's verdicts. |
+| `labels` | The evidence label catalog (P3b). Reports carry its limitations; the reviewer's output carries its labels. |
 
-Not here yet, because they depend on open owner questions: mapping outcomes to FAIL or INCOMPLETE (Q3), auditor keys (Q1), batch construction and signing (Q2), epochs and evidence lifetime (Q4), the CLI, chain reads, submission, the reviewer `verify` command, evidence labels, and envelope files.
+### Keys (owner ruling on Q1, DR-09-25)
+
+The auditor account key signs both the SDK transactions and the attestations: the chain requires the attestation public key to derive the outer signer's address. A key file is the `svnd devnet init` format: the lowercase hex of the 64-byte SDK ed25519 key (seed, then public key) and a newline. `keys.Load` refuses a symlink, a FIFO or other non-regular file, a file readable or writable by group or others, any other format, and a public half that is not the seed's. A `Key` formats as its address only. There is no rotation: the address is the key. These are development keys; no live validator, governance, or production key is handled.
+
+`run` writes the configured `auditor_address` into reports and never opens `key_path` (`TestRunNeverOpensKeyPath` makes the key path a FIFO). `sign` and `submit` refuse a key whose address is not `auditor_address`.
+
+### Classification (owner ruling on Q3, "Provider-answered only")
+
+| Observation | Result | Reason |
+| --- | --- | --- |
+| every checked segment received in full with the manifest digest | PASS | none |
+| a segment received in full with another digest | FAIL | `SEGMENT_DIGEST_MISMATCH` |
+| fewer bytes than expected under the provider's own framing (`LENGTH_MISMATCH`: a declared `Content-Length` below the size, or a chunked body that ends early) | FAIL | `PACKAGE_LENGTH_MISMATCH` |
+| a declared length above the size, or bytes past it | FAIL | `TOO_LARGE` |
+| 404 or 410 | FAIL at once | `HTTP_STATUS` |
+| any other 4xx or 5xx, except the three statuses of the `TIMEOUT` and `RANGE_UNSUPPORTED` rows | FAIL only if it is still the answer after `http_status_retries` retries (backoff 1 s, doubling); INCOMPLETE `RUN_BUDGET_EXHAUSTED` if the run budget ends first | `HTTP_STATUS` |
+| another status (for example 204) | INCOMPLETE | `HTTP_STATUS_UNEXPECTED` |
+| `CONNECT_FAILED`, `TLS_FAILED`, `TIMEOUT` (including a 408 answer), `CONNECTION_RESET` (a cut inside a declared length or a chunk, or a close-delimited body that ends early), `PROTOCOL_ERROR`, `DNS_FAILURE`, `REDIRECT_REFUSED`, `ENCODING_REFUSED`, `RANGE_UNSUPPORTED` (a 200, 416, or 501 answer to a range request, or a `Content-Range` that is not the requested range of the expected total) | INCOMPLETE | the kind |
+| a policy refusal | INCOMPLETE | `POLICY_SCHEME`, `POLICY_PORT`, `POLICY_URL` (length, syntax, userinfo, fragment, path, host), `ENDPOINT_NOT_PERMITTED` (address, no address, too many addresses) |
+| an input or eligibility problem, before any request | INCOMPLETE | `INPUT_MANIFEST_INVALID`, `INPUT_MANIFEST_MISMATCH`, `INPUT_CAPABILITY_INVALID`, `INPUT_CONTENT_WITHDRAWN`, `INPUT_CONTENT_NOT_FOUND`, `LEASE_NOT_HELD`, `LEASE_NEAR_DEADLINE`, `CHAIN_READ_FAILED`, `CONFIG_INVALID` |
+| an outcome kind, rule, or state `classify` does not know | INCOMPLETE | `UNCLASSIFIED` (never FAIL) |
+
+Every request of a `SAMPLED_SEGMENTS` audit is a range request, a goal-09 extension: protocol v0 defines only the 200 answer to a whole-package request. A 416 or 501 refuses the range and says nothing about the bytes the provider holds, so it is `RANGE_UNSUPPORTED`. The trade-off: a truncated package fails a `WHOLE_PACKAGE` audit (`PACKAGE_LENGTH_MISMATCH`), while a sampled audit of it is INCOMPLETE. A 408 is the server saying the request did not arrive in time; the ruling keeps timeouts off chain, so it is `TIMEOUT`. Both are interim choices under DR-09-09 and DR-09-22.
+
+A FAIL reason wins over INCOMPLETE reasons in the same audit: a segment received in full over the verified connection with the wrong digest is the provider's answer even if the connection was cut later. `TestEveryFetchKindIsMapped`, `TestEveryPolicyRuleIsMapped`, and `TestEveryVerifyStateIsMapped` read the constants from the source of `fetch`, `policy`, and `verify` and fail if one is not mapped; `TestFailReasonsAreTheRuling` pins the four FAIL reasons. INCOMPLETE audits stay off chain; their reports are kept.
+
+### Eligibility and rounds (owner ruling on Q4)
+
+Before any request, `run` reads the latest header (a node that is catching up is refused), the held lease of the (provider, content) pair through `Query/ActiveLeases`, and `Query/Content`. Only the configured lease, ACTIVE or RENEWED with its reservation held, with a deadline after header time + guard + inclusion, of registered content that is not withdrawn and has no tombstone, is fetched. Without a held lease no report is written (nothing to describe); the pending run records `LEASE_NOT_HELD`.
+
+`sign` uses the run's header time: epoch = `EpochAt(header time)` (3600 s rounds, PROPOSED), expiry = min(header time + lifetime, lease deadline), never above min(header time + 86400, lease deadline) and never inside the inclusion window. It refuses (`ErrRoundClosing`) when the run's header time or the signing host's clock is within the guard of the end of the run's epoch or past it. The host clock is not verified; it can only add a refusal.
+
+### Batches and envelopes (owner ruling on Q2)
+
+Every signed byte comes from `chain/x/evidence` (`AuditEnvelope`, `AuditSignBytes`, `VerifyAuditSignature`, `IDPrefix`, `EpochAt`); nothing is re-implemented. `TestProducerMatchesChainSignVectors` rebuilds the chain's golden sign vectors through the producer's own path and requires equal canonical text, sign bytes, and signatures.
+
+- evidence id: `IDPrefix(address)` (16 hex characters of the address, then `.`) and the first 47 hex characters of the report's SHA-256
+- observation digest: the lease manifest digest for PASS (the chain stores RECORDED), the full SHA-256 of the report for FAIL (REJECTED, DEC-010); INCOMPLETE produces no item
+- one batch per provider, at most `max_batch_items` items, ordered by evidence id
+- batch id: prefix and 47 hex characters of SHA-256 of `{"auditor", "epoch", "evidence_ids"}` (SVN-JCS-1)
+- business id: prefix and 47 hex characters of SHA-256 of `"svn-audit-business:" + batch_id + ":" + attempt`; attempt 0 first, the next one only after the chain answered REPLAY. The business id is not signed, so a new attempt keeps the auditor signature.
+
+`tests/fixtures/evidence/golden` holds a golden batch the producer writes (`TestGoldenEnvelopeFixtures`, `-update` rewrites it); `tests/unit/test_evidence_envelopes.py` checks it in Python.
+
+### Submission: an acknowledgement is not a commit
+
+`broadcast_tx_sync` answers CheckTx only. States, from the chain:
+
+| State | Meaning |
+| --- | --- |
+| `NOT_SUBMITTED` | no stored submission, no record |
+| `NOT_ACCEPTED(codespace/code)` | every stored submission was refused by CheckTx |
+| `SUBMITTED` | acknowledged, or the answer was lost, and no committed result is visible; never recorded. A rebroadcast that CheckTx refuses while an earlier submission waits (on a node, `sdk/32`: the waiting transaction holds the sequence) keeps it `SUBMITTED`, with the warning `REBROADCAST_NOT_ACCEPTED` |
+| `COMMITTED(0)` | a stored submission is in a block with code 0; items are read back with `Query/Evidence` |
+| `FAILED(code)` | the latest committed submission has a non-zero code |
+| `RECORDS_FOUND` | no committed submission of this store is visible, but records hold the evidence ids |
+
+Items read back: `RECORDED`, `REJECTED`, or `EXPIRED` when the record equals the batch item (signer key, batch id, lease, content, version, kind, digest, epoch, expiry); `ID_TAKEN` when it differs; `NOT_ON_CHAIN` when absent. A retry first queries every stored transaction hash and the evidence ids; only then does it broadcast again with the current account sequence. REPLAY moves to the next business attempt. CONFLICT, EXPIRED, or WITHDRAWN re-reads each item's lease and content, drops the items that changed (reported in `dropped`), and submits the rest as a new batch in the same epoch (`next`; its summary names the old batch in `supersedes`). Another epoch than the batch's adds the warning `EPOCH_LIKELY_STALE`; a batch never submitted is still broadcast (the chain answers STALE_VERSION and nothing changes), a stale SUBMITTED batch is not broadcast again, and any other failure is reported as it is. An index line is appended only for a committed result.
+
+Each submission stores the transaction bytes (`batches/<name>.pb`) before the broadcast and the record with the CheckTx answer (`batches/<name>.json`) after it. Bytes without a record (the process stopped, or the record write failed, in between) are a submission whose answer is unknown: `status` and `submit` query its hash like any other, so a transaction that commits is still found and indexed. The bytes must carry the batch's own message at one of its business attempts; a record without bytes, or bytes that carry anything else, is an error.
+
+The outer transaction is SIGN_MODE_DIRECT with the app's own encoding, no fee, no memo, and the auditor account's number and sequence from the auth query. The chain RPC client uses no proxy, follows no redirect, bounds each request in time, and bounds each response body at 16 MiB. Reads trust the one node they ask.
+
+### Reviewer (`verify`)
+
+It prints `record_source` first: `NODE <url>` ("read through an unverified ABCI query; trusts that node") or `FILE <path>` ("not read from the chain"). Verdicts, first failure wins: `NOT_ON_CHAIN` (node only), `PAYLOAD_UNAVAILABLE`, `CHECKSUM_MISMATCH`, `REPORT_INVALID`, `SIGNATURE_INVALID`, `ENVELOPE_MISMATCH`, `RECORD_MISMATCH`, `CONSISTENT`. CONSISTENT is still an attestation: a valid signature and a consistent payload do not make an observation true. The output carries `claim_limit`, the mode and state labels, and the catalog's limitations.
 
 ## Network policy (PROPOSED, DR-09-10)
 
@@ -33,7 +116,7 @@ Not here yet, because they depend on open owner questions: mapping outcomes to F
 - Proxies: none. `Transport.Proxy` is nil, so `HTTPS_PROXY`, `HTTP_PROXY`, and `NO_PROXY` are ignored.
 - Encoding: `Accept-Encoding: identity`; transparent decompression is off; any other `Content-Encoding`, on any header line, is refused.
 - Short bodies: `LENGTH_MISMATCH` only when the provider's framing says so inside TLS (a declared `Content-Length` below the expected size, or a chunked body whose last chunk comes early). A body cut inside a declared length, or a body with neither a `Content-Length` nor chunked framing that ends early, is `CONNECTION_RESET`: a TCP close at a TLS record boundary reads as a clean end, and the client cannot tell it from `close_notify`.
-- Bounds: connect, TLS handshake, response header, and idle read timeouts; a per-object budget; a run budget setting (the command that applies it is not written yet); 16 KiB of response headers; one connection per session; a body read of at most expected + 1 bytes; 65536-byte manifests; 16 resolved addresses; 64 allowlist entries.
+- Bounds: connect, TLS handshake, response header, and idle read timeouts; a per-object budget; a run budget (`run`); 16 KiB of response headers; one connection per session; a body read of at most expected + 1 bytes; 65536-byte manifests; 16 resolved addresses; 64 allowlist entries.
 
 The configured chain RPC URL is trusted configuration, not a provider endpoint. The destination policy does not apply to it.
 
@@ -63,7 +146,9 @@ The manifest is an operator file of at most 65536 bytes. Its digest is SHA-256 o
 
 ## Report store
 
-Layout: `reports/<sha256>.json`, `envelopes/`, `batches/`, `pending/`, `index.jsonl`. Writes are create-exclusive through a synced temporary file and a hard link; the same bytes again are a no-op; other bytes under an existing name are refused. Directories are 0700 and files 0600. The default root belongs under `.local/`, which Git ignores. `index.jsonl` takes whole lines only: after a torn append (a last line without its newline), appends are refused and scans report the index as corrupt; a line that is not one JSON object is reported as corrupt, never handed on.
+Layout: `reports/<sha256>.json`, `envelopes/<evidence_id>.json`, `batches/<batch_id>.pb` (the signed message, business attempt 0) and `batches/<batch_id>.json` (the batch summary: evidence id to full report SHA-256), `batches/<submission name>.json` and `.pb` (one record and the transaction bytes per broadcast), `pending/<run_id>.json` (the pending run), `index.jsonl` (one line per item of a committed result). Writes are create-exclusive through a synced temporary file and a hard link; the same bytes again are a no-op; other bytes under an existing name are refused. Directories are 0700 and files 0600. The default root belongs under `.local/`, which Git ignores. `index.jsonl` takes whole lines only: after a torn append (a last line without its newline), appends are refused and scans report the index as corrupt; a line that is not one JSON object is reported as corrupt, never handed on.
+
+Reports carry the label catalog's limitations that apply to them: all but "Accounting success is not physical capacity or operator independence." (it is about lease accounting), and "A sampled check covers only the sampled segments." only in sampled reports. More than the report's 8 is an error, never a silent cut. An audit with a capability manifest that ended before the manifest named the endpoint records `endpoint_name_sha256` of the empty name. A sampled audit that ended before any selection (an input or eligibility reason) records a fresh seed that selected nothing, because the report format requires one.
 
 Retention: none set (approved DEC-004 default); nothing is deleted.
 
@@ -73,4 +158,4 @@ Retention: none set (approved DEC-004 default); nothing is deleted.
 go test -count=1 -race ./agents/auditor/...
 ```
 
-No test uses the network beyond loopback. Times in reports come from the auditor host clock and are not verified.
+No test uses the network beyond loopback. Times in reports come from the auditor host clock and are not verified. The chain in the command and `chainclient` tests is `chaintest`, a unit-test fake: those tests are unit tests, not end-to-end evidence. The devnet test runs the built binary against real nodes.

@@ -10,13 +10,29 @@
 // Numbers marked PROPOSED below are interim defaults of this goal, not
 // approved policy; the operator may set each within its bounds.
 //
-// Fields that depend on open owner questions are not here yet: the auditor
-// key path and key id (Q1, Q2) and the evidence lifetime, epoch guard, and
-// inclusion timeout (Q4).
+// Auditor fields (owner rulings on Q1, Q2, Q4):
+//
+//   - auditor_address: the 40-hex address of the auditor account. `run`
+//     writes it into reports without opening the key; `sign` and `submit`
+//     refuse a key whose address differs
+//   - key_path: the ed25519 key file (package keys); only `sign`,
+//     `submit`, and the rebuild inside `submit` open it
+//   - key_id: the signer_key_id label of every envelope (id pattern)
+//   - evidence_lifetime_seconds: at most 86400 (x/evidence
+//     MaxEvidenceLifetimeSeconds); expiry = min(header time + lifetime,
+//     lease deadline)
+//   - epoch_guard_seconds: no signing this close to an epoch boundary
+//   - inclusion_timeout_seconds: the wait for a committed result; a lease
+//     whose deadline is within guard + inclusion of the header time is not
+//     audited
+//   - gas_limit, max_batch_items, http_status_retries, chain_rpc_timeout_ms
+//
+// The lifetime must exceed guard + inclusion.
 package config
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,10 +46,12 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/Maxencejules/shortvideo-network/agents/auditor/batch"
 	"github.com/Maxencejules/shortvideo-network/agents/auditor/fetch"
 	"github.com/Maxencejules/shortvideo-network/agents/auditor/policy"
 	"github.com/Maxencejules/shortvideo-network/agents/auditor/verify"
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
+	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
 )
 
 // Bounds.
@@ -63,6 +81,23 @@ var (
 	idleReadLimit       = limit{"idle_read_timeout_ms", 10000, 100, 120000}
 	objectLimit         = limit{"object_budget_ms", 300000, 1000, 3600000}
 	runLimit            = limit{"run_budget_ms", 3600000, 1000, millisecondsLimit}
+	rpcLimit            = limit{"chain_rpc_timeout_ms", 10000, 100, 60000}
+)
+
+// count is one integer setting: PROPOSED default and bounds.
+type count struct {
+	name                 string
+	def, lowest, highest int64
+}
+
+// PROPOSED auditor defaults and their bounds.
+var (
+	lifetimeCount  = count{"evidence_lifetime_seconds", evidence.MaxEvidenceLifetimeSeconds, 60, evidence.MaxEvidenceLifetimeSeconds}
+	guardCount     = count{"epoch_guard_seconds", 120, 30, evidence.EpochSeconds / 2}
+	inclusionCount = count{"inclusion_timeout_seconds", 60, 5, 600}
+	gasCount       = count{"gas_limit", 2_000_000, int64(genesis.MinGasPerTx), int64(genesis.MaxGasPerTx)}
+	batchCount     = count{"max_batch_items", batch.MaxItems, 1, batch.MaxItems}
+	retriesCount   = count{"http_status_retries", 3, 1, 5}
 )
 
 // Config is a validated configuration.
@@ -82,6 +117,25 @@ type Config struct {
 	// Allowlist is the validated allowlist.
 	Allowlist []policy.Entry
 	Audits    []Audit
+	// AuditorAddress is the auditor account's 20-byte address.
+	AuditorAddress []byte
+	// KeyPath is the auditor key file; `run` never opens it.
+	KeyPath string
+	// KeyID is the signer_key_id label.
+	KeyID string
+	// Window holds the epoch guard, inclusion timeout, and evidence
+	// lifetime, in seconds.
+	Window batch.Window
+	// GasLimit is the declared gas limit of each transaction.
+	GasLimit uint64
+	// MaxBatchItems bounds items per batch; the chain's governed limit
+	// decides.
+	MaxBatchItems int
+	// StatusRetries is how many times an audit answered with a 4xx or 5xx
+	// status other than 404 and 410 is run again before it is FAIL.
+	StatusRetries int
+	// RPCTimeout bounds each chain RPC request.
+	RPCTimeout time.Duration
 }
 
 // Endpoint is one operator-configured provider endpoint.
@@ -114,6 +168,17 @@ type fileConfig struct {
 	Limits    *fileLimits `json:"limits"`
 	Allowlist []fileEntry `json:"allowlist"`
 	Audits    []fileAudit `json:"audits"`
+
+	AuditorAddress  string  `json:"auditor_address"`
+	KeyPath         string  `json:"key_path"`
+	KeyID           string  `json:"key_id"`
+	Lifetime        *int64  `json:"evidence_lifetime_seconds"`
+	Guard           *int64  `json:"epoch_guard_seconds"`
+	Inclusion       *int64  `json:"inclusion_timeout_seconds"`
+	GasLimit        *int64  `json:"gas_limit"`
+	MaxBatchItems   *int64  `json:"max_batch_items"`
+	StatusRetries   *int64  `json:"http_status_retries"`
+	ChainRPCTimeout *uint64 `json:"chain_rpc_timeout_ms"`
 }
 
 type fileLimits struct {
@@ -297,6 +362,9 @@ func (f fileConfig) validate() (*Config, error) {
 	if err := f.limits(c); err != nil {
 		return nil, err
 	}
+	if err := f.auditor(c); err != nil {
+		return nil, err
+	}
 	for i, e := range f.Allowlist {
 		ip, err := netip.ParseAddr(e.IP)
 		if err != nil {
@@ -323,6 +391,69 @@ func (f fileConfig) validate() (*Config, error) {
 		c.Audits = append(c.Audits, audit)
 	}
 	return c, nil
+}
+
+var addressPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
+
+func (c count) value(v *int64) (int64, error) {
+	n := c.def
+	if v != nil {
+		n = *v
+	}
+	if n < c.lowest || n > c.highest {
+		return 0, invalid("%s must be %d to %d", c.name, c.lowest, c.highest)
+	}
+	return n, nil
+}
+
+// auditor validates the auditor fields.
+func (f fileConfig) auditor(c *Config) error {
+	if !addressPattern.MatchString(f.AuditorAddress) {
+		return invalid("auditor_address must be 40 lower-case hex characters")
+	}
+	c.AuditorAddress, _ = hex.DecodeString(f.AuditorAddress)
+	if err := checkPath("key_path", f.KeyPath); err != nil {
+		return err
+	}
+	c.KeyPath = f.KeyPath
+	if !idPattern.MatchString(f.KeyID) {
+		return invalid("key_id must match %s", genesis.IDPattern)
+	}
+	c.KeyID = f.KeyID
+	values := []struct {
+		c   count
+		v   *int64
+		out *int64
+	}{
+		{lifetimeCount, f.Lifetime, &c.Window.Lifetime},
+		{guardCount, f.Guard, &c.Window.Guard},
+		{inclusionCount, f.Inclusion, &c.Window.Inclusion},
+	}
+	for _, v := range values {
+		n, err := v.c.value(v.v)
+		if err != nil {
+			return err
+		}
+		*v.out = n
+	}
+	if err := c.Window.Validate(); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalid, err)
+	}
+	gas, err := gasCount.value(f.GasLimit)
+	if err != nil {
+		return err
+	}
+	items, err := batchCount.value(f.MaxBatchItems)
+	if err != nil {
+		return err
+	}
+	retries, err := retriesCount.value(f.StatusRetries)
+	if err != nil {
+		return err
+	}
+	c.GasLimit, c.MaxBatchItems, c.StatusRetries = uint64(gas), int(items), int(retries)
+	c.RPCTimeout, err = millis(rpcLimit, f.ChainRPCTimeout)
+	return err
 }
 
 func checkChainRPC(raw string) error {

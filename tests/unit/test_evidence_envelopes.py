@@ -11,18 +11,26 @@ fixture differs from its base only at the keys those errors name.
 
 from __future__ import annotations
 
+import hashlib
+import importlib.util
 import json
 import re
 from collections import Counter
+from types import ModuleType
 from typing import Any
 
 import pytest
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from jsonschema.exceptions import ValidationError
 
 from svn_protocol.schemas import repo_root, schema_path, validator_for
 
 ROOT = repo_root()
 FIXTURES = ROOT / "tests" / "fixtures" / "evidence"
+# Written by the Go producer (agents/auditor/batch TestGoldenEnvelopeFixtures),
+# listed by its own index.json, not by cases.json.
+GOLDEN = FIXTURES / "golden"
 SCHEMA_NAME = "evidence-envelope.schema.json"
 STATE_PROTO = ROOT / "docs" / "protocol" / "proto" / "svn" / "evidence" / "v1" / "state.proto"
 KIND_PREFIX = "EVIDENCE_KIND_"
@@ -210,7 +218,10 @@ def test_every_fixture_file_is_indexed_once() -> None:
     on_disk = {
         path.relative_to(FIXTURES).as_posix()
         for path in FIXTURES.rglob("*")
-        if path.is_file() and path.suffix == ".json" and path.name != "cases.json"
+        if path.is_file()
+        and path.suffix == ".json"
+        and path.name != "cases.json"
+        and GOLDEN not in path.parents
     }
     valid = _file_ids(VALID)
     invalid = _file_ids(INVALID)
@@ -352,3 +363,95 @@ def test_bound_fixtures_are_one_step_past_an_accepted_value() -> None:
                 assert any(valid[key] == limit for valid in accepted), case["file"]
             checked += 1
     assert checked >= len(BOUND_KEYWORDS)
+
+
+SIGNATURE_DOMAIN = b"SVN-EVIDENCE-ATTESTATION-1"
+GOLDEN_UPDATE = "go test ./batch -run TestGoldenEnvelopeFixtures -update (in agents/auditor)"
+
+
+def _goal02_jcs() -> ModuleType:
+    path = ROOT / "docs" / "evidence" / "goal-02" / "jcs.py"
+    spec = importlib.util.spec_from_file_location("goal02_jcs", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _canonical_text(jcs: ModuleType, raw: bytes) -> str:
+    text = raw.decode("utf-8")
+    assert jcs.parse_and_canonicalize(text) == text, "not canonical SVN-JCS-1"
+    return text
+
+
+def test_golden_envelopes_from_the_go_producer() -> None:
+    """Cross-language check of the Go producer's envelopes (plan 21.4).
+
+    The Go test writes the files; this test fails, never skips, when they are
+    missing. Python re-derives everything the Go side claims: schema validity,
+    canonical form, the envelopes inside the signed payload, the ed25519
+    signature, the signer address, the evidence ids, and the digest rule.
+    """
+    index_path = GOLDEN / "index.json"
+    assert index_path.is_file(), f"no golden producer output in {GOLDEN}: run {GOLDEN_UPDATE}"
+    jcs = _goal02_jcs()
+    index = strict_loads(index_path.read_text(encoding="utf-8"))
+    items = index["items"]
+    assert {item["result"] for item in items} == {"PASS", "FAIL"}
+
+    listed = (
+        {"index.json"} | {item["envelope"] for item in items} | {item["report"] for item in items}
+    )
+    on_disk = {
+        path.relative_to(GOLDEN).as_posix()
+        for path in GOLDEN.rglob("*")
+        if path.is_file() and path.name != "README.md"
+    }
+    assert on_disk == listed
+
+    public = bytes.fromhex(index["public_key"])
+    signer = hashlib.sha256(public).digest()[:20].hex()
+    assert index["signer"] == signer
+
+    canonical = index["canonical"]
+    assert jcs.parse_and_canonicalize(canonical) == canonical
+    payload = strict_loads(canonical)
+    assert payload["signer"] == signer
+    assert payload["batch_id"] == index["batch_id"]
+    assert payload["batch_id"].startswith(signer[:16] + ".")
+    key = Ed25519PublicKey.from_public_bytes(public)
+    signature = bytes.fromhex(index["signature"])
+    message = SIGNATURE_DOMAIN + b"\x00" + canonical.encode("utf-8")
+    key.verify(signature, message)
+    altered = message.replace(b'"epoch":', b'"epoch":1', 1)
+    with pytest.raises(InvalidSignature):
+        key.verify(signature, altered)
+
+    assert len(payload["envelopes"]) == len(items)
+    for item, signed in zip(items, payload["envelopes"], strict=True):
+        raw = (GOLDEN / item["envelope"]).read_bytes()
+        document = strict_loads(_canonical_text(jcs, raw))
+        assert _actual_errors(document) == Counter(), item["envelope"]
+        assert document == signed
+        assert jcs.canonicalize(signed).encode("utf-8") == raw
+        assert document["epoch"] == index["epoch"]
+        assert document["evidence_id"] == item["evidence_id"]
+        assert item["envelope"] == f"envelopes/{item['evidence_id']}.json"
+
+        report_raw = (GOLDEN / item["report"]).read_bytes()
+        report = strict_loads(_canonical_text(jcs, report_raw))
+        digest = hashlib.sha256(report_raw).hexdigest()
+        assert item["report"] == f"reports/{digest}.json"
+        assert document["evidence_id"] == f"{signer[:16]}.{digest[:47]}"
+        assert report["result"] == item["result"]
+        assert report["auditor_address"] == signer
+        assert report["auditor_key_id"] == document["signer_key_id"]
+        assert report["claim_limit"] == document["claim_limit"] == CLAIM_LIMIT
+        for key_name in ("lease_id", "content_id", "content_version"):
+            assert report[key_name] == document[key_name], key_name
+        assert document["observation_sha256"] == item["observation_sha256"]
+        if item["result"] == "FAIL":
+            assert document["observation_sha256"] == digest
+        else:
+            assert document["observation_sha256"] == report["expected_manifest_sha256"] != digest
