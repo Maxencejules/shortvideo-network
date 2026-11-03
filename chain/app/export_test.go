@@ -14,9 +14,13 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
+	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
+	"github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
+	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
+	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 )
 
@@ -48,6 +52,13 @@ type versionedContent struct {
 
 func (v versionedContent) ConsensusVersion() uint64 { return v.version }
 
+type versionedEvidence struct {
+	evidence.AppModule
+	version uint64
+}
+
+func (v versionedEvidence) ConsensusVersion() uint64 { return v.version }
+
 type versionedLeases struct {
 	leases.AppModule
 	version uint64
@@ -56,7 +67,8 @@ type versionedLeases struct {
 func (v versionedLeases) ConsensusVersion() uint64 { return v.version }
 
 // RunRegistryMigrationForTest registers step as the migration from the
-// current ConsensusVersion v to v+1 of the registry or leases module name on the
+// current ConsensusVersion v to v+1 of the registry, leases, or evidence
+// module name on the
 // configurator New built (the one every module registered its services and
 // migrations on), wraps the app's own module of that name so it reports
 // v+1, and runs the manager's RunMigrations from v. A duplicate
@@ -75,6 +87,9 @@ func (app *App) RunRegistryMigrationForTest(ctx sdk.Context, name string, step m
 	case leases.AppModule:
 		from = m.ConsensusVersion()
 		wrapped = versionedLeases{AppModule: m, version: from + 1}
+	case evidence.AppModule:
+		from = m.ConsensusVersion()
+		wrapped = versionedEvidence{AppModule: m, version: from + 1}
 	default:
 		return nil, fmt.Errorf("%s is not a registry module (%T)", name, m)
 	}
@@ -204,4 +219,59 @@ func (app *App) WriteProviderReservedForTest(providerID string, reserved uint64)
 	}
 	store.Set(key, out)
 	return nil
+}
+
+// evidenceReadersForTest builds a read-only x/evidence keeper over the app's
+// evidence store, with the lease and content readers of
+// leaseReadersForTest, and returns it with the lease reader. Tests use them
+// only to read committed state.
+func (app *App) evidenceReadersForTest() (evidence.Keeper, leases.Keeper) {
+	read := authority.NewKeeper(app.keys[authority.ModuleName])
+	lease, _, cont := app.leaseReadersForTest()
+	return evidence.NewKeeper(app.keys[ModuleEvidence], evidence.Deps{Roles: read, Limits: read, Leases: lease, Content: cont}), lease
+}
+
+// CheckEvidenceInvariantsForTest runs evidencetest.CheckInvariants (I1,
+// I2, I4-I8, I12, I13, the layout key, the business rows) over the
+// committed state with the real lease reader.
+func (app *App) CheckEvidenceInvariantsForTest() error {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	keeper, lease := app.evidenceReadersForTest()
+	return evidencetest.CheckInvariants(ctx, keeper, lease)
+}
+
+// StoreRowsForTest is the logical size of one committed store: the number
+// of keys and the sum of key and value bytes (not IAVL or disk bytes).
+func (app *App) StoreRowsForTest(name string) (keys, size int) {
+	store := app.CommitMultiStore().GetKVStore(app.keys[name])
+	it := store.Iterator(nil, nil)
+	defer it.Close()
+	for ; it.Valid(); it.Next() {
+		keys++
+		size += len(it.Key()) + len(it.Value())
+	}
+	return keys, size
+}
+
+// StoredEvidenceForTest is one evidence record as stored (its stored
+// state, not the reported state), read from the committed state.
+func (app *App) StoredEvidenceForTest(evidenceID string) (*evidencev1.EvidenceRecord, bool) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	keeper, _ := app.evidenceReadersForTest()
+	return keeper.StoredRecord(ctx, evidenceID)
+}
+
+// LeaseForTest reads one lease in any state from the committed state.
+func (app *App) LeaseForTest(leaseID string) (*leasesv1.Lease, bool) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	lease, _, _ := app.leaseReadersForTest()
+	return lease.Lease(ctx, leaseID)
+}
+
+// WriteEvidenceRowForTest writes one raw row into the committed evidence
+// store and commits a new version outside ABCI. Tests use it to put
+// evidence state on a chain without a lease (App.Export refusal).
+func (app *App) WriteEvidenceRowForTest(key, value []byte) {
+	app.CommitMultiStore().GetKVStore(app.keys[ModuleEvidence]).Set(key, value)
+	app.CommitMultiStore().Commit()
 }

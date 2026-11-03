@@ -16,6 +16,7 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
@@ -50,6 +51,8 @@ type Header struct {
 }
 
 // AppStateFromDocument splits a validated document into module genesis JSON.
+// It also applies the app's AUDITOR prefix rule (validateAuditorPrefixes),
+// which InitChain applies through ValidateAuthorityGenesis.
 func AppStateFromDocument(cdc codec.Codec, doc genesis.Document) (map[string]json.RawMessage, error) {
 	if err := genesis.Validate(doc, genesis.CometIdentity{}); err != nil {
 		return nil, err
@@ -60,6 +63,9 @@ func AppStateFromDocument(cdc codec.Codec, doc genesis.Document) (map[string]jso
 	}
 	authorityMsg, err := authorityState(doc)
 	if err != nil {
+		return nil, err
+	}
+	if err := validateAuditorPrefixes(authorityMsg.GetAuthority().GetSubmitters()); err != nil {
 		return nil, err
 	}
 	authorityRaw, err := protoJSON.Marshal(authorityMsg)
@@ -292,6 +298,7 @@ func authGenesis(cdc codec.Codec, doc genesis.Document) (json.RawMessage, error)
 // UNSET, well-formed seats and submitters, the validator power invariant,
 // and every pending validator change projected on the genesis set and
 // activating at or after the first block (authority.ValidateGenesisState).
+// Then it applies the app's AUDITOR prefix rule (validateAuditorPrefixes).
 // DocumentFromModules does not carry pending entries, proposals, or the
 // approved council, so genesis.Validate cannot check them. InitChain and
 // `svnd genesis validate` both call this, so the command refuses every
@@ -301,10 +308,40 @@ func ValidateAuthorityGenesis(modules map[string]json.RawMessage, initialHeight,
 	if err := protojson.Unmarshal(modules[authority.ModuleName], &state); err != nil {
 		return fmt.Errorf("authority genesis: %w", err)
 	}
-	return authority.ValidateGenesisState(&state, &authority.GenesisPoint{
+	if err := authority.ValidateGenesisState(&state, &authority.GenesisPoint{
 		InitialHeight:      max(initialHeight, 1),
 		GenesisUnixSeconds: genesisUnixSeconds,
-	})
+	}); err != nil {
+		return err
+	}
+	return validateAuditorPrefixes(state.GetAuthority().GetSubmitters())
+}
+
+// validateAuditorPrefixes refuses two AUDITOR submitters whose addresses
+// share their first evidence.IDPrefixBytes bytes (DR-09-30, owner ruling on
+// Q2). Every evidence id and batch id an auditor submits must start with
+// evidence.IDPrefix of its address (x/evidence deviation D-17), so two
+// auditors with one prefix could take each other's pending ids. Other roles
+// never submit evidence and are not compared. An AUDITOR address that is not
+// 20 bytes has no prefix and is refused; the submitter rules that run first
+// refuse it already.
+func validateAuditorPrefixes(rows []*typesv1.Submitter) error {
+	owners := make(map[string][]byte, len(rows))
+	for _, row := range rows {
+		if row.GetRole() != typesv1.SubmitterRole_SUBMITTER_ROLE_AUDITOR {
+			continue
+		}
+		prefix := evidence.IDPrefix(row.GetAddress())
+		if prefix == "" {
+			return fmt.Errorf("AUDITOR submitter %x is not a 20-byte address", row.GetAddress())
+		}
+		if prev, taken := owners[prefix]; taken {
+			return fmt.Errorf("AUDITOR submitters %x and %x share the evidence id prefix %q (their first %d address bytes); every AUDITOR address needs its own prefix",
+				prev, row.GetAddress(), prefix, evidence.IDPrefixBytes)
+		}
+		owners[prefix] = row.GetAddress()
+	}
+	return nil
 }
 
 // DocumentFromModules rebuilds the inventory from module genesis JSON.

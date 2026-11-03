@@ -11,26 +11,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
-	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 )
 
-// registerApplicationMessages wires the x/authority council messages here.
-// x/providers, x/content, and x/leases register svn.providers.v1.Msg,
-// svn.content.v1.Msg, and svn.leases.v1.Msg themselves (RegisterServices).
-// The evidence message decodes, with every field set (the nested types are
-// registered in encoding.go), and is rejected with ERROR_CODE_FORBIDDEN until
-// Goal 09 (TestEveryProtocolMessageDecodes). There is no MsgCreateValidator
-// and no single-signer admit, disable, or force-withdraw message (DEC-009).
-func registerApplicationMessages(router *baseapp.MsgServiceRouter, keeper authority.Keeper) {
-	registerAuthority(router, keeper)
-	register(router, "svn.evidence.v1.Msg", []methodSpec{
-		{name: "SubmitAuditBatch", msg: &evidencev1.MsgSubmitAuditBatch{}, err: svnerr.ErrForbidden},
-	})
-}
-
+// registerAuthority wires the x/authority council messages here.
+// x/providers, x/content, x/leases, and x/evidence register
+// svn.providers.v1.Msg, svn.content.v1.Msg, svn.leases.v1.Msg, and
+// svn.evidence.v1.Msg themselves (RegisterServices). There is no
+// MsgCreateValidator and no single-signer admit, disable, or force-withdraw
+// message (DEC-009).
 func registerAuthority(router *baseapp.MsgServiceRouter, keeper authority.Keeper) {
 	type call struct {
 		name string
@@ -72,44 +62,6 @@ func acceptHandler(template proto.Message, fn func(context.Context, proto.Messag
 			return call(ctx, in)
 		}
 		return interceptor(ctx, in, &grpc.UnaryServerInfo{Server: srv}, call)
-	}
-}
-
-type methodSpec struct {
-	name string
-	msg  proto.Message
-	err  error
-}
-
-func register(router *baseapp.MsgServiceRouter, service string, methods []methodSpec) {
-	descs := make([]grpc.MethodDesc, len(methods))
-	for i, method := range methods {
-		descs[i] = grpc.MethodDesc{
-			MethodName: method.name,
-			Handler:    rejectHandler(service, method),
-		}
-	}
-	router.RegisterService(&grpc.ServiceDesc{
-		ServiceName: service,
-		Methods:     descs,
-		HandlerType: (*sdk.Msg)(nil),
-	}, struct{}{})
-}
-
-func rejectHandler(service string, method methodSpec) grpc.MethodHandler {
-	full := fmt.Sprintf("/%s/%s", service, method.name)
-	return func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-		in := proto.Clone(method.msg)
-		if err := dec(in); err != nil {
-			return nil, err
-		}
-		fail := func(context.Context, any) (any, error) {
-			return nil, method.err
-		}
-		if interceptor == nil {
-			return fail(ctx, in)
-		}
-		return interceptor(ctx, in, &grpc.UnaryServerInfo{Server: srv, FullMethod: full}, fail)
 	}
 }
 
