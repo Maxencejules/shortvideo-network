@@ -17,8 +17,10 @@ import (
 // header time of the block being executed, in whole seconds. Due items are
 // processed in (time, kind, id) order with kind "lease" before "offer" at an
 // equal time (the spec's string order; evidence, the spec's third kind, is
-// goal 09), at most the effective max_expiry_steps items per block (governed
-// value, ceiling 128). Items left over wait for the next committed block.
+// not swept: x/evidence reports a record's state at read time and uses no
+// expiry budget, x/evidence deviation D-4), at most the effective
+// max_expiry_steps items per block (governed value, ceiling 128). Items
+// left over wait for the next committed block.
 // Nothing expires while the chain commits no blocks; the real-time deadline
 // in the signed terms does not move.
 //

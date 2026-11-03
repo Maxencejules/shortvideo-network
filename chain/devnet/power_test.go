@@ -48,7 +48,10 @@ func newFixedNetwork() fixedNetwork {
 	}
 	accounts := make([]accountKey, len(accountSpec))
 	for i, spec := range accountSpec {
-		accounts[i] = accountKey{name: spec.name, role: spec.role, key: sdksecp.GenPrivKeyFromSecret([]byte(spec.name))}
+		accounts[i] = accountKey{name: spec.name, role: spec.role, keyType: spec.keyType, key: sdksecp.GenPrivKeyFromSecret([]byte(spec.name))}
+		if spec.keyType == KeyEd25519 {
+			accounts[i].key = sdked.GenPrivKeyFromSecret([]byte(spec.name))
+		}
 	}
 	return fixedNetwork{
 		nodes:    nodes,

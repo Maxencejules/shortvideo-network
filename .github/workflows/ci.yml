@@ -94,19 +94,22 @@ jobs:
           go vet ./agents/auditor/...
 
   # The race detector run of ./chain/..., ./proto/..., ./agents/provider/...
-  # and ./agents/auditor/... with the same flags as before, split into three
+  # and ./agents/auditor/... with the same flags as before, split into four
   # shards so that each job stays within the 20-minute cap of
   # scripts/workflow_policy.py. chain/app and chain/devnet are the two slowest
-  # packages under -race; "rest" is every other ./chain/... package (computed,
-  # so a new package lands there) plus ./proto/..., ./agents/provider/... and
-  # ./agents/auditor/....
+  # packages under -race. chain/devnet is split by test name: "devnet-evidence"
+  # runs the tests matching TestDevnetAudit (the Goal 09 audit demo, which
+  # builds agents/auditor) and "devnet" every other test of the package, so the
+  # two together run the whole package once. "rest" is every other ./chain/...
+  # package (computed, so a new package lands there) plus ./proto/...,
+  # ./agents/provider/... and ./agents/auditor/....
   go-race:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        shard: [app, devnet, rest]
+        shard: [app, devnet, devnet-evidence, rest]
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -127,7 +130,10 @@ jobs:
               go test -race -count=1 -timeout 12m ./chain/app
               ;;
             devnet)
-              go test -race -count=1 -timeout 12m ./chain/devnet
+              go test -race -count=1 -timeout 12m -skip TestDevnetAudit ./chain/devnet
+              ;;
+            devnet-evidence)
+              go test -race -count=1 -timeout 15m -run TestDevnetAudit ./chain/devnet
               ;;
             rest)
               pkgs="$(go list ./chain/... | grep -v -x -e "${mod}/chain/app" -e "${mod}/chain/devnet")"

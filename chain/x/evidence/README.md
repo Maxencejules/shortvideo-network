@@ -176,11 +176,12 @@ The envelope of item i is exactly the frozen 13-field object of
   digest, or a signed string (batch_id, evidence_id, lease_id, content_id, key_id) that is not valid UTF-8 has no
   payload (`ErrNoCanonicalForm`): `UNAUTHORIZED`. Any other value builds a payload (kinds 0 and 3-5, `attestation`
   false, `content_version` 0, a negative expiry) and is rejected at its own step (`TestSignPayloadNeverFails`).
-- The UTF-8 rule keeps the payload injective. The SVN-JCS-1 encoder (`chain/jcs`) writes each invalid byte as U+FFFD,
-  so without the rule a signature over `c1\uFFFD` would also verify for the ids `c1\xff` and `c1\xfe`, which were never
-  signed. A transaction cannot carry such a string (protobuf-go refuses invalid UTF-8 in a proto3 string, and step 9
-  refuses it), but `VerifyAuditSignature` is also the producer's and the reviewer's check
-  (`TestAttestationPayloadRejectsInvalidUTF8`).
+- The UTF-8 rule keeps the payload injective and names the failure. The SVN-JCS-1 encoder (`chain/jcs`) also refuses
+  invalid UTF-8; before goal 09 changed it, it wrote each invalid byte as U+FFFD, so without the rule a signature over
+  `c1\uFFFD` would also have verified for the ids `c1\xff` and `c1\xfe`, which were never signed. The rule runs before
+  the encoder, so such a message is `ErrNoCanonicalForm`, never a size error. A transaction cannot carry such a string
+  (protobuf-go refuses invalid UTF-8 in a proto3 string, and step 9 refuses it), but `VerifyAuditSignature` is also the
+  producer's and the reviewer's check (`TestAttestationPayloadRejectsInvalidUTF8`).
 - The canonical text of 32 maximal items is below 65536 bytes; a payload above 65536 bytes is `BOUNDS` at step 8, which
   needs more than 32 items (`TestSignPayloadSizeBound` logs both sizes). `AuditCanonical` canonicalizes envelope by
   envelope and stops once the running length passes 65536 bytes, so the work of step 8 is bounded by the cap.
@@ -582,6 +583,21 @@ per-epoch cap (D-15), and no write to any other module. The simulation with two 
 (INT, plan section 18).
 
 ## Limitations
+
+The label catalog (`agents/auditor/labels/evidence-labels.json`) states these limitations; they apply to every record
+of this module, verbatim:
+
+- Auditors can lie.
+- Providers may fetch from another host.
+- Node IDs do not prove independent replicas.
+- A valid signature does not make an observation true.
+- Accounting success is not physical capacity or operator independence.
+- A sampled check covers only the sampled segments.
+- This auditor is not shown to be independent of the provider.
+- No evidence record renews, extends or revives a lease, in any state.
+- No cryptographic storage proof exists in this beta. It is a separate decision gate.
+
+Module-specific limits:
 
 - Every success needs a held lease, so evidence is recorded only on a chain with the labelled DEC-001 content and
   DEC-005 lease devnet parameters; elsewhere no lease exists and every batch ends at `NOT_FOUND` or earlier.

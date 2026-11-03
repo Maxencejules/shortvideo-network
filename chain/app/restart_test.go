@@ -70,13 +70,14 @@ func TestRestartLoadsCommittedState(t *testing.T) {
 	}
 }
 
-// TestAppRefusesScaffoldLayout: a committed providers, content, or leases
-// store in the goal-05/06 scaffold layout (no layout version key, the module genesis
-// JSON at key [0x01], which sits inside the registry record prefix) or
-// with another layout version stops app.New on restart, instead of being
-// misread as registry records (an export or a Providers query of such a
-// store failed to decode the JSON as a record). A store in this binary's
-// layout reopens (TestRestartLoadsCommittedState).
+// TestAppRefusesScaffoldLayout: a committed providers, content, leases, or
+// evidence store in the goal-05/06 scaffold layout (no layout version key,
+// the module genesis JSON at key [0x01], which sits inside the registry
+// record prefix and, for evidence, the record prefix) or with another
+// layout version stops app.New on restart, instead of being misread as
+// records (an export or a Providers query of such a store failed to
+// decode the JSON as a record). A store in this binary's layout reopens
+// (TestRestartLoadsCommittedState).
 func TestAppRefusesScaffoldLayout(t *testing.T) {
 	for _, c := range []struct {
 		name     string
@@ -91,6 +92,9 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
 		{"leases scaffold", app.ModuleLeases, []byte(`{"offers":[],"leases":[]}`), 0},
 		{"leases layout 1", app.ModuleLeases, nil, 1},
 		{"leases layout 3", app.ModuleLeases, nil, 3},
+		{"evidence scaffold", app.ModuleEvidence, []byte(`{"records":[],"current_epoch":"0"}`), 0},
+		{"evidence layout 1", app.ModuleEvidence, nil, 1},
+		{"evidence layout 3", app.ModuleEvidence, nil, 3},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			n := newRegNet()

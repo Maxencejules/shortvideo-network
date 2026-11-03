@@ -297,12 +297,13 @@ func TestSignPayloadNeverFails(t *testing.T) {
 
 // TestAttestationPayloadRejectsInvalidUTF8: a signed string (batch_id,
 // evidence_id, lease_id, content_id, key_id) that is not valid UTF-8 has no
-// SVN-JCS-1 form (ErrNoCanonicalForm). Without this rule the encoder writes
-// each invalid byte as U+FFFD, so a signature over "c1\uFFFD" would also
-// verify for "c1\xff" and "c1\xfe": ids never signed. VerifyAuditSignature
-// (the producer's and the reviewer's check) and the handler answer
-// UNAUTHORIZED. A transaction cannot carry such a string (protobuf-go
-// refuses it); the rule keeps the exported builders injective.
+// SVN-JCS-1 form (ErrNoCanonicalForm). The SVN-JCS-1 encoder refuses such a
+// string too; before it did, it wrote each invalid byte as U+FFFD, so a
+// signature over "c1\uFFFD" would also have verified for "c1\xff" and
+// "c1\xfe": ids never signed. VerifyAuditSignature (the producer's and the
+// reviewer's check) and the handler answer UNAUTHORIZED. A transaction
+// cannot carry such a string (protobuf-go refuses it); the rule keeps the
+// exported builders injective whatever the encoder does.
 func TestAttestationPayloadRejectsInvalidUTF8(t *testing.T) {
 	base := func() *evidencev1.MsgSubmitAuditBatch {
 		return batch(auditor1, "u", vectorItem(auditor1, "e1", "l1", "c1"))
@@ -326,7 +327,7 @@ func TestAttestationPayloadRejectsInvalidUTF8(t *testing.T) {
 		}
 	}
 	// The U+FFFD spelling is valid UTF-8 and is signed; the invalid
-	// spellings that the encoder would turn into it do not verify.
+	// spellings that the old encoder turned into it do not verify.
 	signedMsg := base()
 	signedMsg.Items[0].ContentId = "c1\uFFFD"
 	sign(signedMsg, auditor1)

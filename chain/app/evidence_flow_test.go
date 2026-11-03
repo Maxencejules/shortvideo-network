@@ -773,3 +773,101 @@ func addAuditorRow(t *testing.T, raw json.RawMessage, addr []byte) json.RawMessa
 	}
 	return out
 }
+
+// TestLaunchGenesisRejectsEvidence: the launch rule (emptyCatalog) refuses
+// a genesis whose evidence module holds a record (here one exported from a
+// committed batch, with its reported state) or a current_epoch other than
+// 0, both through InitChain and through DocumentFromModules (svnd genesis
+// validate). The empty evidence genesis is accepted.
+func TestLaunchGenesisRejectsEvidence(t *testing.T) {
+	e := newEvNet()
+	c := e.start(t, 1)
+	evidenceSetup(t, e, c)
+	p := prefix(e.auditor1)
+	wantCode(t, "batch", e.send(t, c, e.auditor1, e.audit(t, e.auditor1, "lg-1", p+"lg-1", c.epoch(),
+		auditItem(p+"lg-1-e", "la", "c1", manifestOf("c1"), c.now()+600))), msgkit.OK)
+	stored, found := c.app().StoredEvidenceForTest(p + "lg-1-e")
+	if !found {
+		t.Fatal("no stored record")
+	}
+	original, err := app.AppStateFromDocument(codecFromApp(t, e.doc.ChainID), e.doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withEvidence := func(state *evidencev1.GenesisState) map[string]json.RawMessage {
+		raw, err := evidence.MarshalGenesis(state)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]json.RawMessage{}
+		for k, v := range original {
+			out[k] = v
+		}
+		out[app.ModuleEvidence] = raw
+		return out
+	}
+	initChain := func(modules map[string]json.RawMessage) error {
+		fresh := newTestApp(t, e.doc.ChainID, nil)
+		params := consensusParams()
+		_, err := fresh.InitChain(&abci.RequestInitChain{
+			ChainId: e.doc.ChainID, Time: e.doc.Time(), AppStateBytes: mustJSON(t, modules),
+			InitialHeight: 1, Validators: validatorUpdates(t, e.doc), ConsensusParams: &params,
+		})
+		return err
+	}
+	for name, state := range map[string]*evidencev1.GenesisState{
+		"a record":        {Records: []*evidencev1.EvidenceRecord{stored}},
+		"current_epoch 1": {CurrentEpoch: 1},
+	} {
+		modules := withEvidence(state)
+		if err := initChain(modules); err == nil || !strings.Contains(err.Error(), "evidence is not empty") {
+			t.Fatalf("%s: InitChain: %v", name, err)
+		}
+		if _, err := app.DocumentFromModules(modules); err == nil || !strings.Contains(err.Error(), "evidence is not empty") {
+			t.Fatalf("%s: DocumentFromModules: %v", name, err)
+		}
+	}
+	if err := initChain(withEvidence(&evidencev1.GenesisState{})); err != nil {
+		t.Fatalf("empty evidence genesis: %v", err)
+	}
+}
+
+// TestAcceptanceSignatureCoversDigestBytesTerms (REQ-EVID-002, app level,
+// real keys): the provider's acceptance signs the package's manifest
+// digest, its byte count, and the terms digest. An acceptance signed by
+// the provider's registered key over an offer with another manifest
+// digest, another byte count, or another terms digest, relayed for the
+// real offer, is UNAUTHORIZED with the full state unchanged; the
+// acceptance over the real offer then commits. Acceptance is a promise,
+// not possession.
+func TestAcceptanceSignatureCoversDigestBytesTerms(t *testing.T) {
+	e := newEvNet()
+	c := e.start(t, 1)
+	e.registerAdmit(t, c, e.provider1, "p1", capacity1)
+	wantCode(t, "register c1", e.send(t, c, e.service, e.registerContent(t, e.service, "reg-c1", "c1", 1, packageManifest("c1"), sizeSmall)), msgkit.OK)
+	now := c.now()
+	offer := e.offerMsg(e.service, "of-a1", "o-a1", "c1", "p1", sizeSmall, now+1800, now+600)
+	wantCode(t, "offer", e.send(t, c, e.service, offer), msgkit.OK)
+	chainApp := c.app()
+	for i, edit := range []struct {
+		name string
+		edit func(o *leasesv1.MsgOfferLease)
+	}{
+		{"another manifest digest", func(o *leasesv1.MsgOfferLease) { o.ManifestDigest = contentManifest("c2") }},
+		{"another byte count", func(o *leasesv1.MsgOfferLease) { o.PackageBytes = sizeSmall + 1 }},
+		{"another terms digest", func(o *leasesv1.MsgOfferLease) { o.TermsDigest = termsDigest("o-other") }},
+	} {
+		signed := proto.Clone(offer).(*leasesv1.MsgOfferLease)
+		edit.edit(signed)
+		msg := e.acceptMsg(t, e.broadcaster, fmt.Sprintf("ac-x%d", i), offer, "l-a1")
+		msg.ProviderAcceptance = acceptanceBy(t, signed, "l-a1", e.signing["p1"])
+		before := chainApp.FullSnapshot()
+		res := e.send(t, c, e.broadcaster, msg)
+		wantCode(t, edit.name, res, msgkit.Unauthorized)
+		if !anteCommitted(res) {
+			t.Fatalf("%s: refused by the ante", edit.name)
+		}
+		unchanged(t, edit.name, chainApp, before, res)
+	}
+	wantCode(t, "the real acceptance", e.send(t, c, e.broadcaster, e.acceptMsg(t, e.broadcaster, "ac-a1", offer, "l-a1")), msgkit.OK)
+}

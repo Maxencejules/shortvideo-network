@@ -74,12 +74,14 @@ const (
 // content_id, key_id) that is not valid UTF-8. No signature can verify over
 // it (UNAUTHORIZED).
 //
-// The UTF-8 rule keeps the payload injective: the SVN-JCS-1 encoder writes
-// every invalid byte as U+FFFD, so without it two messages whose ids differ
-// only in invalid bytes would share one payload and one signature. A
-// transaction never carries such a string (protobuf-go refuses invalid UTF-8
-// in a proto3 string, and step 9 refuses it), but VerifyAuditSignature is
-// also the producer's and the reviewer's check.
+// The UTF-8 rule keeps the payload injective and names the failure: the
+// SVN-JCS-1 encoder (chain/jcs) also refuses invalid UTF-8 (it once wrote
+// every invalid byte as U+FFFD, so two messages whose ids differ only in
+// invalid bytes shared one payload and one signature), and this check runs
+// before it, so such a message is ErrNoCanonicalForm and never a size
+// error. A transaction never carries such a string (protobuf-go refuses
+// invalid UTF-8 in a proto3 string, and step 9 refuses it), but
+// VerifyAuditSignature is also the producer's and the reviewer's check.
 var ErrNoCanonicalForm = errors.New("evidence: attestation payload has no SVN-JCS-1 form")
 
 // ErrPayloadTooLarge marks a message whose attestation payload exceeds the

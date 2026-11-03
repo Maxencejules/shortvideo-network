@@ -512,7 +512,7 @@ allowances stay unset; no lease count limit exists (residual risk).
 | D-4 | OfferLease reusing an offer id ever used: `DUPLICATE_ID` (after every spec check) | allowed once the offer is gone | stable offer ids | `TestOfferIDNeverReusedD4` |
 | D-5 | OfferLease with expiry - committed time > 86400: `BOUNDS` | allowed | one offer cannot hold a slot for longer; offers of a service that stops offering are gone within a day (it does not stop re-offering) | `TestOfferLifetimeBoundD5` |
 | D-6 | OfferLease when the content has 256 open offers (any scheduler): `BOUNDS` | allowed | bounds the withdrawal hook's work | `TestOpenOffersPerContentCapD6` |
-| D-7 | one expiry budget for leases and offers (evidence is goal 09); an invariant violation fails the block | one cap over three kinds; an error discards the step | x/evidence is not implemented | `TestExpiryOrderAndBudget`, `TestExpiryInvariantErrors` |
+| D-7 | one expiry budget for leases and offers; evidence uses read-time expiry and no budget (x/evidence D-4); an invariant violation fails the block | one cap over three kinds; an error discards the step | evidence is not swept (owner ruling on Q4, goal 09), so it cannot delay lease releases | `TestExpiryOrderAndBudget`, `TestExpiryInvariantErrors` |
 | D-8 | Enforce first (signer not 20 bytes `MALFORMED`, gas and size `BOUNDS`); an empty string is `MALFORMED` | `check_address` `BOUNDS`; an empty string is present | goal-07 conventions | ladder enforce-* and presence rows |
 | D-9 | untyped `leases_offer_closed{offer_id, reason}` on offer expiry and withdrawal void | no event | indexers need offer closure (DR-08-08) | `TestExpiryOrderAndBudget`, `TestWithdrawalVoidsOffers` |
 | D-10 | OfferLease when the signer holds 128 open offers of the content: `BOUNDS` | allowed | one admitted service cannot fill a content's D-6 slots by itself (it can still fill providers' shared slots, DR-08-13) | `TestOpenOffersPerSchedulerCapD10` |
@@ -590,8 +590,9 @@ digests remain linkable by anyone who holds the preimage.
 Read surfaces x/leases consumes (declared in `keeper.go`, satisfied structurally): `Roles.Role`,
 `Limits.GovernedLimit`, `DevnetParams.DevnetNumeric`, `Policy.PolicyVersion` (x/authority); `Providers.Provider`,
 `CheckNewObligation`, `VerifyProviderSignature`, `ReserveProbe`, `Reserve`, `Release` (x/providers);
-`Content.CheckOfferable`, `CheckNotWithdrawn` (x/content); `Evidence.RenewalEvidence` (x/evidence, may be nil until
-goal 09: every evidence id is then `NOT_FOUND`). `NewKeeper` panics on a nil store key or a nil required dependency.
+`Content.CheckOfferable`, `CheckNotWithdrawn` (x/content); `Evidence.RenewalEvidence` (x/evidence; the app wires it
+since goal 09, and a nil reader, as in the copy x/evidence reads leases through and in test keepers, makes every
+evidence id `NOT_FOUND`). `NewKeeper` panics on a nil store key or a nil required dependency.
 
 What x/leases offers: `Keeper.Lease` (handoff read), `Keeper.BusinessDigest` (`msgkit.BusinessSource`),
 `ContentWithdrawn` (withdrawal hook), `ExpireDue` (BeginBlock body), the four message handlers, `ActiveLeases`,
@@ -600,8 +601,9 @@ store key builders, and `leasestest`.
 
 Later goals:
 
-- Goal 09: wire `Deps.Evidence`; decide the expiry budget shared with evidence (DR-08-07); use `Keeper.Lease` for the
-  DEC-010 digest comparison; evidence never extends a lease.
+- Goal 09 (done): the app wires `Deps.Evidence` to x/evidence; evidence takes no expiry budget (x/evidence D-4, owner
+  ruling on Q4); x/evidence reads `Keeper.Lease` for the DEC-010 digest comparison and the lease binding; a renewal
+  that names evidence is always rejected (row 14), so evidence never extends a lease (`TestNoEvidenceRenews`).
 - Goal 11 broadcaster: a broadcast acknowledgement (CheckTx runs only the ante chain) is not success; poll the
   committed result. Resubmitting the same business id and payload under a new transaction hash returns code 0 and
   `leases_result` (idempotent) only if every check before the business gate still passes, because each of them runs
@@ -648,7 +650,8 @@ real registry keepers with a fake authority. None of them is end to end.
 - DR-08-05 real-time deadline guards D-2 and D-3.
 - DR-08-06 offer ids never reused (D-4); export drops closed-offer markers.
 - DR-08-07 expiry, the chain choices around the Gate-A cap of 128 items per block (the cap itself is accepted):
-  BeginBlock placement, (time, kind, id) order, a budget shared with evidence, fail closed on an invariant violation.
+  BeginBlock placement, (time, kind, id) order, a budget shared by leases and offers (evidence takes none: owner
+  ruling on Q4, x/evidence D-4), fail closed on an invariant violation.
   Security consequence of the shared budget and the spec's (time, kind, id) order: the budget is one per block for the
   whole chain, and open offers cost no fee. Any admitted service can place offers, on any provider, that expire just
   before other parties' lease deadlines. Those offers are swept first, so every lease due at or after their expiry

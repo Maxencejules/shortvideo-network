@@ -125,7 +125,9 @@ func populate(m protoreflect.Message, pick int, used map[protoreflect.FullName]b
 //   - x/leases (Goal 08): accept FORBIDDEN (the service account is neither
 //     BROADCASTER nor ADMITTED_PROVIDER), offer NOT_FOUND (no content "x1"
 //     exists), renew and end NOT_FOUND (no lease "x1" exists);
-//   - evidence: ERROR_CODE_FORBIDDEN from the router until Goal 09.
+//   - x/evidence (Goal 09): SubmitAuditBatch FORBIDDEN at the role check
+//     (step 3 of the check order; the service account is not an AUDITOR):
+//     every populated variant passes the presence step first.
 //
 // The full authority store and the full non-account state are byte-identical
 // after each (council.reject). Fails without the EvidenceItem registration: a
@@ -164,6 +166,8 @@ func TestEveryProtocolMessageDecodes(t *testing.T) {
 			code, protoCode = 19, authority.CodeBounds
 		case "svn.leases.v1.MsgOfferLease", "svn.leases.v1.MsgRenewLease", "svn.leases.v1.MsgEndLease":
 			code, protoCode = 16, authority.CodeNotFound
+		case "svn.evidence.v1.MsgSubmitAuditBatch":
+			code, protoCode = 2, authority.CodeForbidden
 		}
 		var variants [][]byte
 		for pick := 0; pick < 8; pick++ {
