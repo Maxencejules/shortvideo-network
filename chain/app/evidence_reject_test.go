@@ -39,6 +39,9 @@ import (
 //     the ante handler first (the ante cases below); a signer that is not
 //     20 bytes cannot sign a transaction (the ante resolves the signer to
 //     an account address); keeper ladder enforce rows.
+//   - step 2, a nil item: an item on the wire always decodes as a message
+//     (an empty item fails the evidence_id presence case below); keeper
+//     ladder presence-item-nil.
 //   - step 3, no role (UNAUTHORIZED): the ante admits only submitter rows
 //     and council seats (outsider case below); a seat is refused by the
 //     ante (TestSeatEvidenceRefusedForTheSeatRule); keeper ladder role-none.

@@ -47,8 +47,10 @@ and `svn.evidence.v1.Query` on the gRPC query router; the closed evidence stub, 
 `RECORDED` record reads `EXPIRED` from the first committed time at or after its expiry, computed when it is read; nothing
 is swept, and evidence takes no share of the lease expiry budget (owner ruling on Q4; x/evidence deviation D-4). The
 evidence store is in `checkRegistryLayouts`: a committed evidence store without the layout key or with another layout
-version stops `app.New` (`TestAppRefusesScaffoldLayout`). The svn header and policy slots stay scaffolding until Goal 10
-(`chain/x/scaffold`).
+version stops `app.New` (`TestAppRefusesScaffoldLayout`). A node reopened from disk loads every store, the evidence
+store included (`TestRestartLoadsCommittedState`, with the layout key only; `TestDevnetAuditLifecycle` stops two
+validators after evidence records commit, restarts them, and they reach the other nodes' app hash). The svn header and
+policy slots stay scaffolding until Goal 10 (`chain/x/scaffold`).
 
 Genesis and export:
 
@@ -64,8 +66,17 @@ Genesis and export:
   layout key. The export context has no block time, so the module export of a record would fail with
   `evidence.ErrNoBlockTime` inside the SDK module manager's goroutine, where a panic ends the process
   (`TestExportRefusesEvidenceState`, also with a record row written outside ABCI on a chain with no lease, where only
-  this check refuses). App-level export and re-import stays BLOCKED (DR-06-01, DR-07-02, DR-07-03, DR-08-06, DR-09-18);
-  the module round trip is keeper-level (`TestEvidenceGenesisRoundTrip` in `chain/x/evidence`).
+  this check refuses). `App.Export` of evidence state and an app-level re-import stay BLOCKED (DR-06-01, DR-07-02,
+  DR-07-03, DR-08-06, DR-09-18). The module round trip runs at keeper level (`TestEvidenceGenesisRoundTrip` in
+  `chain/x/evidence`) and from committed app state with the real lease keeper
+  (`TestEvidenceGenesisRoundTripFromCommittedState`): the module export at a given block time carries each record with
+  its reported state (a `RECORDED` record past its expiry is exported `EXPIRED`); imported into a discarded branch whose
+  evidence store was emptied, it re-exports equal, the invariants hold, and every row comes back except the business-id
+  rows, which the v0 genesis schema cannot carry.
+- Before a later goal enables evidence export or a non-empty evidence genesis, two app rules are needed that do not
+  exist now (the launch rule and the export refusal make them unreachable): `App.Export` must give its context the last
+  committed header time, and genesis validation must require each record's `AuditorAddress(signer_pubkey)` to be an
+  `AUDITOR` submitter of the same document (the module checks the id prefix and the lease, not the role).
 
 ## Who may write
 
@@ -199,7 +210,7 @@ Auditor keys are generated at test time. Leases exist only under the labelled DE
 | `TestEvidenceEventSchemas` | Every evidence event of a fixed flow parses and matches `chain/app/testdata/evidence-events.golden.json` (auditor prefixes normalized): `EvidenceAccepted` then `evidence_state` per item, `evidence_result` alone for an idempotent resend, nothing for a rejection; forbidden-name scan. |
 | `TestNoPrivateDataInEvidenceStateOrEvents` | Canary digests as observations: no store, transaction, or event holds a canary or a URL scheme. Opaque ids and digests stay linkable by anyone holding the preimage. |
 | `TestEvidenceQueryGasAndBounds` | Query rejections with svn codes (no id `MALFORMED`; id outside the pattern, limit above the cap, page key outside the pattern, page key with an evidence id `BOUNDS`); query gas below the node limit. |
-| `TestGenesisRefusesAuditorPrefixCollision`, `TestLaunchGenesisRejectsEvidence`, `TestExportRefusesEvidenceState`, `TestAppRefusesScaffoldLayout` | See "Wiring". |
+| `TestGenesisRefusesAuditorPrefixCollision`, `TestLaunchGenesisRejectsEvidence`, `TestExportRefusesEvidenceState`, `TestEvidenceGenesisRoundTripFromCommittedState`, `TestAppRefusesScaffoldLayout`, `TestRestartLoadsCommittedState` | See "Wiring". |
 | `TestAuditWithoutDevnetParams` | Without the DEC-001 and DEC-005 devnet parameters a valid batch ends `NOT_FOUND` with the state unchanged. |
 | `TestAcceptanceSignatureCoversDigestBytesTerms` | REQ-EVID-002 with real keys: an acceptance signed over another manifest digest, byte count, or terms digest is `UNAUTHORIZED` with the state unchanged; acceptance is a promise, not possession. |
 | `TestSimulateEstimatesGas`, `TestEveryProtocolMessageDecodes` | `SubmitAuditBatch` simulates with gas equal to committed gas; every populated variant from the service account decodes and is `FORBIDDEN` at the role check. |
@@ -208,6 +219,8 @@ Rows of the check order that no committed transaction reaches, and where they ar
 
 - Step 1 (`msgkit.Enforce`): the ante applies the gas and size bounds first; a signer that is not 20 bytes cannot sign a
   transaction (the ante resolves it to an account address). Keeper ladder enforce rows.
+- Step 2, a nil item: an item on the wire always decodes as a message; an empty item fails the `evidence_id` presence
+  check. Keeper ladder presence-item-nil.
 - Step 3, no role (`UNAUTHORIZED`): the ante admits only submitter rows and council seats, and refuses a seat's evidence
   message. Keeper ladder role-none.
 - Step 15, a business payload with no canonical form (`MALFORMED`): every integer of the business payload is also

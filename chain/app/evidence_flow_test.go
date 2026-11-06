@@ -732,6 +732,108 @@ func TestExportRefusesEvidenceState(t *testing.T) {
 	}
 }
 
+// TestEvidenceGenesisRoundTripFromCommittedState: the x/evidence module
+// genesis round trip from committed app state, with the real lease and
+// content keepers (App.Export refuses evidence state,
+// TestExportRefusesEvidenceState, and a launch genesis carries none,
+// TestLaunchGenesisRejectsEvidence). Two auditors record over three leases:
+// RECORDED and REJECTED records, one RECORDED record whose expiry is the
+// committed header time. The module export at that time carries every
+// record in evidence id order with its reported state: that record EXPIRED
+// (stored RECORDED), the others as stored, current_epoch 0; the export one
+// second earlier carries it RECORDED. Each export, encoded and decoded as
+// genesis JSON, imports into a discarded branch of the committed state
+// whose evidence store was emptied (InitGenesis runs the I5, I6, and I13
+// checks against the committed leases); the re-export equals the export,
+// the invariants hold, and the imported rows equal the committed rows
+// except that the business-id rows (prefix 0x03) are absent (business ids
+// are not in the v0 genesis schema; DR-07-03, DR-09-18) and, in the later
+// export, the expired record is stored EXPIRED. The committed state does
+// not change.
+func TestEvidenceGenesisRoundTripFromCommittedState(t *testing.T) {
+	e := newEvNet()
+	c := e.start(t, 1)
+	evidenceSetup(t, e, c)
+	chainApp := c.app()
+	p1, p2 := prefix(e.auditor1), prefix(e.auditor2)
+	now := c.now()
+	short, rejected, recorded, other := p1+"gr-short", p1+"gr-rej", p1+"gr-rec", p2+"gr-a2"
+	wantCode(t, "auditor-1", e.send(t, c, e.auditor1, e.audit(t, e.auditor1, "gr-1", p1+"gr-1", c.epoch(),
+		auditItem(short, "la", "c1", manifestOf("c1"), now+300),
+		auditItem(rejected, "lb", "c2", wrongDigest("gr"), now+900),
+		auditItem(recorded, "lc", "c3", manifestOf("c3"), now+900),
+	)), msgkit.OK)
+	wantCode(t, "auditor-2", e.send(t, c, e.auditor2, e.audit(t, e.auditor2, "gr-2", p2+"gr-2", c.epoch(),
+		auditItem(other, "la", "c1", manifestOf("c1"), now+900))), msgkit.OK)
+	c.setUnix(now + 300)
+	c.block(t)
+	before := chainApp.FullSnapshot()
+	for _, row := range []struct {
+		at      int64
+		expired bool
+	}{{now + 299, false}, {now + 300, true}} {
+		label := fmt.Sprintf("export at %d", row.at)
+		rt, err := chainApp.EvidenceGenesisRoundTripForTest(row.at)
+		if err != nil {
+			t.Fatalf("%s: %v", label, err)
+		}
+		shortState := stateRecorded
+		if row.expired {
+			shortState = stateExpired
+		}
+		want := map[string]evidencev1.EvidenceState{short: shortState, rejected: stateRejected, recorded: stateRecorded, other: stateRecorded}
+		records := rt.Exported.GetRecords()
+		if len(records) != len(want) || rt.Exported.GetCurrentEpoch() != 0 {
+			t.Fatalf("%s: %d records, current_epoch %d", label, len(records), rt.Exported.GetCurrentEpoch())
+		}
+		for i, rec := range records {
+			if i > 0 && records[i-1].GetEvidenceId() >= rec.GetEvidenceId() {
+				t.Fatalf("%s: records not in evidence id order", label)
+			}
+			if rec.GetState() != want[rec.GetEvidenceId()] {
+				t.Fatalf("%s: %s exported %s, want %s", label, rec.GetEvidenceId(), rec.GetState(), want[rec.GetEvidenceId()])
+			}
+		}
+		if !proto.Equal(rt.Exported, rt.Reexported) {
+			t.Fatalf("%s: the re-export differs from the export", label)
+		}
+		if rt.Invariants != nil {
+			t.Fatalf("%s: invariants after import: %v", label, rt.Invariants)
+		}
+		business := 0
+		for key, value := range rt.Committed {
+			got, imported := rt.Imported[key]
+			switch {
+			case key[0] == evidence.BusinessPrefix:
+				business++
+				if imported {
+					t.Fatalf("%s: business row %x imported", label, key)
+				}
+			case !imported:
+				t.Fatalf("%s: row %x missing after import", label, key)
+			case row.expired && key == string(evidence.RecordKey(short)):
+				var stored evidencev1.EvidenceRecord
+				if err := proto.Unmarshal(value, &stored); err != nil || stored.GetState() != stateRecorded {
+					t.Fatalf("%s: committed %s: %v %v", label, short, stored.GetState(), err)
+				}
+				stored.State = stateExpired
+				wantBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(&stored)
+				if err != nil {
+					t.Fatal(err)
+				}
+				sameBytes(t, label+": the expired record imported EXPIRED", wantBytes, got)
+			default:
+				sameBytes(t, fmt.Sprintf("%s: row %x", label, key), value, got)
+			}
+		}
+		if business != 2 || len(rt.Imported) != len(rt.Committed)-business {
+			t.Fatalf("%s: %d business rows, %d committed rows, %d imported rows", label, business, len(rt.Committed), len(rt.Imported))
+		}
+	}
+	sameBytes(t, "the round trip writes nothing", before, chainApp.FullSnapshot())
+	c.checkEvidenceInvariants(t, "round trip")
+}
+
 // TestAuditWithoutDevnetParams: on a chain without the labelled DEC-001 and
 // DEC-005 devnet parameters no content or lease can exist, so a
 // well-formed, correctly signed batch ends NOT_FOUND (step 18, lease absent)

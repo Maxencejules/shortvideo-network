@@ -253,6 +253,9 @@ type outcome struct {
 	// released is the number of leases a block ended and offers it closed.
 	released int
 	gas      uint64
+	// eventBytes is the event type, attribute key, and attribute value bytes
+	// of every event of an accepted step (the measurements log it).
+	eventBytes int
 }
 
 func (o outcome) codeName() string {
@@ -436,11 +439,17 @@ func (h *harness) deliver(s *step) outcome {
 		return out
 	}
 	out.idempotent = idempotentEvent(cache.EventManager().Events())
-	if out.idempotent && h.cfg.trialCheck && !bytes.Equal(pre, h.snapshot(cache)) {
-		h.tb.Errorf("idempotent %s changed the trial state", s.op)
-	}
-	if s.op == opAudit && h.cfg.trialCheck && !bytes.Equal(preOthers, h.snapshot(cache, h.keys[:keyEvidence]...)) {
-		h.tb.Errorf("I9: an accepted audit batch changed another module's store")
+	switch {
+	case !h.cfg.trialCheck:
+	case out.idempotent:
+		// The whole trial branch, which covers I9's stores too.
+		if !bytes.Equal(pre, h.snapshot(cache)) {
+			h.tb.Errorf("idempotent %s changed the trial state", s.op)
+		}
+	case s.op == opAudit:
+		if !bytes.Equal(preOthers, h.snapshot(cache, h.keys[:keyEvidence]...)) {
+			h.tb.Errorf("I9: an accepted audit batch changed another module's store")
+		}
 	}
 	write()
 	h.parseEvents(&out, ctx.EventManager().Events())
@@ -497,6 +506,10 @@ func (h *harness) block(t int64) outcome {
 	if t <= h.now {
 		h.tb.Fatalf("block time %d is not after %d", t, h.now)
 	}
+	// The previous block's writes are committed first, as the SDK commits
+	// after every block; the stores then keep no unsaved writes across
+	// blocks (an IAVL iterator sorts every unsaved write when it opens).
+	h.ctx.MultiStore().(storetypes.CommitMultiStore).Commit()
 	h.now = t
 	h.height++
 	h.ctx = h.ctx.WithBlockTime(time.Unix(t, 0).UTC()).WithBlockHeight(h.height)
@@ -572,6 +585,10 @@ func (h *harness) parseEvents(out *outcome, events sdk.Events) {
 	out.events = []eventRef{}
 	pending := ""
 	for _, ev := range events {
+		out.eventBytes += len(ev.Type)
+		for _, attr := range ev.Attributes {
+			out.eventBytes += len(attr.Key) + len(attr.Value)
+		}
 		switch {
 		case strings.HasPrefix(ev.Type, "svn.events.v1."):
 			if pending != "" {

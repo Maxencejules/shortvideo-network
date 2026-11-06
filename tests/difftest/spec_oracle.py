@@ -22,6 +22,11 @@ on stdout.
 
     {"cmd": "reset", "config": {...}, "disable_deviations": false}
     {"cmd": "step", "step": {...}}
+    {"cmd": "step", "step": {...}, "projection": false}
+
+A step request with "projection": false is answered with "projection":
+null; nothing else changes (the Go tests use it for steps where they compare
+only the code, idempotent flag, events, and deviation).
 
 reset config: chain_time, term_seconds (an integer, or null for a chain
 without the DEC-005 devnet number), governed (governed limit values),
@@ -129,7 +134,9 @@ from typing import Any, Final
 GOAL02: Final = Path(__file__).resolve().parents[2] / "docs" / "evidence" / "goal-02"
 sys.path.insert(0, str(GOAL02))
 
-import spec_machine as sm  # noqa: E402
+# spec_machine.py is the frozen, untyped goal-02 specification outside the
+# mypy path: every name it exports is Any here.
+import spec_machine as sm  # type: ignore[import-not-found]  # noqa: E402
 
 JSON = dict[str, Any]
 # A self-test case: (step, expected code, expected deviation rule).
@@ -456,6 +463,8 @@ class Oracle:
         # signer -> (epoch, items accepted in that epoch): the chain's
         # auditor window (evidence D-15).
         self.windows: dict[str, tuple[int, int]] = {}
+        # False while a step request asked for no projection.
+        self.with_projection = True
 
     def on(self, rule: str) -> bool:
         return rule not in self.disabled
@@ -558,7 +567,9 @@ class Oracle:
             "idempotent": idempotent,
             "events": [event_ref(event) for event in events],
             "deviation": deviation,
-            "projection": projection(self.current(), self.evidence is not None),
+            "projection": projection(self.current(), self.evidence is not None)
+            if self.with_projection
+            else None,
         }
 
     def transaction(self, step: JSON) -> JSON:
@@ -864,8 +875,17 @@ def handle(oracle: Oracle, request: object) -> JSON:
             need_keys(req, frozenset({"cmd", "config", "disable_deviations"}), "reset")
             return oracle.reset(need_dict(req["config"], "config"), req["disable_deviations"])
         if cmd == "step":
-            need_keys(req, frozenset({"cmd", "step"}), "step")
-            return oracle.step(need_dict(req["step"], "step"))
+            keys = frozenset({"cmd", "step"})
+            if "projection" in req:
+                keys |= {"projection"}
+                if not isinstance(req["projection"], bool):
+                    raise RequestError("projection must be a boolean")
+            need_keys(req, keys, "step")
+            oracle.with_projection = req.get("projection", True) is True
+            try:
+                return oracle.step(need_dict(req["step"], "step"))
+            finally:
+                oracle.with_projection = True
         raise RequestError(f"unknown cmd {cmd!r}")
     except (RequestError, KeyError, TypeError) as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}
@@ -927,7 +947,7 @@ def offer_step(
     business: str,
     signer: str = sm.SERVICE,
 ) -> JSON:
-    step = sm.offer(offer_id, content_id=content_id, expiry=expiry)
+    step: JSON = sm.offer(offer_id, content_id=content_id, expiry=expiry)
     step["start_unix_seconds"] = deadline - TERM
     step["deadline_unix_seconds"] = deadline
     step["business_id"] = business
@@ -968,7 +988,7 @@ def end_step(lease_id: str, business: str, term_version: int) -> JSON:
 
 
 def accept_step(offer_id: str, lease_id: str) -> JSON:
-    step = sm.accept(offer_id, lease_id)
+    step: JSON = sm.accept(offer_id, lease_id)
     del step["tx_hash"]
     return step
 
@@ -1501,6 +1521,14 @@ def self_test() -> int:
     bad = json.loads(handle_line(oracle, json.dumps({"cmd": "step", "step": {"op": "Nope"}})))
     if "error" not in bad:
         raise AssertionError("unknown op was not an error")
+    # "projection": false omits only the projection.
+    step = {"cmd": "step", "step": sm.register_provider()}
+    brief = json.loads(handle_line(oracle, json.dumps({**step, "projection": False})))
+    if brief.get("projection", "absent") is not None or brief.get("code") != "ok":
+        raise AssertionError(f"a step without projection answered {brief}")
+    full = json.loads(handle_line(oracle, json.dumps(step)))
+    if full["code"] != "ok" or full["idempotent"] is not True or full["projection"] is None:
+        raise AssertionError(f"the step after a brief one answered {full}")
     print(f"spec_oracle self-test: PASS ({steps} steps)")
     return 0
 

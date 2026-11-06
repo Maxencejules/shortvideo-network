@@ -151,11 +151,45 @@ type fixtureRun struct {
 // step's spec view before the oracle sees it (the D-6 mapping test).
 func runFixture(tb, cmp testing.TB, f *fixture, o *oracleProc, disable any, rewrite func(i int, s *step) *step) fixtureRun {
 	tb.Helper()
+	return runFixtureFrom(tb, cmp, f, o, disable, rewrite, fixtureRun{}, 0)
+}
+
+// runFixtureFrom is runFixture whose first brief steps are compared without
+// projections: the oracle sends none (stepBrief) and the harness builds no
+// view. At those steps the Go code, idempotent flag, and events must equal
+// the oracle's, and the oracle's deviation must equal ref's, a run of the
+// same fixture with every rule on that agreed at every step: a rule that
+// is off changes the oracle only at a step where it fires, and ref shows
+// where each rule fired. The tests use it for the runs with rules off,
+// whose first divergence is expected at step brief; the full comparison
+// starts there.
+func runFixtureFrom(tb, cmp testing.TB, f *fixture, o *oracleProc, disable any, rewrite func(i int, s *step) *step,
+	ref fixtureRun, brief int) fixtureRun {
+	tb.Helper()
 	h := newHarness(tb, f.cfg)
 	o.reset(tb, f.cfg, disable)
 	run := fixtureRun{firstMismatch: -1}
+	for i, s := range f.steps[:brief] {
+		out := h.apply(s)
+		spec := o.stepBrief(tb, s)
+		run.outs = append(run.outs, out)
+		run.projections = append(run.projections, projection{})
+		run.specs = append(run.specs, spec)
+		run.expected = append(run.expected, ref.expected[i])
+		label := fmt.Sprintf("fixture step %d %s (no projection)", i, s.op)
+		if !compareBrief(cmp, label, s, out, spec) {
+			run.firstMismatch = i
+			return run
+		}
+		if want := ref.specs[i].deviation(); want != spec.deviation() {
+			cmp.Errorf("%s: the run with every rule on applied deviation %q, this run %q", label, want, spec.deviation())
+			run.firstMismatch = i
+			return run
+		}
+	}
 	pre := h.view()
-	for i, s := range f.steps {
+	for i := brief; i < len(f.steps); i++ {
+		s := f.steps[i]
 		out := h.apply(s)
 		post := h.view()
 		proj := post.projection()

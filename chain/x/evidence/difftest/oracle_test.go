@@ -131,18 +131,17 @@ func (o *oracleProc) call(tb testing.TB, req any, resp any) {
 		o.broken = err
 		tb.Fatalf("read oracle response: %v (stderr: %s)", err, o.stderr.String())
 	}
-	var probe struct {
-		Error string `json:"error"`
-	}
-	if err := json.Unmarshal(reply, &probe); err != nil {
-		tb.Fatalf("oracle response is not JSON: %v: %s", err, reply)
-	}
-	if probe.Error != "" {
-		tb.Fatalf("oracle rejected the request %s: %s", line, probe.Error)
-	}
 	dec := json.NewDecoder(bytes.NewReader(reply))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(resp); err != nil {
+		// An {"error": ...} answer has an unknown field for every response
+		// type; name it when it is one.
+		var probe struct {
+			Error string `json:"error"`
+		}
+		if json.Unmarshal(reply, &probe) == nil && probe.Error != "" {
+			tb.Fatalf("oracle rejected the request %s: %s", line, probe.Error)
+		}
 		tb.Fatalf("decode oracle response: %v: %s", err, reply)
 	}
 }
@@ -200,6 +199,8 @@ type resetResponse struct {
 type stepRequest struct {
 	Cmd  string         `json:"cmd"`
 	Step map[string]any `json:"step"`
+	// Projection false asks for no projection (stepBrief).
+	Projection *bool `json:"projection,omitempty"`
 }
 
 // specResult is the oracle's answer for one step.
@@ -259,6 +260,16 @@ func (o *oracleProc) step(tb testing.TB, s *step) specResult {
 	tb.Helper()
 	var resp specResult
 	o.call(tb, stepRequest{Cmd: "step", Step: s.spec}, &resp)
+	return resp
+}
+
+// stepBrief is step without the projection: the oracle answers
+// "projection": null and the result's Projection is the zero value.
+func (o *oracleProc) stepBrief(tb testing.TB, s *step) specResult {
+	tb.Helper()
+	var resp specResult
+	none := false
+	o.call(tb, stepRequest{Cmd: "step", Step: s.spec, Projection: &none}, &resp)
 	return resp
 }
 
@@ -502,6 +513,27 @@ func sortPairs(pairs []pairView) {
 // does). label names the sequence and step.
 func compareStep(tb testing.TB, label string, s *step, goOut outcome, goProj projection, spec specResult) bool {
 	tb.Helper()
+	return reportDiffs(tb, label, s, append(outcomeDiff(s, goOut, spec), projectionDiff(goProj, spec.Projection)...))
+}
+
+// compareBrief is compareStep without the projections (a stepBrief answer).
+func compareBrief(tb testing.TB, label string, s *step, goOut outcome, spec specResult) bool {
+	tb.Helper()
+	return reportDiffs(tb, label, s, outcomeDiff(s, goOut, spec))
+}
+
+func reportDiffs(tb testing.TB, label string, s *step, diffs []string) bool {
+	tb.Helper()
+	if len(diffs) == 0 {
+		return true
+	}
+	stepJSON, _ := json.Marshal(s.spec)
+	tb.Errorf("%s: go and spec_machine.py diverge\nstep: %s\n%s", label, stepJSON, strings.Join(diffs, "\n"))
+	return false
+}
+
+// outcomeDiff lists the differences of code, idempotent flag, and events.
+func outcomeDiff(s *step, goOut outcome, spec specResult) []string {
 	var diffs []string
 	if goOut.codeName() != spec.Code {
 		diffs = append(diffs, fmt.Sprintf("code: go %s, spec %s", goOut.codeName(), spec.Code))
@@ -512,13 +544,7 @@ func compareStep(tb testing.TB, label string, s *step, goOut outcome, goProj pro
 	if s.comparesEvents() && !reflect.DeepEqual(nonNil(goOut.events), nonNil(spec.Events)) {
 		diffs = append(diffs, fmt.Sprintf("events: go %v, spec %v", goOut.events, spec.Events))
 	}
-	diffs = append(diffs, projectionDiff(goProj, spec.Projection)...)
-	if len(diffs) == 0 {
-		return true
-	}
-	stepJSON, _ := json.Marshal(s.spec)
-	tb.Errorf("%s: go and spec_machine.py diverge\nstep: %s\n%s", label, stepJSON, strings.Join(diffs, "\n"))
-	return false
+	return diffs
 }
 
 func nonNil(refs []eventRef) []eventRef {

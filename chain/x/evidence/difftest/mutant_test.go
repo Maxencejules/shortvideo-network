@@ -141,6 +141,13 @@ func TestDeviationRulesAreLoadBearing(t *testing.T) {
 					t.Errorf("step %d (%s) carries deviation %s", i, rf.f.steps[i].op, *spec.Deviation)
 				}
 			}
+			// The runs with rules off only change the oracle: the keepers
+			// replay the run above step for step, so its trial and
+			// invariant checks are not repeated, and the steps before the
+			// rule step are compared without projections (runFixtureFrom;
+			// the D-15 trace is 1036 steps long).
+			quiet := *rf.f
+			quiet.cfg = &config{governed: rf.f.cfg.governed}
 			for _, off := range []struct {
 				name    string
 				disable []string
@@ -150,7 +157,7 @@ func TestDeviationRulesAreLoadBearing(t *testing.T) {
 				{"every evidence rule but D-3 off", allEvidenceRulesButEpoch, "ok"},
 			} {
 				rec := &recorder{TB: t}
-				run := runFixture(t, rec, rf.f, o, off.disable, nil)
+				run := runFixtureFrom(t, rec, &quiet, o, off.disable, nil, on, rf.at)
 				if run.firstMismatch != rf.at || len(rec.errors) == 0 {
 					t.Fatalf("%s: the first divergence is step %d, want %d", off.name, run.firstMismatch, rf.at)
 				}
@@ -164,8 +171,10 @@ func TestDeviationRulesAreLoadBearing(t *testing.T) {
 	}
 
 	t.Run("evidence D-3", func(t *testing.T) {
+		// The first record expires after the boundary block, so that block
+		// crosses the epoch and nothing else (no evidence D-4).
 		f := newFixture(nil, long)
-		first := f.audit(auditorA, f.item(auditorA, "sl0", 600))
+		first := f.audit(auditorA, f.item(auditorA, "sl0", 2*epochSeconds))
 		next := (startTime/epochSeconds + 1) * epochSeconds
 		crossing := f.block(next)
 		stale := f.auditWith(auditParams{

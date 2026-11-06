@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"google.golang.org/protobuf/proto"
@@ -274,4 +275,65 @@ func (app *App) LeaseForTest(leaseID string) (*leasesv1.Lease, bool) {
 func (app *App) WriteEvidenceRowForTest(key, value []byte) {
 	app.CommitMultiStore().GetKVStore(app.keys[ModuleEvidence]).Set(key, value)
 	app.CommitMultiStore().Commit()
+}
+
+// EvidenceRoundTrip is what EvidenceGenesisRoundTripForTest returns.
+// Committed and Imported map each evidence-store key to its value.
+type EvidenceRoundTrip struct {
+	Exported, Reexported *evidencev1.GenesisState
+	Committed, Imported  map[string][]byte
+	Invariants           error
+}
+
+// EvidenceGenesisRoundTripForTest exports the x/evidence module genesis
+// from the committed state with a context whose block time is unixSeconds
+// (App.Export refuses evidence state: its context has no block time),
+// encodes it with MarshalGenesis and decodes it with ParseGenesis. Then, in
+// a cache branch of the committed state that is never written back, it
+// deletes every evidence-store key, imports the decoded state with
+// InitGenesis at the same block time (validation and the checks against
+// the committed leases), exports the branch again, and runs
+// evidencetest.CheckInvariants on it with the real lease reader. Nothing is
+// written to the committed state.
+func (app *App) EvidenceGenesisRoundTripForTest(unixSeconds int64) (*EvidenceRoundTrip, error) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID(), Time: time.Unix(unixSeconds, 0).UTC()})
+	keeper, lease := app.evidenceReadersForTest()
+	exported, err := keeper.ExportGenesis(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("export: %w", err)
+	}
+	raw, err := evidence.MarshalGenesis(exported)
+	if err != nil {
+		return nil, err
+	}
+	parsed, err := evidence.ParseGenesis(raw)
+	if err != nil {
+		return nil, err
+	}
+	out := &EvidenceRoundTrip{Exported: exported, Committed: app.evidenceRows(ctx)}
+	branch := ctx.WithMultiStore(ctx.MultiStore().CacheMultiStore())
+	store := branch.KVStore(app.keys[ModuleEvidence])
+	for key := range out.Committed {
+		store.Delete([]byte(key))
+	}
+	if err := keeper.InitGenesis(branch, parsed); err != nil {
+		return nil, fmt.Errorf("import: %w", err)
+	}
+	if out.Reexported, err = keeper.ExportGenesis(branch); err != nil {
+		return nil, fmt.Errorf("export of the import: %w", err)
+	}
+	out.Imported = app.evidenceRows(branch)
+	out.Invariants = evidencetest.CheckInvariants(branch, keeper, lease)
+	return out, nil
+}
+
+// evidenceRows reads every evidence-store row through ctx.
+func (app *App) evidenceRows(ctx sdk.Context) map[string][]byte {
+	rows := map[string][]byte{}
+	it := ctx.KVStore(app.keys[ModuleEvidence]).Iterator(nil, nil)
+	defer it.Close()
+	for ; it.Valid(); it.Next() {
+		rows[string(it.Key())] = append([]byte(nil), it.Value()...)
+	}
+	return rows
 }

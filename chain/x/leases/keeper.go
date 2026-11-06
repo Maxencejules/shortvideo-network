@@ -216,9 +216,10 @@ func (k Keeper) BusinessDigest(ctx sdk.Context, id string) ([]byte, bool) {
 }
 
 // Lease returns a copy of one lease in any state, or false when no lease
-// has that id. x/evidence reads it (DEC-010 compares the lease manifest
-// digest; the lease/content binding and the held-lease checks). A stored record that does not decode panics
-// (invariant violation, as every message path treats it).
+// has that id. x/evidence reads it for the DEC-010 comparison with the
+// lease manifest digest, the lease/content binding, and the held-lease
+// checks. A stored record that does not decode panics (invariant
+// violation, as every message path treats it).
 func (k Keeper) Lease(ctx sdk.Context, leaseID string) (*leasesv1.Lease, bool) {
 	return k.mustLoadLease(ctx, leaseID)
 }
