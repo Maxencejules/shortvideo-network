@@ -1,0 +1,8 @@
+COMMAND df -h /
+DATE 2026-11-02T15:28:45Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda        252G   33G  6.0G  85% /
+EXIT:0

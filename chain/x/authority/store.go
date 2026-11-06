@@ -97,6 +97,45 @@ func AdmissionKey(addr []byte) []byte {
 	return append([]byte{admitPrefix}, addr...)
 }
 
+// AdmissionOf reports how the ante admits addr (DR-06-06). An address that
+// is not 20 bytes is NotAdmitted without a read. An address with an
+// admission row (0x02) is AdmittedSubmitter; that read is the only one for
+// a submitter, so a submitter's ante gas is as before. Otherwise the config
+// key (0x01) is read, and an address derived from a council seat key is
+// AdmittedSeat. A missing, undecodable or old-layout config admits no seat.
+//
+// No address is both: genesis validation refuses a seat address in the
+// submitter list, RotateCouncilSeat refuses a new key whose address is a
+// submitter, and RotateServiceSubmitter refuses a seat address. The rotated
+// seat key's address is AdmittedSeat as soon as the config holds it, and
+// the retired key's address is NotAdmitted.
+func AdmissionOf(kv KV, addr []byte) Admission {
+	if len(addr) != 20 {
+		return NotAdmitted
+	}
+	if kv.Has(AdmissionKey(addr)) {
+		return AdmittedSubmitter
+	}
+	cfg, err := readConfig(kv)
+	if err != nil {
+		return NotAdmitted
+	}
+	if seatAt(cfg.GetAuthority().GetDevnetTestSeats(), addr) != nil {
+		return AdmittedSeat
+	}
+	return NotAdmitted
+}
+
+// seatAt is the seat whose key derives addr, or nil.
+func seatAt(seats []*authorityv1.DevnetTestSeat, addr []byte) *authorityv1.DevnetTestSeat {
+	for _, seat := range seats {
+		if bytes.Equal(SeatAddress(seat.GetPublicKey()), addr) {
+			return seat
+		}
+	}
+	return nil
+}
+
 // PendingKey is the store key of one scheduled validator change. It returns
 // nil when the entry has no height or unix activation point; genesis
 // validation and the engine reject such an entry before any write.

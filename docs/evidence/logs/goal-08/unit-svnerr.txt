@@ -1,0 +1,12 @@
+COMMAND env -C chain go test -count=1 -v ./svnerr/...
+DATE 2026-11-02T15:31:07Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+=== RUN   TestErrorRegistryMatchesProto
+--- PASS: TestErrorRegistryMatchesProto (0.00s)
+=== RUN   TestNamedErrorsUseTheirProtoNumbers
+--- PASS: TestNamedErrorsUseTheirProtoNumbers (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	0.004s
+EXIT:0

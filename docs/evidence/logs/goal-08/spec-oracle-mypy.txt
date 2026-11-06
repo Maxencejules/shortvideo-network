@@ -1,0 +1,11 @@
+COMMAND .venv/bin/mypy --strict --cache-dir=/dev/null tests/difftest/spec_oracle.py
+DATE 2026-11-02T17:00:33Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+tests/difftest/spec_oracle.py:71: error: Cannot find implementation or library stub for module named "spec_machine"  [import-not-found]
+tests/difftest/spec_oracle.py:71: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+tests/difftest/spec_oracle.py:604: error: Returning Any from function declared to return "dict[str, Any]"  [no-any-return]
+tests/difftest/spec_oracle.py:637: error: Returning Any from function declared to return "dict[str, Any]"  [no-any-return]
+Found 3 errors in 1 file (checked 1 source file)
+EXIT:1

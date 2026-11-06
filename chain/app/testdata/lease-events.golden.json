@@ -1,0 +1,624 @@
+[
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o1"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c1"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseAccepted",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l1"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c1"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "package_bytes",
+        "value": "4000000"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700001900"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "leases_result",
+    "attributes": [
+      {
+        "key": "idempotent",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o2"
+      },
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "content_id",
+        "value": "c1"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseAccepted",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l2"
+      },
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "content_id",
+        "value": "c1"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "package_bytes",
+        "value": "4000000"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700001900"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o3"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c2"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseAccepted",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l3"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c2"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "package_bytes",
+        "value": "9000000"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700001900"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o4"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c1-enc2"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseAccepted",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l4"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c1-enc2"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "package_bytes",
+        "value": "3000000"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700001900"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseRenewed",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l1"
+      },
+      {
+        "key": "term_version",
+        "value": "2"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700005500"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseEnded",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l2"
+      },
+      {
+        "key": "state",
+        "value": "ENDED"
+      },
+      {
+        "key": "released_bytes",
+        "value": "4000000"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseEnded",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l3"
+      },
+      {
+        "key": "state",
+        "value": "ENDED"
+      },
+      {
+        "key": "released_bytes",
+        "value": "9000000"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o5"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c3"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseAccepted",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l5"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c3"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "package_bytes",
+        "value": "4000000"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700001000"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o6"
+      },
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "content_id",
+        "value": "c3"
+      }
+    ]
+  },
+  {
+    "source": "BeginBlock",
+    "type": "leases_offer_closed",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o6"
+      },
+      {
+        "key": "reason",
+        "value": "EXPIRED"
+      }
+    ]
+  },
+  {
+    "source": "BeginBlock",
+    "type": "svn.events.v1.LeaseEnded",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l5"
+      },
+      {
+        "key": "state",
+        "value": "EXPIRED"
+      },
+      {
+        "key": "released_bytes",
+        "value": "4000000"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o7"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c4"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o8"
+      },
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "content_id",
+        "value": "c4"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "leases_offer_closed",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o7"
+      },
+      {
+        "key": "reason",
+        "value": "WITHDRAWN"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "leases_offer_closed",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o8"
+      },
+      {
+        "key": "reason",
+        "value": "WITHDRAWN"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o9"
+      },
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "content_id",
+        "value": "c2"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseAccepted",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l6"
+      },
+      {
+        "key": "provider_id",
+        "value": "p2"
+      },
+      {
+        "key": "content_id",
+        "value": "c2"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "package_bytes",
+        "value": "9000000"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700002800"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseRenewed",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l6"
+      },
+      {
+        "key": "term_version",
+        "value": "2"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700006400"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o11"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c2"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseAccepted",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l7"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c2"
+      },
+      {
+        "key": "content_version",
+        "value": "1"
+      },
+      {
+        "key": "package_bytes",
+        "value": "9000000"
+      },
+      {
+        "key": "deadline_unix_seconds",
+        "value": "1700002800"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseEnded",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l6"
+      },
+      {
+        "key": "state",
+        "value": "ENDED"
+      },
+      {
+        "key": "released_bytes",
+        "value": "9000000"
+      }
+    ]
+  },
+  {
+    "source": "tx",
+    "type": "svn.events.v1.LeaseOffered",
+    "attributes": [
+      {
+        "key": "offer_id",
+        "value": "o13"
+      },
+      {
+        "key": "provider_id",
+        "value": "p1"
+      },
+      {
+        "key": "content_id",
+        "value": "c3"
+      }
+    ]
+  },
+  {
+    "source": "BeginBlock",
+    "type": "svn.events.v1.LeaseEnded",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l4"
+      },
+      {
+        "key": "state",
+        "value": "EXPIRED"
+      },
+      {
+        "key": "released_bytes",
+        "value": "3000000"
+      }
+    ]
+  },
+  {
+    "source": "BeginBlock",
+    "type": "svn.events.v1.LeaseEnded",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l7"
+      },
+      {
+        "key": "state",
+        "value": "EXPIRED"
+      },
+      {
+        "key": "released_bytes",
+        "value": "9000000"
+      }
+    ]
+  },
+  {
+    "source": "BeginBlock",
+    "type": "svn.events.v1.LeaseEnded",
+    "attributes": [
+      {
+        "key": "lease_id",
+        "value": "l1"
+      },
+      {
+        "key": "state",
+        "value": "EXPIRED"
+      },
+      {
+        "key": "released_bytes",
+        "value": "4000000"
+      }
+    ]
+  }
+]

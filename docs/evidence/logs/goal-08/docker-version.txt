@@ -1,0 +1,15 @@
+COMMAND docker version
+DATE 2026-11-02T16:09:47Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+Client: Docker Engine - Community
+ Version:           29.9.2
+ API version:       1.56
+ Go version:        go1.26.10
+ Git commit:        a82e528
+ Built:             Tue Oct 20 18:44:40 2026
+ OS/Arch:           linux/amd64
+ Context:           default
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+EXIT:1

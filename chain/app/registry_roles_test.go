@@ -3,6 +3,7 @@ package app_test
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,14 +18,16 @@ import (
 
 // TestRegistryMessagesRejectOtherRoles sends each of the six goal 07
 // registry messages from every account that neither holds the handler's role
-// nor owns the object: two council seats (BROADCASTER), a BROADCASTER that is
-// not a seat, the AUTHORITY account, an AUDITOR, the service account (provider
-// messages) and provider-2 (p1's messages and the content messages). Rotate
-// and drain carry a valid inner signature by p1's current key, relayed by the
-// other account; the hosting intent is bound to the sending account. Every
-// row passes the ante and is ERROR_CODE_FORBIDDEN at the handler, with the
-// full non-account state byte-identical and no typed event. A council key
-// therefore reaches no registry handler (DR-06-06, DR-07-11).
+// nor owns the object: two council seats, a BROADCASTER that is not a seat,
+// the AUTHORITY account, an AUDITOR, the service account (provider messages)
+// and provider-2 (p1's messages and the content messages). Rotate and drain
+// carry a valid inner signature by p1's current key, relayed by the other
+// account; the hosting intent is bound to the sending account. Every row is
+// ERROR_CODE_FORBIDDEN with the full non-account state byte-identical and no
+// typed event. A seat account has no submitter row (DR-06-06): the ante
+// refuses the seat rows before the handler, so the seat's sequence does not
+// move either. Every other row passes the ante and is refused by the
+// registry handler. A council key therefore reaches no registry handler.
 func TestRegistryMessagesRejectOtherRoles(t *testing.T) {
 	n := newRegNet()
 	auditor := newSecp("auditor")
@@ -81,13 +84,22 @@ func TestRegistryMessagesRejectOtherRoles(t *testing.T) {
 			},
 			withdrawC1: func() sdk.Msg { return n.withdrawContent(t, who, bid("wc"), "c1", 1, reasonDigest("r")) },
 		}
+		seat := false
+		for _, s := range n.seats {
+			seat = seat || s == who
+		}
 		for _, name := range a.msgs {
 			rows++
 			label := who.name + ": " + name
 			before := chainApp.FullSnapshot()
+			seqBefore, _ := chainApp.AccountSequenceForTest(who.addr)
 			res := n.send(t, c, who, build[name]())
 			wantCode(t, label, res, msgkit.Forbidden)
-			if !anteCommitted(res) {
+			seqAfter, _ := chainApp.AccountSequenceForTest(who.addr)
+			switch {
+			case seat && (anteCommitted(res) || seqAfter != seqBefore || !strings.Contains(res.Log, seatOnlyLog)):
+				t.Fatalf("%s: not refused by the ante seat rule (sequence %d -> %d, log %s)", label, seqBefore, seqAfter, res.Log)
+			case !seat && !anteCommitted(res):
 				t.Fatalf("%s: rejected in the ante handler, not by the registry", label)
 			}
 			unchanged(t, label, chainApp, before, res)
@@ -98,16 +110,19 @@ func TestRegistryMessagesRejectOtherRoles(t *testing.T) {
 	}
 }
 
-// TestSeatAddressIsBroadcasterOnly: a genesis that lists a council seat
-// address as a submitter with any role but BROADCASTER is refused. Both
+// TestSeatAddressIsNotASubmitter: a genesis that lists a council seat
+// address as a submitter with any role, BROADCASTER included, is refused
+// (owner ruling DR-06-06, DR-07-11 option 2). It replaces
+// TestSeatAddressIsBroadcasterOnly, which accepted a BROADCASTER row. Both
 // rules are checked: genesis.Validate on the document (AppStateFromDocument,
 // and InitChain through DocumentFromModules, which runs first), and the
 // authority rule ValidateAuthorityGenesis (InitChain after the document
 // check, and svnd's genesis validation) on module genesis whose authority
-// state alone carries the row. Interim rule for DR-07-11; without it a seat
-// key with an ADMITTED_SERVICE or ADMITTED_PROVIDER row could register
-// content or a provider and approve that provider's admission.
-func TestSeatAddressIsBroadcasterOnly(t *testing.T) {
+// state alone carries the row. The genesis without seat rows passes both
+// rules and boots; on that chain no seat address has an admission row or a
+// role, each seat address has an auth account, and the ante admits it as a
+// seat.
+func TestSeatAddressIsNotASubmitter(t *testing.T) {
 	roles := []struct {
 		doc   string
 		proto typesv1.SubmitterRole
@@ -115,23 +130,15 @@ func TestSeatAddressIsBroadcasterOnly(t *testing.T) {
 		{genesis.RoleAuthority, typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY},
 		{genesis.RoleAdmittedService, typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE},
 		{genesis.RoleAdmittedProvider, typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER},
+		{genesis.RoleBroadcaster, typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER},
 		{genesis.RoleAuditor, typesv1.SubmitterRole_SUBMITTER_ROLE_AUDITOR},
 	}
 	for _, role := range roles {
 		t.Run("document "+role.doc, func(t *testing.T) {
 			n := newRegNet()
-			found := false
-			for i := range n.doc.Submitters {
-				if n.doc.Submitters[i].AddressHex == n.seats[0].hexAddr() {
-					n.doc.Submitters[i].Role = role.doc
-					found = true
-				}
-			}
-			if !found {
-				t.Fatal("seat-1 has no submitter row")
-			}
+			n.doc.Submitters = append(n.doc.Submitters, genesis.Submitter{AddressHex: n.seats[0].hexAddr(), Role: role.doc})
 			_, err := app.AppStateFromDocument(codecFromApp(t, n.doc.ChainID), n.doc)
-			want := "seat seat-1 address is a " + role.doc + " submitter; a seat address may only be BROADCASTER"
+			want := "seat seat-1 address is a " + role.doc + " submitter; a seat address may not be a submitter"
 			if err == nil || err.Error() != want {
 				t.Fatalf("AppStateFromDocument: %v; want %q", err, want)
 			}
@@ -139,38 +146,38 @@ func TestSeatAddressIsBroadcasterOnly(t *testing.T) {
 		t.Run("InitChain "+role.doc, func(t *testing.T) {
 			doc, seats, _ := councilDocument()
 			seatAddr := seats[0].key.PubKey().Address().Bytes()
-			edited := false
 			modules := councilModules(t, doc, func(s *authorityv1.GenesisState) {
-				for _, row := range s.Authority.Submitters {
-					if bytes.Equal(row.Address, seatAddr) {
-						row.Role = role.proto
-						edited = true
-					}
-				}
+				s.Authority.Submitters = append(s.Authority.Submitters, &typesv1.Submitter{Address: seatAddr, Role: role.proto})
 			})
-			if !edited {
-				t.Fatal("seat-1 has no submitter row")
-			}
 			_, err := initChain(t, doc, modules, 1)
-			want := "seat seat-1 address is a " + role.doc + " submitter; a seat address may only be BROADCASTER"
+			want := "seat seat-1 address is a " + role.doc + " submitter; a seat address may not be a submitter"
 			if err == nil || err.Error() != want {
 				t.Fatalf("InitChain: %v; want %q", err, want)
 			}
 			err = app.ValidateAuthorityGenesis(modules, 1, doc.GenesisUnixSeconds)
-			wantAuth := "authority genesis: " + authority.CodeForbidden + `: seat "seat-1" address is a ` + role.proto.String() + " submitter; a seat address may only be BROADCASTER"
+			wantAuth := "authority genesis: " + authority.CodeForbidden + `: seat "seat-1" address is a ` + role.proto.String() + " submitter; a seat address may not be a submitter"
 			if err == nil || err.Error() != wantAuth {
 				t.Fatalf("ValidateAuthorityGenesis: %v; want %q", err, wantAuth)
 			}
 		})
 	}
-	// The BROADCASTER rows of the same genesis pass both rules and boot.
-	doc, _, _ := councilDocument()
+	// The same genesis without seat rows passes both rules and boots.
+	doc, seats, _ := councilDocument()
 	modules := councilModules(t, doc, nil)
 	if err := app.ValidateAuthorityGenesis(modules, 1, doc.GenesisUnixSeconds); err != nil {
-		t.Fatalf("ValidateAuthorityGenesis of the BROADCASTER seat rows: %v", err)
+		t.Fatalf("ValidateAuthorityGenesis without seat rows: %v", err)
 	}
-	if _, err := initChain(t, doc, modules, 1); err != nil {
-		t.Fatalf("InitChain of the BROADCASTER seat rows: %v", err)
+	running := bootModules(t, doc, modules)
+	running.deliver(t, nil)
+	chainApp := running.app
+	for _, seat := range seats {
+		addr := seat.key.PubKey().Address().Bytes()
+		if row, role, admission := chainApp.SeatViewForTest(addr); row || role != typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED || admission != authority.AdmittedSeat {
+			t.Fatalf("seat %s: admission row %v, role %v, admission %v", seat.addr, row, role, admission)
+		}
+		if _, known := chainApp.AccountSequenceForTest(addr); !known {
+			t.Fatalf("seat %s has no auth account", seat.addr)
+		}
 	}
 }
 

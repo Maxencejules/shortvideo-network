@@ -1,0 +1,178 @@
+COMMAND env -C chain go test -count=1 -v ./genesis/...
+DATE 2026-11-02T15:31:00Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+=== RUN   TestBoundsMatchProtocolFile
+--- PASS: TestBoundsMatchProtocolFile (0.00s)
+=== RUN   TestValidFixtureIsAccepted
+--- PASS: TestValidFixtureIsAccepted (0.00s)
+=== RUN   TestDevnetDelayBounds
+=== RUN   TestDevnetDelayBounds/minus_one
+=== RUN   TestDevnetDelayBounds/min_int64
+=== RUN   TestDevnetDelayBounds/unix_max_plus_one
+=== RUN   TestDevnetDelayBounds/max_int64
+=== RUN   TestDevnetDelayBounds/zero
+=== RUN   TestDevnetDelayBounds/one
+=== RUN   TestDevnetDelayBounds/unix_max
+--- PASS: TestDevnetDelayBounds (0.00s)
+    --- PASS: TestDevnetDelayBounds/minus_one (0.00s)
+    --- PASS: TestDevnetDelayBounds/min_int64 (0.00s)
+    --- PASS: TestDevnetDelayBounds/unix_max_plus_one (0.00s)
+    --- PASS: TestDevnetDelayBounds/max_int64 (0.00s)
+    --- PASS: TestDevnetDelayBounds/zero (0.00s)
+    --- PASS: TestDevnetDelayBounds/one (0.00s)
+    --- PASS: TestDevnetDelayBounds/unix_max (0.00s)
+=== RUN   TestValidatorPowerTotalBound
+=== RUN   TestValidatorPowerTotalBound/four_at_2^51,_total_2^53
+=== RUN   TestValidatorPowerTotalBound/four_at_2^51-1,_total_2^53-4
+=== RUN   TestValidatorPowerTotalBound/five,_total_safe_max_plus_four
+=== RUN   TestValidatorPowerTotalBound/five,_total_safe_max_minus_one
+=== RUN   TestValidatorPowerTotalBound/total_exactly_safe_max
+=== RUN   TestValidatorPowerTotalBound/four_at_safe_max
+=== RUN   TestValidatorPowerTotalBound/int64_overflow_is_still_caught_first
+--- PASS: TestValidatorPowerTotalBound (0.05s)
+    --- PASS: TestValidatorPowerTotalBound/four_at_2^51,_total_2^53 (0.00s)
+    --- PASS: TestValidatorPowerTotalBound/four_at_2^51-1,_total_2^53-4 (0.00s)
+    --- PASS: TestValidatorPowerTotalBound/five,_total_safe_max_plus_four (0.00s)
+    --- PASS: TestValidatorPowerTotalBound/five,_total_safe_max_minus_one (0.00s)
+    --- PASS: TestValidatorPowerTotalBound/total_exactly_safe_max (0.04s)
+    --- PASS: TestValidatorPowerTotalBound/four_at_safe_max (0.00s)
+    --- PASS: TestValidatorPowerTotalBound/int64_overflow_is_still_caught_first (0.00s)
+=== RUN   TestValidatorRules
+=== RUN   TestValidatorRules/count_3
+=== RUN   TestValidatorRules/count_0
+=== RUN   TestValidatorRules/duplicate_key
+=== RUN   TestValidatorRules/duplicate_key_in_other_hex_case
+=== RUN   TestValidatorRules/duplicate_node_id
+=== RUN   TestValidatorRules/unequal_power
+=== RUN   TestValidatorRules/zero_power
+=== RUN   TestValidatorRules/negative_power
+=== RUN   TestValidatorRules/node_id_pattern
+=== RUN   TestValidatorRules/short_key
+=== RUN   TestValidatorRules/non-hex_key
+--- PASS: TestValidatorRules (0.00s)
+    --- PASS: TestValidatorRules/count_3 (0.00s)
+    --- PASS: TestValidatorRules/count_0 (0.00s)
+    --- PASS: TestValidatorRules/duplicate_key (0.00s)
+    --- PASS: TestValidatorRules/duplicate_key_in_other_hex_case (0.00s)
+    --- PASS: TestValidatorRules/duplicate_node_id (0.00s)
+    --- PASS: TestValidatorRules/unequal_power (0.00s)
+    --- PASS: TestValidatorRules/zero_power (0.00s)
+    --- PASS: TestValidatorRules/negative_power (0.00s)
+    --- PASS: TestValidatorRules/node_id_pattern (0.00s)
+    --- PASS: TestValidatorRules/short_key (0.00s)
+    --- PASS: TestValidatorRules/non-hex_key (0.00s)
+=== RUN   TestPrivateMaterialRejected
+--- PASS: TestPrivateMaterialRejected (0.00s)
+=== RUN   TestParseRejectsTrailingData
+=== RUN   TestParseRejectsTrailingData/second_object
+=== RUN   TestParseRejectsTrailingData/second_document
+=== RUN   TestParseRejectsTrailingData/number
+=== RUN   TestParseRejectsTrailingData/stray_bracket
+--- PASS: TestParseRejectsTrailingData (0.00s)
+    --- PASS: TestParseRejectsTrailingData/second_object (0.00s)
+    --- PASS: TestParseRejectsTrailingData/second_document (0.00s)
+    --- PASS: TestParseRejectsTrailingData/number (0.00s)
+    --- PASS: TestParseRejectsTrailingData/stray_bracket (0.00s)
+=== RUN   TestSeatAddressIsNotASubmitter
+=== RUN   TestSeatAddressIsNotASubmitter/broadcaster_that_is_not_a_seat
+=== RUN   TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-1
+=== RUN   TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-1_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-2
+=== RUN   TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-2_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-3
+=== RUN   TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-3_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-4
+=== RUN   TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-4_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-1
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-1_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-2
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-2_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-3
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-3_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-4
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-4_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-1
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-1_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-2
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-2_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-3
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-3_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-4
+=== RUN   TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-4_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-1
+=== RUN   TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-1_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-2
+=== RUN   TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-2_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-3
+=== RUN   TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-3_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-4
+=== RUN   TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-4_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-1
+=== RUN   TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-1_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-2
+=== RUN   TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-2_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-3
+=== RUN   TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-3_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-4
+=== RUN   TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-4_upper-case_address
+=== RUN   TestSeatAddressIsNotASubmitter/broadcaster_row_for_every_seat
+=== RUN   TestSeatAddressIsNotASubmitter/flag_off,_AUTHORITY
+=== RUN   TestSeatAddressIsNotASubmitter/flag_off,_ADMITTED_SERVICE
+=== RUN   TestSeatAddressIsNotASubmitter/flag_off,_ADMITTED_PROVIDER
+=== RUN   TestSeatAddressIsNotASubmitter/flag_off,_BROADCASTER
+=== RUN   TestSeatAddressIsNotASubmitter/flag_off,_AUDITOR
+=== RUN   TestSeatAddressIsNotASubmitter/flag_off,_malformed_seat_key
+--- PASS: TestSeatAddressIsNotASubmitter (0.01s)
+    --- PASS: TestSeatAddressIsNotASubmitter/broadcaster_that_is_not_a_seat (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-1 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-1_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-2 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-2_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-3 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-3_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-4 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUTHORITY_at_seat-4_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-1 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-1_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-2 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-2_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-3 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-3_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-4 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_SERVICE_at_seat-4_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-1 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-1_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-2 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-2_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-3 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-3_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-4 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/ADMITTED_PROVIDER_at_seat-4_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-1 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-1_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-2 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-2_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-3 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-3_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-4 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/BROADCASTER_at_seat-4_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-1 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-1_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-2 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-2_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-3 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-3_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-4 (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/AUDITOR_at_seat-4_upper-case_address (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/broadcaster_row_for_every_seat (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/flag_off,_AUTHORITY (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/flag_off,_ADMITTED_SERVICE (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/flag_off,_ADMITTED_PROVIDER (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/flag_off,_BROADCASTER (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/flag_off,_AUDITOR (0.00s)
+    --- PASS: TestSeatAddressIsNotASubmitter/flag_off,_malformed_seat_key (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	0.076s
+EXIT:0

@@ -50,9 +50,13 @@ the codespace is not. A client that keys on `svn/2` does not see this rejection 
 - New obligations need `ADMITTED`. `CheckNewObligation` returns `ERROR_CODE_FORBIDDEN` for `APPLIED`, `DRAINING`, and
   `DISABLED`, and `ERROR_CODE_NOT_FOUND` for an unknown id. Goal 08 calls it from offer and accept.
 - Drain and disablement release nothing. Reserved bytes stay until each existing obligation ends by its own legal
-  transition (provider or authority end, or committed expiry). Goal 08 owns those transitions.
-- The v0 spec lets `RenewLease` proceed for a `DRAINING` or `DISABLED` provider. Whether renewals should stop after
-  disablement is decision request DR-07-05 for goal 08.
+  transition (provider or authority end, or committed expiry). Those transitions are x/leases (goal 08); each calls
+  `Release` once for the lease's bytes. `Reserve` and `Release` have no state check, so the accounting works for a
+  `DRAINING` or `DISABLED` provider as for an `ADMITTED` one.
+- The v0 spec lets `RenewLease` proceed for a `DRAINING` or `DISABLED` provider. Goal 07 handed that question
+  (DR-07-05) to goal 08; it is now decision request DR-08-01. x/leases implements the v0 rule (renewal allowed) as the
+  interim, reversible choice; the remedy for a disabled provider's lease is `EndLease` with `authority_end`. This
+  package has no renewal path: a renewal changes no provider field.
 - History stays: the record, its retired keys, past events, and past transactions remain.
 - `DISABLED` is terminal. A disabled provider cannot be admitted or drained again.
 
@@ -247,7 +251,42 @@ it looks for a step in that case.
   the current key only. Only the current key verifies. The current key may be a key the provider retired earlier
   and then rotated back to: the v0 spec allows that (rotation compares the new key with the current key only), and
   that key then verifies again.
-- Reserve and release accounting is goal 08 and extends this package.
+- `ReserveProbe(ctx, id, amount) msgkit.Code`: `reserve_probe` (spec_machine.py:677), the capacity check of
+  `op_offer`. It never writes.
+- `Reserve(ctx, id, amount) msgkit.Code`: `reserve` (:286), the same checks, then `reserved_bytes += amount`.
+- `Release(ctx, id, amount) msgkit.Code`: `release` (:296), `reserved_bytes -= amount`.
+
+The three accounting calls check, in order:
+
+| Call | Checks | Effect on success |
+| --- | --- | --- |
+| `ReserveProbe` | amount 0 `MALFORMED`; no record `NOT_FOUND`; `amount > 2^64-1 - reserved_bytes` `OVERFLOW`; `reserved_bytes + amount > admitted_capacity_bytes` `CAPACITY` | none |
+| `Reserve` | as `ReserveProbe` | `reserved_bytes += amount` |
+| `Release` | amount 0 `MALFORMED`; no record `NOT_FOUND`; `amount > reserved_bytes` `UNDERFLOW` | `reserved_bytes -= amount` |
+
+- The overflow check comes before the capacity check, as in the spec, and is written so it never wraps.
+- Amount 0 is a chain-only guard: the spec's `reserve` and `release` accept 0. x/leases never asks for 0 (a lease holds
+  at least one byte), so a 0 is a wiring error.
+- An id outside the id pattern has no record (`NOT_FOUND`) and costs no store read.
+- There is no provider-state check: the calls work in `APPLIED`, `ADMITTED`, `DRAINING`, and `DISABLED`.
+  `CheckNewObligation` is the state check of a new obligation (x/leases offer and accept); the accounting calls do
+  not repeat it.
+- A non-OK code writes nothing. Success rewrites the provider record with only `reserved_bytes` changed; no retired-key
+  row, business id, or other record is touched, and no event is emitted (the lease event carries the bytes). The
+  record has a constant size, so the write costs the same however many times the provider rotated.
+- A stored record that does not decode panics, as in every handoff read (`mustLoad`); the SDK fails the transaction on
+  every node alike.
+- `UpdateProvider` keeps refusing a capacity below `reserved_bytes` (`CAPACITY`), so `reserved_bytes <=
+  admitted_capacity_bytes` holds after every successful message, hook, and accounting call.
+
+Tests: `TestReserveReleaseAccounting` (exact boundaries of each code in every state; a reject or a probe leaves every
+store byte-identical and emits nothing; a success changes only `reserved_bytes`; queries and export see the new
+value), `TestReserveWritesConstantSize` (after 300 rotations instead of 2, Reserve still writes one key, the record is at most
+2 bytes longer, and each call's gas differs by exactly the per-byte store cost of those bytes),
+`FuzzReserveRelease` (bounded sequences of the three calls, `UpdateProvider`, and the council hooks against an
+independent accounting model written with `math/bits` carries; a reject leaves every store byte-identical),
+`TestAccountingFuzzSeedsReachEveryOutcome` (the seeds reach every code and a success in every state), and
+`TestAccountingHarnessCatchesMutants` (the fuzz checks catch five broken accounting calls).
 
 ## Capability manifest (`capability/`)
 
@@ -332,6 +371,7 @@ person or a host by anyone who holds the preimage. Hashing is not anonymization.
   paths in the node is a follow-up.
 - A provider signing key equal to another provider's key, a council key, or a consensus key is not rejected (DR-07-06).
 - A stored record that does not decode, that names another id than its key, or that carries retired keys inline is
-  an invariant violation. Message paths and council hooks panic on it and the SDK fails the transaction; queries and
-  export return an error (`TestCorruptStoredRecord`). A retired-key row that is missing, extra, out of order, or does
+  an invariant violation. Message paths, council hooks, and the lease handoff calls (`Provider`, `ReserveProbe`,
+  `Reserve`, `Release`) panic on it and the SDK fails the transaction; queries and export return an error
+  (`TestCorruptStoredRecord`). A retired-key row that is missing, extra, out of order, or does
   not decode makes queries and export return an error (`TestRetiredKeyRowsAreTheHistory`).

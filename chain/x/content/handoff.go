@@ -73,6 +73,22 @@ func (k Keeper) CheckOfferable(ctx sdk.Context, contentID string, version uint64
 	return msgkit.OK
 }
 
+// CheckPackage compares a lease's committed package with the record of
+// (contentID, version) in any state, WITHDRAWN included: no such record
+// (any id outside the id pattern included) is NOT_FOUND; a manifest digest
+// or byte count that differs from the record is INTEGRITY. x/leases
+// InitGenesis uses it for every imported lease (invariant I9).
+func (k Keeper) CheckPackage(ctx sdk.Context, contentID string, version uint64, manifestSHA256 []byte, packageBytes uint64) msgkit.Code {
+	record, found := k.content(ctx, contentID, version)
+	if !found {
+		return msgkit.NotFound
+	}
+	if !bytes.Equal(record.GetManifestDigest().GetValue(), manifestSHA256) || record.GetPackageBytes() != packageBytes {
+		return msgkit.Integrity
+	}
+	return msgkit.OK
+}
+
 // CheckNotWithdrawn is the content check of op_accept and op_renew: an
 // absent id is NOT_FOUND and a WITHDRAWN record is WITHDRAWN.
 func (k Keeper) CheckNotWithdrawn(ctx sdk.Context, contentID string) msgkit.Code {

@@ -172,12 +172,7 @@ func (s *State) council() Outcome {
 }
 
 func (s *State) seatOf(signer []byte) *authorityv1.DevnetTestSeat {
-	for _, seat := range s.auth().GetDevnetTestSeats() {
-		if bytes.Equal(SeatAddress(seat.GetPublicKey()), signer) {
-			return seat
-		}
-	}
-	return nil
+	return seatAt(s.auth().GetDevnetTestSeats(), signer)
 }
 
 func (s *State) role(signer []byte) typesv1.SubmitterRole {
@@ -836,11 +831,12 @@ func (s *State) ApplyDue() (before []*authorityv1.ValidatorPower, changed bool, 
 // keys or provider signing keys. There is no single-signature message for
 // it; it is engine-only. The old key is retired (0x15) and cannot return.
 //
-// A seat account passes the ante only through a submitter row (DR-06-06).
-// When the old seat address has one, the rotation moves that row and its
-// admission row (0x02) to the new seat address in the same batch, so the
-// retired key is no longer admitted and the new key is. A new address that
-// is already a submitter is DUPLICATE_ID.
+// A seat account is admitted from the seat list in the config, not from a
+// submitter row (DR-06-06). The rotation writes the new key into the config,
+// so the new key's account is admitted and the retired key's account is not
+// (AdmissionOf). It writes no submitter row and no admission row. A new key
+// whose address is a submitter is DUPLICATE_ID: a seat address is never a
+// submitter.
 func (s *State) RotateCouncilSeat(seatID string, newPub []byte) Outcome {
 	if !idPattern.MatchString(seatID) || len(newPub) != 32 {
 		return fail(CodeBounds)
@@ -862,21 +858,11 @@ func (s *State) RotateCouncilSeat(seatID string, newPub []byte) Outcome {
 	if bytes.Equal(seat.GetPublicKey(), newPub) || s.kv.Has(retiredCouncilKey(newPub)) {
 		return fail(CodeConflict)
 	}
+	if s.role(SeatAddress(newPub)) != typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
+		return fail(CodeDuplicate)
+	}
 	old := bytes.Clone(seat.GetPublicKey())
-	oldAddr, newAddr := SeatAddress(old), SeatAddress(newPub)
-	var moved *typesv1.Submitter
-	for _, row := range cfg.GetAuthority().GetSubmitters() {
-		if bytes.Equal(row.GetAddress(), newAddr) {
-			return fail(CodeDuplicate)
-		}
-		if bytes.Equal(row.GetAddress(), oldAddr) {
-			moved = row
-		}
-	}
 	seat.PublicKey = bytes.Clone(newPub)
-	if moved != nil {
-		moved.Address = bytes.Clone(newAddr)
-	}
 	raw, err := marshalState(cfg)
 	if err != nil {
 		return fail(CodeIntegrity)
@@ -884,10 +870,6 @@ func (s *State) RotateCouncilSeat(seatID string, newPub []byte) Outcome {
 	var b batch
 	b.set([]byte{configKey}, raw)
 	b.set(retiredCouncilKey(old), []byte(seatID))
-	if moved != nil {
-		b.del(AdmissionKey(oldAddr))
-		b.set(AdmissionKey(newAddr), []byte{byte(moved.GetRole())})
-	}
 	s.flush(&b)
 	s.config = cfg
 	return ok()
@@ -895,10 +877,15 @@ func (s *State) RotateCouncilSeat(seatID string, newPub []byte) Outcome {
 
 // RotateServiceSubmitter replaces an admitted service account and its ante
 // admission row. It is engine-only. The old address is retired (0x16); it is
-// not a consensus key.
+// not a consensus key. A new address that is a submitter or the account of a
+// council seat key is DUPLICATE_ID: a seat address is never a submitter
+// (DR-06-06).
 func (s *State) RotateServiceSubmitter(oldAddr, newAddr []byte) Outcome {
 	if len(oldAddr) != 20 || len(newAddr) != 20 || bytes.Equal(oldAddr, newAddr) {
 		return fail(CodeBounds)
+	}
+	if s.seatOf(newAddr) != nil {
+		return fail(CodeDuplicate)
 	}
 	cfg := proto.Clone(s.config).(*authorityv1.GenesisState)
 	var found *typesv1.Submitter

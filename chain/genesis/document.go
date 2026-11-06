@@ -440,15 +440,18 @@ func SeatAddress(pub []byte) []byte {
 }
 
 // validateSeatRoles fails closed when a council seat address is listed as a
-// submitter with any role other than BROADCASTER. The submitter row is how a
-// seat key passes the ante, and every other role names another key class
+// submitter with any role. The ante admits a seat account from the seat list
+// in the authority config, not from a submitter row, and lets it sign only
+// council messages (DR-06-06). A row would give a council key a submitter
+// role beside its seat, and every role names another key class
 // (REQ-SEC-002) with its own handlers: AUTHORITY executes council proposals,
 // ADMITTED_SERVICE registers and withdraws content, ADMITTED_PROVIDER
-// registers a provider. A seat with no submitter row is allowed; it cannot
-// send a transaction. Spec validate_genesis_view has no such rule: this is
-// the interim answer to decision request DR-07-11 (with DR-06-06).
-// Submitters are already well formed when it runs. validateDevnet checks the
-// seats only when the devnet flag is set, so the keys are decoded here.
+// registers a provider, BROADCASTER relays lease messages, and AUDITOR is
+// the Goal 09 evidence role. Spec validate_genesis_view has no such rule.
+// Owner ruling DR-06-06 (2026-11-02) replaces the BROADCASTER-only rule of
+// DR-07-11 with its option 2. Submitters are already well formed when it
+// runs. validateDevnet checks the seats only when the devnet flag is set,
+// so the keys are decoded here.
 func validateSeatRoles(seats []DevnetTestSeat, rows []Submitter) error {
 	for _, seat := range seats {
 		raw, err := hex.DecodeString(seat.PublicKeyHex)
@@ -457,8 +460,8 @@ func validateSeatRoles(seats []DevnetTestSeat, rows []Submitter) error {
 		}
 		addr := hex.EncodeToString(SeatAddress(raw))
 		for _, row := range rows {
-			if strings.ToLower(row.AddressHex) == addr && row.Role != RoleBroadcaster {
-				return fmt.Errorf("seat %s address is a %s submitter; a seat address may only be %s", seat.SeatID, row.Role, RoleBroadcaster)
+			if strings.ToLower(row.AddressHex) == addr {
+				return fmt.Errorf("seat %s address is a %s submitter; a seat address may not be a submitter", seat.SeatID, row.Role)
 			}
 		}
 	}

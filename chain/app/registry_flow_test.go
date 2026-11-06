@@ -17,8 +17,10 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest"
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
+	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
+	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
@@ -385,19 +387,20 @@ func TestGenesisRoundTripFromCommittedState(t *testing.T) {
 }
 
 // TestLaunchGenesisRejectsNonEmptyCatalog: the app's InitChain refuses a
-// genesis whose provider or content catalogue is not empty, here the
-// registry modules' own export once a provider or content record exists.
-// This is the goal 05 launch rule, stricter than protocol v0 for providers;
-// the app-level export/import round trip is BLOCKED on DR-07-02 and
-// DR-07-03. The InitChain input is the original genesis document's module
-// map with the exported providers or content substituted: App.Export
-// refuses after council messages (DR-06-01), so authority state cannot be
-// exported.
+// genesis whose provider, content, lease offer, or lease catalogue is not
+// empty, here the registry and lease modules' own export once such a record
+// exists. This is the goal 05 launch rule, stricter than protocol v0 for
+// providers; the app-level export/import round trip is BLOCKED on DR-07-02,
+// DR-07-03, and DR-08-06. The export comes from the lease flow (Goal 08),
+// which holds providers, content, leases, and an open offer. The InitChain
+// input is the original genesis document's module map with the exported
+// catalogue substituted: App.Export refuses after council messages
+// (DR-06-01), so authority state cannot be exported.
 func TestLaunchGenesisRejectsNonEmptyCatalog(t *testing.T) {
 	n := newRegNet()
 	c := n.start(t, 1)
-	runRegistryFlow(t, n, c)
-	exported, err := c.app().ExportModulesForTest(app.ModuleProviders, app.ModuleContent)
+	runLeaseFlow(t, n, c)
+	exported, err := c.app().ExportModulesForTest(app.ModuleProviders, app.ModuleContent, app.ModuleLeases)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -413,12 +416,23 @@ func TestLaunchGenesisRejectsNonEmptyCatalog(t *testing.T) {
 			raw, err = providers.MarshalGenesis(&providersv1.GenesisState{})
 		case app.ModuleContent:
 			raw, err = content.MarshalGenesis(&contentv1.GenesisState{})
+		case app.ModuleLeases:
+			raw, err = leases.MarshalGenesis(&leasesv1.GenesisState{})
 		}
 		if err != nil {
 			t.Fatal(err)
 		}
 		return raw
 	}
+	leaseState, err := leases.ParseGenesis(exported[app.ModuleLeases])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(leaseState.GetOffers()) == 0 || len(leaseState.GetLeases()) == 0 {
+		t.Fatalf("the lease flow exported %d offers and %d leases", len(leaseState.GetOffers()), len(leaseState.GetLeases()))
+	}
+	onlyLeases := &leasesv1.GenesisState{Leases: leaseState.GetLeases()}
+	onlyOffers := &leasesv1.GenesisState{Offers: leaseState.GetOffers()}
 	initChain := func(modules map[string]json.RawMessage) error {
 		fresh := newTestApp(t, n.doc.ChainID, nil)
 		params := consensusParams()
@@ -432,24 +446,39 @@ func TestLaunchGenesisRejectsNonEmptyCatalog(t *testing.T) {
 		})
 		return err
 	}
-	with := func(providersRaw, contentRaw json.RawMessage) map[string]json.RawMessage {
+	with := func(providersRaw, contentRaw, leasesRaw json.RawMessage) map[string]json.RawMessage {
 		out := map[string]json.RawMessage{}
 		for k, v := range original {
 			out[k] = v
 		}
 		out[app.ModuleProviders] = providersRaw
 		out[app.ModuleContent] = contentRaw
+		out[app.ModuleLeases] = leasesRaw
 		return out
 	}
-	if err := initChain(with(exported[app.ModuleProviders], empty(app.ModuleContent))); err == nil {
+	marshal := func(state *leasesv1.GenesisState) json.RawMessage {
+		raw, err := leases.MarshalGenesis(state)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return raw
+	}
+	noLeases := empty(app.ModuleLeases)
+	if err := initChain(with(exported[app.ModuleProviders], empty(app.ModuleContent), noLeases)); err == nil {
 		t.Fatal("InitChain accepted a non-empty provider catalogue")
 	}
-	if err := initChain(with(empty(app.ModuleProviders), exported[app.ModuleContent])); err == nil {
+	if err := initChain(with(empty(app.ModuleProviders), exported[app.ModuleContent], noLeases)); err == nil {
 		t.Fatal("InitChain accepted a non-empty content catalogue")
 	}
+	if err := initChain(with(empty(app.ModuleProviders), empty(app.ModuleContent), marshal(onlyLeases))); err == nil {
+		t.Fatal("InitChain accepted leases")
+	}
+	if err := initChain(with(empty(app.ModuleProviders), empty(app.ModuleContent), marshal(onlyOffers))); err == nil {
+		t.Fatal("InitChain accepted lease offers")
+	}
 	// The same genesis with an empty catalogue starts: the catalogue is the
-	// only reason for the two rejections above.
-	if err := initChain(with(empty(app.ModuleProviders), empty(app.ModuleContent))); err != nil {
+	// only reason for the rejections above.
+	if err := initChain(with(empty(app.ModuleProviders), empty(app.ModuleContent), noLeases)); err != nil {
 		t.Fatalf("exported state with an empty catalogue: %v", err)
 	}
 }

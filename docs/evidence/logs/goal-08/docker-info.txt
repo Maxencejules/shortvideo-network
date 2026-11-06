@@ -1,0 +1,20 @@
+COMMAND docker info
+DATE 2026-11-02T16:09:47Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+Client: Docker Engine - Community
+ Version:    29.9.2
+ Context:    default
+ Debug Mode: false
+ Plugins:
+  buildx: Docker Buildx (Docker Inc.)
+    Version:  v0.38.1
+    Path:     /usr/libexec/docker/cli-plugins/docker-buildx
+  compose: Docker Compose (Docker Inc.)
+    Version:  v5.6.1
+    Path:     /usr/libexec/docker/cli-plugins/docker-compose
+
+Server:
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+EXIT:1

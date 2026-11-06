@@ -531,10 +531,10 @@ func TestQuorumModelVectors(t *testing.T) {
 }
 
 // TestDevnetKeysAreDistinct (REQ-SEC-002) starts no process. Every key file
-// Init writes is distinct: four consensus keys, four p2p node keys, the five
-// account keys (authority, service, service-2, provider-1, provider-2), and
-// four council seat keys. The public keys and addresses of the roles do not
-// overlap.
+// Init writes is distinct: four consensus keys, four p2p node keys, the six
+// account keys (authority, service, service-2, provider-1, provider-2,
+// broadcaster), and four council seat keys. The public keys and addresses of
+// the roles do not overlap.
 func TestDevnetKeysAreDistinct(t *testing.T) {
 	home := t.TempDir()
 	layout, err := devnet.Init(devnet.Options{Home: home})
@@ -590,7 +590,7 @@ func TestDevnetKeysAreDistinct(t *testing.T) {
 	for _, seat := range layout.Topology.Seats {
 		signers = append(signers, loadEd(t, home, seat.SeatID))
 	}
-	if len(layout.Topology.Accounts) != 5 || len(signers) != 9 {
+	if len(layout.Topology.Accounts) != 6 || len(signers) != 10 {
 		t.Fatalf("%d accounts, %d account and seat keys", len(layout.Topology.Accounts), len(signers))
 	}
 	for _, signer := range signers {
@@ -598,7 +598,61 @@ func TestDevnetKeysAreDistinct(t *testing.T) {
 		note(public, signer.key.PubKey().Bytes(), signer.name)
 		note(public, signer.key.PubKey().Address(), signer.name+" address")
 	}
-	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+9 {
+	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+10 {
 		t.Fatalf("%d validators, %d distinct private keys", len(layout.Topology.Validators), len(private))
+	}
+}
+
+// TestDevnetSeatsHaveNoSubmitterRow (DR-06-06) starts no process. The devnet
+// genesis lists the six application accounts as submitters and no council
+// seat address; the authority module genesis has no submitter at a seat
+// address; and the auth genesis has one account per submitter and one per
+// seat, ten in all, so the seat keys can sign council messages.
+func TestDevnetSeatsHaveNoSubmitterRow(t *testing.T) {
+	home := t.TempDir()
+	layout, err := devnet.Init(devnet.Options{Home: home})
+	if err != nil {
+		t.Fatal(err)
+	}
+	genDoc, err := cmttypes.GenesisDocFromFile(layout.Genesis)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var modules map[string]json.RawMessage
+	if err := json.Unmarshal(genDoc.AppState, &modules); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := app.DocumentFromModules(modules)
+	if err != nil {
+		t.Fatal(err)
+	}
+	submitters := map[string]string{}
+	for _, row := range doc.Submitters {
+		submitters[strings.ToLower(row.AddressHex)] = row.Role
+	}
+	if len(submitters) != len(layout.Topology.Accounts) || len(submitters) != 6 {
+		t.Fatalf("%d submitters for %d accounts", len(submitters), len(layout.Topology.Accounts))
+	}
+	for _, account := range layout.Topology.Accounts {
+		addr := loadSecp(t, home, account.Name).addr
+		if submitters[addr] != account.Role {
+			t.Fatalf("%s: submitter role %q, want %q", account.Name, submitters[addr], account.Role)
+		}
+	}
+	numbers := genesisAccountNumbers(t, mustEncoding(t), layout.Genesis)
+	if len(numbers) != 10 || len(layout.Topology.Seats) != 4 || len(doc.DevnetTestSeats) != 4 {
+		t.Fatalf("%d auth accounts, %d topology seats, %d genesis seats", len(numbers), len(layout.Topology.Seats), len(doc.DevnetTestSeats))
+	}
+	for _, seat := range layout.Topology.Seats {
+		addr := loadEd(t, home, seat.SeatID).addr
+		if role, listed := submitters[addr]; listed {
+			t.Fatalf("%s address is a %s submitter", seat.SeatID, role)
+		}
+		if _, ok := numbers[addr]; !ok {
+			t.Fatalf("%s has no auth account", seat.SeatID)
+		}
+	}
+	if err := app.ValidateAuthorityGenesis(modules, 1, doc.GenesisUnixSeconds); err != nil {
+		t.Fatal(err)
 	}
 }

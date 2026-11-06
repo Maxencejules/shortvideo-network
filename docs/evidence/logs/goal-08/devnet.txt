@@ -1,0 +1,542 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh go test -count=1 -v -timeout 30m ./chain/devnet/
+DATE 2026-11-02T15:41:06Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+=== RUN   TestInitPowerDefaultIsOne
+--- PASS: TestInitPowerDefaultIsOne (0.02s)
+=== RUN   TestInitPowerRejects
+--- PASS: TestInitPowerRejects (0.00s)
+=== RUN   TestInitPowerTopology
+--- PASS: TestInitPowerTopology (0.05s)
+=== RUN   TestDevnetLeaseLifecycle
+label=single-machine four-process devnet (not independent operators)
+phase=start height=3 chain_id=shortvideo-dev-b711c29cbc2420db accounts=6
+phase=register-p1 height=5 code=0 txhash=42016707542A7AAA2BF91A0F6775F8054E672DB2A1584AEAFE878E08364AB633
+phase=register-p2 height=7 code=0 txhash=97168BE6F43CB9D7DB1ABB396E7906C4B5F9F1C081ED8963627E0D1559C377E2
+phase=register-p3 height=8 code=0 txhash=ED20F81414F80077216394C5180EECE0DCD4C3DDBE5AEF42D6FC135D3CA32909
+phase=admit-p1-propose height=9 code=0 txhash=964383D2AA46435BC37E8766EE4A976662CAA9BCFB05E1731FA612F12E84242D
+phase=admit-p1-approve-1 height=11 code=0 txhash=8C6627B968578127B7911BF410C40D47B1F44932D47467607D68472F93A2D817
+phase=admit-p1-approve-2 height=12 code=0 txhash=BDC67844C69CC4A85932C12C0204D479ECEEC2B72C4ABEEF0EE0E232E04148E3
+phase=admit-p1-approve-3 height=14 code=0 txhash=B44CE1EF81E27014A83ADF8CA7A5681DC5DD6D77628360604912A97AB58E61FD
+phase=admit-p1 height=15 code=0 txhash=26E19B4F5096CC29207A4D5991825EEFE7E689DBAB1BA5724CA16A7C8FC00DC4 policy_version=2
+phase=admit-p2-propose height=16 code=0 txhash=DF8E1E3B23B08041C90790FA336DB568C5BC7982376E794E590DFDEEBEA35905
+phase=admit-p2-approve-1 height=17 code=0 txhash=B943EE6E2BE57E98B23A5312DA901CBB3D8D3B2042760442006334AC506C0D06
+phase=admit-p2-approve-2 height=18 code=0 txhash=6DC01B6901CB36605AC7A945007B611469AF2F103A0FB96E634081FC83848F7C
+phase=admit-p2-approve-3 height=19 code=0 txhash=056C7D300E5A2E89782D019B6EDBE9AC0229B258C612253C05CA827E545C1B85
+phase=admit-p2 height=20 code=0 txhash=644CBACF2B11048EC77463E9047B1E10316DE995C241410677530C7CED360DA1 policy_version=3
+phase=admit-p3-propose height=21 code=0 txhash=46966A0E3F8252636F0A121FFEB5B19E2114215D1CC37B7DDE4B1DF07B6BBFB3
+phase=admit-p3-approve-1 height=23 code=0 txhash=5C52ECD0E5A5DD32D008E6603224BF8314A39236E7E0C96A868F2A5CF0CEB2D6
+phase=admit-p3-approve-2 height=24 code=0 txhash=A968D3476B57EBA6C32DB845B78842EE701789A8E29DE20D97D4DB4173130926
+phase=admit-p3-approve-3 height=26 code=0 txhash=6B0A038859060569876652EBDCEF9B8828AC878F16C24B22A6A379317C99C525
+phase=admit-p3 height=28 code=0 txhash=D48DF5AD95E613590AEA542161CDFE706FB907D03D6B50F1BA267890E26621AC policy_version=4
+phase=register-contents height=30 code=0 messages=6 gas_used=459697 txhash=4C36D293073219D514DD9BB7FD0BB01392FE8A61D23738816CA88098AF8C89C4
+phase=offers-p3 height=32 code=0 messages=2 gas_used=226726 txhash=D9177C0A1D4DCF337FA77937B7C69E7245B8E0FE70190053210CE797C6FBC49E
+phase=accept-big height=34 code=0 txhash=054A49D360C27CA01CE7948CC4597136E88A81DCF7DED31E248E09EF9F7FDFF7
+phase=ack-vs-commit txhash=F52948ED5D1B21C90C1D1E4F7662DB1DFAA0DFFE47B27401DD7A71B15BD9E54A ack=0 committed=svn/13 height=36 p3_reserved=9000000
+phase=offer-oa height=38 code=0 txhash=E99C2AAD907AAEAC00DC2D31FBC0196802005B4B2CEA1CFBDFC2C051DF9DC6EE
+phase=timeout-retry first=B3F1BD12166C973D4E2C2BC23F68164F43437C91C2423E7DC86C109402C63D8B height=40 events=[svn.events.v1.LeaseAccepted] retry=3DD7D040EBFA4BA8FFB2BE52EC8908D215E05D08CBC616747A7F7417380C3DAC height=40 events=[leases_result] p1_reserved=4000000 leases=1
+phase=reject name=changed-payload-same-business-id height=42 codespace=svn code=3 (ERROR_CODE_REPLAY) included=true txhash=E4635AD328C88A098915457D603AEC816D657A1B33FB6894D5CB58FAE6904EA8
+phase=seat-relay-refused seat=seat-1 checktx=svn/2
+phase=node-down node=v4 broadcast_error="post failed: Post \"http://127.0.0.1:26957\": dial tcp 127.0.0.1:26957: connect: connection refused"
+phase=node-down-retry node=v1 height=44 code=0 events=[svn.events.v1.LeaseRenewed] txhash=D9D4B0869C66B8BA891E25EC10A9D5BC35F343392476B3357130A19994D39649
+phase=node-down-rebroadcast check_tx=sdk/32 broadcast="mempool ErrTxInCache" original_height=44 included_again=false
+phase=node-restart node=v4 common_height=46 queries_equal_v1=true
+phase=renew-retry height=47 code=0 events=[leases_result]
+phase=reject name=stale-renewal height=48 codespace=svn code=5 (ERROR_CODE_STALE_VERSION) included=true txhash=DF91B8C043CDBA733A59E3146FD13079AD3BB62AB5126FA543B4A7A72F55E379
+phase=reject name=renewal-other-bytes height=50 codespace=svn code=14 (ERROR_CODE_CONFLICT) included=true txhash=99CAE36EF4CCBB27F17269BFCB06C84D3788504D6FC62EFFF9CBCED46832EFCA
+phase=offers-phase-5 height=51 code=0 messages=4 gas_used=424120 txhash=195E67F359AE4CCBBCB9192B13D7F76BD12E1ED5534A2F31F72A83D94611366D
+phase=accepts-phase-5 height=52 code=0 messages=3 gas_used=336135 txhash=2703794129F7948DA1B1846AF670924E8DA42937C9F210B715AE90165AF137CA
+phase=provider-end-lb height=54 code=0 txhash=D77CE56F62D1338BC7C50DECED9A5DC0811988A45956CD66FC4563F38EFA4A13
+phase=end-retry height=55 code=0 events=[leases_result]
+phase=reject name=end-again-new-business-id height=57 codespace=svn code=11 (ERROR_CODE_UNDERFLOW) included=true txhash=6E1CE504DEC8F282BF5FEDD7DA7549EB79E8C4EFA9A743AA455E31B699467BA6
+phase=authority-end-lc height=58 code=0 txhash=911F928A03F5AAEB3AE862F8720275678C83E8E1B789C1773C5D0F2B1546FFCD
+phase=reject name=duplicate-replica height=59 codespace=svn code=4 (ERROR_CODE_DUPLICATE_ID) included=true txhash=41B02A582E70EB3389BCD798307B3EC2415182A171C1FE1672E1029614DB5B78
+phase=reject name=service-key-acceptance height=60 codespace=svn code=1 (ERROR_CODE_UNAUTHORIZED) included=true txhash=90D2A7846206167466C8DD9E1352E012CB80F53BFD7F86B8487EE6D58C511404
+phase=reject name=service-outer-signer height=62 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=C69362F01E8ECBF74F543E7C7EE1C5206421E2550AE7BFA9C1A384FC40558945
+phase=offer-oe height=63 code=0 txhash=34EE748352EBBCABBAB9D82371E2BB029DAD0B9770BA4B6A5C75F054DA45A88C
+phase=accept-le height=64 code=0 txhash=1B048E98D337462E1773147562A83882321C8BE593598E65C0401B7B10E9F50C
+phase=expiry deadline=1793634112 effective_minus_1=174 header_time=1793634111 held=true effective=175 header_time=1793634112 held=false released=4000000
+phase=expiry-steps-4-propose height=183 code=0 txhash=ECC530F0C764FD61B6F824F4D9D6CA503B1650640D1A3374F77E7494CDD8E4BB
+phase=expiry-steps-4-approve-1 height=184 code=0 txhash=85070760037D0B42D4EF6A26E039B3D073AA88BA1AAEE4C9025E3E84C5143532
+phase=expiry-steps-4-approve-2 height=185 code=0 txhash=E5FE0CB043B50324760FBB2E9657DDF0D6908AD69C99103F031A8196067C1AE0
+phase=expiry-steps-4-approve-3 height=186 code=0 txhash=C6B40BC6C06A6A1C20A8AB688BB6AACBE2CF7D98317C9E751678E0A11F408018
+phase=expiry-steps-4 height=188 code=0 txhash=3EAF2AF202964B98F50EE13339B25FE57ACB3F601086B62E8057FE31D237DE06 policy_version=5
+phase=register-drain-contents height=189 code=0 messages=12 gas_used=865904 txhash=9756FF50E112335CC986734206ED83E4D54556DE71D62EA5ADE43DD5DA5963F5
+phase=drain-offers height=190 code=0 messages=30 gas_used=3034340 txhash=C60EAE35B6E1F5CF76D33B629BCCC3BA427A8DA599F708F9D3BFD1E610CCE2D5
+phase=drain-accepts height=192 code=0 messages=24 gas_used=2579732 txhash=0A2C974EA69EE5071C512C6CBB2D4CF03E4C1923E7165B68C0B66EF6EF0A5843
+phase=bounded-drain max_expiry_steps=4 shared_deadline=1793634160 heights=395..402 effective_minus_1=394 header_time=1793634159 counts=[4 4 4 4 4 4 4 2] order=(time,kind,id)
+phase=withdraw-c4 height=405 code=0 voided_offers=1 txhash=26A7DC6A7B6AF7CF69C5FF12FDA7906E8EDF5870CCCCDDE90B04CC694153108B
+phase=reject name=accept-voided-offer height=406 codespace=svn code=16 (ERROR_CODE_NOT_FOUND) included=true txhash=C4F0466737382F55563FE635245CE547089D89E0F30D5436C1F88D4415B6ECE4
+phase=reject name=offer-withdrawn-content height=407 codespace=svn code=15 (ERROR_CODE_WITHDRAWN) included=true txhash=6329A7EA3BE443B5F6D0A4222FF7F29FE5CE6845EAA644E19BA3214F1326755B
+phase=reject name=renew-withdrawn-content height=409 codespace=svn code=15 (ERROR_CODE_WITHDRAWN) included=true txhash=E03A9437F6A5BFF4485611519A3F13B2DEB1E22A4C669CF6CED53B8450C4C7DA
+phase=authority-end-lw height=410 code=0 txhash=ADFD5F298A0F27032C6064C1C385274667991A7CD8719898323FE580C8B408FD
+phase=offers-p2 height=411 code=0 messages=2 gas_used=225871 txhash=7B5F5DF14C44C132B3ABCCBCA8DD5966164C4F1DB795A25AA41EB3F59058A31A
+phase=accept-l6 height=413 code=0 txhash=F6685D17BFF399475122E6CFA524F98903C776D7AAFA53D406873724EB93AEC7
+phase=disable-p2-propose height=414 code=0 txhash=17AD856BE3BFA74AE688891AFDBAB8C1315B6B88B1ACF8716AA9F01F8803FC88
+phase=disable-p2-approve-1 height=416 code=0 txhash=1393100BAE76A5AFB69707A92E8B61D6536AC3903628468EC8BF97211732040A
+phase=disable-p2-approve-2 height=417 code=0 txhash=64C561B68F87211669F13AC89304D0F6D2D62C5D5AFD6A1A0F3B3075EA4A3BB8
+phase=disable-p2-approve-3 height=418 code=0 txhash=FD7F05686B7B02352931ADFB7B0A87220BB83104ACD448E9DC0B53BEF3CB00CF
+phase=disable-p2 height=420 code=0 txhash=38D839078416FF97DB6F0967A144B02BD5B18D5739331AD1762D947FCAB69BE0 policy_version=6
+phase=reject name=offer-disabled-provider height=421 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=4EA624E33CDDDB9FFBF21FD0A3660976778F1ABFFEFDAE80FCF42505EDB6C9F3
+phase=reject name=accept-disabled-provider height=422 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=E10BDB83F5D5A55061F072EA4C1041B16E3CB1C1206039373F1E9F02A72ECB1F
+phase=renew-on-disabled-provider height=423 code=0 txhash=3288CF51591F5E7A97DACDDEAE2F5935BF0F131A78C67D8C4C56DAA9AA56A43B
+phase=repair-offer height=424 code=0 txhash=65877CA7EFD5483CF3273E4290A4DBB86A06624E77B89DB3F885077D85B3F240
+phase=repair-accept height=426 code=0 txhash=E3C4CA167EE33007DCBC631E9FD56040D4F082B2D87F9E0AB56A667EE18C08D6
+phase=authority-end-l6 height=427 code=0 txhash=95411B8E7B22D8FC1A78D656105F72ED22F3152D78A34975C851BDCA8D21E5F9
+phase=query height=427 name=active-c1 nodes=4 equal=true bytes=123 sha256=90d232070626be3b3526a6d5c5362151e0bfc41fa1f4b36f7e2eb405755f112b
+phase=query height=427 name=active-p1 nodes=4 equal=true bytes=251 sha256=19690763ccb529a105b29974f567895cc606b434bb34b52c4ce84e570a5bf3bf
+phase=query height=427 name=deadlines-all nodes=4 equal=true bytes=666 sha256=175a05aa3b96e5761ce864d63ccbda9cc0795bf5fd5061c23250a9885343664c
+phase=query height=427 name=provider-p1 nodes=4 equal=true bytes=144 sha256=147212627b98c0c218649bf9e6ae16f67e39ae78a8bd54d95ca87f5bb5da02f6
+phase=query height=427 name=provider-p2 nodes=4 equal=true bytes=139 sha256=8e7655e25431e1cb5d937d39e550f2a184174212c3e5964ba964c5d49b22bfff
+phase=query height=427 name=provider-p3 nodes=4 equal=true bytes=143 sha256=b57ffe410f3544edc86749415903620564f4691e1b886ac73511ec5c7c046407
+phase=replay-reject name=changed-payload-same-business-id height=42 full_state_unchanged=true
+phase=replay-reject name=stale-renewal height=48 full_state_unchanged=true
+phase=replay-reject name=renewal-other-bytes height=50 full_state_unchanged=true
+phase=replay-reject name=end-again-new-business-id height=57 full_state_unchanged=true
+phase=replay-reject name=duplicate-replica height=59 full_state_unchanged=true
+phase=replay-reject name=service-key-acceptance height=60 full_state_unchanged=true
+phase=replay-reject name=service-outer-signer height=62 full_state_unchanged=true
+phase=replay-reject name=accept-voided-offer height=406 full_state_unchanged=true
+phase=replay-reject name=offer-withdrawn-content height=407 full_state_unchanged=true
+phase=replay-reject name=renew-withdrawn-content height=409 full_state_unchanged=true
+phase=replay-reject name=offer-disabled-provider height=421 full_state_unchanged=true
+phase=replay-reject name=accept-disabled-provider height=422 full_state_unchanged=true
+phase=replay height=427 app_hash=AF90D7B237A1D0EE25BF0AE5DD4E9A8249E33F47793A3935348959660A848EF4 nodes=4 equal=true
+phase=replay-queries height=427 count=6 equal=true
+phase=events heights=1..427 block_txs=67 events=403 typed=130 typed_tx_parsed_with_msg_index=105 typed_block_parsed_with_mode=25 canaries=0 forbidden_names=0
+--- PASS: TestDevnetLeaseLifecycle (100.36s)
+=== RUN   TestDevnetLeaseHaltRestart
+label=single-machine four-process devnet (not independent operators)
+phase=register-p1 height=7 code=0 txhash=B5EA348F92AA23B37EA57AE044DECDF4F40FDCE9BFFFD73C19774CBC62A70103
+phase=admit-p1-propose height=8 code=0 txhash=854929B60CC734DC79FCB83D6D49217B5E2FF5540932280605B1AB3AB85AA05C
+phase=admit-p1-approve-1 height=9 code=0 txhash=BF511732A780FA829E27C4F288A83381099BF95C71914CE04E8F98EF50581FB4
+phase=admit-p1-approve-2 height=11 code=0 txhash=7D44F142423F8F84797E4CA5847C06B236121A351FF29D7E0C28252AB38C561F
+phase=admit-p1-approve-3 height=13 code=0 txhash=C01F689E6206F50124703877789451F4268B61C2059F94694939248494C7991A
+phase=admit-p1 height=14 code=0 txhash=29840961F24C048E1E4E3F61D5A519798E878EAED67484B193294DF13E9DBD48 policy_version=2
+phase=register-c1 height=15 code=0 txhash=E78E4B64EDB6B6CAC549ACDA8B8CDB50CDAA7837C90D566732C4DACBF4A4B02A
+phase=offer-o1 height=16 code=0 txhash=63567173B830B1A90B8F05BBF316BF34180864047D442B8836FDC5804D353504
+phase=accept-l1 height=17 code=0 txhash=C4E4E807E329CF1146604D1C0DFD0930735FE4ED0FD388F2DD61F9591D6587BC
+phase=offline-renewal-signed lease=l1 deadline=1793634195 broadcast=false
+phase=halt-stored validator=v1 committed_height=17
+phase=halt-stored validator=v2 committed_height=17
+phase=halt-stored validator=v3 committed_height=17
+phase=halt-stored validator=v4 committed_height=17
+phase=halt stopped=4 height_before_stop_began=17 last_committed_height=17 deadline=1793634195
+phase=restart-expiry last_pre_halt_height=17 header_time=1793634175 effective_minus_1=18 header_time=1793634175 held=true effective=19 header_time=1793634202 held=false released=4000000
+phase=reject name=offline-renewal-after-restart height=24 codespace=svn code=14 (ERROR_CODE_CONFLICT) included=true txhash=7DC4181F61FFC39268C2E5EA402E3E7453DAB272B0C0E6514A32ED8D559CC12D
+phase=replay-reject name=offline-renewal-after-restart height=24 full_state_unchanged=true
+phase=replay height=24 app_hash=A77E855341A5822DB7A81222D7BFD898BAAEF1E81AC33143A5C17BF8D6935F8F nodes=4 equal=true
+phase=events heights=1..24 block_txs=10 events=35 typed=6 typed_tx_parsed_with_msg_index=5 typed_block_parsed_with_mode=1 canaries=0 forbidden_names=0
+--- PASS: TestDevnetLeaseHaltRestart (33.09s)
+=== RUN   TestDevnetValidatorLifecycle
+phase=plan-add height=3 activation=43 effective=45
+phase=add h-1=42 count=4 h=43 count=4 h+1=44 count=4 h+2=45 count=5
+phase=power-quorum height=45 validators=5 offline=v5 processes=4 model_quorum=true
+phase=power-stop-one threshold=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=0 node=0 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=0 node=1 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=0 node=2 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=1 node=0 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=1 node=1 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=1 node=2 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=2 node=0 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=2 node=1 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=2 node=2 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=3 node=0 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=3 node=1 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=3 node=2 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=4 node=0 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=4 node=1 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=4 node=2 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=5 node=0 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=5 node=1 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-one-down sample=5 node=2 height=45 app_hash=9A60AC24F92EA08C075AAD7E1136CE263328D0BE15EDDBCB805F6529FCB55970
+phase=power-stall height=45 threshold=45
+phase=power-quorum height=45 validators=5 offline=v5,v4 processes=3 model_quorum=false
+phase=power-recovery up=46 reached=48
+phase=plan-rotate height=48 activation=88
+phase=rotate h+1=89 count=5 oldkey=true h+2=90 count=5 newkey=true
+phase=plan-remove height=90 activation=130
+phase=remove h+1=131 count=5 still=true h+2=132 count=4
+--- PASS: TestDevnetValidatorLifecycle (69.72s)
+=== RUN   TestQuorumModelVectors
+--- PASS: TestQuorumModelVectors (0.00s)
+=== RUN   TestDevnetKeysAreDistinct
+--- PASS: TestDevnetKeysAreDistinct (0.02s)
+=== RUN   TestDevnetSeatsHaveNoSubmitterRow
+--- PASS: TestDevnetSeatsHaveNoSubmitterRow (0.01s)
+=== RUN   TestDevnetQuorumFollowsVotingPower
+phase=power-plan height=3 activation=103 effective=105
+phase=power-executed height=18 activation=103
+phase=power-set effective-1=104 powers=v1:10,v2:10,v3:10,v4:10 effective=105 powers=v1:10,v2:10,v3:2,v4:10,v5:1
+phase=power-case-X-stop threshold=105 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-X stopped=v3 running=v1,v2,v4 height_from=105
+phase=power-commit height=107 signers=v1,v2,v4 signed_power=30 total_power=33
+phase=power-commit height=108 signers=v1,v2,v4 signed_power=30 total_power=33
+phase=power-vs-count case=X offline=v3,v5 online_power=30 total_power=33 online_validators=3 validators=5 count_rule=stall power_rule=progress observed=progress height_from=105 height_to=108 set_height=108 online_from=commit-signers
+phase=power-vs-count-recovery case=X nodes=4 up=121 reached=123
+phase=power-vs-count-live case=X heights=122..123 signed=v1,v2,v3,v4
+phase=power-case-Y-stop threshold=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y stopped=v1 running=v2,v3,v4 height_from=123
+phase=power-case-Y probe=no-agreement-above from=123 target=126 window=30s
+phase=power-case-Y sample=0 node=0 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=0 node=1 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=0 node=2 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=1 node=0 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=1 node=1 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=1 node=2 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=2 node=0 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=2 node=1 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=2 node=2 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=3 node=0 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=3 node=1 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=3 node=2 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=4 node=0 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=4 node=1 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=4 node=2 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=5 node=0 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=5 node=1 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y sample=5 node=2 height=123 app_hash=D8F808FBA45ADFDF15803F51E6843EACE7731DC1F87248F84A6356326E2708CF
+phase=power-case-Y-voters node=0 height=124 round=0 voters=v2,v3,v4 stopped=v1 stopped_vote=false voter_power=22 total_power=33
+phase=power-case-Y-voters node=1 height=124 round=0 voters=v2,v3,v4 stopped=v1 stopped_vote=false voter_power=22 total_power=33
+phase=power-case-Y-voters node=2 height=124 round=0 voters=v2,v3,v4 stopped=v1 stopped_vote=false voter_power=22 total_power=33
+phase=power-vs-count case=Y offline=v1,v5 online_power=22 total_power=33 online_validators=3 validators=5 count_rule=stall power_rule=stall observed=stall height_from=123 height_to=123 set_height=124 online_from=stuck-height-votes
+phase=power-vs-count-recovery case=Y nodes=4 up=124 reached=126
+phase=power-vs-count-live case=Y heights=125..126 signed=v1,v2,v3,v4
+--- PASS: TestDevnetQuorumFollowsVotingPower (73.81s)
+=== RUN   TestInitRefusesToReplaceGenesis
+--- PASS: TestInitRefusesToReplaceGenesis (0.01s)
+=== RUN   TestFourValidatorsCommitRestartAndQuorum
+phase=start sample=0 node=0 height=3 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=start sample=0 node=1 height=3 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=start sample=0 node=2 height=3 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=start sample=0 node=3 height=3 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=restart-up height=3
+phase=restart sample=0 node=0 height=5 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=restart sample=0 node=1 height=5 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=restart sample=0 node=2 height=5 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=restart sample=0 node=3 height=5 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=stop-one threshold=5 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=0 node=0 height=6 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=0 node=1 height=6 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=0 node=2 height=6 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=1 node=0 height=8 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=1 node=1 height=8 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=1 node=2 height=8 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=2 node=0 height=9 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=2 node=1 height=9 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=2 node=2 height=9 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=3 node=0 height=11 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=3 node=1 height=11 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=one-down sample=3 node=2 height=11 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=stop-two threshold=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=0 node=0 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=0 node=1 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=1 node=0 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=1 node=1 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=2 node=0 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=2 node=1 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=3 node=0 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=3 node=1 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=4 node=0 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=4 node=1 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=5 node=0 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=two-down sample=5 node=1 height=12 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=recovery-up height=13 stall=12
+phase=recovery sample=0 node=0 height=15 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=recovery sample=0 node=1 height=15 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=recovery sample=0 node=2 height=15 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+phase=recovery sample=0 node=3 height=15 app_hash=CFDDCE32B7452F9E9F7DC34A784596DD034ADC992B534B2FEDD2B68382FE90D0
+--- PASS: TestFourValidatorsCommitRestartAndQuorum (18.23s)
+=== RUN   TestDevnetRegistryDemo
+label=single-machine four-process devnet (not independent operators)
+phase=start height=3 chain_id=shortvideo-dev-492b70b24571b7a3 accounts=6
+phase=register-p1 height=5 code=0 txhash=0648BE06D3178DABBC3FF50030D197AD16CC718D416A013537642B777EEAFDBB
+phase=register-p2 height=6 code=0 txhash=365CD0FBE6DEA2435ECC90B0ADEB66A71DED8326A6530CA9A965E851E3C9D0C6
+phase=admit-p1-propose height=7 code=0 txhash=7545D521BE98DCFF1AC07A20C25DC66166CAC6D8293BE77C8BECD03B70642892
+phase=admit-p1-approve-1 height=9 code=0 txhash=3831A79DA6D8710AFCC4D8178D301D73750F4C999BC6AA54F51246AAA47D9731
+phase=admit-p1-approve-2 height=10 code=0 txhash=F333110F2EDF51251A0B70DEF858BEA7FE1F5301F0B5604A02D1BAC2878EECD4
+phase=admit-p1-approve-3 height=11 code=0 txhash=CA9290C5BD632EA2B781E8AC3ADB8599E456975BE0DB9CD151EAC00FFC68D1FA
+phase=admit-p1 height=13 code=0 txhash=35CD703E649FE7D431C7B75034B288377DCFA4948B80CD5483C6B30C8636D962 policy_version=2
+phase=admit-p2-propose height=14 code=0 txhash=464CB87704F90450A7F1CFF316F700476F1390F58D7E37A643ABE5F3312F17B3
+phase=admit-p2-approve-1 height=15 code=0 txhash=F2EB8BC3BFDCC21B6B877C8433DC18DC3384D45FF53E7816566AE3D6D0343269
+phase=admit-p2-approve-2 height=16 code=0 txhash=7CAE8BB84C981FBB8CF51FD2E5EBA82AE77F06C99C0680040815EB759F7E362F
+phase=admit-p2-approve-3 height=17 code=0 txhash=5FF878EFCAF5EF1A20EA2ADD572F67894FC1B68295DA3123B4340093A69EFD18
+phase=admit-p2 height=18 code=0 txhash=BFD06197BA29E09E5CA3CDE421926ED4937BD5D3F71EAE4D62EC42BF547BD9E5 policy_version=3
+phase=update-p1 height=19 code=0 txhash=4C273D472878F5C56625E90D693A13518329578E2AA9B0E2B1DF84BDCFAF76E2
+phase=rotate-p1 height=20 code=0 txhash=FD0F0D5BC5C1DDD36E8D285C98501FAF85FCF6F755D444DF330ED8634BE8CC4B
+phase=drain-p2 height=21 code=0 txhash=CDC180B00E93D59BD43C1C28B86A98075E804EE64CBC9B90DFDE1BDFEA3F638F
+phase=disable-p2-propose height=23 code=0 txhash=6AF5F383051704A39E293DE3E49A420B033C0B2B59F5BEC9033409D2B713BB6D
+phase=disable-p2-approve-1 height=24 code=0 txhash=C52F795F679495D03DDD4CF92D7CA92308F8E9E7AC781E7FDDC96E4D6BE01A1A
+phase=disable-p2-approve-2 height=26 code=0 txhash=5312605B9F96E73631E396251271090148E0483BF3BDEEB544A83A6B8E923E30
+phase=disable-p2-approve-3 height=27 code=0 txhash=AE4318AE1AADC0C3112B42D7A50B84268C55417BA5EB2C90B9F947B2298B5F57
+phase=disable-p2 height=28 code=0 txhash=CB74823F5D9DFBE8128C16A10655AB9D965F618B0E65EF0D0F1C9A5C2089F06C policy_version=4
+phase=register-c1 height=29 code=0 txhash=36995AA65B8B4AF329585F84B3DC4DCA7467BE71DA05277BB215AAE8F7A26E88
+phase=register-c2 height=30 code=0 txhash=87F7602ADC7408303C76BB53E1B80BD2FD17A1164463962E05641A9A3B8F7736
+phase=withdraw-c1 height=31 code=0 txhash=2DBFF3B0FA4D8B54007DAC3A1FE9D238B7746214F377E6638D7975DE92D0DF92
+phase=force-withdraw-c2-propose height=32 code=0 txhash=E9CC6F1044BD6607F3C082BF41EC59FCD265527DAD6335BB7F31A3DAEB21AB3B
+phase=force-withdraw-c2-approve-1 height=34 code=0 txhash=418C30E1F2F903D437CB4B037B76C0557C08879496EC1D38C27A43593A925353
+phase=force-withdraw-c2-approve-2 height=35 code=0 txhash=1474CE9A33B91885C1D6C3795E215D0B39B6B540E97A2571248E27FE0A9C7315
+phase=force-withdraw-c2-approve-3 height=36 code=0 txhash=206D61E81144F64173FC9C5A51F67DDF33AB9354F263E0875C1EE0EAF8A83619
+phase=force-withdraw-c2 height=37 code=0 txhash=E0BC48F2A5BD0B29E08FEDC08C198DF92037031D0122908A4EAE1B9877BFE9AA policy_version=5
+phase=idempotent-replay-c1 height=38 code=0 txhash=691EE48408ADCDF088507A14F6F54A97C06EEBB8A94D9FB5DF3134DA11A6600D
+phase=reject name=cross-owner-update height=40 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=45BA1D4B9543FB371A26D506A6BE5997CDFC087A233716E7797929444CA9ED73
+phase=reject name=service-updates-provider height=41 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=3B88C5C34332D62435DCC2351AF9930A2F4D35FB83247A1954A15F57164C0BE1
+phase=reject name=duplicate-version-c1 height=43 codespace=svn code=4 (ERROR_CODE_DUPLICATE_ID) included=true txhash=BB6631E18CC06427B195DED447BC5E237A9F85338C4BE541418EB69062709BF0
+phase=reject name=digest-31-bytes height=44 codespace=svn code=19 (ERROR_CODE_BOUNDS) included=true txhash=A03238728C1AA714AD3D6E71F71AACC8A3A6AFD004069B49429A748AD5047EE4
+phase=reject name=digest-algorithm-0 height=45 codespace=svn code=7 (ERROR_CODE_MALFORMED) included=true txhash=0527C234485EC776705611C45F48CCBC80AB82B0F46A8F6A9346E87A9B08E0C9
+phase=reject name=provider-id-65-bytes height=47 codespace=svn code=19 (ERROR_CODE_BOUNDS) included=true txhash=EF79139DE9F88E4AB379B5D7C01BB0E8B89318713B3F6332453EC406B89FF829
+phase=reject name=package-bytes-cap-plus-1 height=48 codespace=svn code=19 (ERROR_CODE_BOUNDS) included=true txhash=D822FE9308C1A0B2AAEE4BC695E14D5472C197E10515BDB20DED7C2C6994E26E
+phase=reject name=replayed-business-id height=49 codespace=svn code=3 (ERROR_CODE_REPLAY) included=true txhash=B7A05A181CFDBE050072CB2E8D05C5EE51D82DF05D6C9C02F37BD8215D53B90F
+phase=reject name=cross-owner-withdraw height=51 codespace=svn code=2 (ERROR_CODE_FORBIDDEN) included=true txhash=660CCB5A07D3EA07F1C4A26F5A8DBAD590AF417D7677CE28332933571830381F
+phase=reject name=second-withdraw height=52 codespace=svn code=15 (ERROR_CODE_WITHDRAWN) included=true txhash=44FB8B5647AF82C34F503616B07259B92109D7794EADD526FB7D0894EF88792B
+phase=reject name=stale-rotation height=53 codespace=svn code=5 (ERROR_CODE_STALE_VERSION) included=true txhash=949D221890D18C9685DDF1FD72A74FFFCE3B7D0379785878D38B2710FE25B9C2
+phase=reject name=wrong-domain-drain height=55 codespace=svn code=12 (ERROR_CODE_WRONG_DOMAIN) included=true txhash=045293C0CBE29EBC832F39FB437C745CEBCFF4544EC793953D20A5EB7B15C786
+phase=checktx-reject name=outsider codespace=sdk code=9 included=false (not included)
+phase=checktx-reject name=fee codespace=svn code=21 included=false (not included)
+phase=checktx-reject name=tx-70-KiB codespace=svn code=19 included=false (not included)
+phase=checktx-reject name=same-signed-bytes check_tx=sdk/32 broadcast="mempool ErrTxInCache" original_height=5 included_again=false (not included)
+phase=page height=55 page=1 provider=p1 next_page_key="p2"
+phase=page height=55 page=2 provider=p2 next_page_key=""
+phase=query height=55 name=content-c1 nodes=4 equal=true bytes=136 sha256=377135fe0dbb8326aefbdf919bacd1896d38ccd5305d756330cab3e333f50c6c
+phase=query height=55 name=content-c2 nodes=4 equal=true bytes=136 sha256=8875e6d1882d874ef79323096e228b1ff3ac26e4871216c697a45d11d654cb37
+phase=query height=55 name=provider-p1 nodes=4 equal=true bytes=183 sha256=732a9cd736b0da8d93605fa155a63f815b20fc725e5cdf0936ce590b20743648
+phase=query height=55 name=provider-p2 nodes=4 equal=true bytes=139 sha256=e048683ffc5bb3d4d335995f8ee1b06b6053a56325a90607f4246661d63492c9
+phase=query height=55 name=providers-page-1 nodes=4 equal=true bytes=189 sha256=246c2f260b33aa78a7f2c60a1a1a20d500d3adf66a027287e1546bf05992e52f
+phase=query height=55 name=providers-page-2 nodes=4 equal=true bytes=141 sha256=91a6df749ebabceb4ea74992c3204d0db3b2b713c817000cdacca2249daac286
+phase=history nodes=4 height=30 c1=PENDING tombstone=false; height=31 c1=WITHDRAWN tombstone=true committed_unix_seconds=1793634374
+phase=grpc node=v1 height=55 path=/svn.providers.v1.Query/Provider equal_to_abci=true
+phase=grpc-reject node=v1 height=55 path=/svn.providers.v1.Query/Provider detail=ERROR_CODE_NOT_FOUND
+phase=grpc-reject node=v1 height=55 path=/svn.providers.v1.Query/Providers detail=ERROR_CODE_BOUNDS
+phase=grpc-reject node=v1 height=55 path=/svn.content.v1.Query/Content detail=ERROR_CODE_NOT_FOUND
+phase=validators rotation_height=20 from=19 to=22 count=4 unchanged=true
+phase=replay-reject name=cross-owner-update height=40 full_state_unchanged=true
+phase=replay-reject name=service-updates-provider height=41 full_state_unchanged=true
+phase=replay-reject name=duplicate-version-c1 height=43 full_state_unchanged=true
+phase=replay-reject name=digest-31-bytes height=44 full_state_unchanged=true
+phase=replay-reject name=digest-algorithm-0 height=45 full_state_unchanged=true
+phase=replay-reject name=provider-id-65-bytes height=47 full_state_unchanged=true
+phase=replay-reject name=package-bytes-cap-plus-1 height=48 full_state_unchanged=true
+phase=replay-reject name=replayed-business-id height=49 full_state_unchanged=true
+phase=replay-reject name=cross-owner-withdraw height=51 full_state_unchanged=true
+phase=replay-reject name=second-withdraw height=52 full_state_unchanged=true
+phase=replay-reject name=stale-rotation height=53 full_state_unchanged=true
+phase=replay-reject name=wrong-domain-drain height=55 full_state_unchanged=true
+phase=replay height=55 app_hash=CBC6E81B55B3DF8AFE5F6ED071C1DE3743C8047CA75313F19D2D9D3869D3CAD3 nodes=4 equal=true
+phase=replay-queries height=55 count=6 equal=true
+phase=events heights=1..55 block_txs=41 events=123 typed=11 typed_tx_parsed_with_msg_index=11 typed_block_parsed_with_mode=0 canaries=0 forbidden_names=0
+--- PASS: TestDevnetRegistryDemo (14.53s)
+=== RUN   TestStallLimit
+=== RUN   TestStallLimit/catch-up_below_threshold
+=== RUN   TestStallLimit/far_behind_the_threshold
+=== RUN   TestStallLimit/equal_to_threshold
+=== RUN   TestStallLimit/threshold+1_with_a_passing_verifier_moves_the_limit
+=== RUN   TestStallLimit/threshold+1_with_a_failing_verifier
+=== RUN   TestStallLimit/threshold+2
+=== RUN   TestStallLimit/threshold+1_again_after_the_limit_moved_is_the_same_block
+=== RUN   TestStallLimit/below_threshold_after_the_limit_moved
+=== RUN   TestStallLimit/second_in-flight_attempt_after_the_limit_moved
+=== RUN   TestStallLimit/height_far_above_the_limit_when_the_limit_is_threshold+1
+=== RUN   TestStallLimit/limit_below_threshold_is_refused
+=== RUN   TestStallLimit/limit_above_threshold+1_is_refused
+--- PASS: TestStallLimit (0.00s)
+    --- PASS: TestStallLimit/catch-up_below_threshold (0.00s)
+    --- PASS: TestStallLimit/far_behind_the_threshold (0.00s)
+    --- PASS: TestStallLimit/equal_to_threshold (0.00s)
+    --- PASS: TestStallLimit/threshold+1_with_a_passing_verifier_moves_the_limit (0.00s)
+    --- PASS: TestStallLimit/threshold+1_with_a_failing_verifier (0.00s)
+    --- PASS: TestStallLimit/threshold+2 (0.00s)
+    --- PASS: TestStallLimit/threshold+1_again_after_the_limit_moved_is_the_same_block (0.00s)
+    --- PASS: TestStallLimit/below_threshold_after_the_limit_moved (0.00s)
+    --- PASS: TestStallLimit/second_in-flight_attempt_after_the_limit_moved (0.00s)
+    --- PASS: TestStallLimit/height_far_above_the_limit_when_the_limit_is_threshold+1 (0.00s)
+    --- PASS: TestStallLimit/limit_below_threshold_is_refused (0.00s)
+    --- PASS: TestStallLimit/limit_above_threshold+1_is_refused (0.00s)
+=== RUN   TestStallLimitWithoutVerifier
+--- PASS: TestStallLimitWithoutVerifier (0.00s)
+=== RUN   TestStallLimitSequences
+=== RUN   TestStallLimitSequences/CI_41362122347:_node_0_catches_up_11_to_12
+=== RUN   TestStallLimitSequences/local:_node_0_catches_up_15_to_16
+=== RUN   TestStallLimitSequences/local:_node_1_catches_up_12_to_13
+=== RUN   TestStallLimitSequences/local:_in-flight_block_14_after_the_stop_at_13
+=== RUN   TestStallLimitSequences/in-flight_block_without_the_stopped_validator
+=== RUN   TestStallLimitSequences/a_second_block_after_the_in-flight_one
+=== RUN   TestStallLimitSequences/chain_still_committing
+--- PASS: TestStallLimitSequences (0.00s)
+    --- PASS: TestStallLimitSequences/CI_41362122347:_node_0_catches_up_11_to_12 (0.00s)
+    --- PASS: TestStallLimitSequences/local:_node_0_catches_up_15_to_16 (0.00s)
+    --- PASS: TestStallLimitSequences/local:_node_1_catches_up_12_to_13 (0.00s)
+    --- PASS: TestStallLimitSequences/local:_in-flight_block_14_after_the_stop_at_13 (0.00s)
+    --- PASS: TestStallLimitSequences/in-flight_block_without_the_stopped_validator (0.00s)
+    --- PASS: TestStallLimitSequences/a_second_block_after_the_in-flight_one (0.00s)
+    --- PASS: TestStallLimitSequences/chain_still_committing (0.00s)
+=== RUN   TestStopForStall
+phase=stop-two threshold=13 app_hash=AA
+--- PASS: TestStopForStall (0.00s)
+=== RUN   TestStopForStallRefuses
+=== RUN   TestStopForStallRefuses/index_without_a_process
+=== RUN   TestStopForStallRefuses/index_below_range
+=== RUN   TestStopForStallRefuses/index_above_range
+=== RUN   TestStopForStallRefuses/stops_shorter_than_the_validators
+=== RUN   TestStopForStallRefuses/app_hash_disagreement_before_the_stop
+=== RUN   TestStopForStallRefuses/stop_fails
+phase=stop-two threshold=12 app_hash=AA
+--- PASS: TestStopForStallRefuses (0.00s)
+    --- PASS: TestStopForStallRefuses/index_without_a_process (0.00s)
+    --- PASS: TestStopForStallRefuses/index_below_range (0.00s)
+    --- PASS: TestStopForStallRefuses/index_above_range (0.00s)
+    --- PASS: TestStopForStallRefuses/stops_shorter_than_the_validators (0.00s)
+    --- PASS: TestStopForStallRefuses/app_hash_disagreement_before_the_stop (0.00s)
+    --- PASS: TestStopForStallRefuses/stop_fails (0.00s)
+=== RUN   TestStoppedSigned
+=== RUN   TestStoppedSigned/v1_v2_v3_before_the_stop
+=== RUN   TestStoppedSigned/v3_voted_exactly_at_the_stop_time
+=== RUN   TestStoppedSigned/v3_voted_after_the_stop
+=== RUN   TestStoppedSigned/v3_absent_and_v4_signed
+=== RUN   TestStoppedSigned/v3_voted_nil
+=== RUN   TestStoppedSigned/v3_absent
+=== RUN   TestStoppedSigned/v4_with_no_process_signed_too
+=== RUN   TestStoppedSigned/a_signer_missing_from_the_keys
+=== RUN   TestStoppedSigned/two_of_four_power
+=== RUN   TestStoppedSigned/case_Y:_v1_v2_v4_hold_30_of_33
+=== RUN   TestStoppedSigned/case_Y:_v1_v2_v3_hold_22_of_33,_two_thirds_exactly
+=== RUN   TestStoppedSigned/case_Y:_v5_with_no_process_signed
+--- PASS: TestStoppedSigned (0.01s)
+    --- PASS: TestStoppedSigned/v1_v2_v3_before_the_stop (0.00s)
+    --- PASS: TestStoppedSigned/v3_voted_exactly_at_the_stop_time (0.00s)
+    --- PASS: TestStoppedSigned/v3_voted_after_the_stop (0.00s)
+    --- PASS: TestStoppedSigned/v3_absent_and_v4_signed (0.00s)
+    --- PASS: TestStoppedSigned/v3_voted_nil (0.00s)
+    --- PASS: TestStoppedSigned/v3_absent (0.00s)
+    --- PASS: TestStoppedSigned/v4_with_no_process_signed_too (0.00s)
+    --- PASS: TestStoppedSigned/a_signer_missing_from_the_keys (0.00s)
+    --- PASS: TestStoppedSigned/two_of_four_power (0.00s)
+    --- PASS: TestStoppedSigned/case_Y:_v1_v2_v4_hold_30_of_33 (0.00s)
+    --- PASS: TestStoppedSigned/case_Y:_v1_v2_v3_hold_22_of_33,_two_thirds_exactly (0.00s)
+    --- PASS: TestStoppedSigned/case_Y:_v5_with_no_process_signed (0.00s)
+=== RUN   TestWatchStall
+=== RUN   TestWatchStall/every_node_at_the_threshold
+phase=fake sample=0 node=0 height=12 app_hash=AA
+phase=fake sample=0 node=1 height=12 app_hash=AA
+phase=fake sample=1 node=0 height=12 app_hash=AA
+phase=fake sample=1 node=1 height=12 app_hash=AA
+phase=fake sample=2 node=0 height=12 app_hash=AA
+phase=fake sample=2 node=1 height=12 app_hash=AA
+phase=fake sample=3 node=0 height=12 app_hash=AA
+phase=fake sample=3 node=1 height=12 app_hash=AA
+phase=fake sample=4 node=0 height=12 app_hash=AA
+phase=fake sample=4 node=1 height=12 app_hash=AA
+phase=fake sample=5 node=0 height=12 app_hash=AA
+phase=fake sample=5 node=1 height=12 app_hash=AA
+=== RUN   TestWatchStall/CI_41362122347:_node_0_catches_up_11_to_12
+phase=fake sample=0 node=0 height=11 app_hash=AA
+phase=fake sample=0 node=1 height=12 app_hash=AA
+phase=fake sample=1 node=0 height=12 app_hash=AA
+phase=fake sample=1 node=1 height=12 app_hash=AA
+phase=fake sample=2 node=0 height=12 app_hash=AA
+phase=fake sample=2 node=1 height=12 app_hash=AA
+phase=fake sample=3 node=0 height=12 app_hash=AA
+phase=fake sample=3 node=1 height=12 app_hash=AA
+phase=fake sample=4 node=0 height=12 app_hash=AA
+phase=fake sample=4 node=1 height=12 app_hash=AA
+phase=fake sample=5 node=0 height=12 app_hash=AA
+phase=fake sample=5 node=1 height=12 app_hash=AA
+=== RUN   TestWatchStall/node_1_far_behind_catches_up
+phase=fake sample=0 node=0 height=12 app_hash=AA
+phase=fake sample=0 node=1 height=3 app_hash=AA
+phase=fake sample=1 node=0 height=12 app_hash=AA
+phase=fake sample=1 node=1 height=7 app_hash=AA
+phase=fake sample=2 node=0 height=12 app_hash=AA
+phase=fake sample=2 node=1 height=12 app_hash=AA
+phase=fake sample=3 node=0 height=12 app_hash=AA
+phase=fake sample=3 node=1 height=12 app_hash=AA
+phase=fake sample=4 node=0 height=12 app_hash=AA
+phase=fake sample=4 node=1 height=12 app_hash=AA
+phase=fake sample=5 node=0 height=12 app_hash=AA
+phase=fake sample=5 node=1 height=12 app_hash=AA
+=== RUN   TestWatchStall/in-flight_block_with_v3's_precommit
+phase=fake sample=0 node=0 height=12 app_hash=AA
+phase=fake sample=0 node=1 height=12 app_hash=AA
+phase=fake sample=1 node=0 height=13 app_hash=AA
+phase=fake-in-flight sample=1 node=0 height=13 threshold=12 signers=v1,v2,v3
+phase=fake sample=1 node=1 height=12 app_hash=AA
+phase=fake sample=2 node=0 height=13 app_hash=AA
+phase=fake sample=2 node=1 height=13 app_hash=AA
+phase=fake sample=3 node=0 height=13 app_hash=AA
+phase=fake sample=3 node=1 height=13 app_hash=AA
+phase=fake sample=4 node=0 height=13 app_hash=AA
+phase=fake sample=4 node=1 height=13 app_hash=AA
+phase=fake sample=5 node=0 height=13 app_hash=AA
+phase=fake sample=5 node=1 height=13 app_hash=AA
+=== RUN   TestWatchStall/in-flight_block_first_seen_on_node_1
+phase=fake sample=0 node=0 height=12 app_hash=AA
+phase=fake sample=0 node=1 height=13 app_hash=AA
+phase=fake-in-flight sample=0 node=1 height=13 threshold=12 signers=v1,v2,v3
+phase=fake sample=1 node=0 height=12 app_hash=AA
+phase=fake sample=1 node=1 height=13 app_hash=AA
+phase=fake sample=2 node=0 height=13 app_hash=AA
+phase=fake sample=2 node=1 height=13 app_hash=AA
+phase=fake sample=3 node=0 height=13 app_hash=AA
+phase=fake sample=3 node=1 height=13 app_hash=AA
+phase=fake sample=4 node=0 height=13 app_hash=AA
+phase=fake sample=4 node=1 height=13 app_hash=AA
+phase=fake sample=5 node=0 height=13 app_hash=AA
+phase=fake sample=5 node=1 height=13 app_hash=AA
+=== RUN   TestWatchStall/in-flight_block_without_v3
+phase=fake sample=0 node=0 height=12 app_hash=AA
+phase=fake sample=0 node=1 height=12 app_hash=AA
+phase=fake sample=1 node=0 height=13 app_hash=AA
+=== RUN   TestWatchStall/in-flight_block_signed_by_v4,_which_has_no_process
+phase=fake sample=0 node=0 height=12 app_hash=AA
+phase=fake sample=0 node=1 height=13 app_hash=AA
+=== RUN   TestWatchStall/in-flight_block_with_v3's_precommit_after_the_stop
+phase=fake sample=0 node=0 height=13 app_hash=AA
+=== RUN   TestWatchStall/a_second_block_after_the_in-flight_one
+phase=fake sample=0 node=0 height=13 app_hash=AA
+phase=fake-in-flight sample=0 node=0 height=13 threshold=12 signers=v1,v2,v3
+phase=fake sample=0 node=1 height=13 app_hash=AA
+phase=fake sample=1 node=0 height=14 app_hash=AA
+=== RUN   TestWatchStall/two_blocks_at_once
+phase=fake sample=0 node=0 height=12 app_hash=AA
+phase=fake sample=0 node=1 height=14 app_hash=AA
+=== RUN   TestWatchStall/in-flight_block_without_a_check
+phase=fake sample=0 node=0 height=13 app_hash=AA
+=== RUN   TestWatchStall/app_hash_disagreement
+phase=fake sample=0 node=0 height=12 app_hash=AA
+--- PASS: TestWatchStall (0.02s)
+    --- PASS: TestWatchStall/every_node_at_the_threshold (0.00s)
+    --- PASS: TestWatchStall/CI_41362122347:_node_0_catches_up_11_to_12 (0.00s)
+    --- PASS: TestWatchStall/node_1_far_behind_catches_up (0.00s)
+    --- PASS: TestWatchStall/in-flight_block_with_v3's_precommit (0.00s)
+    --- PASS: TestWatchStall/in-flight_block_first_seen_on_node_1 (0.00s)
+    --- PASS: TestWatchStall/in-flight_block_without_v3 (0.00s)
+    --- PASS: TestWatchStall/in-flight_block_signed_by_v4,_which_has_no_process (0.00s)
+    --- PASS: TestWatchStall/in-flight_block_with_v3's_precommit_after_the_stop (0.00s)
+    --- PASS: TestWatchStall/a_second_block_after_the_in-flight_one (0.00s)
+    --- PASS: TestWatchStall/two_blocks_at_once (0.00s)
+    --- PASS: TestWatchStall/in-flight_block_without_a_check (0.00s)
+    --- PASS: TestWatchStall/app_hash_disagreement (0.00s)
+=== RUN   TestWatchStallStatusError
+--- PASS: TestWatchStallStatusError (0.00s)
+=== RUN   TestStopForStallThenObserveStall
+phase=fake-stop threshold=12 app_hash=AA
+phase=fake sample=0 node=0 height=12 app_hash=AA
+phase=fake sample=0 node=1 height=12 app_hash=AA
+phase=fake sample=1 node=0 height=13 app_hash=AA
+phase=fake-in-flight sample=1 node=0 height=13 threshold=12 signers=v1,v2,v3
+phase=fake sample=1 node=1 height=12 app_hash=AA
+phase=fake sample=2 node=0 height=13 app_hash=AA
+phase=fake sample=2 node=1 height=12 app_hash=AA
+phase=fake sample=3 node=0 height=13 app_hash=AA
+phase=fake sample=3 node=1 height=12 app_hash=AA
+phase=fake sample=4 node=0 height=13 app_hash=AA
+phase=fake sample=4 node=1 height=12 app_hash=AA
+phase=fake sample=5 node=0 height=13 app_hash=AA
+phase=fake sample=5 node=1 height=12 app_hash=AA
+--- PASS: TestStopForStallThenObserveStall (6.01s)
+=== RUN   TestObserveStallFailsTheTest
+--- PASS: TestObserveStallFailsTheTest (0.07s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	316.009s
+EXIT:0

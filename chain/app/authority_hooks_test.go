@@ -116,6 +116,35 @@ func (app *App) RevokeAdmissionForTest(addr []byte) {
 	app.authorityStore().Delete(authority.AdmissionKey(addr))
 }
 
+// SeatViewForTest reports, from committed state, whether addr has an
+// admission row (0x02), its submitter role (the Role read surface), and its
+// ante admission (DR-06-06).
+func (app *App) SeatViewForTest(addr []byte) (row bool, role typesv1.SubmitterRole, admission authority.Admission) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	return app.authorityStore().Has(authority.AdmissionKey(addr)), app.authority.Role(ctx, addr), app.authority.Admission(ctx, addr)
+}
+
+// RotateCouncilSeatForTest runs the engine-only RotateCouncilSeat on the
+// committed authority store; the next Commit persists it. No message rotates
+// a seat. A rotation message would also have to give the new key's address
+// an auth account, or the SDK refuses the new key (unknown address) before
+// the admission check; this hook creates that account and returns its
+// number. A refused rotation returns its code and writes nothing.
+func (app *App) RotateCouncilSeatForTest(seatID string, newPub []byte) (uint64, error) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	st, err := authority.LoadState(app.authorityStore(), app.ChainID(), ctx.BlockHeight(), ctx.BlockTime().Unix())
+	if err != nil {
+		return 0, err
+	}
+	if out := st.RotateCouncilSeat(seatID, newPub); !out.Success() {
+		return 0, fmt.Errorf("rotation refused: %s", out.Code)
+	}
+	keeper := app.mm.Modules[authtypes.ModuleName].(authModule).keeper
+	account := keeper.NewAccountWithAddress(ctx, sdk.AccAddress(authority.SeatAddress(newPub)))
+	keeper.SetAccount(ctx, account)
+	return account.GetAccountNumber(), nil
+}
+
 // ExportAuthorityModuleForTest calls the authority module's ExportGenesis
 // directly, without the App.Export check, and returns what it panicked with
 // (nil when it did not panic).

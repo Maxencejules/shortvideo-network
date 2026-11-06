@@ -1,0 +1,31 @@
+COMMAND bash -c echo\ \"before:\"\;\ docker\ ps\ -a\ --format\ \"\{\{.ID\}\}\ \{\{.Image\}\}\ \{\{.Names\}\}\ \{\{.Status\}\}\ \{\{.CreatedAt\}\}\"\;\ echo\ \"docker\ rm\ \(the\ four\ chain-v\*-1\ containers\ created\ 2026-11-02\ 18:43:14\ UTC\ by\ m2-containers-labelled-copy.txt\):\"\;\ docker\ rm\ 77647fb04e84\ e5635f4dfe93\ fbd73a2ac1a2\ 82aafb384f36\;\ r=\$\?\;\ echo\ \"after:\"\;\ docker\ ps\ -a\ --format\ \"\{\{.ID\}\}\ \{\{.Image\}\}\ \{\{.Names\}\}\ \{\{.Status\}\}\ \{\{.CreatedAt\}\}\"\;\ docker\ network\ ls\;\ docker\ images\;\ docker\ system\ df\;\ df\ -h\ /\;\ exit\ \$r
+DATE 2026-11-02T18:44:13Z
+HEAD ea29169196d862867a0e270fada1fda74b1214c6
+TREE eabf7cef6fc24f9afdd07a8f95470ad1f85ba375
+DIRTY no
+before:
+77647fb04e84 svn-devnet:goal05 chain-v4-1 Exited (0) 36 seconds ago 2026-11-02 18:43:14 +0000 UTC
+e5635f4dfe93 svn-devnet:goal05 chain-v1-1 Exited (0) 36 seconds ago 2026-11-02 18:43:14 +0000 UTC
+fbd73a2ac1a2 svn-devnet:goal05 chain-v2-1 Exited (0) 36 seconds ago 2026-11-02 18:43:14 +0000 UTC
+82aafb384f36 svn-devnet:goal05 chain-v3-1 Exited (0) 36 seconds ago 2026-11-02 18:43:14 +0000 UTC
+docker rm (the four chain-v*-1 containers created 2026-11-02 18:43:14 UTC by m2-containers-labelled-copy.txt):
+77647fb04e84
+e5635f4dfe93
+fbd73a2ac1a2
+82aafb384f36
+after:
+NETWORK ID     NAME      DRIVER    SCOPE
+ac831ffe15c1   bridge    bridge    local
+57202ac4b0b0   host      host      local
+9625a2ef5bd5   none      null      local
+IMAGE                                                                            ID             DISK USAGE   CONTENT SIZE   EXTRA
+debian@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e   a3bba7dc7dbc        114MB         28.2MB        
+svn-devnet:goal05                                                                2fe0df9458e6        265MB           76MB        
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          2         0         264.5MB   151MB (57%)
+Containers      0         0         0B        0B
+Local Volumes   0         0         0B        0B
+Build Cache     38        0         8.357GB   8.093GB
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda        252G   37G  1.8G  96% /
+EXIT:0

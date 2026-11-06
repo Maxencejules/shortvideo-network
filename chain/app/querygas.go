@@ -31,7 +31,7 @@ const QueryGasLimitOption = "query-gas-limit"
 // not bound them. A query that runs out fails: over ABCI query as the SDK's
 // recovered-panic result (codespace "undefined", code 111222); the node
 // gRPC server's SDK interceptor turns the same panic into ErrOutOfGas
-// (codespace sdk, code 11). It bounds work, not response size; the registries bound their responses by
+// (codespace sdk, code 11). It bounds work, not response size; the registries and x/leases bound their responses by
 // construction (x/providers MaxRetiredKeysPerProvider and the page caps).
 const DefaultQueryGasLimit = genesis.MaxGasPerTx
 

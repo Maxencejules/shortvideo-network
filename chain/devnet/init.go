@@ -103,7 +103,8 @@ type Account struct {
 // accountSpec lists the secp256k1 application accounts Init generates, in
 // genesis order. authority and service are the Goal 05 accounts; the two
 // providers and the second service account are the Goal 07 registry demo
-// accounts.
+// accounts; broadcaster (BROADCASTER) relays provider-signed lease
+// messages in the Goal 08 lease demo. It is not a council seat.
 var accountSpec = []struct {
 	name string
 	role string
@@ -113,6 +114,7 @@ var accountSpec = []struct {
 	{"service-2", genesis.RoleAdmittedService},
 	{"provider-1", genesis.RoleAdmittedProvider},
 	{"provider-2", genesis.RoleAdmittedProvider},
+	{"broadcaster", genesis.RoleBroadcaster},
 }
 
 // Seat is a public devnet council key. It is not a consensus key.
@@ -478,19 +480,18 @@ func document(opts Options, nodes []prepared, accounts []accountKey, seats []cou
 	for i, id := range genesis.DecisionIDs {
 		rows[i] = genesis.BlockedDecision{DecisionID: id, SchemaVersion: 1}
 	}
-	submitters := make([]genesis.Submitter, 0, len(accounts)+len(seats))
+	submitters := make([]genesis.Submitter, 0, len(accounts))
 	for _, account := range accounts {
 		submitters = append(submitters, genesis.Submitter{
 			AddressHex: hex.EncodeToString(account.key.PubKey().Address()),
 			Role:       account.role,
 		})
 	}
+	// A seat has no submitter row: the ante admits its account from the seat
+	// list, and genesis validation refuses a seat address in the submitter
+	// list (DR-06-06). Genesis still gives each seat address an auth account.
 	seatRows := make([]genesis.DevnetTestSeat, len(seats))
 	for i, seat := range seats {
-		submitters = append(submitters, genesis.Submitter{
-			AddressHex: hex.EncodeToString(seat.key.PubKey().Address()),
-			Role:       genesis.RoleBroadcaster,
-		})
 		seatRows[i] = genesis.DevnetTestSeat{SeatID: seat.id, PublicKeyHex: hex.EncodeToString(seat.pub)}
 	}
 	return genesis.Document{

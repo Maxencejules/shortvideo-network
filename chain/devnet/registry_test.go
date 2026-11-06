@@ -257,12 +257,14 @@ type demo struct {
 	service2  loaded
 	provider1 loaded
 	provider2 loaded
-	seats     []loaded
-	keys      map[string]ed25519Key
-	intent    ed25519Key
-	policy    uint64
-	included  []string
-	rejected  map[int64]string
+	// broadcaster relays provider-signed lease messages (Goal 08).
+	broadcaster loaded
+	seats       []loaded
+	keys        map[string]ed25519Key
+	intent      ed25519Key
+	policy      uint64
+	included    []string
+	rejected    map[int64]string
 }
 
 func newDemo(t *testing.T, layout devnet.Layout, home string) *demo {
@@ -279,10 +281,12 @@ func newDemo(t *testing.T, layout devnet.Layout, home string) *demo {
 		service2:  loadSecp(t, home, "service-2"),
 		provider1: loadSecp(t, home, "provider-1"),
 		provider2: loadSecp(t, home, "provider-2"),
-		keys:      map[string]ed25519Key{},
-		intent:    newKey("intent-1"),
-		policy:    1,
-		rejected:  map[int64]string{},
+		// broadcaster is in every devnet genesis since Goal 08.
+		broadcaster: loadSecp(t, home, "broadcaster"),
+		keys:        map[string]ed25519Key{},
+		intent:      newKey("intent-1"),
+		policy:      1,
+		rejected:    map[int64]string{},
 	}
 	for i := 1; i <= 4; i++ {
 		d.seats = append(d.seats, loadEd(t, home, fmt.Sprintf("seat-%d", i)))
@@ -298,7 +302,8 @@ func newDemo(t *testing.T, layout devnet.Layout, home string) *demo {
 	for _, account := range layout.Topology.Accounts {
 		roles[account.Name] = account.Role
 	}
-	if roles["provider-1"] != genesis.RoleAdmittedProvider || roles["provider-2"] != genesis.RoleAdmittedProvider || roles["service-2"] != genesis.RoleAdmittedService {
+	if roles["provider-1"] != genesis.RoleAdmittedProvider || roles["provider-2"] != genesis.RoleAdmittedProvider || roles["service-2"] != genesis.RoleAdmittedService ||
+		roles["broadcaster"] != genesis.RoleBroadcaster {
 		t.Fatalf("topology accounts %v", layout.Topology.Accounts)
 	}
 	return d
@@ -932,7 +937,7 @@ func (d *demo) scanEvents(to int64) {
 		[]byte(demoEndpoint), []byte("canary-endpoint.invalid"), []byte(demoEmail), []byte(demoUser),
 		[]byte(demoWatch), []byte(demoReport), demoMedia, demoMedia[:64],
 	}
-	var events, typed, txs int
+	var events, typed, blockTyped, txs int
 	for h := int64(1); h <= to; h++ {
 		height := h
 		// The block data: every transaction, including the ones a handler
@@ -956,23 +961,53 @@ func (d *demo) scanEvents(to int64) {
 			d.t.Fatal(err)
 		}
 		var all []abci.Event
-		for _, tx := range res.TxsResults {
-			all = append(all, tx.Events...)
+		// msgCount[i] is the number of messages of the transaction that
+		// emitted all[i]; -1 marks a FinalizeBlock event.
+		var msgCount []int
+		for j, tx := range res.TxsResults {
+			decoded, err := d.enc.TxConfig.TxDecoder()(block.Block.Txs[j])
+			count := 0
+			if err == nil {
+				count = len(decoded.GetMsgs())
+			}
+			for _, ev := range tx.Events {
+				all = append(all, ev)
+				msgCount = append(msgCount, count)
+			}
 		}
-		all = append(all, res.FinalizeBlockEvents...)
-		for _, ev := range all {
+		for _, ev := range res.FinalizeBlockEvents {
+			all = append(all, ev)
+			msgCount = append(msgCount, -1)
+		}
+		for i, ev := range all {
 			events++
-			if strings.HasPrefix(ev.Type, "svn.events.v1.") {
-				// The raw /block_results event: typed attributes, then
-				// the SDK's msg_index (every demo tx has one message).
+			if strings.HasPrefix(ev.Type, "svn.events.v1.") && msgCount[i] >= 0 {
+				// A raw /block_results transaction event: typed
+				// attributes, then the SDK's msg_index, which names one
+				// of the transaction's messages (the registry demo sends
+				// one message per transaction; the lease demo also sends
+				// multi-message setup transactions).
 				msg, index, err := msgkit.ParseCommitted(ev)
 				if err != nil {
 					d.t.Fatalf("height %d committed event %s: %v", h, ev.Type, err)
 				}
-				if index != 0 || string(proto.MessageName(msg)) != ev.Type {
-					d.t.Fatalf("height %d committed event %s parsed as %s msg_index %d", h, ev.Type, proto.MessageName(msg), index)
+				if int(index) >= msgCount[i] || string(proto.MessageName(msg)) != ev.Type {
+					d.t.Fatalf("height %d committed event %s parsed as %s msg_index %d of %d messages", h, ev.Type, proto.MessageName(msg), index, msgCount[i])
 				}
 				typed++
+			}
+			if strings.HasPrefix(ev.Type, "svn.events.v1.") && msgCount[i] < 0 {
+				// A FinalizeBlock event (x/leases BeginBlock expiry):
+				// typed attributes, then mode=BeginBlock.
+				msg, mode, err := msgkit.ParseBlockEvent(ev)
+				if err != nil {
+					d.t.Fatalf("height %d block event %s: %v", h, ev.Type, err)
+				}
+				if mode != "BeginBlock" || string(proto.MessageName(msg)) != ev.Type {
+					d.t.Fatalf("height %d block event %s parsed as %s mode %s", h, ev.Type, proto.MessageName(msg), mode)
+				}
+				typed++
+				blockTyped++
 			}
 			var blob []byte
 			blob = append(blob, ev.Type...)
@@ -1010,7 +1045,8 @@ func (d *demo) scanEvents(to int64) {
 	if txs == 0 {
 		d.t.Fatal("no committed transaction was scanned")
 	}
-	fmt.Printf("phase=events heights=1..%d block_txs=%d events=%d typed=%d typed_parsed_with_msg_index=%d canaries=0 forbidden_names=0\n", to, txs, events, typed, typed)
+	fmt.Printf("phase=events heights=1..%d block_txs=%d events=%d typed=%d typed_tx_parsed_with_msg_index=%d typed_block_parsed_with_mode=%d canaries=0 forbidden_names=0\n",
+		to, txs, events, typed, typed-blockTyped, blockTyped)
 }
 
 func sortedKeys(m map[string]namedQuery) []string {

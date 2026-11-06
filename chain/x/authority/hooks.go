@@ -44,8 +44,8 @@ func (k Keeper) WithRegistry(p ProviderAdmission, c ContentRemoval) Keeper {
 
 // WithPeers returns a copy of k whose business gate also consults the
 // ledgers in peers. Business ids are one protocol namespace across
-// authority, providers, and content. Peers may be filled after this call;
-// the pointer is shared. A nil peers set consults no other module.
+// authority, providers, content, and leases. Peers may be filled after this
+// call; the pointer is shared. A nil peers set consults no other module.
 func (k Keeper) WithPeers(peers *msgkit.Peers) Keeper {
 	k.peers = peers
 	return k

@@ -8,7 +8,7 @@ A new validator is a council proposal whose payload is `ValidatorPowerChange` wi
 
 Provider admission is a different record. `RegisterProvider` is an `x/providers` committed handler and creates `APPLIED`. `AdmitProviderChange` through the council moves it to `ADMITTED` when the devnet DEC-002 test role is present. That does not change voting power. Service admission is the genesis submitter role `ADMITTED_SERVICE`. `RotateProviderKey` is an `x/providers` committed handler and changes the provider signing key only. Council seat rotation and service account rotation are engine operations, not transactions. None of those rotate a consensus key.
 
-Council seats send their messages from accounts that genesis lists as `BROADCASTER` submitters. That row is the only way a seat account passes the ante (DR-06-06). Genesis validation refuses a seat address listed with any other role (DR-07-11).
+Council seats send their messages from their own accounts. Genesis gives each seat address an auth account and no submitter row. The ante admits a seat account from the seat list in the authority config and lets it sign only propose and approve (owner ruling DR-06-06). Genesis validation refuses a seat address in the submitter list with any role (DR-07-11 option 2).
 
 ## Ordinary removal
 

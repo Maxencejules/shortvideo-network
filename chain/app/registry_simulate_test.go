@@ -17,8 +17,8 @@ import (
 )
 
 // TestSimulateEstimatesGas: App.Simulate (the handler behind
-// /cosmos.tx.v1beta1.Service/Simulate) runs every registry message and the
-// council messages to the end. Simulation runs on the SDK's infinite gas
+// /cosmos.tx.v1beta1.Service/Simulate) runs every registry message, the
+// four lease messages, and the council messages to the end. Simulation runs on the SDK's infinite gas
 // meter; before the fix, the handlers' meter-limit check rejected every
 // simulated message with ERROR_CODE_BOUNDS. For each step the same signed
 // bytes are simulated and then committed: simulation changes no committed
@@ -65,6 +65,14 @@ func TestSimulateEstimatesGas(t *testing.T) {
 	next := newSigningKey("p1-key-2")
 	step("rotate p1", n.provider1, n.rotate(t, n.provider1, "rot-p1", "p1", 1, next))
 	n.signing["p1"] = next
+	// The four lease messages (Goal 08), before p1 drains.
+	step("register c-lease", n.service, n.registerContent(t, n.service, "reg-cl", "cl", 1, packageManifest("cl"), sizeC1))
+	now := c.now()
+	offer := n.offerMsg(n.service, "of-sim", "o-sim", "cl", "p1", sizeC1, now+1800, now+600)
+	step("offer lease", n.service, offer)
+	step("accept lease", n.broadcaster, n.acceptMsg(t, n.broadcaster, "ac-sim", offer, "l-sim"))
+	step("renew lease", n.broadcaster, n.renewMsg(t, n.broadcaster, "rn-sim", "l-sim", "p1", "cl", sizeC1, 2, now+1800+leaseTerm))
+	step("end lease", n.broadcaster, n.endMsg(t, n.broadcaster, "en-sim", "l-sim", "p1", 2))
 	step("drain p1", n.provider1, n.drain(t, n.provider1, "drain-p1", "p1", 2, typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_DRAIN))
 	step("register c1", n.service, n.registerContent(t, n.service, "reg-c1", "c1", 1, packageManifest("c1"), sizeC1))
 	step("withdraw c1", n.service, n.withdrawContent(t, n.service, "wd-c1", "c1", 1, reasonDigest("c1")))

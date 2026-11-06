@@ -70,8 +70,8 @@ func TestRestartLoadsCommittedState(t *testing.T) {
 	}
 }
 
-// TestAppRefusesScaffoldLayout: a committed registry store in the
-// goal-05/06 scaffold layout (no layout version key, the module genesis
+// TestAppRefusesScaffoldLayout: a committed providers, content, or leases
+// store in the goal-05/06 scaffold layout (no layout version key, the module genesis
 // JSON at key [0x01], which sits inside the registry record prefix) or
 // with another layout version stops app.New on restart, instead of being
 // misread as registry records (an export or a Providers query of such a
@@ -88,6 +88,9 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
 		{"content scaffold", app.ModuleContent, []byte(`{"contents":[],"tombstones":[]}`), 0},
 		{"providers layout 1", app.ModuleProviders, nil, 1},
 		{"content layout 3", app.ModuleContent, nil, 3},
+		{"leases scaffold", app.ModuleLeases, []byte(`{"offers":[],"leases":[]}`), 0},
+		{"leases layout 1", app.ModuleLeases, nil, 1},
+		{"leases layout 3", app.ModuleLeases, nil, 3},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			n := newRegNet()

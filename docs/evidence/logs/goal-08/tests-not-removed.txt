@@ -1,0 +1,43 @@
+COMMAND bash -c $'names() { git grep -h -E \'^func (Test|Fuzz)\' "$1" -- chain | sed \'s/(.*//; s/^func //\' | sort -u; }\nh=$(names HEAD)\necho "HEAD $(git rev-parse HEAD): $(echo "$h" | grep -c .) test/fuzz function names under chain/"\na=$(names 7c79c298ee9036bee017987d0ab045e00ac9b2a8)\nb=$(names 4f7073384093e28d8cdc985ca1407ea66b9b99d5)\necho "7c79c29 (goal-07 as merged): $(echo "$a" | grep -c .) names"\necho "4f70733 (goal-08 before the merge): $(echo "$b" | grep -c .) names"\nga=$(comm -23 <(echo "$a") <(echo "$h")); echo "7c79c29 names missing from HEAD: $(echo "$ga" | grep -c .)"; echo "$ga" | grep . || true\ngb=$(comm -23 <(echo "$b") <(echo "$h")); echo "4f70733 names missing from HEAD: $(echo "$gb" | grep -c .)"; echo "$gb" | grep . || true\nu=$(printf \'%s\\n%s\\n\' "$a" "$b" | grep . | sort -u)\necho "union of 7c79c29 and 4f70733: $(echo "$u" | grep -c .) names"\ngone=$(comm -23 <(echo "$u") <(echo "$h"))\necho "union names missing from HEAD: $(echo "$gone" | grep -c .)"\nfor x in $gone; do\n  printf \'  %s defined in:\' "$x"\n  for c in 7c79c298ee9036bee017987d0ab045e00ac9b2a8 4f7073384093e28d8cdc985ca1407ea66b9b99d5 \'ffd2ce9\' \'70d55dec2db2b6ae1b8a9e0611521bfe69e76cea\' HEAD; do\n    if git grep -q -E "^func $x\\(" "$c" -- chain; then printf \' %s\' "$(git rev-parse --short "$c")"; fi\n  done\n  echo\ndone\necho "(70d55de is goal-07\'s merge of goal-06 round 3; ffd2ce9 is its first parent)"\nnew=$(comm -13 <(echo "$u") <(echo "$h"))\necho "HEAD names not in the union: $(echo "$new" | grep -c .)"\necho "$new" | grep . || true\ntest -z "$gone"'
+DATE 2026-11-02T15:28:45Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310: 417 test/fuzz function names under chain/
+7c79c29 (goal-07 as merged): 323 names
+4f70733 (goal-08 before the merge): 317 names
+7c79c29 names missing from HEAD: 3
+TestSeatAddressIsBroadcasterOnly
+TestSeatAddressRole
+TestSeatRotationMovesAdmission
+4f70733 names missing from HEAD: 4
+TestAdmissionAndMixedActivation
+TestKeeperForceWithdrawArgumentsSurviveTheSideDocument
+TestKeeperLoadsAnOlderSideDocument
+TestQuorumUsesPowerNotCount
+union of 7c79c29 and 4f70733: 410 names
+union names missing from HEAD: 7
+  TestAdmissionAndMixedActivation defined in: 4f70733 ffd2ce9
+  TestKeeperForceWithdrawArgumentsSurviveTheSideDocument defined in: 4f70733 ffd2ce9
+  TestKeeperLoadsAnOlderSideDocument defined in: 4f70733 ffd2ce9
+  TestQuorumUsesPowerNotCount defined in: 4f70733 ffd2ce9
+  TestSeatAddressIsBroadcasterOnly defined in: 7c79c29 70d55de
+  TestSeatAddressRole defined in: 7c79c29 70d55de
+  TestSeatRotationMovesAdmission defined in: 7c79c29 70d55de
+(70d55de is goal-07's merge of goal-06 round 3; ffd2ce9 is its first parent)
+HEAD names not in the union: 14
+TestAcceptReplayByAnotherProviderD13
+TestAdmissionOf
+TestCheckPackage
+TestDevnetSeatsHaveNoSubmitterRow
+TestEndSignedForEarlierTermD12
+TestGeneratorRestrictionsHideKnownDivergences
+TestOfferReplayByAnotherSchedulerD11
+TestOneSchedulerRefillsProviderSlots
+TestOpenOffersPerSchedulerCapD10
+TestRetryAfterKeyRotation
+TestSeatAddressIsNotASubmitter
+TestSeatKeysSignOnlyCouncilMessages
+TestSeatRotationMovesAnteAdmission
+TestSeatRotationMovesSeatAdmission
+EXIT:1

@@ -777,8 +777,9 @@ func (h *fuzzHarness) execute(st *State, seat int, x, v byte) fuzzResult {
 	case executeByService:
 		signer, want = h.service, CodeForbidden
 	case executeBySeat:
-		// Unit-genesis seats are not submitters (app genesis makes them
-		// BROADCASTER, DR-06-06, which gives FORBIDDEN instead).
+		// A seat is not a submitter (DR-06-06), so the engine says
+		// UNAUTHORIZED. In the app the ante refuses a seat-signed execute
+		// first, with FORBIDDEN.
 		signer, want = h.seats[seat].Signer, CodeUnauthorized
 	}
 	out := st.ExecuteChange(execute(signer, "ex-"+target+"-"+fuzzLetter(seat), target))

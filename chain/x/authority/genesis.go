@@ -26,8 +26,8 @@ func genesisError(code, format string, args ...any) error {
 //  1. Shape: the authority state exists; no proposals (the proto has no
 //     payload, so a genesis proposal could never execute); no approved
 //     council (spec guard_decisions); quorum loss UNSET (DEC-008); seats and
-//     submitters well formed; a seat address is a submitter only as
-//     BROADCASTER (DR-07-11, stricter than spec).
+//     submitters well formed; a seat address is not a submitter with any
+//     role (DR-06-06 and DR-07-11, stricter than spec).
 //  2. Validators: InitialUpdates rules, node ids, and the spec
 //     power_set_invariant (spec validate_genesis_view).
 //  3. Pending entries: at most MaxPendingChanges, each well formed, distinct
@@ -132,16 +132,20 @@ func validateSubmitters(rows []*typesv1.Submitter) error {
 }
 
 // validateSeatRoles fails closed when a seat address is a submitter with
-// any role other than BROADCASTER. The row is how a seat key passes the ante;
-// AUTHORITY, ADMITTED_SERVICE and ADMITTED_PROVIDER would let a council key
-// execute, register content or register a provider. genesis.Validate applies
-// the same rule to the document. Interim answer to DR-07-11 (with DR-06-06).
+// any role. A seat account is admitted from the seat list (AdmissionOf), so
+// it needs no row, and a row would give a council key a submitter role
+// beside its seat: AUTHORITY executes council proposals, ADMITTED_SERVICE
+// registers content, ADMITTED_PROVIDER registers a provider, BROADCASTER
+// relays lease messages, and AUDITOR is the Goal 09 evidence role.
+// genesis.Validate applies the same rule to the document. Owner ruling
+// DR-06-06 (2026-11-02), which replaces the BROADCASTER-only rule of
+// DR-07-11 with its option 2.
 func validateSeatRoles(seats []*authorityv1.DevnetTestSeat, rows []*typesv1.Submitter) error {
 	for _, seat := range seats {
 		addr := SeatAddress(seat.GetPublicKey())
 		for _, row := range rows {
-			if bytes.Equal(row.GetAddress(), addr) && row.GetRole() != typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER {
-				return genesisError(CodeForbidden, "seat %q address is a %v submitter; a seat address may only be BROADCASTER", seat.GetSeatId(), row.GetRole())
+			if bytes.Equal(row.GetAddress(), addr) {
+				return genesisError(CodeForbidden, "seat %q address is a %v submitter; a seat address may not be a submitter", seat.GetSeatId(), row.GetRole())
 			}
 		}
 	}

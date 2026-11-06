@@ -62,10 +62,23 @@ func (k Keeper) ConsensusBytes(ctx context.Context) ([]byte, error) {
 	return append([]byte(nil), raw...), nil
 }
 
-// Admitted reports whether addr has an admission row (a genesis submitter).
-func (k Keeper) Admitted(ctx context.Context, addr []byte) bool {
-	if len(addr) != 20 {
-		return false
-	}
-	return sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey).Has(AdmissionKey(addr))
+// Admission is how the ante admits a transaction signer (DR-06-06).
+type Admission int
+
+const (
+	// NotAdmitted: the address has no admission row and is not the address
+	// of a council seat key. The ante refuses it (ERROR_CODE_UNAUTHORIZED).
+	NotAdmitted Admission = iota
+	// AdmittedSubmitter: the address has an admission row (0x02), so it is
+	// a genesis submitter with a role.
+	AdmittedSubmitter
+	// AdmittedSeat: the address is the account of a council seat key in the
+	// config (0x01) and has no admission row. It has no submitter role. The
+	// ante lets it sign only council messages (propose and approve).
+	AdmittedSeat
+)
+
+// Admission reports how the ante admits addr. See AdmissionOf.
+func (k Keeper) Admission(ctx context.Context, addr []byte) Admission {
+	return AdmissionOf(sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey), addr)
 }

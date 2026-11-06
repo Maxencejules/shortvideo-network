@@ -1,0 +1,35 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ env\ -C\ chain\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzLeaseDifferential\$\'\ -fuzztime=60s\ ./x/leases/difftest/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \"new\ or\ changed\ files\ under\ chain/\ after\ the\ run:\"\;\ git\ status\ --porcelain\ --untracked-files=all\ --\ chain\;\ echo\ \"\(end\ of\ list\)\"\;\ exit\ \$s
+DATE 2026-11-02T15:48:55Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+loadavg before: 2.00 2.73 4.12 1/117 3514
+fuzz: elapsed: 0s, gathering baseline coverage: 0/60 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 25/60 completed
+fuzz: elapsed: 5s, gathering baseline coverage: 60/60 completed, now fuzzing with 4 workers
+fuzz: elapsed: 6s, execs: 70 (15/sec), new interesting: 0 (total: 60)
+fuzz: elapsed: 9s, execs: 75 (2/sec), new interesting: 0 (total: 60)
+fuzz: elapsed: 12s, execs: 75 (0/sec), new interesting: 0 (total: 60)
+fuzz: elapsed: 15s, execs: 230 (52/sec), new interesting: 3 (total: 63)
+fuzz: elapsed: 18s, execs: 289 (20/sec), new interesting: 4 (total: 64)
+fuzz: elapsed: 21s, execs: 289 (0/sec), new interesting: 4 (total: 64)
+fuzz: elapsed: 24s, execs: 345 (19/sec), new interesting: 5 (total: 65)
+fuzz: elapsed: 27s, execs: 504 (53/sec), new interesting: 8 (total: 68)
+fuzz: elapsed: 30s, execs: 504 (0/sec), new interesting: 8 (total: 68)
+fuzz: elapsed: 33s, execs: 656 (51/sec), new interesting: 11 (total: 71)
+fuzz: elapsed: 36s, execs: 709 (18/sec), new interesting: 12 (total: 72)
+fuzz: elapsed: 39s, execs: 765 (19/sec), new interesting: 13 (total: 73)
+fuzz: elapsed: 42s, execs: 866 (34/sec), new interesting: 15 (total: 75)
+fuzz: elapsed: 45s, execs: 929 (21/sec), new interesting: 16 (total: 76)
+fuzz: elapsed: 48s, execs: 982 (18/sec), new interesting: 17 (total: 77)
+fuzz: elapsed: 51s, execs: 1043 (20/sec), new interesting: 18 (total: 78)
+fuzz: elapsed: 54s, execs: 1150 (36/sec), new interesting: 19 (total: 79)
+fuzz: elapsed: 57s, execs: 1202 (17/sec), new interesting: 20 (total: 80)
+fuzz: elapsed: 1m0s, execs: 1202 (0/sec), new interesting: 20 (total: 80)
+fuzz: elapsed: 1m1s, execs: 1202 (0/sec), new interesting: 20 (total: 80)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest	61.988s
+loadavg after: 7.13 4.04 4.48 1/117 3694
+new or changed files under chain/ after the run:
+(end of list)
+EXIT:0

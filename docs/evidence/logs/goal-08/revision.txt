@@ -1,0 +1,48 @@
+COMMAND bash -c $'echo "origin/main (local remote-tracking ref): $(git rev-parse origin/main)"\necho "commits in origin/main..HEAD: $(git rev-list --count origin/main..HEAD)"\necho "git log --oneline origin/main..HEAD | head -60:"\ngit log --oneline origin/main..HEAD | head -60\necho "HEAD $(git rev-parse HEAD) tree $(git rev-parse \'HEAD^{tree}\')"\necho "parents of HEAD: $(git log -1 --format=%P HEAD)"\necho "HEAD^1 $(git rev-parse \'HEAD^1\') tree $(git rev-parse \'HEAD^1^{tree}\')"\necho "parents of HEAD^1: $(git log -1 --format=%P \'HEAD^1\')"\necho "HEAD^2 $(git rev-parse \'HEAD^2\') tree $(git rev-parse \'HEAD^2^{tree}\')"\necho "branch: $(git branch --show-current)"\necho "git status --porcelain --untracked-files=all:"\ngit status --porcelain --untracked-files=all\necho "(end of status)"'
+DATE 2026-11-02T15:28:44Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+origin/main (local remote-tracking ref): 2fc93e5b40050e54341cbdb4cc2275ed4bc4839a
+commits in origin/main..HEAD: 28
+git log --oneline origin/main..HEAD | head -60:
+acfe14e Merge origin/main (2fc93e5, PR 10 squash) into goal-08 with -s ours
+210bfb7 Merge goal 07 (7c79c29) into goal 08: DR-06-06 seat-only admission and lease review fixes
+7c79c29 goal 07: evidence for the node shutdown fix on 1e89e60
+1e89e60 node: stop the shutdown panic "leveldb: closed" (exit status 2)
+11b81a0 goal 07: record head CI on 45ac279 (run 41438312010, all green)
+4f70733 goal 08: wip checkpoint (x/leases implemented and reviewed; fix round pending, not gated)
+45ac279 goal 07: evidence on the merged b782e01 (status BLOCKED)
+b782e01 Record main f5916bd (squash of goal 06, PR 9) as merged into goal 07
+70d55de Merge goal 06 round 3 (0936332, main f5916bd) into goal 07
+0936332 goal 06: evidence for the stall-check fix on 90652c6
+90652c6 goal 06: fix the devnet stall check's false failures
+c68113c goal 06: round 3 evidence on fb4cde2 (status VERIFIED)
+fb4cde2 goal 06: devnet test that quorum follows voting power, not node count
+2389948 goal 06: round 3 fixes for the PR 9 review
+ffd2ce9 goal 07: evidence on 43c1a10 (status BLOCKED)
+43c1a10 goal 07: fix second-round review findings
+2e0888d goal 07: provider and content registries (x/providers, x/content)
+a88453e goal 07: wip checkpoint (integration done, review/fix pending, not gated)
+b4282cb goal 07: wip checkpoint (in progress, not tested)
+5213a7c goal 07: wip checkpoint (in progress, not tested)
+4ba4168 goal 07: wip checkpoint (in progress, not tested)
+9ca725e goal 07: wip checkpoint (in progress, not tested)
+26454c1 goal 07: add evidence log capture helper
+3853e34 goal 06: round 2 evidence on tree eacc6b47
+4c87282 goal 06: full-state rejects, transition fuzz, and effective-1 sets
+a6a5273 goal 06: record CI run 41257591421
+54503ac goal 06: record authority evidence
+f38c6ef goal 06: authority and validator lifecycle
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310 tree 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+parents of HEAD: 210bfb78d65f7b1cb910b5e24ebc8d8ce9d17f56 2fc93e5b40050e54341cbdb4cc2275ed4bc4839a
+HEAD^1 210bfb78d65f7b1cb910b5e24ebc8d8ce9d17f56 tree 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+parents of HEAD^1: 4f7073384093e28d8cdc985ca1407ea66b9b99d5 7c79c298ee9036bee017987d0ab045e00ac9b2a8
+HEAD^2 2fc93e5b40050e54341cbdb4cc2275ed4bc4839a tree 3ac4bed9b4904c0aae8473e7d1b2754fecf16135
+branch: goal-08
+git status --porcelain --untracked-files=all:
+ M docs/evidence/goal-01/check_requirements.py
+?? docs/evidence/goal-08/mutants.py
+?? docs/evidence/logs/goal-08/revision.txt
+(end of status)
+EXIT:0

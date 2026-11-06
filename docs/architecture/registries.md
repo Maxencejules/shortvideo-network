@@ -9,9 +9,9 @@ Reviewer note for Goal 07. This is not an audit. Public launch is disabled. Ther
 1. An `x/authority` keeper. Its read surface (`Role`, `DevnetRole`, `GovernedLimit`) is what the registries consume.
 2. `x/providers` and `x/content` keepers with that read surface and one shared `msgkit.Peers` set.
 3. The authority keeper used by the app: `WithRegistry(providers, content).WithPeers(peers)`. Council payloads reach the registries only through it.
-4. `peers` lists `authority`, `content`, and `providers`. A business id is one namespace across the three modules.
+4. `peers` lists `authority`, `content`, and `providers` (and `leases` since Goal 08). A business id is one namespace across those modules.
 
-Each registry module registers its `svn.<module>.v1.Msg` service on the message router and its `svn.<module>.v1.Query` service on the gRPC query router (`RegisterServices`). Lease and evidence messages stay closed stubs that return `ERROR_CODE_FORBIDDEN`. `x/authority` is still the only module that returns validator updates; neither registry has an EndBlock.
+Each registry module registers its `svn.<module>.v1.Msg` service on the message router and its `svn.<module>.v1.Query` service on the gRPC query router (`RegisterServices`). Since Goal 08 the lease messages are handled by x/leases and the content keeper the app runs carries the x/leases withdrawal hook ([leases.md](leases.md)); the evidence message stays a closed stub that returns `ERROR_CODE_FORBIDDEN`. `x/authority` is still the only module that returns validator updates; neither registry has an EndBlock.
 
 ## Who may write
 
@@ -25,9 +25,9 @@ Each registry module registers its `svn.<module>.v1.Msg` service on the message 
 | `WithdrawContent` | The submitting host | Hosting intent, devnet only |
 | Admit, disable, force-withdraw | No direct message (DEC-009) | Council proposal, three of four seats, executed by the authority account |
 
-No other account reaches these handlers. A council seat, a `BROADCASTER` that is not a seat, the `AUTHORITY` account and an `AUDITOR` get `ERROR_CODE_FORBIDDEN` for each of the six messages, as do the service account for the provider messages and a provider account for another provider's record or for content (`TestRegistryMessagesRejectOtherRoles`, 39 rows, full state unchanged). Genesis refuses a council seat address listed with any role but `BROADCASTER` (decision request DR-07-11), so a seat key cannot hold a registry role.
+No other account reaches these handlers. A `BROADCASTER`, the `AUTHORITY` account and an `AUDITOR` get `ERROR_CODE_FORBIDDEN` from the handler for each of the six messages, as do the service account for the provider messages and a provider account for another provider's record or for content. A council seat key gets `ERROR_CODE_FORBIDDEN` from the ante, before any handler and before its sequence moves: it may sign only propose and approve (`TestRegistryMessagesRejectOtherRoles`, 39 rows, full state unchanged; owner ruling DR-06-06). Genesis refuses a council seat address in the submitter list with any role (DR-07-11 option 2), so a seat key cannot hold a registry role.
 
-Recorded deviation: the relay column of the `protocol.md` transition table lets a broadcaster submit the outer transaction of `RegisterProvider`, `RegisterContent` and `WithdrawContent`. The registries follow `spec_machine.py` `check_role` instead. The outer signer is the account that owns the record (`account`, or `submitting_host`, which the hosting intent is bound to), so a broadcaster outer signer is `ERROR_CODE_FORBIDDEN`. Adopting the relay column would give every `BROADCASTER` key, council seats included, registry reach (DR-06-06).
+Recorded deviation: the relay column of the `protocol.md` transition table lets a broadcaster submit the outer transaction of `RegisterProvider`, `RegisterContent` and `WithdrawContent`. The registries follow `spec_machine.py` `check_role` instead. The outer signer is the account that owns the record (`account`, or `submitting_host`, which the hosting intent is bound to), so a broadcaster outer signer is `ERROR_CODE_FORBIDDEN`. Adopting the relay column would give every `BROADCASTER` key registry reach. Council seat keys have no role and are not relays (DR-06-06).
 
 `protocol.md` says a direct `AdmitProvider`, `DisableProvider`, or `ForceWithdraw` is `ERROR_CODE_FORBIDDEN` (codespace `svn`, code 2). No such message type is registered, so such a transaction fails decoding instead: codespace `sdk`, code 2 (`ErrTxDecode`). The number is the same and the codespace is not; this is a recorded deviation (`TestDirectAdminMessagesDoNotExist`).
 
@@ -51,7 +51,7 @@ The same business id with the same payload is idempotent: code 0, no write, no t
 - Drain and disablement release nothing. Existing reservations end only by their own legal transitions (Goal 08). `DISABLED` is terminal. No provider record, retired key, event, or transaction is deleted.
 - A provider cannot rotate its way out of council disablement: retired keys are store rows of their own, so the provider record a disable rewrites has a constant size however often the provider rotated (`TestCouncilDisableGasDoesNotGrowWithRotations`).
 - A `WITHDRAWN` content record keeps its row and gains a tombstone (`history_erased` false, retention decision DEC-004, value version 0). Withdrawal blocks new offers through `CheckOfferable` and `CheckNotWithdrawn` (Goal 08). Re-registering the id is `ERROR_CODE_DUPLICATE_ID`; there is no silent revival. A new encoding is a new `content_id` in protocol v0 (decision request DR-07-04).
-- Withdrawal does not release accepted reservations. Goal 08 wires the withdrawal hook that voids open offers; Goal 07 wires none, because no offer store exists.
+- Withdrawal does not release accepted reservations. Since Goal 08 the app wires x/leases as the withdrawal hook: it voids the content's open offers inside the withdrawal transaction, for `WithdrawContent` and for a council force-withdraw alike (Goal 07 wired none, because no offer store existed).
 
 ## What a registry entry is not
 
@@ -95,6 +95,9 @@ Layout version 1 was the goal-05/06 scaffold slot of each registry store: exactl
 
 ## Handoff to Goal 08
 
+Goal 08 consumes these read surfaces; the wiring and its tests are in [leases.md](leases.md).
+
 - `providers.Keeper.Provider` (the record without its retired keys, constant work), `CheckNewObligation` (`NOT_FOUND`, then `FORBIDDEN` unless `ADMITTED`), and `VerifyProviderSignature` (current key only; any other key is `ERROR_CODE_UNAUTHORIZED`). The v0 spec lets a provider rotate back to a key it retired; that key is then the current key and verifies again.
-- `content.Keeper.Package`, `CheckOfferable` (`NOT_FOUND`, `WITHDRAWN`, `CONFLICT`, `INTEGRITY` in `op_offer` order), `CheckNotWithdrawn`, and the `WithdrawalHook` interface.
-- Reserve and release accounting, and the renewal rule after disablement (decision request DR-07-05), are Goal 08.
+- `content.Keeper.Package`, `CheckOfferable` (`NOT_FOUND`, `WITHDRAWN`, `CONFLICT`, `INTEGRITY` in `op_offer` order), `CheckNotWithdrawn`, `CheckPackage` (Goal 08: a lease's committed package against the record in any state, for x/leases `InitGenesis`), and the `WithdrawalHook` interface, which the x/leases keeper implements.
+- Reserve and release accounting: Goal 08 added `providers.Keeper.ReserveProbe`, `Reserve`, and `Release` (`chain/x/providers/README.md`); x/leases is their only caller.
+- The renewal rule after disablement (DR-07-05) is now decision request DR-08-01: x/leases follows the v0 spec, so a `DRAINING` or `DISABLED` provider can still renew its leases, and the remedy is `authority_end`.

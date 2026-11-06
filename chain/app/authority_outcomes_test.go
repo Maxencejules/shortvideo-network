@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"strings"
 	"testing"
 	"time"
@@ -216,21 +217,27 @@ func TestPowerOnlyChangeCommitted(t *testing.T) {
 }
 
 // TestAnteRejectsNonAdmittedAccount (REQ-CHAIN-008): an account with an
-// auth record but no admission row cannot write. The ante refuses it before
-// the handler and before the sequence moves.
+// auth record but no admission row, and no council seat key, cannot write.
+// The ante refuses it before the handler and before the sequence moves. The
+// service account reaches the handler first, then loses its admission row.
+// A council seat account has no admission row and is admitted from the seat
+// list (DR-06-06), before and after the service account's revocation.
 func TestAnteRejectsNonAdmittedAccount(t *testing.T) {
 	c := newCouncil(t, nil)
-	s1, s2 := c.seat(0), c.seat(1)
-	if res := c.send(t, s1, &authorityv1.MsgProposeChange{Signer: s1.PubKey().Address()}); res.Codespace != "svn" || res.Code != 7 {
-		t.Fatalf("admitted seat: codespace %q code %d log %s", res.Codespace, res.Code, res.Log)
+	service, s1 := c.keys.service, c.seat(0)
+	if res := c.send(t, service, &authorityv1.MsgProposeChange{Signer: service.PubKey().Address()}); res.Codespace != "svn" || res.Code != 7 {
+		t.Fatalf("admitted service: codespace %q code %d log %s", res.Codespace, res.Code, res.Log)
 	}
-	c.run.app.RevokeAdmissionForTest(s1.PubKey().Address())
+	if res := c.send(t, s1, &authorityv1.MsgProposeChange{Signer: s1.PubKey().Address()}); res.Codespace != "svn" || res.Code != 7 {
+		t.Fatalf("seat without an admission row: codespace %q code %d log %s", res.Codespace, res.Code, res.Log)
+	}
+	c.run.app.RevokeAdmissionForTest(service.PubKey().Address())
 	c.run.deliver(t, nil)
-	valid := change{id: "after-revoke", base: 1, node: "v5", pub: bytes32(9), power: 1, height: 1000}.msg(t, s1)
-	c.reject(t, rejectRow{name: "propose from a seat without an admission row", key: s1, msg: valid,
+	c.reject(t, rejectRow{name: "propose from an account without an admission row", key: service,
+		msg:   &authorityv1.MsgProposeChange{Signer: service.PubKey().Address()},
 		space: "svn", code: 1, proto: "signer is not an admitted application account"})
-	if res := c.send(t, s2, &authorityv1.MsgProposeChange{Signer: s2.PubKey().Address()}); res.Codespace != "svn" || res.Code != 7 {
-		t.Fatalf("other seat: codespace %q code %d log %s", res.Codespace, res.Code, res.Log)
+	if res := c.send(t, s1, &authorityv1.MsgProposeChange{Signer: s1.PubKey().Address()}); res.Codespace != "svn" || res.Code != 7 {
+		t.Fatalf("seat after the revocation: codespace %q code %d log %s", res.Codespace, res.Code, res.Log)
 	}
 }
 
@@ -294,9 +301,23 @@ func TestAuthorityMessagesCarryNoMediaFields(t *testing.T) {
 // 17) and leaves the whole authority store byte-identical. One chain has a
 // chain id without the devnet prefix and no devnet test parameters. The
 // other is a devnet whose DEC-008 test parameter has no threshold, so it has
-// no seats. The former seat accounts stay BROADCASTER submitters, so their
+// no seats. Neither chain has seats, so the ante admits no account as a seat
+// (DR-06-06); the edit lists the former seat addresses as BROADCASTER
+// submitters, which is allowed once they are not seat addresses, so their
 // transactions pass the ante and reach the handler.
 func TestCouncilIsDecisionBlockedOffDevnet(t *testing.T) {
+	formerSeats := func(doc *genesis.Document) {
+		for _, seat := range doc.DevnetTestSeats {
+			pub, err := hex.DecodeString(seat.PublicKeyHex)
+			if err != nil {
+				panic(err)
+			}
+			doc.Submitters = append(doc.Submitters, genesis.Submitter{
+				AddressHex: hex.EncodeToString(genesis.SeatAddress(pub)), Role: genesis.RoleBroadcaster,
+			})
+		}
+		doc.DevnetTestSeats = nil
+	}
 	for _, chain := range []struct {
 		name string
 		edit func(*genesis.Document)
@@ -305,11 +326,11 @@ func TestCouncilIsDecisionBlockedOffDevnet(t *testing.T) {
 			doc.ChainID = "shortvideo-beta-unit"
 			doc.AllowDevnetTestParameters = false
 			doc.DevnetTestParameters = nil
-			doc.DevnetTestSeats = nil
+			formerSeats(doc)
 		}},
 		{"devnet DEC-008 parameter without the threshold", func(doc *genesis.Document) {
 			doc.DevnetTestParameters[0].NumericValue = 0
-			doc.DevnetTestSeats = nil
+			formerSeats(doc)
 		}},
 	} {
 		c := newCouncil(t, chain.edit)

@@ -80,6 +80,45 @@ func TestCheckOfferableOrder(t *testing.T) {
 	requireSame(t, before, f.snapshot(), "CheckOfferable is read-only")
 }
 
+// TestCheckPackage: a lease's committed package must equal the record of
+// (id, version) in any state: absent NOT_FOUND, another digest or byte
+// count INTEGRITY, and a WITHDRAWN record still matches.
+func TestCheckPackage(t *testing.T) {
+	f := newFixture(t)
+	f.mustRegister("reg-c1", "c1")
+	good := manifestDigest("c1")
+	cases := []struct {
+		name    string
+		id      string
+		version uint64
+		digest  []byte
+		bytes   uint64
+		want    msgkit.Code
+	}{
+		{"match", "c1", 1, good, testPackageBytes, msgkit.OK},
+		{"absent-id", "c-missing", 1, good, testPackageBytes, msgkit.NotFound},
+		{"id-pattern", "C1", 1, good, testPackageBytes, msgkit.NotFound},
+		{"other-version", "c1", 2, good, testPackageBytes, msgkit.NotFound},
+		{"digest", "c1", 1, manifestDigest("other"), testPackageBytes, msgkit.Integrity},
+		{"short-digest", "c1", 1, good[:31], testPackageBytes, msgkit.Integrity},
+		{"bytes", "c1", 1, good, testPackageBytes - 1, msgkit.Integrity},
+	}
+	before := f.snapshot()
+	for _, c := range cases {
+		if got := f.keeper.CheckPackage(f.ctx, c.id, c.version, c.digest, c.bytes); got != c.want {
+			t.Fatalf("%s: CheckPackage = %s, want %s", c.name, got, c.want)
+		}
+	}
+	requireSame(t, before, f.snapshot(), "CheckPackage is read-only")
+	f.mustWithdraw("wd-c1", "c1")
+	if code := f.keeper.CheckPackage(f.ctx, "c1", 1, good, testPackageBytes); code != msgkit.OK {
+		t.Fatalf("withdrawn record: CheckPackage = %s, want OK", code)
+	}
+	if code := f.keeper.CheckPackage(f.ctx, "c1", 1, good, testPackageBytes+1); code != msgkit.Integrity {
+		t.Fatalf("withdrawn record, other bytes: CheckPackage = %s, want INTEGRITY", code)
+	}
+}
+
 // TestWithdrawalBlocksOfferAndRevival is REQ-INV-006 at the API level:
 // after a withdrawal the lease handoff refuses a new offer, accept, or
 // renewal (WITHDRAWN), the hook ran once with (id, version) so goal 08 can

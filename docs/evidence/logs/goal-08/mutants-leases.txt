@@ -1,0 +1,34 @@
+COMMAND .venv/bin/python docs/evidence/goal-08/mutants.py --group leases
+DATE 2026-11-02T16:01:54Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+revision HEAD commit acfe14ecaf79aa45021baf61f937391b43d2d310 tree 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+copy /tmp/goal08-mutants-ciam4s9c/tree (git archive)
+mutants 9 of 27 (seat=0, review=0, leases=9)
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+SVN_SPEC_PYTHON=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-08/.venv/bin/python
+command leases: go test -count=1 -v -timeout 15m -run ^(TestReserveReleaseAccounting|TestAccountingFuzzSeedsReachEveryOutcome|TestAcceptCheckOrder|TestOfferCheckOrder|TestEndCheckOrder|TestAuthorityEndCheckOrder|TestDuplicateReplicaRejected|TestServiceKeyCannotSignAcceptance|TestEndReleasesOnce|TestExpiryOrderAndBudget|TestExpiryWorkIsBounded|TestDifferentialAgainstSpecMachine|TestExpiryWorkIndependentOfBacklog|TestServiceKeyCannotSignAcceptanceInApp|TestRejectedLeaseMessagesLeaveTheFullState|TestLeaseRetryScenarios|TestLargeExpiringCatalogue|TestRestartContinuesExpiry)$ ./chain/x/leases/ ./chain/x/leases/difftest/ ./chain/x/providers/ ./chain/app/
+CONTROL leases PASS exit=0 secs=146.9 named_tests_passed=18/18
+KILLED capacity-off-by-one group=leases exit=1 secs=55.4 file=chain/x/providers/handoff.go failing=TestReserveReleaseAccounting TestAccountingFuzzSeedsReachEveryOutcome
+    reason: a reservation that ends one byte above the admitted capacity must be CAPACITY at offer and accept
+KILLED end-releases-twice group=leases exit=1 secs=27.3 file=chain/x/leases/msg_server.go failing=TestDuplicateReplicaRejected TestEndReleasesOnce TestDifferentialAgainstSpecMachine TestLargeExpiringCatalogue TestLeaseRetryScenarios TestRejectedLeaseMessagesLeaveTheFullState
+    reason: EndLease must release the lease's reservation exactly once
+KILLED end-held-guard-removed group=leases exit=1 secs=28.4 file=chain/x/leases/msg_server.go failing=TestEndCheckOrder TestAuthorityEndCheckOrder TestEndReleasesOnce TestDifferentialAgainstSpecMachine TestLeaseRetryScenarios TestRejectedLeaseMessagesLeaveTheFullState
+    reason: a second EndLease (repeated ending) must be UNDERFLOW and release nothing
+KILLED expiry-releases-twice group=leases exit=1 secs=18.5 file=chain/x/leases/expiry.go failing=TestExpiryOrderAndBudget TestExpiryWorkIsBounded TestDifferentialAgainstSpecMachine TestExpiryWorkIndependentOfBacklog TestLargeExpiringCatalogue TestRestartContinuesExpiry
+    reason: expiry must release an expiring lease's reservation exactly once
+KILLED accept-duplicate-copy-allowed group=leases exit=1 secs=28.1 file=chain/x/leases/msg_server.go failing=TestAcceptCheckOrder TestDuplicateReplicaRejected TestDifferentialAgainstSpecMachine TestRejectedLeaseMessagesLeaveTheFullState
+    reason: AcceptLease of a second offer for a held (provider, content, version) pair must be DUPLICATE_ID (REQ-INV-001)
+KILLED offer-duplicate-copy-allowed group=leases exit=1 secs=27.3 file=chain/x/leases/msg_server.go failing=TestDuplicateReplicaRejected TestOfferCheckOrder TestDifferentialAgainstSpecMachine TestRejectedLeaseMessagesLeaveTheFullState
+    reason: OfferLease for a (provider, content, version) pair that a lease holds must be DUPLICATE_ID (REQ-INV-001)
+KILLED service-key-signs-acceptance group=leases exit=1 secs=28.6 file=chain/x/leases/msg_server.go failing=TestServiceKeyCannotSignAcceptance TestDifferentialAgainstSpecMachine TestServiceKeyCannotSignAcceptanceInApp TestRejectedLeaseMessagesLeaveTheFullState
+    reason: an acceptance signed by any key it carries (a service key) must be UNAUTHORIZED; only the provider's current registered key counts (REQ-CHAIN-012)
+KILLED expiry-budget-ignored group=leases exit=1 secs=39.9 file=chain/x/leases/expiry.go failing=TestExpiryOrderAndBudget TestExpiryWorkIsBounded TestDifferentialAgainstSpecMachine TestExpiryWorkIndependentOfBacklog TestLargeExpiringCatalogue TestRestartContinuesExpiry
+    reason: BeginBlock expiry must process at most the effective max_expiry_steps items per block
+KILLED expiry-merge-ignores-budget group=leases exit=1 secs=40.0 file=chain/x/leases/expiry.go failing=TestExpiryOrderAndBudget TestDifferentialAgainstSpecMachine TestExpiryWorkIndependentOfBacklog TestLargeExpiringCatalogue TestRestartContinuesExpiry
+    reason: the merge of due leases and due offers must stop at the budget, not at budget per index
+GROUP_SECS leases 440.4
+RESULT mutants=9 killed=9
+EXIT:0

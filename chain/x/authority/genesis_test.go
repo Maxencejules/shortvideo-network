@@ -56,8 +56,15 @@ func TestValidateGenesisState(t *testing.T) {
 			g.Authority.Submitters[1].Role = typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED
 		}, nil, CodeMalformed},
 		{"duplicate submitter", func(g *authorityv1.GenesisState) { g.Authority.Submitters[1].Address = bytes20(1) }, nil, CodeDuplicate},
-		// A seat address is a submitter only as BROADCASTER (DR-07-11).
-		{"seat address as BROADCASTER", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER), start, ""},
+		// A seat address is not a submitter with any role, BROADCASTER
+		// included (DR-06-06, DR-07-11 option 2). A BROADCASTER that is not
+		// a seat is accepted.
+		{"BROADCASTER that is not a seat", func(g *authorityv1.GenesisState) {
+			g.Authority.Submitters = append(g.Authority.Submitters, &typesv1.Submitter{
+				Address: bytes20(3), Role: typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER,
+			})
+		}, start, ""},
+		{"seat address as BROADCASTER", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER), nil, CodeForbidden},
 		{"seat address as AUTHORITY", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY), nil, CodeForbidden},
 		{"seat address as ADMITTED_SERVICE", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_SERVICE), nil, CodeForbidden},
 		{"seat address as ADMITTED_PROVIDER", seatRole(typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER), nil, CodeForbidden},
@@ -167,7 +174,9 @@ func TestValidateGenesisState(t *testing.T) {
 
 // TestSeatAddressMatchesGenesis: the document check (genesis.SeatAddress)
 // and the engine (SeatAddress, CometBFT's ed25519 address) derive the same
-// seat account, so both genesis validators apply DR-07-11 to one address.
+// seat account, so both genesis validators apply the seat rule (DR-06-06) to
+// one address, and the auth account genesis creates for a seat is the one
+// the ante admits.
 func TestSeatAddressMatchesGenesis(t *testing.T) {
 	for i := 0; i < 64; i++ {
 		key := pub(byte(i))

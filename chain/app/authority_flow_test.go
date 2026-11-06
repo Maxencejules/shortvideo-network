@@ -26,9 +26,11 @@ import (
 )
 
 // defaultGas is the gas limit of the test transactions. Measured on this
-// tree: a propose uses about 133,000 gas with its first signature (the
-// public key is stored) and about 119,000 after; an approve about 135,000;
-// an execute about 150,000. 200,000 covers every authority message.
+// tree with councilFixture: a propose uses about 139,000 gas with its first
+// signature (the public key is stored) and about 125,000 after; an approve
+// about 137,000 to 140,000; an execute about 154,000. A seat transaction
+// includes the ante's read of the config key (seat admission, DR-06-06).
+// 200,000 covers every authority message.
 const defaultGas = 200000
 
 func TestCommittedAuthorityFlowAndReplay(t *testing.T) {
@@ -101,9 +103,9 @@ type seatKey struct {
 }
 
 // councilDocument is sampleDocument with an authority account, a service
-// account, and four devnet council seats. Each seat address is also a
-// BROADCASTER submitter: that row is the only way a seat gets an auth
-// account and passes the ante (DR-06-06).
+// account, and four devnet council seats. A seat has no submitter row:
+// genesis gives each seat address an auth account, and the ante admits it
+// from the seat list (DR-06-06).
 func councilDocument() (genesis.Document, []seatKey, *sdksecp.PrivKey) {
 	doc, keys := councilFixture()
 	return doc, keys.seats, keys.authority
@@ -131,10 +133,6 @@ func councilFixture() (genesis.Document, councilKeys) {
 			SeatID:       "seat-" + string(rune('1'+i)),
 			PublicKeyHex: hex.EncodeToString(key.PubKey().Bytes()),
 		}
-		doc.Submitters = append(doc.Submitters, genesis.Submitter{
-			AddressHex: keys.seats[i].addr,
-			Role:       genesis.RoleBroadcaster,
-		})
 	}
 	doc.DevnetTestParameters = []genesis.DevnetTestParameter{{
 		Label: genesis.DevnetTestLabel, DecisionID: "DEC-008", NumericValue: 3,
@@ -142,10 +140,20 @@ func councilFixture() (genesis.Document, councilKeys) {
 	return doc, keys
 }
 
+// accountNumbers is the auth account number of every genesis account: one
+// per submitter and one per council seat address, numbered in hex order of
+// the addresses (app.AppStateFromDocument).
 func accountNumbers(doc genesis.Document) map[string]uint64 {
-	addrs := make([]string, len(doc.Submitters))
-	for i, row := range doc.Submitters {
-		addrs[i] = row.AddressHex
+	addrs := make([]string, 0, len(doc.Submitters)+len(doc.DevnetTestSeats))
+	for _, row := range doc.Submitters {
+		addrs = append(addrs, row.AddressHex)
+	}
+	for _, seat := range doc.DevnetTestSeats {
+		pub, err := hex.DecodeString(seat.PublicKeyHex)
+		if err != nil {
+			panic(err)
+		}
+		addrs = append(addrs, hex.EncodeToString(genesis.SeatAddress(pub)))
 	}
 	return numbersIncluding(addrs)
 }
@@ -511,10 +519,10 @@ func TestRejectedMessagesLeaveTheFullAuthorityState(t *testing.T) {
 	}
 	reject(rejectRow{name: "approve of a QUEUED proposal", key: s3, msg: approveMsg(s3, "ap-3q", "add-v5"),
 		space: "svn", code: 14, proto: authority.CodeConflict, advances: true})
-	// A seat is a BROADCASTER submitter (DR-06-06), so check_role says
-	// FORBIDDEN, not UNAUTHORIZED.
+	// A seat key may sign only propose and approve (DR-06-06): the ante
+	// refuses its execute with FORBIDDEN before the sequence moves.
 	reject(rejectRow{name: "seat-signed execute", key: s2, msg: executeMsg(s2, "ex-seat", "add-v5"),
-		space: "svn", code: 2, proto: authority.CodeForbidden, advances: true})
+		space: "svn", code: 2, proto: seatOnlyLog})
 	reject(rejectRow{name: "service-signed execute", key: service, msg: executeMsg(service, "ex-svc", "add-v5"),
 		space: "svn", code: 2, proto: authority.CodeForbidden, advances: true})
 	reject(rejectRow{name: "early execute (delay 100)", key: auth, msg: executeMsg(auth, "ex-early", "add-v5"),

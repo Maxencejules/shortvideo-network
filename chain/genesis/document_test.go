@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -300,11 +301,14 @@ func TestParseRejectsTrailingData(t *testing.T) {
 	}
 }
 
-// TestSeatAddressRole: a council seat address may be a submitter only as
-// BROADCASTER (DR-07-11). Every other role at a seat address is refused, in
-// either hex case. A BROADCASTER row for every seat, and seats without a
-// row (the fixture), are accepted.
-func TestSeatAddressRole(t *testing.T) {
+// TestSeatAddressIsNotASubmitter: a council seat address may not be a
+// submitter with any role (owner ruling DR-06-06, DR-07-11 option 2). It
+// replaces TestSeatAddressRole, which accepted a BROADCASTER row at a seat
+// address. Every role, BROADCASTER included, at each of the four seat
+// addresses is refused, in either hex case, with the devnet flag on and off.
+// The fixture (seats without a row) and a BROADCASTER row at an address that
+// is not a seat are accepted, so no row is refused for another reason.
+func TestSeatAddressIsNotASubmitter(t *testing.T) {
 	seatAddr := func(doc Document, i int) string {
 		raw, err := hex.DecodeString(doc.DevnetTestSeats[i].PublicKeyHex)
 		if err != nil {
@@ -313,29 +317,44 @@ func TestSeatAddressRole(t *testing.T) {
 		return hex.EncodeToString(SeatAddress(raw))
 	}
 	requireAccepted(t, validFixture())
-	for _, role := range []string{RoleAuthority, RoleAdmittedService, RoleAdmittedProvider, RoleAuditor} {
-		for _, upper := range []bool{false, true} {
-			name := role
-			if upper {
-				name += " upper-case address"
-			}
-			t.Run(name, func(t *testing.T) {
-				doc := validFixture()
-				addr := seatAddr(doc, 1)
+	t.Run("broadcaster that is not a seat", func(t *testing.T) {
+		doc := validFixture()
+		doc.Submitters = append(doc.Submitters, Submitter{AddressHex: fixtureAddress(0x33), Role: RoleBroadcaster})
+		requireAccepted(t, doc)
+	})
+	roles := []string{RoleAuthority, RoleAdmittedService, RoleAdmittedProvider, RoleBroadcaster, RoleAuditor}
+	rows := 0
+	for _, role := range roles {
+		for seat := 0; seat < 4; seat++ {
+			for _, upper := range []bool{false, true} {
+				name := fmt.Sprintf("%s at seat-%d", role, seat+1)
 				if upper {
-					addr = strings.ToUpper(addr)
+					name += " upper-case address"
 				}
-				doc.Submitters = append(doc.Submitters, Submitter{AddressHex: addr, Role: role})
-				requireRejected(t, doc, "seat seat-2 address is a "+role+" submitter; a seat address may only be BROADCASTER")
-			})
+				t.Run(name, func(t *testing.T) {
+					doc := validFixture()
+					addr := seatAddr(doc, seat)
+					if upper {
+						addr = strings.ToUpper(addr)
+					}
+					doc.Submitters = append(doc.Submitters, Submitter{AddressHex: addr, Role: role})
+					requireRejected(t, doc, fmt.Sprintf("seat seat-%d address is a %s submitter; a seat address may not be a submitter", seat+1, role))
+				})
+				rows++
+			}
 		}
 	}
-	t.Run("broadcaster", func(t *testing.T) {
+	if rows != 40 {
+		t.Fatalf("%d rows, want 40", rows)
+	}
+	// The interim DR-07-11 shape (a BROADCASTER row for every seat) that
+	// TestSeatAddressRole accepted is refused at the first seat.
+	t.Run("broadcaster row for every seat", func(t *testing.T) {
 		doc := validFixture()
 		for i := range doc.DevnetTestSeats {
 			doc.Submitters = append(doc.Submitters, Submitter{AddressHex: seatAddr(doc, i), Role: RoleBroadcaster})
 		}
-		requireAccepted(t, doc)
+		requireRejected(t, doc, "seat seat-1 address is a BROADCASTER submitter; a seat address may not be a submitter")
 	})
 	// Without the devnet flag validateDevnet does not look at the seats, so
 	// the seat rule decodes the keys itself and applies the same rule.
@@ -345,12 +364,14 @@ func TestSeatAddressRole(t *testing.T) {
 		doc.DevnetTestParameters = nil
 		return doc
 	}
-	t.Run("flag off, service role", func(t *testing.T) {
-		doc := flagOff()
-		requireAccepted(t, doc)
-		doc.Submitters = append(doc.Submitters, Submitter{AddressHex: seatAddr(doc, 1), Role: RoleAdmittedService})
-		requireRejected(t, doc, "seat seat-2 address is a ADMITTED_SERVICE submitter; a seat address may only be BROADCASTER")
-	})
+	for _, role := range roles {
+		t.Run("flag off, "+role, func(t *testing.T) {
+			doc := flagOff()
+			requireAccepted(t, doc)
+			doc.Submitters = append(doc.Submitters, Submitter{AddressHex: seatAddr(doc, 1), Role: role})
+			requireRejected(t, doc, "seat seat-2 address is a "+role+" submitter; a seat address may not be a submitter")
+		})
+	}
 	t.Run("flag off, malformed seat key", func(t *testing.T) {
 		doc := flagOff()
 		doc.DevnetTestSeats[1].PublicKeyHex = strings.Repeat("zz", ConsensusKeyBytes)

@@ -33,11 +33,11 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
+	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 	"github.com/Maxencejules/shortvideo-network/chain/x/scaffold"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
-	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	policyv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1"
 )
 
@@ -65,7 +65,8 @@ func InitOrder() []string {
 // council proposal flow and is the only module that returns validator
 // updates. The set changes only when a council change is due in EndBlock.
 // x/providers and x/content (Goal 07) are the provider and content
-// registries. Lease and evidence messages are rejected until Goals 08-09.
+// registries. x/leases (Goal 08) holds lease offers, leases, and their
+// capacity reservations. Evidence messages are rejected until Goal 09.
 // Policy has no message service: a governed limit changes only through a
 // council governed-limit payload.
 type App struct {
@@ -119,8 +120,12 @@ func New(cfg Config) (*App, error) {
 		baseapp.SetChainID(cfg.ChainID),
 		baseapp.EnableBlockGasMeter(),
 		baseapp.SetMinGasPrices(""),
-		// Every query runs on a finite gas meter (DefaultQueryGasLimit
-		// unless the node sets another value).
+		// Every gRPC-routed query (ABCI query on a registered service path,
+		// and the node gRPC server) runs on a gas meter limited to
+		// queryGasLimit: DefaultQueryGasLimit unless node.json sets another
+		// value. A node that sets 2^64-1 gets the SDK's unlimited meter.
+		// Raw store queries (/store/<store>/key|subspace) bypass the query
+		// router and are not metered.
 		baseapp.SetQueryGasLimit(queryGasLimit),
 	)
 	base.SetInterfaceRegistry(enc.InterfaceRegistry)
@@ -158,11 +163,12 @@ func New(cfg Config) (*App, error) {
 	)
 	authModule := newAuthModule(accountKeeper)
 
-	// The registries read roles, devnet parameters, and governed limits from
-	// x/authority. They hold the keeper copy taken before WithRegistry; that
-	// read surface does not use the council hooks. x/authority then executes
-	// council admit, disable, and force-withdraw payloads through the
-	// registries. Business ids are one namespace across the three modules.
+	// The registries and x/leases read roles, devnet parameters, governed
+	// limits, and the policy version from x/authority. They hold the keeper
+	// copy taken before WithRegistry; that read surface does not use the
+	// council hooks. x/authority then executes council admit, disable, and
+	// force-withdraw payloads through the registries. Business ids are one
+	// namespace across authority, providers, content, and leases.
 	readKeeper := authority.NewKeeper(keys[authority.ModuleName])
 	peers := msgkit.NewPeers()
 	providersKeeper := providers.NewKeeper(keys[ModuleProviders], providers.Deps{
@@ -170,16 +176,41 @@ func New(cfg Config) (*App, error) {
 		Limits: readKeeper,
 		Peers:  peers,
 	})
+	// x/leases reads content through a copy of the content keeper without
+	// the withdrawal hook (CheckOfferable, CheckNotWithdrawn). Both copies
+	// share the content store key. The copy that carries the hook is the
+	// one the module, the message router, and x/authority use, so a
+	// WithdrawContent message and a council force-withdraw both void the
+	// content's open lease offers in the withdrawal transaction.
+	contentRead := content.NewKeeper(keys[ModuleContent], content.Deps{
+		Roles:  readKeeper,
+		Params: readKeeper,
+		Limits: readKeeper,
+		Peers:  peers,
+	})
+	leasesKeeper := leases.NewKeeper(keys[ModuleLeases], leases.Deps{
+		Roles:     readKeeper,
+		Limits:    readKeeper,
+		Params:    readKeeper,
+		Policy:    readKeeper,
+		Providers: providersKeeper,
+		Content:   contentRead,
+		// Evidence is nil until Goal 09 wires x/evidence: every renewal
+		// that names an evidence_id is NOT_FOUND.
+		Evidence: nil,
+		Peers:    peers,
+	})
 	contentKeeper := content.NewKeeper(keys[ModuleContent], content.Deps{
 		Roles:  readKeeper,
 		Params: readKeeper,
 		Limits: readKeeper,
 		Peers:  peers,
-		// Hook is nil: no lease offer store exists before Goal 08.
+		Hook:   leasesKeeper,
 	})
 	authorityKeeper := readKeeper.WithRegistry(providersKeeper, contentKeeper).WithPeers(peers)
 	peers.Add(authority.ModuleName, authorityKeeper)
 	peers.Add(content.ModuleName, contentKeeper)
+	peers.Add(leases.ModuleName, leasesKeeper)
 	peers.Add(providers.ModuleName, providersKeeper)
 	authorityModule := authority.NewAppModule(authorityKeeper, cfg.Order)
 
@@ -187,7 +218,7 @@ func New(cfg Config) (*App, error) {
 	policyModule := scaffold.New(ModulePolicy, keys[ModulePolicy], cfg.Order, checkPolicy)
 	providersModule := providers.NewAppModule(providersKeeper, cfg.Order)
 	contentModule := content.NewAppModule(contentKeeper, cfg.Order)
-	leasesModule := scaffold.New(ModuleLeases, keys[ModuleLeases], cfg.Order, checkLeases)
+	leasesModule := leases.NewAppModule(leasesKeeper, cfg.Order)
 	evidenceModule := scaffold.New(ModuleEvidence, keys[ModuleEvidence], cfg.Order, checkEvidence)
 
 	mm := module.NewManager(
@@ -203,6 +234,8 @@ func New(cfg Config) (*App, error) {
 	order := InitOrder()
 	mm.SetOrderInitGenesis(order...)
 	mm.SetOrderExportGenesis(order...)
+	// BeginBlock runs in InitOrder: x/leases expiry (the only BeginBlock
+	// work) runs after providers and content and before authority.
 	mm.SetOrderBeginBlockers(order...)
 	mm.SetOrderEndBlockers(order...)
 	mm.SetOrderPreBlockers(authtypes.ModuleName)
@@ -222,14 +255,16 @@ func New(cfg Config) (*App, error) {
 	configurator := module.NewConfigurator(enc.Codec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.configurator = configurator
 	authModule.RegisterServices(configurator)
-	// Each registry registers svn.<module>.v1.Msg on the message router,
-	// svn.<module>.v1.Query on the query router, and its migrations.
+	// Each registry and x/leases registers svn.<module>.v1.Msg on the
+	// message router, svn.<module>.v1.Query on the query router, and its
+	// migrations.
 	providersModule.RegisterServices(configurator)
 	contentModule.RegisterServices(configurator)
+	leasesModule.RegisterServices(configurator)
 	registerApplicationMessages(app.MsgServiceRouter(), authorityKeeper)
 
-	ante, err := NewAnteHandler(accountKeeper, enc.TxConfig.SignModeHandler(), func(ctx sdk.Context, addr []byte) bool {
-		return authorityKeeper.Admitted(ctx, addr)
+	ante, err := NewAnteHandler(accountKeeper, enc.TxConfig.SignModeHandler(), func(ctx sdk.Context, addr []byte) authority.Admission {
+		return authorityKeeper.Admission(ctx, addr)
 	})
 	if err != nil {
 		return nil, err
@@ -252,14 +287,15 @@ func New(cfg Config) (*App, error) {
 	return app, nil
 }
 
-// checkRegistryLayouts refuses committed state whose registry stores are
-// not in this binary's layout. Every committed version of a registry store
-// holds msgkit.LayoutVersionKey, which InitGenesis writes. A store without
-// it was written by the goal-05/06 scaffold slot (layout version 1: the
-// module genesis JSON at key [0x01], inside the registry's record prefix),
-// which this binary would misread; no migration from it exists, so the
-// node does not start. It runs once at load, outside consensus, and only
-// when a block has been committed.
+// checkRegistryLayouts refuses committed state whose providers, content,
+// or leases store is not in this binary's layout. Every committed version
+// of those stores holds msgkit.LayoutVersionKey, which InitGenesis writes.
+// A store without it was written by the goal-05/06 scaffold slot (layout
+// version 1: the module genesis JSON at key [0x01], inside the module's
+// record prefix; for leases, the offer prefix), which this binary would
+// misread; no migration from it exists, so the node does not start. It
+// runs once at load, outside consensus, and only when a block has been
+// committed.
 func (app *App) checkRegistryLayouts() error {
 	if app.LastBlockHeight() == 0 {
 		return nil
@@ -270,6 +306,7 @@ func (app *App) checkRegistryLayouts() error {
 	}{
 		{ModuleProviders, providers.ConsensusVersion},
 		{ModuleContent, content.ConsensusVersion},
+		{ModuleLeases, leases.ConsensusVersion},
 	} {
 		version, found, err := msgkit.ReadLayoutVersion(app.CommitMultiStore().GetKVStore(app.keys[store.name]))
 		switch {
@@ -323,7 +360,7 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 
 // Export returns the current committed application state as module genesis
 // JSON. It refuses, with an error that starts "export refused:", in these
-// cases (DR-06-01, DR-06-02, DR-07-02, DR-07-03):
+// cases (DR-06-01, DR-06-02, DR-07-02, DR-07-03, DR-08-06):
 //
 //   - the authority store holds state the frozen genesis proto has no field
 //     for (proposal records, business ids, the policy version, and the other
@@ -333,10 +370,12 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 //   - the exported genesis does not validate, for example unequal validator
 //     powers after a genesis pending power change applied. Import would
 //     reject that file.
-//   - the provider or content catalogue is not empty: DocumentFromModules
-//     applies the goal 05 launch rule (an empty catalogue at genesis).
-//     Provider and content business ids exist only next to a record, so
-//     App.Export can never drop them silently.
+//   - the provider, content, lease offer, or lease catalogue is not empty:
+//     DocumentFromModules applies the goal 05 launch rule (an empty
+//     catalogue at genesis). Provider and content business ids exist only
+//     next to a record, and a lease business id or used-offer marker only on
+//     a chain that has a provider record (no provider record is ever
+//     deleted), so App.Export can never drop them silently.
 //
 // A fresh chain with no such state round-trips byte for byte.
 func (app *App) Export() (map[string]json.RawMessage, error) {
@@ -494,17 +533,6 @@ func checkPolicy(raw json.RawMessage) error {
 	}
 	if got != genesis.DefaultSafetyCaps() {
 		return fmt.Errorf("safety caps")
-	}
-	return nil
-}
-
-func checkLeases(raw json.RawMessage) error {
-	var state leasesv1.GenesisState
-	if err := protojson.Unmarshal(raw, &state); err != nil {
-		return err
-	}
-	if len(state.GetOffers()) != 0 || len(state.GetLeases()) != 0 {
-		return fmt.Errorf("leases are not empty")
 	}
 	return nil
 }

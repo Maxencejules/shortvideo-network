@@ -1,0 +1,6 @@
+COMMAND git diff --exit-code --stat 2fc93e5b40050e54341cbdb4cc2275ed4bc4839a HEAD -- go.work go.work.sum chain/go.mod chain/go.sum proto/go.mod proto/go.sum agents/provider/go.mod agents/provider/go.sum
+DATE 2026-11-02T15:28:45Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+EXIT:0

@@ -1,9 +1,13 @@
 package authority
 
 import (
+	"bytes"
+	"fmt"
 	"math"
 	"strconv"
 	"testing"
+
+	"google.golang.org/protobuf/proto"
 
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
@@ -253,61 +257,137 @@ func TestStaleProposalsStopCounting(t *testing.T) {
 	}
 }
 
-// RotateCouncilSeat moves the seat's submitter row and its ante admission
-// row (0x02) from the old seat address to the new one, keeping the role; the
-// retired key's account is no longer admitted (DR-06-06). A new address that
-// is already a submitter is DUPLICATE_ID and changes nothing. Fails on the
-// round-3 review tree, which rewrote only the seat key and left the old
-// address admitted and the new one not.
-func TestSeatRotationMovesAdmission(t *testing.T) {
+// TestSeatRotationMovesSeatAdmission (DR-06-06): a seat account is admitted
+// from the seat list, so RotateCouncilSeat moves the admission with the key.
+// After the rotation the new key's account is AdmittedSeat and the retired
+// key's account is NotAdmitted. The rotation writes no submitter row and no
+// admission row (0x02): the submitter list and every 0x02 key are unchanged,
+// and Role of both addresses stays UNSPECIFIED. A new key whose address is a
+// submitter (here a BROADCASTER that is not a seat) is DUPLICATE_ID and
+// changes nothing. It replaces TestSeatRotationMovesAdmission, which moved a
+// seat's BROADCASTER row.
+func TestSeatRotationMovesSeatAdmission(t *testing.T) {
 	gen, seats, _ := readyGenesis()
-	for _, seat := range seats {
-		gen.Authority.Submitters = append(gen.Authority.Submitters, &typesv1.Submitter{
-			Address: seat.Signer, Role: typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER,
-		})
-	}
 	// A broadcaster that is not a seat, whose account is the address of pub(42).
 	taken := pub(42)
 	gen.Authority.Submitters = append(gen.Authority.Submitters, &typesv1.Submitter{
 		Address: SeatAddress(taken), Role: typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER,
 	})
 	kv := storeFrom(t, gen)
+	oldAddr := seats[0].Signer
 	newPub := pub(41)
 	newAddr := SeatAddress(newPub)
+	for _, seat := range seats {
+		if got := AdmissionOf(kv, seat.Signer); got != AdmittedSeat {
+			t.Fatalf("%s before the rotation: admission %v, want AdmittedSeat", seat.ID, got)
+		}
+	}
+	if got := AdmissionOf(kv, newAddr); got != NotAdmitted {
+		t.Fatalf("new key before the rotation: admission %v", got)
+	}
+	submittersBefore := loadAt(t, kv, testHeight, testTime).auth().GetSubmitters()
+	admitBefore := prefixDump(kv, admitPrefix)
 	if out := loadAt(t, kv, testHeight, testTime).RotateCouncilSeat(seats[0].ID, newPub); !out.Success() {
 		t.Fatal(out)
 	}
-	if kv.Has(AdmissionKey(seats[0].Signer)) {
-		t.Fatal("the retired seat key's account is still admitted")
+	if got := AdmissionOf(kv, oldAddr); got != NotAdmitted {
+		t.Fatalf("the retired seat key's account: admission %v, want NotAdmitted", got)
 	}
-	if got := kv.Get(AdmissionKey(newAddr)); len(got) != 1 || got[0] != byte(typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER) {
-		t.Fatalf("new seat admission row %x", got)
+	if got := AdmissionOf(kv, newAddr); got != AdmittedSeat {
+		t.Fatalf("the new seat key's account: admission %v, want AdmittedSeat", got)
 	}
-	found := 0
-	for _, row := range loadAt(t, kv, testHeight, testTime).auth().GetSubmitters() {
-		switch {
-		case string(row.GetAddress()) == string(seats[0].Signer):
-			t.Fatal("the retired seat address is still a submitter")
-		case string(row.GetAddress()) == string(newAddr):
-			found++
-			if row.GetRole() != typesv1.SubmitterRole_SUBMITTER_ROLE_BROADCASTER {
-				t.Fatalf("moved row has role %v", row.GetRole())
-			}
+	for _, seat := range seats[1:] {
+		if got := AdmissionOf(kv, seat.Signer); got != AdmittedSeat {
+			t.Fatalf("%s after the rotation: admission %v", seat.ID, got)
 		}
 	}
-	if found != 1 {
-		t.Fatalf("%d submitter rows for the new seat address", found)
+	if !bytes.Equal(admitBefore, prefixDump(kv, admitPrefix)) {
+		t.Fatal("the rotation changed an admission row")
+	}
+	st := loadAt(t, kv, testHeight, testTime)
+	if !proto.Equal(&authorityv1.AuthorityState{Submitters: submittersBefore}, &authorityv1.AuthorityState{Submitters: st.auth().GetSubmitters()}) {
+		t.Fatal("the rotation changed the submitter list")
+	}
+	for _, addr := range [][]byte{oldAddr, newAddr} {
+		if role := st.role(addr); role != typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
+			t.Fatalf("%x has role %v", addr, role)
+		}
 	}
 	// seat-2 rotates to a key whose account is already a submitter.
 	wantRefused(t, kv, "rotation onto a submitter address", CodeDuplicate, func() Outcome {
 		return loadAt(t, kv, testHeight, testTime).RotateCouncilSeat(seats[1].ID, taken)
 	})
+	if got := AdmissionOf(kv, SeatAddress(taken)); got != AdmittedSubmitter {
+		t.Fatalf("the broadcaster: admission %v", got)
+	}
+}
+
+// TestAdmissionOf (DR-06-06): the ante admission of an address. A submitter
+// (admission row) is AdmittedSubmitter; a seat account, which has no row, is
+// AdmittedSeat; any other address, an address that is not 20 bytes, and every
+// seat address while the config key is missing or does not decode, is
+// NotAdmitted.
+func TestAdmissionOf(t *testing.T) {
+	kv, seats, authority := readyStore(t)
+	service := bytes20(2)
+	rows := []struct {
+		name string
+		addr []byte
+		want Admission
+	}{
+		{"authority submitter", authority, AdmittedSubmitter},
+		{"service submitter", service, AdmittedSubmitter},
+		{"outsider", bytes20(9), NotAdmitted},
+		{"19-byte seat address", seats[0].Signer[:19], NotAdmitted},
+		{"21-byte seat address", append(bytes.Clone(seats[0].Signer), 0), NotAdmitted},
+		{"empty address", nil, NotAdmitted},
+	}
+	for i, seat := range seats {
+		rows = append(rows, struct {
+			name string
+			addr []byte
+			want Admission
+		}{fmt.Sprintf("seat %d", i+1), seat.Signer, AdmittedSeat})
+		if kv.Has(AdmissionKey(seat.Signer)) {
+			t.Fatalf("%s has an admission row", seat.ID)
+		}
+	}
+	for _, row := range rows {
+		if got := AdmissionOf(kv, row.addr); got != row.want {
+			t.Fatalf("%s: %v, want %v", row.name, got, row.want)
+		}
+	}
+	// A config key that does not decode admits no seat; a submitter's
+	// admission row still admits it.
+	broken := newMemKV()
+	broken.Set([]byte{configKey}, []byte{0xff})
+	broken.Set(AdmissionKey(authority), []byte{byte(typesv1.SubmitterRole_SUBMITTER_ROLE_AUTHORITY)})
+	if got := AdmissionOf(broken, seats[0].Signer); got != NotAdmitted {
+		t.Fatalf("seat under an undecodable config: %v", got)
+	}
+	if got := AdmissionOf(broken, authority); got != AdmittedSubmitter {
+		t.Fatalf("authority under an undecodable config: %v", got)
+	}
+	if got := AdmissionOf(newMemKV(), seats[0].Signer); got != NotAdmitted {
+		t.Fatalf("seat in an empty store: %v", got)
+	}
+}
+
+// prefixDump is every key and value under one prefix, as dumpKV encodes it.
+func prefixDump(kv KV, prefix byte) []byte {
+	sub := newMemKV()
+	iter := kv.Iterator([]byte{prefix}, prefixEnd(prefix))
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		sub.Set(iter.Key(), iter.Value())
+	}
+	return dumpKV(sub)
 }
 
 // The engine-only rotations refuse a seat id outside the id pattern or a
 // council key that is not 32 bytes (BOUNDS), a seat id that names no seat
 // (NOT_FOUND), and a service rotation onto an address that is already a
-// submitter, or onto a bad address (DUPLICATE_ID, BOUNDS). Each reject has
+// submitter or a seat account, or onto a bad address (DUPLICATE_ID, BOUNDS). Each reject has
 // its exact code and leaves the store byte-identical. The control rotations
 // then succeed on the same store, so no row is refused for another reason.
 // The second fix-round review found these branches unreached: changing any
@@ -326,6 +406,8 @@ func TestEngineOnlyRotationRejects(t *testing.T) {
 		{"33-byte seat key", CodeBounds, func(st *State) Outcome { return st.RotateCouncilSeat(seats[0].ID, append(pub(41), 0)) }},
 		{"unknown seat", CodeNotFound, func(st *State) Outcome { return st.RotateCouncilSeat("seat-9", pub(41)) }},
 		{"service onto the authority account", CodeDuplicate, func(st *State) Outcome { return st.RotateServiceSubmitter(service, authority) }},
+		// A seat address is never a submitter (DR-06-06).
+		{"service onto a seat address", CodeDuplicate, func(st *State) Outcome { return st.RotateServiceSubmitter(service, seats[2].Signer) }},
 		{"19-byte new service address", CodeBounds, func(st *State) Outcome { return st.RotateServiceSubmitter(service, bytes20(7)[:19]) }},
 		{"19-byte old service address", CodeBounds, func(st *State) Outcome { return st.RotateServiceSubmitter(service[:19], bytes20(7)) }},
 		{"same service address", CodeBounds, func(st *State) Outcome { return st.RotateServiceSubmitter(service, service) }},

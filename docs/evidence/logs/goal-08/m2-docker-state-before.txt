@@ -1,0 +1,18 @@
+COMMAND bash -c docker\ ps\ -a\ --format\ \"table\ \{\{.ID\}\}\\t\{\{.Image\}\}\\t\{\{.Names\}\}\\t\{\{.Status\}\}\\t\{\{.CreatedAt\}\}\"\;\ docker\ images\ --digests\;\ docker\ network\ ls
+DATE 2026-11-02T18:40:18Z
+HEAD ea29169196d862867a0e270fada1fda74b1214c6
+TREE eabf7cef6fc24f9afdd07a8f95470ad1f85ba375
+DIRTY no
+CONTAINER ID   IMAGE               NAMES        STATUS                    CREATED AT
+611d9dcd297b   svn-devnet:goal05   chain-v1-1   Exited (0) 14 hours ago   2026-11-02 04:45:04 +0000 UTC
+06f6108451bd   svn-devnet:goal05   chain-v2-1   Exited (0) 14 hours ago   2026-11-02 04:45:04 +0000 UTC
+3ca79cb6456c   svn-devnet:goal05   chain-v3-1   Exited (0) 14 hours ago   2026-11-02 04:45:04 +0000 UTC
+4e6efdf18bbc   svn-devnet:goal05   chain-v4-1   Exited (0) 14 hours ago   2026-11-02 04:45:04 +0000 UTC
+REPOSITORY   TAG       DIGEST                                                                    IMAGE ID       CREATED        SIZE
+svn-devnet   goal05    sha256:b01d7e489ef5f03422d028bcb3ee35f3c2f64fce3447644b4308c6cdc6cfa315   b01d7e489ef5   14 hours ago   264MB
+debian       <none>    sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e   a3bba7dc7dbc   6 days ago     114MB
+NETWORK ID     NAME      DRIVER    SCOPE
+ac831ffe15c1   bridge    bridge    local
+57202ac4b0b0   host      host      local
+9625a2ef5bd5   none      null      local
+EXIT:0

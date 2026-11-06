@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdked "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -104,28 +105,33 @@ type regNet struct {
 	service2  *actor
 	provider1 *actor
 	provider2 *actor
-	seats     []*actor
-	numbers   map[string]uint64
-	seq       map[string]uint64
-	policy    uint64
-	intent    signingKey
-	signing   map[string]signingKey
+	// broadcaster is a BROADCASTER account that relays provider-signed
+	// lease messages (Goal 08). It is not a council seat.
+	broadcaster *actor
+	seats       []*actor
+	numbers     map[string]uint64
+	seq         map[string]uint64
+	policy      uint64
+	intent      signingKey
+	signing     map[string]signingKey
 }
 
 // newRegNet builds the devnet document: authority, two services, two
-// providers, four council seats, and the DEC-001/002/003/005/008 devnet
-// test parameters. drop removes devnet parameters by decision id.
+// providers, one broadcaster, four council seats (no submitter row,
+// DR-06-06), and the DEC-001/002/003/005/008 devnet test parameters. drop removes devnet
+// parameters by decision id.
 func newRegNet(drop ...string) *regNet {
 	n := &regNet{
-		authority: newSecp("authority"),
-		service:   newSecp("service"),
-		service2:  newSecp("service-2"),
-		provider1: newSecp("provider-1"),
-		provider2: newSecp("provider-2"),
-		seq:       map[string]uint64{},
-		policy:    1,
-		intent:    newSigningKey("intent-1"),
-		signing:   map[string]signingKey{},
+		authority:   newSecp("authority"),
+		service:     newSecp("service"),
+		service2:    newSecp("service-2"),
+		provider1:   newSecp("provider-1"),
+		provider2:   newSecp("provider-2"),
+		broadcaster: newSecp("broadcaster"),
+		seq:         map[string]uint64{},
+		policy:      1,
+		intent:      newSigningKey("intent-1"),
+		signing:     map[string]signingKey{},
 	}
 	doc := sampleDocument()
 	doc.ChainID = "shortvideo-dev-registry"
@@ -135,6 +141,7 @@ func newRegNet(drop ...string) *regNet {
 		{AddressHex: n.service2.hexAddr(), Role: genesis.RoleAdmittedService},
 		{AddressHex: n.provider1.hexAddr(), Role: genesis.RoleAdmittedProvider},
 		{AddressHex: n.provider2.hexAddr(), Role: genesis.RoleAdmittedProvider},
+		{AddressHex: n.broadcaster.hexAddr(), Role: genesis.RoleBroadcaster},
 	}
 	doc.DevnetTestSeats = make([]genesis.DevnetTestSeat, 4)
 	for i := range doc.DevnetTestSeats {
@@ -144,7 +151,6 @@ func newRegNet(drop ...string) *regNet {
 			SeatID:       seat.name,
 			PublicKeyHex: hex.EncodeToString(seat.key.PubKey().Bytes()),
 		}
-		doc.Submitters = append(doc.Submitters, genesis.Submitter{AddressHex: seat.hexAddr(), Role: genesis.RoleBroadcaster})
 	}
 	params := []genesis.DevnetTestParameter{
 		{Label: genesis.DevnetTestLabel, DecisionID: "DEC-001", RoleName: "DEVNET_TEST_ONLY"},
@@ -177,6 +183,16 @@ type cluster struct {
 	// txs is every transaction delivered in a committed block, in order:
 	// the block data, including transactions a handler rejected.
 	txs [][]byte
+	// inputs is the FinalizeBlock input of every committed block (height,
+	// header time, transactions), so a fresh application can replay them.
+	inputs []blockInput
+}
+
+// blockInput is what a replay needs to rebuild one committed block.
+type blockInput struct {
+	height int64
+	time   time.Time
+	txs    [][]byte
 }
 
 func (n *regNet) start(t *testing.T, nodes int) *cluster {
@@ -239,9 +255,12 @@ func (c *cluster) block(t *testing.T, txs ...[]byte) *abci.ResponseFinalizeBlock
 	}
 	c.blocks = append(c.blocks, first)
 	c.hashes = append(c.hashes, append([]byte(nil), hash...))
+	input := blockInput{height: c.nodes[0].height, time: c.nodes[0].when}
 	for _, tx := range txs {
 		c.txs = append(c.txs, append([]byte(nil), tx...))
+		input.txs = append(input.txs, append([]byte(nil), tx...))
 	}
+	c.inputs = append(c.inputs, input)
 	return first
 }
 

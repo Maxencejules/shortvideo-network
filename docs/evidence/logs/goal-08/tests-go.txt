@@ -1,0 +1,37 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh .venv/bin/python scripts/run_tests.py --only go
+DATE 2026-11-02T16:09:25Z
+HEAD acfe14ecaf79aa45021baf61f937391b43d2d310
+TREE 6e81d0c948847af933b25e02be1f1bf2a34a62f2
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/chain/address	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	(cached)
+?   	github.com/Maxencejules/shortvideo-network/chain/cometwrap	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	(cached)
+?   	github.com/Maxencejules/shortvideo-network/chain/jcs	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/node	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	(cached)
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	(cached)
+?   	github.com/Maxencejules/shortvideo-network/chain/x/scaffold	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/protocol/check	(cached)
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/app/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/events/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/offchain/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider	(cached)
+EXIT:0

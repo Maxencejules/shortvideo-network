@@ -36,7 +36,7 @@ Both handlers run `msgkit.Enforce` first (gas meter limit and tx size `BOUNDS`, 
 
 `WithdrawContent` (spec `op_withdraw_content`, `withdraw_content`): presence of `business_id`, `content_id`, `reason_digest`, `hosting_intent`; signer role; reason digest; hosting intent; business gate; no record (`NOT_FOUND`); signer is not the submitting host (`FORBIDDEN`); already withdrawn (`WITHDRAWN`); version mismatch (`STALE_VERSION`). Success marks the record `WITHDRAWN` and writes the tombstone.
 
-Recorded deviation: the relay column of `docs/protocol.md` lets a broadcaster submit the outer transaction of both messages. This module follows `spec_machine.py` `check_role` instead: the outer signer must be an `ADMITTED_SERVICE` account, because it becomes `submitting_host` and both hosting intents sign the signer's address. A broadcaster outer signer, a council seat account included, is `FORBIDDEN` (`TestRegistryMessagesRejectOtherRoles` in `chain/app`). Adopting the relay column would give every `BROADCASTER` key, and so every council seat key, content reach (DR-06-06, DR-07-11).
+Recorded deviation: the relay column of `docs/protocol.md` lets a broadcaster submit the outer transaction of both messages. This module follows `spec_machine.py` `check_role` instead: the outer signer must be an `ADMITTED_SERVICE` account, because it becomes `submitting_host` and both hosting intents sign the signer's address. A broadcaster outer signer is `FORBIDDEN` (`TestRegistryMessagesRejectOtherRoles` in `chain/app`). Adopting the relay column would give every `BROADCASTER` key content reach. A council seat key is not a broadcaster: it has no submitter row, and the ante refuses every message it signs except propose and approve (DR-06-06).
 
 The protocol defines no direct force-withdraw message (DEC-009). Force-withdraw exists only as the council path below.
 
@@ -71,7 +71,7 @@ Limits of this interim:
 - A tombstone keeps `content_id`, `content_version`, `committed_unix_seconds` (block time), `reason_digest`, `history_erased` false, `retention_decision_id` `DEC-004`, and `retention_value_version` 0. The `Content` row stays.
 - A later register of the id is `DUPLICATE_ID`. A second withdrawal is `WITHDRAWN`. The id cannot be revived.
 - Withdrawal blocks new offers, accepts, and renewals through the lease handoff below (Goal 08 enforces it in its handlers). It does not release an accepted reservation.
-- `Deps.Hook` (`WithdrawalHook`) runs inside the withdrawal. Goal 08 implements it to void open offers. Goal 07 wires no hook because no offer store exists. A hook error aborts the withdrawal and nothing of it is written. On both the message path and the council path the hook's svn code is passed through; any other error is `MALFORMED` (`TestWithdrawHookFailureWritesNothing`, `TestForceWithdrawHookFailure`).
+- `Deps.Hook` (`WithdrawalHook`) runs inside the withdrawal, after the tombstone and before `ContentWithdrawn`, on the message path and the council path. In goal 08 the app wires the x/leases keeper as the hook; it voids the open lease offers of the content and changes no accepted lease. This package does not import x/leases (`TestModuleImportsStayNarrow`). A hook error aborts the withdrawal and nothing of it is written. On both the message path and the council path the hook's svn code is passed through; any other error is `MALFORMED` (`TestWithdrawHookFailureWritesNothing`, `TestForceWithdrawHookFailure`).
 - A block time outside `1..253402300799` is `OUT_OF_RANGE`, checked after every protocol check, so an exported tombstone always validates.
 
 ## Events
@@ -98,7 +98,10 @@ A rejected query returns `msgkit.QueryErr`: the `svn` error with a gRPC status (
 - `Package(ctx, id, version) (PackageIdentity, msgkit.Code)`: absent is `NOT_FOUND`.
 - `CheckOfferable(ctx, id, version, manifestSHA256, packageBytes) msgkit.Code`: the content part of `op_offer`, in order `NOT_FOUND`, `WITHDRAWN`, `CONFLICT` (not `PENDING` or version mismatch), `INTEGRITY` (digest or bytes mismatch).
 - `CheckNotWithdrawn(ctx, id) msgkit.Code`: the `op_accept`/`op_renew` content check.
-- `WithdrawalHook`: implemented by Goal 08 to void open offers.
+- `CheckPackage(ctx, id, version, manifestSHA256, packageBytes) msgkit.Code`: a lease's committed package against the
+  record of (id, version) in any state, `WITHDRAWN` included: absent `NOT_FOUND`, digest or bytes mismatch `INTEGRITY`
+  (Goal 08, x/leases `InitGenesis`; `TestCheckPackage`).
+- `WithdrawalHook`: `ContentWithdrawn(ctx, contentID, version) error`. The app wires the x/leases keeper here (goal 08). The hook runs in the withdrawal's cache branch, so its writes and events commit only with the withdrawal.
 
 ## Genesis and migrations
 

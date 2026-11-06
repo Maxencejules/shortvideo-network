@@ -122,8 +122,10 @@ func populate(m protoreflect.Message, pick int, used map[protoreflect.FullName]b
 //     "x1" exists);
 //   - x/content (Goal 07): register and withdraw BOUNDS (the populated ids,
 //     digests and sizes are outside the content bounds);
-//   - leases and evidence: ERROR_CODE_FORBIDDEN from the router until Goals
-//     08-09.
+//   - x/leases (Goal 08): accept FORBIDDEN (the service account is neither
+//     BROADCASTER nor ADMITTED_PROVIDER), offer NOT_FOUND (no content "x1"
+//     exists), renew and end NOT_FOUND (no lease "x1" exists);
+//   - evidence: ERROR_CODE_FORBIDDEN from the router until Goal 09.
 //
 // The full authority store and the full non-account state are byte-identical
 // after each (council.reject). Fails without the EvidenceItem registration: a
@@ -160,6 +162,8 @@ func TestEveryProtocolMessageDecodes(t *testing.T) {
 			code, protoCode = 16, authority.CodeNotFound
 		case "svn.content.v1.MsgRegisterContent", "svn.content.v1.MsgWithdrawContent":
 			code, protoCode = 19, authority.CodeBounds
+		case "svn.leases.v1.MsgOfferLease", "svn.leases.v1.MsgRenewLease", "svn.leases.v1.MsgEndLease":
+			code, protoCode = 16, authority.CodeNotFound
 		}
 		var variants [][]byte
 		for pick := 0; pick < 8; pick++ {

@@ -91,9 +91,59 @@ jobs:
           go vet ./chain/...
           go vet ./proto/...
           go vet ./agents/provider/...
-          go test -race -count=1 -timeout 12m ./chain/...
-          go test -race -count=1 -timeout 2m ./proto/...
-          go test -race -count=1 -timeout 2m ./agents/provider/...
+
+  # The race detector run of ./chain/..., ./proto/... and ./agents/provider/...
+  # with the same flags as before, split into three shards so that each job
+  # stays within the 20-minute cap of scripts/workflow_policy.py. chain/app
+  # and chain/devnet are the two slowest packages under -race; "rest" is every
+  # other ./chain/... package (computed, so a new package lands there) plus
+  # ./proto/... and ./agents/provider/....
+  go-race:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [app, devnet, rest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: "1.26.10"
+          cache: false
+      - name: Race tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mod="github.com/Maxencejules/shortvideo-network"
+          case "${SHARD}" in
+            app)
+              go test -race -count=1 -timeout 12m ./chain/app
+              ;;
+            devnet)
+              go test -race -count=1 -timeout 12m ./chain/devnet
+              ;;
+            rest)
+              pkgs="$(go list ./chain/... | grep -v -x -e "${mod}/chain/app" -e "${mod}/chain/devnet")"
+              if [ -z "${pkgs}" ]; then
+                echo "no packages in the rest shard"
+                exit 1
+              fi
+              echo "${pkgs}"
+              # shellcheck disable=SC2086
+              go test -race -count=1 -timeout 12m ${pkgs}
+              go test -race -count=1 -timeout 2m ./proto/...
+              go test -race -count=1 -timeout 2m ./agents/provider/...
+              ;;
+            *)
+              echo "unknown shard ${SHARD}"
+              exit 1
+              ;;
+          esac
 
   devnet:
     runs-on: ubuntu-24.04
