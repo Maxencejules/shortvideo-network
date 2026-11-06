@@ -18,9 +18,11 @@
 //     evidence.MaxEvidenceLifetimeSeconds
 //   - batch_id = IDPrefix + 47 hex of SHA-256 of the SVN-JCS-1 object
 //     {"auditor": hex address, "epoch": "<decimal>", "evidence_ids": [...]}
-//   - business_id = IDPrefix + 47 hex of SHA-256("svn-audit-business:" +
-//     batch_id + ":" + attempt); attempt 0 first, a new attempt only after
-//     the chain answered REPLAY
+//   - business_id of attempt 0 = IDPrefix + 47 hex of
+//     SHA-256("svn-audit-business:" + batch_id + ":0"); a later attempt,
+//     made only after the chain answered REPLAY, uses IDPrefix + 47 hex of
+//     32 bytes from crypto/rand (RetryBusinessID), so nobody can compute
+//     and commit the retry ids before they are broadcast
 //
 // Eligibility (owner ruling on Q4): only a held lease (ACTIVE or RENEWED,
 // reservation held) of the configured id whose deadline is after the run's
@@ -32,10 +34,12 @@
 package batch
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
 
@@ -97,10 +101,29 @@ func BatchID(signer []byte, epoch uint64, evidenceIDs []string) (string, error) 
 	return evidence.IDPrefix(signer) + suffix(sha256.Sum256([]byte(text))), nil
 }
 
-// BusinessID is the business id of attempt n of a batch.
-func BusinessID(signer []byte, batchID string, attempt uint64) string {
-	sum := sha256.Sum256([]byte("svn-audit-business:" + batchID + ":" + strconv.FormatUint(attempt, 10)))
+// BusinessID is the business id of attempt 0 of a batch, the one the signed
+// batch carries. Anyone who sees the batch id can compute it, but the batch
+// id is public only once attempt 0 is broadcast.
+func BusinessID(signer []byte, batchID string) string {
+	sum := sha256.Sum256([]byte("svn-audit-business:" + batchID + ":0"))
 	return evidence.IDPrefix(signer) + suffix(sum)
+}
+
+// RetryBusinessID draws the business id of a later attempt: IDPrefix and 47
+// hex characters of 32 bytes read from r (crypto/rand when r is nil). It is
+// not derived from the batch, so another account that sees attempt 0 in the
+// mempool cannot commit the retry ids first (security review finding 1). The
+// caller stores the transaction bytes, which carry the id, before the
+// broadcast; a retry after a stop reads the id back from those bytes.
+func RetryBusinessID(signer []byte, r io.Reader) (string, error) {
+	if r == nil {
+		r = rand.Reader
+	}
+	var nonce [32]byte
+	if _, err := io.ReadFull(r, nonce[:]); err != nil {
+		return "", fmt.Errorf("batch: retry business id: %w", err)
+	}
+	return evidence.IDPrefix(signer) + suffix(nonce), nil
 }
 
 // Window holds the producer's time settings in seconds.
@@ -391,7 +414,7 @@ func assemble(p Plan, provider string, items []Item, supersedes string) (*Batch,
 	}
 	msg := &evidencev1.MsgSubmitAuditBatch{
 		Signer:        append([]byte(nil), p.Signer...),
-		BusinessId:    BusinessID(p.Signer, batchID, 0),
+		BusinessId:    BusinessID(p.Signer, batchID),
 		BatchId:       batchID,
 		Epoch:         epoch,
 		SchemaVersion: evidence.SchemaVersion,
@@ -436,12 +459,12 @@ func Sign(b *Batch, key Signer) error {
 	return nil
 }
 
-// WithBusinessAttempt returns a copy of the signed message with the
-// business id of attempt n. The business id is not part of the signed
-// payload, so the auditor signature stays valid.
-func WithBusinessAttempt(msg *evidencev1.MsgSubmitAuditBatch, attempt uint64) *evidencev1.MsgSubmitAuditBatch {
+// WithBusinessID returns a copy of the signed message with another business
+// id. The business id is not part of the signed payload, so the auditor
+// signature stays valid.
+func WithBusinessID(msg *evidencev1.MsgSubmitAuditBatch, businessID string) *evidencev1.MsgSubmitAuditBatch {
 	out := proto.Clone(msg).(*evidencev1.MsgSubmitAuditBatch)
-	out.BusinessId = BusinessID(msg.GetSigner(), msg.GetBatchId(), attempt)
+	out.BusinessId = businessID
 	return out
 }
 

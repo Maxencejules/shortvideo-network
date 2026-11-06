@@ -439,10 +439,14 @@ func TestEvidenceEventSchemas(t *testing.T) {
 // TestNoPrivateDataInEvidenceStateOrEvents runs audits whose off-chain
 // inputs carry the synthetic canaries (an endpoint URL, an email, a
 // username, a watch event, a complaint narrative, media bytes): only their
-// SHA-256 reaches a transaction (as a REJECTED observation digest). Every
-// store, every committed transaction, and every event of the run hold no
-// canary and no URL scheme. Opaque ids and digests stay linkable by anyone
-// holding their preimage.
+// SHA-256 reaches a transaction (as a REJECTED observation digest). The
+// evidence store holds each of those digests (positive control: the scan
+// reads stored observations). Every store, every committed transaction, and
+// every event of the run hold no canary and no URL scheme. The canaries
+// themselves never enter a transaction, so the canary half shows that the
+// message has no field that carries them, not that a field would be
+// refused. Opaque ids and digests stay linkable by anyone holding their
+// preimage.
 func TestNoPrivateDataInEvidenceStateOrEvents(t *testing.T) {
 	e := newEvNet()
 	c := e.start(t, 1)
@@ -455,6 +459,15 @@ func TestNoPrivateDataInEvidenceStateOrEvents(t *testing.T) {
 	}
 	wantCode(t, "canary digests", e.send(t, c, e.auditor1, e.audit(t, e.auditor1, "pd-1", p+"pd-1", c.epoch(), items...)), msgkit.OK)
 	list := canaries()
+	// Positive control: the scan sees what the batch stored. Every canary's
+	// SHA-256 is in the evidence store (the observation digests), so a scan
+	// that missed stored observations would fail here, not pass vacuously.
+	evidenceBlob := c.app().ModuleSnapshot(app.ModuleEvidence)
+	for i, canary := range list {
+		if !bytes.Contains(evidenceBlob, sha(canary)) {
+			t.Fatalf("the evidence store does not hold the digest of canary %d: the scan sees no stored observation", i)
+		}
+	}
 	web := [][]byte{[]byte("https://"), []byte("http://")}
 	for _, name := range append(app.SnapshotStores(), "acc") {
 		blob := c.app().ModuleSnapshot(name)

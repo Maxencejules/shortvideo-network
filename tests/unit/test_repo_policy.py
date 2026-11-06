@@ -122,6 +122,8 @@ def test_ignore_rules_cover_private_material() -> None:
         "dist/app.js",
         ".toolchains/bin/protoc",
         "cache-dump.sql",
+        "accounts/auditor-1.hex",
+        "chain/devnet/work/accounts/validator-1.hex",
     )
     tracked = (
         "README.md",

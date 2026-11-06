@@ -99,6 +99,12 @@ Where the mutants come from (names start with their source):
   rule, the x/leases evidence reader, the DR-06-06 seat gate, the
   broadcaster relay refusal, the layout check, the business-id namespace).
 - p4-*: the x/evidence adapter rules of tests/difftest/spec_oracle.py.
+- w2f-*: the Wave 2 fix round: OwnsID fails closed for an address that is
+  not 20 bytes (security review finding 4), drawn retry business ids and
+  the unrecorded-submission rules that go with them (finding 1). Two
+  ported anchors changed text with that round (plan-ids-d17-*-prefix-
+  dropped, w1b-submit-m12-unrecorded-any-message); each mutant makes the
+  same change to the new line.
 This runner re-runs all of them; its own output is the evidence, not the
 scratch logs.
 """
@@ -161,7 +167,8 @@ EVIDENCE_TESTS = (
     "TestAuditorEpochCapD15", "TestReportedStateD4", "TestNoEvidenceRevivesAnything",
     "TestRecordedEvidenceAfterEndWithdrawExpiry", "TestRecordSizeBound",
     "TestAuditLeavesOtherStoresUntouched", "TestStoreInvariantViolationsFailClosed",
-    "TestRecordFieldsAndDerivedState", "TestEvidenceEvents", "TestGenesisValidateImportExport",
+    "TestRecordFieldsAndDerivedState", "TestRecordStateNeedsTheDigestAlgorithm", "TestEvidenceEvents",
+    "TestGenesisValidateImportExport",
     "TestGenesisBatchConsistency", "TestEvidenceGenesisRoundTrip", "TestModuleGenesis",
     "TestModule", "TestServicesOnRealRouters", "TestServiceDescriptorsMatchTheProtocol",
     "TestUnaryHandlerInterceptor", "TestRunMigrationsAtCurrentVersionIsANoOp",
@@ -169,7 +176,7 @@ EVIDENCE_TESTS = (
     "TestDeterministicSources", "TestKeeperImports", "TestNoMerkleCode", "TestNoForbiddenNames",
     "TestReadsWithoutBlockTimeFailClosed", "TestEvidenceQuery", "TestEvidenceQueryResponseSizeBound",
     "TestSignPayloadNeverFails", "TestAttestationPayloadRejectsInvalidUTF8", "TestSignPayloadSizeBound",
-    "TestAttestationPreimageIsNotASignDoc", "TestAuditorAddressMatchesSDK", "TestKindName",
+    "TestAttestationPreimageIsNotASignDoc", "TestAuditorAddressMatchesSDK", "TestOwnsIDFailsClosed", "TestKindName",
     "TestEpochAt", "TestEnvelopeMatchesSchema",
     "FuzzSubmitAuditBatchDecode", "FuzzAuditStateSequence", "FuzzEvidenceGenesisJSON",
     "FuzzEvidencePageKey",
@@ -182,7 +189,8 @@ AUDITOR_NET_TESTS = (
     "TestParseEndpointRules", "TestURLLengthBoundary", "TestParseEndpointValues",
     "TestAllowlistEntryRules", "TestVet", "TestRefusalTextHasNoAddress", "TestBoundsMatchProtocolFile",
     "TestSpecialPurposeTable", "TestUnmappingCases", "TestGoBuiltinsAreNotEnough",
-    "TestClassifyRejectsInvalidAndZoned", "TestTableMatchesRegistrySnapshot",
+    "TestClassifyRejectsInvalidAndZoned", "TestTableMatchesRegistrySnapshot", "TestURLPolicySeeds",
+    "FuzzURLPolicy",
     # agents/auditor/fetch
     "TestFetchWholePackageOverLoopbackEntry", "TestLoopbackURLNeedsItsExactEntry",
     "TestEntryNameResolvingElsewhereRefused", "TestMixedResolutionRefusedAsAWhole",
@@ -196,7 +204,7 @@ AUDITOR_NET_TESTS = (
     "TestFetchIgnoresProxyEnvironment",
     # agents/auditor/config
     "TestExampleConfig", "TestDefaults", "TestAuditorDefaults", "TestRejects",
-    "TestConfigHasNoBypass", "TestLoadBoundsTheFile",
+    "TestConfigHasNoBypass", "TestLoadBoundsTheFile", "TestConfigSeeds", "FuzzConfigParse",
 )
 
 AUDITOR_FILES_TESTS = (
@@ -206,7 +214,8 @@ AUDITOR_FILES_TESTS = (
     "TestNewLayout", "TestSplitterZeroLengthSegments", "TestSelectIsDeterministicPerSeed",
     "TestNewSeed", "TestInputProblemsFetchNothing", "TestWholePackageMatches",
     "TestWholePackageCorruptedSegment", "TestWholePackageLengthMismatch", "TestSampledSegments",
-    "TestFreshSeedPerAudit", "TestAuditRequestValidation", "TestProducerBytesRead",
+    "TestFreshSeedPerAudit", "TestAuditRequestValidation", "TestProducerBytesRead", "TestManifestSeeds",
+    "FuzzManifestParse",
     # agents/auditor/store
     "TestContentAddressedReports", "TestNamedObjects", "TestConcurrentPutsCreateOnce",
     "TestLinkAfterAnotherWriterNeverReplaces", "TestNoPartialFileAfterCrash", "TestModes",
@@ -238,7 +247,8 @@ AUDITOR_CLI_TESTS = (
     "TestRetryQueriesBeforeResign", "TestReplayLeadsToANewBusinessID", "TestStaleEpochIsWarnedAndFails",
     "TestSubmittedBatchInAPassedEpochIsNotRebroadcast", "TestCheckTxRejectionIsNotAccepted",
     "TestRebroadcastWhileWaitingStaysSubmitted", "TestUnrecordedSubmissionIsQueried",
-    "TestStoredSubmissionMustCarryItsBatch", "TestLostBroadcastAnswerIsSubmitted",
+    "TestStoredSubmissionMustCarryItsBatch", "TestUnrecordedRetryKeepsItsBusinessID",
+    "TestSquattedBusinessIDsDoNotBlockTheBatch", "TestLostBroadcastAnswerIsSubmitted",
     "TestBatchFailureIsolation", "TestBuildTx", "TestReads", "TestSVNCode", "TestHTTPClient",
     "TestChaintestOnlyInTests",
     # agents/auditor/review
@@ -572,13 +582,17 @@ MUTANTS: list[Mutant] = [
         "",
         "an accepted batch must mark its batch_id used, so a second batch with it is DUPLICATE_ID"),
     one("plan-ids-d17-batch-prefix-dropped", EVIDENCE, EMSG,
-        "\tif !strings.HasPrefix(msg.GetBatchId(), prefix) {",
-        "\tif false && !strings.HasPrefix(msg.GetBatchId(), prefix) {",
+        "\tif !OwnsID(msg.GetSigner(), msg.GetBatchId()) {",
+        "\tif false && !OwnsID(msg.GetSigner(), msg.GetBatchId()) {",
         "T1 (D-17): a batch_id without the signer's prefix is FORBIDDEN"),
     one("plan-ids-d17-item-prefix-dropped", EVIDENCE, EMSG,
-        "\t\tif !strings.HasPrefix(item.GetEvidenceId(), prefix) {",
-        "\t\tif false && !strings.HasPrefix(item.GetEvidenceId(), prefix) {",
+        "\t\tif !OwnsID(msg.GetSigner(), item.GetEvidenceId()) {",
+        "\t\tif false && !OwnsID(msg.GetSigner(), item.GetEvidenceId()) {",
         "T1 (D-17): an evidence id without the signer's prefix is FORBIDDEN"),
+    one("w2f-ownsid-empty-prefix-matches", EVIDENCE, ESIGN,
+        '\treturn prefix != "" && strings.HasPrefix(id, prefix)\n',
+        "\treturn strings.HasPrefix(id, prefix)\n",
+        "security review finding 4: an address that is not 20 bytes has no prefix, and OwnsID fails closed"),
     # ---------------------------------------------------------------- plan 21.8: epoch, derivation
     one("plan-epoch-previous-round", EVIDENCE, EMSG,
         "\tif msg.GetEpoch() != current {",
@@ -731,6 +745,30 @@ MUTANTS: list[Mutant] = [
         '        if self.on("evidence D-17") and not (',
         '        if False and self.on("evidence D-17") and not (',
         "the adapter applies evidence D-17 (T1) after every spec check"),
+    one("p4-oracle-d8-off", DIFFTEST, ORACLE,
+        '        if self.on("evidence D-8") and step["kind"] == "PROVIDER_RECEIPT":',
+        '        if False and self.on("evidence D-8") and step["kind"] == "PROVIDER_RECEIPT":',
+        "the adapter applies evidence D-8 (T2): a PROVIDER_RECEIPT item is FORBIDDEN"),
+    one("p4-oracle-d9-off", DIFFTEST, ORACLE,
+        '        if self.on("evidence D-9") and step["expiry_unix_seconds"] - now > cfg.lifetime:',
+        '        if False and self.on("evidence D-9") and step["expiry_unix_seconds"] - now > cfg.lifetime:',
+        "the adapter applies evidence D-9 (T3): an expiry beyond the evidence lifetime is BOUNDS"),
+    one("p4-oracle-d10-off", DIFFTEST, ORACLE,
+        '        if self.on("evidence D-10") and (',
+        '        if False and self.on("evidence D-10") and (',
+        "the adapter applies evidence D-10 (T4): content other than the lease's is CONFLICT"),
+    one("p4-oracle-d11-off", DIFFTEST, ORACLE,
+        '        if self.on("evidence D-11") and not (',
+        '        if False and self.on("evidence D-11") and not (',
+        "the adapter applies evidence D-11 (T5): a lease that is not held is CONFLICT"),
+    one("p4-oracle-d12-off", DIFFTEST, ORACLE,
+        '        if self.on("evidence D-12") and lease["deadline_unix_seconds"] <= now:',
+        '        if False and self.on("evidence D-12") and lease["deadline_unix_seconds"] <= now:',
+        "the adapter applies evidence D-12 (T6): a held lease past its deadline is EXPIRED"),
+    one("p4-oracle-d18-off", DIFFTEST, ORACLE,
+        '            self.on("evidence D-18")\n',
+        '            False and self.on("evidence D-18")\n',
+        "the adapter applies evidence D-18 (T7): an expiry after the lease deadline is CONFLICT"),
     one("p4-oracle-d13-withdrawn-ignored", DIFFTEST, ORACLE,
         '            if content["state"] == "WITHDRAWN":',
         "            if False:",
@@ -924,13 +962,26 @@ MUTANTS: list[Mutant] = [
         "\t\t\tbreak\n",
         "a submission with bytes but no record is queried, not ignored"),
     one("w1b-submit-m12-unrecorded-any-message", AUD_CLI, SUBMIT,
-        "if want := batch.WithBusinessAttempt(b.Msg, attempt); proto.Equal(msg, want) {",
-        "if want := batch.WithBusinessAttempt(b.Msg, attempt); proto.Equal(msg, want) || msg != nil {",
+        "\tif !proto.Equal(msg, batch.WithBusinessID(b.Msg, id)) {",
+        "\tif !proto.Equal(msg, batch.WithBusinessID(b.Msg, id)) && msg == nil {",
         "an unrecorded submission must carry this batch's message"),
     one("w1b-submit-m13-record-without-bytes-ok", AUD_CLI, SUBMIT,
         '\t\t\t\treturn nil, fmt.Errorf("chainclient: submission %d has a record without transaction bytes", n)',
         "\t\t\t\tbreak",
         "a submission record without transaction bytes is an error"),
+    # ---------------------------------------------------------------- W2F fix round: retry business ids
+    one("w2f-replay-keeps-business-id", AUD_CLI, SUBMIT,
+        "\t\t\t\tif businessID, err = batch.RetryBusinessID(b.Msg.GetSigner(), s.Rand); err != nil {",
+        "\t\t\t\tif _, err = batch.RetryBusinessID(b.Msg.GetSigner(), s.Rand); err != nil {",
+        "security review finding 1: after REPLAY the next attempt carries a new, drawn business id"),
+    one("w2f-unrecorded-first-business-id-unchecked", AUD_CLI, SUBMIT,
+        "\t\tif id != b.Msg.GetBusinessId() {\n",
+        "\t\tif false && id != b.Msg.GetBusinessId() {\n",
+        "unrecorded submission 0 must carry the signed batch's own business id"),
+    one("w2f-unrecorded-retry-id-any-prefix", AUD_CLI, SUBMIT,
+        "\tcase msgkit.ValidID(id) && evidence.OwnsID(b.Msg.GetSigner(), id) && prev.BusinessAttempt < MaxSubmissions:",
+        "\tcase msgkit.ValidID(id) && prev.BusinessAttempt < MaxSubmissions:",
+        "an unrecorded retry must carry a business id with its signer's prefix"),
     # ---------------------------------------------------------------- Wave 1b fix round: labels
     recorded_sentence("w1b-labels-verifies-stores",
                       "The chain verifies that the provider stores the content.",

@@ -122,6 +122,14 @@ func IDPrefix(addr []byte) string {
 	return hex.EncodeToString(addr[:IDPrefixBytes]) + "."
 }
 
+// OwnsID reports whether id starts with IDPrefix(addr). It is false for an
+// address that is not 20 bytes: such an address has no prefix, and an empty
+// prefix would match every id, so the D-17 check fails closed.
+func OwnsID(addr []byte, id string) bool {
+	prefix := IDPrefix(addr)
+	return prefix != "" && strings.HasPrefix(id, prefix)
+}
+
 // safeUint converts an unsigned integer of the payload to int64, or reports
 // that it has no SVN-JCS-1 form (above 2^53-1).
 func safeUint(v uint64) (int64, bool) {

@@ -20,7 +20,7 @@ import (
 
 const examplePath = "../testdata/config/example.json"
 
-func example(t *testing.T) []byte {
+func example(t testing.TB) []byte {
 	t.Helper()
 	raw, err := os.ReadFile(examplePath)
 	if err != nil {
@@ -141,7 +141,7 @@ func TestAuditorDefaults(t *testing.T) {
 
 // edit applies a JSON edit to the example: path segments name object keys or
 // array indexes; a nil value deletes the key.
-func edit(t *testing.T, path []any, value any, del bool) []byte {
+func edit(t testing.TB, path []any, value any, del bool) []byte {
 	t.Helper()
 	var doc any
 	if err := json.Unmarshal(example(t), &doc); err != nil {
@@ -223,11 +223,16 @@ func TestRejects(t *testing.T) {
 		"sample count too large": set(32769, "audits", 1, "sample_count"),
 		"duplicate lease":        set("lease-1", "audits", 1, "lease_id"),
 		"allowlist cidr ip":      set("10.0.0.0/8", "allowlist", 0, "ip"),
-		"allowlist wildcard":     set("*", "allowlist", 0, "provider_id"),
-		"allowlist link-local":   set(map[string]any{"provider_id": "p1", "host": "metadata.test", "ip": "169.254.169.254", "port": 443}, "allowlist", 0),
-		"allowlist port 0":       set(0, "allowlist", 0, "port"),
-		"allowlist port 70000":   set(70000, "allowlist", 0, "port"),
-		"allowlist extra field":  set(true, "allowlist", 0, "any_port"),
+		// The example entry's host is 127.0.0.1, so "10.0.0.0/8" is also
+		// refused by the policy rule that an IP-literal host equals ip. This
+		// CIDR names the entry's own address; only the one-address rule
+		// refuses it.
+		"allowlist cidr of the entry host": set("127.0.0.1/32", "allowlist", 0, "ip"),
+		"allowlist wildcard":               set("*", "allowlist", 0, "provider_id"),
+		"allowlist link-local":             set(map[string]any{"provider_id": "p1", "host": "metadata.test", "ip": "169.254.169.254", "port": 443}, "allowlist", 0),
+		"allowlist port 0":                 set(0, "allowlist", 0, "port"),
+		"allowlist port 70000":             set(70000, "allowlist", 0, "port"),
+		"allowlist extra field":            set(true, "allowlist", 0, "any_port"),
 		// Auditor fields (owner rulings on Q1, Q2, Q4).
 		"missing auditor_address": del("auditor_address"),
 		"auditor_address short":   set("79b70b8d1f8f5606e9a823195b38538bbeb9f1", "auditor_address"),

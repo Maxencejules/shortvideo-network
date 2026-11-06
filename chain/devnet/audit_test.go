@@ -912,6 +912,19 @@ func TestDevnetAuditLifecycle(t *testing.T) {
 	}
 	var run2 runLine
 	decodeLine(t, lines[0], &run2)
+	// Plan section 18 step 5: the honest producer, re-run against the same
+	// endpoints, observes la PASS and lb FAIL again. The same operator on the
+	// same machine ran it twice: it is not an independent retrieval test.
+	if len(run2.Audits) != 2 {
+		t.Fatalf("second run: %d audits", len(run2.Audits))
+	}
+	for _, a := range run2.Audits {
+		got := strings.TrimSpace(a.Result + " " + strings.Join(a.Reasons, " "))
+		if got != wantRun[a.LeaseID] || (a.LeaseID != "la" && a.LeaseID != "lb") {
+			t.Fatalf("second run: %s is %q, want %q", a.LeaseID, got, wantRun[a.LeaseID])
+		}
+		fmt.Printf("phase=rerun lease=%s result=%q label=%q\n", a.LeaseID, got, "same operator, same machine; not an independent retrieval test")
+	}
 	code, lines = auditorCLI(t, bin, "sign", "--config", cfg2Path, "--run", run2.RunID)
 	if code != 0 || len(lines) != 1 {
 		t.Fatalf("second sign: exit %d, %d lines", code, len(lines))

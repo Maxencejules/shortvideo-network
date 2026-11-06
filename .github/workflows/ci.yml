@@ -133,6 +133,10 @@ jobs:
               go test -race -count=1 -timeout 12m -skip TestDevnetAudit ./chain/devnet
               ;;
             devnet-evidence)
+              # TestDevnetAuditLifecycle builds agents/auditor with these
+              # flags inside its timeout; building it first fills the build
+              # cache, so that compile time stays outside the 15m limit.
+              go build -C agents/auditor -o /dev/null .
               go test -race -count=1 -timeout 15m -run TestDevnetAudit ./chain/devnet
               ;;
             rest)

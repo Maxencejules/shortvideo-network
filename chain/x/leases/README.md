@@ -601,7 +601,7 @@ store key builders, and `leasestest`.
 
 Later goals:
 
-- Goal 09 (done): the app wires `Deps.Evidence` to x/evidence; evidence takes no expiry budget (x/evidence D-4, owner
+- Goal 09 (implemented): the app wires `Deps.Evidence` to x/evidence; evidence takes no expiry budget (x/evidence D-4, owner
   ruling on Q4); x/evidence reads `Keeper.Lease` for the DEC-010 digest comparison and the lease binding; a renewal
   that names evidence is always rejected (row 14), so evidence never extends a lease (`TestNoEvidenceRenews`).
 - Goal 11 broadcaster: a broadcast acknowledgement (CheckTx runs only the ante chain) is not success; poll the

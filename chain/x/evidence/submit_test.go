@@ -16,6 +16,7 @@ import (
 	eventsv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/events/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
+	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
 // TestRecordFieldsAndDerivedState (REQ-MODU-005; spec cases
@@ -70,6 +71,27 @@ func TestRecordFieldsAndDerivedState(t *testing.T) {
 	}
 	if _, found := e.k.BusinessDigest(e.unmetered(), msg.GetBusinessId()); !found {
 		t.Fatal("business id not committed")
+	}
+	e.requireInvariants()
+}
+
+// TestRecordStateNeedsTheDigestAlgorithm (DR-09-14): RECORDED needs the
+// algorithm AND the value of the lease's manifest digest. A lease whose
+// stored digest has the same 32-byte value under another algorithm
+// (UNSPECIFIED) gets REJECTED. x/leases stores only SHA-256 manifest digests,
+// so only the keeper path with an edited lease reaches this case.
+func TestRecordStateNeedsTheDigestAlgorithm(t *testing.T) {
+	e := newEnv(t)
+	item := e.item(auditor1, "e1", "l1")
+	e.editLease("l1", func(l *leasesv1.Lease) {
+		l.ManifestDigest = &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_UNSPECIFIED, Value: l.GetManifestDigest().GetValue()}
+	})
+	if !bytes.Equal(item.GetObservationDigest().GetValue(), e.lease("l1").GetManifestDigest().GetValue()) {
+		t.Fatal("the item's observation value must equal the lease's manifest digest value")
+	}
+	e.requireOK(e.submit(e.fresh(), signed(auditor1, "1", item)), "submit")
+	if got := e.stored(prefix(auditor1) + "e1").GetState(); got != evidencev1.EvidenceState_EVIDENCE_STATE_REJECTED {
+		t.Fatalf("state %v, want REJECTED: the algorithm differs", got)
 	}
 	e.requireInvariants()
 }

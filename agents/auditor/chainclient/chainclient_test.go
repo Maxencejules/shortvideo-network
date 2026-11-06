@@ -374,8 +374,9 @@ func TestRetryQueriesBeforeResign(t *testing.T) {
 	}
 }
 
-// REPLAY: the business id was taken; the next attempt uses a new business
-// id, and the auditor signature, which does not cover it, stays valid.
+// REPLAY: the business id was taken; the next attempt uses a new, drawn
+// business id with the signer's prefix, its record says attempt 1, and the
+// auditor signature, which does not cover the business id, stays valid.
 func TestReplayLeadsToANewBusinessID(t *testing.T) {
 	e := setup(t)
 	calls := 0
@@ -400,8 +401,13 @@ func TestReplayLeadsToANewBusinessID(t *testing.T) {
 	m1, _ := e.node.Message(e.node.Txs[hashes[1]].Raw)
 	e.node.Unlock()
 	signer := e.b.Msg.GetSigner()
-	if m0.GetBusinessId() != batch.BusinessID(signer, e.b.ID(), 0) || m1.GetBusinessId() != batch.BusinessID(signer, e.b.ID(), 1) {
+	if m0.GetBusinessId() != batch.BusinessID(signer, e.b.ID()) || m1.GetBusinessId() == m0.GetBusinessId() ||
+		!msgkit.ValidID(m1.GetBusinessId()) || !evidence.OwnsID(signer, m1.GetBusinessId()) {
 		t.Fatalf("business ids %s, %s", m0.GetBusinessId(), m1.GetBusinessId())
+	}
+	raw, err := e.store.Get(store.Batches, chainclient.SubmissionName(e.b.ID(), 1), ".json")
+	if err != nil || !bytes.Contains(raw, []byte(`"business_attempt":1,"business_id":"`+m1.GetBusinessId()+`"`)) {
+		t.Fatalf("submission 1 record %s (%v)", raw, err)
 	}
 	if evidence.VerifyAuditSignature(m1) != msgkit.OK || !bytes.Equal(m1.GetAuditorSignature().GetSignature(), m0.GetAuditorSignature().GetSignature()) {
 		t.Fatal("the new attempt changed or broke the auditor signature")
@@ -553,9 +559,11 @@ func TestUnrecordedSubmissionIsQueried(t *testing.T) {
 }
 
 // Stored submissions must be consistent: a record without transaction
-// bytes, bytes that do not decode, and bytes that carry another message
-// are errors; bytes of the batch at a later business attempt are an
-// unrecorded submission (UNKNOWN, so SUBMITTED until a commit is seen).
+// bytes, bytes that do not decode, bytes that carry another message, and
+// submission 0 under another business id than the batch's first are
+// errors; bytes of the batch at attempt 0 are an unrecorded submission
+// (UNKNOWN, so SUBMITTED until a commit is seen). Later submissions:
+// TestUnrecordedRetryKeepsItsBusinessID.
 func TestStoredSubmissionMustCarryItsBatch(t *testing.T) {
 	build := func(e *env, msg *evidencev1.MsgSubmitAuditBatch) []byte {
 		raw, _, err := e.sub.Client.BuildTx(msg, e.key.SDK(), chainclient.TxInput{ChainID: "svn-test-1", AccountNumber: 7, Gas: 2_000_000})
@@ -577,10 +585,14 @@ func TestStoredSubmissionMustCarryItsBatch(t *testing.T) {
 		"record without bytes":     {".json", func(*env) []byte { return []byte("{}") }, false},
 		"bytes that do not decode": {".pb", func(*env) []byte { return []byte("not a transaction") }, false},
 		"another epoch":            {".pb", func(e *env) []byte { return build(e, otherEpoch(e)) }, false},
-		"attempt past the bound": {".pb", func(e *env) []byte {
-			return build(e, batch.WithBusinessAttempt(e.b.Msg, chainclient.MaxSubmissions+1))
+		"a retry business id as submission 0": {".pb", func(e *env) []byte {
+			id, err := batch.RetryBusinessID(e.b.Msg.GetSigner(), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return build(e, batch.WithBusinessID(e.b.Msg, id))
 		}, false},
-		"attempt 2 of the batch": {".pb", func(e *env) []byte { return build(e, batch.WithBusinessAttempt(e.b.Msg, 2)) }, true},
+		"attempt 0 of the batch": {".pb", func(e *env) []byte { return build(e, e.b.Msg) }, true},
 	} {
 		e := setup(t)
 		if err := e.store.Put(store.Batches, chainclient.SubmissionName(e.b.ID(), 0), c.ext, c.data(e)); err != nil {
@@ -590,6 +602,103 @@ func TestStoredSubmissionMustCarryItsBatch(t *testing.T) {
 		if c.ok != (err == nil) || (c.ok && status.State != chainclient.Submitted) {
 			t.Fatalf("%s: %+v %v", name, status, err)
 		}
+	}
+}
+
+// Unrecorded bytes of a later submission: after attempt 0 got REPLAY, the
+// stored bytes of submission 1 (no record: the process stopped after the
+// broadcast) carry a drawn business id. Status reads them as attempt 1,
+// SUBMITTED, and the next submit rebroadcasts under that same business id;
+// it draws no other. Bytes of submission 1 under a business id without the
+// signer's prefix are an error.
+func TestUnrecordedRetryKeepsItsBusinessID(t *testing.T) {
+	setupReplayed := func(t *testing.T) *env {
+		e := setup(t)
+		e.node.OnBroadcast = func(n *chaintest.Node, msg *evidencev1.MsgSubmitAuditBatch, hash string) { n.Commit(hash, 3, "svn") }
+		e.sub.Rand = bytes.NewReader(nil) // no retry id can be drawn: submit stops after the REPLAY
+		if _, err := e.sub.Submit(context.Background(), e.b, "run-test"); err == nil || !strings.Contains(err.Error(), "retry business id") {
+			t.Fatalf("submit without a random source: %v", err)
+		}
+		if len(e.node.Broadcasts()) != 1 {
+			t.Fatalf("%d broadcasts", len(e.node.Broadcasts()))
+		}
+		e.sub.Rand = nil
+		return e
+	}
+	store1 := func(e *env, id string) {
+		raw, _, err := e.sub.Client.BuildTx(batch.WithBusinessID(e.b.Msg, id), e.key.SDK(), chainclient.TxInput{ChainID: "svn-test-1", AccountNumber: 7, Sequence: 1, Gas: 2_000_000})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := e.store.Put(store.Batches, chainclient.SubmissionName(e.b.ID(), 1), ".pb", raw); err != nil {
+			t.Fatal(err)
+		}
+	}
+	e := setupReplayed(t)
+	retryID, err := batch.RetryBusinessID(e.b.Msg.GetSigner(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	store1(e, retryID)
+	status, err := e.sub.Status(context.Background(), e.b)
+	if err != nil || status.State != chainclient.Submitted {
+		t.Fatalf("status %+v %v", status, err)
+	}
+	e.node.OnBroadcast = func(n *chaintest.Node, msg *evidencev1.MsgSubmitAuditBatch, hash string) { commitAll(n, msg, hash) }
+	res, err := e.sub.Submit(context.Background(), e.b, "run-test")
+	if err != nil || res.State != chainclient.Committed || !res.Recorded() {
+		t.Fatalf("submit %+v %v", res, err)
+	}
+	hashes := e.node.Broadcasts()
+	e.node.Lock()
+	last, _ := e.node.Message(e.node.Txs[hashes[len(hashes)-1]].Raw)
+	e.node.Unlock()
+	if len(hashes) != 2 || last.GetBusinessId() != retryID {
+		t.Fatalf("%d broadcasts, last business id %s, want %s", len(hashes), last.GetBusinessId(), retryID)
+	}
+	raw, err := e.store.Get(store.Batches, chainclient.SubmissionName(e.b.ID(), 2), ".json")
+	if err != nil || !bytes.Contains(raw, []byte(`"business_attempt":1,"business_id":"`+retryID+`"`)) {
+		t.Fatalf("submission 2 record %s (%v)", raw, err)
+	}
+
+	foreign := setupReplayed(t)
+	otherID, err := batch.RetryBusinessID(testKey(t, "auditor-2").Address(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	store1(foreign, otherID)
+	if status, err := foreign.sub.Status(context.Background(), foreign.b); err == nil {
+		t.Fatalf("submission 1 under another signer's business id: %+v", status)
+	}
+}
+
+// Squatted business ids (security review finding 1): another account that
+// saw attempt 0 in the mempool commits its business id first, and also the
+// ids attempts 1 to 15 had when they were SHA-256("svn-audit-business:" +
+// batch_id + ":" + attempt). Each of those business ids answers REPLAY.
+// The retry draws its business id, so the batch commits on the second
+// broadcast instead of failing every attempt up to the submission bound.
+func TestSquattedBusinessIDsDoNotBlockTheBatch(t *testing.T) {
+	e := setup(t)
+	signer := e.b.Msg.GetSigner()
+	squatted := map[string]bool{batch.BusinessID(signer, e.b.ID()): true}
+	for attempt := 1; attempt < chainclient.MaxSubmissions; attempt++ {
+		sum := sha256.Sum256([]byte(fmt.Sprintf("svn-audit-business:%s:%d", e.b.ID(), attempt)))
+		squatted[evidence.IDPrefix(signer)+hex.EncodeToString(sum[:])[:batch.SuffixHex]] = true
+	}
+	e.node.OnBroadcast = func(n *chaintest.Node, msg *evidencev1.MsgSubmitAuditBatch, hash string) {
+		if squatted[msg.GetBusinessId()] {
+			n.Commit(hash, 3, "svn")
+			return
+		}
+		commitAll(n, msg, hash)
+	}
+	res, err := e.sub.Submit(context.Background(), e.b, "run-test")
+	if err != nil || res.State != chainclient.Committed || !res.Recorded() {
+		t.Fatalf("%+v %v", res, err)
+	}
+	if n := len(e.node.Broadcasts()); n != 2 {
+		t.Fatalf("%d broadcasts, want 2", n)
 	}
 }
 

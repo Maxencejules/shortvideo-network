@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -164,9 +163,9 @@ func validateRecord(r *evidencev1.EvidenceRecord) error {
 	if len(r.GetSignerPubkey()) != msgkit.PublicKeyBytes {
 		return fmt.Errorf("signer_pubkey is %d bytes, want %d", len(r.GetSignerPubkey()), msgkit.PublicKeyBytes)
 	}
-	prefix := IDPrefix(AuditorAddress(r.GetSignerPubkey()))
-	if !strings.HasPrefix(r.GetEvidenceId(), prefix) || !strings.HasPrefix(r.GetBatchId(), prefix) {
-		return fmt.Errorf("evidence_id %q or batch_id %q does not start with the signer prefix %q", r.GetEvidenceId(), r.GetBatchId(), prefix)
+	signer := AuditorAddress(r.GetSignerPubkey())
+	if !OwnsID(signer, r.GetEvidenceId()) || !OwnsID(signer, r.GetBatchId()) {
+		return fmt.Errorf("evidence_id %q or batch_id %q does not start with the signer prefix %q", r.GetEvidenceId(), r.GetBatchId(), IDPrefix(signer))
 	}
 	if r.GetContentVersion() < 1 || r.GetContentVersion() > uint64(genesis.SafeIntegerMax) {
 		return fmt.Errorf("content_version %d outside [1, %d]", r.GetContentVersion(), genesis.SafeIntegerMax)

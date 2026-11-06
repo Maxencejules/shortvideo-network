@@ -76,7 +76,7 @@ Every signed byte comes from `chain/x/evidence` (`AuditEnvelope`, `AuditSignByte
 - observation digest: the lease manifest digest for PASS (the chain stores RECORDED), the full SHA-256 of the report for FAIL (REJECTED, DEC-010); INCOMPLETE produces no item
 - one batch per provider, at most `max_batch_items` items, ordered by evidence id
 - batch id: prefix and 47 hex characters of SHA-256 of `{"auditor", "epoch", "evidence_ids"}` (SVN-JCS-1)
-- business id: prefix and 47 hex characters of SHA-256 of `"svn-audit-business:" + batch_id + ":" + attempt`; attempt 0 first, the next one only after the chain answered REPLAY. The business id is not signed, so a new attempt keeps the auditor signature.
+- business id: attempt 0 (the one the signed batch carries) is the prefix and 47 hex characters of SHA-256 of `"svn-audit-business:" + batch_id + ":0"`. The next attempt, made only after the chain answered REPLAY, is the prefix and 47 hex characters of 32 bytes from `crypto/rand`, so another account that sees attempt 0 cannot compute and commit the retry ids first (`TestSquattedBusinessIDsDoNotBlockTheBatch`). The business id is not signed, so a new attempt keeps the auditor signature.
 
 `tests/fixtures/evidence/golden` holds a golden batch the producer writes (`TestGoldenEnvelopeFixtures`, `-update` rewrites it); `tests/unit/test_evidence_envelopes.py` checks it in Python.
 
@@ -95,7 +95,7 @@ Every signed byte comes from `chain/x/evidence` (`AuditEnvelope`, `AuditSignByte
 
 Items read back: `RECORDED`, `REJECTED`, or `EXPIRED` when the record equals the batch item (signer key, batch id, lease, content, version, kind, digest, epoch, expiry); `ID_TAKEN` when it differs; `NOT_ON_CHAIN` when absent. A retry first queries every stored transaction hash and the evidence ids; only then does it broadcast again with the current account sequence. REPLAY moves to the next business attempt. CONFLICT, EXPIRED, or WITHDRAWN re-reads each item's lease and content, drops the items that changed (reported in `dropped`), and submits the rest as a new batch in the same epoch (`next`; its summary names the old batch in `supersedes`). Another epoch than the batch's adds the warning `EPOCH_LIKELY_STALE`; a batch never submitted is still broadcast (the chain answers STALE_VERSION and nothing changes), a stale SUBMITTED batch is not broadcast again, and any other failure is reported as it is. An index line is appended only for a committed result.
 
-Each submission stores the transaction bytes (`batches/<name>.pb`) before the broadcast and the record with the CheckTx answer (`batches/<name>.json`) after it. Bytes without a record (the process stopped, or the record write failed, in between) are a submission whose answer is unknown: `status` and `submit` query its hash like any other, so a transaction that commits is still found and indexed. The bytes must carry the batch's own message at one of its business attempts; a record without bytes, or bytes that carry anything else, is an error.
+Each submission stores the transaction bytes (`batches/<name>.pb`) before the broadcast and the record with the CheckTx answer (`batches/<name>.json`) after it. Bytes without a record (the process stopped, or the record write failed, in between) are a submission whose answer is unknown: `status` and `submit` query its hash like any other, so a transaction that commits is still found and indexed. The bytes must carry the batch's own message: submission 0 under the batch's own business id, a later submission under the business id of the one before it (the same attempt) or a new id with the auditor's prefix (the next attempt, read back from the bytes, so a retry after a stop keeps its drawn id). A record without bytes, or bytes that carry anything else, is an error.
 
 The outer transaction is SIGN_MODE_DIRECT with the app's own encoding, no fee, no memo, and the auditor account's number and sequence from the auth query. The chain RPC client uses no proxy, follows no redirect, bounds each request in time, and bounds each response body at 16 MiB. Reads trust the one node they ask.
 
@@ -157,5 +157,7 @@ Retention: none set (approved DEC-004 default); nothing is deleted.
 ```bash
 go test -count=1 -race ./agents/auditor/...
 ```
+
+Parser fuzz targets (plan section 21.7), each with a seed-corpus test that its seeds reach the accepting path and the refusals: `FuzzURLPolicy` (`policy.ParseEndpoint`; `TestURLPolicySeeds`), `FuzzManifestParse` (`verify.ParseManifest` and `NewLayout`; `TestManifestSeeds`), `FuzzReportParse` (`report.Parse`, re-encoding to the same bytes; `TestReportSeeds`), and `FuzzConfigParse` (`config.Parse`; `TestConfigSeeds`). A plain `go test` runs only their seeds; a fuzz run is `go test -run '^$' -fuzz '^FuzzURLPolicy$' -fuzztime=15s ./agents/auditor/policy/`.
 
 No test uses the network beyond loopback. Times in reports come from the auditor host clock and are not verified. The chain in the command and `chainclient` tests is `chaintest`, a unit-test fake: those tests are unit tests, not end-to-end evidence. The devnet test runs the built binary against real nodes.

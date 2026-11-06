@@ -136,11 +136,29 @@ func TestBatchAndBusinessIDs(t *testing.T) {
 	if again != b1 || len(b1) != 64 || !strings.HasPrefix(b1, evidence.IDPrefix(signer)) {
 		t.Fatalf("batch id %s", b1)
 	}
-	if BusinessID(signer, b1, 0) != BusinessID(signer, b1, 0) || BusinessID(signer, b1, 0) == BusinessID(signer, b1, 1) {
-		t.Fatal("business id is not stable per attempt")
+	first := BusinessID(signer, b1)
+	if first != BusinessID(signer, b1) || first == BusinessID(signer, again+"x") || !idPattern.MatchString(first) ||
+		!strings.HasPrefix(first, evidence.IDPrefix(signer)) {
+		t.Fatalf("first business id %s", first)
 	}
-	if bid := BusinessID(signer, b1, 3); !idPattern.MatchString(bid) || !strings.HasPrefix(bid, evidence.IDPrefix(signer)) {
-		t.Fatalf("business id %s", bid)
+	// A retry business id is drawn, not derived from the batch (security
+	// review finding 1): two draws differ, each has the signer's prefix and
+	// the id pattern, the id is the prefix and 47 hex characters of the 32
+	// bytes read, and a source that ends early is an error.
+	r1, err1 := RetryBusinessID(signer, nil)
+	r2, err2 := RetryBusinessID(signer, nil)
+	if err1 != nil || err2 != nil || r1 == r2 || r1 == first || !idPattern.MatchString(r1) || !strings.HasPrefix(r1, evidence.IDPrefix(signer)) {
+		t.Fatalf("retry ids %s %s (%v %v)", r1, r2, err1, err2)
+	}
+	seq := make([]byte, 32)
+	for i := range seq {
+		seq[i] = byte(i)
+	}
+	if got, err := RetryBusinessID(signer, bytes.NewReader(seq)); err != nil || got != evidence.IDPrefix(signer)+hex.EncodeToString(seq)[:SuffixHex] {
+		t.Fatalf("retry id from known bytes %s (%v)", got, err)
+	}
+	if got, err := RetryBusinessID(signer, bytes.NewReader(seq[:31])); err == nil {
+		t.Fatalf("a source of 31 bytes gave the retry id %s", got)
 	}
 }
 
@@ -316,7 +334,7 @@ func TestBuildOneBatchPerProvider(t *testing.T) {
 	}
 	for _, b := range batches {
 		msg := b.Msg
-		if msg.GetEpoch() != evidence.EpochAt(headerTime) || msg.GetSchemaVersion() != 1 || msg.GetBusinessId() != BusinessID(p.Signer, msg.GetBatchId(), 0) {
+		if msg.GetEpoch() != evidence.EpochAt(headerTime) || msg.GetSchemaVersion() != 1 || msg.GetBusinessId() != BusinessID(p.Signer, msg.GetBatchId()) {
 			t.Fatalf("batch fields %+v", msg)
 		}
 		var ids []string
@@ -396,12 +414,16 @@ func TestSignVerifiesWithTheChainCheck(t *testing.T) {
 		t.Fatalf("foreign key: %v", err)
 	}
 	// The business id is not signed: a new attempt keeps the signature valid.
-	retry := WithBusinessAttempt(b.Msg, 1)
-	if retry.GetBusinessId() == b.Msg.GetBusinessId() || evidence.VerifyAuditSignature(retry) != msgkit.OK {
+	rid, err := RetryBusinessID(b.Msg.GetSigner(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retry := WithBusinessID(b.Msg, rid)
+	if retry.GetBusinessId() != rid || retry.GetBusinessId() == b.Msg.GetBusinessId() || evidence.VerifyAuditSignature(retry) != msgkit.OK {
 		t.Fatal("new business attempt broke the signature or kept the business id")
 	}
-	if b.Msg.GetBusinessId() != BusinessID(b.Msg.GetSigner(), b.ID(), 0) {
-		t.Fatal("WithBusinessAttempt changed the original")
+	if b.Msg.GetBusinessId() != BusinessID(b.Msg.GetSigner(), b.ID()) {
+		t.Fatal("WithBusinessID changed the original")
 	}
 }
 

@@ -237,6 +237,12 @@ func checkOrderFaults() []fault {
 		item0("expiry-above-9999", msgkit.Bounds, func(it *evidencev1.EvidenceItem) { it.ExpiryUnixSeconds = genesis.UnixSecondsMax + 1 }),
 		// 15 business gate
 		edit("gate-business-id-pattern", msgkit.Bounds, func(m *evidencev1.MsgSubmitAuditBatch) { m.BusinessId = "B1" }),
+		// A business id that is not UTF-8 is off the id pattern too: BOUNDS
+		// from the id rule, before the payload digest (whose encoder would
+		// answer MALFORMED). A transaction cannot carry such a string
+		// (protobuf-go refuses invalid UTF-8 in proto3 strings); the keeper
+		// path can.
+		edit("gate-business-id-not-utf8", msgkit.Bounds, func(m *evidencev1.MsgSubmitAuditBatch) { m.BusinessId = "\xff" }),
 		envFault("gate-replay-other-module", msgkit.Replay, func(e *env, c *call) { e.peer.digests[c.msg.GetBusinessId()] = make([]byte, 32) }),
 		// 16 duplicates
 		envFault("duplicate-batch-id-used", msgkit.DuplicateID, func(e *env, c *call) {

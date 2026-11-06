@@ -456,6 +456,30 @@ func TestAuditorAddressMatchesSDK(t *testing.T) {
 	}
 }
 
+// TestOwnsIDFailsClosed: OwnsID accepts an id that starts with the
+// auditor's prefix and refuses any other id; an address that is not 20
+// bytes owns no id, not even one it could prefix with "" (security review
+// finding 4: the D-17 check must not fail open if an earlier check is ever
+// removed).
+func TestOwnsIDFailsClosed(t *testing.T) {
+	a1, a2 := addr(auditor1), addr(auditor2)
+	if !evidence.OwnsID(a1, prefix(auditor1)+"e1") || !evidence.OwnsID(a1, prefix(auditor1)) {
+		t.Fatal("an id with the auditor's prefix is not owned")
+	}
+	for _, id := range []string{prefix(auditor2) + "e1", "e1", "", prefix(auditor1)[:16], strings.ToUpper(prefix(auditor1)) + "e1"} {
+		if evidence.OwnsID(a1, id) {
+			t.Fatalf("auditor-1 owns %q", id)
+		}
+	}
+	for _, bad := range [][]byte{nil, {}, a2[:19], append(append([]byte(nil), a2...), 0)} {
+		for _, id := range []string{"", "e1", prefix(auditor2) + "e1"} {
+			if evidence.OwnsID(bad, id) {
+				t.Fatalf("a %d-byte address owns %q", len(bad), id)
+			}
+		}
+	}
+}
+
 // TestKindName: named kinds lose the EVIDENCE_KIND_ prefix; the reserved
 // numbers 3-5 and any other number are decimal strings.
 func TestKindName(t *testing.T) {

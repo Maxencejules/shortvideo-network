@@ -68,7 +68,7 @@ this work package by the goal-09 workflow. The evidence file cites the owner's o
 | --- | --- |
 | `keeper.go` | `Keeper`, `Deps` and the read interfaces, PROPOSED constants, `NewKeeper`, `BusinessDigest`, `RenewalEvidence`, `StoredRecord`, `EpochAt`, `ReportedState` |
 | `store.go` | store layout, key builders, window codec (`EncodeWindow`, `DecodeWindow`), record helpers |
-| `signdoc.go` | attestation payload: `KindName`, `AuditorAddress`, `IDPrefix`, `AuditEnvelope`, `AuditCanonical`, `AuditSignBytes`, `VerifyAuditSignature` (pure; no store access) |
+| `signdoc.go` | attestation payload: `KindName`, `AuditorAddress`, `IDPrefix`, `OwnsID`, `AuditEnvelope`, `AuditCanonical`, `AuditSignBytes`, `VerifyAuditSignature` (pure; no store access) |
 | `msg_server.go` | `SubmitAuditBatch` |
 | `query.go` | `Evidence` |
 | `genesis.go` | `ParseGenesis`, `MarshalGenesis`, `ValidateGenesis`, `InitGenesis`, `ExportGenesis` |
@@ -193,7 +193,7 @@ The envelope of item i is exactly the frozen 13-field object of
   does not decode as a strict `SignDoc` (`TestAttestationPreimageIsNotASignDoc`). This separation argument is
   unreviewed; the ruling limits it to the devnet beta.
 - Exported pure builders, used by the producer and the reviewer so producer and keeper cannot drift: `AuditEnvelope`,
-  `AuditCanonical`, `AuditSignBytes`, `VerifyAuditSignature`, `AuditorAddress`, `IDPrefix`, `KindName`, `EpochAt`.
+  `AuditCanonical`, `AuditSignBytes`, `VerifyAuditSignature`, `AuditorAddress`, `IDPrefix`, `OwnsID`, `KindName`, `EpochAt`.
   Golden vectors: `testdata/sign-vectors.json` (1 item, 2 items, 32 items, an unknown kind number, maximal ids, a
   second auditor; `TestSignBytesVectors`, `-update` rewrites it). TEST-ONLY keys: the ed25519 seed is
   `sha256("svn-evidence-test-seed:" + label)`; the file holds public keys only.
@@ -225,7 +225,7 @@ column names the spec step and any chain-only part of a row.
 | 16 | batch_id used, or an item evidence_id stored or repeated earlier in the batch | `DUPLICATE_ID` | :967; D-6 |
 | 17 | each item expiry <= now | `EXPIRED` | :969 |
 | 18 | each item lease absent | `NOT_FOUND` | :971 |
-| 19 | T1 batch_id or an item evidence_id does not start with `IDPrefix(signer)` | `FORBIDDEN` | D-17 (Q2) |
+| 19 | T1 batch_id or an item evidence_id does not start with `IDPrefix(signer)` (`OwnsID`, false for an address that is not 20 bytes: fail closed) | `FORBIDDEN` | D-17 (Q2) |
 | 20 | T2 each item kind `PROVIDER_RECEIPT` | `FORBIDDEN` | D-8 (DR-09-07) |
 | 21 | T3 each item expiry - now > `MaxEvidenceLifetimeSeconds` (86400) | `BOUNDS` | D-9 (Q4) |
 | 22 | T4 each item content_id or content_version differs from its lease | `CONFLICT` | D-10 (Q4) |
@@ -287,7 +287,7 @@ returns has a row. The last column names the ladder row and any focused test.
 | 12 | attestation false | `MALFORMED` | attestation-false |
 | 13 | epoch current-1 (expired round), current+1 (future round), 0 | `STALE_VERSION` | epoch-expired-round, epoch-future-round, epoch-0; `TestEpochRuleD3` |
 | 14 | expiry 0, -1, 253402300800 | `BOUNDS` | expiry-0, expiry-negative, expiry-above-9999; `TestExpiryRangeEdges` (1 and 253402300799 pass step 14: `EXPIRED` at 17, `NOT_FOUND` at 18) |
-| 15 | business_id off pattern | `BOUNDS` | gate-business-id-pattern |
+| 15 | business_id off pattern; business_id not UTF-8 (keeper path only: a transaction cannot carry it) | `BOUNDS` | gate-business-id-pattern, gate-business-id-not-utf8 |
 | 15 | business id committed by another module with another payload; same id, changed payload | `REPLAY` | gate-replay-other-module; `TestDuplicateIDs`, `TestIdempotentReplay`, `TestBusinessIDTakenFirst` |
 | 16 | batch id used | `DUPLICATE_ID` | duplicate-batch-id-used; `TestDuplicateIDs` |
 | 16 | evidence id stored (on the first, the second, or the last item) | `DUPLICATE_ID` | duplicate-evidence-id-stored; `TestDuplicateIDs` |
@@ -326,7 +326,8 @@ refuses a signer without a submitter row), and T8's `NOT_FOUND` row (a lease nam
 For each item in message order: `0x01|evidence_id` = `EvidenceRecord{evidence_id, batch_id, kind, state, signer_pubkey =
 auditor_signature.public_key, lease_id, content_id, content_version, observation_digest (SHA-256, 32 bytes), epoch =
 msg.epoch, expiry_unix_seconds, schema_version = 1, attestation = true}`, with state `RECORDED` when the observation
-digest equals the lease's manifest digest (algorithm and value) and `REJECTED` otherwise (DEC-010); and
+digest equals the lease's manifest digest (algorithm and value; `TestRecordStateNeedsTheDigestAlgorithm`) and `REJECTED`
+otherwise (DEC-010); and
 `0x04|lease_id|0x00|evidence_id`. Then `0x02|batch_id`, the window row `0x05|signer` = (current epoch, items already in
 this epoch + N), the business id, and the events. Nothing else: no lease, provider, content, or authority write, no
 reservation, no deadline change (`TestRecordFieldsAndDerivedState`).
@@ -635,24 +636,25 @@ What this module offers: `SubmitAuditBatch`, `Evidence`, `RenewalEvidence` (`lea
 `StoreSnapshot`, and `PrefixCollisionKeys`, two synthetic keys whose addresses share their first 8 bytes, for the app
 genesis prefix rule's test).
 
-For the app (INT, plan section 15): wire `evidence.Deps{Roles, Limits, Leases: a leases keeper copy without Evidence,
-Content, Peers}`, set `leases.Deps.Evidence` to this keeper, `peers.Add(evidence.ModuleName, ...)`, replace the scaffold
-slot with `NewAppModule` and `RegisterServices`, delete the router stub and `checkEvidence`, add the layout check, and
-refuse two `AUDITOR` genesis addresses that share their first 8 bytes (DR-09-30, owner ruling on Q2). Devnet auditor
-accounts use ed25519 account keys (Q1). Keep the empty-evidence launch rule (`emptyCatalog`); if non-empty evidence
-genesis is ever allowed, app genesis validation must also require every record's `AuditorAddress(signer_pubkey)` to be
-an `AUDITOR` of the same document (module genesis cannot). `App.Export` builds its context with a zero header time, so
-the module export of a store with any record fails with `ErrNoBlockTime`; `AppModule.ExportGenesis` can only panic, and
-the SDK module manager runs it in a goroutine, where a panic ends the export process instead of refusing. So
-`App.Export` must refuse a non-empty evidence store before `mm.ExportGenesis` (as it does for authority state), and give
-its context the last committed header time before evidence export is ever enabled. Compile-time checks belong in the
-app: `var _ leases.Evidence = evidence.Keeper{}`, `var _ evidence.Leases = leases.Keeper{}`,
-`var _ evidence.Content = content.Keeper{}`, `var _ evidence.Roles = authority.Keeper{}`.
+In the app (`chain/app`): `app.New` builds the keeper with `evidence.Deps{Roles, Limits, Leases: a leases keeper
+without Evidence, Content, Peers}`, sets `leases.Deps.Evidence` to it, and adds it to the business-id peers; these
+assignments are the compile-time interface checks. The module replaces the scaffold slot (`NewAppModule`,
+`RegisterServices`), and the scaffold router stub is gone. The app's layout check refuses an evidence store without
+layout version 2 (`TestAppRefusesScaffoldLayout`). App genesis refuses two `AUDITOR` addresses that share their first
+8 bytes (DR-09-30, owner ruling on Q2; `TestGenesisRefusesAuditorPrefixCollision`) and keeps the empty-evidence launch
+rule (`emptyCatalog`; `TestLaunchGenesisRejectsEvidence`). Devnet auditor accounts use ed25519 account keys (Q1).
+`App.Export` refuses a non-empty evidence store before `mm.ExportGenesis` (`TestExportRefusesEvidenceState`): its
+context has a zero header time, the module export of any record would fail with `ErrNoBlockTime`, and
+`AppModule.ExportGenesis` can only panic, in a goroutine of the SDK module manager.
 
-For the producer (P2b): build ids with `IDPrefix(AuditorAddress(pub))`, the epoch with `EpochAt(latest header time)`,
-envelope files with `AuditEnvelope`, sign `AuditSignBytes`, and check with `VerifyAuditSignature` before submitting. A
-broadcast acknowledgement (CheckTx runs only the ante) is not committed success: read the record by evidence id before
-re-signing.
+Open before evidence export or non-empty evidence genesis is ever enabled: `App.Export` must give its context the last
+committed header time, and app genesis validation must require every record's `AuditorAddress(signer_pubkey)` to be an
+`AUDITOR` of the same document (module genesis cannot check roles).
+
+The producer (`agents/auditor`) builds ids with `IDPrefix(AuditorAddress(pub))`, the epoch with `EpochAt(latest header
+time)`, and envelope files with `AuditEnvelope`; it signs `AuditSignBytes` and checks with `VerifyAuditSignature`
+before submitting. A broadcast acknowledgement (CheckTx runs only the ante) is not committed success: it reads the
+record by evidence id before re-signing.
 
 ## Decision requests (interim choices are reversible and are not owner approval)
 
@@ -700,7 +702,9 @@ sweep is adopted; business ids bound to the signer or to one module.
   fees this repeats at no cost, and a provider that is also the block proposer can order it every time. A retry needs
   only a new business id, because the business id is unsigned (`TestBusinessIDTakenFirst`: `REPLAY`, then success
   under a new business id with the unchanged signature); an epoch boundary between attempts forces a re-sign. The
-  remedy is DR-09-28 (business ids bound to the signer or to one module).
+  producer draws each retry's business id from `crypto/rand`, so the retry ids cannot be computed from the batch id
+  and committed in advance; only a broadcast already in the mempool can be front-run, one at a time, and at most 16
+  submissions are made per batch. The remedy is DR-09-28 (business ids bound to the signer or to one module).
 - Module genesis cannot check that a record's auditor holds the `AUDITOR` role, and genesis records are unsigned; the
   app's empty-evidence launch rule is what keeps unattributed records out (see "Genesis, export, migrations").
 - Evidence state grows forever: at most 8,970,240 records per auditor per year, bounded per auditor per epoch, not over

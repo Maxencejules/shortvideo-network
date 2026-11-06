@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 	"time"
@@ -249,6 +250,9 @@ type Submitter struct {
 	Interval time.Duration
 	// Window holds the eligibility settings used when a batch is rebuilt.
 	Window batch.Window
+	// Rand is the source of retry business ids (batch.RetryBusinessID);
+	// nil means crypto/rand.
+	Rand io.Reader
 }
 
 type stored struct {
@@ -279,7 +283,11 @@ func (s *Submitter) submissions(b *batch.Batch) ([]stored, error) {
 		}
 		raw, err := s.Store.Get(store.Batches, name, ".json")
 		if errors.Is(err, store.ErrNotFound) {
-			sub, err := s.unrecorded(b, n, txRaw)
+			var prev *Submission
+			if len(out) > 0 {
+				prev = &out[len(out)-1].Submission
+			}
+			sub, err := s.unrecorded(b, n, txRaw, prev)
 			if err != nil {
 				return nil, err
 			}
@@ -306,23 +314,38 @@ func (s *Submitter) submissions(b *batch.Batch) ([]stored, error) {
 // record: the process stopped, or the record write failed, between storing
 // the bytes and recording the broadcast answer. The answer is UNKNOWN: the
 // transaction may have been sent and may still commit, so state queries
-// its hash. The bytes must carry exactly b's message under one of its
-// business attempts; the attempt is the one whose business id they carry.
-func (s *Submitter) unrecorded(b *batch.Batch, n int, txRaw []byte) (Submission, error) {
+// its hash. The bytes must carry exactly b's message under a business id of
+// b's signer: submission 0 (prev nil) carries attempt 0, the signed batch's
+// own business id; a later submission carries the business id of the one
+// before it (a rebroadcast of the same attempt) or a new id with the
+// signer's prefix (the next attempt, made only after REPLAY).
+func (s *Submitter) unrecorded(b *batch.Batch, n int, txRaw []byte, prev *Submission) (Submission, error) {
 	msg, err := s.Client.TxMessage(txRaw)
 	if err != nil {
 		return Submission{}, fmt.Errorf("chainclient: submission %d transaction: %w", n, err)
 	}
-	for attempt := uint64(0); attempt <= MaxSubmissions; attempt++ {
-		if want := batch.WithBusinessAttempt(b.Msg, attempt); proto.Equal(msg, want) {
-			sum := sha256.Sum256(txRaw)
-			return Submission{
-				Format: SubmissionFormat, BatchID: b.ID(), Number: int64(n), BusinessAttempt: int64(attempt),
-				BusinessID: want.GetBusinessId(), TxHash: hex.EncodeToString(sum[:]), Ack: AckUnknown,
-			}, nil
-		}
+	id := msg.GetBusinessId()
+	if !proto.Equal(msg, batch.WithBusinessID(b.Msg, id)) {
+		return Submission{}, fmt.Errorf("chainclient: submission %d transaction does not carry its batch", n)
 	}
-	return Submission{}, fmt.Errorf("chainclient: submission %d transaction does not carry its batch", n)
+	var attempt int64
+	switch {
+	case prev == nil:
+		if id != b.Msg.GetBusinessId() {
+			return Submission{}, fmt.Errorf("chainclient: submission %d transaction does not carry its batch's first business id", n)
+		}
+	case id == prev.BusinessID:
+		attempt = prev.BusinessAttempt
+	case msgkit.ValidID(id) && evidence.OwnsID(b.Msg.GetSigner(), id) && prev.BusinessAttempt < MaxSubmissions:
+		attempt = prev.BusinessAttempt + 1
+	default:
+		return Submission{}, fmt.Errorf("chainclient: submission %d transaction carries a business id that is not its signer's", n)
+	}
+	sum := sha256.Sum256(txRaw)
+	return Submission{
+		Format: SubmissionFormat, BatchID: b.ID(), Number: int64(n), BusinessAttempt: attempt,
+		BusinessID: id, TxHash: hex.EncodeToString(sum[:]), Ack: AckUnknown,
+	}, nil
 }
 
 // matches reports whether a record is the batch item's: the same signer
@@ -427,12 +450,17 @@ func (s *Submitter) state(ctx context.Context, b *batch.Batch) (Result, []stored
 	return res, subs, nil
 }
 
-func lastAttempt(subs []stored) uint64 {
-	var attempt uint64
+// lastAttempt is the business attempt of the latest submission and its
+// business id; attempt 0 and the signed batch's business id when nothing
+// was submitted.
+func lastAttempt(b *batch.Batch, subs []stored) (uint64, string) {
+	attempt, id := uint64(0), b.Msg.GetBusinessId()
 	for _, sub := range subs {
-		attempt = max(attempt, uint64(sub.BusinessAttempt))
+		if uint64(sub.BusinessAttempt) >= attempt {
+			attempt, id = uint64(sub.BusinessAttempt), sub.BusinessID
+		}
 	}
-	return attempt
+	return attempt, id
 }
 
 // Submit broadcasts a stored batch unless it is already committed, waits
@@ -440,7 +468,8 @@ func lastAttempt(subs []stored) uint64 {
 //
 //   - COMMITTED or RECORDS_FOUND: nothing is broadcast
 //   - FAILED(REPLAY): the business id was taken; the next business
-//     attempt is broadcast (the auditor signature does not cover it)
+//     attempt is broadcast with a business id from Rand (the auditor
+//     signature does not cover it)
 //   - FAILED(CONFLICT, EXPIRED, WITHDRAWN): the items whose lease or
 //     content changed are dropped and the rest is rebuilt, signed, stored,
 //     and submitted as a new batch in the same epoch (Result.Next)
@@ -474,7 +503,7 @@ func (s *Submitter) submit(ctx context.Context, b *batch.Batch, runID string, ma
 			return Result{}, err
 		}
 		res.Warnings, res.Ack = warnings, ack
-		attempt := lastAttempt(subs)
+		attempt, businessID := lastAttempt(b, subs)
 		switch res.State {
 		case Committed:
 			return res, s.index(b, res)
@@ -487,6 +516,9 @@ func (s *Submitter) submit(ctx context.Context, b *batch.Batch, runID string, ma
 			switch SVNCode(res.Codespace, res.Code) {
 			case msgkit.Replay:
 				attempt++
+				if businessID, err = batch.RetryBusinessID(b.Msg.GetSigner(), s.Rand); err != nil {
+					return res, err
+				}
 			case msgkit.Conflict, msgkit.Expired, msgkit.Withdrawn:
 				if !mayRebuild {
 					return res, nil
@@ -512,7 +544,7 @@ func (s *Submitter) submit(ctx context.Context, b *batch.Batch, runID string, ma
 		if len(subs) >= MaxSubmissions {
 			return res, fmt.Errorf("chainclient: batch %s has %d submissions, the bound", b.ID(), MaxSubmissions)
 		}
-		sub, a, err := s.broadcast(ctx, b, header.ChainID, len(subs), attempt)
+		sub, a, err := s.broadcast(ctx, b, header.ChainID, len(subs), attempt, businessID)
 		if err != nil {
 			return res, err
 		}
@@ -545,17 +577,18 @@ func (s *Submitter) submit(ctx context.Context, b *batch.Batch, runID string, ma
 	return res, nil
 }
 
-// broadcast builds and signs submission n of b with business attempt,
-// stores its bytes, sends it, and then stores the submission record with
+// broadcast builds and signs submission n of b, business attempt attempt
+// with businessID, stores its bytes, sends it, and then stores the
+// submission record with
 // the CheckTx answer. A transport error stores the answer UNKNOWN: the
 // transaction may still commit. The bytes are stored first so that a stop
 // or a store error after the send still leaves the hash to query.
-func (s *Submitter) broadcast(ctx context.Context, b *batch.Batch, chainID string, n int, attempt uint64) (Submission, *Ack, error) {
+func (s *Submitter) broadcast(ctx context.Context, b *batch.Batch, chainID string, n int, attempt uint64, businessID string) (Submission, *Ack, error) {
 	number, sequence, err := s.Client.Account(ctx, b.Msg.GetSigner())
 	if err != nil {
 		return Submission{}, nil, err
 	}
-	msg := batch.WithBusinessAttempt(b.Msg, attempt)
+	msg := batch.WithBusinessID(b.Msg, businessID)
 	raw, hash, err := s.Client.BuildTx(msg, s.Key.SDK(), TxInput{ChainID: chainID, AccountNumber: number, Sequence: sequence, Gas: s.Gas})
 	if err != nil {
 		return Submission{}, nil, err

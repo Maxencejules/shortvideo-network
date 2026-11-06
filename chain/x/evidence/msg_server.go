@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"math"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -287,12 +286,11 @@ func (k Keeper) submitAuditBatch(ctx sdk.Context, msg *evidencev1.MsgSubmitAudit
 	}
 
 	// Chain-only checks (README deviations), after every spec check.
-	prefix := IDPrefix(msg.GetSigner())
-	if !strings.HasPrefix(msg.GetBatchId(), prefix) {
+	if !OwnsID(msg.GetSigner(), msg.GetBatchId()) {
 		return fail(msgkit.Forbidden) // T1, D-17: ids belong to the auditor whose prefix they carry
 	}
 	for _, item := range items {
-		if !strings.HasPrefix(item.GetEvidenceId(), prefix) {
+		if !OwnsID(msg.GetSigner(), item.GetEvidenceId()) {
 			return fail(msgkit.Forbidden)
 		}
 	}
