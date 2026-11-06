@@ -9,7 +9,9 @@
 //     characters of SHA-256(report bytes): 16 + 1 + 47 = 64 bytes
 //   - observation_digest = the lease's manifest digest for PASS; the full
 //     SHA-256 of the report bytes for FAIL (so the chain stores REJECTED,
-//     DEC-010); an INCOMPLETE audit produces no item
+//     DEC-010); an INCOMPLETE audit produces no item, and neither does a
+//     FAIL report whose endpoint_source is not CAPABILITY_MANIFEST (classify
+//     never gives one; NewItem refuses it again, N2)
 //   - one batch per provider, at most MaxItems items each, items ordered by
 //     evidence id (a batch is atomic on chain, so one provider's lease
 //     change fails only that provider's batch)
@@ -284,7 +286,15 @@ func (p Plan) validate() error {
 	return p.Window.Validate()
 }
 
-// NewItem builds the item of one audit and checks it against the plan.
+// NewItem builds the item of one audit and checks it against the plan. A
+// FAIL report is eligible only when its endpoint came from a capability
+// manifest bound to the provider record (endpoint_source
+// CAPABILITY_MANIFEST): classify makes every other would-be FAIL
+// INCOMPLETE, and NewItem refuses one that reaches it anyway
+// (ErrIneligible), so no item it builds asks for a REJECTED record of an
+// endpoint the provider account did not declare (N2). Stored items that are
+// signed again or broadcast without NewItem are checked by
+// CheckFailSource.
 func NewItem(p Plan, a Audit) (Item, error) {
 	r, err := report.Parse(a.Report)
 	if err != nil {
@@ -306,6 +316,10 @@ func NewItem(p Plan, a Audit) (Item, error) {
 	case report.ResultPass:
 		it.Observation = a.ManifestSHA256
 	case report.ResultFail:
+		if r.EndpointSource != report.EndpointSourceCapabilityManifest {
+			return Item{}, fmt.Errorf("%w: a FAIL report needs endpoint_source %s, not %s", ErrIneligible,
+				report.EndpointSourceCapabilityManifest, r.EndpointSource)
+		}
 		it.Observation = sum
 	default:
 		return Item{}, fmt.Errorf("%w: %s audits produce no item", ErrIneligible, r.Result)

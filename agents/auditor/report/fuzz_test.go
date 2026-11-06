@@ -37,6 +37,9 @@ func reportSeeds(t testing.TB) [][]byte {
 		{`"auditor_key_id"`, `"auditor_extra":"x","auditor_key_id"`},
 		{`"mode":"SAMPLED_SEGMENTS"`, `"mode":null`},
 		{`"result":"FAIL"`, `"result":"PASS"`},
+		{`"endpoint_source":"CAPABILITY_MANIFEST",`, ``},
+		{`"endpoint_source":"CAPABILITY_MANIFEST"`, `"endpoint_source":"OPERATOR_CONFIG"`},
+		{`"endpoint_source":"CAPABILITY_MANIFEST"`, `"endpoint_source":"MANIFEST"`},
 	} {
 		if !bytes.Contains(good, []byte(edit[0])) {
 			t.Fatalf("encoded report lacks %q", edit[0])

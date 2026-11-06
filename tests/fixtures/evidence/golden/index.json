@@ -3,23 +3,23 @@
   "key_label": "auditor-1",
   "public_key": "a2a628f04a113484311fe57125590a208aa185a14790344a94d2ee8c984bfb67",
   "signer": "79b70b8d1f8f5606e9a823195b38538bbeb9f162",
-  "batch_id": "79b70b8d1f8f5606.aec4bccd4d6085fcd0216246f55c12ef52f2ea978798a30",
+  "batch_id": "79b70b8d1f8f5606.be2b8a2c6774a9c45fddc643cf4d72c4071b9a129330dec",
   "epoch": 490896,
-  "canonical": "{\"batch_id\":\"79b70b8d1f8f5606.aec4bccd4d6085fcd0216246f55c12ef52f2ea978798a30\",\"envelopes\":[{\"attestation\":true,\"claim_limit\":\"ATTESTATION_NOT_STORAGE_PROOF\",\"content_id\":\"content-golden-fail\",\"content_version\":1,\"epoch\":490896,\"evidence_id\":\"79b70b8d1f8f5606.6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1\",\"expiry_unix_seconds\":1767232800,\"kind\":\"AUDITOR_ATTESTATION\",\"lease_id\":\"lease-golden-fail\",\"observation_sha256\":\"6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1740723187291fbd86\",\"profile\":\"SVN-JCS-1\",\"schema_version\":1,\"signer_key_id\":\"key-auditor-1\"},{\"attestation\":true,\"claim_limit\":\"ATTESTATION_NOT_STORAGE_PROOF\",\"content_id\":\"content-golden-pass\",\"content_version\":1,\"epoch\":490896,\"evidence_id\":\"79b70b8d1f8f5606.902239dba2b2811932eacd29ea0cc95e742c196d220cb83\",\"expiry_unix_seconds\":1767232800,\"kind\":\"AUDITOR_ATTESTATION\",\"lease_id\":\"lease-golden-pass\",\"observation_sha256\":\"525422a4631431534623db84de66275122b0f8aeff78c16c9246d36af3c7bc92\",\"profile\":\"SVN-JCS-1\",\"schema_version\":1,\"signer_key_id\":\"key-auditor-1\"}],\"signer\":\"79b70b8d1f8f5606e9a823195b38538bbeb9f162\"}",
-  "signature": "c7fdcd7de3b1af2cca81ab210f6e1153eb3de3346b8f080026838f83319d8f3b3a0d729ff5358ec38bd9b20f23719ce67d5d5107df5427ac48958c474ef9010e",
+  "canonical": "{\"batch_id\":\"79b70b8d1f8f5606.be2b8a2c6774a9c45fddc643cf4d72c4071b9a129330dec\",\"envelopes\":[{\"attestation\":true,\"claim_limit\":\"ATTESTATION_NOT_STORAGE_PROOF\",\"content_id\":\"content-golden-fail\",\"content_version\":1,\"epoch\":490896,\"evidence_id\":\"79b70b8d1f8f5606.40aa6453b9050f4d95a3ea32c089c21cfe9a66f4708f85c\",\"expiry_unix_seconds\":1767232800,\"kind\":\"AUDITOR_ATTESTATION\",\"lease_id\":\"lease-golden-fail\",\"observation_sha256\":\"40aa6453b9050f4d95a3ea32c089c21cfe9a66f4708f85cdc795ca256c1cab48\",\"profile\":\"SVN-JCS-1\",\"schema_version\":1,\"signer_key_id\":\"key-auditor-1\"},{\"attestation\":true,\"claim_limit\":\"ATTESTATION_NOT_STORAGE_PROOF\",\"content_id\":\"content-golden-pass\",\"content_version\":1,\"epoch\":490896,\"evidence_id\":\"79b70b8d1f8f5606.92ededc398ad648da17d621dd6976471c9516b702bb3e21\",\"expiry_unix_seconds\":1767232800,\"kind\":\"AUDITOR_ATTESTATION\",\"lease_id\":\"lease-golden-pass\",\"observation_sha256\":\"525422a4631431534623db84de66275122b0f8aeff78c16c9246d36af3c7bc92\",\"profile\":\"SVN-JCS-1\",\"schema_version\":1,\"signer_key_id\":\"key-auditor-1\"}],\"signer\":\"79b70b8d1f8f5606e9a823195b38538bbeb9f162\"}",
+  "signature": "e9873f92b05cf4d89e1708a7f67a4129c278033a4be2ed505ef50ad54bb317965c9ba05dc68f1865b23b4ebc26bd172db1d8f854944b29a48820a18b0e2c2b0c",
   "items": [
     {
-      "evidence_id": "79b70b8d1f8f5606.6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1",
+      "evidence_id": "79b70b8d1f8f5606.40aa6453b9050f4d95a3ea32c089c21cfe9a66f4708f85c",
       "result": "FAIL",
-      "report": "reports/6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1740723187291fbd86.json",
-      "envelope": "envelopes/79b70b8d1f8f5606.6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1.json",
-      "observation_sha256": "6fbc32d9056fabfb3038e68e8746971cd662ab6c7a8e2f1740723187291fbd86"
+      "report": "reports/40aa6453b9050f4d95a3ea32c089c21cfe9a66f4708f85cdc795ca256c1cab48.json",
+      "envelope": "envelopes/79b70b8d1f8f5606.40aa6453b9050f4d95a3ea32c089c21cfe9a66f4708f85c.json",
+      "observation_sha256": "40aa6453b9050f4d95a3ea32c089c21cfe9a66f4708f85cdc795ca256c1cab48"
     },
     {
-      "evidence_id": "79b70b8d1f8f5606.902239dba2b2811932eacd29ea0cc95e742c196d220cb83",
+      "evidence_id": "79b70b8d1f8f5606.92ededc398ad648da17d621dd6976471c9516b702bb3e21",
       "result": "PASS",
-      "report": "reports/902239dba2b2811932eacd29ea0cc95e742c196d220cb8329eaa58ef80fdb879.json",
-      "envelope": "envelopes/79b70b8d1f8f5606.902239dba2b2811932eacd29ea0cc95e742c196d220cb83.json",
+      "report": "reports/92ededc398ad648da17d621dd6976471c9516b702bb3e21711372605ae76d79c.json",
+      "envelope": "envelopes/79b70b8d1f8f5606.92ededc398ad648da17d621dd6976471c9516b702bb3e21.json",
       "observation_sha256": "525422a4631431534623db84de66275122b0f8aeff78c16c9246d36af3c7bc92"
     }
   ]

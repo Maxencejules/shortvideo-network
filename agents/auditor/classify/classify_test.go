@@ -181,6 +181,7 @@ func sampleReport(result string, reasons []string) report.Report {
 	r := report.Report{
 		AuditorKeyID: "key-auditor-1", AuditorAddress: "79b70b8d1f8f5606e9a823195b38538bbeb9f162",
 		LeaseID: "l1", ContentID: "c1", ContentVersion: 1, ProviderID: "p1", Mode: report.ModeWholePackage,
+		EndpointSource:     report.EndpointSourceCapabilityManifest,
 		StartedUnixSeconds: 1767225600, FinishedUnixSeconds: 1767225601, Result: result, Reasons: reasons,
 	}
 	if result == Pass {
@@ -451,21 +452,42 @@ func TestObservation(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		got := Observation(c.obs)
+		// The table is the capability-manifest source, the only one that
+		// allows FAIL.
+		got := Observation(c.obs, CapabilityManifest)
 		reasons := append([]string{}, got.Reasons...)
 		if got.Result != c.result || !reflect.DeepEqual(reasons, c.reasons) || got.Retry != c.retry ||
-			!reflect.DeepEqual(got.FailedSegments, c.failed) || got.FailedSegmentCount != len(c.failed) || got.CheckedSegments != len(c.obs.Segments) {
+			!reflect.DeepEqual(got.FailedSegments, c.failed) || got.FailedSegmentCount != len(c.failed) || got.CheckedSegments != len(c.obs.Segments) ||
+			got.EndpointSource != CapabilityManifest {
 			t.Errorf("%s: %+v", c.name, got)
 		}
-		// Every summary makes a valid report.
-		r := sampleReport(got.Result, got.Reasons)
-		r.FailedSegments, r.FailedSegmentCount, r.CheckedSegments = got.FailedSegments, got.FailedSegmentCount, got.CheckedSegments
-		if c.obs.Mode == verify.SampledSegments {
-			r.Mode = report.ModeSampledSegments
-			r.SampleSeed = &[32]byte{1}
+		// The same observation of an operator-configured endpoint: a FAIL
+		// is INCOMPLETE with ENDPOINT_UNBOUND added and every other field
+		// kept (retry included); any other result is unchanged.
+		op := Observation(c.obs, OperatorConfig)
+		wantResult, wantReasons := c.result, append([]string{}, c.reasons...)
+		if c.result == Fail {
+			wantResult = Incomplete
+			wantReasons = append(wantReasons, string(EndpointUnbound))
+			sort.Strings(wantReasons)
 		}
-		if _, err := report.Encode(r); err != nil {
-			t.Errorf("%s: report refused: %v", c.name, err)
+		if op.Result != wantResult || !reflect.DeepEqual(append([]string{}, op.Reasons...), wantReasons) || op.Retry != c.retry ||
+			!reflect.DeepEqual(op.FailedSegments, c.failed) || op.FailedSegmentCount != len(c.failed) || op.CheckedSegments != len(c.obs.Segments) ||
+			op.EndpointSource != OperatorConfig {
+			t.Errorf("%s, operator endpoint: %+v", c.name, op)
+		}
+		// Every summary makes a valid report.
+		for _, sum := range []Summary{got, op} {
+			r := sampleReport(sum.Result, sum.Reasons)
+			r.EndpointSource = string(sum.EndpointSource)
+			r.FailedSegments, r.FailedSegmentCount, r.CheckedSegments = sum.FailedSegments, sum.FailedSegmentCount, sum.CheckedSegments
+			if c.obs.Mode == verify.SampledSegments {
+				r.Mode = report.ModeSampledSegments
+				r.SampleSeed = &[32]byte{1}
+			}
+			if _, err := report.Encode(r); err != nil {
+				t.Errorf("%s (%s): report refused: %v", c.name, sum.EndpointSource, err)
+			}
 		}
 	}
 }
@@ -476,19 +498,93 @@ func TestFailedSegmentsAreBounded(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		obs.Segments = append(obs.Segments, seg(fmt.Sprintf("s%03d", i), verify.DigestMismatch))
 	}
-	got := Observation(obs)
+	got := Observation(obs, CapabilityManifest)
 	if got.FailedSegmentCount != 100 || len(got.FailedSegments) != report.MaxListedFailures || got.FailedSegments[63].SegmentID != "s063" {
 		t.Fatalf("%d listed, count %d", len(got.FailedSegments), got.FailedSegmentCount)
 	}
 }
 
 func TestReasons(t *testing.T) {
-	s := Reasons(InputContentWithdrawn)
-	if s.Result != Incomplete || !reflect.DeepEqual(s.Reasons, []string{"INPUT_CONTENT_WITHDRAWN"}) || s.Retry {
-		t.Fatalf("%+v", s)
+	for _, source := range []Source{CapabilityManifest, OperatorConfig} {
+		s := Reasons(source, InputContentWithdrawn)
+		if s.Result != Incomplete || !reflect.DeepEqual(s.Reasons, []string{"INPUT_CONTENT_WITHDRAWN"}) || s.Retry || s.EndpointSource != source {
+			t.Fatalf("%s: %+v", source, s)
+		}
+		s = Reasons(source, LeaseNearDeadline, ChainReadFailed, LeaseNearDeadline)
+		if s.Result != Incomplete || !reflect.DeepEqual(s.Reasons, []string{"CHAIN_READ_FAILED", "LEASE_NEAR_DEADLINE"}) {
+			t.Fatalf("%s: %+v", source, s)
+		}
 	}
-	s = Reasons(LeaseNearDeadline, ChainReadFailed, LeaseNearDeadline)
-	if s.Result != Incomplete || !reflect.DeepEqual(s.Reasons, []string{"CHAIN_READ_FAILED", "LEASE_NEAR_DEADLINE"}) {
-		t.Fatalf("%+v", s)
+}
+
+// TestEndpointSourceRule is the interim choice N2: FAIL only
+// for an endpoint from a capability manifest bound to the provider record.
+// From any other source a would-be FAIL is INCOMPLETE ENDPOINT_UNBOUND with
+// the provider-answered reasons kept; PASS and INCOMPLETE do not depend on
+// the source.
+func TestEndpointSourceRule(t *testing.T) {
+	ok := fetch.Outcome{Kind: fetch.OK, Status: 200}
+	pass := verify.Observation{Input: verify.InputOK, Mode: verify.WholePackage, Fetches: []fetch.Outcome{ok},
+		Segments: []verify.SegmentResult{seg("s0", verify.Match), seg("s1", verify.Match)}}
+	corrupt := verify.Observation{Input: verify.InputOK, Mode: verify.WholePackage, Fetches: []fetch.Outcome{ok},
+		Segments: []verify.SegmentResult{seg("s0", verify.Match), seg("s1", verify.DigestMismatch)}}
+	notFound := verify.Observation{Input: verify.InputOK, Mode: verify.WholePackage, Fetches: []fetch.Outcome{{Kind: fetch.HTTPStatus, Status: 404}},
+		Segments: []verify.SegmentResult{seg("s0", verify.NotReceived)}}
+	serverError := verify.Observation{Input: verify.InputOK, Mode: verify.WholePackage, Fetches: []fetch.Outcome{{Kind: fetch.HTTPStatus, Status: 503}},
+		Segments: []verify.SegmentResult{seg("s0", verify.NotReceived)}}
+	reset := verify.Observation{Input: verify.InputOK, Mode: verify.WholePackage, Fetches: []fetch.Outcome{{Kind: fetch.ConnectionReset, Status: 200}},
+		Segments: []verify.SegmentResult{seg("s0", verify.NotReceived)}}
+	cases := []struct {
+		name    string
+		obs     verify.Observation
+		source  Source
+		result  string
+		reasons []string
+		retry   bool
+	}{
+		{"manifest PASS", pass, CapabilityManifest, Pass, []string{}, false},
+		{"operator PASS stays PASS", pass, OperatorConfig, Pass, []string{}, false},
+		{"manifest FAIL", corrupt, CapabilityManifest, Fail, []string{"SEGMENT_DIGEST_MISMATCH"}, false},
+		{"operator FAIL is INCOMPLETE", corrupt, OperatorConfig, Incomplete, []string{"ENDPOINT_UNBOUND", "SEGMENT_DIGEST_MISMATCH"}, false},
+		{"manifest 404", notFound, CapabilityManifest, Fail, []string{"HTTP_STATUS"}, false},
+		{"operator 404", notFound, OperatorConfig, Incomplete, []string{"ENDPOINT_UNBOUND", "HTTP_STATUS"}, false},
+		{"manifest 503 retries", serverError, CapabilityManifest, Fail, []string{"HTTP_STATUS"}, true},
+		{"operator 503 retries the same way", serverError, OperatorConfig, Incomplete, []string{"ENDPOINT_UNBOUND", "HTTP_STATUS"}, true},
+		{"operator INCOMPLETE gets no ENDPOINT_UNBOUND", reset, OperatorConfig, Incomplete, []string{"CONNECTION_RESET"}, false},
+		{"an unknown source never gives FAIL", corrupt, "", Incomplete, []string{"ENDPOINT_UNBOUND", "SEGMENT_DIGEST_MISMATCH"}, false},
+		{"a lower-case source never gives FAIL", corrupt, "capability_manifest", Incomplete, []string{"ENDPOINT_UNBOUND", "SEGMENT_DIGEST_MISMATCH"}, false},
+	}
+	for _, c := range cases {
+		got := Observation(c.obs, c.source)
+		if got.Result != c.result || !reflect.DeepEqual(append([]string{}, got.Reasons...), c.reasons) || got.Retry != c.retry || got.EndpointSource != c.source {
+			t.Errorf("%s: %+v, want %s %v retry=%v", c.name, got, c.result, c.reasons, c.retry)
+		}
+		// The failed segments keep the provider's answer.
+		if c.obs.Segments[len(c.obs.Segments)-1].State == verify.DigestMismatch &&
+			(got.FailedSegmentCount != 1 || got.FailedSegments[0].Reason != string(SegmentDigestMismatch)) {
+			t.Errorf("%s: failed segments %+v", c.name, got.FailedSegments)
+		}
+	}
+	// Reasons applies the same rule; ENDPOINT_UNBOUND is never listed twice.
+	for _, c := range []struct {
+		source  Source
+		reasons []Reason
+		result  string
+		want    []string
+	}{
+		{CapabilityManifest, []Reason{HTTPStatus}, Fail, []string{"HTTP_STATUS"}},
+		{OperatorConfig, []Reason{HTTPStatus}, Incomplete, []string{"ENDPOINT_UNBOUND", "HTTP_STATUS"}},
+		{OperatorConfig, []Reason{TooLarge, EndpointUnbound}, Incomplete, []string{"ENDPOINT_UNBOUND", "TOO_LARGE"}},
+		{OperatorConfig, []Reason{EndpointUnbound}, Incomplete, []string{"ENDPOINT_UNBOUND"}},
+		{OperatorConfig, []Reason{ConnectFailed}, Incomplete, []string{"CONNECT_FAILED"}},
+	} {
+		s := Reasons(c.source, c.reasons...)
+		if s.Result != c.result || !reflect.DeepEqual(s.Reasons, c.want) || s.Retry {
+			t.Errorf("Reasons(%s, %v): %+v", c.source, c.reasons, s)
+		}
+	}
+	if ResultOf(EndpointUnbound) != Incomplete || string(CapabilityManifest) != report.EndpointSourceCapabilityManifest ||
+		string(OperatorConfig) != report.EndpointSourceOperatorConfig {
+		t.Fatal("ENDPOINT_UNBOUND result or source values")
 	}
 }

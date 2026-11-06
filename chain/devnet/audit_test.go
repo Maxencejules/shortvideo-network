@@ -43,6 +43,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
 	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
+	"github.com/Maxencejules/shortvideo-network/chain/x/providers/capability"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
@@ -316,13 +317,14 @@ type submitLine struct {
 }
 
 type verifyLine struct {
-	RecordSource string   `json:"record_source"`
-	EvidenceID   string   `json:"evidence_id"`
-	Verdict      string   `json:"verdict"`
-	State        string   `json:"state"`
-	ReportResult string   `json:"report_result"`
-	ClaimLimit   string   `json:"claim_limit"`
-	Limitations  []string `json:"limitations"`
+	RecordSource         string   `json:"record_source"`
+	EvidenceID           string   `json:"evidence_id"`
+	Verdict              string   `json:"verdict"`
+	State                string   `json:"state"`
+	ReportResult         string   `json:"report_result"`
+	ReportEndpointSource string   `json:"report_endpoint_source"`
+	ClaimLimit           string   `json:"claim_limit"`
+	Limitations          []string `json:"limitations"`
 }
 
 // auditConfig is the producer's operator configuration file.
@@ -347,14 +349,17 @@ type auditEntry struct {
 	Port       uint16 `json:"port"`
 }
 
+// auditSpec is one configured audit: exactly one of CapabilityManifestPath
+// and Endpoints is set.
 type auditSpec struct {
-	LeaseID       string     `json:"lease_id"`
-	ProviderID    string     `json:"provider_id"`
-	ContentID     string     `json:"content_id"`
-	EndpointIndex int        `json:"endpoint_index"`
-	ManifestPath  string     `json:"manifest_path"`
-	Endpoints     []auditURL `json:"endpoints"`
-	Mode          string     `json:"mode"`
+	LeaseID                string     `json:"lease_id"`
+	ProviderID             string     `json:"provider_id"`
+	ContentID              string     `json:"content_id"`
+	EndpointIndex          int        `json:"endpoint_index"`
+	ManifestPath           string     `json:"manifest_path"`
+	CapabilityManifestPath string     `json:"capability_manifest_path,omitempty"`
+	Endpoints              []auditURL `json:"endpoints,omitempty"`
+	Mode                   string     `json:"mode"`
 }
 
 type auditURL struct {
@@ -372,6 +377,28 @@ func writeAuditConfig(t *testing.T, path string, cfg auditConfig) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+// auditCapability writes the capability manifest of providerID that lists
+// the given test endpoints in order (svn-provider-capability-v1 in SVN-JCS-1,
+// naming the provider's current signing key id) into dir and returns its
+// digest, which the provider record commits, and the file's path, which the
+// producer configuration names. The producer takes an endpoint from it only
+// when it hashes to the committed digest, and only such an endpoint can give
+// a FAIL (interim choice N2).
+func (d *demo) auditCapability(dir, providerID string, capacity uint64, endpoints ...capability.Endpoint) (*typesv1.Digest, string) {
+	d.t.Helper()
+	result, err := capability.Encode(capability.Manifest{
+		ProviderID: providerID, SigningKeyID: d.keys[providerID].id, DeclaredCapacityBytes: capacity, Endpoints: endpoints,
+	})
+	if err != nil {
+		d.t.Fatal(err)
+	}
+	path := filepath.Join(dir, providerID+".capability.json")
+	if err := os.WriteFile(path, []byte(result.Canonical), 0o600); err != nil {
+		d.t.Fatal(err)
+	}
+	return result.Digest(), path
 }
 
 // registerPackage registers content whose manifest digest and package bytes
@@ -576,9 +603,14 @@ func (d *demo) committedAudit(phase string, who loaded, msg *evidencev1.MsgSubmi
 // test endpoint permitted by exact allowlist entries, signs, submits, and
 // reads committed records back; a reviewer verifies them. It shows:
 //
-//   - run, sign, submit, status: a PASS lands RECORDED, a corrupted segment
-//     and a 404 land REJECTED, and a refused connection stays INCOMPLETE off
-//     chain (no item, no record)
+//   - run, sign, submit, status: with endpoints from capability manifests
+//     whose digests the providers committed on chain, a PASS lands RECORDED,
+//     a corrupted segment and a 404 land REJECTED, and a refused connection
+//     stays INCOMPLETE off chain (no item, no record)
+//   - the same failing endpoints typed into the operator configuration give
+//     no FAIL (interim choice N2): INCOMPLETE ENDPOINT_UNBOUND
+//     with the provider's answer kept in the reasons, nothing signed, no
+//     record
 //   - an acknowledgement (CheckTx) is not a commit: the producer prints both,
 //     an expired round is acknowledged with code 0 and commits
 //     STALE_VERSION (5), and a broadcast while the network has no quorum
@@ -617,22 +649,48 @@ func TestDevnetAuditLifecycle(t *testing.T) {
 	fmt.Printf("phase=start height=%d chain_id=%s accounts=%d auditor_1_prefix=%s auditor_2_prefix=%s\n",
 		d.height(), layout.Topology.ChainID, len(layout.Topology.Accounts), p1, p2)
 
-	// Phase 1: providers, content with synthetic package manifests, and
-	// held leases. la, lb (p1) and lc, ld (p2) are audited by the producer;
-	// le (p1), lw (p1), and lx (p2, deadline near) are the ended, withdrawn,
-	// and expiring obligations of phase 9.
-	d.commit("register-p1", d.provider1, d.registerProvider(d.provider1, "reg-p1", "p1", capacityOne))
-	d.commit("register-p2", d.provider2, d.registerProvider(d.provider2, "reg-p2", "p2", capacityOne))
-	d.council("admit-p1", "prop-admit-p1", "admit-p1", admitChange("p1"))
-	d.council("admit-p2", "prop-admit-p2", "admit-p2", admitChange("p2"))
+	// Phase 1: synthetic packages, the loopback test endpoint (la correct,
+	// lb one corrupted byte in its last segment, lc absent: 404) and a closed
+	// port for ld, providers whose records commit the digest of a capability
+	// manifest listing those endpoints, content with synthetic package
+	// manifests, and held leases. la, lb (p1) and lc, ld (p2) are audited by
+	// the producer; le (p1), lw (p1), and lx (p2, deadline near) are the
+	// ended, withdrawn, and expiring obligations of phase 9.
 	leaseRows := []struct{ lease, content, provider string }{
 		{"la", "ca", "p1"}, {"lb", "cb", "p1"}, {"lc", "cc", "p2"}, {"ld", "cd", "p2"},
 		{"le", "ce", "p1"}, {"lw", "cw", "p1"}, {"lx", "cx", "p2"},
 	}
 	pkgs := map[string]auditPackage{}
-	var registrations []sdk.Msg
 	for _, row := range leaseRows {
 		pkgs[row.content] = newAuditPackage(t, row.content)
+	}
+	dir := t.TempDir()
+	ca := newTestCA(t)
+	caPath := filepath.Join(dir, "test-ca.crt")
+	if err := os.WriteFile(caPath, ca.pem, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	corrupted := append([]byte(nil), pkgs["cb"].bytes...)
+	corrupted[len(corrupted)-1] ^= 0xff
+	ep := startAuditEndpoint(t, ca, map[string][]byte{"ca": pkgs["ca"].bytes, "cb": corrupted})
+	down := closedPort(t)
+	url := func(port uint16) string { return fmt.Sprintf("https://127.0.0.1:%d", port) }
+	// p1's manifest lists the endpoint; p2's the endpoint (index 0) and the
+	// closed port (index 1). The records carry only the digests.
+	regP1 := d.registerProvider(d.provider1, "reg-p1", "p1", capacityOne)
+	regP2 := d.registerProvider(d.provider2, "reg-p2", "p2", capacityOne)
+	capPath := map[string]string{}
+	regP1.EndpointManifestDigest, capPath["p1"] = d.auditCapability(dir, "p1", capacityOne,
+		capability.Endpoint{Name: "loopback test endpoint", URL: url(ep.port)})
+	regP2.EndpointManifestDigest, capPath["p2"] = d.auditCapability(dir, "p2", capacityOne,
+		capability.Endpoint{Name: "loopback test endpoint", URL: url(ep.port)},
+		capability.Endpoint{Name: "closed loopback port", URL: url(down)})
+	d.commit("register-p1", d.provider1, regP1)
+	d.commit("register-p2", d.provider2, regP2)
+	d.council("admit-p1", "prop-admit-p1", "admit-p1", admitChange("p1"))
+	d.council("admit-p2", "prop-admit-p2", "admit-p2", admitChange("p2"))
+	var registrations []sdk.Msg
+	for _, row := range leaseRows {
 		registrations = append(registrations, d.registerPackage(d.service, "reg-"+row.content, pkgs[row.content]))
 	}
 	d.commitMulti("register-content", d.service, registrations...)
@@ -657,30 +715,30 @@ func TestDevnetAuditLifecycle(t *testing.T) {
 	d.commitMulti("accepts", d.broadcaster, accepts...)
 	fmt.Printf("phase=leases held=%d deadline_far=%d deadline_lx=%d\n", len(leaseRows), far, near)
 
-	// Phase 2: the loopback test endpoint (la correct, lb one corrupted
-	// byte in its last segment, lc absent: 404) and a closed port for ld.
-	dir := t.TempDir()
-	ca := newTestCA(t)
-	caPath := filepath.Join(dir, "test-ca.crt")
-	if err := os.WriteFile(caPath, ca.pem, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	corrupted := append([]byte(nil), pkgs["cb"].bytes...)
-	corrupted[len(corrupted)-1] ^= 0xff
-	ep := startAuditEndpoint(t, ca, map[string][]byte{"ca": pkgs["ca"].bytes, "cb": corrupted})
-	down := closedPort(t)
-	url := func(port uint16) string { return fmt.Sprintf("https://127.0.0.1:%d", port) }
+	// Phase 2: the producer configuration. Exact allowlist entries permit
+	// the endpoint and the closed port; each audit names its endpoint by its
+	// index in its provider's capability manifest.
 	allow := []auditEntry{
 		{ProviderID: "p1", Host: "127.0.0.1", IP: "127.0.0.1", Port: ep.port},
 		{ProviderID: "p2", Host: "127.0.0.1", IP: "127.0.0.1", Port: ep.port},
 		{ProviderID: "p2", Host: "127.0.0.1", IP: "127.0.0.1", Port: down},
 	}
-	spec := func(lease, contentID, provider string, port uint16) auditSpec {
+	manifestFile := func(contentID string) string {
 		path := filepath.Join(dir, contentID+".manifest.json")
 		if err := os.WriteFile(path, pkgs[contentID].manifest, 0o600); err != nil {
 			t.Fatal(err)
 		}
-		return auditSpec{LeaseID: lease, ProviderID: provider, ContentID: contentID, ManifestPath: path,
+		return path
+	}
+	// bound takes the endpoint from the provider's capability manifest, the
+	// source that allows FAIL; typed takes it from the operator's endpoints
+	// list (phase 4b).
+	bound := func(lease, contentID, provider string, index int) auditSpec {
+		return auditSpec{LeaseID: lease, ProviderID: provider, ContentID: contentID, ManifestPath: manifestFile(contentID),
+			CapabilityManifestPath: capPath[provider], EndpointIndex: index, Mode: "WHOLE_PACKAGE"}
+	}
+	typed := func(lease, contentID, provider string, port uint16) auditSpec {
+		return auditSpec{LeaseID: lease, ProviderID: provider, ContentID: contentID, ManifestPath: manifestFile(contentID),
 			Endpoints: []auditURL{{Name: "loopback test endpoint", URL: url(port)}}, Mode: "WHOLE_PACKAGE"}
 	}
 	storeRoot := filepath.Join(dir, "store")
@@ -690,7 +748,7 @@ func TestDevnetAuditLifecycle(t *testing.T) {
 		Lifetime: 180, Guard: auditGuard, Inclusion: auditInclusion,
 	}
 	cfg1 := base
-	cfg1.Audits = []auditSpec{spec("la", "ca", "p1", ep.port), spec("lb", "cb", "p1", ep.port), spec("lc", "cc", "p2", ep.port), spec("ld", "cd", "p2", down)}
+	cfg1.Audits = []auditSpec{bound("la", "ca", "p1", 0), bound("lb", "cb", "p1", 0), bound("lc", "cc", "p2", 0), bound("ld", "cd", "p2", 1)}
 	cfg1Path := writeAuditConfig(t, filepath.Join(dir, "auditor-1.json"), cfg1)
 	fmt.Printf("phase=endpoint port=%d closed_port=%d allowlist_entries=%d\n", ep.port, down, len(allow))
 
@@ -796,12 +854,89 @@ func TestDevnetAuditLifecycle(t *testing.T) {
 		if v.Verdict != want || code != wantExit || !strings.HasPrefix(v.RecordSource, "NODE ") || v.ClaimLimit != evidence.ClaimLimit {
 			t.Fatalf("phase %s verify %s: exit %d %s, want %s", phase, evidenceID, code, lines[0], want)
 		}
-		fmt.Printf("phase=%s verify=%s verdict=%s state=%s report=%s\n", phase, evidenceID, v.Verdict, v.State, v.ReportResult)
+		fmt.Printf("phase=%s verify=%s verdict=%s state=%s report=%s endpoint_source=%s\n", phase, evidenceID, v.Verdict, v.State, v.ReportResult, v.ReportEndpointSource)
 		return v
 	}
+	// Every phase 4 audit named its provider's capability manifest, so each
+	// stored report says CAPABILITY_MANIFEST, as a REJECTED record needs (N2).
 	for _, lease := range []string{"la", "lb", "lc"} {
-		verify("review", evidenceOf[lease], storeRoot, "CONSISTENT")
+		if v := verify("review", evidenceOf[lease], storeRoot, "CONSISTENT"); v.ReportEndpointSource != "CAPABILITY_MANIFEST" {
+			t.Fatalf("phase review: report of %s has endpoint_source %q, want CAPABILITY_MANIFEST", lease, v.ReportEndpointSource)
+		}
 	}
+
+	// Phase 4b (interim choice N2): the same failing endpoint
+	// typed into the operator's endpoints list. Nothing binds it to the
+	// provider, so the server's wrong answers give no FAIL: lb (the
+	// corrupted byte) and lc (404) are INCOMPLETE ENDPOINT_UNBOUND with the
+	// provider's answer kept in the reasons, `sign` finds no PASS or FAIL
+	// audit, and no record appears for either lease or for the evidence ids
+	// their reports would have.
+	d.auditRound("operator-endpoint", 60)
+	cfgTyped := base
+	cfgTyped.StoreRoot = filepath.Join(dir, "store-operator-endpoints")
+	cfgTyped.Audits = []auditSpec{typed("lb", "cb", "p1", ep.port), typed("lc", "cc", "p2", ep.port)}
+	cfgTypedPath := writeAuditConfig(t, filepath.Join(dir, "auditor-1-operator-endpoints.json"), cfgTyped)
+	recordsBefore := map[string]int{}
+	for _, lease := range []string{"lb", "lc"} {
+		recordsBefore[lease] = len(d.evidenceAt(&evidencev1.QueryEvidenceRequest{LeaseId: lease}, 0))
+	}
+	requestsBefore := ep.requests.Load()
+	code, lines = auditorCLI(t, bin, "run", "--config", cfgTypedPath)
+	if code != 0 || len(lines) != 1 {
+		t.Fatalf("operator-endpoint run: exit %d, %d lines", code, len(lines))
+	}
+	var runTyped runLine
+	decodeLine(t, lines[0], &runTyped)
+	wantTyped := map[string]string{"lb": "INCOMPLETE ENDPOINT_UNBOUND SEGMENT_DIGEST_MISMATCH", "lc": "INCOMPLETE ENDPOINT_UNBOUND HTTP_STATUS"}
+	unboundIDs := map[string]string{}
+	for _, a := range runTyped.Audits {
+		got := strings.TrimSpace(a.Result + " " + strings.Join(a.Reasons, " "))
+		if got != wantTyped[a.LeaseID] || len(a.ReportSHA256) != 64 {
+			t.Fatalf("operator-endpoint run: %s is %q (report %q), want %q", a.LeaseID, got, a.ReportSHA256, wantTyped[a.LeaseID])
+		}
+		unboundIDs[a.LeaseID] = p1 + a.ReportSHA256[:47]
+		// The stored report records the source the audit was classified
+		// with; read it rather than assume it.
+		rawReport, err := os.ReadFile(filepath.Join(cfgTyped.StoreRoot, "reports", a.ReportSHA256+".json"))
+		if err != nil {
+			t.Fatalf("operator-endpoint run: report of %s: %v", a.LeaseID, err)
+		}
+		var stored struct {
+			EndpointSource string `json:"endpoint_source"`
+			Result         string `json:"result"`
+		}
+		if err := json.Unmarshal(rawReport, &stored); err != nil {
+			t.Fatalf("operator-endpoint run: report of %s: %v", a.LeaseID, err)
+		}
+		if stored.EndpointSource != "OPERATOR_CONFIG" || stored.Result != "INCOMPLETE" {
+			t.Fatalf("operator-endpoint run: report of %s has endpoint_source %q result %q, want OPERATOR_CONFIG INCOMPLETE", a.LeaseID, stored.EndpointSource, stored.Result)
+		}
+		fmt.Printf("phase=operator-endpoint-run lease=%s result=%q report_endpoint_source=%s report_result=%s\n", a.LeaseID, got, stored.EndpointSource, stored.Result)
+	}
+	if len(runTyped.Audits) != 2 || len(unboundIDs) != 2 || ep.requests.Load() < requestsBefore+2 {
+		t.Fatalf("operator-endpoint run: %d audits, %d new endpoint requests", len(runTyped.Audits), ep.requests.Load()-requestsBefore)
+	}
+	code, lines = auditorCLI(t, bin, "sign", "--config", cfgTypedPath, "--run", runTyped.RunID)
+	if code != 0 || len(lines) != 1 {
+		t.Fatalf("operator-endpoint sign: exit %d, %d lines", code, len(lines))
+	}
+	var signedTyped struct {
+		RunID   string `json:"run_id"`
+		Batches *int   `json:"batches"`
+		BatchID string `json:"batch_id"`
+	}
+	decodeLine(t, lines[0], &signedTyped)
+	if signedTyped.RunID != runTyped.RunID || signedTyped.Batches == nil || *signedTyped.Batches != 0 || signedTyped.BatchID != "" {
+		t.Fatalf("operator-endpoint sign: %s (nothing may be signed)", lines[0])
+	}
+	for _, lease := range []string{"lb", "lc"} {
+		if n := len(d.evidenceAt(&evidencev1.QueryEvidenceRequest{LeaseId: lease}, 0)); n != recordsBefore[lease] {
+			t.Fatalf("operator-endpoint: records of %s %d -> %d", lease, recordsBefore[lease], n)
+		}
+		d.wantReported("operator-endpoint", unboundIDs[lease], 0, evidencev1.EvidenceState_EVIDENCE_STATE_UNSPECIFIED)
+	}
+	fmt.Printf("phase=operator-endpoint signed_batches=0 new_records=0 label=%q\n", "an endpoint not bound to the provider gives no FAIL (N2)")
 
 	// Phase 8a: a renewal of la naming its live RECORDED evidence is
 	// FORBIDDEN; the lease bytes do not change.
@@ -904,7 +1039,7 @@ func TestDevnetAuditLifecycle(t *testing.T) {
 	d.auditRound("second-run", 300)
 	cfg2 := base
 	cfg2.Lifetime = 900
-	cfg2.Audits = []auditSpec{spec("la", "ca", "p1", ep.port), spec("lb", "cb", "p1", ep.port)}
+	cfg2.Audits = []auditSpec{bound("la", "ca", "p1", 0), bound("lb", "cb", "p1", 0)}
 	cfg2Path := writeAuditConfig(t, filepath.Join(dir, "auditor-1-second.json"), cfg2)
 	code, lines = auditorCLI(t, bin, "run", "--config", cfg2Path)
 	if code != 0 || len(lines) != 1 {

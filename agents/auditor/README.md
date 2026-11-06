@@ -26,7 +26,7 @@ Output is one JSON object per line on stdout. Exit codes: 0 done; 1 an input, st
 | `fetch` | HTTPS requests to vetted addresses. Typed outcomes. |
 | `fetch/fetchtest` | Loopback test endpoints for tests. Only tests import it. |
 | `verify` | Manifest parsing and digest, interim package layout, segment checks, sample selection. It returns observations. |
-| `classify` | PASS, FAIL, or INCOMPLETE under the owner's Q3 ruling (table below). |
+| `classify` | PASS, FAIL, or INCOMPLETE under the owner's Q3 ruling and the endpoint-source rule (N2) (table below). |
 | `report` | Canonical report encoding, format `svn-audit-report-proposed-v0` (DR-09-22). |
 | `store` | Content-addressed report store and append-only index. |
 | `keys` | Dev-only ed25519 key files (owner's Q1 ruling). |
@@ -57,10 +57,24 @@ The auditor account key signs both the SDK transactions and the attestations: th
 | a policy refusal | INCOMPLETE | `POLICY_SCHEME`, `POLICY_PORT`, `POLICY_URL` (length, syntax, userinfo, fragment, path, host), `ENDPOINT_NOT_PERMITTED` (address, no address, too many addresses) |
 | an input or eligibility problem, before any request | INCOMPLETE | `INPUT_MANIFEST_INVALID`, `INPUT_MANIFEST_MISMATCH`, `INPUT_CAPABILITY_INVALID`, `INPUT_CONTENT_WITHDRAWN`, `INPUT_CONTENT_NOT_FOUND`, `LEASE_NOT_HELD`, `LEASE_NEAR_DEADLINE`, `CHAIN_READ_FAILED`, `CONFIG_INVALID` |
 | an outcome kind, rule, or state `classify` does not know | INCOMPLETE | `UNCLASSIFIED` (never FAIL) |
+| any row above that is FAIL, when the endpoint came from the operator's `endpoints` list (report `endpoint_source` `OPERATOR_CONFIG`) | INCOMPLETE | `ENDPOINT_UNBOUND`, beside the row's own reason |
 
 Every request of a `SAMPLED_SEGMENTS` audit is a range request, a goal-09 extension: protocol v0 defines only the 200 answer to a whole-package request. A 416 or 501 refuses the range and says nothing about the bytes the provider holds, so it is `RANGE_UNSUPPORTED`. The trade-off: a truncated package fails a `WHOLE_PACKAGE` audit (`PACKAGE_LENGTH_MISMATCH`), while a sampled audit of it is INCOMPLETE. A 408 is the server saying the request did not arrive in time; the ruling keeps timeouts off chain, so it is `TIMEOUT`. Both are interim choices under DR-09-09 and DR-09-22.
 
 A FAIL reason wins over INCOMPLETE reasons in the same audit: a segment received in full over the verified connection with the wrong digest is the provider's answer even if the connection was cut later. `TestEveryFetchKindIsMapped`, `TestEveryPolicyRuleIsMapped`, and `TestEveryVerifyStateIsMapped` read the constants from the source of `fetch`, `policy`, and `verify` and fail if one is not mapped; `TestFailReasonsAreTheRuling` pins the four FAIL reasons. INCOMPLETE audits stay off chain; their reports are kept.
+
+#### Endpoint source (interim choice N2, 2026-11-06)
+
+Q3 names "the provider's verified server". A certificate shows only that the server holds the host name, not that the host is the provider's. An audit takes its endpoint from one of two sources, and every report records which in `endpoint_source`:
+
+- `CAPABILITY_MANIFEST`: `capability_manifest_path` names a capability manifest file. Before any request, `run` requires it to parse, to name the audit's provider and the provider record's current signing key id, and to hash to the record's committed `endpoint_manifest_digest`; otherwise the audit is INCOMPLETE `INPUT_CAPABILITY_INVALID`. The detached manifest signature is not checked (protocol v0 defines no wire envelope for it, DR-07-09); the committed digest binds the body.
+- `OPERATOR_CONFIG`: the operator typed the endpoint into `endpoints`. Nothing binds it to the provider.
+
+The field names the configured source: an audit whose capability manifest fails the check is INCOMPLETE `INPUT_CAPABILITY_INVALID`, fetches nothing, and its report still says `CAPABILITY_MANIFEST`.
+
+Only `CAPABILITY_MANIFEST` allows FAIL. With `OPERATOR_CONFIG`, a result that would be FAIL is INCOMPLETE with the added reason `ENDPOINT_UNBOUND`: the endpoint was not declared by the provider account (no capability manifest bound to its committed `endpoint_manifest_digest`). Even a `CAPABILITY_MANIFEST` endpoint shows only that the provider account declared it, not that the provider controls the host. The provider-answered reasons and the failed segments stay in the report, so the operator sees what the server answered; the audit is retried the same way (a 5xx is still retried before `HTTP_STATUS` is listed); nothing is signed and no `REJECTED` record follows. The rule lives where `classify` decides the result (`Observation` and `Reasons` take the source), so no caller gets a FAIL without it. `batch.NewItem` refuses a FAIL report whose `endpoint_source` is not `CAPABILITY_MANIFEST` (`ErrIneligible`). The paths that re-sign or broadcast stored items without `NewItem` read each FAIL item's stored report again (`batch.CheckFailSources`): the CONFLICT, EXPIRED, or WITHDRAWN rebuild drops such an item, and `submit` refuses a stored batch that holds one before any broadcast, naming the evidence id (for example a batch signed before reports recorded the field). The reviewer reports such a signed item as `RECORD_MISMATCH`.
+
+PASS does not depend on the source: a PASS from an operator-configured endpoint is PASS, is signed, and is `RECORDED` on chain until its expiry (at most 86400 s, PROPOSED); its report says `OPERATOR_CONFIG`, and the reviewer's output carries `report_endpoint_source`. The chain cannot see the source. This asymmetry is a residual risk: a PASS can describe a server that is not the provider's. N2 is an interim choice, reversible; the owner approved the recommendation in general terms ("go with your recommendations for N1 and N2"), and the option was named in the orchestrator's message after the approval.
 
 ### Eligibility and rounds (owner ruling on Q4)
 
@@ -73,7 +87,7 @@ Before any request, `run` reads the latest header (a node that is catching up is
 Every signed byte comes from `chain/x/evidence` (`AuditEnvelope`, `AuditSignBytes`, `VerifyAuditSignature`, `IDPrefix`, `EpochAt`); nothing is re-implemented. `TestProducerMatchesChainSignVectors` rebuilds the chain's golden sign vectors through the producer's own path and requires equal canonical text, sign bytes, and signatures.
 
 - evidence id: `IDPrefix(address)` (16 hex characters of the address, then `.`) and the first 47 hex characters of the report's SHA-256
-- observation digest: the lease manifest digest for PASS (the chain stores RECORDED), the full SHA-256 of the report for FAIL (REJECTED, DEC-010); INCOMPLETE produces no item
+- observation digest: the lease manifest digest for PASS (the chain stores RECORDED), the full SHA-256 of the report for FAIL (REJECTED, DEC-010); INCOMPLETE produces no item, and a FAIL report whose `endpoint_source` is not `CAPABILITY_MANIFEST` is refused (`ErrIneligible`, N2)
 - one batch per provider, at most `max_batch_items` items, ordered by evidence id
 - batch id: prefix and 47 hex characters of SHA-256 of `{"auditor", "epoch", "evidence_ids"}` (SVN-JCS-1)
 - business id: attempt 0 (the one the signed batch carries) is the prefix and 47 hex characters of SHA-256 of `"svn-audit-business:" + batch_id + ":0"`. The next attempt, made only after the chain answered REPLAY, is the prefix and 47 hex characters of 32 bytes from `crypto/rand`, so another account that sees attempt 0 cannot compute and commit the retry ids first (`TestSquattedBusinessIDsDoNotBlockTheBatch`). The business id is not signed, so a new attempt keeps the auditor signature.
@@ -101,7 +115,7 @@ The outer transaction is SIGN_MODE_DIRECT with the app's own encoding, no fee, n
 
 ### Reviewer (`verify`)
 
-It prints `record_source` first: `NODE <url>` ("read through an unverified ABCI query; trusts that node") or `FILE <path>` ("not read from the chain"). Verdicts, first failure wins: `NOT_ON_CHAIN` (node only), `PAYLOAD_UNAVAILABLE`, `CHECKSUM_MISMATCH`, `REPORT_INVALID`, `SIGNATURE_INVALID`, `ENVELOPE_MISMATCH`, `RECORD_MISMATCH`, `CONSISTENT`. CONSISTENT is still an attestation: a valid signature and a consistent payload do not make an observation true. The output carries `claim_limit`, the mode and state labels, and the catalog's limitations.
+It prints `record_source` first: `NODE <url>` ("read through an unverified ABCI query; trusts that node") or `FILE <path>` ("not read from the chain"). Verdicts, first failure wins: `NOT_ON_CHAIN` (node only), `PAYLOAD_UNAVAILABLE`, `CHECKSUM_MISMATCH`, `REPORT_INVALID`, `SIGNATURE_INVALID`, `ENVELOPE_MISMATCH`, `RECORD_MISMATCH`, `CONSISTENT`. `RECORD_MISMATCH` also covers a report the producer never attests: an INCOMPLETE report, or a FAIL report whose `endpoint_source` is not `CAPABILITY_MANIFEST` (N2). CONSISTENT is still an attestation: a valid signature and a consistent payload do not make an observation true. The output carries `claim_limit`, the report's result and `endpoint_source` (`report_endpoint_source`), the mode and state labels, and the catalog's limitations.
 
 ## Network policy (PROPOSED, DR-09-10)
 
@@ -147,6 +161,8 @@ The manifest is an operator file of at most 65536 bytes. Its digest is SHA-256 o
 ## Report store
 
 Layout: `reports/<sha256>.json`, `envelopes/<evidence_id>.json`, `batches/<batch_id>.pb` (the signed message, business attempt 0) and `batches/<batch_id>.json` (the batch summary: evidence id to full report SHA-256), `batches/<submission name>.json` and `.pb` (one record and the transaction bytes per broadcast), `pending/<run_id>.json` (the pending run), `index.jsonl` (one line per item of a committed result). Writes are create-exclusive through a synced temporary file and a hard link; the same bytes again are a no-op; other bytes under an existing name are refused. Directories are 0700 and files 0600. The default root belongs under `.local/`, which Git ignores. `index.jsonl` takes whole lines only: after a torn append (a last line without its newline), appends are refused and scans report the index as corrupt; a line that is not one JSON object is reported as corrupt, never handed on.
+
+Every report records `endpoint_source` (`CAPABILITY_MANIFEST` or `OPERATOR_CONFIG`; required). The field was added on 2026-11-06 under N2 without a new format string: the format is interim and unreleased (DR-09-22), and a report written before the change does not parse (the reviewer reports `REPORT_INVALID`).
 
 Reports carry the label catalog's limitations that apply to them: all but "Accounting success is not physical capacity or operator independence." (it is about lease accounting), and "A sampled check covers only the sampled segments." only in sampled reports. More than the report's 8 is an error, never a silent cut. An audit with a capability manifest that ended before the manifest named the endpoint records `endpoint_name_sha256` of the empty name. A sampled audit that ended before any selection (an input or eligibility reason) records a fresh seed that selected nothing, because the report format requires one.
 

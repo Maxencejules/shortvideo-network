@@ -76,7 +76,16 @@ jobs:
           cache: false
       - name: Install protoc
         run: bash scripts/install_toolchains.sh --protoc-only
+      # SVN_SKIP_DEVNET=1 skips the multi-process chain/devnet tests in this
+      # job. Without -race they take about 9.5 minutes, plus up to about 6.5
+      # minutes when TestDevnetAuditLifecycle waits for an audit round
+      # boundary, which can reach the 20-minute job cap, and they would only
+      # repeat the go-race "devnet" and "devnet-evidence" shards, which run
+      # every chain/devnet test under -race. tests/unit/test_ci_devnet_coverage.py
+      # fails if this skip is set while those shards stop covering the package.
       - name: Format, generate, and test
+        env:
+          SVN_SKIP_DEVNET: "1"
         run: |
           export PATH="${GITHUB_WORKSPACE}/.toolchains/bin:${PATH}"
           bash scripts/gofmt_check.sh
@@ -87,6 +96,7 @@ jobs:
             exit 1
           fi
           git diff --exit-code -- proto/svn proto/gen/python
+          echo "SVN_SKIP_DEVNET=1: the multi-process chain/devnet tests run in the go-race devnet and devnet-evidence shards"
           python3 scripts/run_tests.py --only go
           go vet ./chain/...
           go vet ./proto/...

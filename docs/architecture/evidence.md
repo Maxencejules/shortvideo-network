@@ -168,6 +168,18 @@ fetches anything. In short (the full rules are in `agents/auditor/README.md`):
   byte, a length mismatch under its own framing, too many bytes, 404 or 410, another 4xx or 5xx after retries) is
   `FAIL` and goes on chain as `REJECTED`. A network, TLS, timeout, DNS, redirect, or policy failure is `INCOMPLETE` and
   stays off chain; its report is kept.
+- The endpoint must be one the provider account declared: a capability manifest bound to its committed
+  `endpoint_manifest_digest` (interim choice N2, 2026-11-06; approved in general terms, see Residual risks). Every
+  report records `endpoint_source`:
+
+  | Endpoint source | How the endpoint is bound | Provider-answered wrong or missing bytes | Correct bytes |
+  | --- | --- | --- | --- |
+  | `CAPABILITY_MANIFEST` | a capability manifest file that names the provider and its current signing key id and hashes to the provider record's committed `endpoint_manifest_digest`, checked before any request | `FAIL`, signed, `REJECTED` on chain (never expires) | `PASS`, signed, `RECORDED` until its expiry |
+  | `OPERATOR_CONFIG` | none: the operator typed it into the configuration | `INCOMPLETE ENDPOINT_UNBOUND`, the provider-answered reasons kept in the report; nothing signed, off chain | `PASS`, signed, `RECORDED` until its expiry |
+
+  The rule is in `classify`, where the result is decided; `batch.NewItem` refuses a `FAIL` report whose source is not
+  `CAPABILITY_MANIFEST`, and the reviewer reports such a signed item as `RECORD_MISMATCH`. The chain cannot see the
+  source.
 
 The configured chain RPC URL is trusted operator configuration, not a provider endpoint, and may be loopback. Reads
 through it trust the one node they ask.
@@ -240,17 +252,23 @@ auditors.
 `TestDevnetAuditLifecycle` builds `agents/auditor` with `go build` (a build failure fails the test), starts four svnd
 processes, and runs:
 
-1. Providers p1 and p2 registered and admitted by the council; seven contents whose manifest digest is SHA-256 of the
-   SVN-JCS-1 text of a synthetic `svn-media-manifest-v1`; offers and acceptances (DEC-005 3600 s term, start in the
-   past).
-2. A loopback HTTPS endpoint with a runtime CA, permitted only by exact allowlist entries: lease la's package served
-   correctly, lb's with one corrupted byte, lc absent (404), and ld's endpoint a closed port.
+1. A loopback HTTPS endpoint with a runtime CA (lease la's package served correctly, lb's with one corrupted byte, lc
+   absent: 404) and a closed port for ld. Providers p1 and p2 registered with an `endpoint_manifest_digest` equal to
+   the digest of a capability manifest the test writes (p1: the endpoint; p2: the endpoint, then the closed port; each
+   naming the provider and its signing key id) and admitted by the council; seven contents whose manifest digest is
+   SHA-256 of the SVN-JCS-1 text of a synthetic `svn-media-manifest-v1`; offers and acceptances (DEC-005 3600 s term,
+   start in the past).
+2. The producer configuration: exact allowlist entries for the endpoint and the closed port; each audit names its
+   endpoint by its index in its provider's capability manifest (`capability_manifest_path`).
 3. A round wait (polling the header time) so a batch signed now commits in its round.
 4. `auditor run`, `sign`, `submit` as auditor-1: la `PASS`, lb `FAIL SEGMENT_DIGEST_MISMATCH`, lc `FAIL HTTP_STATUS`,
    ld `INCOMPLETE CONNECT_FAILED`. Two batches; the acknowledgement (CheckTx code 0) and the committed code and height
    are printed separately; records read back `RECORDED`, `REJECTED`, `REJECTED`; ld has no item and no record (a network
    failure stays off chain); `status` reads the same committed result without broadcasting; the reviewer finds all
-   three `CONSISTENT`.
+   three `CONSISTENT`, each report with `report_endpoint_source` `CAPABILITY_MANIFEST`. Then (N2) the same failing
+   endpoint typed into the operator's `endpoints` list for lb and lc: `run` gives
+   `INCOMPLETE ENDPOINT_UNBOUND SEGMENT_DIGEST_MISMATCH` and `INCOMPLETE ENDPOINT_UNBOUND HTTP_STATUS`, the test reads
+   `endpoint_source` `OPERATOR_CONFIG` from both stored reports, `sign` signs no batch, and no record appears for either lease or for the evidence ids those reports would have.
 5. A renewal naming la's live record is `FORBIDDEN`; the lease bytes do not change. The same business payload under a
    new transaction hash is an idempotent success with one set of records.
 6. auditor-2 (test code, fetching nothing) records a false FAIL for la and a false PASS for lb; the reviewer finds the
@@ -278,11 +296,24 @@ Goal 09 changed two devnet assertions, without weakening them: `TestDevnetKeysAr
 12 account and seat keys (6 and 10 before) and checks the auditors' key type, file mode, and distinct prefixes;
 `TestDevnetSeatsHaveNoSubmitterRow` now expects 8 submitters and 12 auth accounts (6 and 10 before).
 
-CI runs `TestDevnetAudit` in its own go-race shard (`devnet-evidence`); the `devnet` shard skips it.
+CI runs `TestDevnetAudit` in its own go-race shard (`devnet-evidence`); the `devnet` shard skips it, so every
+`chain/devnet` test runs under `-race` in exactly one of the two. The CI `go` job sets `SVN_SKIP_DEVNET=1`: its
+non-race run skips the seven tests that start devnet validator processes and runs the other tests of the package.
+`tests/unit/test_ci_devnet_coverage.py` fails if that skip is set and the two shards stop covering the package.
 
 ## Residual risks
 
 - An admitted auditor can lie, in both directions; a `REJECTED` record never expires; nothing is paid or slashed.
+- Endpoint source (N2). An honest producer files `REJECTED` only for an endpoint from a capability manifest bound to
+  the provider record's committed `endpoint_manifest_digest`; a failure at an operator-configured endpoint stays off
+  chain as `INCOMPLETE ENDPOINT_UNBOUND`. A `PASS` from an operator-configured endpoint is still signed and `RECORDED`
+  (until its expiry, at most 86400 s, PROPOSED), although nothing bound that endpoint to the provider account; its report
+  says `OPERATOR_CONFIG`, and the chain cannot see that. The binding is a digest the provider account committed, not a
+  check of the detached manifest signature (DR-07-09); it shows that the provider account declared the endpoint, not
+  that the provider controls the host. Nothing on chain enforces any of this: a dishonest admitted auditor can still
+  sign a `REJECTED` record for any endpoint. N2 is an interim choice of 2026-11-06, reversible: the owner
+  approved the recommendation in general terms; the option was named in the orchestrator's message after the
+  approval.
 - Business ids are one unsigned namespace across modules: any admitted account can take a pending batch's business id
   first and make the whole batch `REPLAY` (`chain/x/evidence/README.md`, residual risks; DR-09-28 asks for business ids
   bound to the signer). The producer moves to the next business attempt, whose business id it draws from `crypto/rand`,

@@ -73,9 +73,16 @@ func heldLease(id, content string) *leasesv1.Lease {
 
 func reportOf(t testing.TB, key keys.Key, leaseID, content, result string) []byte {
 	t.Helper()
+	return reportFrom(t, key, report.EndpointSourceCapabilityManifest, leaseID, content, result)
+}
+
+// reportFrom is reportOf with the given endpoint_source.
+func reportFrom(t testing.TB, key keys.Key, source, leaseID, content, result string) []byte {
+	t.Helper()
 	r := report.Report{
 		AuditorKeyID: "key-auditor-1", AuditorAddress: hex.EncodeToString(key.Address()),
 		LeaseID: leaseID, ContentID: content, ContentVersion: 1, ProviderID: "p1",
+		EndpointSource:         source,
 		ExpectedManifestSHA256: manifestOf(content), Mode: report.ModeWholePackage, CheckedSegments: 2,
 		StartedUnixSeconds: headerTime - 30, FinishedUnixSeconds: headerTime - 29, Result: result,
 	}
@@ -760,6 +767,145 @@ func TestBatchFailureIsolation(t *testing.T) {
 	if _, ok := e.node.Records[ended.EvidenceID]; ok {
 		t.Fatal("the dropped item was recorded")
 	}
+}
+
+// storedBatchWithFail replaces e.b with a signed, stored batch of the PASS
+// item of lease l1 and a FAIL item of lease l2 whose report says source.
+// The FAIL item is built by hand: NewItem refuses an OPERATOR_CONFIG FAIL,
+// but a store may hold one that was signed before the report recorded its
+// endpoint source.
+func storedBatchWithFail(t *testing.T, e *env, source string) batch.Item {
+	t.Helper()
+	p := batch.Plan{Signer: e.key.Address(), KeyID: "key-auditor-1", HeaderTime: headerTime, MaxItems: batch.MaxItems, Window: window}
+	pass, err := batch.NewItem(p, batch.Audit{Report: reportOf(t, e.key, "l1", "c1", report.ResultPass), Deadline: headerTime + 7200, ManifestSHA256: manifestOf("c1")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := reportFrom(t, e.key, source, "l2", "c2", report.ResultFail)
+	sum, err := e.store.PutReport(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fail := batch.Item{
+		EvidenceID: batch.EvidenceID(e.key.Address(), sum), ProviderID: "p1", LeaseID: "l2", ContentID: "c2", ContentVersion: 1,
+		Result: report.ResultFail, ReportSHA256: sum, Observation: sum, Expiry: batch.Expiry(headerTime, window.Lifetime, headerTime+7200),
+	}
+	batches, err := batch.Build(p, []batch.Item{pass, fail})
+	if err != nil || len(batches) != 1 {
+		t.Fatalf("build: %v", err)
+	}
+	b := batches[0]
+	if err := batch.Sign(b, e.key); err != nil {
+		t.Fatal(err)
+	}
+	if err := batch.Persist(e.store, b, "run-test"); err != nil {
+		t.Fatal(err)
+	}
+	e.b = b
+	return fail
+}
+
+// refusedEarlier stores submission 0 of e.b and commits it with CONFLICT on
+// the fake chain, as if it had been broadcast before, so the next submit
+// goes straight to the rebuild.
+func refusedEarlier(t *testing.T, e *env) {
+	t.Helper()
+	raw, hash, err := e.sub.Client.BuildTx(e.b.Msg, e.key.SDK(), chainclient.TxInput{ChainID: "svn-test-1", AccountNumber: 7, Gas: 2_000_000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.Put(store.Batches, chainclient.SubmissionName(e.b.ID(), 0), ".pb", raw); err != nil {
+		t.Fatal(err)
+	}
+	e.node.Lock()
+	e.node.Txs[hex.EncodeToString(hash[:])] = &chaintest.Tx{Raw: raw}
+	e.node.Commit(hex.EncodeToString(hash[:]), 14, "svn")
+	e.node.Unlock()
+}
+
+// TestOperatorFailIsNeitherBroadcastNorResigned (N2): a stored batch with a
+// FAIL item whose report says OPERATOR_CONFIG is never broadcast, and the
+// CONFLICT rebuild drops that item instead of signing it again. The same
+// batch with a CAPABILITY_MANIFEST FAIL item keeps the item in both paths.
+func TestOperatorFailIsNeitherBroadcastNorResigned(t *testing.T) {
+	t.Run("submit refuses", func(t *testing.T) {
+		e := setup(t)
+		fail := storedBatchWithFail(t, e, report.EndpointSourceOperatorConfig)
+		e.node.OnBroadcast = commitAll
+		res, err := e.sub.Submit(context.Background(), e.b, "run-test")
+		if !errors.Is(err, batch.ErrIneligible) || !strings.Contains(err.Error(), fail.EvidenceID) ||
+			!strings.Contains(err.Error(), report.EndpointSourceOperatorConfig) {
+			t.Fatalf("submit of an operator FAIL: %+v %v", res, err)
+		}
+		if n := len(e.node.Broadcasts()); n != 0 {
+			t.Fatalf("%d broadcasts", n)
+		}
+		if _, err := e.store.Get(store.Batches, chainclient.SubmissionName(e.b.ID(), 0), ".pb"); !errors.Is(err, store.ErrNotFound) {
+			t.Fatalf("a submission was stored: %v", err)
+		}
+		if len(e.node.Records) != 0 {
+			t.Fatalf("records %v", e.node.Records)
+		}
+	})
+	t.Run("submit of a manifest FAIL", func(t *testing.T) {
+		e := setup(t)
+		fail := storedBatchWithFail(t, e, report.EndpointSourceCapabilityManifest)
+		e.node.OnBroadcast = commitAll
+		res, err := e.sub.Submit(context.Background(), e.b, "run-test")
+		if err != nil || res.State != chainclient.Committed || len(e.node.Broadcasts()) != 1 {
+			t.Fatalf("submit of a manifest FAIL: %+v %v", res, err)
+		}
+		if _, ok := e.node.Records[fail.EvidenceID]; !ok {
+			t.Fatal("the manifest FAIL item was not recorded")
+		}
+	})
+	t.Run("rebuild drops", func(t *testing.T) {
+		e := setup(t)
+		fail := storedBatchWithFail(t, e, report.EndpointSourceOperatorConfig)
+		refusedEarlier(t, e)
+		e.node.OnBroadcast = commitAll
+		res, err := e.sub.Submit(context.Background(), e.b, "run-test")
+		if err != nil || res.State != chainclient.Failed || res.Label() != "FAILED(14)" || len(res.Dropped) != 1 ||
+			res.Dropped[0] != fail.EvidenceID || res.Next == nil {
+			t.Fatalf("rebuild of an operator FAIL: %+v %v", res, err)
+		}
+		next := res.Next
+		if next.State != chainclient.Committed || len(next.Items) != 1 || next.Items[0].EvidenceID == fail.EvidenceID {
+			t.Fatalf("rebuilt batch %+v", next)
+		}
+		nb, _, err := batch.Load(e.store, next.BatchID)
+		if err != nil || len(nb.Items) != 1 || nb.Items[0].Result != report.ResultPass {
+			t.Fatalf("stored rebuilt batch %+v %v", nb, err)
+		}
+		if _, err := e.store.Get(store.Envelopes, fail.EvidenceID, ".json"); err != nil {
+			t.Fatalf("the earlier batch's envelope: %v", err)
+		}
+		if _, ok := e.node.Records[fail.EvidenceID]; ok {
+			t.Fatal("the operator FAIL item was recorded")
+		}
+		if n := len(e.node.Broadcasts()); n != 1 {
+			t.Fatalf("%d broadcasts, want only the rebuilt batch", n)
+		}
+	})
+	t.Run("rebuild keeps a manifest FAIL", func(t *testing.T) {
+		e := setup(t)
+		fail := storedBatchWithFail(t, e, report.EndpointSourceCapabilityManifest)
+		refusedEarlier(t, e)
+		// The PASS item's lease ended, so the rebuilt batch holds only the
+		// FAIL item (a rebuild that keeps every item would have the same
+		// batch id as the refused batch).
+		delete(e.node.Leases, "p1/c1")
+		e.node.OnBroadcast = commitAll
+		res, err := e.sub.Submit(context.Background(), e.b, "run-test")
+		if err != nil || res.State != chainclient.Failed || len(res.Dropped) != 1 || res.Dropped[0] == fail.EvidenceID ||
+			res.Next == nil || res.Next.State != chainclient.Committed || len(res.Next.Items) != 1 ||
+			res.Next.Items[0].EvidenceID != fail.EvidenceID {
+			t.Fatalf("rebuild of a manifest FAIL: %+v %v", res, err)
+		}
+		if _, ok := e.node.Records[fail.EvidenceID]; !ok {
+			t.Fatal("the manifest FAIL item was not recorded")
+		}
+	})
 }
 
 func TestBuildTx(t *testing.T) {

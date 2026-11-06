@@ -418,3 +418,41 @@ func fromSummary(msg *evidencev1.MsgSubmitAuditBatch, s Summary) (*Batch, error)
 	}
 	return b, nil
 }
+
+// CheckFailSource reads the stored report of a FAIL item and returns an
+// error naming the item unless the report hashes to the item's report
+// digest, parses, is FAIL, and has endpoint_source CAPABILITY_MANIFEST (N2).
+// An item counts as FAIL when its summary says FAIL or its observation is
+// its report digest (the FAIL observation); every other item returns nil.
+// NewItem already refuses such a FAIL item; this check covers the paths that
+// re-sign or broadcast stored items without NewItem: the CONFLICT, EXPIRED,
+// and WITHDRAWN rebuild and the submission of a stored batch, for example a
+// batch signed before the report recorded its endpoint source.
+func CheckFailSource(st *store.Store, it Item) error {
+	if it.Result != report.ResultFail && it.Observation != it.ReportSHA256 {
+		return nil
+	}
+	raw, err := st.Report(it.ReportSHA256)
+	if err != nil {
+		return fmt.Errorf("%w: FAIL item %s: report: %v", ErrIneligible, it.EvidenceID, err)
+	}
+	r, err := report.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("%w: FAIL item %s: report: %v", ErrIneligible, it.EvidenceID, err)
+	}
+	if r.Result != report.ResultFail || r.EndpointSource != report.EndpointSourceCapabilityManifest {
+		return fmt.Errorf("%w: FAIL item %s: report result %s endpoint_source %s, a FAIL needs endpoint_source %s",
+			ErrIneligible, it.EvidenceID, r.Result, r.EndpointSource, report.EndpointSourceCapabilityManifest)
+	}
+	return nil
+}
+
+// CheckFailSources is CheckFailSource for every item of b.
+func CheckFailSources(st *store.Store, b *Batch) error {
+	for _, it := range b.Items {
+		if err := CheckFailSource(st, it); err != nil {
+			return err
+		}
+	}
+	return nil
+}

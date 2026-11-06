@@ -471,8 +471,9 @@ func lastAttempt(b *batch.Batch, subs []stored) (uint64, string) {
 //     attempt is broadcast with a business id from Rand (the auditor
 //     signature does not cover it)
 //   - FAILED(CONFLICT, EXPIRED, WITHDRAWN): the items whose lease or
-//     content changed are dropped and the rest is rebuilt, signed, stored,
-//     and submitted as a new batch in the same epoch (Result.Next)
+//     content changed, and FAIL items without a bound endpoint source, are
+//     dropped and the rest is rebuilt, signed, stored, and submitted as a
+//     new batch in the same epoch (Result.Next)
 //   - any other FAILED code: returned (STALE_VERSION needs a new audit)
 //   - NOT_SUBMITTED, NOT_ACCEPTED, SUBMITTED: broadcast with the current
 //     account sequence; a SUBMITTED batch whose epoch has passed is not
@@ -483,7 +484,11 @@ func lastAttempt(b *batch.Batch, subs []stored) (uint64, string) {
 // Before a broadcast it reads a fresh header: another epoch than the
 // batch's adds the warning EPOCH_LIKELY_STALE, and a batch never submitted
 // is still broadcast (the chain decides; a rejected transaction changes no
-// state). An acknowledgement alone leaves the batch SUBMITTED.
+// state). An acknowledgement alone leaves the batch SUBMITTED. Before
+// each broadcast it also reads the stored report of every FAIL item and
+// returns an error, broadcasting nothing, when one does not say its
+// endpoint came from a bound capability manifest (batch.CheckFailSources,
+// N2); a committed or recorded batch is still reported.
 func (s *Submitter) Submit(ctx context.Context, b *batch.Batch, runID string) (Result, error) {
 	return s.submit(ctx, b, runID, true)
 }
@@ -543,6 +548,11 @@ func (s *Submitter) submit(ctx context.Context, b *batch.Batch, runID string, ma
 		}
 		if len(subs) >= MaxSubmissions {
 			return res, fmt.Errorf("chainclient: batch %s has %d submissions, the bound", b.ID(), MaxSubmissions)
+		}
+		// N2: a FAIL item is broadcast only when its stored report says
+		// its endpoint came from a bound capability manifest.
+		if err := batch.CheckFailSources(s.Store, b); err != nil {
+			return res, err
 		}
 		sub, a, err := s.broadcast(ctx, b, header.ChainID, len(subs), attempt, businessID)
 		if err != nil {
@@ -650,7 +660,9 @@ func (s *Submitter) wait(ctx context.Context, txHash string) (bool, error) {
 }
 
 // rebuild drops the items of a batch the chain refused for a lease or
-// content change and submits the rest as a new batch in the same epoch.
+// content change and submits the rest as a new batch in the same epoch. It
+// also drops a FAIL item whose stored report does not say its endpoint came
+// from a bound capability manifest (N2), so no such item is signed again.
 func (s *Submitter) rebuild(ctx context.Context, b *batch.Batch, runID string, res Result) (Result, error) {
 	header, err := s.Client.Header(ctx)
 	if err != nil {
@@ -662,6 +674,10 @@ func (s *Submitter) rebuild(ctx context.Context, b *batch.Batch, runID string, r
 	}
 	keep := map[string]bool{}
 	for _, it := range b.Items {
+		if batch.CheckFailSource(s.Store, it) != nil {
+			keep[it.EvidenceID] = false
+			continue
+		}
 		ok, err := s.stillEligible(ctx, b.ProviderID, it, header.Time)
 		if err != nil {
 			return res, err

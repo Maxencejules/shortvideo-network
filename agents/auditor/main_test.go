@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -276,7 +277,11 @@ func TestRunNeverOpensKeyPath(t *testing.T) {
 
 // TestRunClassifiesLoopbackOutcomes runs one audit per endpoint behavior
 // through the real fetch path and checks the Q3 classification in the
-// stored report.
+// stored report, once with the endpoint from a capability manifest bound to
+// the provider record (the table) and once with the same endpoint in the
+// operator's endpoints list: there, under N2, a FAIL row is INCOMPLETE with
+// ENDPOINT_UNBOUND added and its reasons kept, after the same requests
+// (retries included); every other row is unchanged.
 func TestRunClassifiesLoopbackOutcomes(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -310,30 +315,38 @@ func TestRunClassifiesLoopbackOutcomes(t *testing.T) {
 		{"no allowlist entry", auditSpec{behavior: fetchtest.Correct, noEntry: true}, report.ResultIncomplete, []string{"ENDPOINT_NOT_PERMITTED"}, 0},
 	}
 	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			h := newHarness(t)
-			c.spec.lease, c.spec.provider, c.spec.content = "l1", "p1", "c1"
-			srv := h.add(c.spec)
-			out := h.run()
-			ra := out.Audits[0]
-			reasons := c.reasons
-			if reasons == nil {
-				reasons = []string{}
-			}
-			if ra.Result != c.result || !reflect.DeepEqual(append([]string{}, ra.Reasons...), reasons) {
-				t.Fatalf("%s %v, want %s %v", ra.Result, ra.Reasons, c.result, reasons)
-			}
-			if got := srv.Requests(); got != c.requests {
-				t.Fatalf("%d requests, want %d", got, c.requests)
-			}
-			r := h.report(ra)
-			if r.Result != c.result || r.LeaseID != "l1" || r.AuditorAddress != hex.EncodeToString(h.key.Address()) || r.AuditorKeyID != "key-auditor-1" {
-				t.Fatalf("report %+v", r)
-			}
-			if r.EndpointNameSHA256 != sha256.Sum256([]byte("loopback test endpoint")) {
-				t.Fatal("report endpoint name digest")
-			}
-		})
+		for _, source := range []string{report.EndpointSourceCapabilityManifest, report.EndpointSourceOperatorConfig} {
+			t.Run(c.name+"/"+source, func(t *testing.T) {
+				h := newHarness(t)
+				c.spec.lease, c.spec.provider, c.spec.content = "l1", "p1", "c1"
+				srv := h.add(c.spec)
+				if source == report.EndpointSourceCapabilityManifest {
+					h.bind()
+				}
+				out := h.run()
+				ra := out.Audits[0]
+				result, reasons := c.result, append([]string{}, c.reasons...)
+				if source == report.EndpointSourceOperatorConfig && result == report.ResultFail {
+					result = report.ResultIncomplete
+					reasons = append(reasons, "ENDPOINT_UNBOUND")
+					sort.Strings(reasons)
+				}
+				if ra.Result != result || !reflect.DeepEqual(append([]string{}, ra.Reasons...), reasons) {
+					t.Fatalf("%s %v, want %s %v", ra.Result, ra.Reasons, result, reasons)
+				}
+				if got := srv.Requests(); got != c.requests {
+					t.Fatalf("%d requests, want %d", got, c.requests)
+				}
+				r := h.report(ra)
+				if r.Result != result || r.LeaseID != "l1" || r.AuditorAddress != hex.EncodeToString(h.key.Address()) || r.AuditorKeyID != "key-auditor-1" ||
+					r.EndpointSource != source || !reflect.DeepEqual(append([]string{}, r.Reasons...), reasons) {
+					t.Fatalf("report %+v", r)
+				}
+				if r.EndpointNameSHA256 != sha256.Sum256([]byte("loopback test endpoint")) {
+					t.Fatal("report endpoint name digest")
+				}
+			})
+		}
 	}
 }
 
@@ -535,6 +548,48 @@ func (h *harness) capabilityFile(provider string, srv *fetchtest.Server) string 
 	return path
 }
 
+// bind moves the endpoints of the named leases (every configured audit when
+// none is named) from the operator's endpoints list into one capability
+// manifest file per provider, in configuration order, and registers each
+// provider record with that manifest's digest, its current key id, and the
+// audit's index in the manifest: the endpoint source that allows FAIL (N2).
+func (h *harness) bind(leases ...string) {
+	h.t.Helper()
+	endpoints := map[string][]capability.Endpoint{}
+	var providers []string
+	var bound []int
+	for i, a := range h.cfg.Audits {
+		if len(leases) != 0 && !contains(leases, a.LeaseID) {
+			continue
+		}
+		if _, ok := endpoints[a.ProviderID]; !ok {
+			providers = append(providers, a.ProviderID)
+		}
+		e := a.Endpoints[a.EndpointIndex]
+		h.cfg.Audits[i].EndpointIndex = len(endpoints[a.ProviderID])
+		endpoints[a.ProviderID] = append(endpoints[a.ProviderID], capability.Endpoint{Name: e.Name, URL: e.URL})
+		bound = append(bound, i)
+	}
+	paths := map[string]string{}
+	for _, provider := range providers {
+		r, err := capability.Encode(capability.Manifest{
+			ProviderID: provider, SigningKeyID: "key-" + provider, DeclaredCapacityBytes: 1 << 30, Endpoints: endpoints[provider],
+		})
+		if err != nil {
+			h.t.Fatal(err)
+		}
+		paths[provider] = filepath.Join(h.dir, provider+".bound.capability.json")
+		if err := os.WriteFile(paths[provider], []byte(r.Canonical), 0o600); err != nil {
+			h.t.Fatal(err)
+		}
+		h.node.Providers[provider] = &providersv1.Provider{ProviderId: provider, SigningKeyId: "key-" + provider, EndpointManifestDigest: r.Digest()}
+	}
+	for _, i := range bound {
+		h.cfg.Audits[i].CapabilityManifestPath = paths[h.cfg.Audits[i].ProviderID]
+		h.cfg.Audits[i].Endpoints = nil
+	}
+}
+
 // With a capability manifest, the endpoint comes from the manifest only
 // when it names the provider and its current key id and hashes to the
 // committed endpoint_manifest_digest.
@@ -548,7 +603,8 @@ func TestCapabilityManifestEndpoint(t *testing.T) {
 		return h, srv
 	}
 	h, srv := setup()
-	if ra := h.run().Audits[0]; ra.Result != report.ResultPass || srv.Requests() != 1 {
+	ra := h.run().Audits[0]
+	if ra.Result != report.ResultPass || srv.Requests() != 1 || h.report(ra).EndpointSource != report.EndpointSourceCapabilityManifest {
 		t.Fatalf("%+v", ra)
 	}
 	for name, edit := range map[string]func(h *harness){
@@ -561,8 +617,11 @@ func TestCapabilityManifestEndpoint(t *testing.T) {
 		h, srv := setup()
 		edit(h)
 		ra := h.run().Audits[0]
-		if ra.Result != report.ResultIncomplete || !reflect.DeepEqual(ra.Reasons, []string{"INPUT_CAPABILITY_INVALID"}) || srv.Requests() != 0 {
-			t.Fatalf("%s: %+v, %d requests", name, ra, srv.Requests())
+		// The report names the configured source even though the manifest
+		// failed its check (README: endpoint source).
+		if ra.Result != report.ResultIncomplete || !reflect.DeepEqual(ra.Reasons, []string{"INPUT_CAPABILITY_INVALID"}) || srv.Requests() != 0 ||
+			h.report(ra).EndpointSource != report.EndpointSourceCapabilityManifest {
+			t.Fatalf("%s: %+v, %d requests, endpoint_source %q", name, ra, srv.Requests(), h.report(ra).EndpointSource)
 		}
 	}
 }
@@ -638,6 +697,7 @@ func TestRunSignSubmitReviewUnit(t *testing.T) {
 	withdrawn := &contentv1.QueryContentResponse{Content: &contentv1.Content{ContentId: "c3", ContentVersion: 1, State: contentv1.ContentState_CONTENT_STATE_WITHDRAWN}}
 	h.add(auditSpec{lease: "l3", provider: "p1", content: "c3", answer: withdrawn})
 	h.add(auditSpec{lease: "l4", provider: "p2", content: "c4", behavior: fetchtest.NotFound})
+	h.bind()
 	out := h.run()
 	results := map[string]string{}
 	for _, a := range out.Audits {
@@ -828,14 +888,20 @@ func (h *harness) configFile(chainRPC, keyPath string) string {
 		allow = append(allow, map[string]any{"provider_id": e.ProviderID, "host": e.Host, "ip": e.IP.String(), "port": e.Port})
 	}
 	for _, a := range h.cfg.Audits {
-		var eps []any
-		for _, e := range a.Endpoints {
-			eps = append(eps, map[string]any{"name": e.Name, "url": e.URL})
-		}
-		audits = append(audits, map[string]any{
+		entry := map[string]any{
 			"lease_id": a.LeaseID, "provider_id": a.ProviderID, "content_id": a.ContentID, "endpoint_index": a.EndpointIndex,
-			"manifest_path": a.ManifestPath, "endpoints": eps, "mode": string(a.Mode),
-		})
+			"manifest_path": a.ManifestPath, "mode": string(a.Mode),
+		}
+		if a.CapabilityManifestPath != "" {
+			entry["capability_manifest_path"] = a.CapabilityManifestPath
+		} else {
+			var eps []any
+			for _, e := range a.Endpoints {
+				eps = append(eps, map[string]any{"name": e.Name, "url": e.URL})
+			}
+			entry["endpoints"] = eps
+		}
+		audits = append(audits, entry)
 	}
 	doc := map[string]any{
 		"chain_rpc": chainRPC, "ca_file": h.cfg.CAFile, "store_root": h.cfg.StoreRoot, "allowlist": allow, "audits": audits,
@@ -901,6 +967,7 @@ func TestSignAndStatusKeepToTheirResources(t *testing.T) {
 	h.node.Time = now
 	h.add(auditSpec{lease: "l1", provider: "p1", content: "c1"})
 	h.add(auditSpec{lease: "l2", provider: "p1", content: "c2", corrupt: true})
+	h.bind()
 	for _, l := range h.node.Leases {
 		l.DeadlineUnixSeconds = now + 7200
 	}
@@ -951,6 +1018,7 @@ func TestCommandsAgainstTheFakeNode(t *testing.T) {
 	h := newHarness(t)
 	h.add(auditSpec{lease: "l1", provider: "p1", content: "c1"})
 	h.add(auditSpec{lease: "l2", provider: "p1", content: "c2", corrupt: true})
+	h.bind()
 	srv := chaintest.Serve(t, h.node)
 
 	code, stdout, stderr := cliRun(t, "run", "--config", h.configFile(srv.URL, h.cfg.KeyPath))
@@ -1017,5 +1085,93 @@ func TestCommandsAgainstTheFakeNode(t *testing.T) {
 	}
 	if code, _, _ := cliRun(t, "verify", "--evidence-id", signed[0].EvidenceIDs[0], "--store", filepath.Join(h.dir, "no-store"), "--node", srv.URL); code != exitError {
 		t.Fatalf("missing store root exit %d", code)
+	}
+}
+
+// TestOperatorEndpointFailIsNotSigned drives `run` as a command against the
+// fake chain served over loopback JSON-RPC, then signs its run from the same
+// configuration file (as TestCommandsAgainstTheFakeNode does), with both endpoint
+// sources in one run (N2). l1 (correct) and l2 (one corrupted byte) take
+// their endpoints from the operator's endpoints list; l3 (one corrupted
+// byte) from a capability manifest bound to the provider record. l1 is PASS,
+// l2 INCOMPLETE ENDPOINT_UNBOUND with the digest mismatch still in its
+// report, l3 FAIL. `sign` attests l1 and l3 only. Unit test: the chain is
+// chaintest and the endpoints are loopback test endpoints.
+func TestOperatorEndpointFailIsNotSigned(t *testing.T) {
+	h := newHarness(t)
+	h.add(auditSpec{lease: "l1", provider: "p1", content: "c1"})
+	operatorSrv := h.add(auditSpec{lease: "l2", provider: "p1", content: "c2", corrupt: true})
+	h.add(auditSpec{lease: "l3", provider: "p1", content: "c3", corrupt: true})
+	h.bind("l3")
+	if h.cfg.Audits[1].CapabilityManifestPath != "" || h.cfg.Audits[2].CapabilityManifestPath == "" {
+		t.Fatal("bind moved the wrong endpoints")
+	}
+	srv := chaintest.Serve(t, h.node)
+	code, stdout, stderr := cliRun(t, "run", "--config", h.configFile(srv.URL, h.cfg.KeyPath))
+	var out runOutput
+	if err := json.Unmarshal([]byte(stdout), &out); code != exitOK || err != nil || len(out.Audits) != 3 {
+		t.Fatalf("run exit %d: %s %s (%v)", code, stdout, stderr, err)
+	}
+	want := map[string]struct {
+		result  string
+		reasons []string
+		source  string
+	}{
+		"l1": {report.ResultPass, []string{}, report.EndpointSourceOperatorConfig},
+		"l2": {report.ResultIncomplete, []string{"ENDPOINT_UNBOUND", "SEGMENT_DIGEST_MISMATCH"}, report.EndpointSourceOperatorConfig},
+		"l3": {report.ResultFail, []string{"SEGMENT_DIGEST_MISMATCH"}, report.EndpointSourceCapabilityManifest},
+	}
+	evidenceOf := map[string]string{}
+	for _, ra := range out.Audits {
+		w := want[ra.LeaseID]
+		r := h.report(ra)
+		if ra.Result != w.result || !reflect.DeepEqual(append([]string{}, ra.Reasons...), w.reasons) || r.Result != w.result || r.EndpointSource != w.source {
+			t.Fatalf("%s: run %s %v, report %s %s", ra.LeaseID, ra.Result, ra.Reasons, r.Result, r.EndpointSource)
+		}
+		sum, _ := hex.DecodeString(ra.ReportSHA256)
+		evidenceOf[ra.LeaseID] = batch.EvidenceID(h.key.Address(), [32]byte(sum))
+	}
+	// The operator still sees what the server answered.
+	if r := h.report(out.Audits[1]); r.FailedSegmentCount != 1 || r.FailedSegments[0].Reason != "SEGMENT_DIGEST_MISMATCH" || operatorSrv.Requests() != 1 {
+		t.Fatalf("l2 report %+v, %d requests", r, operatorSrv.Requests())
+	}
+	// sign as the command does, with the configuration file read back; the
+	// host clock is replaced by a time inside the run's round (the command
+	// reads time.Now, and headerTime is in 2026-01-01's round).
+	cfg, err := config.Load(h.configFile(srv.URL, h.writeKeyFile()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err := loadKey(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := store.Open(cfg.StoreRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outs, err := sign(cfg, st, key, out.RunID, headerTime+30)
+	if err != nil || len(outs) != 1 {
+		t.Fatalf("sign %+v %v", outs, err)
+	}
+	signed := outs[0]
+	got := append([]string{}, signed.EvidenceIDs...)
+	wantIDs := []string{evidenceOf["l1"], evidenceOf["l3"]}
+	sort.Strings(got)
+	sort.Strings(wantIDs)
+	if !reflect.DeepEqual(got, wantIDs) {
+		t.Fatalf("signed %v, want %v (l2 %s must have no item)", got, wantIDs, evidenceOf["l2"])
+	}
+	b, _, err := batch.Load(st, signed.BatchID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range b.Items {
+		if it.Result == report.ResultFail && it.LeaseID != "l3" {
+			t.Fatalf("FAIL item for %s", it.LeaseID)
+		}
+	}
+	if _, err := st.Get(store.Envelopes, evidenceOf["l2"], ".json"); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("l2 has an envelope: %v", err)
 	}
 }

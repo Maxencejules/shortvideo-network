@@ -35,6 +35,7 @@ func sampledReport() Report {
 		ProviderID:             "p1",
 		EndpointIndex:          0,
 		EndpointNameSHA256:     sha256.Sum256([]byte("primary")),
+		EndpointSource:         EndpointSourceCapabilityManifest,
 		ExpectedManifestSHA256: sha256.Sum256([]byte("manifest")),
 		Mode:                   ModeSampledSegments,
 		SampleSeed:             seed(7),
@@ -57,6 +58,8 @@ func wholeReport() Report {
 	r.BytesRead = 1048576
 	r.Result, r.Reasons = ResultPass, nil
 	r.Limitations = nil
+	// A PASS from an endpoint the operator configured is a valid report.
+	r.EndpointSource = EndpointSourceOperatorConfig
 	return r
 }
 
@@ -244,6 +247,9 @@ func TestEncodeRejects(t *testing.T) {
 		"content version 2^53":     func(r *Report) { r.ContentVersion = 1 << 53 },
 		"endpoint index 8":         func(r *Report) { r.EndpointIndex = 8 },
 		"endpoint index -1":        func(r *Report) { r.EndpointIndex = -1 },
+		"endpoint source empty":    func(r *Report) { r.EndpointSource = "" },
+		"endpoint source unknown":  func(r *Report) { r.EndpointSource = "PROVIDER_SAID_SO" },
+		"endpoint source lower":    func(r *Report) { r.EndpointSource = "capability_manifest" },
 		"unknown mode":             func(r *Report) { r.Mode = "MERKLE" },
 		"sampled without seed":     func(r *Report) { r.SampleSeed = nil },
 		"whole with seed":          func(r *Report) { r.Mode = ModeWholePackage },
@@ -293,19 +299,23 @@ func TestParseRejects(t *testing.T) {
 		return bytes.Replace(good, []byte(old), []byte(new), 1)
 	}
 	cases := map[string][]byte{
-		"not canonical (space)":  append([]byte(" "), good...),
-		"not canonical (order)":  edit(`{"auditor_address"`, `{"zzz":1,"auditor_address"`),
-		"extra key":              edit(`"auditor_key_id"`, `"auditor_extra":"x","auditor_key_id"`),
-		"missing key":            edit(`"claim_limit":"ATTESTATION_NOT_STORAGE_PROOF",`, ``),
-		"claim limit changed":    edit(`ATTESTATION_NOT_STORAGE_PROOF`, `STORAGE_PROOF`),
-		"format changed":         edit(Format, "svn-audit-report-v1"),
-		"bytes_read as number":   edit(`"bytes_read":"65536"`, `"bytes_read":65536`),
-		"upper-case digest":      bytes.ToUpper(good),
-		"failed segment extra":   edit(`{"reason":"SEGMENT_DIGEST_MISMATCH","segment_id":"s0002"}`, `{"reason":"SEGMENT_DIGEST_MISMATCH","segment_id":"s0002","x":"y"}`),
-		"failed segment missing": edit(`{"reason":"SEGMENT_DIGEST_MISMATCH","segment_id":"s0002"}`, `{"a":"b","reason":"SEGMENT_DIGEST_MISMATCH"}`),
-		"seed removed":           edit(`"sample_seed":"0707070707070707070707070707070707070707070707070707070707070707",`, ``),
-		"oversized":              bytes.Repeat([]byte(" "), MaxBytes+1),
-		"null":                   edit(`"mode":"SAMPLED_SEGMENTS"`, `"mode":null`),
+		"not canonical (space)":   append([]byte(" "), good...),
+		"not canonical (order)":   edit(`{"auditor_address"`, `{"zzz":1,"auditor_address"`),
+		"extra key":               edit(`"auditor_key_id"`, `"auditor_extra":"x","auditor_key_id"`),
+		"missing key":             edit(`"claim_limit":"ATTESTATION_NOT_STORAGE_PROOF",`, ``),
+		"claim limit changed":     edit(`ATTESTATION_NOT_STORAGE_PROOF`, `STORAGE_PROOF`),
+		"format changed":          edit(Format, "svn-audit-report-v1"),
+		"bytes_read as number":    edit(`"bytes_read":"65536"`, `"bytes_read":65536`),
+		"upper-case digest":       bytes.ToUpper(good),
+		"failed segment extra":    edit(`{"reason":"SEGMENT_DIGEST_MISMATCH","segment_id":"s0002"}`, `{"reason":"SEGMENT_DIGEST_MISMATCH","segment_id":"s0002","x":"y"}`),
+		"failed segment missing":  edit(`{"reason":"SEGMENT_DIGEST_MISMATCH","segment_id":"s0002"}`, `{"a":"b","reason":"SEGMENT_DIGEST_MISMATCH"}`),
+		"seed removed":            edit(`"sample_seed":"0707070707070707070707070707070707070707070707070707070707070707",`, ``),
+		"endpoint source missing": edit(`"endpoint_source":"CAPABILITY_MANIFEST",`, ``),
+		"endpoint source unknown": edit(`"endpoint_source":"CAPABILITY_MANIFEST"`, `"endpoint_source":"UNBOUND"`),
+		"endpoint source null":    edit(`"endpoint_source":"CAPABILITY_MANIFEST"`, `"endpoint_source":null`),
+		"endpoint source number":  edit(`"endpoint_source":"CAPABILITY_MANIFEST"`, `"endpoint_source":1`),
+		"oversized":               bytes.Repeat([]byte(" "), MaxBytes+1),
+		"null":                    edit(`"mode":"SAMPLED_SEGMENTS"`, `"mode":null`),
 	}
 	for name, raw := range cases {
 		_, err := Parse(raw)
@@ -323,5 +333,34 @@ func TestSHA256(t *testing.T) {
 	}
 	if SHA256(encoded) != sha256.Sum256(encoded) {
 		t.Fatal("digest")
+	}
+}
+
+// TestEndpointSource: endpoint_source is required and takes exactly the two
+// values; each value round-trips through Encode and Parse with every result
+// (the report does not decide which results a source allows: classify does,
+// and batch.NewItem and review enforce it again).
+func TestEndpointSource(t *testing.T) {
+	if !slices.Contains(Keys, "endpoint_source") {
+		t.Fatal("endpoint_source is not a required key")
+	}
+	for _, source := range []string{EndpointSourceCapabilityManifest, EndpointSourceOperatorConfig} {
+		for _, r := range []Report{sampledReport(), wholeReport()} {
+			r.EndpointSource = source
+			encoded, err := Encode(r)
+			if err != nil {
+				t.Fatalf("%s %s: %v", source, r.Result, err)
+			}
+			if !bytes.Contains(encoded, []byte(`"endpoint_source":"`+source+`"`)) {
+				t.Fatalf("%s: encoded %s", source, encoded)
+			}
+			parsed, err := Parse(encoded)
+			if err != nil || parsed.EndpointSource != source || parsed.Result != r.Result {
+				t.Fatalf("%s %s: parsed %+v, %v", source, r.Result, parsed, err)
+			}
+		}
+	}
+	if EndpointSourceCapabilityManifest != "CAPABILITY_MANIFEST" || EndpointSourceOperatorConfig != "OPERATOR_CONFIG" {
+		t.Fatal("endpoint source values changed")
 	}
 }

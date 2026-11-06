@@ -55,7 +55,13 @@ this work package by the goal-09 workflow. The evidence file cites the owner's o
   DR-09-29, DR-09-30).
 - Q3 "Provider-answered only (Recommended)": a producer-side rule (package P2b), not a chain rule: `REJECTED` items are
   filed only for provider-answered wrong or missing bytes; network, TLS, DNS, timeout, and redirect failures stay off
-  chain as INCOMPLETE reports (DR-09-09). The chain cannot tell why a digest differs.
+  chain as INCOMPLETE reports (DR-09-09). The chain cannot tell why a digest differs. Under interim choice N2
+  (2026-11-06; reversible; the owner approved the orchestrator's recommendations in general terms, "go with your
+  recommendations for N1 and N2", and the N2 option was named after that approval) the producer also requires the
+  endpoint to come from a capability manifest that hashes to the provider record's committed
+  `endpoint_manifest_digest`; an operator-configured endpoint gives no FAIL
+  (INCOMPLETE `ENDPOINT_UNBOUND`, off chain), but its PASS is still signed. The chain cannot see the endpoint source
+  either (`agents/auditor/README.md`).
 - Q4 "Strict, read-time (Recommended)": rounds are 3600 s of block time (`EpochAt`), only the current round is
   accepted; evidence only for a held lease before its deadline, content not withdrawn, content id and version
   matching; `expiry_unix_seconds <= min(now + 86400, lease deadline)`; `EXPIRED` is computed at read time (a record

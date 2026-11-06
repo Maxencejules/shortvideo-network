@@ -76,7 +76,8 @@ list of each group names its intended killer tests):
   chain/x/evidence/difftest (real keepers, spec_machine.py through
   tests/difftest/spec_oracle.py).
 - auditor-net, auditor-files, auditor-cli: agents/auditor packages
-  (loopback HTTPS endpoints and a fake chain RPC in unit tests only).
+  (loopback HTTPS endpoints and a fake chain RPC in unit tests only);
+  auditor-files includes agents/auditor/report.
 - labels: agents/auditor/labels and apps/web/test/evidence-labels.test.ts.
 
 Where the mutants come from (names start with their source):
@@ -105,6 +106,22 @@ Where the mutants come from (names start with their source):
   ported anchors changed text with that round (plan-ids-d17-*-prefix-
   dropped, w1b-submit-m12-unrecorded-any-message); each mutant makes the
   same change to the new line.
+- n2-*: the interim choice N2 (2026-11-06; the owner approved the
+  recommendations in general terms and the option was named after that
+  approval): only an endpoint
+  from a capability manifest bound to the provider record gives FAIL; an
+  operator-configured endpoint's would-be FAIL is INCOMPLETE
+  ENDPOINT_UNBOUND (classify), batch.NewItem refuses such a FAIL report,
+  the reviewer reports one as RECORD_MISMATCH, the report requires
+  endpoint_source, and the producer records the audit's real source. The
+  devnet assertion of the same rule (TestDevnetAuditLifecycle phase 4b) is
+  not a mutant here: this runner never starts a validator.
+  The n2-rebuild-*, n2-submit-*, and n2-check-fail-source-* mutants cover
+  batch.CheckFailSource, which the CONFLICT rebuild and submit run on
+  stored items that NewItem never saw (a batch signed before the field).
+  plan-producer-pass-fail-digest-swapped was re-ported with that round: the
+  FAIL case of NewItem now checks endpoint_source before its digest line,
+  so the mutant swaps the two digest lines with two edits.
 This runner re-runs all of them; its own output is the evidence, not the
 scratch logs.
 """
@@ -226,7 +243,11 @@ AUDITOR_FILES_TESTS = (
     "TestRoundOpen", "TestCheckLease", "TestCheckContent", "TestBuildOneBatchPerProvider",
     "TestSignVerifiesWithTheChainCheck", "TestEnvelopesAreTheSignedEnvelopes", "TestPersistAndLoad",
     "TestRebuild", "TestRunFormat", "TestSummaryFormat", "TestProducerMatchesChainSignVectors",
-    "TestGoldenEnvelopeFixtures",
+    "TestGoldenEnvelopeFixtures", "TestNewItemFailNeedsABoundEndpoint", "TestCheckFailSource",
+    # agents/auditor/report
+    "TestEncodeIsCanonicalAndRoundTrips", "TestGoldenReports", "TestWorstCaseFitsTheBound",
+    "TestFieldNamesAvoidForbiddenPatterns", "TestReportCarriesNoNameURLOrKey", "TestEncodeRejects",
+    "TestParseRejects", "TestSHA256", "TestEndpointSource", "TestReportSeeds", "FuzzReportParse",
 )
 
 AUDITOR_CLI_TESTS = (
@@ -237,11 +258,12 @@ AUDITOR_CLI_TESTS = (
     "TestEmptySampleStillVetsEndpoint", "TestCapabilityManifestEndpoint", "TestReportLimitations",
     "TestRunSignSubmitReviewUnit", "TestSignRefusals", "TestCLIUsageAndKeygen",
     "TestSignAndStatusKeepToTheirResources", "TestCommandsAgainstTheFakeNode",
-    "TestNoInsecureTLSOrProxyInSource", "TestFetchtestOnlyInTests", "TestTestSeamOnlySetInTests",
+    "TestOperatorEndpointFailIsNotSigned", "TestNoInsecureTLSOrProxyInSource", "TestFetchtestOnlyInTests", "TestTestSeamOnlySetInTests",
     # agents/auditor/classify
     "TestEveryFetchKindIsMapped", "TestEveryPolicyRuleIsMapped", "TestEveryVerifyStateIsMapped",
     "TestEveryReasonHasAResult", "TestFailReasonsAreTheRuling", "TestOutcomeTable",
     "TestRangeOutcomeTable", "TestObservation", "TestFailedSegmentsAreBounded", "TestReasons",
+    "TestEndpointSourceRule",
     # agents/auditor/chainclient
     "TestAcknowledgementIsNotCommit", "TestCommittedResultIsReadBack", "TestDifferentRecordIsIDTaken",
     "TestRetryQueriesBeforeResign", "TestReplayLeadsToANewBusinessID", "TestStaleEpochIsWarnedAndFails",
@@ -249,12 +271,13 @@ AUDITOR_CLI_TESTS = (
     "TestRebroadcastWhileWaitingStaysSubmitted", "TestUnrecordedSubmissionIsQueried",
     "TestStoredSubmissionMustCarryItsBatch", "TestUnrecordedRetryKeepsItsBusinessID",
     "TestSquattedBusinessIDsDoNotBlockTheBatch", "TestLostBroadcastAnswerIsSubmitted",
-    "TestBatchFailureIsolation", "TestBuildTx", "TestReads", "TestSVNCode", "TestHTTPClient",
-    "TestChaintestOnlyInTests",
+    "TestBatchFailureIsolation", "TestOperatorFailIsNeitherBroadcastNorResigned", "TestBuildTx",
+    "TestReads", "TestSVNCode", "TestHTTPClient", "TestChaintestOnlyInTests",
     # agents/auditor/review
     "TestConsistentPassAndFail", "TestNotOnChainOnlyFromANode", "TestPayloadUnavailable",
     "TestChecksumMismatch", "TestReportInvalid", "TestSignatureInvalid", "TestEnvelopeMismatch",
     "TestRecordMismatch", "TestSelfConsistentFalseReportIsConsistent", "TestIndexFallback",
+    "TestSignedOperatorFailIsRecordMismatch",
 )
 
 LABEL_TESTS = (
@@ -307,7 +330,10 @@ COMMANDS: dict[str, Command] = {
         AUDITOR_NET_TESTS,
     ),
     AUD_FILES: Command(
-        ("./agents/auditor/verify/", "./agents/auditor/store/", "./agents/auditor/batch/"),
+        (
+            "./agents/auditor/verify/", "./agents/auditor/store/", "./agents/auditor/batch/",
+            "./agents/auditor/report/",
+        ),
         AUDITOR_FILES_TESTS,
     ),
     AUD_CLI: Command(
@@ -369,6 +395,8 @@ CLASSIFY = AUD + "classify/classify.go"
 MAIN = AUD + "main.go"
 SUBMIT = AUD + "chainclient/submit.go"
 REVIEW = AUD + "review/review.go"
+REPORT = AUD + "report/report.go"
+BFILES = AUD + "batch/files.go"
 LJSON = AUD + "labels/evidence-labels.json"
 LRULES = AUD + "labels/testdata/label-rules.json"
 LGO = AUD + "labels/labels.go"
@@ -1032,10 +1060,15 @@ MUTANTS: list[Mutant] = [
         "\tif r == nil {\n\t\tr = rand.Reader\n\t}\n",
         "\tif r == nil {\n\t\t_ = rand.Reader\n\t\treturn [SeedBytes]byte{7}, nil\n\t}\n",
         "every audit draws a fresh sample seed"),
-    one("plan-producer-pass-fail-digest-swapped", AUD_FILES, BATCH,
-        "\t\tit.Observation = a.ManifestSHA256\n\tcase report.ResultFail:\n\t\tit.Observation = sum\n",
-        "\t\tit.Observation = sum\n\tcase report.ResultFail:\n\t\tit.Observation = a.ManifestSHA256\n",
-        "PASS reports the manifest digest and FAIL the report's SHA-256"),
+    Mutant(
+        "plan-producer-pass-fail-digest-swapped", AUD_FILES,
+        (
+            Edit(BATCH, "\t\tit.Observation = a.ManifestSHA256\n\tcase report.ResultFail:\n",
+                 "\t\tit.Observation = sum\n\tcase report.ResultFail:\n"),
+            Edit(BATCH, "\t\tit.Observation = sum\n\tdefault:", "\t\tit.Observation = a.ManifestSHA256\n\tdefault:"),
+        ),
+        "PASS reports the manifest digest and FAIL the report's SHA-256",
+    ),
     one("plan-producer-epoch-guard-off", AUD_FILES, BATCH,
         "\tif headerTime >= end || now >= end {",
         "\tif false && (headerTime >= end || now >= end) {",
@@ -1074,6 +1107,79 @@ MUTANTS: list[Mutant] = [
         ),
         "the auditor attestation mode text keeps 'It is not proof of storage.' in both catalogs",
     ),
+    # ---------------------------------------------------------------- N2: endpoint source (2026-11-06)
+    one("n2-classify-ignores-endpoint-source", AUD_CLI, CLASSIFY,
+        "\tif result == Fail && source != CapabilityManifest {",
+        "\tif false && result == Fail && source != CapabilityManifest {",
+        "an operator-configured endpoint's would-be FAIL is INCOMPLETE ENDPOINT_UNBOUND (N2)"),
+    one("n2-classify-unbound-drops-provider-reasons", AUD_CLI, CLASSIFY,
+        "\t\tif !set[EndpointUnbound] {\n\t\t\ts.Reasons = append(s.Reasons, string(EndpointUnbound))\n",
+        "\t\tif !set[EndpointUnbound] {\n\t\t\ts.Reasons = []string{string(EndpointUnbound)}\n",
+        "ENDPOINT_UNBOUND keeps the provider-answered reasons beside it (N2)"),
+    one("n2-newitem-accepts-operator-fail", AUD_FILES, BATCH,
+        "\t\tif r.EndpointSource != report.EndpointSourceCapabilityManifest {\n\t\t\treturn Item{}, fmt.Errorf(",
+        "\t\tif false && r.EndpointSource != report.EndpointSourceCapabilityManifest {\n\t\t\treturn Item{}, fmt.Errorf(",
+        "batch.NewItem refuses a FAIL report whose endpoint_source is not CAPABILITY_MANIFEST (N2)"),
+    one("n2-review-ignores-endpoint-source", AUD_CLI, REVIEW,
+        "\t\tif r.EndpointSource != report.EndpointSourceCapabilityManifest {",
+        "\t\tif false && r.EndpointSource != report.EndpointSourceCapabilityManifest {",
+        "the reviewer reports a signed FAIL item of an operator-configured endpoint as RECORD_MISMATCH (N2)"),
+    one("n2-report-any-endpoint-source", AUD_FILES, REPORT,
+        "\tif r.EndpointSource != EndpointSourceCapabilityManifest && r.EndpointSource != EndpointSourceOperatorConfig {",
+        "\tif false {",
+        "endpoint_source takes exactly CAPABILITY_MANIFEST or OPERATOR_CONFIG"),
+    Mutant(
+        "n2-report-parse-accepts-missing-endpoint-source", AUD_FILES,
+        (
+            Edit(REPORT, "\tif r.EndpointSource != EndpointSourceCapabilityManifest && r.EndpointSource != EndpointSourceOperatorConfig {",
+                 '\tif r.EndpointSource != "" && r.EndpointSource != EndpointSourceCapabilityManifest && '
+                 "r.EndpointSource != EndpointSourceOperatorConfig {"),
+            Edit(REPORT, '\t\t"endpoint_source":          r.EndpointSource,\n', ""),
+            Edit(REPORT, "\tif r.SampleSeed != nil {\n\t\to[SampledKey]",
+                 '\tif r.EndpointSource != "" {\n\t\to["endpoint_source"] = r.EndpointSource\n\t}\n'
+                 "\tif r.SampleSeed != nil {\n\t\to[SampledKey]"),
+            Edit(REPORT, '\t"endpoint_source", "expected_manifest_sha256",', '\t"expected_manifest_sha256",'),
+            Edit(REPORT, "\tif _, ok := o[SampledKey]; ok {\n\t\twant = append(want, SampledKey)\n\t}\n",
+                 "\tif _, ok := o[SampledKey]; ok {\n\t\twant = append(want, SampledKey)\n\t}\n"
+                 '\tif _, ok := o["endpoint_source"]; ok {\n\t\twant = append(want, "endpoint_source")\n\t}\n'),
+            Edit(REPORT, '\t\tEndpointSource:         rd.str("endpoint_source"),\n',
+                 '\t\tEndpointSource:         func() string { v, _ := o["endpoint_source"].(string); return v }(),\n'),
+        ),
+        "endpoint_source is a required report key: Parse refuses a report without it",
+    ),
+    one("n2-producer-source-always-manifest", AUD_CLI, MAIN,
+        "\tif a.CapabilityManifestPath != \"\" {\n\t\treturn classify.CapabilityManifest\n\t}\n\treturn classify.OperatorConfig\n",
+        "\treturn classify.CapabilityManifest\n",
+        "the producer classifies and records an audit with its real endpoint source"),
+    one("n2-producer-report-source-from-config", AUD_CLI, MAIN,
+        "EndpointSource: string(s.EndpointSource), Mode: string(w.a.Mode),",
+        "EndpointSource: report.EndpointSourceCapabilityManifest, Mode: string(w.a.Mode),",
+        "the report records the source the audit was classified with"),
+    one("n2-producer-capability-invalid-records-operator", AUD_CLI, MAIN,
+        "\tif reason != \"\" {\n\t\treturn w.write(classify.Reasons(source, reason), nil)\n\t}\n\tw.endpointName = endpoint.Name\n",
+        "\tif reason != \"\" {\n\t\treturn w.write(classify.Reasons(classify.OperatorConfig, reason), nil)\n\t}\n"
+        "\tw.endpointName = endpoint.Name\n",
+        "an audit whose capability manifest fails the check still records CAPABILITY_MANIFEST"),
+    one("n2-rebuild-resigns-operator-fail", AUD_CLI, SUBMIT,
+        "\t\tif batch.CheckFailSource(s.Store, it) != nil {",
+        "\t\tif false && batch.CheckFailSource(s.Store, it) != nil {",
+        "the CONFLICT rebuild drops a stored FAIL item whose report is not CAPABILITY_MANIFEST"),
+    one("n2-submit-broadcasts-operator-fail", AUD_CLI, SUBMIT,
+        "\t\tif err := batch.CheckFailSources(s.Store, b); err != nil {",
+        "\t\tif err := batch.CheckFailSources(s.Store, b); false && err != nil {",
+        "submit refuses a stored batch with a FAIL item whose report is not CAPABILITY_MANIFEST"),
+    one("n2-check-fail-source-trusts-summary-result", AUD_FILES, BFILES,
+        "\tif it.Result != report.ResultFail && it.Observation != it.ReportSHA256 {",
+        "\tif it.Result != report.ResultFail {",
+        "an item whose observation is its report digest is checked as FAIL whatever its summary says"),
+    one("n2-check-fail-source-ignores-source", AUD_FILES, BFILES,
+        "\tif r.Result != report.ResultFail || r.EndpointSource != report.EndpointSourceCapabilityManifest {",
+        "\tif r.Result != report.ResultFail {",
+        "a stored FAIL item needs a CAPABILITY_MANIFEST report"),
+    one("n2-check-fail-source-ignores-result", AUD_FILES, BFILES,
+        "\tif r.Result != report.ResultFail || r.EndpointSource != report.EndpointSourceCapabilityManifest {",
+        "\tif r.EndpointSource != report.EndpointSourceCapabilityManifest {",
+        "a stored FAIL item needs a FAIL report"),
 ]
 
 BUILD_FAILURE = re.compile(r"\[(build|setup) failed\]|^# \S+$|cannot find package|undefined: ", re.M)

@@ -59,15 +59,22 @@ func lease(id, provider, content string, deadline int64) *leasesv1.Lease {
 	}
 }
 
-// reportBytes is a canonical report of one audit by the key of label.
+// reportBytes is a canonical report of one audit by the key of label, of
+// an endpoint from a capability manifest.
 func reportBytes(t testing.TB, label, leaseID, provider, content, result string, started int64) []byte {
+	t.Helper()
+	return reportFrom(t, report.EndpointSourceCapabilityManifest, label, leaseID, provider, content, result, started)
+}
+
+// reportFrom is reportBytes with the given endpoint_source.
+func reportFrom(t testing.TB, source, label, leaseID, provider, content, result string, started int64) []byte {
 	t.Helper()
 	r := report.Report{
 		AuditorKeyID: "key-" + label, AuditorAddress: hex.EncodeToString(testKey(t, label).Address()),
 		LeaseID: leaseID, ContentID: content, ContentVersion: 1, ProviderID: provider, EndpointIndex: 0,
-		EndpointNameSHA256: sha256.Sum256([]byte("loopback test endpoint")), ExpectedManifestSHA256: manifestOf(content),
-		Mode: report.ModeWholePackage, CheckedSegments: 4, StartedUnixSeconds: started, FinishedUnixSeconds: started + 1,
-		Result: result, Limitations: []string{"Auditors can lie."},
+		EndpointNameSHA256: sha256.Sum256([]byte("loopback test endpoint")), EndpointSource: source,
+		ExpectedManifestSHA256: manifestOf(content), Mode: report.ModeWholePackage, CheckedSegments: 4,
+		StartedUnixSeconds: started, FinishedUnixSeconds: started + 1, Result: result, Limitations: []string{"Auditors can lie."},
 	}
 	switch result {
 	case report.ResultFail:
@@ -190,6 +197,34 @@ func TestNewItemDigests(t *testing.T) {
 	}
 	if _, err := NewItem(p, Audit{Report: []byte("{}")}); !errors.Is(err, report.ErrInvalid) {
 		t.Fatalf("invalid report: %v", err)
+	}
+}
+
+// TestNewItemFailNeedsABoundEndpoint (N2): a FAIL report is signed only when
+// its endpoint came from a capability manifest bound to the provider record.
+// A FAIL report of an operator-configured endpoint, which classify never
+// produces, is ErrIneligible; a PASS of one is still eligible (the
+// documented asymmetry).
+func TestNewItemFailNeedsABoundEndpoint(t *testing.T) {
+	p := plan(t, keyLabel)
+	audit := func(source, result string) Audit {
+		return Audit{Report: reportFrom(t, source, keyLabel, "l1", "p1", "c1", result, headerTime), Deadline: headerTime + 7200, ManifestSHA256: manifestOf("c1")}
+	}
+	if _, err := NewItem(p, audit(report.EndpointSourceOperatorConfig, report.ResultFail)); !errors.Is(err, ErrIneligible) ||
+		!strings.Contains(err.Error(), "endpoint_source") {
+		t.Fatalf("operator-config FAIL: %v", err)
+	}
+	a := audit(report.EndpointSourceCapabilityManifest, report.ResultFail)
+	fail, err := NewItem(p, a)
+	if err != nil || fail.Result != report.ResultFail || fail.Observation != sha256.Sum256(a.Report) {
+		t.Fatalf("capability-manifest FAIL: %+v %v", fail, err)
+	}
+	pass, err := NewItem(p, audit(report.EndpointSourceOperatorConfig, report.ResultPass))
+	if err != nil || pass.Result != report.ResultPass || pass.Observation != manifestOf("c1") {
+		t.Fatalf("operator-config PASS: %+v %v", pass, err)
+	}
+	if _, err := NewItem(p, audit(report.EndpointSourceOperatorConfig, report.ResultIncomplete)); !errors.Is(err, ErrIneligible) {
+		t.Fatalf("operator-config INCOMPLETE: %v", err)
 	}
 }
 
@@ -504,6 +539,86 @@ func TestRebuild(t *testing.T) {
 	none, dropped, err := Rebuild(b, func(Item) bool { return false })
 	if err != nil || none != nil || len(dropped) != 2 {
 		t.Fatalf("all dropped: %v %v", none, err)
+	}
+}
+
+// TestCheckFailSource (N2): the paths that re-sign or broadcast stored items
+// without NewItem read each FAIL item's stored report. A FAIL item passes
+// only when its report is stored, hashes to its digest, parses, is FAIL, and
+// says CAPABILITY_MANIFEST; the error names the evidence id. An item whose
+// observation is its report digest counts as FAIL whatever its summary
+// result says. A PASS item is not read.
+func TestCheckFailSource(t *testing.T) {
+	p := plan(t, keyLabel)
+	st, err := store.Open(filepath.Join(t.TempDir(), "store"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// stored builds the item NewItem would build for raw, without its
+	// endpoint check, and stores raw unless missing.
+	stored := func(raw []byte, result string, missing bool) Item {
+		t.Helper()
+		sum := sha256.Sum256(raw)
+		if !missing {
+			if _, err := st.PutReport(raw); err != nil {
+				t.Fatal(err)
+			}
+		}
+		it := Item{EvidenceID: EvidenceID(p.Signer, sum), ProviderID: "p1", LeaseID: "l1", ContentID: "c1", ContentVersion: 1,
+			Result: result, ReportSHA256: sum, Observation: sum, Expiry: headerTime + 7200}
+		if result == report.ResultPass {
+			it.Observation = manifestOf("c1")
+		}
+		return it
+	}
+	manifestFail := reportFrom(t, report.EndpointSourceCapabilityManifest, keyLabel, "l1", "p1", "c1", report.ResultFail, headerTime)
+	operatorFail := reportFrom(t, report.EndpointSourceOperatorConfig, keyLabel, "l1", "p1", "c1", report.ResultFail, headerTime+1)
+	operatorPass := reportFrom(t, report.EndpointSourceOperatorConfig, keyLabel, "l1", "p1", "c1", report.ResultPass, headerTime+2)
+	manifestIncomplete := reportFrom(t, report.EndpointSourceCapabilityManifest, keyLabel, "l1", "p1", "c1", report.ResultIncomplete, headerTime+3)
+	// The store is shared by the cases, so a report that must be missing
+	// has bytes no other case stores.
+	unstoredFail := reportFrom(t, report.EndpointSourceCapabilityManifest, keyLabel, "l1", "p1", "c1", report.ResultFail, headerTime+5)
+	unstoredPass := reportFrom(t, report.EndpointSourceOperatorConfig, keyLabel, "l1", "p1", "c1", report.ResultPass, headerTime+6)
+	field := `"endpoint_source":"CAPABILITY_MANIFEST",`
+	if bytes.Count(manifestFail, []byte(field)) != 1 {
+		t.Fatalf("report text has no %s", field)
+	}
+	// A report written before the field existed no longer parses.
+	beforeN2 := bytes.Replace(reportFrom(t, report.EndpointSourceCapabilityManifest, keyLabel, "l1", "p1", "c1", report.ResultFail, headerTime+4), []byte(field), nil, 1)
+	relabelled := stored(operatorFail, report.ResultPass, false)
+	relabelled.Observation = relabelled.ReportSHA256
+	for name, c := range map[string]struct {
+		it   Item
+		want string
+	}{
+		"manifest FAIL":                     {stored(manifestFail, report.ResultFail, false), ""},
+		"operator PASS":                     {stored(operatorPass, report.ResultPass, false), ""},
+		"PASS whose report is not stored":   {stored(unstoredPass, report.ResultPass, true), ""},
+		"operator FAIL":                     {stored(operatorFail, report.ResultFail, false), "endpoint_source OPERATOR_CONFIG"},
+		"FAIL whose report is not stored":   {stored(unstoredFail, report.ResultFail, true), "report"},
+		"FAIL report written before N2":     {stored(beforeN2, report.ResultFail, false), "report"},
+		"FAIL item of an INCOMPLETE report": {stored(manifestIncomplete, report.ResultFail, false), "report result INCOMPLETE"},
+		"operator FAIL labelled PASS":       {relabelled, "endpoint_source OPERATOR_CONFIG"},
+	} {
+		err := CheckFailSource(st, c.it)
+		if c.want == "" {
+			if err != nil {
+				t.Fatalf("%s: %v", name, err)
+			}
+			continue
+		}
+		if !errors.Is(err, ErrIneligible) || !strings.Contains(err.Error(), c.it.EvidenceID) || !strings.Contains(err.Error(), c.want) {
+			t.Fatalf("%s: %v", name, err)
+		}
+	}
+	ok := &Batch{Items: []Item{stored(manifestFail, report.ResultFail, false), stored(operatorPass, report.ResultPass, false)}}
+	if err := CheckFailSources(st, ok); err != nil {
+		t.Fatalf("batch of a manifest FAIL and an operator PASS: %v", err)
+	}
+	bad := stored(operatorFail, report.ResultFail, false)
+	ok.Items = append(ok.Items, bad)
+	if err := CheckFailSources(st, ok); !errors.Is(err, ErrIneligible) || !strings.Contains(err.Error(), bad.EvidenceID) {
+		t.Fatalf("batch with an operator FAIL: %v", err)
 	}
 }
 

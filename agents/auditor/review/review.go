@@ -24,7 +24,11 @@
 //     evidence.AuditEnvelope of the stored batch, or from the envelope
 //     derived from the chain record
 //  7. RECORD_MISMATCH: lease, content, version, kind, digest, epoch,
-//     expiry, or result differ between the batch or report and the record
+//     expiry, or result differ between the batch or report and the record,
+//     or the report is one the producer never attests: an INCOMPLETE
+//     report, or a FAIL report whose endpoint_source is not
+//     CAPABILITY_MANIFEST (N2: an endpoint the provider account did not
+//     declare)
 //  8. CONSISTENT
 //
 // CONSISTENT means the stored payload is the one an admitted key signed
@@ -100,7 +104,12 @@ type Result struct {
 	State string `json:"state"`
 	// ReportResult is the stored report's result, "" when not read.
 	ReportResult string `json:"report_result"`
-	ClaimLimit   string `json:"claim_limit"`
+	// ReportEndpointSource is the stored report's endpoint_source
+	// (CAPABILITY_MANIFEST or OPERATOR_CONFIG), "" when not read. A PASS
+	// from OPERATOR_CONFIG reviews CONSISTENT: its endpoint was not bound to
+	// the provider.
+	ReportEndpointSource string `json:"report_endpoint_source"`
+	ClaimLimit           string `json:"claim_limit"`
 	// ModeLabel and StateLabel come from the label catalog for the record's
 	// kind and reported state; Limitations are the catalog's limitations.
 	ModeLabel   string   `json:"mode_label"`
@@ -189,7 +198,7 @@ func Review(in Input) (Result, error) {
 	if err != nil {
 		return verdict(res, ReportInvalid, "the stored report is not a canonical report"), nil
 	}
-	res.ReportResult = r.Result
+	res.ReportResult, res.ReportEndpointSource = r.Result, r.EndpointSource
 	msg := &evidencev1.MsgSubmitAuditBatch{}
 	if err := proto.Unmarshal(p.msg, msg); err != nil {
 		return verdict(res, SignatureInvalid, "the stored batch does not decode"), nil
@@ -371,6 +380,11 @@ func recordMismatch(it *evidencev1.EvidenceItem, r report.Report, rec *evidencev
 	case report.ResultFail:
 		if !bytes.Equal(d.GetValue(), sum[:]) || rec.GetState() != evidencev1.EvidenceState_EVIDENCE_STATE_REJECTED {
 			return "a FAIL report needs a REJECTED record of the report's SHA-256"
+		}
+		if r.EndpointSource != report.EndpointSourceCapabilityManifest {
+			return "a FAIL report whose endpoint_source is not " + report.EndpointSourceCapabilityManifest +
+				" is never attested: the endpoint was not declared by the provider account" +
+				" (no capability manifest bound to its committed endpoint_manifest_digest)"
 		}
 	default:
 		return "an INCOMPLETE report is never attested"

@@ -284,10 +284,21 @@ func (p *producer) run(ctx context.Context) (runOutput, error) {
 	}, nil
 }
 
+// endpointSource is where audit a takes its endpoint from: a capability
+// manifest file (checked against the provider record before any request,
+// endpoint) or the operator's endpoints list. Only CapabilityManifest
+// allows FAIL (classify, N2).
+func endpointSource(a config.Audit) classify.Source {
+	if a.CapabilityManifestPath != "" {
+		return classify.CapabilityManifest
+	}
+	return classify.OperatorConfig
+}
+
 // incomplete is a run entry without a report: no held lease was read, so
 // there is no content version or manifest digest to describe.
 func incomplete(a config.Audit, reasons ...classify.Reason) batch.RunAudit {
-	s := classify.Reasons(reasons...)
+	s := classify.Reasons(endpointSource(a), reasons...)
 	return batch.RunAudit{
 		LeaseID: a.LeaseID, ProviderID: a.ProviderID, ContentID: a.ContentID,
 		Result: s.Result, Reasons: s.Reasons,
@@ -299,10 +310,13 @@ func incomplete(a config.Audit, reasons ...classify.Reason) batch.RunAudit {
 // content's state, the capability manifest, and the media manifest. The
 // endpoint is opened, and its host name resolved, only after them
 // (lazySession). Nothing is resolved or requested when one of them fails.
+// Every classification of the audit takes its endpoint source, and the
+// report records the source the summary was classified with.
 func (p *producer) audit(ctx context.Context, a config.Audit, header chainclient.Header) (batch.RunAudit, error) {
 	if ctx.Err() != nil {
 		return incomplete(a, classify.RunBudgetExhausted), nil
 	}
+	source := endpointSource(a)
 	started := p.now()
 	lease, found, err := p.chain.HeldLease(ctx, a.ProviderID, a.ContentID)
 	if err != nil {
@@ -322,26 +336,26 @@ func (p *producer) audit(ctx context.Context, a config.Audit, header chainclient
 		w.endpointName = a.Endpoints[a.EndpointIndex].Name
 	}
 	if reason != "" {
-		return w.write(classify.Reasons(reason), nil)
+		return w.write(classify.Reasons(source, reason), nil)
 	}
 	content, found, err := p.chain.Content(ctx, a.ContentID, lease.GetContentVersion())
 	if err != nil {
-		return w.write(classify.Reasons(classify.ChainReadFailed), nil)
+		return w.write(classify.Reasons(source, classify.ChainReadFailed), nil)
 	}
 	if reason := batch.CheckContent(content, found, lease); reason != "" {
-		return w.write(classify.Reasons(reason), nil)
+		return w.write(classify.Reasons(source, reason), nil)
 	}
 	endpoint, reason, err := p.endpoint(ctx, a)
 	if err != nil {
 		return batch.RunAudit{}, err
 	}
 	if reason != "" {
-		return w.write(classify.Reasons(reason), nil)
+		return w.write(classify.Reasons(source, reason), nil)
 	}
 	w.endpointName = endpoint.Name
 	manifest, err := verify.ReadManifestFile(a.ManifestPath)
 	if err != nil {
-		return w.write(classify.Reasons(classify.InputManifestInvalid), nil)
+		return w.write(classify.Reasons(source, classify.InputManifestInvalid), nil)
 	}
 	session := &lazySession{fetcher: p.fetcher, providerID: a.ProviderID, url: endpoint.URL}
 	defer session.Close()
@@ -355,7 +369,7 @@ func (p *producer) audit(ctx context.Context, a config.Audit, header chainclient
 	for attempt := 0; ; attempt++ {
 		obs, err := verify.Audit(ctx, session, req)
 		if err != nil {
-			return w.write(classify.Reasons(classify.ConfigInvalid), nil)
+			return w.write(classify.Reasons(source, classify.ConfigInvalid), nil)
 		}
 		if obs.Input == verify.InputOK {
 			// An audit that made no request (every sampled segment is
@@ -363,15 +377,16 @@ func (p *producer) audit(ctx context.Context, a config.Audit, header chainclient
 			session.open(ctx)
 		}
 		if out := session.refused; out != nil {
-			return w.write(classify.Reasons(classify.Outcome(*out).Reason), &obs)
+			return w.write(classify.Reasons(source, classify.Outcome(*out).Reason), &obs)
 		}
-		summary := classify.Observation(obs)
+		summary := classify.Observation(obs, source)
 		if summary.Retry && attempt < p.cfg.StatusRetries {
-			// A 4xx or 5xx other than 404 and 410 is FAIL only if it is
-			// still the answer after every retry. A run budget that ends
-			// first leaves the audit INCOMPLETE.
+			// A 4xx or 5xx other than 404 and 410 is FAIL (INCOMPLETE
+			// ENDPOINT_UNBOUND for an operator-configured endpoint) only if
+			// it is still the answer after every retry. A run budget that
+			// ends first leaves the audit INCOMPLETE.
 			if !p.sleep(ctx, p.backoff<<attempt) {
-				return w.write(classify.Reasons(classify.RunBudgetExhausted), &obs)
+				return w.write(classify.Reasons(source, classify.RunBudgetExhausted), &obs)
 			}
 			continue
 		}
@@ -503,14 +518,15 @@ type writer struct {
 // write encodes and stores the report. obs is nil when the audit ended
 // before verify.Audit ran. A sampled report whose audit ended before
 // selection records a fresh seed that selected nothing (the report format
-// requires one).
+// requires one). endpoint_source is the source s was classified with.
 func (w *writer) write(s classify.Summary, obs *verify.Observation) (batch.RunAudit, error) {
 	r := report.Report{
 		AuditorKeyID: w.p.cfg.KeyID, AuditorAddress: hex.EncodeToString(w.p.cfg.AuditorAddress),
 		LeaseID: w.a.LeaseID, ContentID: w.a.ContentID, ContentVersion: w.lease.GetContentVersion(),
 		ProviderID: w.a.ProviderID, EndpointIndex: w.a.EndpointIndex,
 		EndpointNameSHA256: sha256.Sum256([]byte(w.endpointName)), ExpectedManifestSHA256: w.manifest,
-		Mode: string(w.a.Mode), CheckedSegments: s.CheckedSegments, FailedSegments: s.FailedSegments,
+		EndpointSource: string(s.EndpointSource), Mode: string(w.a.Mode),
+		CheckedSegments: s.CheckedSegments, FailedSegments: s.FailedSegments,
 		FailedSegmentCount: s.FailedSegmentCount, Result: s.Result, Reasons: s.Reasons,
 		StartedUnixSeconds: w.started.Unix(), FinishedUnixSeconds: max(w.p.now().Unix(), w.started.Unix()),
 	}

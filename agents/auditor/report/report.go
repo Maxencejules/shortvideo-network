@@ -15,6 +15,17 @@
 // media byte, or personal data. The endpoint is named by its index and the
 // SHA-256 of its name; the provider's text is never copied. Start and finish
 // times come from the auditor host clock and are not verified by anyone.
+//
+// endpoint_source records where the audit took its endpoint from:
+// CAPABILITY_MANIFEST (a capability manifest file, checked against the
+// provider record before any request) or OPERATOR_CONFIG (an endpoint the
+// operator typed into the configuration). The field is required. It was
+// added on 2026-11-06 under the interim choice N2 without a
+// new format string: the format is interim and unreleased, and a report
+// written before the change does not parse. This package checks only that
+// the value is one of the two; which results each source allows is the
+// classify package's rule (classify), and signing and review enforce it
+// again (batch.NewItem, review).
 package report
 
 import (
@@ -67,6 +78,18 @@ const (
 	ModeSampledSegments = "SAMPLED_SEGMENTS"
 )
 
+// Endpoint sources.
+const (
+	// EndpointSourceCapabilityManifest: the endpoint is listed in a
+	// capability manifest file that names the provider and its current
+	// signing key id and hashes to the provider record's committed
+	// endpoint_manifest_digest.
+	EndpointSourceCapabilityManifest = "CAPABILITY_MANIFEST"
+	// EndpointSourceOperatorConfig: the operator typed the endpoint into
+	// the configuration; nothing binds it to the provider.
+	EndpointSourceOperatorConfig = "OPERATOR_CONFIG"
+)
+
 // FailedSegment is one segment that did not check, with its reason.
 type FailedSegment struct {
 	SegmentID string
@@ -75,14 +98,17 @@ type FailedSegment struct {
 
 // Report is one audit report.
 type Report struct {
-	AuditorKeyID           string
-	AuditorAddress         string
-	LeaseID                string
-	ContentID              string
-	ContentVersion         uint64
-	ProviderID             string
-	EndpointIndex          int
-	EndpointNameSHA256     [32]byte
+	AuditorKeyID       string
+	AuditorAddress     string
+	LeaseID            string
+	ContentID          string
+	ContentVersion     uint64
+	ProviderID         string
+	EndpointIndex      int
+	EndpointNameSHA256 [32]byte
+	// EndpointSource is EndpointSourceCapabilityManifest or
+	// EndpointSourceOperatorConfig.
+	EndpointSource         string
 	ExpectedManifestSHA256 [32]byte
 	Mode                   string
 	// SampleSeed is set for SAMPLED_SEGMENTS only.
@@ -134,6 +160,9 @@ func (r Report) validate() error {
 	}
 	if r.EndpointIndex < 0 || r.EndpointIndex > MaxEndpoint {
 		return invalid("endpoint_index must be 0 to %d", MaxEndpoint)
+	}
+	if r.EndpointSource != EndpointSourceCapabilityManifest && r.EndpointSource != EndpointSourceOperatorConfig {
+		return invalid("endpoint_source must be %s or %s", EndpointSourceCapabilityManifest, EndpointSourceOperatorConfig)
 	}
 	switch r.Mode {
 	case ModeWholePackage:
@@ -234,6 +263,7 @@ func (r Report) object() map[string]any {
 		"provider_id":              r.ProviderID,
 		"endpoint_index":           int64(r.EndpointIndex),
 		"endpoint_name_sha256":     hex.EncodeToString(r.EndpointNameSHA256[:]),
+		"endpoint_source":          r.EndpointSource,
 		"expected_manifest_sha256": hex.EncodeToString(r.ExpectedManifestSHA256[:]),
 		"mode":                     r.Mode,
 		"checked_segments":         int64(r.CheckedSegments),
@@ -271,7 +301,7 @@ func SHA256(encoded []byte) [32]byte { return sha256.Sum256(encoded) }
 var Keys = []string{
 	"auditor_address", "auditor_key_id", "bytes_read", "checked_segments", "claim_limit",
 	"content_id", "content_version", "endpoint_index", "endpoint_name_sha256",
-	"expected_manifest_sha256", "failed_segment_count", "failed_segments",
+	"endpoint_source", "expected_manifest_sha256", "failed_segment_count", "failed_segments",
 	"finished_unix_seconds", "format", "lease_id", "limitations", "mode", "provider_id",
 	"reasons", "result", "started_unix_seconds",
 }
@@ -393,6 +423,7 @@ func fromObject(o map[string]any) (Report, error) {
 		ProviderID:             rd.str("provider_id"),
 		EndpointIndex:          int(rd.num("endpoint_index")),
 		EndpointNameSHA256:     rd.digest("endpoint_name_sha256"),
+		EndpointSource:         rd.str("endpoint_source"),
 		ExpectedManifestSHA256: rd.digest("expected_manifest_sha256"),
 		Mode:                   rd.str("mode"),
 		CheckedSegments:        int(rd.num("checked_segments")),

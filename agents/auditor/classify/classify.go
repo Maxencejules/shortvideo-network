@@ -37,6 +37,30 @@
 // A FAIL reason wins over INCOMPLETE reasons in the same audit: a segment
 // received in full over the verified connection that has the wrong digest is
 // the provider's answer even when the connection was cut later.
+//
+// The endpoint must be one the provider account declared (interim choice
+// N2, 2026-11-06). Q3 names "the provider's verified server". A certificate
+// shows only that the server holds the host name; it does not show that the
+// host is the provider's. The producer takes a server's answer as the
+// provider's only when its endpoint comes from a capability manifest that
+// names the provider and its current signing key id and hashes to the
+// endpoint_manifest_digest the provider account committed on chain
+// (Source CapabilityManifest; the producer checks the manifest before any
+// request). That shows the provider account declared the endpoint, not that
+// the provider controls the host. An endpoint the operator typed into the
+// configuration (Source OperatorConfig) is bound to nothing. So Observation and Reasons, the
+// functions that decide an audit's result, take the endpoint source, and
+// every result that would be FAIL from any source other than
+// CapabilityManifest is INCOMPLETE with the added reason ENDPOINT_UNBOUND.
+// The provider-answered reasons stay in the report, so the operator still
+// sees what the server answered; the result is not FAIL, so no REJECTED
+// record follows. PASS is not changed by the source: a PASS from an
+// operator-configured endpoint is still PASS and can be signed (RECORDED on
+// chain until its expiry, at most 86400 s, PROPOSED); its report says
+// OPERATOR_CONFIG. That asymmetry is a documented residual risk.
+// batch.NewItem refuses to sign a FAIL report whose source is not
+// CAPABILITY_MANIFEST, and the reviewer reports such a signed item as
+// RECORD_MISMATCH.
 package classify
 
 import (
@@ -108,6 +132,27 @@ const (
 	RunBudgetExhausted     Reason = "RUN_BUDGET_EXHAUSTED"
 )
 
+// EndpointUnbound is added to an audit that would be FAIL when its endpoint
+// did not come from a capability manifest bound to the provider's committed
+// endpoint_manifest_digest: the endpoint was not declared by the provider
+// account, so its answer stays off chain (N2). The provider-answered reasons stay
+// beside it.
+const EndpointUnbound Reason = "ENDPOINT_UNBOUND"
+
+// Source is where an audit took its endpoint from: the report's
+// endpoint_source.
+type Source string
+
+// Endpoint sources.
+const (
+	// CapabilityManifest: a capability manifest file that names the provider
+	// and its current signing key id and hashes to the provider record's
+	// endpoint_manifest_digest. Only this source allows FAIL.
+	CapabilityManifest Source = report.EndpointSourceCapabilityManifest
+	// OperatorConfig: an endpoint the operator typed into the configuration.
+	OperatorConfig Source = report.EndpointSourceOperatorConfig
+)
+
 // Results are the report results.
 const (
 	Pass       = report.ResultPass
@@ -149,6 +194,7 @@ var Results = map[Reason]string{
 	ConfigInvalid:          Incomplete,
 	ChainReadFailed:        Incomplete,
 	RunBudgetExhausted:     Incomplete,
+	EndpointUnbound:        Incomplete,
 }
 
 // ResultOf is the result one reason gives. An unknown reason is INCOMPLETE.
@@ -275,6 +321,9 @@ func Input(state verify.InputState) Class {
 // Summary is the classification of one audit, in report fields.
 type Summary struct {
 	Result string
+	// EndpointSource is the source the audit was classified with; the
+	// report records it as endpoint_source.
+	EndpointSource Source
 	// Reasons are sorted and unique.
 	Reasons []string
 	// FailedSegments lists the first report.MaxListedFailures segments that
@@ -282,21 +331,26 @@ type Summary struct {
 	FailedSegments     []report.FailedSegment
 	FailedSegmentCount int
 	CheckedSegments    int
-	// Retry is true when the audit is FAIL only through a retryable
-	// status: the caller retries it while retries remain.
+	// Retry is true when the provider-answered failure of the audit is only
+	// a retryable status: the caller retries it while retries remain. It is
+	// decided before the endpoint-source rule, so an audit of an
+	// operator-configured endpoint is retried the same way and its
+	// HTTP_STATUS reason keeps its meaning ("still the answer after the
+	// retries"), although its result is INCOMPLETE.
 	Retry bool
 }
 
 // Reasons builds the summary of an audit that ended before any request,
-// with the given reasons (at least one). The result is the strongest of
-// the reasons' results, as in Observation.
-func Reasons(reasons ...Reason) Summary {
+// with the given reasons (at least one), for an endpoint from source. The
+// result is the strongest of the reasons' results, as in Observation, and
+// the endpoint-source rule applies the same way.
+func Reasons(source Source, reasons ...Reason) Summary {
 	s := Summary{}
 	set := map[Reason]bool{}
 	for _, r := range reasons {
 		set[r] = true
 	}
-	s.finish(set, false)
+	s.finish(set, false, source)
 	return s
 }
 
@@ -313,11 +367,13 @@ func Reasons(reasons ...Reason) Summary {
 //     segments after it
 //   - the result is FAIL if any reason is FAIL, else INCOMPLETE if any
 //     reason exists, else PASS
-func Observation(obs verify.Observation) Summary {
+//   - a FAIL for an endpoint whose source is not CapabilityManifest is
+//     INCOMPLETE, with ENDPOINT_UNBOUND added to its reasons
+func Observation(obs verify.Observation, source Source) Summary {
 	if obs.Input != verify.InputOK {
 		c := Input(obs.Input)
 		s := Summary{}
-		s.finish(map[Reason]bool{c.Reason: true}, false)
+		s.finish(map[Reason]bool{c.Reason: true}, false, source)
 		return s
 	}
 	set := map[Reason]bool{}
@@ -366,7 +422,7 @@ func Observation(obs verify.Observation) Summary {
 			s.FailedSegments = append(s.FailedSegments, report.FailedSegment{SegmentID: seg.SegmentID, Reason: string(r)})
 		}
 	}
-	s.finish(set, retry)
+	s.finish(set, retry, source)
 	return s
 }
 
@@ -383,7 +439,12 @@ func notReceived(mode verify.Mode, stop Reason, stopped bool) Reason {
 	}
 }
 
-func (s *Summary) finish(set map[Reason]bool, retry bool) {
+// finish sets the result and the sorted reasons from set, then applies the
+// endpoint-source rule: a FAIL for an endpoint that is not from a bound
+// capability manifest is INCOMPLETE ENDPOINT_UNBOUND, its other reasons
+// kept.
+func (s *Summary) finish(set map[Reason]bool, retry bool, source Source) {
+	s.EndpointSource = source
 	s.Reasons = s.Reasons[:0]
 	result := Pass
 	for r := range set {
@@ -408,8 +469,15 @@ func (s *Summary) finish(set map[Reason]bool, retry bool) {
 		s.Reasons = append(s.Reasons, string(Unclassified))
 		result = Incomplete
 	}
-	s.Result = result
 	s.Retry = result == Fail && retry
+	if result == Fail && source != CapabilityManifest {
+		if !set[EndpointUnbound] {
+			s.Reasons = append(s.Reasons, string(EndpointUnbound))
+			sort.Strings(s.Reasons)
+		}
+		result = Incomplete
+	}
+	s.Result = result
 }
 
 // String is a short description for logs.

@@ -451,7 +451,11 @@ def test_golden_envelopes_from_the_go_producer() -> None:
         for key_name in ("lease_id", "content_id", "content_version"):
             assert report[key_name] == document[key_name], key_name
         assert document["observation_sha256"] == item["observation_sha256"]
+        assert report["endpoint_source"] in ("CAPABILITY_MANIFEST", "OPERATOR_CONFIG")
         if item["result"] == "FAIL":
             assert document["observation_sha256"] == digest
+            # Only an endpoint from a capability manifest bound to the
+            # provider record gives FAIL (interim choice N2).
+            assert report["endpoint_source"] == "CAPABILITY_MANIFEST"
         else:
             assert document["observation_sha256"] == report["expected_manifest_sha256"] != digest

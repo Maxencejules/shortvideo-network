@@ -37,9 +37,15 @@ func manifestOf(contentID string) [32]byte { return sha256.Sum256([]byte("manife
 
 func reportOf(t testing.TB, key keys.Key, keyID, leaseID, content, result string) []byte {
 	t.Helper()
+	return reportFrom(t, report.EndpointSourceCapabilityManifest, key, keyID, leaseID, content, result)
+}
+
+// reportFrom is reportOf with the given endpoint_source.
+func reportFrom(t testing.TB, source string, key keys.Key, keyID, leaseID, content, result string) []byte {
+	t.Helper()
 	r := report.Report{
 		AuditorKeyID: keyID, AuditorAddress: hex.EncodeToString(key.Address()),
-		LeaseID: leaseID, ContentID: content, ContentVersion: 1, ProviderID: "p1",
+		LeaseID: leaseID, ContentID: content, ContentVersion: 1, ProviderID: "p1", EndpointSource: source,
 		ExpectedManifestSHA256: manifestOf(content), Mode: report.ModeWholePackage, CheckedSegments: 2,
 		StartedUnixSeconds: headerTime - 30, FinishedUnixSeconds: headerTime - 29, Result: result,
 	}
@@ -150,7 +156,8 @@ func reportPath(f *fixture, rec *evidencev1.EvidenceRecord) string {
 func TestConsistentPassAndFail(t *testing.T) {
 	f := build(t, "auditor-1")
 	pass := f.review(t, f.pass, node)
-	if pass.Verdict != Consistent || pass.ReportResult != "PASS" || pass.State != "RECORDED" || pass.StateLabel != "Recorded" ||
+	if pass.Verdict != Consistent || pass.ReportResult != "PASS" || pass.ReportEndpointSource != "CAPABILITY_MANIFEST" ||
+		pass.State != "RECORDED" || pass.StateLabel != "Recorded" ||
 		pass.ModeLabel != "Auditor attestation" || pass.ClaimLimit != "ATTESTATION_NOT_STORAGE_PROOF" || len(pass.Limitations) == 0 {
 		t.Fatalf("%+v", pass)
 	}
@@ -158,7 +165,7 @@ func TestConsistentPassAndFail(t *testing.T) {
 		t.Fatalf("record source %q %q", pass.RecordSource, pass.RecordSourceLabel)
 	}
 	fail := f.review(t, f.fail, Source{Kind: SourceFile, Location: "/tmp/record.json"})
-	if fail.Verdict != Consistent || fail.ReportResult != "FAIL" || fail.State != "REJECTED" ||
+	if fail.Verdict != Consistent || fail.ReportResult != "FAIL" || fail.ReportEndpointSource != "CAPABILITY_MANIFEST" || fail.State != "REJECTED" ||
 		fail.RecordSource != "FILE /tmp/record.json" || fail.RecordSourceLabel != "not read from the chain" {
 		t.Fatalf("%+v", fail)
 	}
@@ -357,6 +364,81 @@ func TestRecordMismatch(t *testing.T) {
 	if res := g.review(t, rec, node); res.Verdict != ChecksumMismatch {
 		// A REJECTED record's digest must be the report's SHA-256 first.
 		t.Fatalf("PASS report, REJECTED record: %+v", res)
+	}
+}
+
+// TestSignedOperatorFailIsRecordMismatch (N2): the producer never attests a
+// FAIL report whose endpoint_source is OPERATOR_CONFIG (classify makes it
+// INCOMPLETE and batch.NewItem refuses it). A store that holds one anyway,
+// signed into a batch built around it so that every earlier check passes,
+// reviews RECORD_MISMATCH, the verdict an attested INCOMPLETE report also
+// gets. A PASS of an operator-configured endpoint is attested and reviews
+// CONSISTENT, with its endpoint_source in the output.
+func TestSignedOperatorFailIsRecordMismatch(t *testing.T) {
+	key := testKey(t, "auditor-1")
+	keyID := "key-auditor-1"
+	st, err := store.Open(filepath.Join(t.TempDir(), "store"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := batch.Plan{Signer: key.Address(), KeyID: keyID, HeaderTime: headerTime, MaxItems: batch.MaxItems,
+		Window: batch.Window{Guard: 120, Inclusion: 60, Lifetime: 86400}}
+	failRaw := reportFrom(t, report.EndpointSourceOperatorConfig, key, keyID, "l9", "c9", report.ResultFail)
+	if _, err := batch.NewItem(p, batch.Audit{Report: failRaw, Deadline: headerTime + 7200, ManifestSHA256: manifestOf("c9")}); !errors.Is(err, batch.ErrIneligible) {
+		t.Fatalf("NewItem signed an operator-config FAIL: %v", err)
+	}
+	failSum, err := st.PutReport(failRaw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	passRaw := reportFrom(t, report.EndpointSourceOperatorConfig, key, keyID, "l8", "c8", report.ResultPass)
+	if _, err := st.PutReport(passRaw); err != nil {
+		t.Fatal(err)
+	}
+	pass, err := batch.NewItem(p, batch.Audit{Report: passRaw, Deadline: headerTime + 7200, ManifestSHA256: manifestOf("c8")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fail := batch.Item{
+		EvidenceID: batch.EvidenceID(key.Address(), failSum), ProviderID: "p1", LeaseID: "l9", ContentID: "c9", ContentVersion: 1,
+		Result: report.ResultFail, ReportSHA256: failSum, Observation: failSum, Expiry: pass.Expiry,
+	}
+	batches, err := batch.Build(p, []batch.Item{pass, fail})
+	if err != nil || len(batches) != 1 {
+		t.Fatalf("%d batches: %v", len(batches), err)
+	}
+	b := batches[0]
+	if err := batch.Sign(b, key); err != nil {
+		t.Fatal(err)
+	}
+	if err := batch.Persist(st, b, "run-operator"); err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := labels.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, it := range b.Items {
+		state := evidencev1.EvidenceState_EVIDENCE_STATE_RECORDED
+		if it.Result == report.ResultFail {
+			state = evidencev1.EvidenceState_EVIDENCE_STATE_REJECTED
+		}
+		rec := recordOf(b.Msg, i, state)
+		res, err := Review(Input{EvidenceID: rec.GetEvidenceId(), Source: node, Record: rec, Found: true, Store: st, Labels: &catalog})
+		if err != nil || res.ReportEndpointSource != "OPERATOR_CONFIG" {
+			t.Fatalf("%s: %+v %v", it.Result, res, err)
+		}
+		switch it.Result {
+		case report.ResultFail:
+			if res.Verdict != RecordMismatch || !strings.Contains(res.Detail, "endpoint_source") || res.ReportResult != "FAIL" {
+				t.Fatalf("signed operator-config FAIL: %+v", res)
+			}
+		default:
+			if res.Verdict != Consistent || res.ReportResult != "PASS" || res.State != "RECORDED" {
+				t.Fatalf("operator-config PASS: %+v", res)
+			}
+		}
+		t.Logf("%s from OPERATOR_CONFIG: %s (%s)", it.Result, res.Verdict, res.Detail)
 	}
 }
 
