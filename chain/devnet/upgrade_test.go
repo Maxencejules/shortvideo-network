@@ -1868,11 +1868,20 @@ func TestDevnetUpgradeRehearsal(t *testing.T) {
 	n.start(0, b2)
 	waitRPC(t, d.clients[0], 60*time.Second)
 	last, _, _ := abciInfo(t, d.clients[0])
-	if d.numbers[d.service.addr] == 0 {
-		t.Fatal("the service account has account number 0")
+	// The probe needs a signer whose account number is not 0: before the
+	// first commit the check state verifies signatures with account number
+	// 0, so a signer numbered 0 would pass. Account numbers follow address
+	// order and devnet keys are new on every run, so either service account
+	// may be numbered 0; at most one of them is.
+	who := d.service
+	if d.numbers[who.addr] == 0 {
+		who = d.service2
 	}
-	probe := signDevnet(t, d.enc, d.chainID, d.service.key, d.numbers[d.service.addr], d.seq[d.service.addr],
-		d.registerContent(d.service, "bid-dr-10-41", "c-dr-10-41", 1, sizeOne))
+	if d.numbers[who.addr] == 0 {
+		t.Fatal("both service accounts have account number 0")
+	}
+	probe := signDevnet(t, d.enc, d.chainID, who.key, d.numbers[who.addr], d.seq[who.addr],
+		d.registerContent(who, "bid-dr-10-41", "c-dr-10-41", 1, sizeOne))
 	space, code := checkTxCode(t, d.clients[0], probe)
 	if space != sdkerrors.RootCodespace || code != sdkerrors.ErrUnauthorized.ABCICode() {
 		t.Fatalf("CheckTx before the first commit after the load: %s/%d, want %s/%d", space, code, sdkerrors.RootCodespace, sdkerrors.ErrUnauthorized.ABCICode())
@@ -1880,7 +1889,7 @@ func TestDevnetUpgradeRehearsal(t *testing.T) {
 	if again, _, _ := abciInfo(t, d.clients[0]); again != last {
 		t.Fatalf("node 0 alone committed height %d", again)
 	}
-	fmt.Printf("phase=dr-10-41-before-commit node=0 application_height=%d check_tx=%s/%d (refused; account number %d)\n", last, space, code, d.numbers[d.service.addr])
+	fmt.Printf("phase=dr-10-41-before-commit node=0 application_height=%d check_tx=%s/%d (refused; account number %d)\n", last, space, code, d.numbers[who.addr])
 	for i := 1; i < len(n.stops); i++ {
 		n.start(i, b2)
 	}
@@ -1899,7 +1908,7 @@ func TestDevnetUpgradeRehearsal(t *testing.T) {
 	if err != nil || probeRes.check.Code != 0 || probeRes.deliver.Code != 0 {
 		t.Fatalf("the probe transaction after the commit: %v %+v", err, probeRes)
 	}
-	d.seq[d.service.addr]++
+	d.seq[who.addr]++
 	fmt.Printf("phase=dr-10-41-committed height=%d code=0 txhash=%X\n", probeRes.height, probeRes.hash)
 	n.checkHistory("restart")
 	if row := n.printHeights("h-plus-5", h+5)[h+5]; row.versionApp != rehearsal.ToAppVersion {
