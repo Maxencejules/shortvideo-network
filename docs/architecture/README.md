@@ -7,3 +7,5 @@ Goal 06's reviewer map is [authority-authorization.md](authority-authorization.m
 Goal 07's reviewer map for the provider and content registries is [registries.md](registries.md).
 
 Goal 08's reviewer map for lease lifecycle and capacity accounting (x/leases wiring, cross-module flows, app-level and devnet tests, decision requests DR-08-01 to DR-08-13) is [leases.md](leases.md).
+
+Goal 09's reviewer map for beta attestations and audit evidence (x/evidence wiring, the off-chain audit producer and reviewer, labels and limitations, the network policy, retention, app-level and devnet tests, the cryptographic-verification decision gate) is [evidence.md](evidence.md).

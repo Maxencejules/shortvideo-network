@@ -21,6 +21,7 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdked "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	chainaddress "github.com/Maxencejules/shortvideo-network/chain/address"
@@ -93,28 +94,46 @@ type Topology struct {
 }
 
 // Account is one public application account of the devnet genesis. Its
-// secp256k1 key is under accounts/<name>.hex in the home directory only.
+// key is under accounts/<name>.hex in the home directory only.
 type Account struct {
 	Name    string `json:"name"`
 	Role    string `json:"role"`
 	Address string `json:"address"`
+	// KeyType is the account key's algorithm: KeySecp256k1 or KeyEd25519.
+	KeyType string `json:"key_type"`
 }
 
-// accountSpec lists the secp256k1 application accounts Init generates, in
-// genesis order. authority and service are the Goal 05 accounts; the two
-// providers and the second service account are the Goal 07 registry demo
-// accounts; broadcaster (BROADCASTER) relays provider-signed lease
-// messages in the Goal 08 lease demo. It is not a council seat.
+// Account key algorithms.
+const (
+	KeySecp256k1 = "secp256k1"
+	KeyEd25519   = "ed25519"
+)
+
+// accountSpec lists the application accounts Init generates, in genesis
+// order. authority and service are the Goal 05 accounts; the two providers
+// and the second service account are the Goal 07 registry demo accounts;
+// broadcaster (BROADCASTER) relays provider-signed lease messages in the
+// Goal 08 lease demo. auditor-1 and auditor-2 (AUDITOR, Goal 09) have
+// ed25519 account keys: the same key signs their transactions and their
+// SVN-EVIDENCE-ATTESTATION-1 batches, whose public key must derive the
+// sending account's address (owner ruling on Q1). None of them is a
+// council seat. The two auditors are one operator on one machine, not
+// independent auditors. Two AUDITOR addresses that share their first 8
+// bytes fail app genesis validation (DR-09-30), so Init fails and leaves
+// no home; with fresh random keys that has probability about 2^-64.
 var accountSpec = []struct {
-	name string
-	role string
+	name    string
+	role    string
+	keyType string
 }{
-	{"authority", genesis.RoleAuthority},
-	{"service", genesis.RoleAdmittedService},
-	{"service-2", genesis.RoleAdmittedService},
-	{"provider-1", genesis.RoleAdmittedProvider},
-	{"provider-2", genesis.RoleAdmittedProvider},
-	{"broadcaster", genesis.RoleBroadcaster},
+	{"authority", genesis.RoleAuthority, KeySecp256k1},
+	{"service", genesis.RoleAdmittedService, KeySecp256k1},
+	{"service-2", genesis.RoleAdmittedService, KeySecp256k1},
+	{"provider-1", genesis.RoleAdmittedProvider, KeySecp256k1},
+	{"provider-2", genesis.RoleAdmittedProvider, KeySecp256k1},
+	{"broadcaster", genesis.RoleBroadcaster, KeySecp256k1},
+	{"auditor-1", genesis.RoleAuditor, KeyEd25519},
+	{"auditor-2", genesis.RoleAuditor, KeyEd25519},
 }
 
 // Seat is a public devnet council key. It is not a consensus key.
@@ -183,8 +202,14 @@ func Init(opts Options) (layout Layout, err error) {
 	}
 	accounts := make([]accountKey, len(accountSpec))
 	for i, spec := range accountSpec {
-		key := sdksecp.GenPrivKey()
-		accounts[i] = accountKey{name: spec.name, role: spec.role, key: key}
+		var key cryptotypes.PrivKey
+		switch spec.keyType {
+		case KeyEd25519:
+			key = sdked.GenPrivKey()
+		default:
+			key = sdksecp.GenPrivKey()
+		}
+		accounts[i] = accountKey{name: spec.name, role: spec.role, keyType: spec.keyType, key: key}
 		if err = writeKey(filepath.Join(opts.Home, "accounts", spec.name+".hex"), key.Bytes()); err != nil {
 			return Layout{}, err
 		}
@@ -432,9 +457,10 @@ func writeNodeConfig(p prepared, peers string) error {
 }
 
 type accountKey struct {
-	name string
-	role string
-	key  *sdksecp.PrivKey
+	name    string
+	role    string
+	keyType string
+	key     cryptotypes.PrivKey
 }
 
 func publicAccounts(accounts []accountKey) []Account {
@@ -444,6 +470,7 @@ func publicAccounts(accounts []accountKey) []Account {
 			Name:    account.name,
 			Role:    account.role,
 			Address: sdk.AccAddress(account.key.PubKey().Address()).String(),
+			KeyType: account.keyType,
 		}
 	}
 	return out

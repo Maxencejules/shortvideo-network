@@ -149,14 +149,16 @@ type Content interface {
 }
 
 // Evidence reads one evidence record for the renewal check of op_renew.
-// x/evidence (goal 09) implements it. found is false when no record exists.
+// x/evidence implements it (wired by the app since goal 09). found is false
+// when no record exists.
 type Evidence interface {
 	RenewalEvidence(ctx sdk.Context, evidenceID string) (expiry int64, expired bool, found bool)
 }
 
 // Deps are the read surfaces this module consumes. They are declared here
 // and satisfied structurally. Roles, Limits, Params, Policy, Providers, and
-// Content are required. Evidence may be nil until goal 09 wires x/evidence;
+// Content are required. Evidence may be nil (the app wires x/evidence; the
+// copy x/evidence reads leases through, and test keepers, leave it nil):
 // every evidence_id is then NOT_FOUND. Peers joins the business-id ledgers
 // of the other modules and may be nil (no peers).
 type Deps struct {
@@ -214,9 +216,10 @@ func (k Keeper) BusinessDigest(ctx sdk.Context, id string) ([]byte, bool) {
 }
 
 // Lease returns a copy of one lease in any state, or false when no lease
-// has that id. It is the handoff read for goal 09 (DEC-010 compares the
-// lease manifest digest). A stored record that does not decode panics
-// (invariant violation, as every message path treats it).
+// has that id. x/evidence reads it for the DEC-010 comparison with the
+// lease manifest digest, the lease/content binding, and the held-lease
+// checks. A stored record that does not decode panics (invariant
+// violation, as every message path treats it).
 func (k Keeper) Lease(ctx sdk.Context, leaseID string) (*leasesv1.Lease, bool) {
 	return k.mustLoadLease(ctx, leaseID)
 }

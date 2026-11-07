@@ -1,0 +1,24 @@
+{
+  "attestation": true,
+  "claim_limit": "UNIQUE_REPLICA_PROOF",
+  "content_id": "fixture.content-1",
+  "content_version": 1,
+  "epoch": 1,
+  "evidence_id": "fixture.receipt-1",
+  "expiry_unix_seconds": 1798761600,
+  "inclusion_proof": {
+    "leaf_index": 2,
+    "leaf_sha256": "5d9a2667cb05dac5c4c9eb6fa7e67cd100323ee4f4a5be23e0abfbdedfc8683a",
+    "siblings": [
+      "d8c0bab9ef25e74def6c70ce9cf58277f0f199f39351cce50899d535f1237d06",
+      "5bdccc5e5c07feb5ffc913a4daf96e42d4e076e6f4c1b0e2dfde5176786e2cdc"
+    ]
+  },
+  "kind": "PROVIDER_RECEIPT",
+  "lease_id": "fixture.lease-1",
+  "merkle_root": "8abfb615fccc6307328c586045c676778f859a1ce5d98607fe9160a1108746b9",
+  "observation_sha256": "5d9a2667cb05dac5c4c9eb6fa7e67cd100323ee4f4a5be23e0abfbdedfc8683a",
+  "profile": "SVN-JCS-1",
+  "schema_version": 1,
+  "signer_key_id": "fixture.provider-key-1"
+}

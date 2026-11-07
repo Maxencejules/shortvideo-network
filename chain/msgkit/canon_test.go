@@ -41,6 +41,10 @@ func TestCanonicalRejectsNonCanonicalValues(t *testing.T) {
 		"depth above 8":      deep,
 		"text above 64 KiB":  {"a": strings.Repeat("x", 65536)},
 		"bad value in array": {"a": []any{"x", uint32(2)}},
+		"invalid UTF-8":      {"a": "x\xff"},
+		"surrogate bytes":    {"a": "\xed\xa0\x80"},
+		"nested bad UTF-8":   {"a": map[string]any{"b": []any{"ok", "\xfe"}}},
+		"invalid UTF-8 key":  {"a\xff": "x"},
 	}
 	for name, fields := range cases {
 		if text, err := Canonical(fields); err == nil {
@@ -53,6 +57,33 @@ func TestCanonicalRejectsNonCanonicalValues(t *testing.T) {
 	ok, err := Canonical(map[string]any{"b": true, "a": int64(9007199254740991), "c": []any{"x", map[string]any{}}})
 	if err != nil || ok != `{"a":9007199254740991,"b":true,"c":["x",{}]}` {
 		t.Fatalf("valid object: %q %v", ok, err)
+	}
+}
+
+// A string is never rewritten: "c1" + U+FFFD has its own canonical text and
+// digest, and the invalid spellings that the SVN-JCS-1 writer used to turn
+// into the same U+FFFD text have none (MALFORMED). The error names the field.
+func TestCanonicalRefusesInvalidUTF8(t *testing.T) {
+	replacement := map[string]any{"content_id": "c1\U0000FFFD"}
+	text, err := Canonical(replacement)
+	if err != nil || text != "{\"content_id\":\"c1\U0000FFFD\"}" {
+		t.Fatalf("U+FFFD spelling: %q %v", text, err)
+	}
+	if digest, code := BusinessDigest(replacement); code != OK || len(digest) != 32 {
+		t.Fatalf("U+FFFD digest: %x %q", digest, code)
+	}
+	for _, bad := range []string{"c1\xff", "c1\xfe", "c1\xed\xa0\x80"} {
+		fields := map[string]any{"content_id": bad, "lease": map[string]any{"id": "l1"}}
+		text, err := Canonical(fields)
+		if err == nil || text != "" {
+			t.Fatalf("%q accepted as %q", bad, text)
+		}
+		if !strings.Contains(err.Error(), "content_id: canonical: string is not valid UTF-8") {
+			t.Fatalf("%q: error %q does not name the field", bad, err)
+		}
+		if digest, code := BusinessDigest(fields); code != Malformed || digest != nil {
+			t.Fatalf("%q: BusinessDigest %x %q", bad, digest, code)
+		}
 	}
 }
 

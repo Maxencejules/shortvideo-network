@@ -1,0 +1,35 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzEvidenceTransitions\$\'\ -fuzztime=60s\ -count=1\ ./chain/x/evidence/difftest/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \'new\ or\ changed\ files\ outside\ docs/evidence\ after\ the\ run:\'\;\ git\ status\ --porcelain\ --untracked-files=all\ \|\ grep\ -v\ \'\ docs/evidence/\'\;\ echo\ \'\(end\ of\ list\)\'\;\ exit\ \$s
+DATE 2026-11-06T23:15:16Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+loadavg before: 2.32 3.73 4.87 1/129 6416
+fuzz: elapsed: 0s, gathering baseline coverage: 0/27 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 0/27 completed
+fuzz: elapsed: 5s, gathering baseline coverage: 27/27 completed, now fuzzing with 4 workers
+fuzz: elapsed: 6s, execs: 32 (11/sec), new interesting: 0 (total: 27)
+fuzz: elapsed: 9s, execs: 32 (0/sec), new interesting: 0 (total: 27)
+fuzz: elapsed: 12s, execs: 138 (35/sec), new interesting: 2 (total: 29)
+fuzz: elapsed: 15s, execs: 245 (36/sec), new interesting: 4 (total: 31)
+fuzz: elapsed: 18s, execs: 296 (17/sec), new interesting: 5 (total: 32)
+fuzz: elapsed: 21s, execs: 296 (0/sec), new interesting: 5 (total: 32)
+fuzz: elapsed: 24s, execs: 398 (34/sec), new interesting: 7 (total: 34)
+fuzz: elapsed: 27s, execs: 500 (34/sec), new interesting: 9 (total: 36)
+fuzz: elapsed: 30s, execs: 500 (0/sec), new interesting: 9 (total: 36)
+fuzz: elapsed: 33s, execs: 609 (36/sec), new interesting: 11 (total: 38)
+fuzz: elapsed: 36s, execs: 659 (17/sec), new interesting: 12 (total: 39)
+fuzz: elapsed: 39s, execs: 762 (34/sec), new interesting: 14 (total: 41)
+fuzz: elapsed: 42s, execs: 762 (0/sec), new interesting: 14 (total: 41)
+fuzz: elapsed: 45s, execs: 867 (35/sec), new interesting: 16 (total: 43)
+fuzz: elapsed: 48s, execs: 919 (17/sec), new interesting: 17 (total: 44)
+fuzz: elapsed: 51s, execs: 971 (17/sec), new interesting: 18 (total: 45)
+fuzz: elapsed: 54s, execs: 1077 (35/sec), new interesting: 20 (total: 47)
+fuzz: elapsed: 57s, execs: 1077 (0/sec), new interesting: 20 (total: 47)
+fuzz: elapsed: 1m0s, execs: 1127 (17/sec), new interesting: 21 (total: 48)
+fuzz: elapsed: 1m2s, execs: 1127 (0/sec), new interesting: 21 (total: 48)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest	64.014s
+loadavg after: 6.18 4.45 4.99 1/127 6662
+new or changed files outside docs/evidence after the run:
+(end of list)
+EXIT:0

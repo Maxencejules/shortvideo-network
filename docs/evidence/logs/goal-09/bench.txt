@@ -1,0 +1,75 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ env\ -C\ chain\ go\ test\ -run=\'\^\$\'\ -bench=\'BenchmarkSubmitAuditBatch\|BenchmarkVerifyAuditSignature\|BenchmarkAcceptLeaseBaseline\'\ -benchmem\ -count=5\ ./x/evidence/\ ./x/evidence/difftest/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ exit\ \$s
+DATE 2026-11-06T22:01:13Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+loadavg before: 2.16 2.18 1.76 1/168 10679
+goos: linux
+goarch: amd64
+pkg: github.com/Maxencejules/shortvideo-network/chain/x/evidence
+cpu: Intel(R) Xeon(R) Processor @ 2.10GHz
+BenchmarkVerifyAuditSignature/1-4 	   12709	     93968 ns/op	   15961 B/op	     398 allocs/op
+BenchmarkVerifyAuditSignature/1-4 	   12910	     92792 ns/op	   15971 B/op	     399 allocs/op
+BenchmarkVerifyAuditSignature/1-4 	   13047	     93318 ns/op	   15967 B/op	     399 allocs/op
+BenchmarkVerifyAuditSignature/1-4 	   12663	     97715 ns/op	   15971 B/op	     399 allocs/op
+BenchmarkVerifyAuditSignature/1-4 	   12946	     94431 ns/op	   15964 B/op	     398 allocs/op
+BenchmarkVerifyAuditSignature/32-4         	     950	   1216378 ns/op	  474731 B/op	   11458 allocs/op
+BenchmarkVerifyAuditSignature/32-4         	    1039	   1184495 ns/op	  474586 B/op	   11455 allocs/op
+BenchmarkVerifyAuditSignature/32-4         	    1020	   1256327 ns/op	  474661 B/op	   11458 allocs/op
+BenchmarkVerifyAuditSignature/32-4         	     925	   1286527 ns/op	  474734 B/op	   11457 allocs/op
+BenchmarkVerifyAuditSignature/32-4         	     820	   1361764 ns/op	  474570 B/op	   11455 allocs/op
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	12.105s
+goos: linux
+goarch: amd64
+pkg: github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest
+cpu: Intel(R) Xeon(R) Processor @ 2.10GHz
+BenchmarkSubmitAuditBatch/F1-4   	    6301	    194533 ns/op	     79696 gas/op	         1.000 items/op	       260.0 msgbytes/op	    194533 ns/item	   41231 B/op	     830 allocs/op
+BenchmarkSubmitAuditBatch/F1-4   	    6663	    196873 ns/op	     79696 gas/op	         1.000 items/op	       260.0 msgbytes/op	    196873 ns/item	   41231 B/op	     830 allocs/op
+BenchmarkSubmitAuditBatch/F1-4   	    6975	    190532 ns/op	     79696 gas/op	         1.000 items/op	       260.0 msgbytes/op	    190532 ns/item	   41209 B/op	     829 allocs/op
+BenchmarkSubmitAuditBatch/F1-4   	    6567	    191496 ns/op	     79696 gas/op	         1.000 items/op	       260.0 msgbytes/op	    191496 ns/item	   41226 B/op	     829 allocs/op
+BenchmarkSubmitAuditBatch/F1-4   	    6496	    185536 ns/op	     79696 gas/op	         1.000 items/op	       260.0 msgbytes/op	    185536 ns/item	   41225 B/op	     830 allocs/op
+BenchmarkSubmitAuditBatch/F8-4   	    1562	    704234 ns/op	    167602 gas/op	         8.000 items/op	       855.0 msgbytes/op	     88029 ns/item	  241992 B/op	    4870 allocs/op
+BenchmarkSubmitAuditBatch/F8-4   	    1766	    700528 ns/op	    167602 gas/op	         8.000 items/op	       855.0 msgbytes/op	     87566 ns/item	  241974 B/op	    4870 allocs/op
+BenchmarkSubmitAuditBatch/F8-4   	    1654	    705566 ns/op	    167602 gas/op	         8.000 items/op	       855.0 msgbytes/op	     88196 ns/item	  241945 B/op	    4869 allocs/op
+BenchmarkSubmitAuditBatch/F8-4   	    1567	    739694 ns/op	    167602 gas/op	         8.000 items/op	       855.0 msgbytes/op	     92462 ns/item	  241969 B/op	    4869 allocs/op
+BenchmarkSubmitAuditBatch/F8-4   	    1671	    733297 ns/op	    167602 gas/op	         8.000 items/op	       855.0 msgbytes/op	     91662 ns/item	  242013 B/op	    4871 allocs/op
+BenchmarkSubmitAuditBatch/F32-4  	     466	   2424913 ns/op	    472906 gas/op	        32.00 items/op	      2929 msgbytes/op	     75779 ns/item	  931879 B/op	   18650 allocs/op
+BenchmarkSubmitAuditBatch/F32-4  	     462	   2474587 ns/op	    472906 gas/op	        32.00 items/op	      2929 msgbytes/op	     77331 ns/item	  932078 B/op	   18662 allocs/op
+BenchmarkSubmitAuditBatch/F32-4  	     466	   2436938 ns/op	    472906 gas/op	        32.00 items/op	      2929 msgbytes/op	     76154 ns/item	  931554 B/op	   18643 allocs/op
+BenchmarkSubmitAuditBatch/F32-4  	     544	   2417777 ns/op	    472906 gas/op	        32.00 items/op	      2929 msgbytes/op	     75556 ns/item	  931913 B/op	   18654 allocs/op
+BenchmarkSubmitAuditBatch/F32-4  	     508	   2358352 ns/op	    472906 gas/op	        32.00 items/op	      2929 msgbytes/op	     73699 ns/item	  931693 B/op	   18648 allocs/op
+BenchmarkSubmitAuditBatch/F32max-4         	     504	   2408924 ns/op	    636982 gas/op	        32.00 items/op	      4343 msgbytes/op	     75279 ns/item	  991922 B/op	   18889 allocs/op
+BenchmarkSubmitAuditBatch/F32max-4         	     456	   2605863 ns/op	    636982 gas/op	        32.00 items/op	      4343 msgbytes/op	     81433 ns/item	  992111 B/op	   18894 allocs/op
+BenchmarkSubmitAuditBatch/F32max-4         	     480	   2402087 ns/op	    636982 gas/op	        32.00 items/op	      4343 msgbytes/op	     75065 ns/item	  992070 B/op	   18889 allocs/op
+BenchmarkSubmitAuditBatch/F32max-4         	     418	   2483268 ns/op	    636982 gas/op	        32.00 items/op	      4343 msgbytes/op	     77602 ns/item	  992159 B/op	   18892 allocs/op
+BenchmarkSubmitAuditBatch/F32max-4         	     513	   2675455 ns/op	    636982 gas/op	        32.00 items/op	      4343 msgbytes/op	     83608 ns/item	  991895 B/op	   18887 allocs/op
+BenchmarkSubmitAuditBatch/F32rej-4         	     476	   2506187 ns/op	    473122 gas/op	        32.00 items/op	      2903 msgbytes/op	     78318 ns/item	  931695 B/op	   18652 allocs/op
+BenchmarkSubmitAuditBatch/F32rej-4         	     507	   2550034 ns/op	    473122 gas/op	        32.00 items/op	      2903 msgbytes/op	     79689 ns/item	  931767 B/op	   18651 allocs/op
+BenchmarkSubmitAuditBatch/F32rej-4         	     426	   2420651 ns/op	    473122 gas/op	        32.00 items/op	      2903 msgbytes/op	     75645 ns/item	  931896 B/op	   18659 allocs/op
+BenchmarkSubmitAuditBatch/F32rej-4         	     469	   2585837 ns/op	    473122 gas/op	        32.00 items/op	      2903 msgbytes/op	     80807 ns/item	  931826 B/op	   18658 allocs/op
+BenchmarkSubmitAuditBatch/F32rej-4         	     481	   2764969 ns/op	    473122 gas/op	        32.00 items/op	      2903 msgbytes/op	     86405 ns/item	  931775 B/op	   18659 allocs/op
+BenchmarkSubmitAuditBatch/F32tail-4        	     544	   2460979 ns/op	    141991 gas/op	        32.00 items/op	      2969 msgbytes/op	     76906 ns/item	  873817 B/op	   18047 allocs/op
+BenchmarkSubmitAuditBatch/F32tail-4        	     481	   2235540 ns/op	    141991 gas/op	        32.00 items/op	      2969 msgbytes/op	     69861 ns/item	  873846 B/op	   18043 allocs/op
+BenchmarkSubmitAuditBatch/F32tail-4        	     510	   2303256 ns/op	    141991 gas/op	        32.00 items/op	      2969 msgbytes/op	     71977 ns/item	  873510 B/op	   18034 allocs/op
+BenchmarkSubmitAuditBatch/F32tail-4        	     536	   2445696 ns/op	    141991 gas/op	        32.00 items/op	      2969 msgbytes/op	     76428 ns/item	  873890 B/op	   18043 allocs/op
+BenchmarkSubmitAuditBatch/F32tail-4        	     465	   2572583 ns/op	    141991 gas/op	        32.00 items/op	      2969 msgbytes/op	     80393 ns/item	  873912 B/op	   18049 allocs/op
+BenchmarkSubmitAuditBatch/Rcount-4         	     195	   6758687 ns/op	     52123 gas/op	       164.0 items/op	     14187 msgbytes/op	     41212 ns/item	 2414777 B/op	   58719 allocs/op
+BenchmarkSubmitAuditBatch/Rcount-4         	     194	   6233421 ns/op	     52123 gas/op	       164.0 items/op	     14187 msgbytes/op	     38009 ns/item	 2414456 B/op	   58720 allocs/op
+BenchmarkSubmitAuditBatch/Rcount-4         	     196	   6447849 ns/op	     52123 gas/op	       164.0 items/op	     14187 msgbytes/op	     39316 ns/item	 2415304 B/op	   58736 allocs/op
+BenchmarkSubmitAuditBatch/Rcount-4         	     181	   6479923 ns/op	     52123 gas/op	       164.0 items/op	     14187 msgbytes/op	     39512 ns/item	 2414638 B/op	   58712 allocs/op
+BenchmarkSubmitAuditBatch/Rcount-4         	     174	   6383275 ns/op	     52123 gas/op	       164.0 items/op	     14187 msgbytes/op	     38922 ns/item	 2415621 B/op	   58753 allocs/op
+BenchmarkSubmitAuditBatch/Rpayload-4       	     360	   3158548 ns/op	     51066 gas/op	       150.0 items/op	     19237 msgbytes/op	     21057 ns/item	 1043559 B/op	   28353 allocs/op
+BenchmarkSubmitAuditBatch/Rpayload-4       	     373	   3258713 ns/op	     51066 gas/op	       150.0 items/op	     19237 msgbytes/op	     21725 ns/item	 1043235 B/op	   28341 allocs/op
+BenchmarkSubmitAuditBatch/Rpayload-4       	     386	   3053959 ns/op	     51066 gas/op	       150.0 items/op	     19237 msgbytes/op	     20360 ns/item	 1043404 B/op	   28347 allocs/op
+BenchmarkSubmitAuditBatch/Rpayload-4       	     384	   3284662 ns/op	     51066 gas/op	       150.0 items/op	     19237 msgbytes/op	     21898 ns/item	 1043018 B/op	   28332 allocs/op
+BenchmarkSubmitAuditBatch/Rpayload-4       	     402	   3284293 ns/op	     51066 gas/op	       150.0 items/op	     19237 msgbytes/op	     21895 ns/item	 1043216 B/op	   28338 allocs/op
+BenchmarkAcceptLeaseBaseline-4             	    6315	    180184 ns/op	     99107 gas/op	       157.0 msgbytes/op	   32460 B/op	     607 allocs/op
+BenchmarkAcceptLeaseBaseline-4             	    5703	    188041 ns/op	     99107 gas/op	       157.0 msgbytes/op	   32456 B/op	     607 allocs/op
+BenchmarkAcceptLeaseBaseline-4             	    7527	    170765 ns/op	     99107 gas/op	       157.0 msgbytes/op	   32460 B/op	     607 allocs/op
+BenchmarkAcceptLeaseBaseline-4             	    7304	    174868 ns/op	     99107 gas/op	       157.0 msgbytes/op	   32459 B/op	     607 allocs/op
+BenchmarkAcceptLeaseBaseline-4             	    7350	    189254 ns/op	     99107 gas/op	       157.0 msgbytes/op	   32455 B/op	     607 allocs/op
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest	84.084s
+loadavg after: 1.57 1.97 1.72 1/170 10976
+EXIT:0

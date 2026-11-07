@@ -9,9 +9,9 @@ Reviewer note for Goal 07. This is not an audit. Public launch is disabled. Ther
 1. An `x/authority` keeper. Its read surface (`Role`, `DevnetRole`, `GovernedLimit`) is what the registries consume.
 2. `x/providers` and `x/content` keepers with that read surface and one shared `msgkit.Peers` set.
 3. The authority keeper used by the app: `WithRegistry(providers, content).WithPeers(peers)`. Council payloads reach the registries only through it.
-4. `peers` lists `authority`, `content`, and `providers` (and `leases` since Goal 08). A business id is one namespace across those modules.
+4. `peers` lists `authority`, `content`, and `providers` (and `leases` since Goal 08, `evidence` since Goal 09). A business id is one namespace across those modules.
 
-Each registry module registers its `svn.<module>.v1.Msg` service on the message router and its `svn.<module>.v1.Query` service on the gRPC query router (`RegisterServices`). Since Goal 08 the lease messages are handled by x/leases and the content keeper the app runs carries the x/leases withdrawal hook ([leases.md](leases.md)); the evidence message stays a closed stub that returns `ERROR_CODE_FORBIDDEN`. `x/authority` is still the only module that returns validator updates; neither registry has an EndBlock.
+Each registry module registers its `svn.<module>.v1.Msg` service on the message router and its `svn.<module>.v1.Query` service on the gRPC query router (`RegisterServices`). Since Goal 08 the lease messages are handled by x/leases and the content keeper the app runs carries the x/leases withdrawal hook ([leases.md](leases.md)); since Goal 09 the evidence message is handled by x/evidence ([evidence.md](evidence.md)); no closed stub remains. `x/authority` is still the only module that returns validator updates; neither registry has an EndBlock.
 
 ## Who may write
 

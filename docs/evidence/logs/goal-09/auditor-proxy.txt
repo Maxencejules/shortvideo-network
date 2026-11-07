@@ -1,0 +1,10 @@
+COMMAND env -C agents/auditor go test -count=1 -v -run TestFetchIgnoresProxyEnvironment ./fetch/
+DATE 2026-11-06T22:01:01Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+=== RUN   TestFetchIgnoresProxyEnvironment
+--- PASS: TestFetchIgnoresProxyEnvironment (0.01s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch	0.014s
+EXIT:0

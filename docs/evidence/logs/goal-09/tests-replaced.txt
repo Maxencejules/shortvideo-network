@@ -1,0 +1,274 @@
+COMMAND bash -c echo\ \'pre-existing\ test\ files\ changed\ since\ 7a266e7e9a37a66c093f74d2fe33589089a22fb7\ \(section\ 15.5\ and\ 15.6\ assertion\ changes\):\'\;\ git\ diff\ --stat\ --diff-filter=M\ 7a266e7e9a37a66c093f74d2fe33589089a22fb7..HEAD\ --\ \'\*_test.go\'\;\ echo\;\ git\ diff\ --diff-filter=M\ 7a266e7e9a37a66c093f74d2fe33589089a22fb7..HEAD\ --\ chain/app/decode_test.go\ chain/app/registry_events_test.go\ chain/app/restart_test.go\ chain/app/registry_simulate_test.go\ chain/app/app_test.go\ chain/devnet/lifecycle_test.go\ chain/devnet/power_test.go\ chain/devnet/registry_test.go\ chain/devnet/power_quorum_test.go
+DATE 2026-11-06T23:20:54Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+pre-existing test files changed since 7a266e7e9a37a66c093f74d2fe33589089a22fb7 (section 15.5 and 15.6 assertion changes):
+ chain/app/decode_test.go            |   6 +-
+ chain/app/export_test.go            | 134 +++++++++++++++++++++++++++++++++++-
+ chain/app/lease_reject_test.go      |   9 ++-
+ chain/app/registry_events_test.go   |   2 +-
+ chain/app/registry_simulate_test.go |   9 ++-
+ chain/app/restart_test.go           |  18 +++--
+ chain/devnet/lifecycle_test.go      |  68 +++++++++++++++---
+ chain/devnet/power_test.go          |   5 +-
+ chain/msgkit/canon_test.go          |  31 +++++++++
+ chain/x/leases/signdoc_test.go      |   4 +-
+ 10 files changed, 259 insertions(+), 27 deletions(-)
+
+diff --git a/chain/app/decode_test.go b/chain/app/decode_test.go
+index acd991b..c23a904 100644
+--- a/chain/app/decode_test.go
++++ b/chain/app/decode_test.go
+@@ -125,7 +125,9 @@ func populate(m protoreflect.Message, pick int, used map[protoreflect.FullName]b
+ //   - x/leases (Goal 08): accept FORBIDDEN (the service account is neither
+ //     BROADCASTER nor ADMITTED_PROVIDER), offer NOT_FOUND (no content "x1"
+ //     exists), renew and end NOT_FOUND (no lease "x1" exists);
+-//   - evidence: ERROR_CODE_FORBIDDEN from the router until Goal 09.
++//   - x/evidence (Goal 09): SubmitAuditBatch FORBIDDEN at the role check
++//     (step 3 of the check order; the service account is not an AUDITOR):
++//     every populated variant passes the presence step first.
+ //
+ // The full authority store and the full non-account state are byte-identical
+ // after each (council.reject). Fails without the EvidenceItem registration: a
+@@ -164,6 +166,8 @@ func TestEveryProtocolMessageDecodes(t *testing.T) {
+ 			code, protoCode = 19, authority.CodeBounds
+ 		case "svn.leases.v1.MsgOfferLease", "svn.leases.v1.MsgRenewLease", "svn.leases.v1.MsgEndLease":
+ 			code, protoCode = 16, authority.CodeNotFound
++		case "svn.evidence.v1.MsgSubmitAuditBatch":
++			code, protoCode = 2, authority.CodeForbidden
+ 		}
+ 		var variants [][]byte
+ 		for pick := 0; pick < 8; pick++ {
+diff --git a/chain/app/registry_events_test.go b/chain/app/registry_events_test.go
+index 6d145b4..57ed38d 100644
+--- a/chain/app/registry_events_test.go
++++ b/chain/app/registry_events_test.go
+@@ -186,7 +186,7 @@ func TestNoPrivateDataInStateOrEvents(t *testing.T) {
+ 	stores := append(app.SnapshotStores(), "acc")
+ 	for _, name := range stores {
+ 		blob := chainApp.ModuleSnapshot(name)
+-		if blob == nil && name != app.ModuleLeases && name != app.ModuleEvidence {
++		if blob == nil && name != app.ModuleLeases {
+ 			t.Fatalf("store %s has no snapshot", name)
+ 		}
+ 		if hit, found := msgkittest.FindCanary(blob, list...); found {
+diff --git a/chain/app/registry_simulate_test.go b/chain/app/registry_simulate_test.go
+index a3012f4..ef030be 100644
+--- a/chain/app/registry_simulate_test.go
++++ b/chain/app/registry_simulate_test.go
+@@ -18,7 +18,8 @@ import (
+ 
+ // TestSimulateEstimatesGas: App.Simulate (the handler behind
+ // /cosmos.tx.v1beta1.Service/Simulate) runs every registry message, the
+-// four lease messages, and the council messages to the end. Simulation runs on the SDK's infinite gas
++// four lease messages, SubmitAuditBatch (Goal 09, from an AUDITOR account
++// of newEvNet's genesis), and the council messages to the end. Simulation runs on the SDK's infinite gas
+ // meter; before the fix, the handlers' meter-limit check rejected every
+ // simulated message with ERROR_CODE_BOUNDS. For each step the same signed
+ // bytes are simulated and then committed: simulation changes no committed
+@@ -27,7 +28,8 @@ import (
+ // simulation (the SDK gas=auto flow) and is BOUNDS in a block, and a
+ // limit above the cap is rejected in both.
+ func TestSimulateEstimatesGas(t *testing.T) {
+-	n := newRegNet()
++	e := newEvNet()
++	n := e.regNet
+ 	c := n.start(t, 1)
+ 	chainApp := c.app()
+ 	step := func(label string, who *actor, msg sdk.Msg) {
+@@ -71,6 +73,9 @@ func TestSimulateEstimatesGas(t *testing.T) {
+ 	offer := n.offerMsg(n.service, "of-sim", "o-sim", "cl", "p1", sizeC1, now+1800, now+600)
+ 	step("offer lease", n.service, offer)
+ 	step("accept lease", n.broadcaster, n.acceptMsg(t, n.broadcaster, "ac-sim", offer, "l-sim"))
++	auditor := prefix(e.auditor1)
++	step("submit audit batch", e.auditor1, e.audit(t, e.auditor1, "au-sim", auditor+"au-sim", c.epoch(),
++		auditItem(auditor+"au-sim-e", "l-sim", "cl", manifestOf("cl"), now+600)))
+ 	step("renew lease", n.broadcaster, n.renewMsg(t, n.broadcaster, "rn-sim", "l-sim", "p1", "cl", sizeC1, 2, now+1800+leaseTerm))
+ 	step("end lease", n.broadcaster, n.endMsg(t, n.broadcaster, "en-sim", "l-sim", "p1", 2))
+ 	step("drain p1", n.provider1, n.drain(t, n.provider1, "drain-p1", "p1", 2, typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_DRAIN))
+diff --git a/chain/app/restart_test.go b/chain/app/restart_test.go
+index 63bdc73..4467730 100644
+--- a/chain/app/restart_test.go
++++ b/chain/app/restart_test.go
+@@ -70,13 +70,14 @@ func TestRestartLoadsCommittedState(t *testing.T) {
+ 	}
+ }
+ 
+-// TestAppRefusesScaffoldLayout: a committed providers, content, or leases
+-// store in the goal-05/06 scaffold layout (no layout version key, the module genesis
+-// JSON at key [0x01], which sits inside the registry record prefix) or
+-// with another layout version stops app.New on restart, instead of being
+-// misread as registry records (an export or a Providers query of such a
+-// store failed to decode the JSON as a record). A store in this binary's
+-// layout reopens (TestRestartLoadsCommittedState).
++// TestAppRefusesScaffoldLayout: a committed providers, content, leases, or
++// evidence store in the goal-05/06 scaffold layout (no layout version key,
++// the module genesis JSON at key [0x01], which sits inside the registry
++// record prefix and, for evidence, the record prefix) or with another
++// layout version stops app.New on restart, instead of being misread as
++// records (an export or a Providers query of such a store failed to
++// decode the JSON as a record). A store in this binary's layout reopens
++// (TestRestartLoadsCommittedState).
+ func TestAppRefusesScaffoldLayout(t *testing.T) {
+ 	for _, c := range []struct {
+ 		name     string
+@@ -91,6 +92,9 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
+ 		{"leases scaffold", app.ModuleLeases, []byte(`{"offers":[],"leases":[]}`), 0},
+ 		{"leases layout 1", app.ModuleLeases, nil, 1},
+ 		{"leases layout 3", app.ModuleLeases, nil, 3},
++		{"evidence scaffold", app.ModuleEvidence, []byte(`{"records":[],"current_epoch":"0"}`), 0},
++		{"evidence layout 1", app.ModuleEvidence, nil, 1},
++		{"evidence layout 3", app.ModuleEvidence, nil, 3},
+ 	} {
+ 		t.Run(c.name, func(t *testing.T) {
+ 			n := newRegNet()
+diff --git a/chain/devnet/lifecycle_test.go b/chain/devnet/lifecycle_test.go
+index 7f16f73..979a3f8 100644
+--- a/chain/devnet/lifecycle_test.go
++++ b/chain/devnet/lifecycle_test.go
+@@ -9,6 +9,7 @@ import (
+ 	"fmt"
+ 	"net/http"
+ 	"os"
++	"path/filepath"
+ 	"strings"
+ 	"testing"
+ 	"time"
+@@ -25,7 +26,9 @@ import (
+ 
+ 	"github.com/Maxencejules/shortvideo-network/chain/app"
+ 	"github.com/Maxencejules/shortvideo-network/chain/devnet"
++	"github.com/Maxencejules/shortvideo-network/chain/genesis"
+ 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
++	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
+ 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
+ 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
+ )
+@@ -197,6 +200,19 @@ func loadSecp(t *testing.T, home, name string) loaded {
+ 	return loaded{name: name, key: key, addr: hex.EncodeToString(key.PubKey().Address())}
+ }
+ 
++// loadAccount loads a topology account's key by its key type.
++func loadAccount(t *testing.T, home string, account devnet.Account) loaded {
++	t.Helper()
++	switch account.KeyType {
++	case devnet.KeySecp256k1:
++		return loadSecp(t, home, account.Name)
++	case devnet.KeyEd25519:
++		return loadEd(t, home, account.Name)
++	}
++	t.Fatalf("%s: key type %q", account.Name, account.KeyType)
++	return loaded{}
++}
++
+ func loadEd(t *testing.T, home, name string) loaded {
+ 	t.Helper()
+ 	raw := readHexFile(t, home+"/accounts/"+name+".hex")
+@@ -585,12 +601,14 @@ func TestDevnetKeysAreDistinct(t *testing.T) {
+ 	}
+ 	signers := make([]loaded, 0, len(layout.Topology.Accounts)+len(layout.Topology.Seats))
+ 	for _, account := range layout.Topology.Accounts {
+-		signers = append(signers, loadSecp(t, home, account.Name))
++		signers = append(signers, loadAccount(t, home, account))
+ 	}
+ 	for _, seat := range layout.Topology.Seats {
+ 		signers = append(signers, loadEd(t, home, seat.SeatID))
+ 	}
+-	if len(layout.Topology.Accounts) != 6 || len(signers) != 10 {
++	// Goal 09 added auditor-1 and auditor-2 (ed25519 AUDITOR accounts): 8
++	// accounts and 12 account and seat keys (6 and 10 before).
++	if len(layout.Topology.Accounts) != 8 || len(signers) != 12 {
+ 		t.Fatalf("%d accounts, %d account and seat keys", len(layout.Topology.Accounts), len(signers))
+ 	}
+ 	for _, signer := range signers {
+@@ -598,16 +616,46 @@ func TestDevnetKeysAreDistinct(t *testing.T) {
+ 		note(public, signer.key.PubKey().Bytes(), signer.name)
+ 		note(public, signer.key.PubKey().Address(), signer.name+" address")
+ 	}
+-	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+10 {
++	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+12 {
+ 		t.Fatalf("%d validators, %d distinct private keys", len(layout.Topology.Validators), len(private))
+ 	}
++	// The auditor accounts: ed25519 account keys, AUDITOR rows, key files
++	// readable by the owner only, and distinct evidence id prefixes.
++	prefixes := map[string]string{}
++	for _, name := range []string{"auditor-1", "auditor-2"} {
++		var account devnet.Account
++		for _, a := range layout.Topology.Accounts {
++			if a.Name == name {
++				account = a
++			}
++		}
++		if account.Role != genesis.RoleAuditor || account.KeyType != devnet.KeyEd25519 {
++			t.Fatalf("%s: %+v", name, account)
++		}
++		info, err := os.Stat(filepath.Join(home, "accounts", name+".hex"))
++		if err != nil || info.Mode().Perm() != 0o600 {
++			t.Fatalf("%s key file: %v %v", name, info, err)
++		}
++		signer := loadEd(t, home, name)
++		prefix := evidence.IDPrefix(signer.key.PubKey().Address())
++		if prev, dup := prefixes[prefix]; dup || prefix == "" {
++			t.Fatalf("%s and %s share the evidence id prefix %q", prev, name, prefix)
++		}
++		prefixes[prefix] = name
++	}
++	for _, account := range layout.Topology.Accounts {
++		if account.Role != genesis.RoleAuditor && account.KeyType != devnet.KeySecp256k1 {
++			t.Fatalf("%s: key type %q", account.Name, account.KeyType)
++		}
++	}
+ }
+ 
+ // TestDevnetSeatsHaveNoSubmitterRow (DR-06-06) starts no process. The devnet
+-// genesis lists the six application accounts as submitters and no council
+-// seat address; the authority module genesis has no submitter at a seat
+-// address; and the auth genesis has one account per submitter and one per
+-// seat, ten in all, so the seat keys can sign council messages.
++// genesis lists the eight application accounts (six before Goal 09 added
++// the two auditors) as submitters and no council seat address; the
++// authority module genesis has no submitter at a seat address; and the auth
++// genesis has one account per submitter and one per seat, twelve in all
++// (ten before), so the seat keys can sign council messages.
+ func TestDevnetSeatsHaveNoSubmitterRow(t *testing.T) {
+ 	home := t.TempDir()
+ 	layout, err := devnet.Init(devnet.Options{Home: home})
+@@ -630,17 +678,17 @@ func TestDevnetSeatsHaveNoSubmitterRow(t *testing.T) {
+ 	for _, row := range doc.Submitters {
+ 		submitters[strings.ToLower(row.AddressHex)] = row.Role
+ 	}
+-	if len(submitters) != len(layout.Topology.Accounts) || len(submitters) != 6 {
++	if len(submitters) != len(layout.Topology.Accounts) || len(submitters) != 8 {
+ 		t.Fatalf("%d submitters for %d accounts", len(submitters), len(layout.Topology.Accounts))
+ 	}
+ 	for _, account := range layout.Topology.Accounts {
+-		addr := loadSecp(t, home, account.Name).addr
++		addr := loadAccount(t, home, account).addr
+ 		if submitters[addr] != account.Role {
+ 			t.Fatalf("%s: submitter role %q, want %q", account.Name, submitters[addr], account.Role)
+ 		}
+ 	}
+ 	numbers := genesisAccountNumbers(t, mustEncoding(t), layout.Genesis)
+-	if len(numbers) != 10 || len(layout.Topology.Seats) != 4 || len(doc.DevnetTestSeats) != 4 {
++	if len(numbers) != 12 || len(layout.Topology.Seats) != 4 || len(doc.DevnetTestSeats) != 4 {
+ 		t.Fatalf("%d auth accounts, %d topology seats, %d genesis seats", len(numbers), len(layout.Topology.Seats), len(doc.DevnetTestSeats))
+ 	}
+ 	for _, seat := range layout.Topology.Seats {
+diff --git a/chain/devnet/power_test.go b/chain/devnet/power_test.go
+index 68f3d7c..f82093e 100644
+--- a/chain/devnet/power_test.go
++++ b/chain/devnet/power_test.go
+@@ -48,7 +48,10 @@ func newFixedNetwork() fixedNetwork {
+ 	}
+ 	accounts := make([]accountKey, len(accountSpec))
+ 	for i, spec := range accountSpec {
+-		accounts[i] = accountKey{name: spec.name, role: spec.role, key: sdksecp.GenPrivKeyFromSecret([]byte(spec.name))}
++		accounts[i] = accountKey{name: spec.name, role: spec.role, keyType: spec.keyType, key: sdksecp.GenPrivKeyFromSecret([]byte(spec.name))}
++		if spec.keyType == KeyEd25519 {
++			accounts[i].key = sdked.GenPrivKeyFromSecret([]byte(spec.name))
++		}
+ 	}
+ 	return fixedNetwork{
+ 		nodes:    nodes,
+EXIT:0

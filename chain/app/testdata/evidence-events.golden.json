@@ -1,0 +1,132 @@
+[
+  {
+    "height": 1,
+    "type": "svn.events.v1.EvidenceAccepted",
+    "attributes": [
+      {
+        "key": "evidence_id",
+        "value": "\u003cauditor-1\u003e.ev-1-a"
+      },
+      {
+        "key": "batch_id",
+        "value": "\u003cauditor-1\u003e.ev-1"
+      },
+      {
+        "key": "kind",
+        "value": "AUDITOR_ATTESTATION"
+      },
+      {
+        "key": "attestation",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "height": 1,
+    "type": "evidence_state",
+    "attributes": [
+      {
+        "key": "evidence_id",
+        "value": "\u003cauditor-1\u003e.ev-1-a"
+      },
+      {
+        "key": "lease_id",
+        "value": "la"
+      },
+      {
+        "key": "state",
+        "value": "RECORDED"
+      }
+    ]
+  },
+  {
+    "height": 1,
+    "type": "svn.events.v1.EvidenceAccepted",
+    "attributes": [
+      {
+        "key": "evidence_id",
+        "value": "\u003cauditor-1\u003e.ev-1-b"
+      },
+      {
+        "key": "batch_id",
+        "value": "\u003cauditor-1\u003e.ev-1"
+      },
+      {
+        "key": "kind",
+        "value": "AUDITOR_ATTESTATION"
+      },
+      {
+        "key": "attestation",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "height": 1,
+    "type": "evidence_state",
+    "attributes": [
+      {
+        "key": "evidence_id",
+        "value": "\u003cauditor-1\u003e.ev-1-b"
+      },
+      {
+        "key": "lease_id",
+        "value": "lb"
+      },
+      {
+        "key": "state",
+        "value": "REJECTED"
+      }
+    ]
+  },
+  {
+    "height": 2,
+    "type": "evidence_result",
+    "attributes": [
+      {
+        "key": "idempotent",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "height": 4,
+    "type": "svn.events.v1.EvidenceAccepted",
+    "attributes": [
+      {
+        "key": "evidence_id",
+        "value": "\u003cauditor-2\u003e.ev-3-a"
+      },
+      {
+        "key": "batch_id",
+        "value": "\u003cauditor-2\u003e.ev-3"
+      },
+      {
+        "key": "kind",
+        "value": "AUDITOR_ATTESTATION"
+      },
+      {
+        "key": "attestation",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "height": 4,
+    "type": "evidence_state",
+    "attributes": [
+      {
+        "key": "evidence_id",
+        "value": "\u003cauditor-2\u003e.ev-3-a"
+      },
+      {
+        "key": "lease_id",
+        "value": "lc"
+      },
+      {
+        "key": "state",
+        "value": "RECORDED"
+      }
+    ]
+  }
+]

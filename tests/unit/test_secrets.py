@@ -20,6 +20,23 @@ def test_encrypted_pkcs8_pgp_slack_and_priv_key() -> None:
     assert findings_in_text("other.json", priv)
 
 
+def test_hex_key_files() -> None:
+    # The 64-byte ed25519 key format of `auditor keygen` and of svnd devnet
+    # accounts: 128 lowercase hex characters, with or without a newline,
+    # under any name. A 64-character SHA-256 digest file is not a key file.
+    key = "".join(format((i * 37 + 11) % 256, "02x") for i in range(64))
+    assert len(key) == 128
+    for name in ("auditor.hex", "auditor-key", "keys/auditor-1.txt", "notes.md"):
+        assert findings_in_text(name, key + "\n"), name
+        assert findings_in_text(name, key), name
+    assert findings_in_text("accounts/v1.hex", "not a key\n")
+    digest = key[:64]
+    assert not findings_in_text("container-genesis.sha256", digest + "\n")
+    assert not findings_in_text("note.txt", key + "\n" + key + "\n")
+    assert not findings_in_text("note.txt", key.upper() + "\n")
+    assert not findings_in_text("v1.hex", "not a key\n")
+
+
 def _bip_prefix(count: int) -> str:
     raw = [
         "aban" + "don",

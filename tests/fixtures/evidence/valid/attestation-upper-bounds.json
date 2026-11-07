@@ -1,0 +1,15 @@
+{
+  "attestation": true,
+  "claim_limit": "ATTESTATION_NOT_STORAGE_PROOF",
+  "content_id": "fixture.content-upper-bound.000000000000000000000000000000000000",
+  "content_version": 9007199254740991,
+  "epoch": 9007199254740991,
+  "evidence_id": "fixture.upper-bound.00000000000000000000000000000000000000000000",
+  "expiry_unix_seconds": 253402300799,
+  "kind": "AUDITOR_ATTESTATION",
+  "lease_id": "fixture.lease-upper-bound.00000000000000000000000000000000000000",
+  "observation_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "profile": "SVN-JCS-1",
+  "schema_version": 1,
+  "signer_key_id": "fixture.key-upper-bound.0000000000000000000000000000000000000000"
+}

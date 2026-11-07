@@ -170,6 +170,8 @@ PY_ALLOW = (
     "docs/evidence/goal-07/mutants.py",
     # The goal 08 mutation runner, likewise.
     "docs/evidence/goal-08/mutants.py",
+    # The goal 09 mutation runner, likewise.
+    "docs/evidence/goal-09/mutants.py",
     "scripts/",
     "tests/",
     "services/",

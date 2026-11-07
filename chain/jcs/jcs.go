@@ -1,7 +1,31 @@
+// Package jcs is SVN-JCS-1, the restricted RFC 8785 profile frozen in
+// protocol v0 (docs/evidence/goal-02/jcs.py is the reference). The parser
+// is the same one Goal 02 checks against docs/protocol/fixtures/vectors.json.
+//
+// Canonicalize writes a Go value and ParseAndCanonicalize reads JSON text.
+// Canonicalize refuses every value without exactly one SVN-JCS-1 form, so
+// two accepted values share a canonical text only when they are the same
+// JSON value (a nil and an empty map[string]any are both {}). It refuses:
+//
+//   - a string, key or value, that is not valid UTF-8 (reason
+//     "invalid_utf8" for a value; a key fails the ASCII key rule first,
+//     "bad_key"). Writing each invalid byte as U+FFFD would give "a\xff",
+//     "a\xfe" and "a" + U+FFFD one text, and one signature would cover
+//     all three;
+//   - an int64 outside [-(2^53-1), 2^53-1] ("unsafe_integer"), which the
+//     parser would refuse to read back;
+//   - nil ("null"), any other Go type ("malformed"), nesting deeper than 8
+//     ("depth"), and canonical text above 65536 bytes ("bounds").
+//
+// Lone surrogates: a Go string holds UTF-8 bytes, not UTF-16 code units.
+// The only way to put U+D800..U+DFFF in one is the three-byte sequence
+// ED A0..BF 80..BF (the CESU-8/WTF-8 spelling), which is not valid UTF-8
+// and is refused as "invalid_utf8"; a surrogate pair spelled that way is
+// refused too. In JSON text, a \uD800..\uDFFF escape that is not a high
+// surrogate directly followed by a \u low-surrogate escape is refused by
+// the parser as "lone_surrogate"; a correct pair is one supplementary code
+// point, written as its four UTF-8 bytes.
 package jcs
-
-// SVN-JCS-1, the restricted RFC 8785 profile frozen in protocol v0.
-// The parser is the same one Goal 02 checks against the vectors.
 
 import (
 	"fmt"
@@ -23,6 +47,8 @@ func (e *jcsError) Error() string { return e.reason }
 
 func fail(reason string) error { return &jcsError{reason: reason} }
 
+// ParseAndCanonicalize reads one SVN-JCS-1 JSON value from raw and returns
+// its canonical text. raw must be valid UTF-8 without a byte order mark.
 func ParseAndCanonicalize(raw string) (string, error) {
 	return parseBytes([]byte(raw))
 }
@@ -45,6 +71,9 @@ func parseBytes(raw []byte) (string, error) {
 	return Canonicalize(value)
 }
 
+// Canonicalize returns the SVN-JCS-1 text of value. value is bool, int64,
+// string, []any, or map[string]any, nested at most 8 deep; the package
+// comment lists what is refused.
 func Canonicalize(value any) (string, error) {
 	text, err := emit(value, 0)
 	if err != nil {
@@ -69,9 +98,12 @@ func emit(value any, depth int) (string, error) {
 		}
 		return "false", nil
 	case int64:
+		if typed > safeMax || typed < -safeMax {
+			return "", fail("unsafe_integer")
+		}
 		return strconv.FormatInt(typed, 10), nil
 	case string:
-		return emitString(typed), nil
+		return emitString(typed)
 	case []any:
 		parts := make([]string, len(typed))
 		for i, item := range typed {
@@ -93,11 +125,15 @@ func emit(value any, depth int) (string, error) {
 		sort.Slice(keys, func(i, j int) bool { return compareUTF16(keys[i], keys[j]) < 0 })
 		parts := make([]string, len(keys))
 		for i, key := range keys {
+			name, err := emitString(key)
+			if err != nil {
+				return "", err
+			}
 			part, err := emit(typed[key], depth+1)
 			if err != nil {
 				return "", err
 			}
-			parts[i] = emitString(key) + ":" + part
+			parts[i] = name + ":" + part
 		}
 		return "{" + strings.Join(parts, ",") + "}", nil
 	default:
@@ -105,7 +141,12 @@ func emit(value any, depth int) (string, error) {
 	}
 }
 
-func emitString(text string) string {
+// emitString writes text as an RFC 8785 JSON string. Text that is not
+// valid UTF-8 has no JSON form and is refused; it is never rewritten.
+func emitString(text string) (string, error) {
+	if !utf8.ValidString(text) {
+		return "", fail("invalid_utf8")
+	}
 	var b strings.Builder
 	b.WriteByte('"')
 	for _, r := range text {
@@ -133,7 +174,7 @@ func emitString(text string) string {
 		}
 	}
 	b.WriteByte('"')
-	return b.String()
+	return b.String(), nil
 }
 
 func compareUTF16(a, b string) int {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/Maxencejules/shortvideo-network/chain/jcs"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
@@ -18,11 +19,14 @@ const safeIntegerMax int64 = 9007199254740991
 
 // Canonical returns the SVN-JCS-1 text of one object.
 //
-// Values must be string, bool, int64 within the safe integer range,
-// map[string]any, or []any. uint64 values go through Dec, bytes through Hex,
-// digests through DigestObject, and inner signatures through
-// SignatureObject. Any other type, a nil value, a key outside the JCS key
-// rules, nesting deeper than 8, or output above 65536 bytes is an error.
+// Values must be string (valid UTF-8), bool, int64 within the safe integer
+// range, map[string]any, or []any. uint64 values go through Dec, bytes
+// through Hex, digests through DigestObject, and inner signatures through
+// SignatureObject. Any other type, a nil value, a string that is not valid
+// UTF-8, a key outside the JCS key rules, nesting deeper than 8, or output
+// above 65536 bytes is an error. A string is never rewritten (jcs refuses
+// invalid UTF-8 instead of writing U+FFFD), so the text, and every inner
+// signature over it, names exactly one object.
 func Canonical(fields map[string]any) (string, error) {
 	if fields == nil {
 		return "", fmt.Errorf("canonical: nil object")
@@ -42,7 +46,12 @@ func checkCanonicalValue(value any, depth int) error {
 		return fmt.Errorf("canonical: depth above 8")
 	}
 	switch typed := value.(type) {
-	case string, bool:
+	case bool:
+		return nil
+	case string:
+		if !utf8.ValidString(typed) {
+			return fmt.Errorf("canonical: string is not valid UTF-8")
+		}
 		return nil
 	case int64:
 		if typed > safeIntegerMax || typed < -safeIntegerMax {

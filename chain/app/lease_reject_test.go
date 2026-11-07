@@ -123,8 +123,11 @@ func leaseRejectSetup(t *testing.T, n *regNet, c *cluster) leaseRejectState {
 //     (keeper ladder content-withdrawn, with fakes).
 //   - accept EXPIRED of an unswept expired offer and renew D-2 EXPIRED:
 //     need an expiry backlog (TestLargeExpiringCatalogue).
-//   - renew evidence EXPIRED and FORBIDDEN: Evidence is nil until Goal 09,
-//     so every evidence_id is NOT_FOUND (keeper TestEvidenceCannotExtendLease).
+//   - renew evidence EXPIRED and FORBIDDEN: these need committed evidence
+//     records, which need AUDITOR accounts this genesis does not have; the
+//     renewal below names an absent evidence id (NOT_FOUND).
+//     TestNoEvidenceRenews and TestEvidenceCannotExtendOrReviveLease reach
+//     FORBIDDEN and EXPIRED with records written by x/evidence (Goal 09).
 //   - end Release UNDERFLOW: needs reserved bytes below a held lease's
 //     bytes, an invariant violation no transaction produces (keeper ladder
 //     release-underflow; TestExpiryInvariantViolationHalts for expiry).
@@ -387,7 +390,7 @@ func TestRejectedLeaseMessagesLeaveTheFullState(t *testing.T) {
 		{"renew: term is not the DEC-005 number", n.broadcaster, func() sdk.Msg {
 			return n.renewMsg(t, n.broadcaster, "x-rn-15", "l1", "p1", "c1", sizeSmall, 2, d1+leaseTerm+1)
 		}, msgkit.OutOfRange},
-		{"renew: names evidence (no x/evidence before Goal 09)", n.broadcaster, func() sdk.Msg {
+		{"renew: names an absent evidence id", n.broadcaster, func() sdk.Msg {
 			m := baseRenew(n.broadcaster, "x-rn-16")
 			m.EvidenceId = "ev-1"
 			m.ProviderSignature = renewSig("l1", 2, d1+leaseTerm, contentManifest("c1"), sizeSmall, "ev-1", domainRenew, n.signing["p1"])
