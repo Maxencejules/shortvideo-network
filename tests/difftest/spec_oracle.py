@@ -2450,15 +2450,17 @@ def same(step: JSON, code: str, deviation: str | None = None) -> CouncilCase:
 
 
 def governed(key: str, value: int) -> JSON:
-    return sm.governed_limit_payload(key, value)
+    payload: JSON = sm.governed_limit_payload(key, value)
+    return payload
 
 
 def add_validator(node_id: str, height: int, pubkey: str | None = None, power: int = 10) -> JSON:
-    return sm.validator_power_payload(node_id, power, {"height": str(height)}, pubkey)
+    payload: JSON = sm.validator_power_payload(node_id, power, {"height": str(height)}, pubkey)
+    return payload
 
 
 def raw_validator(node_id: str, activation: JSON, reason: JSON | None = None) -> JSON:
-    payload = sm.validator_power_payload(node_id, 10, activation)
+    payload: JSON = sm.validator_power_payload(node_id, 10, activation)
     if reason is not None:
         payload["validatorPower"]["reasonDigest"] = reason
     return payload
@@ -2633,7 +2635,7 @@ def shape_step(proposal_id: str, payload: JSON, parameter_key: str) -> JSON:
 
 def short_key_validator() -> JSON:
     """A validator payload whose consensus key is 31 bytes, every other field well formed."""
-    payload = sm.validator_power_payload("v7", 10, {"height": "9"})
+    payload: JSON = sm.validator_power_payload("v7", 10, {"height": "9"})
     payload["validatorPower"]["consensusPubkey"] = sm.standard_b64(
         bytes.fromhex(sm.pubkey_for("v7"))[:31]
     )
