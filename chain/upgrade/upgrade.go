@@ -8,7 +8,8 @@
 //     the handler fails; at any other height a stored app version that
 //     differs from the binary's fails.
 //   - Runner: runs one upgrade in a cache context and writes it back only
-//     after every check passed.
+//     after every check passed. It gives the handler the handler
+//     environment (env.go): by-name access to the module stores.
 //   - PlanSource: where the scheduled upgrade is read from.
 //     CouncilPlans (plans.go) is the production source: the plan row an
 //     executed council proposal wrote into the x/policy store, read through
@@ -17,7 +18,8 @@
 // The package imports no app, module keeper, node, or command code. The
 // app composes it: it supplies the stores through the interfaces of
 // runner.go and plans.go (for the plan row, a small adapter over the
-// x/policy keeper) and the migrations through Migrate.
+// x/policy keeper), the migrations through Migrate, and its mounted store
+// keys through Env.
 //
 // Every non-test file runs inside chain execution or in the load gate. It
 // reads block data only from sdk.Context, iterates maps in sorted key
@@ -74,8 +76,10 @@ type Migrate func(ctx sdk.Context, from module.VersionMap) (module.VersionMap, e
 
 // Handler is the code of one upgrade. It receives a copy of the stored
 // version map and the app's Migrate, and returns the version map after the
-// upgrade. It runs inside the runner's cache context: an error, or any
-// failed check after it, discards everything it wrote.
+// upgrade. Its context carries the handler environment (EnvOf), through
+// which it reads and writes module stores by name. It runs inside the
+// runner's cache context: an error, or any failed check after it, discards
+// everything it wrote.
 type Handler func(ctx sdk.Context, from module.VersionMap, migrate Migrate) (module.VersionMap, error)
 
 // Upgrade is one upgrade handler compiled into a binary. It moves the app

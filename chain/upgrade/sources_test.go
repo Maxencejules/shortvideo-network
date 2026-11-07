@@ -51,10 +51,13 @@ func goFiles(t *testing.T, dir string, tests bool) map[string]*ast.File {
 // node, command, devnet, test-support, or off-chain package, and no SDK
 // x/upgrade or cosmovisor (which would link x/gov, x/staking, and x/authz
 // into svnd). Its imports outside the standard library are the SDK types,
-// the module manager types, the CometBFT proto types, and msgkit.
+// the store types (the KVStore interface the handler environment returns,
+// the type sdk.Context.KVStore returns), the module manager types, the
+// CometBFT proto types, and msgkit.
 func TestPackageImports(t *testing.T) {
 	allowed := map[string]bool{
 		"github.com/cosmos/cosmos-sdk/types":                      true,
+		"github.com/cosmos/cosmos-sdk/store/v2/types":             true,
 		"github.com/cosmos/cosmos-sdk/types/module":               true,
 		"github.com/cometbft/cometbft/proto/tendermint/types":     true,
 		"github.com/Maxencejules/shortvideo-network/chain/msgkit": true,

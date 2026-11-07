@@ -13,7 +13,9 @@
 // tests/difftest/spec_oracle.py in a Python subprocess with its "council"
 // reset config. Each divergence the oracle maps is a named rule (G-1 to
 // G-11, authority D-1, D-2 and D-7), listed in chain/x/authority/README.md.
-// TestUnnamedParseDivergences pins the open divergences that no rule names.
+// TestUnnamedParseDivergences pins the open divergences that no rule names
+// and sends one payload of every v0 field shape class combination to show
+// that no other parse divergence is unnamed.
 // The generator sends v0 payloads only (and the G-11 shapes); the schema
 // version 2 payloads (D-4, D-5) are sent only by TestSchemaTwoPayloadsD5.
 //

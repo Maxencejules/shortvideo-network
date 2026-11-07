@@ -8,21 +8,22 @@ the applied-upgrade history and the plan names, the persisted module version map
 `svn.policy.v1.Query/Policy` and has a BeginBlock that applies the pending governed changes whose height has come. It has
 no message service: "There is no direct MsgUpdateLimits. Limit changes are proposal payloads executed by
 svn.authority.v1.MsgExecuteChange." (`docs/protocol/proto/svn/policy/v1/tx.proto`). x/authority stays
-the council and the policy version counter (decision request DR-10-20, interim); it is meant to be the only writer of the
-governed, pending, and plan rows, through the writer methods below.
+the council and the policy version counter (decision request DR-10-20, interim); it is the only writer of the governed,
+pending, and plan rows, through the writer methods below.
 
 ## Status of this directory
 
-This is the goal-10 Wave 1 state of the package, built under the owner's answers of 2026-11-07: Q1 (DR-10-01) "Minimal
+This is the goal-10 state of the package, built under the owner's answers of 2026-11-07: Q1 (DR-10-01) "Minimal
 additive (Recommended)", Q2 (DR-10-02) "Council plan, fail closed (Recommended)", and Q3 (DR-10-03) "3 of 4 + min notice
 (Recommended)". The two lead numbers of Q3 (`msgkit.MinActivationLeadBlocks` = 100 blocks, `msgkit.MaxActivationLeadBlocks`
 = 1,000,000 blocks) remain PROPOSED constants: the owner chose the option text that contained them, not the numbers as
 policy. The protocol fields this package reads and returns are those of `docs/protocol.md`, "Goal 10 additive revision".
 
-Wiring this module into `chain/app` (the policy slot, every module's `Limits`, the BeginBlocker order, the InitChain
-checks, export, and the upgrade runner) and switching x/authority's `PolicyWriter` to this keeper are the INT and P2b parts
-of the same goal-10 Wave 1 change. Every claim below is about this package and its unit tests: real IAVL stores, with a fake
-in place of the authority read surface.
+The module is wired into `chain/app` (`chain/app/app.go:221-285`): the policy slot, every module's `Limits`, the
+BeginBlocker order, the InitChain checks (`InitVersions`, the decision-row cross-check), the export refusal
+(`ExportCheck` before the module manager export), and the upgrade runner; x/authority's `PolicyWriter` is this keeper,
+bound to the payload's nested cache. Unless a line names an app-level or devnet test, a claim below is about this package
+and its unit tests: real IAVL stores, with a fake in place of the authority read surface.
 
 The code in this directory (not `_test.go`, not `policytest/`) is chain code. It reads block data only from
 `sdk.Context` (the block height; it reads no time), iterates stores in key order with a bound, and never reads the local
@@ -45,7 +46,7 @@ in code or in tests (`TestKeeperImports`). It has a BeginBlock, no EndBlock, and
 | `service.go` | hand-written `svn.policy.v1.Query` service descriptor |
 | `genesis.go` | `DefaultSafetyCaps`, `DefaultGenesisState`, `ParseGenesis`, `MarshalGenesis`, `ValidateGenesis`, `InitGenesis`, `ExportCheck`, `ExportGenesis` |
 | `module.go` | `AppModule` (genesis, query service, BeginBlock, consensus version, empty migration table) |
-| `policytest/` | test support: `CheckInvariants`, `CheckInvariantsAt`, `CheckDecisions`, `StoreSnapshot`; imported only by `_test.go` files |
+| `policytest/` | test support: `CheckInvariants`, `CheckInvariantsAt`, `CheckDecisions`, `StoreSnapshot`; imported by `_test.go` files and by the state check `chain/internal/statecheck`, which only the `svn_statecheck` build of svnd links |
 
 ## Store layout
 
@@ -71,7 +72,8 @@ plan name that an executed council proposal first scheduled.
 
 `0x08` is not in the plan's store table (plan section 7.3). It exists because the Q3 answer says a plan name can never be
 reused with a different release digest, and `docs/protocol.md` refuses such a plan "whether that plan is pending,
-cancelled, or replaced"; a cancelled or replaced plan leaves no `0x06` row, so the name and digest are kept here.
+cancelled, or replaced"; a cancelled or replaced plan leaves no `0x06` row, so the name and digest are kept here. That
+strict reading is orchestrator choice ORCH-10 (a reversible implementation choice, not an owner decision).
 
 ## Read surface
 
@@ -84,18 +86,17 @@ cancelled, or replaced"; a cancelled or replaced plan leaves no `0x06` row, so t
 | `UpgradeApplied(ctx, name)` | `0x07 \| name` | whether that upgrade applied; a name outside the id pattern is false without a read | panics on a bad height |
 | `SafetyCaps(ctx)` | `0x01` | the caps | an error when missing, undecodable, carrying unknown fields, or different from the protocol caps |
 
-`GovernedLimit` has the contract of the authority read it is meant to replace (`chain/x/authority/read.go`), with the
+`GovernedLimit` has the contract of the authority read it replaced (`chain/x/authority/read.go`), with the
 panic text `policy: governed limit "<key>" is not an 8-byte value in 1..ceiling (<n> bytes stored)`. A transaction
 handler panic becomes a failed transaction on every node alike; ABCI `Query` and the node gRPC server recover a query
 panic into an error.
 
-`WithStore(kv)` returns a keeper that reads and writes `kv` instead of the context's store. The load-time gate is meant to
-use it on committed rows before any block context exists; the read methods accept a zero `sdk.Context` there
-(`TestWithStore`).
+`WithStore(kv)` returns a keeper that reads and writes `kv` instead of the context's store; the read methods accept a zero
+`sdk.Context` there (`TestWithStore`). No code outside this package calls it today.
 
 ## Writer methods
 
-x/authority is meant to call these from an executed proposal's payload on the nested cache it writes back only on success
+x/authority calls these from an executed proposal's payload on the nested cache it writes back only on success
 (`chain/x/authority/msg.go`), so a policy write never outlives a failed or kept proposal. Each method returns a
 `msgkit.Code` and runs every check before its first write: a failure writes nothing and emits nothing (every reject row
 of `TestSetLimitAndSchedulePending` and `TestPlanScheduleReplaceCancel` compares the store bytes and the event count). A
@@ -118,6 +119,8 @@ produces a higher policy version, so `SchedulePending` refuses a replacement tha
 A plan name is never reused with another release digest: the first plan of a name stores its digest under `0x08` for good,
 so a later plan of that name with another digest is CONFLICT whether the earlier plan is pending, was replaced, or was
 cancelled; the same name with the same digest may be scheduled again after a cancel (`TestPlanScheduleReplaceCancel`).
+This strict reading of the Q3 text, with the `0x08` row and DUPLICATE_ID for an applied name, is orchestrator choice
+ORCH-10, a reversible implementation choice, not an owner decision.
 
 The writers re-check the height window themselves, whatever the caller checked: x/authority checks the same windows at
 propose and execute (P2b). The lead numbers come from `chain/msgkit` (`lead.go`), defined once for both modules; both are
@@ -205,14 +208,14 @@ missing caps row, or a damaged governed, pending, plan, or app version row, is a
 (`TestGenesisValidateImportExport`, `FuzzPolicyGenesisJSON`).
 
 `InitGenesis` needs an empty store (the scaffold key `[0x01]`, a layout key, or any row is refused) and writes the layout
-version and the safety caps. The policy version and the decision rows live in the authority store; the app is meant to
-cross-check the decision rows against the authority genesis in InitChain.
+version and the safety caps. The policy version and the decision rows live in the authority store; the app cross-checks
+the decision rows against the authority genesis in InitChain (`chain/app/state.go`, `validatePolicyGenesis`).
 
 `ExportCheck` refuses, with `ErrExportRefused` naming the prefix, while the store holds a governed value (`0x02`), a
 pending change (`0x03`), a plan (`0x06`), an applied upgrade (`0x07`), or a plan name (`0x08`, which a cancelled plan
 leaves), while the app version is not 1 (absent included), or while the policy version is not 1. The version map is
 derived from the binary and is not exported. `ExportGenesis` runs `ExportCheck` and returns `policy_version` 1, the stored
-caps, and the authority's decision rows, and validates its own result; `AppModule.ExportGenesis` panics on a refusal, so the app is meant to call `ExportCheck` first. This joins
+caps, and the authority's decision rows, and validates its own result; `AppModule.ExportGenesis` panics on a refusal, so the app calls `ExportCheck` first (`chain/app/app.go`, export). This joins
 DR-06-01: restart from an export is unsupported once any governance state exists (interim DR-10-04).
 
 No migration is registered. Version 1 is the scaffold layout and has no step on purpose: `RunMigrations` from 1 fails
@@ -238,7 +241,7 @@ per rule into a store that holds every kind of row; `TestCheckInvariantsAtLayout
 | I7 safety caps | the caps row equals the protocol caps | decision rows, council, devnet rows: authority checker |
 | I8-I11 | | authority checker |
 | I12 only allowed writers | | AST test and snapshots (app) |
-| I13 upgrade self-check | | upgrade runner (app) |
+| I13 upgrade self-check | | upgrade runner (app): every x/policy row except the layout key, the app version, the version map, and the plan, which the runner checks itself, is in an I13 class (`chain/app/upgrades.go` `rowClasses`) |
 
 `h` is the last committed height, or the height of a block whose BeginBlock already ran on the checked state; checked at
 `b` on state committed at `b - 1`, a row due at `b` is reported as an I3 violation. `TestCheckDecisionsSelfTest` injects one
@@ -272,23 +275,11 @@ The plan and plan-name rows serve deviations D-5 and D-6, which belong to x/auth
 (the per-block upgrade step). The spec machine has no export; the export refusal is DR-06-01 and DR-10-04, not a spec
 deviation.
 
-## Handoff
-
-- x/authority (P2b): `DecisionSource.BlockedDecisions(ctx)` must be implemented by the authority keeper before the app can
-  wire this keeper; `VersionSource` is `authority.Keeper.PolicyVersion`. The writer methods take an `sdk.Context` and
-  return `msgkit.Code`; authority's context-free `PolicyWriter` (plan section 7.2) needs a bound adapter, as `boundRegistry`
-  does for the registry hooks. `ScheduleUpgrade` checks the minimum lead too, not only the maximum.
-- The app (INT): order this module's BeginBlock before x/leases (D-8); call `InitVersions` in InitChain after every
-  `InitGenesis`; call `ExportCheck` before the module manager export; the I13 snapshot list may include `0x08`, which an
-  upgrade does not change. `ExportGenesis` now marshals the four query fields of schema version 2 as empty values
-  (`EmitUnpopulated`), so an export round trip compares decoded documents, not the input bytes.
-- The upgrade code: `Plan(ctx)` returns `policy.Plan`, not `chain/upgrade.Plan` (x/policy may not import `chain/upgrade`,
-  plan section 3); `RecordUpgrade` now refuses when no plan row exists.
-
 ## Limitations
 
-- Unit level only (see "Status of this directory"); the app-level and devnet behaviour of the BeginBlock, the query, and
-  the plan rows is tested elsewhere or not yet.
+- The claims of this file are unit level unless a line says otherwise. The app-level and devnet behaviour of activation
+  is `TestActivationTiming` (chain/app) and `TestDevnetGovernedChangeTiming` (single-machine four-process devnet, not
+  independent operators); the upgrade plan rows at app level are `TestUpgradeRehearsalInProcess`.
 - The `release_digest` of a plan is information for operators: the chain cannot check which binary a node runs
   (DR-10-18). No review of any release is claimed.
 - A damaged committed row panics in every message path that reads it, makes BeginBlock fail the block, and makes the query

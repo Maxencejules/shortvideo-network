@@ -94,11 +94,16 @@ type payload struct {
 }
 
 // digestJSON is the proto3 JSON of a Digest; the default algorithm and an
-// empty value are omitted.
+// empty value are omitted. An algorithm outside the enum is written as its
+// number, as proto3 JSON writes an unknown enum value.
 func digestJSON(d *typesv1.Digest) map[string]any {
 	out := map[string]any{}
-	if d.GetAlgorithm() != typesv1.DigestAlgorithm_DIGEST_ALGORITHM_UNSPECIFIED {
-		out["algorithm"] = d.GetAlgorithm().String()
+	if alg := d.GetAlgorithm(); alg != typesv1.DigestAlgorithm_DIGEST_ALGORITHM_UNSPECIFIED {
+		if _, known := typesv1.DigestAlgorithm_name[int32(alg)]; known {
+			out["algorithm"] = alg.String()
+		} else {
+			out["algorithm"] = int64(alg)
+		}
 	}
 	if len(d.GetValue()) > 0 {
 		out["value"] = base64.StdEncoding.EncodeToString(d.GetValue())
@@ -305,9 +310,11 @@ type shapeCase struct {
 	payload payload
 }
 
-// shapeCases are the eight G-11 conditions of spec_oracle.py
+// shapeCases are the thirteen G-11 conditions of spec_oracle.py
 // shape_condition, in its order (the empty provider id once for admit and
-// once for disable, which share the parse).
+// once for disable, which share the parse): the eight of ORCH-1, then the
+// five ORCH-8 added, which were the Wave 1 rows of
+// TestUnnamedParseDivergences.
 func shapeCases() []shapeCase {
 	short := &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: sha("r")[:31]}
 	noAlgorithm := &typesv1.Digest{Value: sha("r")}
@@ -325,6 +332,11 @@ func shapeCases() []shapeCase {
 		{"governed empty limit key (proto3 default)", keyed(governedPayload("", 5), msgkit.LimitMaxPageLimit)},
 		{"admit empty provider id (proto3 default)", keyed(admitPayload(""), "admit-x")},
 		{"disable empty provider id (proto3 default)", keyed(disablePayload(""), "disable-x")},
+		{"validator consensus key of 31 bytes without a reason digest", validatorPayload("v9", consensusKey("v9")[:31], 10, nil, atHeight(9))},
+		{"validator empty node id (proto3 default)", keyed(validatorPayload("", consensusKey("v9"), 10, digest(sha("r")), atHeight(9)), "validator-v9")},
+		{"withdraw content id outside the pattern without a reason digest", keyed(withdrawWith("-bad", 1, nil), "withdraw-x")},
+		{"withdraw content id outside the pattern with version 0 (proto3 default)", keyed(withdrawWith("-bad", 0, digest(sha("r"))), "withdraw-x")},
+		{"withdraw content id outside the pattern with a 31-byte reason digest", keyed(withdrawWith("-bad", 1, short), "withdraw-x")},
 	}
 }
 

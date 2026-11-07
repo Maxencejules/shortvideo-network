@@ -37,7 +37,10 @@ func readU64(t testing.TB, raw []byte) uint64 {
 
 // fakeVersions is the x/policy stand-in: app version at 'a', version map
 // rows at 'm'|name, the plan at 'p', applied upgrades at 'x'|name.
-// RecordUpgrade checks as the policy keeper does before it writes.
+// RecordUpgrade checks as the policy keeper does before it writes: the
+// height is the block's, the upgrade is not applied yet, the plan row is
+// stored and names this upgrade at this height, and the app version moves
+// by one.
 type fakeVersions struct {
 	t         testing.TB
 	key       *storetypes.KVStoreKey
@@ -78,7 +81,11 @@ func (f *fakeVersions) RecordUpgrade(ctx sdk.Context, name string, height uint64
 	if store.Has(append([]byte("x"), name...)) {
 		return fmt.Errorf("%s already applied", name)
 	}
-	if plan, found, _ := (&fakePlans{t: f.t, key: f.key}).Plan(ctx); found && (plan.Name != name || plan.Height != height) {
+	plan, found, _ := (&fakePlans{t: f.t, key: f.key}).Plan(ctx)
+	if !found {
+		return fmt.Errorf("no stored plan for upgrade %s at height %d", name, height)
+	}
+	if plan.Name != name || plan.Height != height {
 		return fmt.Errorf("stored plan %s at %d", plan.Name, plan.Height)
 	}
 	if f.AppVersion(ctx)+1 != appVersion {
@@ -227,6 +234,29 @@ func (f *fakeCounter) BumpPolicyVersionForUpgrade(ctx sdk.Context) error {
 	return nil
 }
 
+// fakeEnv is the handler environment over the test context's stores, by
+// name.
+type fakeEnv struct {
+	keys map[string]*storetypes.KVStoreKey
+}
+
+func (f fakeEnv) StoreNames() []string {
+	names := make([]string, 0, len(f.keys))
+	for name := range f.keys {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func (f fakeEnv) KVStore(ctx sdk.Context, name string) (storetypes.KVStore, bool) {
+	key, ok := f.keys[name]
+	if !ok {
+		return nil, false
+	}
+	return ctx.KVStore(key), true
+}
+
 // fakeMigrate stands in for the module manager's RunMigrations: for each
 // layout module whose binary version is above the stored one it writes the
 // layout key at the binary version, and it returns the binary's map.
@@ -363,6 +393,7 @@ func newRunnerEnv(t *testing.T) *runnerEnv {
 	e.deps = upgrade.Deps{
 		Plans: e.plans, Versions: e.versions, Params: e.params, Layouts: e.layouts, Counter: e.counter,
 		Migrate: fakeMigrate(keys["mod"], runnerVM),
+		Env:     fakeEnv{keys: keys},
 		Unchanged: []upgrade.Unchanged{
 			{Name: "authority rows", Snapshot: prefixSnapshot(keys["authority"], nil, []byte{0x04})},
 			{Name: "protected rows", Snapshot: prefixSnapshot(keys["mod"], []byte("k"))},
@@ -886,6 +917,7 @@ func TestNewRunnerRefusesBadDeps(t *testing.T) {
 		{"no layout source", func(d *upgrade.Deps) { d.Layouts = nil }, "layouts false"},
 		{"no policy counter", func(d *upgrade.Deps) { d.Counter = nil }, "counter false"},
 		{"no migrate", func(d *upgrade.Deps) { d.Migrate = nil }, "migrate false"},
+		{"no handler environment", func(d *upgrade.Deps) { d.Env = nil }, "env false"},
 		{"no post-condition check", func(d *upgrade.Deps) { d.Unchanged = nil }, "no post-condition checks (I13)"},
 		{"empty post-condition list", func(d *upgrade.Deps) { d.Unchanged = []upgrade.Unchanged{} }, "no post-condition checks (I13)"},
 		{"too many checks", func(d *upgrade.Deps) { d.Unchanged = tooMany }, "33 post-condition checks"},
@@ -915,5 +947,119 @@ func TestNewRunnerRefusesBadDeps(t *testing.T) {
 	got.Modules["alpha"] = 7
 	if r.Binary().Modules["alpha"] != 2 {
 		t.Fatal("Binary() returned the runner's own map")
+	}
+}
+
+// TestRunnerGivesHandlerTheEnv: the handler's context carries the runner's
+// handler environment (upgrade.EnvOf): it names the mounted stores in byte
+// order, reports an unknown name as absent, and returns stores of the
+// handler's cache branch, so a write through it is not in the block state
+// while the handler runs and is kept after every check passed. A context the
+// runner did not give to a handler, and one carrying a nil environment,
+// carry none.
+func TestRunnerGivesHandlerTheEnv(t *testing.T) {
+	e := newRunnerEnv(t)
+	if _, found := upgrade.EnvOf(e.ctx); found {
+		t.Fatal("a plain context carries a handler environment")
+	}
+	if _, found := upgrade.EnvOf(upgrade.WithEnv(e.ctx, nil)); found {
+		t.Fatal("a nil handler environment was reported")
+	}
+	e.handler = func(ctx sdk.Context, from module.VersionMap, migrate upgrade.Migrate) (module.VersionMap, error) {
+		env, found := upgrade.EnvOf(ctx)
+		if !found {
+			return nil, errors.New("the handler has no environment")
+		}
+		if got := fmt.Sprint(env.StoreNames()); got != "[authority mod policy svn]" {
+			return nil, fmt.Errorf("store names %s", got)
+		}
+		if _, found := env.KVStore(ctx, "absent"); found {
+			return nil, errors.New("an unmounted store was found")
+		}
+		mod, found := env.KVStore(ctx, "mod")
+		if !found {
+			return nil, errors.New("store mod not found")
+		}
+		if !bytes.Equal(mod.Get([]byte("d1")), []byte("module data")) {
+			return nil, errors.New("the environment's store does not read the state")
+		}
+		mod.Set([]byte("d2"), []byte("env row"))
+		if e.store("mod").Has([]byte("d2")) {
+			return nil, errors.New("an environment write reached the block state before the checks")
+		}
+		return migrate(ctx, from)
+	}
+	if changed, err := e.runner().PreBlock(e.ctx); err != nil || !changed {
+		t.Fatalf("PreBlock: %t %v", changed, err)
+	}
+	if !bytes.Equal(e.store("mod").Get([]byte("d2")), []byte("env row")) {
+		t.Fatal("the environment write to a store outside every check was not kept")
+	}
+}
+
+// TestRunnerRefusesProtectedEnvWrites: a handler that writes through its
+// handler environment meets the same checks as any other write. A change to
+// an Unchanged class (the I13 self-check: an authority row, a protected
+// row) or to a row the runner owns (the policy version, the plan, the
+// consensus params, the app version) refuses the upgrade: every store is
+// unchanged and nothing is emitted. The same state with the honest handler
+// then applies.
+func TestRunnerRefusesProtectedEnvWrites(t *testing.T) {
+	changedParams := runnerParams
+	changedParams.Block = &cmtproto.BlockParams{MaxBytes: 1, MaxGas: 1}
+	rawParams, err := changedParams.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := []struct {
+		name  string
+		store string
+		key   []byte
+		value []byte
+		want  string
+	}{
+		{"authority row", "authority", []byte{0x10, 'p'}, []byte("rewritten"), "upgrade up-1 changed authority rows"},
+		{"authority row beside the policy version", "authority", []byte{0x04, 'x'}, []byte("row"), "upgrade up-1 changed authority rows"},
+		{"protected row", "mod", []byte("k2"), []byte("added"), "upgrade up-1 changed protected rows"},
+		{"policy version", "authority", []byte{0x04}, u64(6), "handler changed the policy version from 5 to 6"},
+		{"plan", "policy", []byte("p"), encodePlan(upgrade.Plan{Name: "up-1", Height: uint64(planHeight), Digest: digest(6)}), "handler changed or removed the upgrade plan"},
+		{"app version", "policy", []byte("a"), u64(2), "handler changed the stored app version from 1 to 2"},
+		{"consensus params", "svn", []byte{0x03}, rawParams, "handler changed the consensus params"},
+	}
+	for _, row := range rows {
+		e := newRunnerEnv(t)
+		e.handler = func(ctx sdk.Context, from module.VersionMap, migrate upgrade.Migrate) (module.VersionMap, error) {
+			out, err := migrate(ctx, from)
+			env, found := upgrade.EnvOf(ctx)
+			if !found {
+				return nil, errors.New("the handler has no environment")
+			}
+			store, found := env.KVStore(ctx, row.store)
+			if !found {
+				return nil, fmt.Errorf("store %s not found", row.store)
+			}
+			store.Set(row.key, row.value)
+			return out, err
+		}
+		e.failsUnchanged(row.name, upgrade.ErrPostcondition, row.want)
+		e.handler = nil
+		if changed, err := e.runner().PreBlock(e.ctx); err != nil || !changed {
+			t.Fatalf("%s: the honest handler on the same state: %t %v", row.name, changed, err)
+		}
+	}
+}
+
+// TestRunnerRecordRefusesAbsentPlan: the version store records an upgrade
+// only from a stored plan of that name at that height, as the x/policy
+// keeper does. A plan source that reports the upgrade while the plan row is
+// absent (a source that breaks the PlanSource contract) reaches the record
+// step, which refuses it: every store is unchanged and nothing is emitted.
+func TestRunnerRecordRefusesAbsentPlan(t *testing.T) {
+	e := newRunnerEnv(t)
+	e.store("policy").Delete([]byte("p"))
+	e.plans.stale = &upgrade.Plan{Name: "up-1", Height: uint64(planHeight), Digest: digest(5)}
+	e.failsUnchanged("plan row absent", upgrade.ErrRecord, "record upgrade up-1: no stored plan for upgrade up-1 at height 7")
+	if e.handlerCalls != 1 {
+		t.Fatalf("handler ran %d times", e.handlerCalls)
 	}
 }

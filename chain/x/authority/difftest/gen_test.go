@@ -25,13 +25,14 @@ var d1Keys = []string{"max_tx_bytes", "max_gas_per_tx", "max_open_proposals", "m
 // schema version 2 payload (D-4, D-5: spec_machine.py has no such field or
 // alternative; TestSchemaTwoPayloadsD5); and, outside the G-11 cases, a
 // zero payload integer other than a validator removal's power, an empty
-// payload string or consensus key, a reason digest whose value is not 32
-// bytes, a negative validator power, and a force-withdraw content id
-// outside the id pattern with an unparseable or absent reason digest or an
-// absent version. The rows of TestUnnamedParseDivergences are in that
-// excluded part: parse cases where the chain and spec_machine.py answer
-// different reject codes and no rule names the difference (open
-// divergences).
+// payload string or consensus key, a consensus key that is not 32 bytes, a
+// reason digest whose value is not 32 bytes or whose algorithm is outside
+// the enum, an absent activation, a negative validator power, and a
+// force-withdraw content id outside the id pattern. The open classes of
+// TestUnnamedParseDivergences are in that excluded part: parse cases where
+// the chain and spec_machine.py answer different reject codes and no rule
+// names the difference (open divergences). That test's shape space sends
+// every v0 field shape class combination, the excluded ones included.
 type gen struct {
 	rng *rand.Rand
 	// side draws only the G-11 replacements, so the draws of rng, and with

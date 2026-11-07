@@ -7,12 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -57,14 +53,17 @@ import (
 //
 //   - v1: the production app (app version 1, no upgrade handler): svnd.
 //   - v2: the app with rehearsal.Upgrades (upgrade "rehearsal-1", app
-//     version 1 to 2), x/leases and x/evidence reporting consensus version
-//     3, and rehearsal.LeasesStep and rehearsal.EvidenceStep registered as
-//     their 2 to 3 migrations (BumpModuleVersionForTest). It is the
-//     in-process stand-in for the rehearsal binary plus a module migration
-//     (decision request DR-10-36); the svnd-rehearsal binary itself
+//     version 1 to 2, run by rehearsal.Handler, the handler of B2), x/leases
+//     and x/evidence reporting consensus version 3, and
+//     rehearsal.LeasesStep and rehearsal.EvidenceStep registered as their 2
+//     to 3 migrations (BumpModuleVersionForTest). It is the in-process
+//     stand-in for the rehearsal binary B2 plus a module migration (decision
+//     request DR-10-36); B2 itself (svnd built with -tags svn_rehearsal)
 //     registers no module step.
-//   - v2-bad: v2 with rehearsal.BadLeasesStep (one extra leases row): the
-//     wrong migration.
+//   - v2-bad: v2 with rehearsal.BadUpgrades (the same upgrade run by
+//     rehearsal.BadHandler, the handler of B2-bad, svnd built with -tags
+//     svn_rehearsal_bad): it writes one documented extra row into the
+//     x/leases store through the handler environment.
 //
 // Everything is built from one tree: not independently built releases, not
 // signed, not reviewed source.
@@ -72,7 +71,7 @@ import (
 // rehearsalRelease is the text whose SHA-256 the plan names as its release
 // digest. The digest is information for operators; the chain cannot check
 // which binary a node runs (DR-10-18).
-const rehearsalRelease = "svnd-rehearsal built from the tested tree (not a release)"
+const rehearsalRelease = "svnd -tags svn_rehearsal built from the tested tree (not a release)"
 
 // rehearsalSlack is the number of blocks the plan height lies beyond the
 // minimum lead: h = execute height + MinActivationLeadBlocks + slack.
@@ -107,11 +106,11 @@ func openBinary(t *testing.T, dir, chainID string, kind binaryKind) (*app.App, d
 		}
 		return chainApp, db, nil
 	}
-	step := rehearsal.LeasesStep
+	upgrades := rehearsal.Upgrades()
 	if kind == binaryV2Bad {
-		step = rehearsal.BadLeasesStep
+		upgrades = rehearsal.BadUpgrades()
 	}
-	return openUpgrade(t, dir, chainID, rehearsal.Upgrades(), step)
+	return openUpgrade(t, dir, chainID, upgrades, rehearsal.LeasesStep)
 }
 
 // leasesStepFor builds the x/leases 2 to 3 migration of one binary from
@@ -1359,12 +1358,33 @@ func rowWrite(name string, key []byte) func(*testing.T, *app.App, sdk.Context) {
 	}
 }
 
-// refuseWrongMigrations restarts the one node of r (at h-1) once per write
-// with a binary whose x/leases migration runs rehearsal.LeasesStep and then
-// the write. FinalizeBlock(h) must fail with the write's error, write
-// nothing to the finalize branch, and leave the commit. After every write,
-// the honest v2 binary applies the upgrade on the same state.
+// writeSite is where a wrong upgrade makes its protected write.
+type writeSite int
+
+const (
+	// inMigration: in the x/leases module migration, after
+	// rehearsal.LeasesStep.
+	inMigration writeSite = iota
+	// inHandler: in the upgrade handler, after rehearsal.Handler, through
+	// the handler environment the runner gives it (envWrite).
+	inHandler
+)
+
+// refuseWrongMigrations is refuseWrongUpgrades with every write made in the
+// x/leases module migration.
 func refuseWrongMigrations(t *testing.T, writes []protectedWrite) {
+	t.Helper()
+	refuseWrongUpgrades(t, inMigration, writes)
+}
+
+// refuseWrongUpgrades restarts the one node of r (at h-1) once per write
+// with a binary that makes the write at site: in its x/leases migration
+// (rehearsal.LeasesStep, then the write) or in its upgrade handler
+// (rehearsal.Handler, then the write). FinalizeBlock(h) must fail with the
+// write's error, write nothing to the finalize branch, and leave the
+// commit. After every write, the honest v2 binary applies the upgrade on the
+// same state.
+func refuseWrongUpgrades(t *testing.T, site writeSite, writes []protectedWrite) {
 	t.Helper()
 	r := newPlanNet(t, 1)
 	d, id := r.disks[0], r.e.doc.ChainID
@@ -1378,11 +1398,24 @@ func refuseWrongMigrations(t *testing.T, writes []protectedWrite) {
 				if err := honest(ctx); err != nil {
 					return err
 				}
-				w.write(t, target, ctx)
+				if site == inMigration {
+					w.write(t, target, ctx)
+				}
 				return nil
 			}
 		}
-		chainApp, db, err := openUpgrade(t, d.dir, id, rehearsal.Upgrades(), step)
+		upgrades := rehearsal.Upgrades()
+		if site == inHandler {
+			upgrades[0].Handler = func(ctx sdk.Context, from module.VersionMap, migrate upgrade.Migrate) (module.VersionMap, error) {
+				migrated, err := rehearsal.Handler(ctx, from, migrate)
+				if err != nil {
+					return nil, err
+				}
+				w.write(t, target, ctx)
+				return migrated, nil
+			}
+		}
+		chainApp, db, err := openUpgrade(t, d.dir, id, upgrades, step)
 		if err != nil {
 			t.Fatalf("%s: %v", w.name, err)
 		}
@@ -1411,12 +1444,11 @@ func changedClass(class string) string {
 }
 
 // TestMigrationCannotChangeAuthorityRows: for every I13 row class of the
-// upgrade runner (the authority prefixes, the other authority rows, and
-// the x/policy safety caps, governed values, and pending changes), a module
-// migration that adds one row in that class is refused with "upgrade
-// rehearsal-1 changed <class>" and nothing of h is written. The class list
-// is the app's own (PostConditionNamesForTest); a class without a write
-// here fails the test.
+// upgrade runner (the authority prefixes, the other authority rows, the
+// x/policy prefixes, and the other x/policy rows), a module migration that
+// adds one row in that class is refused with "upgrade rehearsal-1 changed
+// <class>" and nothing of h is written. The class list is the app's own
+// (PostConditionNamesForTest); a class without a write here fails the test.
 func TestMigrationCannotChangeAuthorityRows(t *testing.T) {
 	keys := map[string][2]any{
 		"authority layout version":            {authority.ModuleName, []byte{0x00, 0x7A}},
@@ -1433,6 +1465,9 @@ func TestMigrationCannotChangeAuthorityRows(t *testing.T) {
 		"policy safety caps":                  {app.ModulePolicy, []byte{0x01, 0x7A}},
 		"policy governed values":              {app.ModulePolicy, []byte{policy.GovernedPrefix, 0x7A}},
 		"policy pending changes":              {app.ModulePolicy, []byte{policy.PendingPrefix, 0x7A}},
+		"policy applied upgrades":             {app.ModulePolicy, policy.AppliedKey("ghost")},
+		"policy plan names":                   {app.ModulePolicy, policy.PlanNameKey("future")},
+		"policy other rows":                   {app.ModulePolicy, []byte{0x09}},
 	}
 	names := newTestApp(t, "shortvideo-dev-names", nil).PostConditionNamesForTest()
 	var writes []protectedWrite
@@ -1449,6 +1484,97 @@ func TestMigrationCannotChangeAuthorityRows(t *testing.T) {
 	refuseWrongMigrations(t, writes)
 }
 
+// envWrite sets key to value in store name through the handler
+// environment of ctx (upgrade.EnvOf), or deletes key when value is nil.
+func envWrite(name string, key, value []byte) func(*testing.T, *app.App, sdk.Context) {
+	return func(t *testing.T, _ *app.App, ctx sdk.Context) {
+		env, found := upgrade.EnvOf(ctx)
+		if !found {
+			t.Error("the handler context carries no handler environment")
+			return
+		}
+		store, found := env.KVStore(ctx, name)
+		if !found {
+			t.Errorf("the handler environment has no store %s", name)
+			return
+		}
+		if value == nil {
+			store.Delete(key)
+			return
+		}
+		store.Set(key, value)
+	}
+}
+
+// TestUpgradeHandlerEnvCannotChangeProtectedRows (ORCH-7): an upgrade handler that
+// writes through its handler environment meets the runner's checks
+// unchanged. For every I13 row class (the app's own list,
+// PostConditionNamesForTest) a handler that adds one row of that class is
+// refused with "upgrade rehearsal-1 changed <class>", and a handler that
+// writes a row the runner owns (the authority policy version, the x/policy
+// app version and plan, the consensus params) is refused with the runner's
+// own message; nothing of h is written, the commit does not move, and the
+// honest v2 binary then applies on the same state. A handler write outside
+// every check applies: TestWrongMigrationDiverges (B2-bad).
+func TestUpgradeHandlerEnvCannotChangeProtectedRows(t *testing.T) {
+	keys := map[string][2]any{
+		"authority layout version":            {authority.ModuleName, []byte{0x00, 0x7A}},
+		"authority config":                    {authority.ModuleName, []byte{0x01, 0x7A}},
+		"authority admission rows":            {authority.ModuleName, []byte{0x02, 0x7A}},
+		"authority pending validator changes": {authority.ModuleName, []byte{0x03, 0x7A}},
+		"authority proposals":                 {authority.ModuleName, []byte{0x10, 0x7A}},
+		"authority business ids":              {authority.ModuleName, []byte{0x11, 0x7A}},
+		"authority executed digests":          {authority.ModuleName, []byte{0x12, 0x7A}},
+		"authority open counts":               {authority.ModuleName, []byte{0x14, 0x7A}},
+		"authority retired seat keys":         {authority.ModuleName, []byte{0x15, 0x7A}},
+		"authority retired service addresses": {authority.ModuleName, []byte{0x16, 0x7A}},
+		"authority other rows":                {authority.ModuleName, []byte{0x04, 0x7A}},
+		"policy safety caps":                  {app.ModulePolicy, []byte{0x01, 0x7A}},
+		"policy governed values":              {app.ModulePolicy, []byte{policy.GovernedPrefix, 0x7A}},
+		"policy pending changes":              {app.ModulePolicy, []byte{policy.PendingPrefix, 0x7A}},
+		"policy applied upgrades":             {app.ModulePolicy, policy.AppliedKey("ghost")},
+		"policy plan names":                   {app.ModulePolicy, policy.PlanNameKey("future")},
+		"policy other rows":                   {app.ModulePolicy, []byte{0x06, 0x7A}},
+	}
+	names := newTestApp(t, "shortvideo-dev-env-names", nil).PostConditionNamesForTest()
+	var writes []protectedWrite
+	for _, class := range names {
+		key, ok := keys[class]
+		if !ok {
+			t.Fatalf("I13 class %q has no write in this test", class)
+		}
+		writes = append(writes, protectedWrite{name: class, write: envWrite(key[0].(string), key[1].([]byte), []byte{0x01}), want: changedClass(class)})
+	}
+	if len(writes) != len(keys) {
+		t.Fatalf("%d I13 classes, %d writes", len(names), len(keys))
+	}
+	writes = append(writes,
+		protectedWrite{name: "authority policy version", write: envWrite(authority.ModuleName, []byte{0x04}, policy.EncodeU64(99)),
+			want: fmt.Sprintf("upgrade %s handler changed the policy version from", rehearsal.UpgradeName)},
+		protectedWrite{name: "policy app version", write: envWrite(app.ModulePolicy, policy.AppVersionKey(), policy.EncodeU64(rehearsal.ToAppVersion)),
+			want: fmt.Sprintf("upgrade %s handler changed the stored app version from 1 to 2", rehearsal.UpgradeName)},
+		protectedWrite{name: "policy plan deleted", write: envWrite(app.ModulePolicy, policy.PlanKey(), nil),
+			want: fmt.Sprintf("upgrade %s handler changed or removed the upgrade plan", rehearsal.UpgradeName)},
+		protectedWrite{name: "block max gas raised", write: func(t *testing.T, _ *app.App, ctx sdk.Context) {
+			env, _ := upgrade.EnvOf(ctx)
+			store, _ := env.KVStore(ctx, app.ModuleSVN)
+			var params cmtproto.ConsensusParams
+			if err := params.Unmarshal(store.Get([]byte{0x03})); err != nil || params.Block == nil {
+				t.Errorf("consensus params: %v", err)
+				return
+			}
+			params.Block.MaxGas++
+			raw, err := params.Marshal()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			store.Set([]byte{0x03}, raw)
+		}, want: fmt.Sprintf("upgrade %s handler changed the consensus params", rehearsal.UpgradeName)},
+	)
+	refuseWrongUpgrades(t, inHandler, writes)
+}
+
 // TestMigrationCannotAddRowsBesideThePolicyVersion: the runner checks the
 // authority policy version key (0x04) itself, so only that exact key is left
 // out of "authority other rows". A module migration that adds a longer key
@@ -1459,6 +1585,32 @@ func TestMigrationCannotAddRowsBesideThePolicyVersion(t *testing.T) {
 		write: rowWrite(authority.ModuleName, []byte{0x04, 0x7A}),
 		want:  changedClass("authority other rows"),
 	}})
+}
+
+// TestUpgradeCannotChangePlanNameOrRunnerKeyRows (security review, Wave 2):
+// the plan-name rows (0x08) hold the rule of the owner's Q3 option "3 of 4 +
+// min notice (Recommended)" that a plan name can never be reused with a
+// different release digest, so a handler that deletes the plan-name row of
+// the upgrade being applied, or rewrites it to another digest, is refused
+// ("policy plan names"). A handler that adds an applied row (0x07, the
+// ORCH-10 rule that an applied name is DUPLICATE_ID) is refused as a change
+// of "policy applied upgrades" (TestUpgradeHandlerEnvCannotChangeProtectedRows).
+// The runner checks the layout key, the app version, and the plan only as
+// exact keys, so a longer key that starts with one of those bytes, or a key
+// under no known prefix, is a change of "policy other rows". Nothing of h is
+// written, and the honest v2 binary then applies on the same state.
+func TestUpgradeCannotChangePlanNameOrRunnerKeyRows(t *testing.T) {
+	writes := []protectedWrite{
+		{name: "plan-name row of the applied upgrade deleted", write: envWrite(app.ModulePolicy, policy.PlanNameKey(rehearsal.UpgradeName), nil),
+			want: changedClass("policy plan names")},
+		{name: "plan-name row rewritten to another digest", write: envWrite(app.ModulePolicy, policy.PlanNameKey(rehearsal.UpgradeName), bytes.Repeat([]byte{0xEE}, 32)),
+			want: changedClass("policy plan names")},
+	}
+	for _, key := range [][]byte{{0x00, 0x7A}, {0x04, 0x7A}, {0x06, 0x7A}, {0x09}} {
+		writes = append(writes, protectedWrite{name: fmt.Sprintf("policy row %x", key), write: envWrite(app.ModulePolicy, key, []byte{0x01}),
+			want: changedClass("policy other rows")})
+	}
+	refuseWrongUpgrades(t, inHandler, writes)
 }
 
 // TestMigrationCannotChangeSafetyCaps: a module migration that rewrites the
@@ -1534,9 +1686,12 @@ func TestMigrationCannotChangeBlockParams(t *testing.T) {
 }
 
 // TestWrongMigrationDiverges: of two nodes at h-1, one opens v2 and one
-// v2-bad (rehearsal.BadLeasesStep, one extra leases row). Both apply the
-// upgrade at h; the upgrade runner's own checks do not cover the leases
-// store, so the wrong node commits another app hash. The two states differ
+// v2-bad (rehearsal.BadHandler, the handler of B2-bad: rehearsal.Handler,
+// then one extra row, BadRowKey -> BadRowValue, written into the x/leases
+// store through the handler environment). The result is a divergence, not
+// a halt: both nodes apply the upgrade at h (app version 2), because the
+// row is outside every check of the upgrade runner (x/leases is not an I13
+// class), so the wrong node commits another app hash. The two states differ
 // exactly in that row, and the lease invariants refuse it on the wrong node
 // only. Under CometBFT the wrong node then halts at h+1 ("+2/3 committed an
 // invalid block", case I6); this test does not run CometBFT.
@@ -1559,6 +1714,11 @@ func TestWrongMigrationDiverges(t *testing.T) {
 	}
 	if bytes.Equal(hashes[0], hashes[1]) {
 		t.Fatal("v2 and v2-bad committed the same app hash")
+	}
+	for i, node := range r.c.nodes {
+		if got := queryPolicy(t, node.app).GetAppVersion(); got != rehearsal.ToAppVersion {
+			t.Fatalf("node %d: app version %d after h", i, got)
+		}
 	}
 	changed := changedKeys(allRows(r.c.nodes[0].app), allRows(r.c.nodes[1].app))
 	if want := map[string][]string{app.ModuleLeases: sortedHex(rehearsal.BadRowKey)}; fmt.Sprint(changed) != fmt.Sprint(want) {
@@ -1650,53 +1810,19 @@ type cancelChange struct{ name string }
 
 func (cancelChange) ParameterKey() string { return "upgrade" }
 
-// rehearsalBinary builds ./internal/rehearsal/cmd/svnd-rehearsal once per
-// test binary (module cache only) and returns its `version` output and its
-// `go tool nm` listing. The binary is deleted after both are read.
-var rehearsalBinary = sync.OnceValues(func() (string, error) {
-	dir, err := os.MkdirTemp("", "svnd-rehearsal-")
-	if err != nil {
-		return "", err
-	}
-	defer os.RemoveAll(dir)
-	bin := filepath.Join(dir, "svnd-rehearsal")
-	build := exec.Command("go", "build", "-o", bin, "./internal/rehearsal/cmd/svnd-rehearsal")
-	build.Dir = filepath.Clean("..")
-	build.Env = append(os.Environ(), "GOPROXY=off")
-	if output, err := build.CombinedOutput(); err != nil {
-		return "", fmt.Errorf("build: %v\n%s", err, output)
-	}
-	sum, err := os.ReadFile(bin)
-	if err != nil {
-		return "", err
-	}
-	digest := sha256.Sum256(sum)
-	version, err := exec.Command(bin, "version").CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("version: %v\n%s", err, version)
-	}
-	nm, err := exec.Command("go", "tool", "nm", bin).CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("nm: %v\n%s", err, nm)
-	}
-	return "sha256 " + hex.EncodeToString(digest[:]) + "\n" + string(version) + "\x00" + string(nm), nil
-})
-
-// TestRehearsalBinaryVersionAndLinks builds the rehearsal binary B2
-// (svnd-rehearsal) from the tree with the module cache only. `version`
-// reports app version 2, the upgrade rehearsal-1 from 1 to 2, and the same
-// module versions as svnd (B2 runs no module step). Its symbols hold no
-// economic module (the TestLinkedBinaryOmitsEconomicModules list) and no
-// test hook of this repository (ForTest); the rehearsal handler and the
-// upgrade runner's PreBlock are linked (controls). Not a release: built
-// from one tree, not signed, not reviewed source.
+// TestRehearsalBinaryVersionAndLinks builds the rehearsal binaries from the
+// one svnd main package with the module cache only: B2 (-tags
+// svn_rehearsal) and B2-bad (-tags svn_rehearsal_bad). The `version` of
+// each reports app version 2, the upgrade rehearsal-1 from 1 to 2 (the same
+// plan name for both), and the same module versions as svnd (neither runs
+// a module step). Their symbols hold no test hook of this repository
+// (ForTest) and no test-support package (leasestest, evidencetest,
+// policytest, msgkittest); TestLinkedBinaryOmitsEconomicModules scans them
+// for economic modules. Controls: each links the upgrade runner's PreBlock
+// and its own handler, B2 links rehearsal.Handler and not
+// rehearsal.BadHandler, and B2-bad links rehearsal.BadHandler. Not
+// releases: built from one tree, not signed, not reviewed source.
 func TestRehearsalBinaryVersionAndLinks(t *testing.T) {
-	out, err := rehearsalBinary()
-	if err != nil {
-		t.Fatal(err)
-	}
-	version, symbols, _ := strings.Cut(out, "\x00")
-	t.Logf("svnd-rehearsal %s", version)
 	declared, err := app.DeclaredBinary(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -1705,34 +1831,49 @@ func TestRehearsalBinaryVersionAndLinks(t *testing.T) {
 	for name, v := range declared.Modules {
 		want = append(want, fmt.Sprintf("module %s %d", name, v))
 	}
-	lines := strings.Split(version, "\n")
-	for _, line := range want {
-		found := false
-		for _, got := range lines {
-			found = found || got == line
-		}
-		if !found {
-			t.Errorf("version output has no line %q:\n%s", line, version)
-		}
-	}
-	for _, path := range []string{
-		"github.com/cosmos/cosmos-sdk/x/staking", "github.com/cosmos/cosmos-sdk/x/bank", "github.com/cosmos/cosmos-sdk/x/mint",
-		"github.com/cosmos/cosmos-sdk/x/distribution", "github.com/cosmos/cosmos-sdk/x/slashing", "github.com/cosmos/cosmos-sdk/x/gov",
-		"github.com/cosmos/cosmos-sdk/x/authz", "github.com/cosmos/ibc-go", "github.com/cosmos/evm",
-	} {
-		if strings.Contains(symbols, path) {
-			t.Errorf("svnd-rehearsal links %s", path)
-		}
-	}
 	const repo = "github.com/Maxencejules/shortvideo-network/"
-	for _, line := range strings.Split(symbols, "\n") {
-		if strings.Contains(line, repo) && strings.Contains(line, "ForTest") {
-			t.Errorf("svnd-rehearsal links a test hook: %s", line)
+	for _, b := range []struct {
+		tag, links, omits string
+	}{
+		{"svn_rehearsal", repo + "chain/internal/rehearsal.Handler", repo + "chain/internal/rehearsal.BadHandler"},
+		{"svn_rehearsal_bad", repo + "chain/internal/rehearsal.BadHandler", ""},
+	} {
+		res := built(t, b.tag)
+		t.Logf("svnd -tags %s: sha256 %s\n%s", b.tag, res.digest, res.version)
+		lines := strings.Split(res.version, "\n")
+		for _, line := range want {
+			found := false
+			for _, got := range lines {
+				found = found || got == line
+			}
+			if !found {
+				t.Errorf("%s: version output has no line %q:\n%s", b.tag, line, res.version)
+			}
 		}
-	}
-	for _, control := range []string{repo + "chain/internal/rehearsal.Handler", repo + "chain/upgrade.(*Runner).PreBlock"} {
-		if !strings.Contains(symbols, control) {
-			t.Errorf("control symbol %s is not in the listing", control)
+		if strings.Contains(res.version, "upgrades none") {
+			t.Errorf("%s: version output says upgrades none:\n%s", b.tag, res.version)
+		}
+		testSupport := []string{repo + "chain/x/leases/leasestest", repo + "chain/x/evidence/evidencetest", repo + "chain/x/policy/policytest", repo + "chain/msgkit/msgkittest"}
+		for _, line := range strings.Split(res.symbols, "\n") {
+			if !strings.Contains(line, repo) {
+				continue
+			}
+			if strings.Contains(line, "ForTest") {
+				t.Errorf("%s links a test hook: %s", b.tag, line)
+			}
+			for _, pkg := range testSupport {
+				if strings.Contains(line, pkg) {
+					t.Errorf("%s links test support code: %s", b.tag, line)
+				}
+			}
+		}
+		for _, control := range []string{b.links, repo + "chain/upgrade.(*Runner).PreBlock"} {
+			if !strings.Contains(res.symbols, control) {
+				t.Errorf("%s: control symbol %s is not in the listing", b.tag, control)
+			}
+		}
+		if b.omits != "" && strings.Contains(res.symbols, b.omits) {
+			t.Errorf("%s links %s", b.tag, b.omits)
 		}
 	}
 }

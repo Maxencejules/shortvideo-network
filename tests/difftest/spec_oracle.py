@@ -149,8 +149,8 @@ Council rules, each applied only to the step class named and reported in
 shape and check-order differences of the same code; authority D-1, D-2 and
 D-7 are goal 10's. The scopes of G-6 and G-10 below are the implemented
 ones (orchestrator decision ORCH-2, accepted as implemented; not an owner
-decision). G-11 is orchestrator decision ORCH-1 (a reversible
-implementation choice, not an owner decision; open request DR-10-44).
+decision). G-11 is orchestrator decisions ORCH-1 and ORCH-8 (reversible
+implementation choices, not owner decisions; open request DR-10-44).
 chain/x/authority/README.md lists every rule, and the open differences no
 rule names (the oracle maps none of those):
 
@@ -201,20 +201,39 @@ rule names (the oracle maps none of those):
   consensus_pubkey_bytes bytes, and nodeId outside the id pattern, is
   BOUNDS. reasonDigest, activation and power are not read: absent ones are
   included (the chain checks the node id before them). An absent nodeId
-  (the proto3 empty string) is not included; it is an open divergence.
+  (the proto3 empty string) is not included; it is G-11 "empty node id".
 - G-11 (payload field shape: chain BOUNDS where the spec says MALFORMED):
   a propose whose spec validated_payload answered MALFORMED, with a payload
-  that meets one of exactly eight conditions (shape_condition), is BOUNDS.
-  Both sides reject and neither changes state. The conditions: a
-  validator reason digest that names SHA-256 with a value that is not 32
-  bytes; a negative validator power (every earlier validator field well
-  formed); an empty (omitted) consensus key; a force-withdraw reason
-  digest that names SHA-256 with a value that is not 32 bytes (content id
-  in the pattern, version at least 1); a force-withdraw content id outside
-  the id pattern with a reason digest whose algorithm is omitted; a
-  governed value of 0 (omitted); an empty (omitted) governed limit key;
-  an empty provider id in an admit or a disable payload (one parse).
+  that meets one of exactly thirteen conditions (shape_condition), is
+  BOUNDS. Both sides reject and neither changes state. Orchestrator
+  decision ORCH-1 named the first eight; ORCH-8 (the same open request
+  DR-10-44) added the last five, the parse divergences Wave 1 pinned in
+  TestUnnamedParseDivergences. The conditions, each with every earlier
+  check of the chain's parse passing:
+  1. a validator reason digest that names SHA-256 with a value that is
+     not 32 bytes (32-byte consensus key, node id in the pattern);
+  2. a negative validator power (every earlier validator field well
+     formed);
+  3. an empty (omitted) consensus key;
+  4. a force-withdraw reason digest that names SHA-256 with a value that
+     is not 32 bytes (content id in the pattern, version at least 1);
+  5. a force-withdraw content id outside the id pattern with a reason
+     digest whose algorithm is omitted;
+  6. a governed value of 0 (omitted);
+  7. an empty (omitted) governed limit key;
+  8. an empty provider id in an admit or a disable payload (one parse);
+  9. a validator consensus key that is not 32 bytes (not empty) with the
+     reason digest omitted;
+  10. an empty (omitted) validator node id with a 32-byte consensus key;
+  11. a force-withdraw content id outside the id pattern with the reason
+      digest omitted;
+  12. a force-withdraw content id outside the id pattern with the version
+      0 (omitted) and a reason digest the spec parses;
+  13. a force-withdraw content id outside the id pattern with a reason
+      digest that names SHA-256 with a value that is not 32 bytes.
   shape_condition gives each exactly; G-9, G-10 and G-11 are disjoint.
+  The same chain check failing in a combination outside these is not
+  mapped (shape_condition lists the open ones).
 - authority D-1: whenever the spec's validated_payload passed for a
   governed limit whose key is not in governed_limit_caps or whose value is
   above its ceiling, the chain answers BOUNDS (right after the payload
@@ -403,7 +422,9 @@ VALIDATOR_BODY_KEYS: Final = frozenset({"consensusPubkey", "nodeId", "reasonDige
 GOVERNED_BODY_KEYS: Final = frozenset({"limitKey", "value"})
 WITHDRAW_BODY_KEYS: Final = frozenset({"contentId", "contentVersion", "reasonDigest"})
 DIGEST_KEYS: Final = frozenset({"algorithm", "value"})
-# The eight G-11 conditions, by the name shape_condition returns.
+# The thirteen G-11 conditions, by the name shape_condition returns: the
+# eight of ORCH-1, then the five ORCH-8 added (the Wave 1 rows of
+# TestUnnamedParseDivergences).
 SHAPE_CONDITIONS: Final = (
     "validator reason digest not 32 bytes",
     "negative validator power",
@@ -413,6 +434,11 @@ SHAPE_CONDITIONS: Final = (
     "governed value 0",
     "empty governed limit key",
     "empty provider id",
+    "validator consensus key not 32 bytes, reason digest omitted",
+    "empty node id",
+    "withdraw content id outside the pattern, reason digest omitted",
+    "withdraw content id outside the pattern, version 0",
+    "withdraw content id outside the pattern, SHA-256 reason not 32 bytes",
 )
 OPEN_STATES: Final = frozenset({"OPEN", "QUEUED"})
 
@@ -916,9 +942,15 @@ def validator_shape_condition(body: JSON) -> str | None:
     if "consensusPubkey" not in body:
         return "empty consensus key"
     key = b64_bytes(body["consensusPubkey"])
-    if key is None or len(key) != int(sm.BOUNDS["consensus_pubkey_bytes"]):
+    if key is None:
         return None
-    node_id = body.get("nodeId")
+    if len(key) != int(sm.BOUNDS["consensus_pubkey_bytes"]):
+        if "reasonDigest" not in body:
+            return "validator consensus key not 32 bytes, reason digest omitted"
+        return None
+    if "nodeId" not in body:
+        return "empty node id"
+    node_id = body["nodeId"]
     if not isinstance(node_id, str) or sm.check_id(node_id) is not None:
         return None
     reason = body.get("reasonDigest")
@@ -933,17 +965,34 @@ def validator_shape_condition(body: JSON) -> str | None:
     return None
 
 
+def withdraw_outside_pattern_condition(body: JSON) -> str | None:
+    """The G-11 condition of a forceWithdraw body whose content id is outside the id pattern.
+
+    The chain answers BOUNDS at the content id and reads nothing else; the
+    conditions below are the reason digest and version shapes ORCH-1 and
+    ORCH-8 name (see shape_condition). The body's content id is non-empty.
+    """
+    if "reasonDigest" not in body:
+        return "withdraw content id outside the pattern, reason digest omitted"
+    reason = body["reasonDigest"]
+    if without_algorithm(reason):
+        return "withdraw content id outside the pattern, reason without algorithm"
+    if sha256_not_32_bytes(reason):
+        return "withdraw content id outside the pattern, SHA-256 reason not 32 bytes"
+    if "contentVersion" not in body and sm.digest_message(reason) is not None:
+        return "withdraw content id outside the pattern, version 0"
+    return None
+
+
 def withdraw_shape_condition(body: JSON) -> str | None:
     """The G-11 condition of a forceWithdraw body, or None (see shape_condition)."""
     if not set(body) <= WITHDRAW_BODY_KEYS:
         return None
     content_id = body.get("contentId")
-    if not isinstance(content_id, str):
+    if not isinstance(content_id, str) or not content_id:
         return None
     if sm.check_id(content_id) is not None:
-        if "reasonDigest" in body and without_algorithm(body["reasonDigest"]):
-            return "withdraw content id outside the pattern, reason without algorithm"
-        return None
+        return withdraw_outside_pattern_condition(body)
     version = sm.decimal_uint(body.get("contentVersion"))
     if version is None or version < 1:
         return None
@@ -961,7 +1010,8 @@ def shape_condition(payload: object) -> str | None:
     parse (chain/x/authority/payload.go) first fails with BOUNDS, with every
     earlier check of that parse passing; spec parse_proposal_payload answers
     MALFORMED for every payload that meets one (the caller applies the rule
-    only when the spec answered MALFORMED). The conditions, exactly:
+    only when the spec answered MALFORMED). The conditions, exactly (the
+    first eight are ORCH-1's, the last five ORCH-8's):
 
     - "validator reason digest not 32 bytes": validatorPower with a 32-byte
       consensus key (canonical base64), a node id in the id pattern, and a
@@ -987,14 +1037,35 @@ def shape_condition(payload: object) -> str | None:
       only) without limitKey.
     - "empty provider id": admitProvider or disableProvider with an empty
       body (both use the same parse).
+    - "validator consensus key not 32 bytes, reason digest omitted":
+      validatorPower with a consensus key (canonical base64, not empty)
+      that is not 32 bytes and no reasonDigest; nodeId, activation and
+      power are not read.
+    - "empty node id": validatorPower with a 32-byte consensus key and no
+      nodeId; reasonDigest, activation and power are not read.
+    - "withdraw content id outside the pattern, reason digest omitted":
+      forceWithdraw with a non-empty content id outside the id pattern and
+      no reasonDigest; the content version is not read.
+    - "withdraw content id outside the pattern, version 0": forceWithdraw
+      with a non-empty content id outside the id pattern, no
+      contentVersion, and a reason digest the spec parses (SHA-256, 32
+      bytes).
+    - "withdraw content id outside the pattern, SHA-256 reason not 32
+      bytes": forceWithdraw with a non-empty content id outside the id
+      pattern and a reason digest that names SHA-256 with a value that is
+      not 32 bytes (an omitted value included); the content version is not
+      read.
 
     A body with a key outside its v0 message (a schema version 2 field such
     as activationHeight) meets none. The same check failing with another
-    combination (a consensus key of another length with a field omitted,
-    an omitted node id, a content id outside the pattern with an omitted or
-    SHA-256 reason digest or an omitted version) meets none either: those
-    are open divergences that no rule names (TestUnnamedParseDivergences in
-    chain/x/authority/difftest pins them).
+    combination meets none either: a consensus key that is not 32 bytes
+    with a reason digest present and the node id or the activation
+    omitted, and a content id outside the pattern with a reason digest
+    whose algorithm is neither omitted nor SHA-256 (a value outside the
+    enum, which proto3 JSON writes as a number). Those are open
+    divergences that no rule names (TestUnnamedParseDivergences in
+    chain/x/authority/difftest pins them and sends one payload of every
+    v0 field shape class to show that nothing else is unnamed).
     """
     if not isinstance(payload, dict) or len(payload) != 1:
         return None
@@ -2560,16 +2631,35 @@ def shape_step(proposal_id: str, payload: JSON, parameter_key: str) -> JSON:
     return step
 
 
+def short_key_validator() -> JSON:
+    """A validator payload whose consensus key is 31 bytes, every other field well formed."""
+    payload = sm.validator_power_payload("v7", 10, {"height": "9"})
+    payload["validatorPower"]["consensusPubkey"] = sm.standard_b64(
+        bytes.fromhex(sm.pubkey_for("v7"))[:31]
+    )
+    return payload
+
+
+def without(payload: JSON, *fields: str) -> JSON:
+    """A copy of a one-field payload without the named body fields (proto3 JSON omits defaults)."""
+    out = copy.deepcopy(payload)
+    body = next(iter(out.values()))
+    for name in fields:
+        del body[name]
+    return out
+
+
 def shape_payloads() -> list[tuple[str, JSON, str]]:
-    """One payload per G-11 condition (two for the empty provider id): (condition, payload, key)."""
+    """Payloads of every G-11 condition (two for some): (condition, payload, key)."""
+    reason = sm.digest_json(sm.REASON)
     short = sm.standard_b64(bytes.fromhex(sm.REASON)[:31])
     sha_short = {"algorithm": SHA256_ALGORITHM, "value": short}
     sha_empty = {"algorithm": SHA256_ALGORITHM}
-    no_algorithm = {"value": sm.digest_json(sm.REASON)["value"]}
+    no_algorithm = {"value": reason["value"]}
     negative = sm.validator_power_payload("v7", 10, {"height": "9"})
     negative["validatorPower"]["power"] = "-5"
-    no_key = sm.validator_power_payload("v7", 10, {"height": "9"})
-    del no_key["validatorPower"]["consensusPubkey"]
+    no_key = without(sm.validator_power_payload("v7", 10, {"height": "9"}), "consensusPubkey")
+    full = sm.validator_power_payload("v7", 10, {"height": "9"})
     return [
         (SHAPE_CONDITIONS[0], raw_validator("v7", {"height": "9"}, sha_short), "validator-v7"),
         (SHAPE_CONDITIONS[0], raw_validator("v7", {"height": "9"}, sha_empty), "validator-v7"),
@@ -2581,6 +2671,19 @@ def shape_payloads() -> list[tuple[str, JSON, str]]:
         (SHAPE_CONDITIONS[6], {"governedLimit": {"value": "5"}}, "max_page_limit"),
         (SHAPE_CONDITIONS[7], {"admitProvider": {}}, "admit-x"),
         (SHAPE_CONDITIONS[7], {"disableProvider": {}}, "disable-x"),
+        (SHAPE_CONDITIONS[8], without(short_key_validator(), "reasonDigest"), "validator-v7"),
+        (
+            SHAPE_CONDITIONS[8],
+            without(short_key_validator(), "reasonDigest", "nodeId"),
+            "validator-v7",
+        ),
+        (SHAPE_CONDITIONS[9], without(full, "nodeId"), "validator-v7"),
+        (SHAPE_CONDITIONS[9], without(negative, "nodeId", "reasonDigest"), "validator-v7"),
+        (SHAPE_CONDITIONS[10], withdraw_body("-bad", "1", None), "withdraw-x"),
+        (SHAPE_CONDITIONS[10], withdraw_body("-bad", None, None), "withdraw-x"),
+        (SHAPE_CONDITIONS[11], withdraw_body("-bad", None, reason), "withdraw-x"),
+        (SHAPE_CONDITIONS[12], withdraw_body("-bad", "1", sha_short), "withdraw-x"),
+        (SHAPE_CONDITIONS[12], withdraw_body("-bad", None, sha_empty), "withdraw-x"),
     ]
 
 
@@ -2600,30 +2703,31 @@ def withdraw_body(content_id: str | None, version: str | None, reason: JSON | No
 def shape_controls() -> list[tuple[JSON, str, str]]:
     """Near misses of the G-11 conditions that the rule must leave alone: (payload, key, code).
 
-    Each answers the same code with the rule on and off. In order: six
+    Each answers the same code with the rule on and off. In order: nine
     payloads the chain also answers MALFORMED for (a reason digest without
     algorithm, 32 or 31 bytes, in a validator and in a withdraw payload; a
-    withdraw version 0; a negative power with an activation height of 0,
-    which the chain refuses before the power), checked against the chain
-    by TestShapeRuleNearMisses; two the spec also answers BOUNDS for; the
-    five open divergences TestUnnamedParseDivergences pins (the chain
-    answers BOUNDS, no rule maps them); and two schema version 2 governed
-    bodies (D-4, D-5; TestSchemaTwoPayloadsD5).
+    withdraw version 0 and a withdraw reason digest omitted, both with a
+    content id in the pattern; a withdraw with the content id omitted; a
+    negative power with an activation height of 0, which the chain refuses
+    before the power; a 32-byte consensus key with the reason digest
+    omitted), checked against the chain by TestShapeRuleNearMisses; three
+    the spec also answers BOUNDS for (the last a 31-byte consensus key with
+    every field present); four payloads of the three open divergence
+    classes TestUnnamedParseDivergences pins (the chain answers BOUNDS, no
+    rule maps them; the last two differ only in the version, which no
+    condition of a content id outside the pattern reads unless the reason
+    digest parses); and two schema version 2 governed bodies (D-4, D-5;
+    TestSchemaTwoPayloadsD5).
     """
     reason = sm.digest_json(sm.REASON)
     short = sm.standard_b64(bytes.fromhex(sm.REASON)[:31])
     no_algorithm = {"value": reason["value"]}
     short_no_algorithm = {"value": short}
-    sha_short = {"algorithm": SHA256_ALGORITHM, "value": short}
-    short_key = sm.validator_power_payload("v7", 10, {"height": "9"})
-    short_key["validatorPower"]["consensusPubkey"] = sm.standard_b64(
-        bytes.fromhex(sm.pubkey_for("v7"))[:31]
-    )
-    del short_key["validatorPower"]["reasonDigest"]
-    no_node = sm.validator_power_payload("v7", 10, {"height": "9"})
-    del no_node["validatorPower"]["nodeId"]
+    # A Digest algorithm outside the enum: proto3 JSON writes its number.
+    unknown_algorithm = {"algorithm": 7, "value": reason["value"]}
     negative_height_zero = sm.validator_power_payload("v7", 10, {"height": "0"})
     negative_height_zero["validatorPower"]["power"] = "-5"
+    no_reason_full = without(sm.validator_power_payload("v7", 10, {"height": "9"}), "reasonDigest")
     scheduled = {"activationHeight": "500", "limitKey": "max_page_limit", "value": "5"}
     scheduled_no_value = {"activationHeight": "500", "limitKey": "max_page_limit"}
     return [
@@ -2632,14 +2736,17 @@ def shape_controls() -> list[tuple[JSON, str, str]]:
         (withdraw_body("c1", "1", no_algorithm), "withdraw-c1", MALFORMED),
         (withdraw_body("c1", "1", short_no_algorithm), "withdraw-c1", MALFORMED),
         (withdraw_body("c1", None, reason), "withdraw-c1", MALFORMED),
+        (withdraw_body("c1", "1", None), "withdraw-c1", MALFORMED),
+        (withdraw_body(None, "1", reason), "withdraw-c1", MALFORMED),
         (negative_height_zero, "validator-v7", MALFORMED),
+        (no_reason_full, "validator-v7", MALFORMED),
         ({"governedLimit": {"limitKey": "-bad", "value": "5"}}, "max_page_limit", BOUNDS_CODE),
         (withdraw_body("-bad", "1", reason), "withdraw-x", BOUNDS_CODE),
-        (short_key, "validator-v7", MALFORMED),
-        (no_node, "validator-v7", MALFORMED),
-        (withdraw_body("-bad", "1", None), "withdraw-x", MALFORMED),
-        (withdraw_body("-bad", None, reason), "withdraw-x", MALFORMED),
-        (withdraw_body("-bad", "1", sha_short), "withdraw-x", MALFORMED),
+        (short_key_validator(), "validator-v7", BOUNDS_CODE),
+        (without(short_key_validator(), "nodeId"), "validator-v7", MALFORMED),
+        (without(short_key_validator(), "activation"), "validator-v7", MALFORMED),
+        (withdraw_body("-bad", "1", unknown_algorithm), "withdraw-x", MALFORMED),
+        (withdraw_body("-bad", None, unknown_algorithm), "withdraw-x", MALFORMED),
         ({"governedLimit": scheduled}, "max_page_limit", MALFORMED),
         ({"governedLimit": scheduled_no_value}, "max_page_limit", MALFORMED),
     ]

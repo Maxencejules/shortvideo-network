@@ -154,6 +154,29 @@ func (l layoutReader) LayoutVersions(ctx sdk.Context) (map[string]uint64, error)
 	return out, nil
 }
 
+// storeEnv stands in for the app's handler environment: the test
+// context's stores by name.
+type storeEnv struct {
+	keys map[string]*storetypes.KVStoreKey
+}
+
+func (e storeEnv) StoreNames() []string {
+	names := make([]string, 0, len(e.keys))
+	for name := range e.keys {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func (e storeEnv) KVStore(ctx sdk.Context, name string) (storetypes.KVStore, bool) {
+	key, ok := e.keys[name]
+	if !ok {
+		return nil, false
+	}
+	return ctx.KVStore(key), true
+}
+
 // migrateTo stands in for the module manager's RunMigrations toward the
 // binary's map target: mod 1 -> 2 rewrites mod's layout key and its data
 // row. It returns target.
@@ -260,6 +283,7 @@ func (c *chain) deps(b upgrade.Binary) upgrade.Deps {
 	return upgrade.Deps{
 		Plans: c.plans, Versions: c.policy, Params: c.params, Layouts: layoutReader{keys: c.keys}, Counter: c.authority,
 		Migrate: migrateTo(c.keys["mod"], b.Modules),
+		Env:     storeEnv{keys: c.keys},
 		Unchanged: []upgrade.Unchanged{
 			{Name: "authority rows except the policy version", Snapshot: rowsSnapshot(c.keys[authority.ModuleName], nil, authorityPolicyVersionKey)},
 			{Name: "policy caps, governed values, pending changes, plan names", Snapshot: rowsSnapshot(c.keys[policy.ModuleName],

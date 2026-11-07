@@ -1,8 +1,10 @@
 // Package evidencetest is test support for x/evidence: an invariant checker
 // over an evidence store, a byte snapshot of several stores, and a synthetic
 // pair of signer keys whose addresses share their id prefix
-// (PrefixCollisionKeys). It is imported only by _test.go files and never
-// runs in chain execution.
+// (PrefixCollisionKeys). It never runs in chain execution. Besides _test.go
+// files, its one importer is the state check, chain/internal/statecheck,
+// which only svnd built with the build tag svn_statecheck links (a test
+// tool, not a release); the default svnd build does not link it.
 //
 // CheckInvariants checks the state-local invariants of
 // chain/x/evidence/README.md over one context (committed state or a cached

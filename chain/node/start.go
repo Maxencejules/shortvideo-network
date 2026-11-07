@@ -56,7 +56,10 @@ func Start(home string) error {
 // data. cfg.Upgrades go to the application (app.Config.Upgrades), which
 // takes the binary's app version from them and runs the load gate before
 // CometBFT starts: a refusal is an error here, so svnd exits 1 without
-// starting consensus or loading the validator key.
+// starting consensus or loading the validator key. The application's
+// chain id is the one CometBFT runs (genesisChainID): a home whose state
+// database holds a genesis document of another chain id than its genesis
+// file is refused before any database of the application is opened.
 func StartWith(cfg Config) error {
 	home := cfg.Home
 	logger := log.NewLogger(os.Stdout).With("home", home)
@@ -68,7 +71,7 @@ func StartWith(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	chainID, err := readChainID(comet.GenesisFile())
+	chainID, err := genesisChainID(comet)
 	if err != nil {
 		return err
 	}
@@ -242,23 +245,6 @@ func applyDevnetTimeouts(cfg *cmtcfg.Config) {
 	cfg.Consensus.SkipTimeoutCommit = true
 	cfg.Consensus.CreateEmptyBlocks = true
 	cfg.Consensus.CreateEmptyBlocksInterval = 0
-}
-
-func readChainID(path string) (string, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	var header struct {
-		ChainID string `json:"chain_id"`
-	}
-	if err := json.Unmarshal(raw, &header); err != nil {
-		return "", err
-	}
-	if header.ChainID == "" {
-		return "", fmt.Errorf("genesis %s has no chain id", path)
-	}
-	return header.ChainID, nil
 }
 
 func readListen(home string) (Listen, error) {

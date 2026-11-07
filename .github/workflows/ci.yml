@@ -113,12 +113,12 @@ jobs:
   # builds agents/auditor), "devnet-upgrade" the tests matching
   # TestDevnetUpgrade, TestDevnetMinority, or TestDevnetGovernedChange (the
   # Goal 10 upgrade rehearsal, the minority wrong-migration run, and the
-  # governed change timing, which build svnd, the rehearsal binaries, and the
-  # state-check tools), and "devnet" every other test of the package (its
-  # -skip regex is the union of the other two), so the three together run the
-  # whole package once. "rest" is every other ./chain/... package (computed,
-  # so a new package lands there) plus ./proto/..., ./agents/provider/... and
-  # ./agents/auditor/....
+  # governed change timing, which build svnd and the rehearsal binaries and
+  # call the state-check library), and "devnet" every other test of the
+  # package (its -skip regex is the union of the other two), so the three
+  # together run the whole package once. "rest" is every other ./chain/...
+  # package (computed, so a new package lands there) plus ./proto/...,
+  # ./agents/provider/... and ./agents/auditor/....
   go-race:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -159,11 +159,15 @@ jobs:
               go test -race -count=1 -timeout 15m -run TestDevnetAudit ./chain/devnet
               ;;
             devnet-upgrade)
-              # The upgrade tests build svnd, the rehearsal binaries, and the
-              # state-check tools (chain/internal) inside their timeout;
+              # The upgrade tests build svnd and the rehearsal binaries
+              # (-tags svn_rehearsal, -tags svn_rehearsal_bad) inside their
+              # timeout and link the state-check library (chain/internal);
               # building them first fills the build cache, so that compile
               # time stays outside the 15m limit.
-              go build -C chain ./cmd/svnd ./internal/...
+              go build -C chain -o /dev/null ./cmd/svnd
+              go build -C chain -tags svn_rehearsal -o /dev/null ./cmd/svnd
+              go build -C chain -tags svn_rehearsal_bad -o /dev/null ./cmd/svnd
+              go build -C chain ./internal/...
               go test -race -count=1 -timeout 15m -run 'TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange' ./chain/devnet
               ;;
             rest)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"sort"
 
 	dbm "github.com/cosmos/cosmos-db"
 
@@ -34,6 +35,8 @@ import (
 //     applied upgrade, DR-10-38)
 //   - migrate: the module manager's RunMigrations on the configurator every
 //     module registered its migrations on
+//   - env: the handler environment over the mounted store keys
+//     (handlerEnv), through which a handler reads and writes module stores
 //   - unchanged: the I13 row classes (postConditions)
 func (app *App) buildRunner() error {
 	plans, err := upgrade.NewCouncilPlans(policyPlanRows{keeper: app.policy})
@@ -51,6 +54,7 @@ func (app *App) buildRunner() error {
 		Layouts:   layoutReader{keys: app.keys},
 		Counter:   app.authority,
 		Migrate:   app.runMigrations,
+		Env:       newHandlerEnv(app.keys),
 		Unchanged: app.postConditions(),
 	})
 	if err != nil {
@@ -64,6 +68,41 @@ func (app *App) buildRunner() error {
 // migrations from the version map from, in InitOrder.
 func (app *App) runMigrations(ctx sdk.Context, from module.VersionMap) (module.VersionMap, error) {
 	return app.mm.RunMigrations(ctx, app.configurator, from)
+}
+
+// handlerEnv is upgrade.Env over the app's mounted store keys: an upgrade
+// handler reads and writes a module store by its name, in the cache branch
+// the runner gave it. Every store is reachable, including x/authority and
+// x/policy, so a handler can read them; the runner's checks after the
+// handler (its own rows and the I13 classes of postConditions) refuse the
+// upgrade on any change to a protected row, as they do for a module
+// migration's writes.
+type handlerEnv struct {
+	keys  map[string]*storetypes.KVStoreKey
+	names []string
+}
+
+// newHandlerEnv returns the handler environment over a copy of keys.
+func newHandlerEnv(keys map[string]*storetypes.KVStoreKey) handlerEnv {
+	env := handlerEnv{keys: make(map[string]*storetypes.KVStoreKey, len(keys)), names: make([]string, 0, len(keys))}
+	for name, key := range keys {
+		env.keys[name] = key
+		env.names = append(env.names, name)
+	}
+	sort.Strings(env.names)
+	return env
+}
+
+func (e handlerEnv) StoreNames() []string {
+	return append([]string(nil), e.names...)
+}
+
+func (e handlerEnv) KVStore(ctx sdk.Context, name string) (storetypes.KVStore, bool) {
+	key, ok := e.keys[name]
+	if !ok {
+		return nil, false
+	}
+	return ctx.KVStore(key), true
 }
 
 // Binary is what this binary declares: its app version, the consensus
@@ -152,13 +191,13 @@ func (l layoutReader) LayoutVersions(ctx sdk.Context) (map[string]uint64, error)
 // compares before and after an upgrade's handler: the rows of store whose
 // first key byte is in prefixes, or, with other set, every row of store
 // whose first key byte is in none of the listed prefixes of that store and
-// whose key is not exactly except.
+// whose key is not exactly one of except.
 type rowClass struct {
 	name     string
 	store    string
 	prefixes []byte
 	other    bool
-	except   []byte
+	except   [][]byte
 }
 
 // authorityRowPrefixes are the authority prefixes with a class of their own
@@ -185,26 +224,48 @@ var authorityRowPrefixes = []struct {
 // with 0x04 is in that class.
 var authorityPolicyVersionKey = []byte{0x04}
 
+// policyRowPrefixes are the x/policy prefixes with a class of their own
+// (chain/x/policy store.go): the safety caps, the governed values, the
+// pending governed changes, the applied upgrades, and the plan names. The
+// runner writes the applied row of an upgrade only in its record step,
+// after these checks.
+var policyRowPrefixes = []struct {
+	name   string
+	prefix byte
+}{
+	{"policy safety caps", 0x01},
+	{"policy governed values", policy.GovernedPrefix},
+	{"policy pending changes", policy.PendingPrefix},
+	{"policy applied upgrades", policy.AppliedPrefix},
+	{"policy plan names", policy.PlanNamePrefix},
+}
+
+// policyRunnerKeys are the x/policy rows the runner checks itself (its
+// post-conditions and layout check): the layout key, the app version, and
+// the plan. Only these exact keys and the version map prefix (0x05, which
+// the runner decodes and compares) are left out of "policy other rows".
+var policyRunnerKeys = [][]byte{msgkit.LayoutVersionKey, policy.AppVersionKey(), policy.PlanKey()}
+
 // rowClasses are the I13 classes, in check order: one class per authority
-// prefix above, every other authority row except the policy version, and the
-// x/policy safety caps (0x01), governed values (0x02), and pending governed
-// changes (0x03). Every authority row except the policy version is in
-// exactly one class. The other x/policy rows are the runner's own (app
-// version, version map, plan, applied upgrades) or never change after they
-// are written (plan names, checked by x/policy's invariants).
+// prefix above, every other authority row except the policy version, one
+// class per x/policy prefix above, and every other x/policy row except the
+// version map and policyRunnerKeys. Every authority row except the policy
+// version, and every x/policy row except the rows the runner checks itself,
+// is in exactly one class.
 func rowClasses() []rowClass {
-	classes := make([]rowClass, 0, len(authorityRowPrefixes)+4)
+	classes := make([]rowClass, 0, len(authorityRowPrefixes)+len(policyRowPrefixes)+2)
 	listed := make([]byte, 0, len(authorityRowPrefixes))
 	for _, row := range authorityRowPrefixes {
 		classes = append(classes, rowClass{name: row.name, store: authority.ModuleName, prefixes: []byte{row.prefix}})
 		listed = append(listed, row.prefix)
 	}
-	return append(classes,
-		rowClass{name: "authority other rows", store: authority.ModuleName, prefixes: listed, other: true, except: authorityPolicyVersionKey},
-		rowClass{name: "policy safety caps", store: ModulePolicy, prefixes: []byte{0x01}},
-		rowClass{name: "policy governed values", store: ModulePolicy, prefixes: []byte{policy.GovernedPrefix}},
-		rowClass{name: "policy pending changes", store: ModulePolicy, prefixes: []byte{policy.PendingPrefix}},
-	)
+	classes = append(classes, rowClass{name: "authority other rows", store: authority.ModuleName, prefixes: listed, other: true, except: [][]byte{authorityPolicyVersionKey}})
+	policyListed := []byte{policy.VersionMapPrefix}
+	for _, row := range policyRowPrefixes {
+		classes = append(classes, rowClass{name: row.name, store: ModulePolicy, prefixes: []byte{row.prefix}})
+		policyListed = append(policyListed, row.prefix)
+	}
+	return append(classes, rowClass{name: "policy other rows", store: ModulePolicy, prefixes: policyListed, other: true, except: policyRunnerKeys})
 }
 
 // postConditions are the runner's I13 checks (upgrade.Unchanged), one per
@@ -270,10 +331,20 @@ func (c rowClass) snapshot(store storetypes.KVStore) []byte {
 	it := store.Iterator(nil, nil)
 	defer it.Close()
 	for ; it.Valid(); it.Next() {
-		if bytes.IndexByte(c.prefixes, it.Key()[0]) >= 0 || bytes.Equal(it.Key(), c.except) {
+		if bytes.IndexByte(c.prefixes, it.Key()[0]) >= 0 || c.excepted(it.Key()) {
 			continue
 		}
 		appendRow(it.Key(), it.Value())
 	}
 	return out
+}
+
+// excepted reports whether key is exactly one of the class's except keys.
+func (c rowClass) excepted(key []byte) bool {
+	for _, exact := range c.except {
+		if bytes.Equal(key, exact) {
+			return true
+		}
+	}
+	return false
 }

@@ -474,8 +474,11 @@ func TestCouncilSeatCreatesTheNewKeyAccount(t *testing.T) {
 
 // TestUpgradePostConditionClasses pins the upgrade runner's I13 checks of
 // the app, in order: every authority prefix class, the other authority rows
-// (everything but the policy version, which an upgrade moves by one), and
-// the x/policy safety caps, governed values, and pending changes.
+// (everything but the policy version, which an upgrade moves by one), the
+// x/policy safety caps, governed values, pending changes, applied upgrades,
+// and plan names, and the other x/policy rows (everything but the rows the
+// runner checks itself: the layout key, the app version, the version map,
+// and the plan).
 func TestUpgradePostConditionClasses(t *testing.T) {
 	got := newTestApp(t, "shortvideo-dev-i13", nil).PostConditionNamesForTest()
 	want := []string{
@@ -493,6 +496,9 @@ func TestUpgradePostConditionClasses(t *testing.T) {
 		"policy safety caps",
 		"policy governed values",
 		"policy pending changes",
+		"policy applied upgrades",
+		"policy plan names",
+		"policy other rows",
 	}
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("I13 classes:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))

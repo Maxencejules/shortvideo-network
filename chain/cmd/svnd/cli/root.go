@@ -1,7 +1,9 @@
-// Package cli is the svnd command tree. A main package calls Root with the
-// upgrade handlers compiled into its binary: svnd passes none, so a second
-// binary (for example an upgrade rehearsal binary) reuses the same
-// commands with its own handlers.
+// Package cli is the svnd command tree. The svnd main package calls Root
+// with what its build compiles in: the default build passes no option, a
+// rehearsal build (build tag svn_rehearsal or svn_rehearsal_bad) passes its
+// upgrade handlers and the devnet chain id prefix, and a state check build
+// (build tag svn_statecheck) passes the devnet chain id prefix, so each
+// reuses the same commands.
 package cli
 
 import (
@@ -22,6 +24,12 @@ type Options struct {
 	// Upgrades are the upgrade handlers compiled into the binary. start
 	// passes them to the node; version and the help text list them.
 	Upgrades []upgrade.Upgrade
+	// ChainIDPrefix, when not empty, is the prefix every chain id this
+	// binary starts on must have: start refuses a home whose genesis
+	// names another chain id (requireChainIDPrefix) before it opens the
+	// application database or starts the node. The rehearsal and state
+	// check builds set the devnet prefix; the default build sets none.
+	ChainIDPrefix string
 }
 
 // Root returns the svnd command tree for a binary with opts.
@@ -30,13 +38,13 @@ func Root(opts Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "svnd",
 		Short: "shortvideo-network development chain",
-		Long:  longHelp(upgrades),
+		Long:  longHelp(upgrades, opts.ChainIDPrefix),
 	}
-	cmd.AddCommand(versionCmd(upgrades, debug.ReadBuildInfo), startCmd(upgrades), genesisCmd(), devnetCmd(), statusCmd())
+	cmd.AddCommand(versionCmd(upgrades, debug.ReadBuildInfo), startCmd(upgrades, opts.ChainIDPrefix), genesisCmd(), devnetCmd(), statusCmd())
 	return cmd
 }
 
-func longHelp(upgrades []upgrade.Upgrade) string {
+func longHelp(upgrades []upgrade.Upgrade, chainIDPrefix string) string {
 	compiled := "none"
 	if len(upgrades) > 0 {
 		names := make([]string, len(upgrades))
@@ -44,6 +52,10 @@ func longHelp(upgrades []upgrade.Upgrade) string {
 			names[i] = fmt.Sprintf("%s (app version %d to %d)", up.Name, up.FromAppVersion, up.ToAppVersion)
 		}
 		compiled = strings.Join(names, ", ")
+	}
+	restriction := ""
+	if chainIDPrefix != "" {
+		restriction = "\nThis build starts only on a chain whose id starts with " + chainIDPrefix + ".\n"
 	}
 	return `svnd is the shortvideo-network application chain.
 
@@ -56,11 +68,11 @@ limit changes only through an executed council proposal. There is no token,
 mint, distribution, slashing, or staking module.
 
 Compiled upgrade handlers: ` + compiled + `.
-
+` + restriction + `
 Public launch is disabled. This binary is not a release.`
 }
 
-func startCmd(upgrades []upgrade.Upgrade) *cobra.Command {
+func startCmd(upgrades []upgrade.Upgrade, chainIDPrefix string) *cobra.Command {
 	var home string
 	cmd := &cobra.Command{
 		Use:   "start",
@@ -70,12 +82,33 @@ func startCmd(upgrades []upgrade.Upgrade) *cobra.Command {
 start does not create genesis, delete data, or invent block history.
 Stop it with SIGINT or SIGTERM. Start it again to resume.`,
 		RunE: func(*cobra.Command, []string) error {
+			if chainIDPrefix != "" {
+				if err := requireChainIDPrefix(home, chainIDPrefix); err != nil {
+					return err
+				}
+			}
 			return node.StartWith(node.Config{Home: home, Upgrades: upgrades})
 		},
 	}
 	cmd.Flags().StringVar(&home, "home", "", "validator home directory")
 	_ = cmd.MarkFlagRequired("home")
 	return cmd
+}
+
+// requireChainIDPrefix reads the chain id the node of home runs with the
+// reader node.StartWith uses (node.GenesisChainID: the CometBFT genesis
+// file decoded as CometBFT decodes it, and the genesis document CometBFT
+// stored in the state database when there is one) and refuses one that
+// does not start with prefix.
+func requireChainIDPrefix(home, prefix string) error {
+	chainID, err := node.GenesisChainID(home)
+	if err != nil {
+		return fmt.Errorf("genesis of %s: %w", home, err)
+	}
+	if !strings.HasPrefix(chainID, prefix) {
+		return fmt.Errorf("this build starts only on a chain whose id starts with %q; the genesis of %s names chain id %q", prefix, home, chainID)
+	}
+	return nil
 }
 
 func devnetCmd() *cobra.Command {

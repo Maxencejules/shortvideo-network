@@ -1,6 +1,9 @@
 // Package leasestest is test support for x/leases: an invariant checker
-// over a lease store and a byte snapshot of several stores. It is imported
-// only by _test.go files and never runs in chain execution.
+// over a lease store and a byte snapshot of several stores. It never runs in
+// chain execution. Besides _test.go files, its one importer is the state
+// check, chain/internal/statecheck, which only svnd built with the build tag
+// svn_statecheck links (a test tool, not a release); the default svnd build
+// does not link it.
 //
 // CheckInvariants checks the state-local invariants of chain/x/leases/README.md
 // over one context (committed state or a cached branch):

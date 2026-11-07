@@ -274,6 +274,7 @@ func TestPlanScheduleReplaceCancel(t *testing.T) {
 	e.rejects("bad proposal id", msgkit.Bounds, schedule("up-1", h+5, d1, "-p"))
 	e.rejects("short digest", msgkit.Bounds, schedule("up-1", h+5, d1[:31], "p1"))
 	e.rejects("nil digest", msgkit.Bounds, schedule("up-1", h+5, nil, "p1"))
+	e.rejects("height below the block", msgkit.OutOfRange, schedule("up-1", h-1, d1, "p1"))
 	e.rejects("height at block height", msgkit.OutOfRange, schedule("up-1", h, d1, "p1"))
 	e.rejects("height one above the block", msgkit.OutOfRange, schedule("up-1", h+1, d1, "p1"))
 	e.rejects("height one below the minimum lead", msgkit.OutOfRange, schedule("up-1", h+lead-1, d1, "p1"))

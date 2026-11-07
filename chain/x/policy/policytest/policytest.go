@@ -1,6 +1,9 @@
 // Package policytest is test support for x/policy: an invariant checker over
-// a policy store and a byte snapshot of several stores. It is imported only
-// by _test.go files and never runs in chain execution; svnd must not link it.
+// a policy store and a byte snapshot of several stores. It never runs in
+// chain execution. Besides _test.go files, its one importer is the state
+// check, chain/internal/statecheck, which only svnd built with the build tag
+// svn_statecheck links (a test tool, not a release); the default svnd build
+// does not link it.
 //
 // CheckInvariantsAt checks the keeper-level invariants of
 // chain/x/policy/README.md over one context (committed state or a cached

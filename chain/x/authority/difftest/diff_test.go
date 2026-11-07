@@ -155,8 +155,9 @@ func TestNonAuthorityExecuteDifferential(t *testing.T) {
 }
 
 // TestCouncilRulesAreLoadBearing runs one directed trace per council rule a
-// message can reach on the chain (one per condition for G-11, the eight
-// payload field shapes of ORCH-1). With every oracle rule on, every step
+// message can reach on the chain (one per condition for G-11, the thirteen
+// payload field shapes of ORCH-1 and ORCH-8, with admit and disable as two
+// rows of the empty provider id). With every oracle rule on, every step
 // agrees and the rule step names its rule. With that one rule off, the
 // first divergence is exactly the rule step. So each rule is needed, and it
 // fires only where the chain differs. For G-11 the chain answers BOUNDS,
@@ -206,31 +207,48 @@ func TestCouncilRulesAreLoadBearing(t *testing.T) {
 
 // TestUnnamedParseDivergences pins the propose payloads on which the chain
 // and spec_machine.py answer different reject codes and no G or D rule
-// names the difference. The eight payload field shapes Wave 0 found here
-// are now oracle rule G-11 (orchestrator decision ORCH-1) and are tested in
-// TestCouncilRulesAreLoadBearing. The rows below are the same parse checks
-// failing in combinations G-11's conditions do not include, found while
-// G-11 was written down: the chain's first failing check is a BOUNDS check
-// (the consensus key length, the node id pattern, the content id pattern)
-// while the spec answers MALFORMED for an omitted field or an unparseable
-// reason digest. The generator never sends them. Each is reported as an
-// open divergence that needs a decision (a wider G-11, another rule, or a
-// chain change); none changes state on either side, which the harness's
-// trial check and the projection compare confirm here. The oracle applies
-// no rule to them.
+// names the difference, and shows that no other v0 payload shape does.
+//
+// The eight payload field shapes Wave 0 found are oracle rule G-11
+// (orchestrator decision ORCH-1); the five Wave 1 pinned here were added
+// to G-11 by ORCH-8. Both are tested in TestCouncilRulesAreLoadBearing. The
+// rows below are the open classes the shape space found when G-11 was
+// widened: the same chain checks (the consensus key length, the content id
+// pattern) failing first with BOUNDS while the spec answers MALFORMED for
+// an omitted node id or activation, or for a reason digest algorithm
+// outside the enum. Each is reported as an open divergence that needs a
+// decision (a wider G-11, another rule, or a chain change). None changes
+// state on either side, which the harness's trial check and the projection
+// compare confirm. The oracle applies no rule to them, and the generator
+// never sends them.
+//
+// The "v0 shape space" subtest proposes one payload of every combination
+// of field shape classes of every v0 alternative (parseShapes) and
+// requires that each agrees with spec_machine.py, possibly by a named rule
+// (G-9, G-10, G-11), unless it lies in one of these open classes, in which
+// case it must diverge as above. Every v0 payload, the generator's
+// included, falls in one combination, and the chain's parse, the spec's
+// parse and the oracle conditions answer every payload of a combination
+// alike (the class argument in shapes_test.go, read from the code; the
+// subtest sends one representative per combination). So the open classes
+// are the only unnamed parse divergences of v0 payloads.
 func TestUnnamedParseDivergences(t *testing.T) {
-	short := &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: sha("r")[:31]}
+	unknown := &typesv1.Digest{Algorithm: unknownAlgorithm, Value: sha("r")}
+	noActivation := validatorPayload("v9", consensusKey("v9")[:31], 10, digest(sha("r")), atHeight(9))
+	noActivation.msg.GetValidatorPower().Activation = nil
+	delete(noActivation.json["validatorPower"].(map[string]any), "activation")
 	cases := []struct {
-		name        string
-		payload     payload
-		key         string
-		chain, spec msgkit.Code
+		name    string
+		class   string
+		payload payload
+		key     string
 	}{
-		{"validator consensus key of 31 bytes without a reason digest", validatorPayload("v9", consensusKey("v9")[:31], 10, nil, atHeight(9)), "", msgkit.Bounds, msgkit.Malformed},
-		{"validator empty node id (proto3 default)", validatorPayload("", consensusKey("v9"), 10, digest(sha("r")), atHeight(9)), "validator-v9", msgkit.Bounds, msgkit.Malformed},
-		{"withdraw content id outside the pattern without a reason digest", withdrawWith("-bad", 1, nil), "withdraw-x", msgkit.Bounds, msgkit.Malformed},
-		{"withdraw content id outside the pattern with version 0 (proto3 default)", withdrawWith("-bad", 0, digest(sha("r"))), "withdraw-x", msgkit.Bounds, msgkit.Malformed},
-		{"withdraw content id outside the pattern with a 31-byte reason digest", withdrawWith("-bad", 1, short), "withdraw-x", msgkit.Bounds, msgkit.Malformed},
+		{"validator consensus key of 31 bytes with a reason digest and no node id", openShortKeyNoNode,
+			validatorPayload("", consensusKey("v9")[:31], 10, digest(sha("r")), atHeight(9)), "validator-v9"},
+		{"validator consensus key of 31 bytes with a reason digest and no activation", openShortKeyNoActivation,
+			noActivation, ""},
+		{"withdraw content id outside the pattern with reason digest algorithm 7", openWithdrawAlgorithm,
+			withdrawWith("-bad", 1, unknown), "withdraw-x"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -244,27 +262,46 @@ func TestUnnamedParseDivergences(t *testing.T) {
 				t.Fatalf("no divergence: chain %s, spec %s", run.outs[0].codeName(), run.specs[0].Code)
 			}
 			out, spec := run.outs[0], run.specs[0]
-			if out.code != c.chain || spec.Code != string(c.spec) || spec.Deviation != nil {
-				t.Fatalf("chain %s, spec %s (deviation %q); want chain %s, spec %s, no rule", out.code, spec.Code, spec.deviation(), c.chain, c.spec)
+			if out.code != msgkit.Bounds || spec.Code != string(msgkit.Malformed) || spec.Deviation != nil {
+				t.Fatalf("chain %s, spec %s (deviation %q); want chain BOUNDS, spec MALFORMED, no rule", out.code, spec.Code, spec.deviation())
 			}
 			for _, report := range rec.errors {
 				if strings.Contains(report, "projection.") {
 					t.Fatalf("the states differ, not only the codes: %s", report)
 				}
 			}
-			t.Logf("%s: chain %s, spec_machine.py %s", c.name, out.code, spec.Code)
+			t.Logf("%s (%s): chain %s, spec_machine.py %s", c.name, c.class, out.code, spec.Code)
 		})
 	}
+	t.Run("v0 shape space", func(t *testing.T) {
+		shapes := parseShapes()
+		res := runShapeSpace(t, shapes)
+		t.Logf("%d shapes\n%s", len(shapes), res)
+		for _, class := range []string{openShortKeyNoNode, openShortKeyNoActivation, openWithdrawAlgorithm} {
+			if res.open[class] == 0 {
+				t.Errorf("open class %q never reached", class)
+			}
+		}
+		for _, rule := range []string{"G-9", "G-10", "G-11"} {
+			if res.rules[rule] == 0 {
+				t.Errorf("rule %s never applied in the shape space", rule)
+			}
+		}
+	})
 }
 
 // TestShapeRuleNearMisses sends the near misses of the G-11 conditions on
 // which the chain and spec_machine.py agree (spec_oracle.py shape_controls,
 // first two groups) and requires, with every rule on, that every step
-// agrees and that no rule is named: six payloads both answer MALFORMED for
+// agrees and that no rule is named: nine payloads both answer MALFORMED for
 // (a reason digest without algorithm, 32 or 31 bytes, in a validator and in
-// a withdraw payload; a withdraw version 0; a negative power with an
-// activation height of 0, refused at the activation) and two both answer
-// BOUNDS for. So G-11 fires only on its conditions.
+// a withdraw payload; a withdraw version 0 and a withdraw reason digest
+// omitted, both with a content id in the pattern; a withdraw content id
+// omitted; a negative power with an activation height of 0, refused at the
+// activation; a 32-byte consensus key with the reason digest omitted) and
+// three both answer BOUNDS for (the last a 31-byte consensus key with every
+// field present). So G-11 fires only on its conditions; the shape space of
+// TestUnnamedParseDivergences checks the same over every class combination.
 func TestShapeRuleNearMisses(t *testing.T) {
 	noAlgorithm := &typesv1.Digest{Value: sha("r")}
 	shortNoAlgorithm := &typesv1.Digest{Value: sha("r")[:31]}
@@ -279,9 +316,13 @@ func TestShapeRuleNearMisses(t *testing.T) {
 		{"withdraw reason without algorithm", withdrawWith("c1", 1, noAlgorithm), "", msgkit.Malformed},
 		{"withdraw 31-byte reason without algorithm", withdrawWith("c1", 1, shortNoAlgorithm), "", msgkit.Malformed},
 		{"withdraw version 0 (proto3 default)", withdrawWith("c1", 0, digest(sha("r"))), "", msgkit.Malformed},
+		{"withdraw reason digest omitted", withdrawWith("c1", 1, nil), "", msgkit.Malformed},
+		{"withdraw content id omitted (proto3 default)", withdrawWith("", 1, digest(sha("r"))), "withdraw-c1", msgkit.Malformed},
 		{"negative power with activation height 0", validatorPayload("v9", consensusKey("v9"), -5, digest(sha("r")), atHeight(0)), "", msgkit.Malformed},
+		{"validator reason digest omitted", validatorPayload("v9", consensusKey("v9"), 10, nil, atHeight(9)), "", msgkit.Malformed},
 		{"governed limit key outside the pattern", governedPayload("-bad", 5), msgkit.LimitMaxPageLimit, msgkit.Bounds},
 		{"withdraw content id outside the pattern, well-formed otherwise", withdrawWith("-bad", 1, digest(sha("r"))), "withdraw-x", msgkit.Bounds},
+		{"validator consensus key of 31 bytes, every field present", validatorPayload("v9", consensusKey("v9")[:31], 10, digest(sha("r")), atHeight(9)), "", msgkit.Bounds},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
