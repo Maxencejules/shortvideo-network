@@ -81,13 +81,14 @@ func (k Keeper) devnetRow(ctx sdk.Context, decisionID string) *typesv1.DevnetTes
 // PolicyVersion returns the committed policy version (0x04): 1 while the key
 // is absent, which is before the first executed proposal, then the stored
 // value, which grows by one with each executed proposal (op_execute,
-// spec_machine.py:1522). It is the value the engine reads (State.policy).
-// x/leases stamps it on each accepted lease.
+// spec_machine.py:1522) and with each BumpPolicyVersionForUpgrade call. It
+// is the value the engine reads (State.policy). x/leases stamps it on each
+// accepted lease.
 //
 // It fails closed, like GovernedLimit: a stored value that is not 8 bytes,
 // or is below 2, panics instead of reporting a version, exactly where the
-// engine reports ERROR_CODE_INTEGRITY. Only ExecuteChange writes 0x04, so
-// this is integrity damage. The SDK turns a handler panic into a failed
+// engine reports ERROR_CODE_INTEGRITY. Only ExecuteChange and
+// BumpPolicyVersionForUpgrade write 0x04, so this is integrity damage. The SDK turns a handler panic into a failed
 // transaction on every node alike.
 func (k Keeper) PolicyVersion(ctx sdk.Context) uint64 {
 	raw := ctx.KVStore(k.storeKey).Get([]byte{policyKey})
@@ -102,15 +103,16 @@ func (k Keeper) PolicyVersion(ctx sdk.Context) uint64 {
 }
 
 // GovernedLimit returns the value an executed GovernedLimitChange set for
-// key (0x13). authority writes only values in 1..ceiling. found is false
-// when no value was set. The caller applies msgkit.Effective, which uses the
-// protocol ceiling when found is false.
+// key (0x13). authority writes only values in 1..ceiling of a key of the
+// msgkit table (msgkit.Ceiling). found is false when no value was set. The
+// caller applies msgkit.Effective, which uses the protocol ceiling when
+// found is false.
 //
 // It fails closed, like BusinessDigest: a stored value that is not 8 bytes,
 // or is outside 1..ceiling of a known key, panics instead of reporting no
 // limit, so a transaction never runs against the protocol ceiling when a
-// lower governed value may be set. Only ExecuteChange writes 0x13, so this
-// is integrity damage. A transaction handler panic becomes a failed
+// lower governed value may be set. Only ExecuteChange writes 0x13 (through
+// PolicyWriter.SetLimit), so this is integrity damage. A transaction handler panic becomes a failed
 // transaction on every node alike. Query handlers also call it: ABCI Query
 // recovers a panic into an error result, and the node gRPC server
 // (RegisterGRPCServerWithSkipCheckHeader) wraps every query in a recovery
@@ -121,8 +123,7 @@ func (k Keeper) GovernedLimit(ctx sdk.Context, key string) (uint64, bool) {
 		return 0, false
 	}
 	value, good := decodeU64(raw)
-	ceiling, known := governedCeiling(key)
-	if !good || !known || value < 1 || value > ceiling {
+	if !good || !governedInRange(key, value) {
 		panic(fmt.Sprintf("authority: governed limit %q is not an 8-byte value in 1..ceiling (%d bytes stored)", key, len(raw)))
 	}
 	return value, true

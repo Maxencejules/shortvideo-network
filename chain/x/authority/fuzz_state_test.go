@@ -12,6 +12,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
@@ -51,7 +52,10 @@ func FuzzStateTransitions(f *testing.F) {
 //
 // Key pool for node n (fuzzKey): 0 the key n holds now (a fresh key for a
 // new node: power-only change or add), 1 a current validator key picked by n
-// (often another node's: duplicate key), 2 and 3 fresh keys (key change).
+// (often another node's: duplicate key), 2 one of two fresh keys picked by n
+// (key change), 3 the
+// genesis key of a council seat picked by n, current or retired by a
+// rotation (D-7: an execute of it is DUPLICATE_ID).
 const (
 	// v: node (bits 0-2), key pool (3-4), power 0..3 (5-6), far activation (7).
 	// flagExtra with power bits 0: power safeMax/4.
@@ -60,7 +64,8 @@ const (
 	// activation (7). Power 0. flagExtra reuses the last proposal id.
 	opProposeRemoval
 	// v: payload (0-2: governed limits 0-4, unknown limit 5, admit 6,
-	// force-withdraw 7), value 1..16 (3-6), one above the ceiling (7).
+	// force-withdraw 7), value 1..16 (3-6), one above the ceiling (7). An
+	// unknown limit or a value above the ceiling is BOUNDS at propose (D-1).
 	// flagExtra reuses the last proposal id.
 	opProposeGoverned
 	// v bit 7 clear: the OPEN proposal with the most approvals (pick); set:
@@ -115,7 +120,7 @@ const (
 var fuzzTimeSteps = [8]int64{15, 30, 60, 120, 600, 1800, 3600, fuzzExpiryJump}
 
 // fuzzLimits are the governed limit keys; the last one is unknown and fails
-// at execute with BOUNDS.
+// at propose with BOUNDS (D-1).
 var fuzzLimits = [6]string{"max_evidence_batch", "max_page_limit", "max_open_offers", "max_expiry_steps", "max_package_bytes", "max_unknown_limit"}
 
 // fuzzCounters counts what one or more sequences reached.
@@ -432,7 +437,9 @@ func (h *fuzzHarness) validatorBytes(vals []*authorityv1.ValidatorPower) []byte 
 //     EXECUTED or EXPIRED (the spec relabel);
 //   - pending entries are at most MaxPendingChanges, of one activation kind,
 //     not yet due, and each one comes from a successful execute;
-//   - the ante admission rows (0x02) are exactly the config submitters.
+//   - the ante admission rows (0x02) are exactly the config submitters;
+//   - no consensus key of the set or of a pending entry is a current or a
+//     retired council seat key (D-7).
 func (h *fuzzHarness) checkInvariants(index int, valsBefore []byte, changed bool) {
 	t := h.t
 	t.Helper()
@@ -475,9 +482,15 @@ func (h *fuzzHarness) checkInvariants(index int, valsBefore []byte, changed bool
 	open := map[string]uint64{}
 	counts := map[string]uint64{}
 	admission := map[string][]byte{}
+	council := map[string]bool{}
+	for _, seat := range st.auth().GetDevnetTestSeats() {
+		council[string(seat.GetPublicKey())] = true
+	}
 	var pending []*authorityv1.PendingValidatorPower
 	walkDump(t, h.dump, func(key, value []byte) {
 		switch key[0] {
+		case retiredCouncilPrefix:
+			council[string(key[1:])] = true
 		case admitPrefix:
 			admission[string(key[1:])] = value
 		case pendingPrefix:
@@ -535,6 +548,14 @@ func (h *fuzzHarness) checkInvariants(index int, valsBefore []byte, changed bool
 		}
 		if !h.executed[entry.GetProposalId()] {
 			t.Fatalf("op %d: pending entry %s does not come from an execute", index, entry.GetProposalId())
+		}
+		if council[string(entry.GetConsensusPubkey())] {
+			t.Fatalf("op %d: pending entry %s has a council seat key", index, entry.GetProposalId())
+		}
+	}
+	for _, row := range vals {
+		if council[string(row.GetConsensusPubkey())] {
+			t.Fatalf("op %d: validator %s holds a council seat key", index, row.GetNodeId())
 		}
 	}
 
@@ -615,8 +636,10 @@ func fuzzKey(vals []*authorityv1.ValidatorPower, nodeBits, pool byte) []byte {
 		return pub(49 + number)
 	case 1:
 		return bytes.Clone(vals[int(number)%len(vals)].GetConsensusPubkey())
+	case 2:
+		return pub(58 + number%2)
 	default:
-		return pub(56 + pool&3)
+		return pub(30 + number%4)
 	}
 }
 
@@ -700,7 +723,7 @@ func otherFuzzMsg(v byte) *authorityv1.MsgProposeChange {
 		key := fuzzLimits[index]
 		value := 1 + uint64(v>>3)&15
 		if v&0x80 != 0 {
-			ceiling, _ := governedCeiling(key)
+			ceiling, _ := msgkit.Ceiling(key)
 			value = ceiling + 1
 		}
 		return governedMsg(key, value)

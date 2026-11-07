@@ -44,6 +44,10 @@ func SeatAddress(pub []byte) []byte {
 //
 // Registry and External are not stored. Keeper.transition binds them to one
 // transaction after LoadState; LoadState leaves them nil.
+//
+// A governed limit payload writes through PolicyWriter (policy.go), whose
+// implementation adds its writes to the same batch, so the rule above holds
+// for it too.
 type State struct {
 	ChainID string
 	Height  int64
@@ -58,6 +62,19 @@ type State struct {
 
 	kv     KV
 	config *authorityv1.GenesisState
+
+	// executed is set by a successful ExecuteChange and is nil otherwise.
+	// Keeper.transition emits the typed execute events from it (D-2).
+	executed *executedChange
+}
+
+// executedChange is what the typed events of a successful execute carry:
+// the proposal id, its parameter key, and the policy version the execute
+// wrote.
+type executedChange struct {
+	proposalID   string
+	parameterKey string
+	version      uint64
 }
 
 // Registry is the provider and content registry as an executed council
@@ -103,7 +120,12 @@ func (s *State) Validators() []*authorityv1.ValidatorPower {
 // policy is the policy version: 1 until the first execute. A stored value
 // that is not 8 bytes, or is below 2, is integrity damage.
 func (s *State) policy() (uint64, Outcome) {
-	raw := s.kv.Get([]byte{policyKey})
+	return readPolicyVersion(s.kv)
+}
+
+// readPolicyVersion reads 0x04 under the rule of State.policy.
+func readPolicyVersion(kv KV) (uint64, Outcome) {
+	raw := kv.Get([]byte{policyKey})
 	if raw == nil {
 		return 1, ok()
 	}
@@ -328,6 +350,17 @@ func (s *State) ProposeChange(msg *authorityv1.MsgProposeChange) Outcome {
 	if kind == kindValidatorPower && !activationFuture(activationPoint(change), s.Height, s.Time) {
 		return fail(CodeOutOfRange)
 	}
+	// Go only (D-1, DR-10-21): a governed limit names a key of the msgkit
+	// table (bounds.json governed_limit_caps) with a value of at most its
+	// ceiling. The spec accepts any id-pattern key and any value of at least
+	// 1 here and refuses the payload at execute (BOUNDS, the proposal stays
+	// QUEUED), so such a proposal could never execute and would hold a seat's
+	// quota slot. This check comes right after validated_payload, before
+	// check_time, the business gate, the duplicate id, expiry, base version
+	// and quota checks.
+	if kind == kindGovernedLimit && !governedInRange(limitKey(msg), msg.GetPayload().GetGovernedLimit().GetValue()) {
+		return fail(CodeBounds)
+	}
 	if msg.GetExpiryUnixSeconds() < unixMin || msg.GetExpiryUnixSeconds() > unixMax { // check_time 1423
 		return fail(CodeBounds)
 	}
@@ -507,14 +540,18 @@ func (s *State) ExecuteChange(msg *authorityv1.MsgExecuteChange) Outcome {
 	b.set([]byte{policyKey}, encodeU64(version+1))
 	b.set(businessKey(msg.GetBusinessId()), digest)
 	s.flush(&b)
+	s.executed = &executedChange{proposalID: rec.ProposalID, parameterKey: rec.ParameterKey, version: version + 1}
 	return ok()
 }
 
 // applyPayload checks the stored payload and adds its authority writes to b.
 // It writes nothing to the authority store itself; a failure leaves b to be
-// discarded. A registry payload adds nothing to b: it calls Registry, which
-// writes to x/providers or x/content. The keeper binds Registry to a nested
-// cache that it writes only when the whole message succeeds (msg.go).
+// discarded. A governed limit payload goes through PolicyWriter.SetLimit,
+// which checks the key and the ceiling again (the propose check is D-1) and
+// adds its write to b. A registry payload adds nothing to b: it calls
+// Registry, which writes to x/providers or x/content. The keeper binds
+// Registry to a nested cache that it writes only when the whole message
+// succeeds (msg.go).
 func (s *State) applyPayload(b *batch, rec *proposalRecord) Outcome {
 	if rec.Payload == "" || !digestMatches(rec.Payload, rec.PayloadDigest) {
 		return fail(CodeIntegrity)
@@ -524,12 +561,7 @@ func (s *State) applyPayload(b *batch, rec *proposalRecord) Outcome {
 	case kindValidatorPower:
 		return s.schedule(b, rec.ProposalID, decoded.power())
 	case kindGovernedLimit:
-		ceiling, known := governedCeiling(decoded.LimitKey)
-		if !known || decoded.LimitValue < 1 || decoded.LimitValue > ceiling {
-			return fail(CodeBounds)
-		}
-		b.set(governedKey(decoded.LimitKey), encodeU64(decoded.LimitValue))
-		return ok()
+		return s.policyWriter(b).SetLimit(decoded.LimitKey, decoded.LimitValue, rec.ProposalID)
 	case kindAdmitProvider:
 		if s.Registry == nil {
 			return fail(CodeMalformed)
@@ -592,9 +624,16 @@ func (s *State) schedule(b *batch, proposalID string, change PowerChange) Outcom
 	if out := projectAll(s.auth().GetValidators(), append(pending, entry)); !out.Success() {
 		return out
 	}
-	// Go only (DR-06-04): checked after the projection, as the last rule.
+	// Go only (DR-06-04): checked after the projection.
 	if len(pending) >= MaxPendingChanges {
 		return fail(CodeBounds)
+	}
+	// Go only (D-7, DR-10-13): a consensus key that is a current or retired
+	// council seat key is DUPLICATE_ID, so a council key never becomes a
+	// consensus key. The spec has no such rule. It is the last check, so it
+	// changes only an outcome the spec and the quota would accept.
+	if s.councilKey(change.PubKey) {
+		return fail(CodeDuplicate)
 	}
 	raw, err := marshalState(entry)
 	if err != nil {
@@ -604,22 +643,36 @@ func (s *State) schedule(b *batch, proposalID string, change PowerChange) Outcom
 	return ok()
 }
 
-// governedCeiling is the protocol ceiling of each governed limit.
-func governedCeiling(key string) (uint64, bool) {
-	switch key {
-	case "max_evidence_batch":
-		return uint64(genesis.MaxEvidenceBatch), true
-	case "max_page_limit":
-		return uint64(genesis.MaxPageLimit), true
-	case "max_open_offers":
-		return uint64(genesis.MaxOpenOffersPerProvider), true
-	case "max_expiry_steps":
-		return uint64(genesis.MaxExpiryStepsPerBlock), true
-	case "max_package_bytes":
-		return genesis.MaxPackageBytes, true
-	default:
-		return 0, false
+// councilKey reports whether pub is the key of a council seat in the config
+// or a key retired by a seat rotation (0x15).
+func (s *State) councilKey(pub []byte) bool {
+	for _, seat := range s.auth().GetDevnetTestSeats() {
+		if bytes.Equal(seat.GetPublicKey(), pub) {
+			return true
+		}
 	}
+	return s.kv.Has(retiredCouncilKey(pub))
+}
+
+// validatorKey reports whether pub is the consensus key of a current
+// validator or of a pending validator change. A pending set that does not
+// decode is integrity damage.
+func (s *State) validatorKey(pub []byte) (bool, Outcome) {
+	for _, row := range s.auth().GetValidators() {
+		if bytes.Equal(row.GetConsensusPubkey(), pub) {
+			return true, ok()
+		}
+	}
+	pending, err := readPending(s.kv)
+	if err != nil {
+		return false, fail(CodeIntegrity)
+	}
+	for _, item := range pending {
+		if bytes.Equal(item.GetConsensusPubkey(), pub) {
+			return true, ok()
+		}
+	}
+	return false, ok()
 }
 
 // projected is one validator in a projection: its key and power.
@@ -836,7 +889,8 @@ func (s *State) ApplyDue() (before []*authorityv1.ValidatorPower, changed bool, 
 // so the new key's account is admitted and the retired key's account is not
 // (AdmissionOf). It writes no submitter row and no admission row. A new key
 // whose address is a submitter is DUPLICATE_ID: a seat address is never a
-// submitter.
+// submitter. A new key that is the consensus key of a current validator or
+// of a pending validator change is DUPLICATE_ID too (D-7).
 func (s *State) RotateCouncilSeat(seatID string, newPub []byte) Outcome {
 	if !idPattern.MatchString(seatID) || len(newPub) != 32 {
 		return fail(CodeBounds)
@@ -859,6 +913,13 @@ func (s *State) RotateCouncilSeat(seatID string, newPub []byte) Outcome {
 		return fail(CodeConflict)
 	}
 	if s.role(SeatAddress(newPub)) != typesv1.SubmitterRole_SUBMITTER_ROLE_UNSPECIFIED {
+		return fail(CodeDuplicate)
+	}
+	consensus, out := s.validatorKey(newPub)
+	if !out.Success() {
+		return out
+	}
+	if consensus {
 		return fail(CodeDuplicate)
 	}
 	old := bytes.Clone(seat.GetPublicKey())

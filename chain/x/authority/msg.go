@@ -21,7 +21,9 @@ import (
 // reads and writes the proposer's open count at the record's base version.
 // None of these grows with past proposals. An execute of a validator payload
 // also scans the pending prefix (0x03), at most MaxPendingChanges entries, so
-// its gas is bounded but depends on how many changes are scheduled.
+// its gas is bounded but depends on how many changes are scheduled; when the
+// projection and the pending cap pass, it also reads the retired-seat key
+// (0x15) of its consensus key (D-7).
 //
 // A business gate whose id is absent from 0x11 also reads one key in each
 // peer ledger (x/content 0x03, x/evidence 0x03, x/leases 0x03, x/providers
@@ -75,7 +77,11 @@ func (k Keeper) Execute(ctx context.Context, msg *authorityv1.MsgExecuteChange) 
 //
 //   - idempotent retry: an authority_result event with idempotent=true; both
 //     branches are dropped (the engine wrote nothing and called no hook).
-//   - success: the registry branch, then the message branch, is written.
+//   - success: the registry branch is written into the message branch; a
+//     successful execute then adds its typed events (emitExecuted, D-2)
+//     after the registry hook's events; then the message branch is written.
+//     If a typed event cannot be built, nothing is written and the handler
+//     returns an ERROR_CODE_INTEGRITY error.
 //   - keep (EXPIRED or REJECTED mark, DR-06-05): the message branch is
 //     written, the registry branch is dropped, and the code goes on an
 //     authority_result event. Cosmos SDK v0.55 discards the message branch
@@ -104,6 +110,9 @@ func (k Keeper) transition(ctx context.Context, signer []byte, fn func(*State) O
 		return nil
 	case out.Success():
 		writeRegistry()
+		if err := emitExecuted(cacheCtx, st.executed); err != nil {
+			return svnerr.ErrIntegrity.Wrapf("%s: %v", CodeIntegrity, err)
+		}
 		write()
 		return nil
 	case out.Keep:

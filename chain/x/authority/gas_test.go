@@ -162,7 +162,9 @@ func hexKeys(set map[string]bool) []string {
 // a propose, an approve keep and an execute. An execute of an admit, disable
 // or force-withdraw payload reads and writes the keys of a governed execute
 // except 0x13: the registry hook writes x/providers or x/content, and no
-// authority key under the reserved 0x17 prefix is read or written.
+// authority key under the reserved 0x17 prefix is read or written. A
+// successful validator execute reads the pending prefix and the 0x15 key of
+// its consensus key (goal 10, D-7) and writes its pending entry.
 func TestMessageKeySets(t *testing.T) {
 	kv, seats, authority := readyStore(t)
 	cfg := []byte{configKey}
@@ -256,4 +258,14 @@ func TestMessageKeySets(t *testing.T) {
 	if len(registry.calls) != 3 {
 		t.Fatalf("registry calls %+v", registry.calls)
 	}
+
+	// A successful validator execute also scans the pending prefix and,
+	// after the projection and the pending cap, reads the retired-seat key
+	// of its consensus key (D-7). It writes the pending entry.
+	add := powerMsg("v5", pub(5), 1, uint64(testHeight)+10)
+	queueAt(t, kv, seats, testHeight, unix, "p9", add)
+	entry := heightEntry("p9", "v5", pub(5), 1, uint64(testHeight)+10)
+	run("execute p9", "", keySet(businessKey("e9"), proposalKey("p9"), policy, []byte("scan:\x03"), retiredCouncilKey(pub(5)), openKey(seat1, 6)),
+		keySet(PendingKey(entry), openKey(seat1, 6), proposalKey("p9"), executedKey("validator-v5"), policy, businessKey("e9")),
+		func(st *State) Outcome { return st.ExecuteChange(execute(authority, "e9", "p9")) })
 }

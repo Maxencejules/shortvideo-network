@@ -15,6 +15,12 @@ type GenesisPoint struct {
 	GenesisUnixSeconds int64
 }
 
+// MaxSeatIDLength is the longest council seat id genesis accepts (D-10,
+// DR-10-42; stricter than the spec, whose id pattern allows 64 characters).
+// With at most 59 characters, "seat-" followed by the id still matches the
+// 64-character id pattern of a parameter key.
+const MaxSeatIDLength = 59
+
 // genesisError carries the protocol code of the rule that failed.
 func genesisError(code, format string, args ...any) error {
 	return fmt.Errorf("authority genesis: %s: %s", code, fmt.Sprintf(format, args...))
@@ -26,15 +32,18 @@ func genesisError(code, format string, args ...any) error {
 //  1. Shape: the authority state exists; no proposals (the proto has no
 //     payload, so a genesis proposal could never execute); no approved
 //     council (spec guard_decisions); quorum loss UNSET (DEC-008); seats and
-//     submitters well formed; a seat address is not a submitter with any
+//     submitters well formed, a seat id at most MaxSeatIDLength characters
+//     (D-10, stricter than spec); a seat address is not a submitter with any
 //     role (DR-06-06 and DR-07-11, stricter than spec).
 //  2. Validators: InitialUpdates rules, node ids, and the spec
 //     power_set_invariant (spec validate_genesis_view).
 //  3. Pending entries: at most MaxPendingChanges, each well formed, distinct
 //     proposal ids (distinct ids give distinct PendingKeys).
-//  4. Projection of every pending entry on the genesis validators, as Execute
+//  4. Key separation (D-7, stricter than spec): no seat key is the consensus
+//     key of a genesis validator or of a pending entry (DUPLICATE_ID).
+//  5. Projection of every pending entry on the genesis validators, as Execute
 //     projects a new entry (DEC-012: mixed height and time kinds conflict).
-//  5. With a point: every entry activates at or after the first block.
+//  6. With a point: every entry activates at or after the first block.
 func ValidateGenesisState(state *authorityv1.GenesisState, at *GenesisPoint) error {
 	auth := state.GetAuthority()
 	if auth == nil {
@@ -75,6 +84,9 @@ func ValidateGenesisState(state *authorityv1.GenesisState, at *GenesisPoint) err
 		}
 		ids[entry.GetProposalId()] = struct{}{}
 	}
+	if err := validateSeatKeys(auth.GetDevnetTestSeats(), auth.GetValidators(), pending); err != nil {
+		return err
+	}
 	if out := projectAll(auth.GetValidators(), pending); !out.Success() {
 		return genesisError(out.Code, "pending validator changes do not project on the genesis set")
 	}
@@ -99,7 +111,7 @@ func validateSeats(seats []*authorityv1.DevnetTestSeat) error {
 	ids := map[string]struct{}{}
 	keys := map[string]struct{}{}
 	for _, seat := range seats {
-		if !idPattern.MatchString(seat.GetSeatId()) || len(seat.GetPublicKey()) != 32 {
+		if !idPattern.MatchString(seat.GetSeatId()) || len(seat.GetSeatId()) > MaxSeatIDLength || len(seat.GetPublicKey()) != 32 {
 			return genesisError(CodeBounds, "seat %q", seat.GetSeatId())
 		}
 		if _, dup := ids[seat.GetSeatId()]; dup {
@@ -110,6 +122,25 @@ func validateSeats(seats []*authorityv1.DevnetTestSeat) error {
 			return genesisError(CodeDuplicate, "seat key appears twice")
 		}
 		keys[string(seat.GetPublicKey())] = struct{}{}
+	}
+	return nil
+}
+
+// validateSeatKeys refuses a seat key that is also the consensus key of a
+// genesis validator or of a pending validator change (D-7, DR-10-13). A
+// council key signs council messages only; it is never a consensus key.
+func validateSeatKeys(seats []*authorityv1.DevnetTestSeat, validators []*authorityv1.ValidatorPower, pending []*authorityv1.PendingValidatorPower) error {
+	consensus := map[string]struct{}{}
+	for _, row := range validators {
+		consensus[string(row.GetConsensusPubkey())] = struct{}{}
+	}
+	for _, entry := range pending {
+		consensus[string(entry.GetConsensusPubkey())] = struct{}{}
+	}
+	for _, seat := range seats {
+		if _, dup := consensus[string(seat.GetPublicKey())]; dup {
+			return genesisError(CodeDuplicate, "seat %q key is a validator consensus key", seat.GetSeatId())
+		}
 	}
 	return nil
 }

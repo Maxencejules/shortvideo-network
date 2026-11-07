@@ -1,6 +1,9 @@
-// Package scaffold holds the module slots that Goal 10 fills in: the svn
-// header and policy. x/authority, x/providers, x/content, x/leases, and
-// x/evidence replaced their slots in Goals 06-09.
+// Package scaffold holds the module slots that have no keeper in the app:
+// the svn header, and policy. The svn slot stays a scaffold (decision
+// request DR-10-28). chain/x/policy holds the policy keeper and module, but
+// the app still runs this scaffold in the policy slot until it wires that
+// module. x/authority, x/providers, x/content, x/leases, and x/evidence
+// replaced their slots in Goals 06-09.
 //
 // Each module stores its genesis document and rejects application messages.
 // None of them returns validator updates. x/authority is the only writer.

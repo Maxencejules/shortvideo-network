@@ -1,0 +1,194 @@
+{
+  "description": "Council proposal payload vectors for the v0 payload kinds (x/authority). Synthetic values; no key or account is real. payload_json is proto3 JSON with keys deliberately out of canonical order; canonical is its SVN-JCS-1 text; sha256 is the payload digest (hex). chain_propose_code is the code the chain's payload checks at propose return: empty for accepted, ERROR_CODE_BOUNDS for a governed limit outside the bounds.json governed_limit_caps table (D-1; the spec accepts these at propose and refuses them at execute). Checked by TestPayloadVectors (Go) and tests/unit/test_payload_vectors.py (Python, with docs/evidence/goal-02/jcs.py and spec_machine.py).",
+  "vectors": [
+    {
+      "id": "validator-power-height",
+      "kind": "validator_power",
+      "parameter_key": "validator-v5",
+      "chain_propose_code": "",
+      "payload_json": "{\"validatorPower\":{\"reasonDigest\":{\"value\":\"EBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"power\":\"10\",\"nodeId\":\"v5\",\"consensusPubkey\":\"UVZfRE1ye2BpbhccBQozOCEmL9Tdwsvw+f7n7JWag4g=\",\"activation\":{\"height\":\"240\"}}}",
+      "canonical": "{\"validatorPower\":{\"activation\":{\"height\":\"240\"},\"consensusPubkey\":\"UVZfRE1ye2BpbhccBQozOCEmL9Tdwsvw+f7n7JWag4g=\",\"nodeId\":\"v5\",\"power\":\"10\",\"reasonDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"EBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8=\"}}}",
+      "sha256": "85d55005165b7d8fd67b7529bb22cc96c1cd6f88089e04c33f6be49c975c3f23"
+    },
+    {
+      "id": "validator-power-unix",
+      "kind": "validator_power",
+      "parameter_key": "validator-v6",
+      "chain_propose_code": "",
+      "payload_json": "{\"validatorPower\":{\"reasonDigest\":{\"value\":\"ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"power\":\"7\",\"nodeId\":\"v6\",\"consensusPubkey\":\"YmVsd35BSFNaXSQvNjkACxIVHOfu8fjDys3U36apsLs=\",\"activation\":{\"unixSeconds\":\"1700003600\"}}}",
+      "canonical": "{\"validatorPower\":{\"activation\":{\"unixSeconds\":\"1700003600\"},\"consensusPubkey\":\"YmVsd35BSFNaXSQvNjkACxIVHOfu8fjDys3U36apsLs=\",\"nodeId\":\"v6\",\"power\":\"7\",\"reasonDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=\"}}}",
+      "sha256": "8ff8a7804e1a7b2df7c9bb244730625d954c026eb2114f4099b2c629dad4457b"
+    },
+    {
+      "id": "validator-removal-height",
+      "kind": "validator_power",
+      "parameter_key": "validator-v1",
+      "chain_propose_code": "",
+      "payload_json": "{\"validatorPower\":{\"reasonDigest\":{\"value\":\"MDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk8=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"nodeId\":\"v1\",\"consensusPubkey\":\"ExQdBg8wOSIrLFVeR0hxemNkbZafgImyu7ylrtfYwco=\",\"activation\":{\"height\":\"300\"}}}",
+      "canonical": "{\"validatorPower\":{\"activation\":{\"height\":\"300\"},\"consensusPubkey\":\"ExQdBg8wOSIrLFVeR0hxemNkbZafgImyu7ylrtfYwco=\",\"nodeId\":\"v1\",\"reasonDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"MDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk8=\"}}}",
+      "sha256": "515e8ef5dc2374d45e78cbbe5988c382f2f95e58149c0693a9ec764c2b602a3c"
+    },
+    {
+      "id": "governed-max_evidence_batch-1",
+      "kind": "governed_limit",
+      "parameter_key": "max_evidence_batch",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"1\",\"limitKey\":\"max_evidence_batch\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_evidence_batch\",\"value\":\"1\"}}",
+      "sha256": "f6245db5580946283d6b8e164af7facdefa6cce1bcae039df9dec3bf68222e24"
+    },
+    {
+      "id": "governed-max_evidence_batch-ceiling",
+      "kind": "governed_limit",
+      "parameter_key": "max_evidence_batch",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"32\",\"limitKey\":\"max_evidence_batch\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_evidence_batch\",\"value\":\"32\"}}",
+      "sha256": "fe915a71298c344b5b6bf6545f9ae1298edbd1da859b44f78da67815243f56a5"
+    },
+    {
+      "id": "governed-max_expiry_steps-1",
+      "kind": "governed_limit",
+      "parameter_key": "max_expiry_steps",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"1\",\"limitKey\":\"max_expiry_steps\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_expiry_steps\",\"value\":\"1\"}}",
+      "sha256": "b0fcbd3354e49fdc74a7db71219b3b4b76d08d07b27b538d4269a003dae1cdf5"
+    },
+    {
+      "id": "governed-max_expiry_steps-ceiling",
+      "kind": "governed_limit",
+      "parameter_key": "max_expiry_steps",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"128\",\"limitKey\":\"max_expiry_steps\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_expiry_steps\",\"value\":\"128\"}}",
+      "sha256": "38e8ffc87417d54768b4069447630424a7fb105e2107770bef2b6db1a3f3440d"
+    },
+    {
+      "id": "governed-max_open_offers-1",
+      "kind": "governed_limit",
+      "parameter_key": "max_open_offers",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"1\",\"limitKey\":\"max_open_offers\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_open_offers\",\"value\":\"1\"}}",
+      "sha256": "3c01f3df6861a902a0a556446e4a6d587237debfdd1a52a9e5916b58ed71dbb4"
+    },
+    {
+      "id": "governed-max_open_offers-ceiling",
+      "kind": "governed_limit",
+      "parameter_key": "max_open_offers",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"1024\",\"limitKey\":\"max_open_offers\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_open_offers\",\"value\":\"1024\"}}",
+      "sha256": "e110512d16cc4024583f1f267807d18dc2653cc8364225018c12bb1fcbd80f25"
+    },
+    {
+      "id": "governed-max_package_bytes-1",
+      "kind": "governed_limit",
+      "parameter_key": "max_package_bytes",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"1\",\"limitKey\":\"max_package_bytes\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_package_bytes\",\"value\":\"1\"}}",
+      "sha256": "2e4340d5f3a9e1caf99544a99c3b49c2024043ccc0f000c453cd4b670fe6178a"
+    },
+    {
+      "id": "governed-max_package_bytes-ceiling",
+      "kind": "governed_limit",
+      "parameter_key": "max_package_bytes",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"268435456\",\"limitKey\":\"max_package_bytes\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_package_bytes\",\"value\":\"268435456\"}}",
+      "sha256": "853144a40e21958e7a236ade1b9e62383cf01d0454e6d7c2fed02f0c76d80947"
+    },
+    {
+      "id": "governed-max_page_limit-1",
+      "kind": "governed_limit",
+      "parameter_key": "max_page_limit",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"1\",\"limitKey\":\"max_page_limit\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_page_limit\",\"value\":\"1\"}}",
+      "sha256": "a3405a75601cfc976a88cb7218b1090dceb43fa22b1a3d447fa70fba59ebcbdd"
+    },
+    {
+      "id": "governed-max_page_limit-ceiling",
+      "kind": "governed_limit",
+      "parameter_key": "max_page_limit",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"100\",\"limitKey\":\"max_page_limit\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_page_limit\",\"value\":\"100\"}}",
+      "sha256": "d89b42669b483edc8c27b73a89ae5c5af247d4a7a66f1b7a7fc8b0afc86c3c30"
+    },
+    {
+      "id": "governed-max_page_limit-above-ceiling",
+      "kind": "governed_limit",
+      "parameter_key": "max_page_limit",
+      "chain_propose_code": "ERROR_CODE_BOUNDS",
+      "payload_json": "{\"governedLimit\":{\"value\":\"101\",\"limitKey\":\"max_page_limit\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_page_limit\",\"value\":\"101\"}}",
+      "sha256": "81bb2cf1c240e5140c7351a23e1e00e988e17ed097c096223e68fe96af6bb505"
+    },
+    {
+      "id": "governed-max_package_bytes-above-ceiling",
+      "kind": "governed_limit",
+      "parameter_key": "max_package_bytes",
+      "chain_propose_code": "ERROR_CODE_BOUNDS",
+      "payload_json": "{\"governedLimit\":{\"value\":\"268435457\",\"limitKey\":\"max_package_bytes\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_package_bytes\",\"value\":\"268435457\"}}",
+      "sha256": "c83018b5dcc728b8fd2248251f77a0b271974da598639b5d91cdd74d1ac0adc2"
+    },
+    {
+      "id": "governed-max_tx_bytes-safety-cap",
+      "kind": "governed_limit",
+      "parameter_key": "max_tx_bytes",
+      "chain_propose_code": "ERROR_CODE_BOUNDS",
+      "payload_json": "{\"governedLimit\":{\"value\":\"65536\",\"limitKey\":\"max_tx_bytes\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_tx_bytes\",\"value\":\"65536\"}}",
+      "sha256": "a1800c6b05db3495a7aa268dc61a3fe54caf7c137e6919623a33bc6b9fdb75e5"
+    },
+    {
+      "id": "governed-max_gas_per_tx-safety-cap",
+      "kind": "governed_limit",
+      "parameter_key": "max_gas_per_tx",
+      "chain_propose_code": "ERROR_CODE_BOUNDS",
+      "payload_json": "{\"governedLimit\":{\"value\":\"20000000\",\"limitKey\":\"max_gas_per_tx\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_gas_per_tx\",\"value\":\"20000000\"}}",
+      "sha256": "1bf7f8b667f295152691118b0640c6967622fa0db7e408873d5b7dc793d55b92"
+    },
+    {
+      "id": "governed-max_open_proposals-quota",
+      "kind": "governed_limit",
+      "parameter_key": "max_open_proposals",
+      "chain_propose_code": "ERROR_CODE_BOUNDS",
+      "payload_json": "{\"governedLimit\":{\"value\":\"32\",\"limitKey\":\"max_open_proposals\"}}",
+      "canonical": "{\"governedLimit\":{\"limitKey\":\"max_open_proposals\",\"value\":\"32\"}}",
+      "sha256": "6dc7df1b40d04ef79bbd7e4b198307bfc527453705b38c810aac25eb3a8e53cd"
+    },
+    {
+      "id": "admit-provider",
+      "kind": "admit_provider",
+      "parameter_key": "admit-prov-1",
+      "chain_propose_code": "",
+      "payload_json": "{\"admitProvider\":{\"providerId\":\"prov-1\"}}",
+      "canonical": "{\"admitProvider\":{\"providerId\":\"prov-1\"}}",
+      "sha256": "eda64f6c115df5e62b2848a5d5711ad9730d211a96d67496971f69c544e783ca"
+    },
+    {
+      "id": "disable-provider",
+      "kind": "disable_provider",
+      "parameter_key": "disable-prov-1",
+      "chain_propose_code": "",
+      "payload_json": "{\"disableProvider\":{\"providerId\":\"prov-1\"}}",
+      "canonical": "{\"disableProvider\":{\"providerId\":\"prov-1\"}}",
+      "sha256": "32505d189ba23b436f73e7b2b33c54cb1310f2c929033541501311084238ba20"
+    },
+    {
+      "id": "force-withdraw",
+      "kind": "force_withdraw",
+      "parameter_key": "withdraw-content-1",
+      "chain_propose_code": "",
+      "payload_json": "{\"forceWithdraw\":{\"reasonDigest\":{\"value\":\"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"contentVersion\":\"1\",\"contentId\":\"content-1\"}}",
+      "canonical": "{\"forceWithdraw\":{\"contentId\":\"content-1\",\"contentVersion\":\"1\",\"reasonDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=\"}}}",
+      "sha256": "6807350a4d0037117e3740620b2151c15e72fd65c5a164902c7ba39bee7c49db"
+    }
+  ]
+}

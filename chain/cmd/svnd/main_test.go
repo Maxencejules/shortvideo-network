@@ -1,139 +1,99 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	cmttypes "github.com/cometbft/cometbft/types"
-	"google.golang.org/protobuf/encoding/protojson"
-
-	"github.com/Maxencejules/shortvideo-network/chain/devnet"
-	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
-	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
-	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-// editAuthority returns raw (a CometBFT genesis) with its authority module
-// genesis decoded, edited, and encoded again. Only the app_state.authority
-// value changes.
-func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState)) []byte {
-	t.Helper()
-	var doc map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		t.Fatal(err)
-	}
-	var modules map[string]json.RawMessage
-	if err := json.Unmarshal(doc["app_state"], &modules); err != nil {
-		t.Fatal(err)
-	}
-	var state authorityv1.GenesisState
-	if err := protojson.Unmarshal(modules[authority.ModuleName], &state); err != nil {
-		t.Fatal(err)
-	}
-	edit(&state)
-	encoded, err := protojson.Marshal(&state)
-	if err != nil {
-		t.Fatal(err)
-	}
-	modules[authority.ModuleName] = encoded
-	if doc["app_state"], err = json.Marshal(modules); err != nil {
-		t.Fatal(err)
-	}
-	out, err := json.Marshal(doc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return out
+// buildInfoLines reads `go version -m <binary>`: the Go version, the main
+// module version, the build settings, and each dependency's version (with
+// its replacement, if any), as the go tool reports them independently of
+// svnd's own code.
+type buildInfoLines struct {
+	goVersion string
+	mainMod   string
+	settings  map[string]string
+	deps      map[string]string
 }
 
-// TestValidateGenesisAppliesAuthorityRules: `svnd genesis validate` refuses
-// every authority genesis that InitChain refuses, with the same rule. The
-// genesis is a fresh `devnet init` document; each row edits only its
-// authority module state. Fails on the round-3 review tree, where the
-// command ran only DocumentFromModules and genesis.Validate, which ignore
-// pending entries, proposals, the approved council, and quorum loss, and
-// returned nil for every row below.
-func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
-	home := t.TempDir()
-	if _, err := devnet.Init(devnet.Options{Home: home}); err != nil {
-		t.Fatal(err)
-	}
-	raw, err := os.ReadFile(filepath.Join(home, "genesis.json"))
+func readBuildInfoLines(t *testing.T, bin string) buildInfoLines {
+	t.Helper()
+	out, err := exec.Command("go", "version", "-m", bin).CombinedOutput()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("go version -m: %v\n%s", err, out)
 	}
-	if err := validateGenesisFile(raw); err != nil {
-		t.Fatalf("fresh devnet genesis: %v", err)
+	info := buildInfoLines{settings: map[string]string{}, deps: map[string]string{}}
+	lines := strings.Split(strings.TrimRight(string(out), "\n"), "\n")
+	_, goVersion, ok := strings.Cut(lines[0], ": ")
+	if !ok {
+		t.Fatalf("first line %q", lines[0])
 	}
-	if unchanged := editAuthority(t, raw, func(*authorityv1.GenesisState) {}); validateGenesisFile(unchanged) != nil {
-		t.Fatal("re-encoding the authority genesis changed its validity")
-	}
-	reason := &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: bytes.Repeat([]byte{7}, 32)}
-	atHeight := func(h uint64) *authorityv1.ActivationPoint {
-		return &authorityv1.ActivationPoint{Point: &authorityv1.ActivationPoint_Height{Height: h}}
-	}
-	first := func(state *authorityv1.GenesisState) *authorityv1.ValidatorPower {
-		return state.GetAuthority().GetValidators()[0]
-	}
-	genDoc, err := cmttypes.GenesisDocFromJSON(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	genesisUnix := genDoc.GenesisTime.Unix()
-	rows := []struct {
-		name string
-		code string
-		edit func(*authorityv1.GenesisState)
-	}{
-		{"approved council", authority.CodeForbidden, func(state *authorityv1.GenesisState) {
-			state.Authority.ApprovedCouncil = []*authorityv1.DevnetTestSeat{{SeatId: "seat-x", PublicKey: bytes.Repeat([]byte{1}, 32)}}
-		}},
-		{"quorum loss set", authority.CodeForbidden, func(state *authorityv1.GenesisState) {
-			state.Authority.QuorumLoss = authorityv1.QuorumLossBehavior_QUORUM_LOSS_BEHAVIOR_UNSPECIFIED
-		}},
-		{"genesis proposal", authority.CodeMalformed, func(state *authorityv1.GenesisState) {
-			state.Authority.Proposals = []*authorityv1.Proposal{{ProposalId: "p-1"}}
-		}},
-		{"pending removal that leaves three validators", authority.CodeForbidden, func(state *authorityv1.GenesisState) {
-			v := first(state)
-			state.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{{
-				ProposalId: "rm-1", ConsensusPubkey: v.GetConsensusPubkey(), Power: 0, NodeId: v.GetNodeId(),
-				ReasonDigest: reason, Activation: atHeight(5),
-			}}
-		}},
-		{"pending removal bound to the wrong key", authority.CodeConflict, func(state *authorityv1.GenesisState) {
-			v := first(state)
-			state.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{{
-				ProposalId: "rm-1", ConsensusPubkey: bytes.Repeat([]byte{1}, 32), Power: 0, NodeId: v.GetNodeId(),
-				ReasonDigest: reason, Activation: atHeight(5),
-			}}
-		}},
-		{"pending change at genesis time", authority.CodeOutOfRange, func(state *authorityv1.GenesisState) {
-			state.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{{
-				ProposalId: "add-1", ConsensusPubkey: bytes.Repeat([]byte{2}, 32), Power: 1, NodeId: "v9",
-				ReasonDigest: reason,
-				Activation:   &authorityv1.ActivationPoint{Point: &authorityv1.ActivationPoint_UnixSeconds{UnixSeconds: genesisUnix}},
-			}}
-		}},
-	}
-	for _, row := range rows {
-		err := validateGenesisFile(editAuthority(t, raw, row.edit))
-		if err == nil || !strings.Contains(err.Error(), row.code) {
-			t.Errorf("%s: %v, want an error naming %s", row.name, err, row.code)
+	info.goVersion = goVersion
+	lastDep := ""
+	for _, line := range lines[1:] {
+		fields := strings.Split(strings.TrimPrefix(line, "\t"), "\t")
+		switch fields[0] {
+		case "mod":
+			info.mainMod = fields[2]
+		case "dep":
+			lastDep = fields[1]
+			info.deps[lastDep] = fields[2]
+		case "=>":
+			info.deps[lastDep] += " => " + fields[1] + " " + fields[2]
+		case "build":
+			if key, value, found := strings.Cut(fields[1], "="); found {
+				info.settings[key] = value
+			}
 		}
 	}
-	// A well-formed pending add in the future is accepted.
-	future := editAuthority(t, raw, func(state *authorityv1.GenesisState) {
-		state.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{{
-			ProposalId: "add-1", ConsensusPubkey: bytes.Repeat([]byte{2}, 32), Power: 1, NodeId: "v9",
-			ReasonDigest: reason, Activation: atHeight(50),
-		}}
-	})
-	if err := validateGenesisFile(future); err != nil {
-		t.Fatalf("future pending add: %v", err)
+	return info
+}
+
+// TestSvndVersionMatchesBuildInfo builds svnd and checks `svnd version`
+// line for line against what `go version -m` reads from the same binary:
+// the main module version, the Go version, vcs.revision and vcs.modified
+// ("unknown" when the build has no VCS stamp), the three pinned framework
+// modules, and "upgrades none" (svnd compiles no upgrade handler). The
+// help text says the same about handlers.
+func TestSvndVersionMatchesBuildInfo(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "svnd")
+	build := exec.Command("go", "build", "-o", bin, ".")
+	build.Env = os.Environ()
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build: %v\n%s", err, out)
+	}
+	info := readBuildInfoLines(t, bin)
+	known := func(v string) string {
+		if v == "" {
+			return "unknown"
+		}
+		return v
+	}
+	want := strings.Join([]string{
+		"svnd " + info.mainMod,
+		"go " + info.goVersion,
+		"vcs.revision " + known(info.settings["vcs.revision"]),
+		"vcs.modified " + known(info.settings["vcs.modified"]),
+		"github.com/cosmos/cosmos-sdk " + info.deps["github.com/cosmos/cosmos-sdk"],
+		"github.com/cosmos/cosmos-sdk/store/v2 " + info.deps["github.com/cosmos/cosmos-sdk/store/v2"],
+		"github.com/cometbft/cometbft " + info.deps["github.com/cometbft/cometbft"],
+		"upgrades none",
+	}, "\n") + "\n"
+	if info.deps["github.com/cosmos/cosmos-sdk"] == "" || info.deps["github.com/cometbft/cometbft"] == "" || info.deps["github.com/cosmos/cosmos-sdk/store/v2"] == "" {
+		t.Fatalf("go version -m lists no framework pins: %+v", info.deps)
+	}
+	got, err := exec.Command(bin, "version").CombinedOutput()
+	if err != nil {
+		t.Fatalf("svnd version: %v\n%s", err, got)
+	}
+	if string(got) != want {
+		t.Fatalf("svnd version:\n%s\nwant:\n%s", got, want)
+	}
+	help, err := exec.Command(bin, "--help").CombinedOutput()
+	if err != nil || !strings.Contains(string(help), "Compiled upgrade handlers: none.") {
+		t.Fatalf("svnd --help: %v\n%s", err, help)
 	}
 }

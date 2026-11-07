@@ -292,13 +292,14 @@ func fuzzStateSeeds() []fuzzSeed {
 			want: fuzzCounters{Queued: 1, Executed: 1, Bounds: 1},
 		},
 		{
-			name:  "payloads that cannot execute stay QUEUED",
-			trace: "ok ok ok ok BOUNDS ok ok ok ok NOT_FOUND ok ok ok ok NOT_FOUND ok ok ok ok BOUNDS",
-			steps: steps(proposeLimit(0, 0, limitV(1, 1, true)), quorum(0), executeLast(0),
+			// D-1: a governed limit above its ceiling or with an unknown key
+			// is BOUNDS at propose and never becomes a proposal.
+			name:  "governed limits outside the caps are BOUNDS at propose; registry payloads that cannot execute stay QUEUED",
+			trace: "BOUNDS BOUNDS ok ok ok ok NOT_FOUND ok ok ok ok NOT_FOUND",
+			steps: steps(proposeLimit(0, 0, limitV(1, 1, true)), proposeLimit(3, 0, limitV(5, 1, false)),
 				proposeLimit(1, 0, limitV(6, 1, false)), quorum(1), executeLast(1),
-				proposeLimit(2, 0, limitV(7, 1, false)), quorum(2), executeLast(2),
-				proposeLimit(3, 0, limitV(5, 1, false)), quorum(3), executeLast(3)),
-			want: fuzzCounters{Queued: 4, Bounds: 2},
+				proposeLimit(2, 0, limitV(7, 1, false)), quorum(2), executeLast(2)),
+			want: fuzzCounters{Queued: 2, Bounds: 2},
 		},
 		{
 			name:  "passed activation, unbound removal and duplicate key are refused",
@@ -307,6 +308,14 @@ func fuzzStateSeeds() []fuzzSeed {
 				proposeRemoval(1, 0, removalUnboundV(0, 2)), quorum(1), executeLast(1),
 				proposeValidator(2, 0, validatorV(5, 1, 1, false)), quorum(2), executeLast(2)),
 			want: fuzzCounters{Queued: 3},
+		},
+		{
+			// D-7: v5 with the genesis key of seat-2 (pool 3) is accepted at
+			// propose and refused at execute.
+			name:  "a validator payload with a council seat key is DUPLICATE_ID at execute",
+			trace: "ok ok ok ok DUPLICATE_ID",
+			steps: steps(proposeValidator(0, 0, validatorV(4, 3, 1, false)), quorum(0), executeLast(0)),
+			want:  fuzzCounters{Queued: 1},
 		},
 		{
 			name:  "a time jump passes a far expiry",

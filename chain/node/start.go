@@ -28,6 +28,7 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/cometwrap"
+	"github.com/Maxencejules/shortvideo-network/chain/upgrade"
 )
 
 // Listen is the public bind file written next to the CometBFT config.
@@ -37,18 +38,41 @@ type Listen struct {
 	P2P  string `json:"p2p"`
 }
 
-// Start runs one validator until SIGINT or SIGTERM. It does not delete data.
+// Config is what StartWith runs: the validator home and the upgrade
+// handlers compiled into this binary. svnd passes none. There is no halt
+// height: a node never stops at a height of its own choosing.
+type Config struct {
+	Home     string
+	Upgrades []upgrade.Upgrade
+}
+
+// Start runs one validator from home with no upgrade handlers. It is
+// StartWith(Config{Home: home}).
 func Start(home string) error {
+	return StartWith(Config{Home: home})
+}
+
+// StartWith runs one validator until SIGINT or SIGTERM. It does not delete
+// data.
+//
+// The application (app.Config) does not take upgrade handlers yet, so
+// StartWith refuses a non-empty cfg.Upgrades before it reads the home:
+// a binary that declares a handler must not run as if it had none.
+func StartWith(cfg Config) error {
+	if len(cfg.Upgrades) > 0 {
+		return fmt.Errorf("node: this binary declares %d upgrade handlers, and the application cannot run upgrade handlers yet; refusing to start", len(cfg.Upgrades))
+	}
+	home := cfg.Home
 	logger := log.NewLogger(os.Stdout).With("home", home)
 	saved, err := loadNodeFile(home)
 	if err != nil {
 		return err
 	}
-	cfg, err := cometConfig(home, saved)
+	comet, err := cometConfig(home, saved)
 	if err != nil {
 		return err
 	}
-	chainID, err := readChainID(cfg.GenesisFile())
+	chainID, err := readChainID(comet.GenesisFile())
 	if err != nil {
 		return err
 	}
@@ -61,20 +85,20 @@ func Start(home string) error {
 		_ = db.Close()
 		return err
 	}
-	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(comet.NodeKeyFile())
 	if err != nil {
 		_ = application.Close()
 		return err
 	}
 	cmtApp := cometwrap.New(application)
 	tmNode, err := node.NewNode(
-		cfg,
-		privval.LoadFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
+		comet,
+		privval.LoadFilePV(comet.PrivValidatorKeyFile(), comet.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.NewLocalClientCreator(cmtApp),
-		node.DefaultGenesisDocProviderFunc(cfg),
+		node.DefaultGenesisDocProviderFunc(comet),
 		dbProvider,
-		node.DefaultMetricsProvider(cfg.Instrumentation),
+		node.DefaultMetricsProvider(comet.Instrumentation),
 		servercmtlog.CometLoggerWrapper{Logger: logger},
 	)
 	if err != nil {

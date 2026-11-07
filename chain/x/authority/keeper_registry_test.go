@@ -533,7 +533,7 @@ func TestKeeperReadSurface(t *testing.T) {
 		if _, found := NewKeeper(keys[ModuleName]).GovernedLimit(empty, msgkit.LimitMaxPageLimit); found {
 			t.Fatal("an empty store has a governed limit")
 		}
-		ceiling, _ := governedCeiling(msgkit.LimitMaxPageLimit)
+		ceiling, _ := msgkit.Ceiling(msgkit.LimitMaxPageLimit)
 		for name, value := range map[string][]byte{
 			"7 bytes":         make([]byte, 7),
 			"zero":            encodeU64(0),

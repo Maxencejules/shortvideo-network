@@ -22,10 +22,11 @@ import (
 // (0x14) at the current version; a keep from OPEN or QUEUED, or a successful
 // execute, reads and writes the proposer's open count at the record's base
 // version. A validator-payload execute also scans the pending prefix (0x03),
-// at most MaxPendingChanges entries; an execute of a registry payload reads no
-// authority key beyond the common set (its hook reads and writes a fixed key
-// set in x/providers or x/content). So gas is bounded and does not grow with
-// past proposals; a validator execute depends on the pending count.
+// at most MaxPendingChanges entries, and reads the 0x15 key of its consensus
+// key (D-7); an execute of a registry payload reads no authority key beyond
+// the common set (its hook reads and writes a fixed key set in x/providers
+// or x/content). So gas is bounded and does not grow with past proposals; a
+// validator execute depends on the pending count.
 //
 // No live chain exists, so there is no migration from the round-2 layout
 // (one side document at 0x20). A store that still holds 0x20 is an old devnet
