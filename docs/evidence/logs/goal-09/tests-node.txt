@@ -1,0 +1,110 @@
+COMMAND .venv/bin/python scripts/run_tests.py --only node
+DATE 2026-11-06T21:54:01Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+TAP version 13
+# Subtest: the module exports only the catalog, and its JSON text is the Go catalog file byte for byte
+ok 1 - the module exports only the catalog, and its JSON text is the Go catalog file byte for byte
+  ---
+  duration_ms: 1.807893
+  type: 'test'
+  ...
+# Subtest: every catalog string is pinned sentence by sentence, in order
+ok 2 - every catalog string is pinned sentence by sentence, in order
+  ---
+  duration_ms: 0.823596
+  type: 'test'
+  ...
+# Subtest: every string is bounded printable ASCII; labels are phrases, texts are sentences
+ok 3 - every string is bounded printable ASCII; labels are phrases, texts are sentences
+  ---
+  duration_ms: 0.57267
+  type: 'test'
+  ...
+# Subtest: the mode is explicit: auditor attestation or provider receipt (goal requirement 4)
+ok 4 - the mode is explicit: auditor attestation or provider receipt (goal requirement 4)
+  ---
+  duration_ms: 0.292103
+  type: 'test'
+  ...
+# Subtest: the state keys are the three short reported state names
+ok 5 - the state keys are the three short reported state names
+  ---
+  duration_ms: 0.131152
+  type: 'test'
+  ...
+# Subtest: the goal limitations, REQ-INV-007, and the decision gate appear verbatim
+ok 6 - the goal limitations, REQ-INV-007, and the decision gate appear verbatim
+  ---
+  duration_ms: 0.130969
+  type: 'test'
+  ...
+# Subtest: the acceptance text calls the signature a promise, not possession (REQ-EVID-002)
+ok 7 - the acceptance text calls the signature a promise, not possession (REQ-EVID-002)
+  ---
+  duration_ms: 0.097825
+  type: 'test'
+  ...
+# Subtest: state and event texts limit the claim: past observation, public digest, no blame, not a pass
+ok 8 - state and event texts limit the claim: past observation, public digest, no blame, not a pass
+  ---
+  duration_ms: 0.151124
+  type: 'test'
+  ...
+# Subtest: the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs
+ok 9 - the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs
+  ---
+  duration_ms: 0.638532
+  type: 'test'
+  ...
+# Subtest: claim_limit and the modes match the frozen envelope schema
+ok 10 - claim_limit and the modes match the frozen envelope schema
+  ---
+  duration_ms: 0.575589
+  type: 'test'
+  ...
+# Subtest: the denylist rules are well formed and are exactly the list of this test
+ok 11 - the denylist rules are well formed and are exactly the list of this test
+  ---
+  duration_ms: 2.702967
+  type: 'test'
+  ...
+# Subtest: no catalog string claims proof of storage, a unique replica, independence, legality, or future quality
+ok 12 - no catalog string claims proof of storage, a unique replica, independence, legality, or future quality
+  ---
+  duration_ms: 1.171209
+  type: 'test'
+  ...
+# Subtest: the denylist scanner detects denied claims and passes the allowed negations
+ok 13 - the denylist scanner detects denied claims and passes the allowed negations
+  ---
+  duration_ms: 5.367238
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 133.928943
+TAP version 13
+# Subtest: react version is the pinned release
+ok 1 - react version is the pinned release
+  ---
+  duration_ms: 0.671172
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 73.266192
+EXIT:0

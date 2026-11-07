@@ -1,0 +1,873 @@
+COMMAND go test -count=1 -v ./chain/x/evidence/ ./chain/x/evidence/evidencetest/
+DATE 2026-11-06T21:56:33Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+=== RUN   TestGenesisValidateImportExport
+=== RUN   TestGenesisValidateImportExport/invalid/kind-4
+=== RUN   TestGenesisValidateImportExport/invalid/state-0
+=== RUN   TestGenesisValidateImportExport/invalid/state-7
+=== RUN   TestGenesisValidateImportExport/invalid/content-version-0
+=== RUN   TestGenesisValidateImportExport/invalid/digest-algorithm-0
+=== RUN   TestGenesisValidateImportExport/invalid/expiry-above-9999
+=== RUN   TestGenesisValidateImportExport/invalid/epoch-above-9999
+=== RUN   TestGenesisValidateImportExport/invalid/expiry-at-epoch-start
+=== RUN   TestGenesisValidateImportExport/invalid/duplicate-evidence-id
+=== RUN   TestGenesisValidateImportExport/invalid/evidence-id-prefix
+=== RUN   TestGenesisValidateImportExport/invalid/content-version-2^53
+=== RUN   TestGenesisValidateImportExport/invalid/batch-mixes-signer-keys
+=== RUN   TestGenesisValidateImportExport/invalid/batch-above-32-records
+=== RUN   TestGenesisValidateImportExport/invalid/auditor-epoch-above-cap
+=== RUN   TestGenesisValidateImportExport/invalid/state-unknown-field
+=== RUN   TestGenesisValidateImportExport/invalid/lease-id-pattern
+=== RUN   TestGenesisValidateImportExport/invalid/batch-id-pattern
+=== RUN   TestGenesisValidateImportExport/invalid/kind-provider-receipt
+=== RUN   TestGenesisValidateImportExport/invalid/signer-pubkey-31
+=== RUN   TestGenesisValidateImportExport/invalid/digest-31-bytes
+=== RUN   TestGenesisValidateImportExport/invalid/expiry-0
+=== RUN   TestGenesisValidateImportExport/invalid/schema-version-2
+=== RUN   TestGenesisValidateImportExport/invalid/batch-mixes-epochs
+=== RUN   TestGenesisValidateImportExport/invalid/record-unknown-field
+=== RUN   TestGenesisValidateImportExport/invalid/evidence-id-pattern
+=== RUN   TestGenesisValidateImportExport/invalid/batch-id-prefix
+=== RUN   TestGenesisValidateImportExport/invalid/attestation-false
+=== RUN   TestGenesisValidateImportExport/invalid/nil-record
+=== RUN   TestGenesisValidateImportExport/invalid/kind-0
+=== RUN   TestGenesisValidateImportExport/invalid/expiry-beyond-lifetime
+=== RUN   TestGenesisValidateImportExport/invalid/schema-version-0
+=== RUN   TestGenesisValidateImportExport/invalid/digest-unknown-field
+=== RUN   TestGenesisValidateImportExport/invalid/digest-nil
+=== RUN   TestGenesisValidateImportExport/invalid/current-epoch-1
+=== RUN   TestGenesisValidateImportExport/invalid/content-id-pattern
+=== RUN   TestGenesisValidateImportExport/cross-module/recorded-other-digest
+=== RUN   TestGenesisValidateImportExport/cross-module/expired-other-digest
+=== RUN   TestGenesisValidateImportExport/cross-module/rejected-manifest-digest
+=== RUN   TestGenesisValidateImportExport/cross-module/expiry-after-lease-deadline
+=== RUN   TestGenesisValidateImportExport/cross-module/epoch-after-current
+=== RUN   TestGenesisValidateImportExport/cross-module/lease-not-found
+=== RUN   TestGenesisValidateImportExport/cross-module/content-id-differs
+=== RUN   TestGenesisValidateImportExport/cross-module/content-version-differs
+=== RUN   TestGenesisValidateImportExport/requires-an-empty-store
+=== RUN   TestGenesisValidateImportExport/derived-rows
+--- PASS: TestGenesisValidateImportExport (0.15s)
+    --- PASS: TestGenesisValidateImportExport/invalid/kind-4 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/state-0 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/state-7 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/content-version-0 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/digest-algorithm-0 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/expiry-above-9999 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/epoch-above-9999 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/expiry-at-epoch-start (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/duplicate-evidence-id (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/evidence-id-prefix (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/content-version-2^53 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/batch-mixes-signer-keys (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/batch-above-32-records (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/auditor-epoch-above-cap (0.07s)
+    --- PASS: TestGenesisValidateImportExport/invalid/state-unknown-field (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/lease-id-pattern (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/batch-id-pattern (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/kind-provider-receipt (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/signer-pubkey-31 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/digest-31-bytes (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/expiry-0 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/schema-version-2 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/batch-mixes-epochs (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/record-unknown-field (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/evidence-id-pattern (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/batch-id-prefix (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/attestation-false (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/nil-record (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/kind-0 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/expiry-beyond-lifetime (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/schema-version-0 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/digest-unknown-field (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/digest-nil (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/current-epoch-1 (0.00s)
+    --- PASS: TestGenesisValidateImportExport/invalid/content-id-pattern (0.00s)
+    --- PASS: TestGenesisValidateImportExport/cross-module/recorded-other-digest (0.00s)
+    --- PASS: TestGenesisValidateImportExport/cross-module/expired-other-digest (0.00s)
+    --- PASS: TestGenesisValidateImportExport/cross-module/rejected-manifest-digest (0.00s)
+    --- PASS: TestGenesisValidateImportExport/cross-module/expiry-after-lease-deadline (0.00s)
+    --- PASS: TestGenesisValidateImportExport/cross-module/epoch-after-current (0.00s)
+    --- PASS: TestGenesisValidateImportExport/cross-module/lease-not-found (0.00s)
+    --- PASS: TestGenesisValidateImportExport/cross-module/content-id-differs (0.00s)
+    --- PASS: TestGenesisValidateImportExport/cross-module/content-version-differs (0.00s)
+    --- PASS: TestGenesisValidateImportExport/requires-an-empty-store (0.00s)
+    --- PASS: TestGenesisValidateImportExport/derived-rows (0.00s)
+=== RUN   TestGenesisBatchConsistency
+--- PASS: TestGenesisBatchConsistency (0.00s)
+=== RUN   TestEvidenceGenesisRoundTrip
+--- PASS: TestEvidenceGenesisRoundTrip (0.00s)
+=== RUN   TestModuleGenesis
+--- PASS: TestModuleGenesis (0.00s)
+=== RUN   TestSubmitAuditBatchCheckOrder
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/enforce-gas-limit-0
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/enforce-gas-limit-0
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/enforce-tx-65537-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/enforce-tx-65537-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/enforce-signer-19-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/enforce-signer-19-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/presence-business-id
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/presence-business-id
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/presence-batch-id
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/presence-batch-id
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/presence-auditor-signature
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/presence-auditor-signature
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/presence-item-nil
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/presence-item-nil
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/presence-evidence-id
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/presence-evidence-id
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/presence-lease-id
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/presence-lease-id
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/presence-content-id
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/presence-content-id
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/presence-observation-digest
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/presence-observation-digest
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/role-none
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/role-none
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/role-service
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/role-service
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/role-provider
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/role-provider
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/role-broadcaster-relay
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/role-broadcaster-relay
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/role-authority
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/role-authority
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/schema-version-0
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/schema-version-0
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/schema-version-2
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/schema-version-2
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/digest-algorithm-0
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/digest-algorithm-0
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/digest-algorithm-7
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/digest-algorithm-7
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/digest-31-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/digest-31-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/digest-33-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/digest-33-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-domain-unspecified
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-domain-unspecified
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-domain-unknown-99
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-domain-unknown-99
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-wrong-domain
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-wrong-domain
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-profile-0
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-profile-0
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-profile-2
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-profile-2
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-key-id-empty
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-key-id-empty
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-key-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-key-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-public-key-31
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-public-key-31
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/sig-signature-63
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/sig-signature-63
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/binding-other-auditor-key
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/binding-other-auditor-key
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/binding-provider-key
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/binding-provider-key
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/payload-content-version-2^53
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/payload-content-version-2^53
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/payload-content-version-2^63
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/payload-content-version-2^63
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/payload-content-version-max-uint64
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/payload-content-version-max-uint64
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/payload-epoch-2^53
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/payload-epoch-2^53
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/payload-expiry-min-int64
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/payload-expiry-min-int64
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/payload-above-65536-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/payload-above-65536-bytes
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/payload-ed25519-failure
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/payload-ed25519-failure
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/batch-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/batch-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/evidence-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/evidence-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/lease-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/lease-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/content-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/content-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/kind-0
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/kind-0
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/kind-3-reserved-storage-proof
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/kind-3-reserved-storage-proof
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/kind-4-reserved-unique-replica
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/kind-4-reserved-unique-replica
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/kind-5-reserved-future-delivery
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/kind-5-reserved-future-delivery
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/kind-7-unknown
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/kind-7-unknown
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/count-0
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/count-0
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/count-33
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/count-33
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/count-above-governed-2
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/count-above-governed-2
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/attestation-false
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/attestation-false
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/epoch-expired-round
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/epoch-expired-round
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/epoch-future-round
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/epoch-future-round
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/epoch-0
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/epoch-0
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/expiry-0
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/expiry-0
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/expiry-negative
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/expiry-negative
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/expiry-above-9999
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/expiry-above-9999
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/gate-business-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/gate-business-id-pattern
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/gate-business-id-not-utf8
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/gate-business-id-not-utf8
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/gate-replay-other-module
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/gate-replay-other-module
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/duplicate-batch-id-used
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/duplicate-batch-id-used
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/duplicate-evidence-id-stored
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/duplicate-evidence-id-stored
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/duplicate-evidence-id-in-batch
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/duplicate-evidence-id-in-batch
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/item-expiry-at-committed-time
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/item-expiry-at-committed-time
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/lease-not-found
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/lease-not-found
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t1-batch-id-foreign-prefix
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t1-batch-id-foreign-prefix
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t1-evidence-id-foreign-prefix
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t1-evidence-id-foreign-prefix
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t1-evidence-id-no-prefix
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t1-evidence-id-no-prefix
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t2-kind-provider-receipt
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t2-kind-provider-receipt
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t3-expiry-now-plus-86401
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t3-expiry-now-plus-86401
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t4-content-id-differs
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t4-content-id-differs
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t4-content-version-differs
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t4-content-version-differs
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t5-lease-ended
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t5-lease-ended
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t5-lease-expired
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t5-lease-expired
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t5-reservation-not-held
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t5-reservation-not-held
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t6-lease-deadline-at-committed-time
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t6-lease-deadline-at-committed-time
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t7-expiry-after-lease-deadline
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t7-expiry-after-lease-deadline
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t8-content-withdrawn
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t8-content-withdrawn
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t8-content-not-found
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t8-content-not-found
+=== RUN   TestSubmitAuditBatchCheckOrder/cumulative/t9-auditor-epoch-cap
+=== RUN   TestSubmitAuditBatchCheckOrder/isolated/t9-auditor-epoch-cap
+=== RUN   TestSubmitAuditBatchCheckOrder/no-fault
+--- PASS: TestSubmitAuditBatchCheckOrder (0.76s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/enforce-gas-limit-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/enforce-tx-65537-bytes (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/enforce-signer-19-bytes (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/presence-business-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/presence-business-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/presence-batch-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/presence-batch-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/presence-auditor-signature (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/presence-auditor-signature (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/presence-item-nil (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/presence-item-nil (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/presence-evidence-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/presence-evidence-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/presence-lease-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/presence-lease-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/presence-content-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/presence-content-id (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/presence-observation-digest (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/presence-observation-digest (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/role-none (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/role-none (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/role-service (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/role-service (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/role-provider (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/role-provider (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/role-broadcaster-relay (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/role-broadcaster-relay (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/role-authority (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/role-authority (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/schema-version-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/schema-version-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/schema-version-2 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/schema-version-2 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/digest-algorithm-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/digest-algorithm-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/digest-algorithm-7 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/digest-algorithm-7 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/digest-31-bytes (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/digest-31-bytes (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/digest-33-bytes (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/digest-33-bytes (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-domain-unspecified (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-domain-unspecified (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-domain-unknown-99 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-domain-unknown-99 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-wrong-domain (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-wrong-domain (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-profile-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-profile-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-profile-2 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-profile-2 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-key-id-empty (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-key-id-empty (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-key-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-key-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-public-key-31 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-public-key-31 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/sig-signature-63 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/sig-signature-63 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/binding-other-auditor-key (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/binding-other-auditor-key (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/binding-provider-key (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/binding-provider-key (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/payload-content-version-2^53 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/payload-content-version-2^53 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/payload-content-version-2^63 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/payload-content-version-2^63 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/payload-content-version-max-uint64 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/payload-content-version-max-uint64 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/payload-epoch-2^53 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/payload-epoch-2^53 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/payload-expiry-min-int64 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/payload-expiry-min-int64 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/payload-above-65536-bytes (0.26s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/payload-above-65536-bytes (0.31s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/payload-ed25519-failure (0.01s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/payload-ed25519-failure (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/batch-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/batch-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/evidence-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/evidence-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/lease-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/lease-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/content-id-pattern (0.01s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/content-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/kind-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/kind-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/kind-3-reserved-storage-proof (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/kind-3-reserved-storage-proof (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/kind-4-reserved-unique-replica (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/kind-4-reserved-unique-replica (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/kind-5-reserved-future-delivery (0.01s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/kind-5-reserved-future-delivery (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/kind-7-unknown (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/kind-7-unknown (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/count-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/count-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/count-33 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/count-33 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/count-above-governed-2 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/count-above-governed-2 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/attestation-false (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/attestation-false (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/epoch-expired-round (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/epoch-expired-round (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/epoch-future-round (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/epoch-future-round (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/epoch-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/epoch-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/expiry-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/expiry-0 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/expiry-negative (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/expiry-negative (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/expiry-above-9999 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/expiry-above-9999 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/gate-business-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/gate-business-id-pattern (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/gate-business-id-not-utf8 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/gate-business-id-not-utf8 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/gate-replay-other-module (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/gate-replay-other-module (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/duplicate-batch-id-used (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/duplicate-batch-id-used (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/duplicate-evidence-id-stored (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/duplicate-evidence-id-stored (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/duplicate-evidence-id-in-batch (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/duplicate-evidence-id-in-batch (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/item-expiry-at-committed-time (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/item-expiry-at-committed-time (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/lease-not-found (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/lease-not-found (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t1-batch-id-foreign-prefix (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t1-batch-id-foreign-prefix (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t1-evidence-id-foreign-prefix (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t1-evidence-id-foreign-prefix (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t1-evidence-id-no-prefix (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t1-evidence-id-no-prefix (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t2-kind-provider-receipt (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t2-kind-provider-receipt (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t3-expiry-now-plus-86401 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t3-expiry-now-plus-86401 (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t4-content-id-differs (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t4-content-id-differs (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t4-content-version-differs (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t4-content-version-differs (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t5-lease-ended (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t5-lease-ended (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t5-lease-expired (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t5-lease-expired (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t5-reservation-not-held (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t5-reservation-not-held (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t6-lease-deadline-at-committed-time (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t6-lease-deadline-at-committed-time (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t7-expiry-after-lease-deadline (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t7-expiry-after-lease-deadline (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t8-content-withdrawn (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t8-content-withdrawn (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t8-content-not-found (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t8-content-not-found (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/cumulative/t9-auditor-epoch-cap (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/isolated/t9-auditor-epoch-cap (0.00s)
+    --- PASS: TestSubmitAuditBatchCheckOrder/no-fault (0.00s)
+=== RUN   TestItemFaultsOnLastItem
+=== RUN   TestItemFaultsOnLastItem/presence-evidence-id
+=== RUN   TestItemFaultsOnLastItem/presence-lease-id
+=== RUN   TestItemFaultsOnLastItem/presence-content-id
+=== RUN   TestItemFaultsOnLastItem/presence-observation-digest
+=== RUN   TestItemFaultsOnLastItem/digest-algorithm-0
+=== RUN   TestItemFaultsOnLastItem/digest-algorithm-7
+=== RUN   TestItemFaultsOnLastItem/digest-31-bytes
+=== RUN   TestItemFaultsOnLastItem/digest-33-bytes
+=== RUN   TestItemFaultsOnLastItem/payload-content-version-2^53
+=== RUN   TestItemFaultsOnLastItem/payload-content-version-2^63
+=== RUN   TestItemFaultsOnLastItem/payload-content-version-max-uint64
+=== RUN   TestItemFaultsOnLastItem/payload-expiry-min-int64
+=== RUN   TestItemFaultsOnLastItem/evidence-id-pattern
+=== RUN   TestItemFaultsOnLastItem/lease-id-pattern
+=== RUN   TestItemFaultsOnLastItem/content-id-pattern
+=== RUN   TestItemFaultsOnLastItem/kind-0
+=== RUN   TestItemFaultsOnLastItem/kind-3-reserved-storage-proof
+=== RUN   TestItemFaultsOnLastItem/kind-4-reserved-unique-replica
+=== RUN   TestItemFaultsOnLastItem/kind-5-reserved-future-delivery
+=== RUN   TestItemFaultsOnLastItem/kind-7-unknown
+=== RUN   TestItemFaultsOnLastItem/attestation-false
+=== RUN   TestItemFaultsOnLastItem/expiry-0
+=== RUN   TestItemFaultsOnLastItem/expiry-negative
+=== RUN   TestItemFaultsOnLastItem/expiry-above-9999
+=== RUN   TestItemFaultsOnLastItem/item-expiry-at-committed-time
+=== RUN   TestItemFaultsOnLastItem/lease-not-found
+=== RUN   TestItemFaultsOnLastItem/t1-evidence-id-foreign-prefix
+=== RUN   TestItemFaultsOnLastItem/t1-evidence-id-no-prefix
+=== RUN   TestItemFaultsOnLastItem/t2-kind-provider-receipt
+=== RUN   TestItemFaultsOnLastItem/t3-expiry-now-plus-86401
+=== RUN   TestItemFaultsOnLastItem/t4-content-id-differs
+=== RUN   TestItemFaultsOnLastItem/t4-content-version-differs
+=== RUN   TestItemFaultsOnLastItem/item-nil
+=== RUN   TestItemFaultsOnLastItem/evidence-id-pattern-with-prefix
+=== RUN   TestItemFaultsOnLastItem/evidence-id-repeats-first
+--- PASS: TestItemFaultsOnLastItem (0.02s)
+    --- PASS: TestItemFaultsOnLastItem/presence-evidence-id (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/presence-lease-id (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/presence-content-id (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/presence-observation-digest (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/digest-algorithm-0 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/digest-algorithm-7 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/digest-31-bytes (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/digest-33-bytes (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/payload-content-version-2^53 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/payload-content-version-2^63 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/payload-content-version-max-uint64 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/payload-expiry-min-int64 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/evidence-id-pattern (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/lease-id-pattern (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/content-id-pattern (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/kind-0 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/kind-3-reserved-storage-proof (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/kind-4-reserved-unique-replica (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/kind-5-reserved-future-delivery (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/kind-7-unknown (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/attestation-false (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/expiry-0 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/expiry-negative (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/expiry-above-9999 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/item-expiry-at-committed-time (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/lease-not-found (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/t1-evidence-id-foreign-prefix (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/t1-evidence-id-no-prefix (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/t2-kind-provider-receipt (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/t3-expiry-now-plus-86401 (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/t4-content-id-differs (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/t4-content-version-differs (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/item-nil (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/evidence-id-pattern-with-prefix (0.00s)
+    --- PASS: TestItemFaultsOnLastItem/evidence-id-repeats-first (0.00s)
+=== RUN   TestLadderCoversEveryCode
+--- PASS: TestLadderCoversEveryCode (0.00s)
+=== RUN   TestTrialSnapshotDetectsEarlyWrite
+--- PASS: TestTrialSnapshotDetectsEarlyWrite (0.00s)
+=== RUN   TestModule
+--- PASS: TestModule (0.00s)
+=== RUN   TestServicesOnRealRouters
+--- PASS: TestServicesOnRealRouters (0.00s)
+=== RUN   TestServiceDescriptorsMatchTheProtocol
+--- PASS: TestServiceDescriptorsMatchTheProtocol (0.00s)
+=== RUN   TestUnaryHandlerInterceptor
+--- PASS: TestUnaryHandlerInterceptor (0.00s)
+=== RUN   TestRunMigrationsAtCurrentVersionIsANoOp
+--- PASS: TestRunMigrationsAtCurrentVersionIsANoOp (0.00s)
+=== RUN   TestNoMigrationFromScaffoldLayout
+--- PASS: TestNoMigrationFromScaffoldLayout (0.00s)
+=== RUN   TestMigrationTable
+--- PASS: TestMigrationTable (0.00s)
+=== RUN   TestNewKeeperRejectsMissingDependencies
+=== RUN   TestNewKeeperRejectsMissingDependencies/roles
+=== RUN   TestNewKeeperRejectsMissingDependencies/limits
+=== RUN   TestNewKeeperRejectsMissingDependencies/leases
+=== RUN   TestNewKeeperRejectsMissingDependencies/content
+=== RUN   TestNewKeeperRejectsMissingDependencies/nil-key
+--- PASS: TestNewKeeperRejectsMissingDependencies (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/roles (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/limits (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/leases (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/content (0.00s)
+    --- PASS: TestNewKeeperRejectsMissingDependencies/nil-key (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+=== RUN   TestKeeperImports
+--- PASS: TestKeeperImports (0.01s)
+=== RUN   TestNoMerkleCode
+--- PASS: TestNoMerkleCode (0.00s)
+=== RUN   TestNoForbiddenNames
+--- PASS: TestNoForbiddenNames (0.00s)
+=== RUN   TestReadsWithoutBlockTimeFailClosed
+--- PASS: TestReadsWithoutBlockTimeFailClosed (0.00s)
+=== RUN   TestEvidenceQuery
+=== RUN   TestEvidenceQuery/by-id
+=== RUN   TestEvidenceQuery/by-lease-pages
+=== RUN   TestEvidenceQuery/both-filters
+=== RUN   TestEvidenceQuery/rejections
+=== RUN   TestEvidenceQuery/limits
+=== RUN   TestEvidenceQuery/reported-state
+=== RUN   TestEvidenceQuery/broken-index-row
+--- PASS: TestEvidenceQuery (0.00s)
+    --- PASS: TestEvidenceQuery/by-id (0.00s)
+    --- PASS: TestEvidenceQuery/by-lease-pages (0.00s)
+    --- PASS: TestEvidenceQuery/both-filters (0.00s)
+    --- PASS: TestEvidenceQuery/rejections (0.00s)
+    --- PASS: TestEvidenceQuery/limits (0.00s)
+    --- PASS: TestEvidenceQuery/reported-state (0.00s)
+    --- PASS: TestEvidenceQuery/broken-index-row (0.00s)
+=== RUN   TestEvidenceQueryResponseSizeBound
+    query_test.go:290: page of 100 maximal records: 37202 encoded bytes (bound 65536)
+--- PASS: TestEvidenceQueryResponseSizeBound (0.01s)
+=== RUN   TestSignBytesVectors
+--- PASS: TestSignBytesVectors (0.01s)
+=== RUN   TestSignPayloadNeverFails
+--- PASS: TestSignPayloadNeverFails (0.00s)
+=== RUN   TestAttestationPayloadRejectsInvalidUTF8
+--- PASS: TestAttestationPayloadRejectsInvalidUTF8 (0.00s)
+=== RUN   TestSignPayloadSizeBound
+    signdoc_test.go:373: 32 maximal items: 20689 canonical payload bytes (cap 65536)
+    signdoc_test.go:387: smallest oversized batch: 102 maximal items; encoded message 26699 bytes
+--- PASS: TestSignPayloadSizeBound (0.42s)
+=== RUN   TestAttestationPreimageIsNotASignDoc
+--- PASS: TestAttestationPreimageIsNotASignDoc (0.00s)
+=== RUN   TestAuditorAddressMatchesSDK
+--- PASS: TestAuditorAddressMatchesSDK (0.00s)
+=== RUN   TestOwnsIDFailsClosed
+--- PASS: TestOwnsIDFailsClosed (0.00s)
+=== RUN   TestKindName
+--- PASS: TestKindName (0.00s)
+=== RUN   TestEpochAt
+--- PASS: TestEpochAt (0.00s)
+=== RUN   TestEnvelopeMatchesSchema
+--- PASS: TestEnvelopeMatchesSchema (0.00s)
+=== RUN   TestRecordFieldsAndDerivedState
+--- PASS: TestRecordFieldsAndDerivedState (0.00s)
+=== RUN   TestRecordStateNeedsTheDigestAlgorithm
+--- PASS: TestRecordStateNeedsTheDigestAlgorithm (0.00s)
+=== RUN   TestEvidenceEvents
+--- PASS: TestEvidenceEvents (0.00s)
+=== RUN   TestBatchCheckMajorOrderD6
+=== RUN   TestBatchCheckMajorOrderD6/id-pattern-vs-digest
+=== RUN   TestBatchCheckMajorOrderD6/expired-vs-kind
+=== RUN   TestBatchCheckMajorOrderD6/lease-absent-vs-attestation
+=== RUN   TestBatchCheckMajorOrderD6/tail-binding-vs-expiry-range
+=== RUN   TestBatchCheckMajorOrderD6/tail-provider-receipt-vs-lease-absent
+=== RUN   TestBatchCheckMajorOrderD6/presence-second-vs-digest-bounds-first
+=== RUN   TestBatchCheckMajorOrderD6/id-pattern-second-vs-kind-first
+=== RUN   TestBatchCheckMajorOrderD6/expired-second-vs-lease-absent-first
+--- PASS: TestBatchCheckMajorOrderD6 (0.01s)
+    --- PASS: TestBatchCheckMajorOrderD6/id-pattern-vs-digest (0.00s)
+    --- PASS: TestBatchCheckMajorOrderD6/expired-vs-kind (0.00s)
+    --- PASS: TestBatchCheckMajorOrderD6/lease-absent-vs-attestation (0.00s)
+    --- PASS: TestBatchCheckMajorOrderD6/tail-binding-vs-expiry-range (0.00s)
+    --- PASS: TestBatchCheckMajorOrderD6/tail-provider-receipt-vs-lease-absent (0.00s)
+    --- PASS: TestBatchCheckMajorOrderD6/presence-second-vs-digest-bounds-first (0.00s)
+    --- PASS: TestBatchCheckMajorOrderD6/id-pattern-second-vs-kind-first (0.00s)
+    --- PASS: TestBatchCheckMajorOrderD6/expired-second-vs-lease-absent-first (0.00s)
+=== RUN   TestBatchAtomicD6
+=== RUN   TestBatchAtomicD6/t1-prefix
+=== RUN   TestBatchAtomicD6/t2-provider-receipt
+=== RUN   TestBatchAtomicD6/t3-lifetime
+=== RUN   TestBatchAtomicD6/t4-binding
+=== RUN   TestBatchAtomicD6/t5-not-held
+=== RUN   TestBatchAtomicD6/t6-deadline
+=== RUN   TestBatchAtomicD6/t7-expiry-after-deadline
+=== RUN   TestBatchAtomicD6/t8-withdrawn
+=== RUN   TestBatchAtomicD6/t9-window
+--- PASS: TestBatchAtomicD6 (0.04s)
+    --- PASS: TestBatchAtomicD6/t1-prefix (0.01s)
+    --- PASS: TestBatchAtomicD6/t2-provider-receipt (0.00s)
+    --- PASS: TestBatchAtomicD6/t3-lifetime (0.00s)
+    --- PASS: TestBatchAtomicD6/t4-binding (0.00s)
+    --- PASS: TestBatchAtomicD6/t5-not-held (0.00s)
+    --- PASS: TestBatchAtomicD6/t6-deadline (0.01s)
+    --- PASS: TestBatchAtomicD6/t7-expiry-after-deadline (0.00s)
+    --- PASS: TestBatchAtomicD6/t8-withdrawn (0.00s)
+    --- PASS: TestBatchAtomicD6/t9-window (0.01s)
+=== RUN   TestDuplicateInBatchD6
+--- PASS: TestDuplicateInBatchD6 (0.00s)
+=== RUN   TestBatchSizeAndGovernedLimit
+--- PASS: TestBatchSizeAndGovernedLimit (0.02s)
+=== RUN   TestAlteredObservationD1
+=== RUN   TestAlteredObservationD1/attestation
+=== RUN   TestAlteredObservationD1/content_id
+=== RUN   TestAlteredObservationD1/content_version
+=== RUN   TestAlteredObservationD1/evidence_id
+=== RUN   TestAlteredObservationD1/expiry_unix_seconds
+=== RUN   TestAlteredObservationD1/kind
+=== RUN   TestAlteredObservationD1/lease_id
+=== RUN   TestAlteredObservationD1/observation_sha256
+=== RUN   TestAlteredObservationD1/epoch
+=== RUN   TestAlteredObservationD1/schema_version-signed-as-2
+=== RUN   TestAlteredObservationD1/signer_key_id
+=== RUN   TestAlteredObservationD1/batch_id
+=== RUN   TestAlteredObservationD1/signer-signed-for-another-address
+=== RUN   TestAlteredObservationD1/item-order-swapped
+=== RUN   TestAlteredObservationD1/item-removed
+=== RUN   TestAlteredObservationD1/item-added
+--- PASS: TestAlteredObservationD1 (0.02s)
+    --- PASS: TestAlteredObservationD1/attestation (0.00s)
+    --- PASS: TestAlteredObservationD1/content_id (0.00s)
+    --- PASS: TestAlteredObservationD1/content_version (0.00s)
+    --- PASS: TestAlteredObservationD1/evidence_id (0.00s)
+    --- PASS: TestAlteredObservationD1/expiry_unix_seconds (0.00s)
+    --- PASS: TestAlteredObservationD1/kind (0.00s)
+    --- PASS: TestAlteredObservationD1/lease_id (0.00s)
+    --- PASS: TestAlteredObservationD1/observation_sha256 (0.00s)
+    --- PASS: TestAlteredObservationD1/epoch (0.00s)
+    --- PASS: TestAlteredObservationD1/schema_version-signed-as-2 (0.00s)
+    --- PASS: TestAlteredObservationD1/signer_key_id (0.00s)
+    --- PASS: TestAlteredObservationD1/batch_id (0.00s)
+    --- PASS: TestAlteredObservationD1/signer-signed-for-another-address (0.00s)
+    --- PASS: TestAlteredObservationD1/item-order-swapped (0.00s)
+    --- PASS: TestAlteredObservationD1/item-removed (0.00s)
+    --- PASS: TestAlteredObservationD1/item-added (0.00s)
+=== RUN   TestSpecIntegrityCaseIsUnauthorizedD1
+--- PASS: TestSpecIntegrityCaseIsUnauthorizedD1 (0.00s)
+=== RUN   TestAuditorKeyBindingD2
+--- PASS: TestAuditorKeyBindingD2 (0.00s)
+=== RUN   TestBroadcasterRelayForbidden
+--- PASS: TestBroadcasterRelayForbidden (0.00s)
+=== RUN   TestForeignAuditorCannotTakeEvidenceIDsD17
+--- PASS: TestForeignAuditorCannotTakeEvidenceIDsD17 (0.00s)
+=== RUN   TestEpochRuleD3
+--- PASS: TestEpochRuleD3 (0.00s)
+=== RUN   TestSchemaVersionD5
+--- PASS: TestSchemaVersionD5 (0.00s)
+=== RUN   TestDuplicateIDs
+--- PASS: TestDuplicateIDs (0.01s)
+=== RUN   TestBusinessIDTakenFirst
+--- PASS: TestBusinessIDTakenFirst (0.00s)
+=== RUN   TestExpiryRangeEdges
+--- PASS: TestExpiryRangeEdges (0.00s)
+=== RUN   TestIdempotentReplay
+--- PASS: TestIdempotentReplay (0.00s)
+=== RUN   TestSameObservationNewIDIsAccepted
+--- PASS: TestSameObservationNewIDIsAccepted (0.00s)
+=== RUN   TestEvidenceKindHasNoProofValues
+--- PASS: TestEvidenceKindHasNoProofValues (0.00s)
+=== RUN   TestEvidenceItemHasNoRejectFlag
+--- PASS: TestEvidenceItemHasNoRejectFlag (0.00s)
+=== RUN   TestProviderReceiptNotOnChainD8
+--- PASS: TestProviderReceiptNotOnChainD8 (0.00s)
+=== RUN   TestEvidenceLifetimeBoundD9
+--- PASS: TestEvidenceLifetimeBoundD9 (0.00s)
+=== RUN   TestLeaseContentBindingD10
+--- PASS: TestLeaseContentBindingD10 (0.00s)
+=== RUN   TestLeaseNotHeldD11
+--- PASS: TestLeaseNotHeldD11 (0.00s)
+=== RUN   TestLeaseDeadlinePassedD12
+--- PASS: TestLeaseDeadlinePassedD12 (0.00s)
+=== RUN   TestEvidenceExpiryWithinLeaseD18
+--- PASS: TestEvidenceExpiryWithinLeaseD18 (0.00s)
+=== RUN   TestContentWithdrawnD13
+--- PASS: TestContentWithdrawnD13 (0.00s)
+=== RUN   TestAuditorEpochCapD15
+--- PASS: TestAuditorEpochCapD15 (0.22s)
+=== RUN   TestReportedStateD4
+--- PASS: TestReportedStateD4 (0.00s)
+=== RUN   TestNoEvidenceRevivesAnything
+--- PASS: TestNoEvidenceRevivesAnything (0.00s)
+=== RUN   TestRecordedEvidenceAfterEndWithdrawExpiry
+=== RUN   TestRecordedEvidenceAfterEndWithdrawExpiry/end
+=== RUN   TestRecordedEvidenceAfterEndWithdrawExpiry/withdraw
+=== RUN   TestRecordedEvidenceAfterEndWithdrawExpiry/expiry
+--- PASS: TestRecordedEvidenceAfterEndWithdrawExpiry (0.00s)
+    --- PASS: TestRecordedEvidenceAfterEndWithdrawExpiry/end (0.00s)
+    --- PASS: TestRecordedEvidenceAfterEndWithdrawExpiry/withdraw (0.00s)
+    --- PASS: TestRecordedEvidenceAfterEndWithdrawExpiry/expiry (0.00s)
+=== RUN   TestRecordSizeBound
+    submit_test.go:914: maximal record value 365 bytes; record row 430, lease index row 131 (per item 561); per batch: batch marker 66, business row 97; window row 37 (one per auditor, overwritten)
+    submit_test.go:916: yearly bound per auditor at the cap (1024 items per epoch, 1-item batches, maximal ids): 8970240 items x (561 + 163) bytes = 6494453760 logical KV bytes
+--- PASS: TestRecordSizeBound (0.00s)
+=== RUN   TestAuditLeavesOtherStoresUntouched
+--- PASS: TestAuditLeavesOtherStoresUntouched (0.00s)
+=== RUN   TestStoreInvariantViolationsFailClosed
+--- PASS: TestStoreInvariantViolationsFailClosed (0.00s)
+=== RUN   FuzzSubmitAuditBatchDecode
+=== RUN   FuzzSubmitAuditBatchDecode/seed#0
+=== RUN   FuzzSubmitAuditBatchDecode/seed#1
+=== RUN   FuzzSubmitAuditBatchDecode/seed#2
+=== RUN   FuzzSubmitAuditBatchDecode/seed#3
+--- PASS: FuzzSubmitAuditBatchDecode (0.00s)
+    --- PASS: FuzzSubmitAuditBatchDecode/seed#0 (0.00s)
+    --- PASS: FuzzSubmitAuditBatchDecode/seed#1 (0.00s)
+    --- PASS: FuzzSubmitAuditBatchDecode/seed#2 (0.00s)
+    --- PASS: FuzzSubmitAuditBatchDecode/seed#3 (0.00s)
+=== RUN   FuzzAuditStateSequence
+=== RUN   FuzzAuditStateSequence/seed#0
+=== RUN   FuzzAuditStateSequence/seed#1
+=== RUN   FuzzAuditStateSequence/seed#2
+--- PASS: FuzzAuditStateSequence (0.01s)
+    --- PASS: FuzzAuditStateSequence/seed#0 (0.00s)
+    --- PASS: FuzzAuditStateSequence/seed#1 (0.00s)
+    --- PASS: FuzzAuditStateSequence/seed#2 (0.00s)
+=== RUN   FuzzEvidenceGenesisJSON
+=== RUN   FuzzEvidenceGenesisJSON/seed#0
+=== RUN   FuzzEvidenceGenesisJSON/seed#1
+=== RUN   FuzzEvidenceGenesisJSON/seed#2
+=== RUN   FuzzEvidenceGenesisJSON/seed#3
+=== RUN   FuzzEvidenceGenesisJSON/seed#4
+--- PASS: FuzzEvidenceGenesisJSON (0.00s)
+    --- PASS: FuzzEvidenceGenesisJSON/seed#0 (0.00s)
+    --- PASS: FuzzEvidenceGenesisJSON/seed#1 (0.00s)
+    --- PASS: FuzzEvidenceGenesisJSON/seed#2 (0.00s)
+    --- PASS: FuzzEvidenceGenesisJSON/seed#3 (0.00s)
+    --- PASS: FuzzEvidenceGenesisJSON/seed#4 (0.00s)
+=== RUN   FuzzEvidencePageKey
+=== RUN   FuzzEvidencePageKey/seed#0
+=== RUN   FuzzEvidencePageKey/seed#1
+=== RUN   FuzzEvidencePageKey/seed#2
+=== RUN   FuzzEvidencePageKey/seed#3
+--- PASS: FuzzEvidencePageKey (0.00s)
+    --- PASS: FuzzEvidencePageKey/seed#0 (0.00s)
+    --- PASS: FuzzEvidencePageKey/seed#1 (0.00s)
+    --- PASS: FuzzEvidencePageKey/seed#2 (0.00s)
+    --- PASS: FuzzEvidencePageKey/seed#3 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	1.822s
+=== RUN   TestCheckInvariantsDetectsEachViolation
+=== RUN   TestCheckInvariantsDetectsEachViolation/no-layout-key
+=== RUN   TestCheckInvariantsDetectsEachViolation/layout-version-1
+=== RUN   TestCheckInvariantsDetectsEachViolation/unknown-prefix
+=== RUN   TestCheckInvariantsDetectsEachViolation/business-row-31-bytes
+=== RUN   TestCheckInvariantsDetectsEachViolation/business-row-off-pattern-id
+=== RUN   TestCheckInvariantsDetectsEachViolation/record-does-not-decode
+=== RUN   TestCheckInvariantsDetectsEachViolation/record-under-another-id
+=== RUN   TestCheckInvariantsDetectsEachViolation/attestation-false
+=== RUN   TestCheckInvariantsDetectsEachViolation/schema-version-2
+=== RUN   TestCheckInvariantsDetectsEachViolation/kind-provider-receipt
+=== RUN   TestCheckInvariantsDetectsEachViolation/signer-pubkey-31
+=== RUN   TestCheckInvariantsDetectsEachViolation/digest-31-bytes
+=== RUN   TestCheckInvariantsDetectsEachViolation/content-version-0
+=== RUN   TestCheckInvariantsDetectsEachViolation/expiry-0
+=== RUN   TestCheckInvariantsDetectsEachViolation/expiry-above-9999
+=== RUN   TestCheckInvariantsDetectsEachViolation/batch-id-pattern
+=== RUN   TestCheckInvariantsDetectsEachViolation/state-unspecified
+=== RUN   TestCheckInvariantsDetectsEachViolation/state-unknown
+=== RUN   TestCheckInvariantsDetectsEachViolation/evidence-id-without-prefix
+=== RUN   TestCheckInvariantsDetectsEachViolation/batch-id-of-another-auditor
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-index-row-missing
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-index-row-without-record
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-index-row-other-lease
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-index-row-value
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-index-row-without-separator
+=== RUN   TestCheckInvariantsDetectsEachViolation/batch-marker-missing
+=== RUN   TestCheckInvariantsDetectsEachViolation/batch-marker-without-record
+=== RUN   TestCheckInvariantsDetectsEachViolation/batch-marker-value
+=== RUN   TestCheckInvariantsDetectsEachViolation/batch-mixes-epochs
+=== RUN   TestCheckInvariantsDetectsEachViolation/batch-above-32-records
+=== RUN   TestCheckInvariantsDetectsEachViolation/batch-mixes-signer-keys
+=== RUN   TestCheckInvariantsDetectsEachViolation/window-missing
+=== RUN   TestCheckInvariantsDetectsEachViolation/window-count
+=== RUN   TestCheckInvariantsDetectsEachViolation/window-epoch
+=== RUN   TestCheckInvariantsDetectsEachViolation/window-count-0
+=== RUN   TestCheckInvariantsDetectsEachViolation/window-15-bytes
+=== RUN   TestCheckInvariantsDetectsEachViolation/window-count-above-cap
+=== RUN   TestCheckInvariantsDetectsEachViolation/window-without-records
+=== RUN   TestCheckInvariantsDetectsEachViolation/recorded-with-other-digest
+=== RUN   TestCheckInvariantsDetectsEachViolation/rejected-with-manifest-digest
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-absent
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-content-differs
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-content-version-differs
+=== RUN   TestCheckInvariantsDetectsEachViolation/lease-deadline-before-expiry
+=== RUN   TestCheckInvariantsDetectsEachViolation/nil-lease-surface
+--- PASS: TestCheckInvariantsDetectsEachViolation (0.04s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/no-layout-key (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/layout-version-1 (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/unknown-prefix (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/business-row-31-bytes (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/business-row-off-pattern-id (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/record-does-not-decode (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/record-under-another-id (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/attestation-false (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/schema-version-2 (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/kind-provider-receipt (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/signer-pubkey-31 (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/digest-31-bytes (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/content-version-0 (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/expiry-0 (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/expiry-above-9999 (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/batch-id-pattern (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/state-unspecified (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/state-unknown (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/evidence-id-without-prefix (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/batch-id-of-another-auditor (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-index-row-missing (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-index-row-without-record (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-index-row-other-lease (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-index-row-value (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-index-row-without-separator (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/batch-marker-missing (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/batch-marker-without-record (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/batch-marker-value (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/batch-mixes-epochs (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/batch-above-32-records (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/batch-mixes-signer-keys (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/window-missing (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/window-count (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/window-epoch (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/window-count-0 (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/window-15-bytes (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/window-count-above-cap (0.02s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/window-without-records (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/recorded-with-other-digest (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/rejected-with-manifest-digest (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-absent (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-content-differs (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-content-version-differs (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/lease-deadline-before-expiry (0.00s)
+    --- PASS: TestCheckInvariantsDetectsEachViolation/nil-lease-surface (0.00s)
+=== RUN   TestPrefixCollisionKeys
+--- PASS: TestPrefixCollisionKeys (0.00s)
+=== RUN   TestStoreSnapshot
+--- PASS: TestStoreSnapshot (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest	0.090s
+EXIT:0
