@@ -3,6 +3,7 @@ package upgrade
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strconv"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -73,8 +74,8 @@ type Unchanged struct {
 	Snapshot func(ctx sdk.Context, vm module.VersionMap) ([]byte, error)
 }
 
-// Deps are the stores and code the runner uses. Every field except
-// Unchanged is required.
+// Deps are the stores and code the runner uses. Every field is required;
+// Unchanged must hold at least one check (the I13 self-check).
 type Deps struct {
 	Plans     PlanSource
 	Versions  VersionStore
@@ -105,9 +106,9 @@ type Runner struct {
 }
 
 // NewRunner returns the runner for binary b. It refuses a declaration that
-// Binary.Validate refuses (ErrInvalidBinary), a missing dependency, more
-// than MaxUnchanged checks, a check without a name or a snapshot, and two
-// checks of one name (ErrInvalidDeps).
+// Binary.Validate refuses (ErrInvalidBinary), a missing dependency, no
+// post-condition check or more than MaxUnchanged, a check without a name or
+// a snapshot, and two checks of one name (ErrInvalidDeps).
 func NewRunner(b Binary, deps Deps) (*Runner, error) {
 	if err := b.Validate(); err != nil {
 		return nil, err
@@ -116,6 +117,8 @@ func NewRunner(b Binary, deps Deps) (*Runner, error) {
 	case deps.Plans == nil, deps.Versions == nil, deps.Params == nil, deps.Layouts == nil, deps.Counter == nil, deps.Migrate == nil:
 		return nil, errorf(ErrInvalidDeps, nil, "runner dependencies missing (plans %t, versions %t, params %t, layouts %t, counter %t, migrate %t)",
 			deps.Plans != nil, deps.Versions != nil, deps.Params != nil, deps.Layouts != nil, deps.Counter != nil, deps.Migrate != nil)
+	case len(deps.Unchanged) == 0:
+		return nil, errorf(ErrInvalidDeps, nil, "no post-condition checks (I13)")
 	case len(deps.Unchanged) > MaxUnchanged:
 		return nil, errorf(ErrInvalidDeps, nil, "%d post-condition checks, at most %d", len(deps.Unchanged), MaxUnchanged)
 	}
@@ -227,6 +230,7 @@ type before struct {
 //
 //  1. preconditions (preconditions)
 //  2. the handler, with a copy of the stored version map and Migrate
+//     (runHandler)
 //  3. post-conditions (postconditions)
 //  4. the record: RecordUpgrade, Version.App, the policy version bump, and
 //     a read-back of each (record), then the upgrade_applied event
@@ -239,9 +243,9 @@ func (r *Runner) apply(ctx sdk.Context, height uint64, up Upgrade, plan Plan) er
 	if err != nil {
 		return err
 	}
-	migrated, err := up.Handler(cc, cloneVM(pre.modules), r.deps.Migrate)
+	migrated, err := r.runHandler(cc, height, up, pre.modules)
 	if err != nil {
-		return errorf(ErrHandler, err, "upgrade %s at height %d", up.Name, height)
+		return err
 	}
 	if err := r.postconditions(cc, up, plan, pre, migrated); err != nil {
 		return err
@@ -256,6 +260,24 @@ func (r *Runner) apply(ctx sdk.Context, height uint64, up Upgrade, plan Plan) er
 	))
 	write()
 	return nil
+}
+
+// runHandler calls the handler of up with a copy of the stored version map
+// and Migrate. A handler error, or a panic in the handler or in a migration
+// it runs, is returned as an ErrHandler error, so PreBlock fails the block
+// through its error return and the cache context is never written. Every
+// node runs the same code on the same state and fails the same way.
+func (r *Runner) runHandler(cc sdk.Context, height uint64, up Upgrade, stored module.VersionMap) (migrated module.VersionMap, err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			migrated, err = nil, errorf(ErrHandler, fmt.Errorf("panic: %v", p), "upgrade %s at height %d", up.Name, height)
+		}
+	}()
+	migrated, err = up.Handler(cc, cloneVM(stored), r.deps.Migrate)
+	if err != nil {
+		return nil, errorf(ErrHandler, err, "upgrade %s at height %d", up.Name, height)
+	}
+	return migrated, nil
 }
 
 // preconditions checks the state the upgrade starts from and takes the

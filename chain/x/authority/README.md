@@ -107,6 +107,38 @@ Each one is stricter than `spec_machine.py` or adds an event; none changes a cod
 
 The differential oracle rules for D-1 and D-7 belong to `chain/x/authority/difftest` (a separate package). The execute-side ceiling check stays (defence in depth); after D-1 no message reaches it, so `TestExecuteRechecksCeiling` writes a `QUEUED` record directly and shows `BOUNDS` with the proposal left `QUEUED` and the store unchanged.
 
+## Recorded differences found by the goal 10 differential
+
+`chain/x/authority/difftest` runs this keeper against `spec_machine.py` step by step through `tests/difftest/spec_oracle.py` (keeper level, not end-to-end). The oracle maps each difference below by name and reports the name in the step's `deviation` field. G-1 to G-10 describe chain code that predates goal 10.
+
+| Rule | Chain | Spec | Recorded in |
+| --- | --- | --- | --- |
+| G-1 | A propose whose digest algorithm is not SHA-256 is `MALFORMED`, checked right after the digest value (after the spec's `INTEGRITY` check). | No algorithm field. | `docs/evidence/goal-06.md` (Deviations) |
+| G-2 | A request mapping: proto3 has no absent integer, so a missing `base_policy_version` or `expiry_unix_seconds` is 0 (`STALE_VERSION`, `BOUNDS`). | An absent field is `MALFORMED`. | `docs/evidence/goal-06.md` (Deviations) |
+| G-3 | The per-seat open-proposal quota is `BOUNDS`, the last propose check (DR-06-03). | No quota. | `docs/evidence/goal-06.md` (Deviations) |
+| G-4 | The pending cap is `BOUNDS` after the projection; the proposal stays `QUEUED` (DR-06-04). | No cap. | `docs/evidence/goal-06.md` (Deviations) |
+| G-5 | An approve that queues the proposal past `unix_seconds_max` is `OVERFLOW`. | No check. | `docs/evidence/goal-06.md` (Deviations) |
+| G-6 | Only the approved shape (four seats, threshold three, DEC-008) runs; any other shape makes every council step `DECISION_BLOCKED` at the council check. | Any shape. | `docs/architecture/authority-authorization.md` (four seats and three approvals) |
+| G-7 | A label: a keep outcome commits with ABCI code 0 and carries its code in an `authority_result` event (DR-06-05). | Keep outcome. | `docs/evidence/goal-06.md` (Deviations) |
+| G-8 | After a due group, the EndBlock checks the applied validator set again and halts with `DUPLICATE_ID` or `FORBIDDEN`. No message reaches it (every change was projected when scheduled), so only the oracle self-test covers it. | No re-check. | first written down here |
+| G-9 | A validator activation `unix_seconds` outside `[unix_seconds_min, unix_seconds_max]`, with every other field well formed, is `BOUNDS`. | `MALFORMED`. | first written down here |
+| G-10 | A validator payload with a well-formed consensus key and a node id outside the id pattern is `BOUNDS` whatever its reason digest, activation and power hold, absent ones included: the chain checks the node id first. | `MALFORMED` when one of those is absent or does not parse. | first written down here |
+
+Plan 16.4 words G-6 as "reset only" and G-10 as "node id checked before the reason digest". The oracle applies G-6 to every step (the chain's own behaviour) and G-10 to the activation and the power as well, absent fields included. Both wider scopes are open for the orchestrator's confirmation. If G-10 is narrowed, its absent-activation and absent-power cases join the open list below.
+
+**Open differences (no rule; a decision is needed).** `TestUnnamedParseDivergences` (difftest) pins eight propose payloads on which the chain answers `BOUNDS` and `spec_machine.py` answers `MALFORMED`. Neither side changes state, which the test checks. The random generator never sends them, so the seeded differential does not cover them:
+
+- a validator reason digest whose value is not 32 bytes;
+- a negative validator power;
+- an empty consensus key;
+- a force-withdraw reason digest whose value is not 32 bytes;
+- a force-withdraw content id outside the id pattern, together with a reason digest that has no algorithm;
+- a governed value of 0 (a proto3 default; G-2 as recorded covers only the message's two integer fields);
+- an empty governed limit key (a proto3 default);
+- an empty provider id in an admit payload (a proto3 default; disable uses the same parse).
+
+Each needs either a named oracle rule or a chain change to `MALFORMED`, which would change a client-visible code. Neither is made here.
+
 ## Policy writer and account hooks
 
 `PolicyWriter` (`policy.go`) is the policy store as an executed proposal sees it: `SetLimit`, `SchedulePending`, `ScheduleUpgrade`, `CancelUpgrade`, `UpgradeApplied`. `applyPayload` is its only caller (`TestPolicyWriterCallSites`, an AST scan of this package). Every method checks before its first write.

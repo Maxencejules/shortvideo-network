@@ -551,11 +551,14 @@ Running the upgrade, all inside one cache context of the PreBlock context:
 1. Preconditions: `VMs` and `VM` name the same modules; every `VMs[m] <= VM[m]`; snapshots taken for the self-check.
 2. The handler runs, calling `RunMigrations` from the stored map with an explicit migration order.
 3. Self-check (I13; it protects only against an honest binary's mistakes, section 9): the snapshots are unchanged except
-   the allowed rows; each module's layout key equals the returned map; the returned map equals `VM`.
+   the allowed rows; each module's layout key equals the returned map; the returned map equals `VM`. The runner refuses
+   to start without at least one snapshot class, so the self-check cannot be left out by omission.
 4. Writes into the cache: version map, app version `To`, `ConsensusParams.Version.App = To`, `0x07[name] = h`, plan
    deleted, policy version + 1 (DR-10-38); event `upgrade_applied`.
 5. The cache is written only after 1-4 succeed. PreBlock reports changed consensus params.
-6. Any error in 1-4 returns before the cache is written. The SDK reuses a failed attempt's finalize state for a retry of
+6. Any error in 1-4 returns before the cache is written. A panic in the handler or in a migration it runs is turned into
+   the same handler error (the SDK's PreBlock does not recover one), so it fails the block the same way on every node.
+   The SDK reuses a failed attempt's finalize state for a retry of
    the same height (`cosmos-sdk@v0.55.0/baseapp/abci.go:817-820,1016-1022`); because the upgrade step runs first and wrote nothing into it, a
    retry starts from the same state.
    Block h does not commit on that node. Restarting the same binary repeats the attempt; the plan is still due.
@@ -728,7 +731,25 @@ Goal 06's recorded differences stay. Goal 10's own:
 | D-9 | `Query/Policy` and `Query/Governance` registered with paging | no query semantics | REQ-GOV-003 "published delay" |
 | D-10 | genesis refuses a seat id longer than 59 characters (PROPOSED) | id pattern up to 64 (`chain/x/authority/payload.go:36`) | `seat-<seat_id>` must fit the 64-character parameter-key pattern, or the seat could never be replaced |
 
-A divergence from `spec_machine.py` outside goal 06's recorded differences and D-1 to D-10 is reported, never hidden.
+The keeper-level differential (`chain/x/authority/difftest`, through `tests/difftest/spec_oracle.py`) names goal 06's
+differences G-1 to G-10. G-1 to G-5 and G-7 are recorded in `docs/evidence/goal-06.md:316-322`; G-6, the approved
+four-seat, threshold-three shape, in `docs/architecture/authority-authorization.md:32`. G-8 (the validator set re-checked
+after a due group; no message reaches it), G-9 (validator activation unix time out of range: `BOUNDS` on the chain,
+`MALFORMED` in the spec), and G-10 (validator node id outside the id pattern: `BOUNDS` whatever the later fields hold) were
+first written down by goal 10. The oracle applies G-6 per step (any other shape makes every council step
+`DECISION_BLOCKED`) and extends G-10 to an absent or unparseable reason digest, activation, or power; both scopes are wider
+than the plan's wording and are open for confirmation.
+
+Open differences that no rule names. On eight propose payloads the chain answers `BOUNDS` and the spec answers `MALFORMED`;
+neither side changes state. They are: a validator reason digest whose value is not 32 bytes; a negative validator power; an
+empty consensus key; a withdraw reason digest whose value is not 32 bytes; a withdraw content id outside the id pattern
+together with a reason digest without an algorithm; a governed value of 0; an empty governed limit key; an empty provider id
+in an admit payload. The last three are proto3 defaults the spec reads as absent fields. A keeper-level differential test
+pins each one; the random generator does not send them. Each needs a decision: a named oracle rule, or a chain change to
+`MALFORMED`, which changes a client-visible code.
+
+A divergence from `spec_machine.py` outside G-1 to G-10, D-1 to D-10, and the eight open differences above is reported,
+never hidden.
 
 ## 20. Invariants
 

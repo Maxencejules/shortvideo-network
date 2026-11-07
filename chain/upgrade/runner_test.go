@@ -733,6 +733,41 @@ func TestRunnerWritesOnSuccessOnly(t *testing.T) {
 	}
 }
 
+// TestRunnerHandlerPanicIsAnError: a panic in the handler, or in a
+// migration the handler runs through Migrate, after it wrote to the cache
+// context, is an ErrHandler error carrying the panic value: every store is
+// unchanged, no event is emitted, and PreBlock reports no change. The plan
+// stays due, so the same state with a handler that does not panic applies.
+func TestRunnerHandlerPanicIsAnError(t *testing.T) {
+	rows := []struct {
+		name string
+		edit func(*runnerEnv)
+	}{
+		{"handler panics", func(e *runnerEnv) {
+			e.handler = func(ctx sdk.Context, from module.VersionMap, migrate upgrade.Migrate) (module.VersionMap, error) {
+				ctx.KVStore(e.keys["mod"]).Set([]byte("d1"), []byte("half written"))
+				panic("migration bug")
+			}
+		}},
+		{"migration panics", func(e *runnerEnv) {
+			e.deps.Migrate = func(ctx sdk.Context, from module.VersionMap) (module.VersionMap, error) {
+				ctx.KVStore(e.keys["mod"]).Set([]byte("Lalpha"), u64(2))
+				panic(errors.New("migration bug"))
+			}
+		}},
+	}
+	for _, row := range rows {
+		e := newRunnerEnv(t)
+		row.edit(e)
+		e.failsUnchanged(row.name, upgrade.ErrHandler, "upgrade up-1 at height 7: panic: migration bug")
+		e.handler = nil
+		e.deps.Migrate = fakeMigrate(e.keys["mod"], runnerVM)
+		if changed, err := e.runner().PreBlock(e.ctx); err != nil || !changed {
+			t.Fatalf("%s: retry with a corrected handler: %t %v", row.name, changed, err)
+		}
+	}
+}
+
 // TestRunnerPreBlockRule: PreBlock applies CheckBlock before any write:
 // with nothing due it writes nothing and returns false; an old binary at
 // the plan height, an upgrade binary below it, a plan below the block
@@ -851,6 +886,8 @@ func TestNewRunnerRefusesBadDeps(t *testing.T) {
 		{"no layout source", func(d *upgrade.Deps) { d.Layouts = nil }, "layouts false"},
 		{"no policy counter", func(d *upgrade.Deps) { d.Counter = nil }, "counter false"},
 		{"no migrate", func(d *upgrade.Deps) { d.Migrate = nil }, "migrate false"},
+		{"no post-condition check", func(d *upgrade.Deps) { d.Unchanged = nil }, "no post-condition checks (I13)"},
+		{"empty post-condition list", func(d *upgrade.Deps) { d.Unchanged = []upgrade.Unchanged{} }, "no post-condition checks (I13)"},
 		{"too many checks", func(d *upgrade.Deps) { d.Unchanged = tooMany }, "33 post-condition checks"},
 		{"check without a name", func(d *upgrade.Deps) { d.Unchanged = []upgrade.Unchanged{{Snapshot: noop}} }, "name of 0 bytes"},
 		{"check name too long", func(d *upgrade.Deps) {

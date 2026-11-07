@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Differential oracle for chain/x/leases and chain/x/evidence (keeper level, not end to end).
+"""Differential oracle for chain/x/leases, chain/x/evidence and chain/x/authority (keeper level).
 
 It drives docs/evidence/goal-02/spec_machine.py, the executable protocol v0
 specification, one step at a time for the Go tests in chain/x/leases/difftest
-(goal 08) and chain/x/evidence/difftest (goal 09). It lives under tests/
+(goal 08), chain/x/evidence/difftest (goal 09) and chain/x/authority/difftest
+(goal 10, council flow). It is not end-to-end evidence. It lives under tests/
 because the goal-01 contract checker allows Python only in the repository's
 Python trees. It is test support. It does not run in chain execution and it
 is not evidence of a committed transaction.
@@ -120,6 +121,88 @@ Go generator, never by this adapter.
 With "evidence", the projection also carries "evidence" (per evidence id:
 batch_id, kind, derived state, stored_state, lease_id, content_id,
 expiry_unix_seconds, observation_digest, attestation) and "batch_ids".
+
+Council flow (goal 10), only with "council" in the reset config. Without it
+a council step is a request error and nothing above changes. "council"
+config: seats (a list of {address, seat_id, pubkey}: the 20-byte account in
+hex, the seat id, the 32-byte council key in hex), threshold and
+delay_seconds (the DEC-008 devnet numeric value and delay), height (the
+current block height), validators (a list of {node_id, power,
+consensus_pubkey}), and the x/authority chain constants approved_seats,
+approved_threshold, max_open_proposals_per_seat and max_pending_changes.
+
+A council step is ProposeChange, ApproveChange or ExecuteChange in the
+spec_machine.py field names. The signer is a 20-byte account in hex; for a
+propose or an approve the adapter replaces a seat account with its seat id
+(spec seats are names). A propose payload is proto3 JSON and payload_digest
+is hex. A propose may carry "digest_algorithm", the payload digest's
+algorithm name on the chain (not a spec_machine.py field; absent means
+DIGEST_ALGORITHM_SHA256); the adapter always removes it. The step goes to
+spec_machine.dispatch_tx on a copy of the state, which is kept on a success
+or a keep (EXPIRED or REJECTED mark). The response adds "keep" (true for a
+keep outcome). Its events are {"type", "id", "policy_version"}: id is the
+parameter key of PolicyChanged and the proposal id of ProposalExecuted.
+
+Council rules, each applied only to the step class named and reported in
+"deviation". G-1 to G-5 and G-7 are the differences goal 06 recorded
+(docs/evidence/goal-06.md, Deviations); G-6 and G-8 to G-10 are further
+shape and check-order differences of the same code; authority D-1, D-2 and
+D-7 are goal 10's. chain/x/authority/README.md lists every rule, and the
+open differences no rule names (the oracle maps none of those):
+
+- G-1: a propose whose digest_algorithm is not SHA-256 is MALFORMED once
+  the spec's validated_payload got past the INTEGRITY check (it passed, or
+  failed later with OUT_OF_RANGE): the chain checks the algorithm right
+  after the digest value.
+- G-2 (a request mapping): proto3 has no absent integer. A propose without
+  base_policy_version or expiry_unix_seconds carries 0, the value the chain
+  decodes. The Go generator never omits them; with the rule off the spec
+  sees the field absent (MALFORMED).
+- G-3: a non-idempotent propose success whose seat already holds
+  max_open_proposals_per_seat OPEN or QUEUED proposals on the current base
+  version is BOUNDS (the chain's last propose check). The adapter records
+  the proposer of each proposal it accepted.
+- G-4: a non-idempotent execute success of a validator payload while
+  max_pending_changes changes are pending is BOUNDS (checked after the
+  projection); the proposal stays QUEUED.
+- G-5: a non-idempotent approve success that queues the proposal when
+  chain_time + delay_seconds is above unix_seconds_max is OVERFLOW.
+- G-6: the chain accepts only the approved council shape (approved_seats
+  seats, threshold approved_threshold). Any other shape makes every step
+  that reaches spec council_ready DECISION_BLOCKED there.
+- G-7 (a label): a keep outcome commits with ABCI code 0 on the chain and
+  carries its code in an authority_result event (DR-06-05). The adapter
+  reports the spec's code and keep flag unchanged and names the rule.
+- G-8: after a Block, the chain checks the applied validator set again
+  (distinct consensus keys, spec power_set_invariant) and halts on a
+  failure: the Block answers DUPLICATE_ID or FORBIDDEN and nothing changes.
+  A message cannot reach this (every change was projected when scheduled).
+- G-9: a validator payload whose activation is unixSeconds outside
+  [unix_seconds_min, unix_seconds_max], with a well-formed key, node id and
+  reason digest, is BOUNDS on the chain; the spec parses it as MALFORMED.
+- G-10: a validator payload with a well-formed consensus key and a node id
+  outside the id pattern is BOUNDS on the chain whatever its reason digest,
+  activation and power hold, absent ones included (the chain checks the
+  node id first); the spec answers MALFORMED when one of those is absent or
+  does not parse.
+- authority D-1: whenever the spec's validated_payload passed for a
+  governed limit whose key is not in governed_limit_caps or whose value is
+  above its ceiling, the chain answers BOUNDS (right after the payload
+  checks), whatever later code the spec returns. Applied after G-1.
+- authority D-2: a non-idempotent execute success also emits
+  ProposalExecuted{proposal_id, policy_version} after PolicyChanged.
+- authority D-7: a non-idempotent execute success of a validator payload
+  whose consensus key is a council seat key is DUPLICATE_ID (after G-4);
+  the proposal stays QUEUED.
+
+The adapter finds where the spec stopped by wrapping spec_machine.py's own
+council_ready and validated_payload for the duration of one step (it never
+copies their logic). With "council", the projection also carries "council":
+height, policy_version, proposals (per id: parameter_key,
+base_policy_version, payload_digest, state, expiry_unix_seconds,
+execute_after_unix_seconds, approvers as seat ids), executed_params,
+governed_limits, validators (node_id, power, consensus_pubkey,
+reason_digest), and pending_power in spec activation order.
 """
 
 from __future__ import annotations
@@ -238,6 +321,52 @@ UNAUTHORIZED: Final = "ERROR_CODE_UNAUTHORIZED"
 CONFLICT: Final = "ERROR_CODE_CONFLICT"
 WITHDRAWN: Final = "ERROR_CODE_WITHDRAWN"
 NOT_FOUND: Final = "ERROR_CODE_NOT_FOUND"
+MALFORMED: Final = "ERROR_CODE_MALFORMED"
+OUT_OF_RANGE: Final = "ERROR_CODE_OUT_OF_RANGE"
+OVERFLOW: Final = "ERROR_CODE_OVERFLOW"
+DECISION_BLOCKED: Final = "ERROR_CODE_DECISION_BLOCKED"
+
+PROPOSE: Final = "ProposeChange"
+APPROVE: Final = "ApproveChange"
+EXECUTE: Final = "ExecuteChange"
+COUNCIL_OPS: Final = frozenset({PROPOSE, APPROVE, EXECUTE})
+COUNCIL_CONFIG_KEYS: Final = frozenset(
+    {
+        "seats",
+        "threshold",
+        "delay_seconds",
+        "height",
+        "validators",
+        "approved_seats",
+        "approved_threshold",
+        "max_open_proposals_per_seat",
+        "max_pending_changes",
+    }
+)
+SEAT_CONFIG_KEYS: Final = frozenset({"address", "seat_id", "pubkey"})
+VALIDATOR_CONFIG_KEYS: Final = frozenset({"node_id", "power", "consensus_pubkey"})
+COUNCIL_RULES: Final = frozenset(
+    {
+        "G-1",
+        "G-2",
+        "G-3",
+        "G-4",
+        "G-5",
+        "G-6",
+        "G-7",
+        "G-8",
+        "G-9",
+        "G-10",
+        "authority D-1",
+        "authority D-2",
+        "authority D-7",
+    }
+)
+SHA256_ALGORITHM: Final = "DIGEST_ALGORITHM_SHA256"
+# The integer fields of a propose that proto3 cannot leave absent (G-2).
+PROPOSE_INTEGERS: Final = ("base_policy_version", "expiry_unix_seconds")
+VALIDATOR_BODY_KEYS: Final = frozenset({"consensusPubkey", "nodeId", "reasonDigest", "activation"})
+OPEN_STATES: Final = frozenset({"OPEN", "QUEUED"})
 
 
 class RequestError(ValueError):
@@ -285,6 +414,79 @@ def event_ref(event: JSON) -> JSON:
     raise RequestError(f"event {event.get('type')} carries no id field")
 
 
+def council_event_ref(event: JSON) -> JSON:
+    """A council event: its type, the id it reports, and the policy version."""
+    kind = str(event["type"])
+    field = {"PolicyChanged": "parameter_key", "ProposalExecuted": "proposal_id"}.get(kind)
+    if field is None:
+        raise RequestError(f"council event {kind} is not PolicyChanged or ProposalExecuted")
+    return {"type": kind, "id": str(event[field]), "policy_version": str(event["policy_version"])}
+
+
+def activation_view(activation: JSON) -> JSON:
+    if activation["kind"] == "height":
+        return {"kind": "height", "point": str(activation["height"])}
+    return {"kind": "time", "point": str(activation["unix_seconds"])}
+
+
+def council_projection(state: JSON, seat_ids: frozenset[str]) -> JSON:
+    """The council part of the projection (only with the council config)."""
+    proposals = []
+    for proposal_id in sorted(state["proposals"]):
+        p = state["proposals"][proposal_id]
+        if any(approver not in seat_ids for approver in p["approvers"]):
+            raise RequestError(f"proposal {proposal_id} has an approver that is not a seat")
+        proposals.append(
+            {
+                "proposal_id": proposal_id,
+                "parameter_key": p["parameter_key"],
+                "base_policy_version": str(p["base_policy_version"]),
+                "payload_digest": p["payload_digest"],
+                "state": p["state"],
+                "expiry_unix_seconds": str(p["expiry_unix_seconds"]),
+                "execute_after_unix_seconds": str(p["execute_after_unix_seconds"]),
+                "approvers": sorted(p["approvers"]),
+            }
+        )
+    validators = []
+    for node_id in sorted(state["validators"]):
+        validators.append(
+            {
+                "node_id": node_id,
+                "power": str(state["validators"][node_id]),
+                "consensus_pubkey": state["validator_pubkeys"][node_id],
+                "reason_digest": state["validator_reasons"].get(node_id),
+            }
+        )
+    pending = []
+    for item in sorted(state["pending_power"], key=sm.activation_sort_key):
+        pending.append(
+            {
+                "proposal_id": item["proposal_id"],
+                "node_id": item["node_id"],
+                "power": str(item["power"]),
+                "consensus_pubkey": item["consensus_pubkey"],
+                "reason_digest": item["reason_digest"],
+                "activation": activation_view(item["activation"]),
+            }
+        )
+    return {
+        "height": str(state["height"]),
+        "policy_version": str(state["policy_version"]),
+        "proposals": proposals,
+        "executed_params": [
+            {"parameter_key": key, "payload_digest": state["executed_params"][key]}
+            for key in sorted(state["executed_params"])
+        ],
+        "governed_limits": [
+            {"limit_key": key, "value": str(state["governed_limits"][key])}
+            for key in sorted(state["governed_limits"])
+        ],
+        "validators": validators,
+        "pending_power": pending,
+    }
+
+
 def derived_state(record: JSON, chain_time: int) -> str:
     """Evidence D-4: a RECORDED record reads EXPIRED from its expiry on."""
     stored = str(record["state"])
@@ -293,10 +495,11 @@ def derived_state(record: JSON, chain_time: int) -> str:
     return stored
 
 
-def projection(state: JSON, evidence: bool) -> JSON:
+def projection(state: JSON, evidence: bool, seat_ids: frozenset[str] | None = None) -> JSON:
     """The chain-state projection both sides compare.
 
     Integers are decimal strings so uint64 values survive JSON exactly.
+    seat_ids is set only with the council config; it adds "council".
     """
     providers = []
     for provider_id in sorted(state["providers"]):
@@ -417,6 +620,8 @@ def projection(state: JSON, evidence: bool) -> JSON:
             )
         out["evidence"] = records
         out["batch_ids"] = sorted(state["batches"])
+    if seat_ids is not None:
+        out["council"] = council_projection(state, seat_ids)
     return out
 
 
@@ -447,6 +652,151 @@ class EvidenceConfig:
         return signer[: 2 * self.prefix_bytes] + "."
 
 
+def need_hex(value: object, name: str, size: int) -> str:
+    text = need_str(value, name)
+    if len(text) != 2 * size or any(char not in "0123456789abcdef" for char in text):
+        raise RequestError(f"{name} must be {size} bytes of lowercase hex")
+    return text
+
+
+class CouncilConfig:
+    """The council genesis and the x/authority chain constants of the council rules."""
+
+    def __init__(self, config: JSON) -> None:
+        need_keys(config, COUNCIL_CONFIG_KEYS, "council config")
+        seats = config["seats"]
+        if not isinstance(seats, list):
+            raise RequestError("council seats must be a list")
+        # account (hex) -> seat id, and seat id -> council key (hex).
+        self.seat_of: dict[str, str] = {}
+        self.seat_keys: dict[str, str] = {}
+        for index, raw in enumerate(seats):
+            seat = need_dict(raw, f"seat {index}")
+            need_keys(seat, SEAT_CONFIG_KEYS, f"seat {index}")
+            address = need_hex(
+                seat["address"], "seat address", int(sm.BOUNDS["account_address_bytes"])
+            )
+            seat_id = need_str(seat["seat_id"], "seat_id")
+            if sm.check_id(seat_id) is not None:
+                raise RequestError(f"seat id {seat_id} outside the id pattern")
+            if address in self.seat_of or seat_id in self.seat_keys:
+                raise RequestError(f"seat {seat_id} ({address}) appears twice")
+            self.seat_of[address] = seat_id
+            self.seat_keys[seat_id] = need_hex(seat["pubkey"], "seat pubkey", 32)
+        if len(set(self.seat_keys.values())) != len(self.seat_keys):
+            raise RequestError("two seats share a council key")
+        self.threshold = need_int(config["threshold"], "threshold", 1, sm.SAFE_MAX)
+        self.delay = need_int(config["delay_seconds"], "delay_seconds", 0, sm.SAFE_MAX)
+        self.height = need_int(config["height"], "height", 1, sm.SAFE_MAX)
+        validators = config["validators"]
+        if not isinstance(validators, list):
+            raise RequestError("council validators must be a list")
+        self.validators: dict[str, int] = {}
+        self.validator_keys: dict[str, str] = {}
+        for index, raw in enumerate(validators):
+            row = need_dict(raw, f"validator {index}")
+            need_keys(row, VALIDATOR_CONFIG_KEYS, f"validator {index}")
+            node_id = need_str(row["node_id"], "node_id")
+            if node_id in self.validators:
+                raise RequestError(f"validator {node_id} appears twice")
+            self.validators[node_id] = need_int(row["power"], "power", 1, sm.SAFE_MAX)
+            self.validator_keys[node_id] = need_hex(row["consensus_pubkey"], "consensus_pubkey", 32)
+        self.approved_seats = need_int(config["approved_seats"], "approved_seats", 1, sm.SAFE_MAX)
+        self.approved_threshold = need_int(
+            config["approved_threshold"], "approved_threshold", 1, sm.SAFE_MAX
+        )
+        self.quota = need_int(
+            config["max_open_proposals_per_seat"], "max_open_proposals_per_seat", 1, sm.SAFE_MAX
+        )
+        self.pending_cap = need_int(
+            config["max_pending_changes"], "max_pending_changes", 1, sm.SAFE_MAX
+        )
+
+    def approved_shape(self) -> bool:
+        """G-6: the shape the chain's council check accepts."""
+        return (
+            len(self.seat_keys) == self.approved_seats and self.threshold == self.approved_threshold
+        )
+
+
+class SpecProbe:
+    """Records the first result of chosen spec_machine.py functions during one step.
+
+    The wrapper calls the spec's own function and returns its result
+    unchanged, so the spec's outcome never depends on the probe. The module
+    attributes are restored when the step ends.
+    """
+
+    def __init__(self, names: tuple[str, ...]) -> None:
+        self.names = names
+        self.seen: dict[str, object] = {}
+        self.saved: dict[str, Any] = {}
+
+    def __enter__(self) -> SpecProbe:
+        for name in self.names:
+            original = getattr(sm, name)
+            self.saved[name] = original
+
+            def wrapper(*args: object, _name: str = name, _original: Any = original) -> object:
+                result = _original(*args)
+                self.seen.setdefault(_name, result)
+                return result
+
+            setattr(sm, name, wrapper)
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        for name, original in self.saved.items():
+            setattr(sm, name, original)
+
+    def reached(self, name: str) -> bool:
+        return name in self.seen
+
+    def result(self, name: str) -> object:
+        return self.seen.get(name)
+
+
+def validator_parse_rule(payload: object) -> str | None:
+    """G-9 or G-10: the chain's BOUNDS for a validator payload the spec parses as MALFORMED.
+
+    Returns the rule whose condition the payload meets (the caller applies
+    it only when the spec's parse answered MALFORMED), or None. The chain
+    reads the consensus key, then the node id, the reason digest, the
+    activation and the power; spec parse_proposal_payload reads the key
+    and then answers MALFORMED for any unparseable power, reason or
+    activation before it looks at the node id.
+    """
+    if not isinstance(payload, dict) or set(payload) != {"validatorPower"}:
+        return None
+    body = payload["validatorPower"]
+    if not isinstance(body, dict) or not set(body) <= VALIDATOR_BODY_KEYS | {"power"}:
+        return None
+    if not {"consensusPubkey", "nodeId"} <= set(body):
+        return None
+    raw_key = sm.b64_fixed(body["consensusPubkey"], sm.BOUNDS["consensus_pubkey_bytes"])
+    if raw_key is None or sm.standard_b64(raw_key) != body["consensusPubkey"]:
+        return None
+    if sm.check_id(body["nodeId"]) is not None:
+        return "G-10"
+    if "reasonDigest" not in body or sm.digest_message(body["reasonDigest"]) is None:
+        return None
+    activation = body.get("activation")
+    if not isinstance(activation, dict) or set(activation) != {"unixSeconds"}:
+        return None
+    text = activation["unixSeconds"]
+    if not isinstance(text, str):
+        return None
+    try:
+        number = int(text, 10)
+    except ValueError:
+        return None
+    if str(number) != text:
+        return None
+    if int(sm.BOUNDS["unix_seconds_min"]) <= number <= int(sm.BOUNDS["unix_seconds_max"]):
+        return None
+    return "G-9"
+
+
 class Oracle:
     """spec_machine.py state plus the x/leases and x/evidence deviation rules."""
 
@@ -463,6 +813,10 @@ class Oracle:
         # signer -> (epoch, items accepted in that epoch): the chain's
         # auditor window (evidence D-15).
         self.windows: dict[str, tuple[int, int]] = {}
+        self.governance_cfg: CouncilConfig | None = None
+        # proposal id -> the seat id that proposed it (G-3), for every
+        # proposal a propose committed.
+        self.proposers: dict[str, str] = {}
         # False while a step request asked for no projection.
         self.with_projection = True
 
@@ -471,9 +825,12 @@ class Oracle:
 
     def reset(self, config: JSON, disable_deviations: object) -> JSON:
         evidence_config = config.get("evidence")
+        council_config = config.get("council")
         need_keys(
             config,
-            CONFIG_KEYS | ({"evidence"} if evidence_config is not None else frozenset()),
+            CONFIG_KEYS
+            | ({"evidence"} if evidence_config is not None else frozenset())
+            | ({"council"} if council_config is not None else frozenset()),
             "config",
         )
         state = sm.devnet_state()
@@ -519,16 +876,48 @@ class Oracle:
             if evidence_config is None
             else EvidenceConfig(need_dict(evidence_config, "evidence"))
         )
+        self.governance_cfg = (
+            None if council_config is None else CouncilConfig(need_dict(council_config, "council"))
+        )
+        if self.governance_cfg is not None:
+            self.council_genesis(state, self.governance_cfg)
         self.disabled = self.read_disabled(disable_deviations)
         if self.evidence is not None and self.on("evidence D-3"):
             state["epoch"] = self.evidence.epoch(state["chain_time"])
         self.used_offer_ids = {}
         self.windows = {}
+        self.proposers = {}
         self.state = state
-        return {"ok": True, "projection": projection(state, self.evidence is not None)}
+        return {"ok": True, "projection": self.project(state)}
+
+    @staticmethod
+    def council_genesis(state: JSON, cfg: CouncilConfig) -> None:
+        """The council config replaces the spec devnet seats, DEC-008 and validators."""
+        for address in cfg.seat_of:
+            if address in state["submitters"]:
+                raise RequestError(f"seat account {address} is a submitter (DR-06-06)")
+        state["seats"] = sorted(cfg.seat_keys)
+        dec8 = state["devnet_tests"]["DEC-008"]
+        dec8["numeric_value"] = cfg.threshold
+        dec8["delay_seconds"] = cfg.delay
+        state["height"] = cfg.height
+        state["validators"] = dict(cfg.validators)
+        state["validator_pubkeys"] = dict(cfg.validator_keys)
+        state["validator_reasons"] = {}
+        problems = sm.validate_genesis_view(state)
+        if problems:
+            raise RequestError(f"council genesis: {problems}")
+
+    def project(self, state: JSON) -> JSON:
+        seat_ids = None if self.governance_cfg is None else frozenset(self.governance_cfg.seat_keys)
+        return projection(state, self.evidence is not None, seat_ids)
 
     def read_disabled(self, value: object) -> frozenset[str]:
-        known = LEASE_RULES | (EVIDENCE_RULES if self.evidence is not None else frozenset())
+        known = (
+            LEASE_RULES
+            | (EVIDENCE_RULES if self.evidence is not None else frozenset())
+            | (COUNCIL_RULES if self.governance_cfg is not None else frozenset())
+        )
         if value is False:
             return frozenset()
         if value is True:
@@ -551,6 +940,8 @@ class Oracle:
             return self.transaction(step)
         if op == AUDIT_OP:
             return self.audit(step)
+        if op in COUNCIL_OPS:
+            return self.governance(step)
         if op == "Block":
             return self.block(step)
         if op in ("CouncilAdmit", "CouncilDisable", "CouncilForceWithdraw", "GovernedLimit"):
@@ -567,9 +958,7 @@ class Oracle:
             "idempotent": idempotent,
             "events": [event_ref(event) for event in events],
             "deviation": deviation,
-            "projection": projection(self.current(), self.evidence is not None)
-            if self.with_projection
-            else None,
+            "projection": self.project(self.current()) if self.with_projection else None,
         }
 
     def transaction(self, step: JSON) -> JSON:
@@ -781,6 +1170,10 @@ class Oracle:
         trial = copy.deepcopy(pre)
         rules: list[str] = []
         result = sm.dispatch(trial, {"op": "CommitBlock", "header_time": header_time})
+        if result["ok"] and self.governance_cfg is not None and self.on("G-8"):
+            halt = self.applied_set_error(trial)
+            if halt is not None:
+                return self.respond(halt, False, [], "G-8")
         if result["ok"]:
             if self.evidence is not None and self.on("evidence D-3"):
                 epoch = self.evidence.epoch(header_time)
@@ -802,6 +1195,162 @@ class Oracle:
             return self.respond(str(result["error"]), False, [], None)
         self.state = trial
         return self.respond("ok", False, trial["events"][before:], "+".join(rules) or None)
+
+    @staticmethod
+    def applied_set_error(state: JSON) -> str | None:
+        """G-8: the chain's check of the validator set after a due group."""
+        keys = list(state["validator_pubkeys"].values())
+        if len(keys) != len(set(keys)):
+            return DUPLICATE_ID
+        problem = sm.power_set_invariant(state["validators"])
+        return None if problem is None else str(problem)
+
+    def council_config(self) -> CouncilConfig:
+        if self.governance_cfg is None:
+            raise RequestError("a council step needs the council reset config")
+        return self.governance_cfg
+
+    def council_request(self, cfg: CouncilConfig, step: JSON) -> tuple[JSON, str, list[str]]:
+        """The spec step of a council request, the chain's digest algorithm, and mapping rules.
+
+        Removes the Go-only digest_algorithm field, fills an absent propose
+        integer with 0 (G-2), and replaces a seat account signer of a
+        propose or an approve with its seat id.
+        """
+        op = step["op"]
+        spec = dict(step)
+        algorithm = SHA256_ALGORITHM
+        rules: list[str] = []
+        if "digest_algorithm" in spec:
+            if op != PROPOSE:
+                raise RequestError("digest_algorithm belongs to a propose")
+            algorithm = need_str(spec.pop("digest_algorithm"), "digest_algorithm")
+        if op == PROPOSE and self.on("G-2"):
+            for name in PROPOSE_INTEGERS:
+                if name not in spec:
+                    spec[name] = 0
+                    if "G-2" not in rules:
+                        rules.append("G-2")
+        signer = spec.get("signer")
+        if op in (PROPOSE, APPROVE) and isinstance(signer, str) and signer in cfg.seat_of:
+            spec["signer"] = cfg.seat_of[signer]
+        return spec, algorithm, rules
+
+    def open_count(self, state: JSON, seat_id: str) -> int:
+        """G-3: OPEN or QUEUED proposals of seat_id on the current base version."""
+        return sum(
+            1
+            for proposal_id, proposal in state["proposals"].items()
+            if proposal["state"] in OPEN_STATES
+            and proposal["base_policy_version"] == state["policy_version"]
+            and self.proposers.get(proposal_id) == seat_id
+        )
+
+    def governance(self, step: JSON) -> JSON:
+        """One council transaction: spec_machine.py plus the council rules, in the chain's order."""
+        cfg = self.council_config()
+        pre = self.current()
+        before = len(pre["events"])
+        op = step["op"]
+        spec, algorithm, rules = self.council_request(cfg, step)
+        trial = copy.deepcopy(pre)
+        with SpecProbe(("council_ready", "validated_payload")) as probe:
+            result = sm.dispatch_tx(trial, spec)
+        ok = bool(result["ok"])
+        idempotent = bool(result["idempotent"])
+        keep = bool(result["keep"]) and not ok
+        code = "ok" if ok else str(result["error"])
+
+        def refuse(rule: str, chain_code: str) -> JSON:
+            return self.council_respond(chain_code, False, False, [], rules + [rule])
+
+        if self.on("G-6") and probe.reached("council_ready") and not cfg.approved_shape():
+            if code != DECISION_BLOCKED:
+                return refuse("G-6", DECISION_BLOCKED)
+        if op == PROPOSE:
+            mapped = self.propose_rules(cfg, pre, spec, algorithm, probe, ok and not idempotent)
+            if mapped is not None:
+                return refuse(*mapped)
+        elif op == APPROVE and ok and not idempotent and self.on("G-5"):
+            proposal = trial["proposals"][spec["proposal_id"]]
+            queued = proposal["state"] == "QUEUED"
+            if queued and pre["chain_time"] + cfg.delay > int(sm.BOUNDS["unix_seconds_max"]):
+                return refuse("G-5", OVERFLOW)
+        elif op == EXECUTE and ok and not idempotent:
+            payload = pre["proposals"][spec["proposal_id"]]["payload"]
+            if payload["kind"] == "validator_power":
+                if self.on("G-4") and len(pre["pending_power"]) >= cfg.pending_cap:
+                    return refuse("G-4", BOUNDS_CODE)
+                seat_keys = set(cfg.seat_keys.values())
+                if self.on("authority D-7") and payload["consensus_pubkey"] in seat_keys:
+                    return refuse("authority D-7", DUPLICATE_ID)
+        if not result["keep"]:
+            return self.council_respond(code, False, False, [], rules)
+        self.state = trial
+        events = list(trial["events"][before:])
+        if op == PROPOSE and ok and not idempotent:
+            self.proposers[spec["proposal_id"]] = spec["signer"]
+        if op == EXECUTE and ok and not idempotent and self.on("authority D-2"):
+            events.append(
+                {
+                    "type": "ProposalExecuted",
+                    "proposal_id": spec["proposal_id"],
+                    "policy_version": trial["policy_version"],
+                }
+            )
+            rules.append("authority D-2")
+        if keep and self.on("G-7"):
+            rules.append("G-7")
+        return self.council_respond(code, idempotent, keep, events, rules)
+
+    def propose_rules(
+        self,
+        cfg: CouncilConfig,
+        pre: JSON,
+        spec: JSON,
+        algorithm: str,
+        probe: SpecProbe,
+        fresh_success: bool,
+    ) -> tuple[str, str] | None:
+        """The chain's propose outcome where it differs from the spec: (rule, code), or None.
+
+        In the chain's order: G-9 and G-10 inside the payload parse, G-1
+        after the digest value, authority D-1 after validated_payload, and
+        G-3 last.
+        """
+        if probe.reached("validated_payload"):
+            checked = probe.result("validated_payload")
+            if not isinstance(checked, dict):
+                raise RequestError("validated_payload returned a non-object")
+            failed = "ok" in checked
+            spec_code = str(checked["error"]) if failed else ""
+            if failed and spec_code == MALFORMED:
+                rule = validator_parse_rule(spec.get("payload"))
+                if rule is not None and self.on(rule):
+                    return rule, BOUNDS_CODE
+            if algorithm != SHA256_ALGORITHM and self.on("G-1"):
+                if not failed or spec_code == OUT_OF_RANGE:
+                    return "G-1", MALFORMED
+            if not failed and checked["kind"] == "governed_limit" and self.on("authority D-1"):
+                ceiling = sm.BOUNDS["governed_limit_caps"].get(checked["limit_key"])
+                if ceiling is None or checked["value"] > int(ceiling):
+                    return "authority D-1", BOUNDS_CODE
+        if fresh_success and self.on("G-3"):
+            if self.open_count(pre, spec["signer"]) >= cfg.quota:
+                return "G-3", BOUNDS_CODE
+        return None
+
+    def council_respond(
+        self, code: str, idempotent: bool, keep: bool, events: list[JSON], rules: list[str]
+    ) -> JSON:
+        return {
+            "code": code,
+            "idempotent": idempotent,
+            "keep": keep,
+            "events": [council_event_ref(event) for event in events],
+            "deviation": "+".join(rules) or None,
+            "projection": self.project(self.current()) if self.with_projection else None,
+        }
 
     def council(self, step: JSON) -> JSON:
         op = step["op"]
@@ -1513,8 +2062,466 @@ def evidence_self_test() -> int:
     return len(trace) + len(plain) + len(stale) + 2 * len(window) + len(evidence_setup())
 
 
+# Council self-test. Four seats with accounts 0xa1..0xa4 (not submitters),
+# six validators of power 10, DEC-008 threshold 3. A council case is (step,
+# code with every rule on, deviation, code with the segment's rules off,
+# deviation then).
+CouncilCase = tuple[JSON, str, str | None, str, str | None]
+SEATS: Final = [
+    (sm.addr(0xA1 + i), f"seat-{i + 1}", sm.pubkey_for(f"seat-{i + 1}")) for i in range(4)
+]
+VALIDATORS: Final = [(f"v{i}", 10, sm.pubkey_for(f"v{i}")) for i in range(1, 7)]
+D2: Final = "authority D-2"
+UNIX_MAX: Final = int(sm.BOUNDS["unix_seconds_max"])
+
+
+def council_config(
+    threshold: int = 3, delay: int = 10, quota: int = 32, pending_cap: int = 128
+) -> JSON:
+    config = self_config(1)
+    config["council"] = {
+        "seats": [{"address": a, "seat_id": s, "pubkey": k} for a, s, k in SEATS],
+        "threshold": threshold,
+        "delay_seconds": delay,
+        "height": 1,
+        "validators": [{"node_id": n, "power": p, "consensus_pubkey": k} for n, p, k in VALIDATORS],
+        "approved_seats": 4,
+        "approved_threshold": 3,
+        "max_open_proposals_per_seat": quota,
+        "max_pending_changes": pending_cap,
+    }
+    return config
+
+
+def default_parameter_key(payload: JSON) -> str:
+    field, body = next(iter(payload.items()))
+    if field == "governedLimit":
+        return str(body["limitKey"])
+    if field == "validatorPower":
+        return "validator-" + str(body["nodeId"])
+    if field == "admitProvider":
+        return "admit-" + str(body["providerId"])
+    if field == "disableProvider":
+        return "disable-" + str(body["providerId"])
+    return "withdraw-" + str(body["contentId"])
+
+
+def propose_step(
+    seat: int,
+    proposal_id: str,
+    payload: JSON,
+    base: int = 1,
+    expiry: int = T + 10000,
+    business: str | None = None,
+    algorithm: str | None = None,
+    digest: str | None = None,
+) -> JSON:
+    step: JSON = {
+        "op": PROPOSE,
+        "signer": SEATS[seat - 1][0],
+        "business_id": business or f"b-{proposal_id}",
+        "proposal_id": proposal_id,
+        "parameter_key": default_parameter_key(payload),
+        "base_policy_version": base,
+        "payload": payload,
+        "payload_digest": digest or sm.payload_digest(payload),
+        "expiry_unix_seconds": expiry,
+    }
+    if algorithm is not None:
+        step["digest_algorithm"] = algorithm
+    return step
+
+
+def approve_step(seat: int, proposal_id: str, business: str | None = None) -> JSON:
+    return {
+        "op": APPROVE,
+        "signer": SEATS[seat - 1][0],
+        "business_id": business or f"a-{proposal_id}-{seat}",
+        "proposal_id": proposal_id,
+    }
+
+
+def execute_step(proposal_id: str, signer: str = sm.AUTHORITY, business: str | None = None) -> JSON:
+    return {
+        "op": EXECUTE,
+        "signer": signer,
+        "business_id": business or f"x-{proposal_id}",
+        "proposal_id": proposal_id,
+    }
+
+
+def same(step: JSON, code: str, deviation: str | None = None) -> CouncilCase:
+    return (step, code, deviation, code, deviation)
+
+
+def governed(key: str, value: int) -> JSON:
+    return sm.governed_limit_payload(key, value)
+
+
+def add_validator(node_id: str, height: int, pubkey: str | None = None, power: int = 10) -> JSON:
+    return sm.validator_power_payload(node_id, power, {"height": str(height)}, pubkey)
+
+
+def raw_validator(node_id: str, activation: JSON, reason: JSON | None = None) -> JSON:
+    payload = sm.validator_power_payload(node_id, 10, activation)
+    if reason is not None:
+        payload["validatorPower"]["reasonDigest"] = reason
+    return payload
+
+
+def no_reason(node_id: str) -> JSON:
+    """A validator payload without its reason digest (proto3 JSON omits an unset message)."""
+    payload = raw_validator(node_id, {"height": "9"})
+    del payload["validatorPower"]["reasonDigest"]
+    return payload
+
+
+def passed(
+    proposal_id: str, payload: JSON, base: int, at: int | None, seat: int = 1
+) -> list[CouncilCase]:
+    """Propose, three approvals, a block at time at (None: no block), and the execute."""
+    cases = [same(propose_step(seat, proposal_id, payload, base), "ok")]
+    cases += [same(approve_step(s, proposal_id), "ok") for s in (1, 2, 3)]
+    if at is not None:
+        cases.append(same({"op": "Block", "header_time": at}, "ok"))
+    cases.append(same(execute_step(proposal_id), "ok", D2))
+    return cases
+
+
+def flow_segment() -> list[CouncilCase]:
+    """Authority D-2 and G-7 on the plain council flow (delay 10)."""
+    p1 = governed("max_page_limit", 50)
+    return [
+        same(propose_step(1, "p1", p1), "ok"),
+        same(approve_step(1, "p1"), "ok"),
+        same(approve_step(2, "p1"), "ok"),
+        same(approve_step(2, "p1", "a-p1-2b"), "ERROR_CODE_REPLAY"),
+        same(approve_step(3, "p1"), "ok"),
+        same(approve_step(4, "p1"), CONFLICT),
+        same(execute_step("p1"), OUT_OF_RANGE),
+        same(execute_step("p1", sm.SERVICE, "x-p1-svc"), FORBIDDEN),
+        same(execute_step("p1", SEATS[0][0], "x-p1-seat"), UNAUTHORIZED),
+        same({"op": "Block", "header_time": T + 10}, "ok"),
+        (execute_step("p1"), "ok", D2, "ok", None),
+        same(execute_step("p1"), "ok"),
+        same(propose_step(2, "p2", governed("max_page_limit", 60)), "ERROR_CODE_STALE_VERSION"),
+        same(propose_step(2, "p3", governed("max_open_offers", 7), 2, T + 20), "ok"),
+        same({"op": "Block", "header_time": T + 20}, "ok"),
+        (approve_step(1, "p3"), EXPIRED, "G-7", EXPIRED, None),
+        (execute_step("p3"), EXPIRED, "G-7", EXPIRED, None),
+        same({"op": "Block", "header_time": T + 10000}, "ok"),
+        # An EXECUTED proposal executed again after its expiry is relabelled.
+        (execute_step("p1", business="x-p1-late"), EXPIRED, "G-7", EXPIRED, None),
+    ]
+
+
+def d1_segment() -> list[CouncilCase]:
+    over = governed("max_page_limit", 101)
+    return [
+        (
+            propose_step(1, "d1", governed("max_tx_bytes", 5)),
+            BOUNDS_CODE,
+            "authority D-1",
+            "ok",
+            None,
+        ),
+        (propose_step(1, "d2", over), BOUNDS_CODE, "authority D-1", "ok", None),
+        (propose_step(1, "d3", over, expiry=T), BOUNDS_CODE, "authority D-1", EXPIRED, None),
+        (
+            propose_step(1, "d4", governed("max_open_offers", 1025), business="b-d2"),
+            BOUNDS_CODE,
+            "authority D-1",
+            "ERROR_CODE_REPLAY",
+            None,
+        ),
+        same(propose_step(1, "d5", governed("max_page_limit", 100)), "ok"),
+    ]
+
+
+def g1_segment() -> list[CouncilCase]:
+    unspecified = "DIGEST_ALGORITHM_UNSPECIFIED"
+    past = add_validator("v7", 1)
+    return [
+        (
+            propose_step(1, "g1", governed("max_page_limit", 50), algorithm=unspecified),
+            MALFORMED,
+            "G-1",
+            "ok",
+            None,
+        ),
+        same(
+            propose_step(
+                1, "g2", governed("max_page_limit", 50), algorithm=unspecified, digest="00" * 32
+            ),
+            "ERROR_CODE_INTEGRITY",
+        ),
+        (propose_step(1, "g3", past, algorithm=unspecified), MALFORMED, "G-1", OUT_OF_RANGE, None),
+        (
+            propose_step(1, "g4", governed("max_tx_bytes", 5), algorithm=unspecified),
+            MALFORMED,
+            "G-1",
+            BOUNDS_CODE,
+            "authority D-1",
+        ),
+    ]
+
+
+def g2_segment() -> list[CouncilCase]:
+    no_expiry = propose_step(1, "n1", governed("max_page_limit", 50))
+    del no_expiry["expiry_unix_seconds"]
+    no_base = propose_step(1, "n2", governed("max_page_limit", 50))
+    del no_base["base_policy_version"]
+    return [
+        (no_expiry, BOUNDS_CODE, "G-2", MALFORMED, None),
+        (no_base, "ERROR_CODE_STALE_VERSION", "G-2", MALFORMED, None),
+    ]
+
+
+def parse_segment() -> list[CouncilCase]:
+    """G-9 and G-10 (both off in the second run)."""
+    no_algorithm = {"value": sm.digest_json(sm.REASON)["value"]}
+    return [
+        (
+            propose_step(1, "u1", raw_validator("v7", {"unixSeconds": "0"})),
+            BOUNDS_CODE,
+            "G-9",
+            MALFORMED,
+            None,
+        ),
+        (
+            propose_step(1, "u2", raw_validator("v7", {"unixSeconds": str(UNIX_MAX + 1)})),
+            BOUNDS_CODE,
+            "G-9",
+            MALFORMED,
+            None,
+        ),
+        (
+            propose_step(1, "u3", raw_validator("v7", {"unixSeconds": "-5"})),
+            BOUNDS_CODE,
+            "G-9",
+            MALFORMED,
+            None,
+        ),
+        same(propose_step(1, "u4", raw_validator("v7", {"height": "0"})), MALFORMED),
+        # "-bad" is outside the id pattern; its parameter key "validator--bad" is not.
+        same(propose_step(1, "u5", raw_validator("-bad", {"height": "9"})), BOUNDS_CODE),
+        (
+            propose_step(1, "u6", raw_validator("-bad", {"unixSeconds": "0"})),
+            BOUNDS_CODE,
+            "G-10",
+            MALFORMED,
+            None,
+        ),
+        (
+            propose_step(1, "u7", raw_validator("-bad", {"height": "9"}, no_algorithm)),
+            BOUNDS_CODE,
+            "G-10",
+            MALFORMED,
+            None,
+        ),
+        same(propose_step(1, "u8", raw_validator("v7", {"height": "9"}, no_algorithm)), MALFORMED),
+        (propose_step(1, "u9", no_reason("-bad")), BOUNDS_CODE, "G-10", MALFORMED, None),
+        same(propose_step(1, "u10", no_reason("v7")), MALFORMED),
+    ]
+
+
+def g3_segment() -> list[CouncilCase]:
+    """G-3 with a quota of 2 (delay 10)."""
+    return [
+        same(propose_step(4, "q1", governed("max_page_limit", 11)), "ok"),
+        same(propose_step(4, "q2", governed("max_page_limit", 12)), "ok"),
+        (propose_step(4, "q3", governed("max_page_limit", 13)), BOUNDS_CODE, "G-3", "ok", None),
+        same(propose_step(3, "q4", governed("max_page_limit", 14)), "ok"),
+        *passed("q5", governed("max_open_offers", 9), 1, T + 10),
+        same(propose_step(4, "q6", governed("max_page_limit", 15), 2), "ok"),
+    ]
+
+
+def g4_segment() -> list[CouncilCase]:
+    """G-4 with a pending cap of 2 (delay 0, so no block is needed)."""
+    last = passed("v9", add_validator("v9", 102), 3, None)
+    head, execute = last[:-1], last[-1][0]
+    return [
+        *passed("v7", add_validator("v7", 100), 1, None),
+        *passed("v8", add_validator("v8", 101), 2, None),
+        *head,
+        (execute, BOUNDS_CODE, "G-4", "ok", D2),
+    ]
+
+
+def d7_segment() -> list[CouncilCase]:
+    """Authority D-7: a validator payload with a seat key (delay 0)."""
+    last = passed("v7", add_validator("v7", 100, SEATS[0][2]), 1, None)
+    head, execute = last[:-1], last[-1][0]
+    return [
+        *head,
+        (execute, DUPLICATE_ID, "authority D-7", "ok", D2),
+        # The proposal stays QUEUED: the same refusal again.
+        (execute_step("v7", business="x-v7-2"), DUPLICATE_ID, "authority D-7", CONFLICT, None),
+    ]
+
+
+def g5_segment() -> list[CouncilCase]:
+    near = UNIX_MAX - 5
+    return [
+        same({"op": "Block", "header_time": near}, "ok"),
+        same(propose_step(1, "o1", governed("max_page_limit", 50), expiry=UNIX_MAX), "ok"),
+        same(approve_step(1, "o1"), "ok"),
+        same(approve_step(2, "o1"), "ok"),
+        (approve_step(3, "o1"), OVERFLOW, "G-5", "ok", None),
+    ]
+
+
+def g6_segment() -> list[CouncilCase]:
+    """G-6 with DEC-008 threshold 2 on four seats."""
+    return [
+        (
+            propose_step(1, "s1", governed("max_page_limit", 50)),
+            DECISION_BLOCKED,
+            "G-6",
+            "ok",
+            None,
+        ),
+        same(execute_step("s1", sm.SERVICE), FORBIDDEN),
+        (execute_step("none"), DECISION_BLOCKED, "G-6", NOT_FOUND, None),
+    ]
+
+
+def run_council(oracle: Oracle, cases: list[CouncilCase], rules_on: bool) -> list[JSON]:
+    trace: list[Case] = [
+        (step, on if rules_on else off, dev_on if rules_on else dev_off)
+        for step, on, dev_on, off, dev_off in cases
+    ]
+    return run_trace(oracle, trace)
+
+
+def council_segments() -> list[tuple[str, JSON, list[str], list[CouncilCase]]]:
+    return [
+        ("flow", council_config(), [D2, "G-7"], flow_segment()),
+        ("D-1", council_config(), ["authority D-1"], d1_segment()),
+        ("G-1", council_config(), ["G-1"], g1_segment()),
+        ("G-2", council_config(), ["G-2"], g2_segment()),
+        ("G-9/G-10", council_config(), ["G-9", "G-10"], parse_segment()),
+        ("G-3", council_config(quota=2), ["G-3"], g3_segment()),
+        ("G-4", council_config(delay=0, pending_cap=2), ["G-4"], g4_segment()),
+        ("D-7", council_config(delay=0), ["authority D-7"], d7_segment()),
+        ("G-5", council_config(), ["G-5"], g5_segment()),
+        ("G-6", council_config(threshold=2), ["G-6"], g6_segment()),
+    ]
+
+
+def g8_self_test() -> int:
+    """G-8: a due set that breaks the power invariant or repeats a key halts the Block.
+
+    No message can build such a pending set (every change is projected when
+    it is scheduled), so the self-test writes the pending entry into the
+    spec state directly; the step under test is the Block.
+    """
+    reason = sm.REASON
+    broken = [
+        ("v9", 1000, sm.pubkey_for("v9"), "ERROR_CODE_FORBIDDEN"),
+        ("v9", 10, VALIDATORS[0][2], DUPLICATE_ID),
+    ]
+    for node_id, power, pubkey, code in broken:
+        for rules_on in (True, False):
+            oracle = Oracle()
+            reset(oracle, council_config(), disable=False if rules_on else ["G-8"])
+            oracle.current()["pending_power"].append(
+                {
+                    "proposal_id": "injected",
+                    "node_id": node_id,
+                    "consensus_pubkey": pubkey,
+                    "power": power,
+                    "reason_digest": reason,
+                    "activation": {"kind": "height", "height": 2},
+                }
+            )
+            block = {"op": "Block", "header_time": T + 1}
+            expected = (code, "G-8") if rules_on else ("ok", None)
+            responses = run_trace(oracle, [(block, *expected)])
+            pending = responses[0]["projection"]["council"]["pending_power"]
+            if rules_on and [p["proposal_id"] for p in pending] != ["injected"]:
+                raise AssertionError("a G-8 halt changed the state")
+    return 4
+
+
+def council_self_test() -> int:
+    steps = 0
+    for name, config, rules, cases in council_segments():
+        oracle = Oracle()
+        reset(oracle, config, disable=False)
+        try:
+            responses = run_council(oracle, cases, rules_on=True)
+        except AssertionError as exc:
+            raise AssertionError(f"council segment {name}, rules on: {exc}") from exc
+        if name == "flow":
+            check_flow(responses, d2_on=True)
+        oracle = Oracle()
+        reset(oracle, config, disable=rules)
+        try:
+            off = run_council(oracle, cases, rules_on=False)
+        except AssertionError as exc:
+            raise AssertionError(f"council segment {name}, {rules} off: {exc}") from exc
+        if name == "flow":
+            check_flow(off, d2_on=False)
+        steps += 2 * len(cases)
+    steps += g8_self_test()
+    # A council step needs the council config, and council rule names are
+    # unknown without it.
+    oracle = Oracle()
+    reset(oracle, self_config(1), disable=False)
+    refused = json.loads(
+        handle_line(oracle, json.dumps({"cmd": "step", "step": execute_step("p1")}))
+    )
+    if "error" not in refused:
+        raise AssertionError("a council step without the council config was not an error")
+    bad = json.loads(
+        handle_line(
+            Oracle(),
+            json.dumps({"cmd": "reset", "config": self_config(1), "disable_deviations": ["G-1"]}),
+        )
+    )
+    if "error" not in bad:
+        raise AssertionError("a council rule name was accepted without the council config")
+    plain = json.loads(
+        handle_line(
+            Oracle(),
+            json.dumps({"cmd": "reset", "config": self_config(1), "disable_deviations": False}),
+        )
+    )
+    if "council" in plain["projection"]:
+        raise AssertionError("the lease projection carries a council part")
+    return steps
+
+
+def check_flow(responses: list[JSON], d2_on: bool) -> None:
+    """The typed events and keep flags of the flow segment."""
+    executed = responses[10]
+    want = [{"type": "PolicyChanged", "id": "max_page_limit", "policy_version": "2"}]
+    if d2_on:
+        want.append({"type": "ProposalExecuted", "id": "p1", "policy_version": "2"})
+    council = executed["projection"]["council"]
+    checks = {
+        "execute events": executed["events"] == want,
+        "idempotent execute": responses[11]["idempotent"] is True and responses[11]["events"] == [],
+        "keep flags": [responses[i]["keep"] for i in (15, 16, 18)] == [True, True, True],
+        "no keep on a refusal": responses[6]["keep"] is False,
+        "governed value": council["governed_limits"]
+        == [
+            {"limit_key": "max_expiry_steps", "value": "1"},
+            {"limit_key": "max_page_limit", "value": "50"},
+        ],
+        "approvers": council["proposals"][0]["approvers"] == ["seat-1", "seat-2", "seat-3"],
+        "relabel": [p["state"] for p in responses[-1]["projection"]["council"]["proposals"]]
+        == ["EXPIRED", "EXPIRED"],
+    }
+    failed = [name for name, held in checks.items() if not held]
+    if failed:
+        raise AssertionError(f"council flow checks failed: {failed}")
+
+
 def self_test() -> int:
-    steps = lease_self_test() + evidence_self_test()
+    steps = lease_self_test() + evidence_self_test() + council_self_test()
     # A bad request is an error response, not a code.
     oracle = Oracle()
     reset(oracle, self_config(1), disable=False)

@@ -126,7 +126,8 @@ func TestRootHelpText(t *testing.T) {
 // the node, which refuses them (the application cannot run upgrade
 // handlers yet) before it reads the home; without handlers start reads the
 // home and fails on the missing node.json. Root keeps its own copy of the
-// handler list.
+// handler list: version lists the handlers as Root received them after the
+// caller renamed one in its own slice.
 func TestStartPassesUpgradesToTheNode(t *testing.T) {
 	home := t.TempDir()
 	upgrades := rehearsalUpgrades()
@@ -146,13 +147,15 @@ func TestStartPassesUpgradesToTheNode(t *testing.T) {
 		t.Fatalf("start without handlers: %v", err)
 	}
 	var out bytes.Buffer
-	versions := Root(Options{Upgrades: rehearsalUpgrades()})
+	listed := rehearsalUpgrades()
+	versions := Root(Options{Upgrades: listed})
+	listed[0].Name = "changed"
 	versions.SetArgs([]string{"version"})
 	versions.SetOut(&out)
 	if err := versions.Execute(); err != nil {
 		t.Fatalf("version through Root: %v", err)
 	}
-	if !strings.Contains(out.String(), "upgrade rehearsal-1 from_app_version 1 to_app_version 2") {
-		t.Fatalf("version through Root:\n%s", out.String())
+	if !strings.Contains(out.String(), "upgrade rehearsal-1 from_app_version 1 to_app_version 2") || strings.Contains(out.String(), "changed") {
+		t.Fatalf("version through Root does not list the handlers Root received:\n%s", out.String())
 	}
 }
