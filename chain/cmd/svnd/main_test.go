@@ -1,11 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
+
+	"github.com/Maxencejules/shortvideo-network/chain/app"
 )
 
 // buildInfoLines reads `go version -m <binary>`: the Go version, the main
@@ -56,8 +60,9 @@ func readBuildInfoLines(t *testing.T, bin string) buildInfoLines {
 // line for line against what `go version -m` reads from the same binary:
 // the main module version, the Go version, vcs.revision and vcs.modified
 // ("unknown" when the build has no VCS stamp), the three pinned framework
-// modules, and "upgrades none" (svnd compiles no upgrade handler). The
-// help text says the same about handlers.
+// modules, then the app version and the module versions the application
+// declares for svnd (app.DeclaredBinary), and "upgrades none" (svnd
+// compiles no upgrade handler). The help text says the same about handlers.
 func TestSvndVersionMatchesBuildInfo(t *testing.T) {
 	bin := filepath.Join(t.TempDir(), "svnd")
 	build := exec.Command("go", "build", "-o", bin, ".")
@@ -80,6 +85,7 @@ func TestSvndVersionMatchesBuildInfo(t *testing.T) {
 		"github.com/cosmos/cosmos-sdk " + info.deps["github.com/cosmos/cosmos-sdk"],
 		"github.com/cosmos/cosmos-sdk/store/v2 " + info.deps["github.com/cosmos/cosmos-sdk/store/v2"],
 		"github.com/cometbft/cometbft " + info.deps["github.com/cometbft/cometbft"],
+		declaredLines(t),
 		"upgrades none",
 	}, "\n") + "\n"
 	if info.deps["github.com/cosmos/cosmos-sdk"] == "" || info.deps["github.com/cometbft/cometbft"] == "" || info.deps["github.com/cosmos/cosmos-sdk/store/v2"] == "" {
@@ -96,4 +102,29 @@ func TestSvndVersionMatchesBuildInfo(t *testing.T) {
 	if err != nil || !strings.Contains(string(help), "Compiled upgrade handlers: none.") {
 		t.Fatalf("svnd --help: %v\n%s", err, help)
 	}
+}
+
+// declaredLines are the app_version line and the module lines of what the
+// application declares for a binary without upgrade handlers
+// (app.DeclaredBinary), which svnd version must print: app version 1 and
+// every module in name order.
+func declaredLines(t *testing.T) string {
+	t.Helper()
+	binary, err := app.DeclaredBinary(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if binary.AppVersion != 1 || len(binary.Modules) != 8 {
+		t.Fatalf("declared binary: app version %d, %d modules", binary.AppVersion, len(binary.Modules))
+	}
+	names := make([]string, 0, len(binary.Modules))
+	for name := range binary.Modules {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	lines := []string{fmt.Sprintf("app_version %d", binary.AppVersion)}
+	for _, name := range names {
+		lines = append(lines, fmt.Sprintf("module %s %d", name, binary.Modules[name]))
+	}
+	return strings.Join(lines, "\n")
 }

@@ -450,13 +450,29 @@ func consensusKeys(t *testing.T, layout devnet.Layout) map[string][]byte {
 	return keys
 }
 
+// launch starts this test binary as one validator of home: TestMain runs
+// node.Start for SVN_HELPER=start.
 func launch(home string) (func() error, error) {
+	cmd := exec.Command(os.Args[0])
+	cmd.Env = append(os.Environ(), "SVN_HELPER=start", "SVN_HOME="+home)
+	return startLogged(cmd, home)
+}
+
+// launchBinary starts the binary bin as one validator of home with
+// `bin start --home <home>`: svnd, or another binary built on the svnd
+// command tree (chain/cmd/svnd/cli), such as an upgrade rehearsal binary.
+func launchBinary(bin, home string) (func() error, error) {
+	return startLogged(exec.Command(bin, "start", "--home", home), home)
+}
+
+// startLogged starts cmd with its output in <home>/node.log (a new file
+// for every start) and returns the stop function: SIGTERM, then a kill
+// after 20 s. Exit 0 and a signal exit (143 or -1) are a clean stop.
+func startLogged(cmd *exec.Cmd, home string) (func() error, error) {
 	logFile, err := os.Create(filepath.Join(home, "node.log"))
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.Command(os.Args[0])
-	cmd.Env = append(os.Environ(), "SVN_HELPER=start", "SVN_HOME="+home)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	if err := cmd.Start(); err != nil {

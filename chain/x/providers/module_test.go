@@ -213,8 +213,9 @@ func TestUnaryHandlerInterceptor(t *testing.T) {
 // TestRunMigrationsAtCurrentVersionIsANoOp: the module registers through a
 // real configurator, the version map holds ConsensusVersion 2, and
 // RunMigrations from 2 returns 2 and leaves the store byte-identical (the
-// SDK returns before it looks for a step). Real migrations (and the auth
-// 5 -> 7 follow-up) belong to goal 10.
+// SDK returns before it looks for a step). Goal 10 added the upgrade
+// runner (chain/upgrade) and no providers step; the auth 5 -> 7 follow-up
+// is not applicable, because every svnd chain starts auth at 7 (DR-10-24).
 func TestRunMigrationsAtCurrentVersionIsANoOp(t *testing.T) {
 	e := newEnv(t)
 	e.admitted("p1")

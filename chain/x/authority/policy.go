@@ -1,6 +1,8 @@
 package authority
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 )
 
@@ -8,7 +10,8 @@ import (
 // applyPayload is its only caller (TestPolicyWriterCallSites). Every method
 // runs its checks before its first write, so a refusal writes nothing.
 // FORBIDDEN would mark the proposal REJECTED; any other refusal leaves it
-// QUEUED, as for a Registry hook.
+// QUEUED, as for a Registry hook. Keeper.transition binds it to x/policy
+// (PolicyKeeper) on the nested cache of one message (boundPolicy).
 type PolicyWriter interface {
 	// SetLimit sets the governed limit key to value at once (activation
 	// height 0) and deletes any pending change of key. A key outside the
@@ -19,8 +22,8 @@ type PolicyWriter interface {
 	// replaces any pending change of key.
 	SchedulePending(key string, value, activation uint64, proposalID string, policyVersion uint64) Outcome
 	// ScheduleUpgrade stores the upgrade plan name at height with the
-	// 32-byte release digest. A pending plan of the same name with another
-	// digest is CONFLICT.
+	// 32-byte release digest, replacing any pending plan. A name that an
+	// earlier plan used with another digest is CONFLICT.
 	ScheduleUpgrade(name string, height uint64, digest []byte, proposalID string) Outcome
 	// CancelUpgrade deletes the pending plan name.
 	CancelUpgrade(name string) Outcome
@@ -28,68 +31,154 @@ type PolicyWriter interface {
 	UpgradeApplied(name string) bool
 }
 
-// Accounts creates the auth account of an address that is about to sign,
-// such as a new council seat key's account (DR-10-35). No authority code
-// calls it: no message replaces a council seat key in this binary
-// (RotateCouncilSeat is engine-only), and the protocol has no seat payload.
+// Accounts creates the auth account of an address that is about to sign:
+// the account of a new council seat key (DR-10-35, goal 06 follow-up "Any
+// future message path for RotateCouncilSeat must create the auth account
+// for the new seat address"). applyPayload calls it for a council seat
+// payload after every check of the replacement, on the same nested cache
+// as the other hooks, so a refused or failed execute creates no account.
+// An address that already has an account is a success.
 type Accounts interface {
 	EnsureAccount(addr []byte) Outcome
 }
 
-// localPolicy is the PolicyWriter of this binary. It keeps governed values
-// in the authority store (0x13) and adds its writes to the batch of the
-// execute that calls it, so they are flushed only with the rest of a
-// successful execute and a refused or failed execute writes nothing.
-//
-// The authority layout has no row for a pending limit change or an upgrade
-// plan, and no v0 payload carries an activation height or a plan, so
-// applyPayload calls only SetLimit. SchedulePending, ScheduleUpgrade and
-// CancelUpgrade refuse with ERROR_CODE_MALFORMED, the code the spec gives a
-// payload alternative it does not know, and write nothing; UpgradeApplied is
-// false because no upgrade record exists.
-type localPolicy struct {
-	b *batch
+// PolicyKeeper is the part of x/policy this module uses: the writer methods
+// an executed proposal calls, and the governed-value read of Query/
+// Governance (max_page_limit). x/policy's Keeper implements it; authority
+// never imports that package. Each writer method checks before its first
+// write, emits its own events on ctx, and returns the protocol code.
+type PolicyKeeper interface {
+	SetLimit(ctx sdk.Context, key string, value uint64, proposalID string) msgkit.Code
+	SchedulePending(ctx sdk.Context, key string, value, activation uint64, proposalID string, policyVersion uint64) msgkit.Code
+	ScheduleUpgrade(ctx sdk.Context, name string, height uint64, digest []byte, proposalID string) msgkit.Code
+	CancelUpgrade(ctx sdk.Context, name string) msgkit.Code
+	UpgradeApplied(ctx sdk.Context, name string) bool
+	GovernedLimit(ctx sdk.Context, key string) (uint64, bool)
 }
 
-// policyWriter returns the PolicyWriter of one execute, bound to its batch.
-func (s *State) policyWriter(b *batch) PolicyWriter {
-	return localPolicy{b: b}
+// AccountKeeper creates an auth account for a 20-byte address when it has
+// none, and returns the protocol code (OK when the account exists
+// afterwards). The app implements it over the auth module's account keeper.
+type AccountKeeper interface {
+	EnsureAccount(ctx sdk.Context, addr []byte) msgkit.Code
 }
 
-// SetLimit adds the 0x13 write of key to the batch. The layout has no
-// pending rows, so there is no pending change to delete.
-func (w localPolicy) SetLimit(key string, value uint64, _ string) Outcome {
-	if !governedInRange(key, value) {
-		return fail(CodeBounds)
+// WithPolicy returns a copy of k that executes governed limit and upgrade
+// payloads through p and reads the governed max_page_limit from it. A nil
+// p is a wiring error and panics before the chain starts.
+func (k Keeper) WithPolicy(p PolicyKeeper) Keeper {
+	if p == nil {
+		panic("authority: WithPolicy needs the policy keeper")
 	}
-	w.b.set(governedKey(key), encodeU64(value))
-	return ok()
+	k.policy = p
+	return k
 }
 
-// SchedulePending refuses: the layout has no pending limit rows.
-func (localPolicy) SchedulePending(string, uint64, uint64, string, uint64) Outcome {
-	return fail(CodeMalformed)
+// WithAccounts returns a copy of k that creates the account of a new council
+// seat key through a. A nil a is a wiring error and panics before the chain
+// starts.
+func (k Keeper) WithAccounts(a AccountKeeper) Keeper {
+	if a == nil {
+		panic("authority: WithAccounts needs the account keeper")
+	}
+	k.accounts = a
+	return k
 }
 
-// ScheduleUpgrade refuses: the layout has no upgrade plan row.
-func (localPolicy) ScheduleUpgrade(string, uint64, []byte, string) Outcome {
-	return fail(CodeMalformed)
+// policyWriter binds the policy keeper to one transaction context. It
+// returns nil when no policy keeper is wired, so the engine reports
+// governed limit and upgrade payloads as MALFORMED.
+func (k Keeper) policyWriter(ctx sdk.Context) PolicyWriter {
+	if k.policy == nil {
+		return nil
+	}
+	return boundPolicy{ctx: ctx, keeper: k.policy}
 }
 
-// CancelUpgrade refuses: the layout has no upgrade plan row.
-func (localPolicy) CancelUpgrade(string) Outcome {
-	return fail(CodeMalformed)
+// accountCreator binds the account keeper to one transaction context. It
+// returns nil when no account keeper is wired, so the engine reports a
+// council seat payload as MALFORMED.
+func (k Keeper) accountCreator(ctx sdk.Context) Accounts {
+	if k.accounts == nil {
+		return nil
+	}
+	return boundAccounts{ctx: ctx, keeper: k.accounts}
 }
 
-// UpgradeApplied is false: the layout has no upgrade record.
-func (localPolicy) UpgradeApplied(string) bool {
-	return false
+// boundPolicy is PolicyWriter over x/policy on one context.
+type boundPolicy struct {
+	ctx    sdk.Context
+	keeper PolicyKeeper
+}
+
+func (p boundPolicy) SetLimit(key string, value uint64, proposalID string) Outcome {
+	return fromCode(p.keeper.SetLimit(p.ctx, key, value, proposalID))
+}
+
+func (p boundPolicy) SchedulePending(key string, value, activation uint64, proposalID string, policyVersion uint64) Outcome {
+	return fromCode(p.keeper.SchedulePending(p.ctx, key, value, activation, proposalID, policyVersion))
+}
+
+func (p boundPolicy) ScheduleUpgrade(name string, height uint64, digest []byte, proposalID string) Outcome {
+	return fromCode(p.keeper.ScheduleUpgrade(p.ctx, name, height, digest, proposalID))
+}
+
+func (p boundPolicy) CancelUpgrade(name string) Outcome {
+	return fromCode(p.keeper.CancelUpgrade(p.ctx, name))
+}
+
+func (p boundPolicy) UpgradeApplied(name string) bool {
+	return p.keeper.UpgradeApplied(p.ctx, name)
+}
+
+// boundAccounts is Accounts over the account keeper on one context.
+type boundAccounts struct {
+	ctx    sdk.Context
+	keeper AccountKeeper
+}
+
+func (a boundAccounts) EnsureAccount(addr []byte) Outcome {
+	return fromCode(a.keeper.EnsureAccount(a.ctx, addr))
 }
 
 // governedInRange reports whether key is a governed limit key of the
 // msgkit table (bounds.json governed_limit_caps) and value is in
-// 1..its ceiling. ProposeChange (D-1) and SetLimit both apply it.
+// 1..its ceiling. ProposeChange (D-1) and applyPayload both apply it.
 func governedInRange(key string, value uint64) bool {
 	ceiling, known := msgkit.Ceiling(key)
 	return known && value >= 1 && value <= ceiling
+}
+
+// heightLead checks a future height named by a payload against the block at
+// height now, at propose and again at execute: ERROR_CODE_OUT_OF_RANGE when
+// target is not at least minLead blocks above now, ERROR_CODE_BOUNDS when it
+// is more than msgkit.MaxActivationLeadBlocks (PROPOSED) above now or above
+// safe_integer_max. The empty string means the height is in the window.
+// A governed limit activation passes minLead 1 (strictly above now); an
+// upgrade plan height passes msgkit.MinActivationLeadBlocks (PROPOSED,
+// owner option text Q3 (a)).
+func heightLead(target uint64, now int64, minLead uint64) string {
+	base := uint64(max(now, 0))
+	if target <= base || target-base < minLead {
+		return CodeOutOfRange
+	}
+	if target-base > msgkit.MaxActivationLeadBlocks || target > uint64(safeMax) {
+		return CodeBounds
+	}
+	return ""
+}
+
+// leadCode is heightLead for the payload that names a future height: a
+// governed limit with an activation height (minLead 1) and a software
+// upgrade (minLead msgkit.MinActivationLeadBlocks). Every other payload, and
+// a governed limit applied at execute (activation 0), passes.
+func (d decodedWire) leadCode(now int64) string {
+	switch {
+	case d.Kind == kindGovernedLimit && d.Activation != 0:
+		return heightLead(d.Activation, now, 1)
+	case d.Kind == kindSoftwareUpgrade:
+		return heightLead(d.UpgradeHeight, now, msgkit.MinActivationLeadBlocks)
+	default:
+		return ""
+	}
 }

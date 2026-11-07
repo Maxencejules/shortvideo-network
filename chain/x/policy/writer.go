@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"sort"
@@ -39,14 +40,34 @@ func checkLimit(key string, value uint64) msgkit.Code {
 	return msgkit.OK
 }
 
-// checkFutureHeight is the height check of a pending change or a plan
+// checkActivationHeight is the height check of a pending governed change
 // written in a block at height now: OUT_OF_RANGE at or below now, BOUNDS
-// more than MaxActivationLeadBlocks above now or above 2^53-1.
-func checkFutureHeight(target, now uint64) msgkit.Code {
+// more than msgkit.MaxActivationLeadBlocks (PROPOSED) above now or above
+// 2^53-1.
+func checkActivationHeight(target, now uint64) msgkit.Code {
 	if target <= now {
 		return msgkit.OutOfRange
 	}
-	if target-now > MaxActivationLeadBlocks || target > uint64(genesis.SafeIntegerMax) {
+	return checkUpperLead(target, now)
+}
+
+// checkPlanHeight is the height check of an upgrade plan written in a block
+// at height now: OUT_OF_RANGE below now + msgkit.MinActivationLeadBlocks,
+// BOUNDS more than msgkit.MaxActivationLeadBlocks above now or above
+// 2^53-1. Both lead numbers are PROPOSED constants (owner question Q3,
+// option "3 of 4 + min notice (Recommended)"; the owner chose the option,
+// not the numbers).
+func checkPlanHeight(target, now uint64) msgkit.Code {
+	if target <= now || target-now < msgkit.MinActivationLeadBlocks {
+		return msgkit.OutOfRange
+	}
+	return checkUpperLead(target, now)
+}
+
+// checkUpperLead is BOUNDS when target, above now, is more than
+// msgkit.MaxActivationLeadBlocks above now or above 2^53-1.
+func checkUpperLead(target, now uint64) msgkit.Code {
+	if target-now > msgkit.MaxActivationLeadBlocks || target > uint64(genesis.SafeIntegerMax) {
 		return msgkit.Bounds
 	}
 	return msgkit.OK
@@ -86,8 +107,8 @@ func (k Keeper) SetLimit(ctx sdk.Context, key string, value uint64, proposalID s
 //   - key not a governed limit key, value outside 1..ceiling: BOUNDS
 //   - proposalID outside the id pattern: BOUNDS
 //   - activation at or below the block height: OUT_OF_RANGE
-//   - activation more than MaxActivationLeadBlocks above the block height,
-//     or above 2^53-1: BOUNDS
+//   - activation more than msgkit.MaxActivationLeadBlocks above the block
+//     height, or above 2^53-1: BOUNDS
 //   - policyVersion below 2 (the first execute produces version 2):
 //     OUT_OF_RANGE
 //   - a pending change of key already stores a policy version at or above
@@ -103,7 +124,7 @@ func (k Keeper) SchedulePending(ctx sdk.Context, key string, value, activation u
 	if !msgkit.ValidID(proposalID) {
 		return msgkit.Bounds
 	}
-	if code := checkFutureHeight(activation, blockHeight(ctx)); code != msgkit.OK {
+	if code := checkActivationHeight(activation, blockHeight(ctx)); code != msgkit.OK {
 		return code
 	}
 	if policyVersion < 2 {
@@ -128,14 +149,21 @@ func (k Keeper) SchedulePending(ctx sdk.Context, key string, value, activation u
 // ScheduleUpgrade writes the upgrade plan: name, height, the 32-byte release
 // digest, and the executing proposal. A later plan replaces a stored plan
 // of another name, or of the same name with an identical digest (DR-10-32).
+// A plan name is never reused with another release digest (owner question
+// Q3, option "3 of 4 + min notice (Recommended)"): the first plan of a name
+// writes its digest under 0x08 for good, so a later plan of that name with
+// another digest is refused whether the earlier plan is pending, replaced,
+// or cancelled.
 //
 //   - name or proposalID outside the id pattern: BOUNDS
 //   - digest not 32 bytes: BOUNDS
-//   - height at or below the block height: OUT_OF_RANGE
-//   - height more than MaxActivationLeadBlocks above the block height, or
-//     above 2^53-1: BOUNDS
+//   - height below the block height + msgkit.MinActivationLeadBlocks:
+//     OUT_OF_RANGE
+//   - height more than msgkit.MaxActivationLeadBlocks above the block
+//     height, or above 2^53-1: BOUNDS
 //   - an upgrade of this name already applied: DUPLICATE_ID
-//   - a stored plan of the same name with another digest: CONFLICT
+//   - a plan of this name was scheduled before with another digest:
+//     CONFLICT
 //
 // It emits upgrade_plan with action "scheduled", or "replaced" and the
 // replaced plan's name.
@@ -143,19 +171,23 @@ func (k Keeper) ScheduleUpgrade(ctx sdk.Context, name string, height uint64, dig
 	if !msgkit.ValidID(name) || !msgkit.ValidID(proposalID) || len(digest) != msgkit.DigestBytes {
 		return msgkit.Bounds
 	}
-	if code := checkFutureHeight(height, blockHeight(ctx)); code != msgkit.OK {
+	if code := checkPlanHeight(height, blockHeight(ctx)); code != msgkit.OK {
 		return code
 	}
 	store := k.kv(ctx)
 	if _, applied := must(loadApplied(store, name)); applied {
 		return msgkit.DuplicateID
 	}
-	old, replaced := must(loadPlan(store))
-	if replaced && old.Name == name && string(old.Digest) != string(digest) {
+	first, used := must(loadPlanName(store, name))
+	if used && !bytes.Equal(first, digest) {
 		return msgkit.Conflict
 	}
+	old, replaced := must(loadPlan(store))
 	plan := Plan{Name: name, Height: height, Digest: append([]byte(nil), digest...), ProposalID: proposalID}
 	store.Set(PlanKey(), EncodePlan(plan))
+	if !used {
+		store.Set(PlanNameKey(name), append([]byte(nil), digest...))
+	}
 	if replaced {
 		emitPlan(ctx, plan, PlanActionReplaced, old.Name)
 	} else {
@@ -238,7 +270,8 @@ func sortedNames(vm module.VersionMap) []string {
 //
 // It refuses (an error, nothing written) an app version of 0, a version map
 // that checkVersionMap refuses, and a store that already holds an app
-// version, a version map row, a plan, or an applied upgrade row.
+// version, a version map row, a plan, an applied upgrade row, or a plan
+// name row.
 func (k Keeper) InitVersions(ctx sdk.Context, vm module.VersionMap, appVersion uint64) error {
 	if appVersion < 1 {
 		return errors.New("policy: app version 0")
@@ -247,7 +280,7 @@ func (k Keeper) InitVersions(ctx sdk.Context, vm module.VersionMap, appVersion u
 	if err := checkVersionMap(store, vm); err != nil {
 		return err
 	}
-	for _, prefix := range [][]byte{AppVersionKey(), {VersionMapPrefix}, PlanKey(), {AppliedPrefix}} {
+	for _, prefix := range [][]byte{AppVersionKey(), {VersionMapPrefix}, PlanKey(), {AppliedPrefix}, {PlanNamePrefix}} {
 		found, err := anyUnder(store, prefix)
 		if err != nil {
 			return err
@@ -265,14 +298,16 @@ func (k Keeper) InitVersions(ctx sdk.Context, vm module.VersionMap, appVersion u
 // it applied at (0x07), the new module version map (0x05, replacing every
 // row), the new app version (0x04), and the deletion of the plan (0x06).
 // The upgrade runner calls it in the block at height, after the migrations.
+// An upgrade applies only from a plan an executed council proposal stored
+// (owner question Q2, option "Council plan, fail closed (Recommended)"), so
+// the stored plan must be this upgrade.
 //
 // It refuses (an error, nothing written):
 //
 //   - name outside the id pattern
 //   - height of 0 or not the context's block height
 //   - an upgrade of this name that already applied
-//   - a stored plan whose name or height differs (a compiled plan source
-//     has no plan row; a stored plan must be this upgrade)
+//   - no stored plan, or a stored plan whose name or height differs
 //   - no stored app version, or appVersion not the stored app version + 1
 //   - a version map that checkVersionMap refuses
 func (k Keeper) RecordUpgrade(ctx sdk.Context, name string, height uint64, vm module.VersionMap, appVersion uint64) error {
@@ -294,7 +329,10 @@ func (k Keeper) RecordUpgrade(ctx sdk.Context, name string, height uint64, vm mo
 	if err != nil {
 		return err
 	}
-	if planned && (plan.Name != name || plan.Height != height) {
+	if !planned {
+		return fmt.Errorf("policy: no stored plan for upgrade %q at height %d; an upgrade applies only from an executed council plan", name, height)
+	}
+	if plan.Name != name || plan.Height != height {
 		return fmt.Errorf("policy: stored plan is %q at height %d, not %q at height %d", plan.Name, plan.Height, name, height)
 	}
 	stored, err := loadAppVersion(store)
@@ -314,8 +352,6 @@ func (k Keeper) RecordUpgrade(ctx sdk.Context, name string, height uint64, vm mo
 	writeVersionMap(store, old, vm)
 	store.Set(AppVersionKey(), EncodeU64(appVersion))
 	store.Set(AppliedKey(name), EncodeU64(height))
-	if planned {
-		store.Delete(PlanKey())
-	}
+	store.Delete(PlanKey())
 	return nil
 }

@@ -1,5 +1,5 @@
 {
-  "description": "Council proposal payload vectors for the v0 payload kinds (x/authority). Synthetic values; no key or account is real. payload_json is proto3 JSON with keys deliberately out of canonical order; canonical is its SVN-JCS-1 text; sha256 is the payload digest (hex). chain_propose_code is the code the chain's payload checks at propose return: empty for accepted, ERROR_CODE_BOUNDS for a governed limit outside the bounds.json governed_limit_caps table (D-1; the spec accepts these at propose and refuses them at execute). Checked by TestPayloadVectors (Go) and tests/unit/test_payload_vectors.py (Python, with docs/evidence/goal-02/jcs.py and spec_machine.py).",
+  "description": "Council proposal payload vectors (x/authority): every v0 payload kind, and the schema version 2 additions of the goal 10 revision (docs/protocol.md \"Goal 10 additive revision\": a governed limit with an activation height, software_upgrade, cancel_upgrade, council_seat). Synthetic values; no key, account or release is real. payload_json is proto3 JSON with keys deliberately out of canonical order where an object has more than one key; canonical is its SVN-JCS-1 text; sha256 is the payload digest (hex). chain_propose_code is the code the chain's payload checks at propose return in a block at height 5: empty for accepted, ERROR_CODE_BOUNDS for a governed limit outside the bounds.json governed_limit_caps table (D-1; the spec accepts these at propose and refuses them at execute). The height windows of the schema version 2 rows (activation in (5, 5 + MaxActivationLeadBlocks], plan height in [5 + MinActivationLeadBlocks, 5 + MaxActivationLeadBlocks]; both numbers PROPOSED) hold at that height. The goal-02 spec machine parses every schema version 2 row as ERROR_CODE_MALFORMED (D-5). Checked by TestPayloadVectors (Go) and tests/unit/test_payload_vectors.py (Python, with docs/evidence/goal-02/jcs.py, spec_machine.py and the generated Python protobuf module).",
   "vectors": [
     {
       "id": "validator-power-height",
@@ -189,6 +189,60 @@
       "payload_json": "{\"forceWithdraw\":{\"reasonDigest\":{\"value\":\"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"contentVersion\":\"1\",\"contentId\":\"content-1\"}}",
       "canonical": "{\"forceWithdraw\":{\"contentId\":\"content-1\",\"contentVersion\":\"1\",\"reasonDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=\"}}}",
       "sha256": "6807350a4d0037117e3740620b2151c15e72fd65c5a164902c7ba39bee7c49db"
+    },
+    {
+      "id": "governed-scheduled-240",
+      "kind": "governed_limit",
+      "parameter_key": "max_open_offers",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"8\",\"limitKey\":\"max_open_offers\",\"activationHeight\":\"240\"}}",
+      "canonical": "{\"governedLimit\":{\"activationHeight\":\"240\",\"limitKey\":\"max_open_offers\",\"value\":\"8\"}}",
+      "sha256": "54e3cd1dd8134d915d3387802522c99f13e83ed470e044a581549a290a7cf965"
+    },
+    {
+      "id": "governed-scheduled-max-lead",
+      "kind": "governed_limit",
+      "parameter_key": "max_page_limit",
+      "chain_propose_code": "",
+      "payload_json": "{\"governedLimit\":{\"value\":\"25\",\"limitKey\":\"max_page_limit\",\"activationHeight\":\"1000005\"}}",
+      "canonical": "{\"governedLimit\":{\"activationHeight\":\"1000005\",\"limitKey\":\"max_page_limit\",\"value\":\"25\"}}",
+      "sha256": "025d4653eceec945a758e63e5f91bfbefa34d68f67dffdbcd2deea75e2a5d8a9"
+    },
+    {
+      "id": "software-upgrade-300",
+      "kind": "software_upgrade",
+      "parameter_key": "upgrade",
+      "chain_propose_code": "",
+      "payload_json": "{\"softwareUpgrade\":{\"releaseDigest\":{\"value\":\"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"name\":\"rehearsal-1\",\"height\":\"300\"}}",
+      "canonical": "{\"softwareUpgrade\":{\"height\":\"300\",\"name\":\"rehearsal-1\",\"releaseDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=\"}}}",
+      "sha256": "4a6953f4de89be2a374d59d18ff4443c1d432c4da7de81b77fa731148d8be512"
+    },
+    {
+      "id": "software-upgrade-min-lead",
+      "kind": "software_upgrade",
+      "parameter_key": "upgrade",
+      "chain_propose_code": "",
+      "payload_json": "{\"softwareUpgrade\":{\"releaseDigest\":{\"value\":\"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=\",\"algorithm\":\"DIGEST_ALGORITHM_SHA256\"},\"name\":\"rehearsal-2\",\"height\":\"105\"}}",
+      "canonical": "{\"softwareUpgrade\":{\"height\":\"105\",\"name\":\"rehearsal-2\",\"releaseDigest\":{\"algorithm\":\"DIGEST_ALGORITHM_SHA256\",\"value\":\"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=\"}}}",
+      "sha256": "084754855c99fd249ce1c45c79614d03bd9b95b003c8ab218290e76453a36ea8"
+    },
+    {
+      "id": "cancel-upgrade",
+      "kind": "cancel_upgrade",
+      "parameter_key": "upgrade",
+      "chain_propose_code": "",
+      "payload_json": "{\"cancelUpgrade\":{\"name\":\"rehearsal-1\"}}",
+      "canonical": "{\"cancelUpgrade\":{\"name\":\"rehearsal-1\"}}",
+      "sha256": "0cff1906c7874903aeef3c9c52263b335b1028ab91c803f695f4036eaa45472d"
+    },
+    {
+      "id": "council-seat",
+      "kind": "council_seat",
+      "parameter_key": "seat-seat-2",
+      "chain_propose_code": "",
+      "payload_json": "{\"councilSeat\":{\"seatId\":\"seat-2\",\"newPublicKey\":\"YGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=\"}}",
+      "canonical": "{\"councilSeat\":{\"newPublicKey\":\"YGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=\",\"seatId\":\"seat-2\"}}",
+      "sha256": "74a38fbacda381dd6904e2a571eb74f05a42fdd5b3fa1db2c82eb83009754309"
     }
   ]
 }

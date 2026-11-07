@@ -21,24 +21,27 @@ import (
 //
 //	0x00                 -> layout version 2, 8 bytes BE (msgkit.LayoutVersionKey); InitGenesis
 //	0x01                 -> svn.policy.v1.SafetyCaps, deterministic protobuf; InitGenesis only, never changed
-//	0x02 | limit_key     -> governed value, 8 bytes BE, in 1..ceiling; SetLimit
-//	0x03 | limit_key     -> pending change (PendingValueBytes); SchedulePending; deleted by SetLimit of the key
+//	0x02 | limit_key     -> governed value, 8 bytes BE, in 1..ceiling; SetLimit, ApplyDue
+//	0x03 | limit_key     -> pending change (PendingValueBytes); SchedulePending; deleted by SetLimit of the key and by ApplyDue
 //	0x04                 -> app version, 8 bytes BE, at least 1; InitVersions, RecordUpgrade
 //	0x05 | module name   -> consensus version, 8 bytes BE, at least 1; InitVersions, RecordUpgrade
 //	0x06                 -> upgrade plan (PlanValueBytes); ScheduleUpgrade; deleted by CancelUpgrade, RecordUpgrade
 //	0x07 | upgrade name  -> height at which the upgrade applied, 8 bytes BE, at least 1; RecordUpgrade
+//	0x08 | upgrade name  -> the 32-byte release digest the name was first scheduled with; ScheduleUpgrade; never deleted
 //
 // Limit keys, module names, upgrade names, and proposal ids match the id
 // pattern ^[a-z0-9][a-z0-9._-]{0,63}$, so a key never contains 0x00 and key
 // byte order is name byte order. Bounds: 0x02 and 0x03 hold at most one row
 // per governed limit key (five); 0x04 and 0x06 are single keys; 0x05 holds
 // at most MaxVersionMapModules rows; 0x07 grows by one row per applied
-// upgrade.
+// upgrade and 0x08 by one row per plan name a council execute first
+// scheduled.
 const (
 	GovernedPrefix   byte = 0x02
 	PendingPrefix    byte = 0x03
 	VersionMapPrefix byte = 0x05
 	AppliedPrefix    byte = 0x07
+	PlanNamePrefix   byte = 0x08
 
 	safetyCapsByte byte = 0x01
 	appVersionByte byte = 0x04
@@ -86,6 +89,10 @@ func VersionMapKey(module string) []byte { return nameKey(VersionMapPrefix, modu
 
 // AppliedKey is the applied-upgrade row of one upgrade name.
 func AppliedKey(name string) []byte { return nameKey(AppliedPrefix, name) }
+
+// PlanNameKey is the plan-name row of one upgrade name: the release digest
+// the name was scheduled with.
+func PlanNameKey(name string) []byte { return nameKey(PlanNamePrefix, name) }
 
 // Pending is a governed limit change that applies at a later height.
 // PolicyVersion is the policy version the executing proposal produced.
@@ -310,21 +317,60 @@ func loadGoverned(store storetypes.KVStore, key string) (uint64, bool, error) {
 	return value, true, nil
 }
 
-// loadPending reads the pending change of key. A value that does not decode
-// or whose value is outside 1..ceiling of a known key is an error.
+// loadPending reads the pending change of key. A value that decodePending
+// refuses is an error.
 func loadPending(store storetypes.KVStore, key string) (Pending, bool, error) {
 	raw := store.Get(PendingKey(key))
 	if raw == nil {
 		return Pending{}, false, nil
 	}
-	p, err := DecodePending(raw)
+	p, err := decodePending(key, raw)
 	if err != nil {
-		return Pending{}, false, fmt.Errorf("policy: pending change of %q: %w", key, err)
-	}
-	if ceiling, known := msgkit.Ceiling(key); !known || p.Value > ceiling {
-		return Pending{}, false, fmt.Errorf("policy: pending change of %q holds value %d outside 1..ceiling", key, p.Value)
+		return Pending{}, false, err
 	}
 	return p, true, nil
+}
+
+// decodePending reads the pending change row of key. A value that does not
+// decode, a key that is not a governed limit key, or a value above the
+// key's ceiling is an error.
+func decodePending(key string, raw []byte) (Pending, error) {
+	p, err := DecodePending(raw)
+	if err != nil {
+		return Pending{}, fmt.Errorf("policy: pending change of %q: %w", key, err)
+	}
+	if ceiling, known := msgkit.Ceiling(key); !known || p.Value > ceiling {
+		return Pending{}, fmt.Errorf("policy: pending change of %q holds value %d outside 1..ceiling", key, p.Value)
+	}
+	return p, nil
+}
+
+// keyedPending is one pending change row: the governed limit key and the
+// change.
+type keyedPending struct {
+	Key string
+	Pending
+}
+
+// readPending returns every pending change in key order. There is at most
+// one row per governed limit key, so the walk stops with an error after
+// that many rows (at most six iterator steps). A row that decodePending
+// refuses is an error.
+func readPending(store storetypes.KVStore) ([]keyedPending, error) {
+	var rows []keyedPending
+	err := iterate(store, PendingPrefix, len(msgkit.LimitKeys()), func(key, value []byte) error {
+		limit := string(key[1:])
+		p, err := decodePending(limit, value)
+		if err != nil {
+			return err
+		}
+		rows = append(rows, keyedPending{Key: limit, Pending: p})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
 
 // loadPlan reads the plan row.
@@ -366,6 +412,19 @@ func loadApplied(store storetypes.KVStore, name string) (uint64, bool, error) {
 		return 0, false, fmt.Errorf("policy: applied upgrade %q is not an 8-byte height of at least 1 (%d bytes stored)", name, len(raw))
 	}
 	return h, true, nil
+}
+
+// loadPlanName reads the release digest a plan name was scheduled with. A
+// value that is not 32 bytes is an error.
+func loadPlanName(store storetypes.KVStore, name string) ([]byte, bool, error) {
+	raw := store.Get(PlanNameKey(name))
+	if raw == nil {
+		return nil, false, nil
+	}
+	if len(raw) != msgkit.DigestBytes {
+		return nil, false, fmt.Errorf("policy: plan name %q holds a %d-byte digest, want %d", name, len(raw), msgkit.DigestBytes)
+	}
+	return append([]byte(nil), raw...), true, nil
 }
 
 // loadSafetyCaps reads the safety caps row. Absent is an error: InitGenesis

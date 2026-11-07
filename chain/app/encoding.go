@@ -89,6 +89,11 @@ func init() {
 	registerGogo("svn.authority.v1.AdmitProviderChange", &authorityv1.AdmitProviderChange{})
 	registerGogo("svn.authority.v1.DisableProviderChange", &authorityv1.DisableProviderChange{})
 	registerGogo("svn.authority.v1.ForceWithdrawChange", &authorityv1.ForceWithdrawChange{})
+	// The payload kinds of protocol schema version 2 (docs/protocol.md,
+	// "Goal 10 additive revision").
+	registerGogo("svn.authority.v1.SoftwareUpgradeChange", &authorityv1.SoftwareUpgradeChange{})
+	registerGogo("svn.authority.v1.CancelUpgradeChange", &authorityv1.CancelUpgradeChange{})
+	registerGogo("svn.authority.v1.CouncilSeatChange", &authorityv1.CouncilSeatChange{})
 	registerGogo("svn.authority.v1.ActivationPoint", &authorityv1.ActivationPoint{})
 	registerGogo("svn.types.v1.Digest", &typesv1.Digest{})
 	// Every message with an InnerSignature field carries one:

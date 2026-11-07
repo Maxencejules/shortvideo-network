@@ -32,8 +32,8 @@ func mutated(edit func(*policyv1.PolicyState)) *policyv1.GenesisState {
 	return state
 }
 
-// TestGenesisValidateImportExport: one invalid document per rule; the app's
-// document validates; InitGenesis needs an empty store and writes nothing
+// TestGenesisValidateImportExport: one invalid document per rule, including
+// each query field of schema version 2 set; the app's document validates; InitGenesis needs an empty store and writes nothing
 // on an error; a fresh state exports and re-imports to the same store; the
 // export is refused, naming the prefix, for every row the document cannot
 // carry and for app or policy versions other than 1.
@@ -47,6 +47,24 @@ func TestGenesisValidateImportExport(t *testing.T) {
 	}
 	if !proto.Equal(state, policy.DefaultGenesisState()) {
 		t.Fatal("the app document differs from DefaultGenesisState")
+	}
+	for name, raw := range map[string]string{
+		"governed_limits":       strings.Replace(appDocument, `"policy_version":"1",`, `"policy_version":"1","governed_limits":[{"limit_key":"max_page_limit","value":"100"}],`, 1),
+		"pending_limit_changes": strings.Replace(appDocument, `"policy_version":"1",`, `"policy_version":"1","pending_limit_changes":[{"limit_key":"max_page_limit"}],`, 1),
+		"upgrade_plan":          strings.Replace(appDocument, `"policy_version":"1",`, `"policy_version":"1","upgrade_plan":{},`, 1),
+		"app_version":           strings.Replace(appDocument, `"policy_version":"1",`, `"policy_version":"1","app_version":"1",`, 1),
+	} {
+		state, err := policy.ParseGenesis(json.RawMessage(raw))
+		if err != nil {
+			t.Fatalf("%s document does not parse: %v", name, err)
+		}
+		if err := policy.ValidateGenesis(state); err == nil || !strings.Contains(err.Error(), name) {
+			t.Fatalf("%s document: %v", name, err)
+		}
+	}
+	empty := strings.Replace(appDocument, `"policy_version":"1",`, `"policy_version":"1","governed_limits":[],"pending_limit_changes":[],"upgrade_plan":null,"app_version":"0",`, 1)
+	if state, err := policy.ParseGenesis(json.RawMessage(empty)); err != nil || policy.ValidateGenesis(state) != nil {
+		t.Fatalf("document with the query fields empty: %v", err)
 	}
 	parseErrors := map[string]string{
 		"empty":         "",
@@ -89,6 +107,18 @@ func TestGenesisValidateImportExport(t *testing.T) {
 		"value_version 1":  mutated(func(p *policyv1.PolicyState) { p.BlockedDecisions[4].ValueVersion = 1 }),
 		"schema_version 2": mutated(func(p *policyv1.PolicyState) { p.BlockedDecisions[5].SchemaVersion = 2 }),
 		"schema_version 0": mutated(func(p *policyv1.PolicyState) { p.BlockedDecisions[6].SchemaVersion = 0 }),
+		"governed_limits row": mutated(func(p *policyv1.PolicyState) {
+			p.GovernedLimits = []*policyv1.GovernedLimitValue{{LimitKey: msgkit.LimitMaxPageLimit, Value: 100}}
+		}),
+		"pending_limit_changes row": mutated(func(p *policyv1.PolicyState) {
+			p.PendingLimitChanges = []*policyv1.PendingLimitChange{{LimitKey: msgkit.LimitMaxPageLimit, Value: 5, ActivationHeight: 9, ProposalId: "p1", PolicyVersion: 2}}
+		}),
+		"empty upgrade_plan": mutated(func(p *policyv1.PolicyState) { p.UpgradePlan = &policyv1.UpgradePlan{} }),
+		"upgrade_plan": mutated(func(p *policyv1.PolicyState) {
+			p.UpgradePlan = &policyv1.UpgradePlan{Name: "up-1", Height: 200, ProposalId: "p1",
+				ReleaseDigest: &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: digestOf("r")}}
+		}),
+		"app_version 1": mutated(func(p *policyv1.PolicyState) { p.AppVersion = 1 }),
 	}
 	for name, bad := range invalid {
 		if err := policy.ValidateGenesis(bad); err == nil {
@@ -169,17 +199,21 @@ func TestGenesisValidateImportExport(t *testing.T) {
 			apply      func(*env)
 		}{
 			{"governed value", "governed values (prefix 0x02)", func(e *env) {
-				e.k.SetLimit(e.fresh(), msgkit.LimitMaxPageLimit, 5, "p1")
+				mustOK(e.t, e.k.SetLimit(e.fresh(), msgkit.LimitMaxPageLimit, 5, "p1"))
 			}},
 			{"pending change", "pending governed changes (prefix 0x03)", func(e *env) {
 				e.auth.version = 2
-				e.k.SchedulePending(e.fresh(), msgkit.LimitMaxPageLimit, 5, h+5, "p1", 2)
+				mustOK(e.t, e.k.SchedulePending(e.fresh(), msgkit.LimitMaxPageLimit, 5, h+5, "p1", 2))
 			}},
 			{"plan", "an upgrade plan (prefix 0x06)", func(e *env) {
-				e.k.ScheduleUpgrade(e.fresh(), "up-1", h+5, digestOf("r"), "p1")
+				mustOK(e.t, e.k.ScheduleUpgrade(e.fresh(), "up-1", h+lead, digestOf("r"), "p1"))
 			}},
 			{"applied upgrade", "applied upgrades (prefix 0x07)", func(e *env) {
 				e.store().Set(policy.AppliedKey("up-0"), policy.EncodeU64(3))
+			}},
+			{"plan name of a cancelled plan", "plan names (prefix 0x08)", func(e *env) {
+				mustOK(e.t, e.k.ScheduleUpgrade(e.fresh(), "up-1", h+lead, digestOf("r"), "p1"))
+				mustOK(e.t, e.k.CancelUpgrade(e.fresh(), "up-1"))
 			}},
 			{"app version 2", "app version (prefix 0x04) is 2", func(e *env) {
 				e.store().Set(policy.AppVersionKey(), policy.EncodeU64(2))
@@ -252,13 +286,16 @@ func TestDefaultGenesisApprovesNothing(t *testing.T) {
 
 // FuzzPolicyGenesisJSON: ParseGenesis and ValidateGenesis never panic; a
 // document they accept equals DefaultGenesisState up to the order of the
-// decision rows, imports into an empty store, and its export encoding
-// parses and validates again.
+// decision rows (so every query field of schema version 2 is empty),
+// imports into an empty store, and its export encoding parses and
+// validates again.
 func FuzzPolicyGenesisJSON(f *testing.F) {
 	f.Add([]byte(appDocument))
 	f.Add([]byte(`{}`))
 	f.Add([]byte(`{"policy":{"policy_version":"1"}}`))
 	f.Add([]byte(strings.Replace(appDocument, `"DEC-008","schema_version":1`, `"DEC-008","schema_version":1,"approved":true`, 1)))
+	f.Add([]byte(strings.Replace(appDocument, `"policy_version":"1",`, `"policy_version":"1","app_version":"1","upgrade_plan":{"name":"up"},`, 1)))
+	f.Add([]byte(strings.Replace(appDocument, `"policy_version":"1",`, `"policy_version":"1","governed_limits":[],"pending_limit_changes":[{}],`, 1)))
 	f.Fuzz(func(t *testing.T, raw []byte) {
 		state, err := policy.ParseGenesis(raw)
 		if err != nil {
@@ -270,6 +307,9 @@ func FuzzPolicyGenesisJSON(f *testing.F) {
 		p := state.GetPolicy()
 		if p.GetPolicyVersion() != 1 || !proto.Equal(p.GetSafetyCaps(), policy.DefaultSafetyCaps()) || len(p.GetBlockedDecisions()) != len(genesis.DecisionIDs) {
 			t.Fatalf("accepted %s", raw)
+		}
+		if len(p.GetGovernedLimits()) != 0 || len(p.GetPendingLimitChanges()) != 0 || p.GetUpgradePlan() != nil || p.GetAppVersion() != 0 {
+			t.Fatalf("accepted a document with a query field set: %s", raw)
 		}
 		for _, row := range p.GetBlockedDecisions() {
 			if row.GetApproved() || row.GetValueVersion() != 0 {

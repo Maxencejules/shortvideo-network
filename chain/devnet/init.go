@@ -51,6 +51,13 @@ type Options struct {
 	// requires equal powers. The total, Validators*Power, must not exceed
 	// genesis.SafeIntegerMax.
 	Power int64
+	// CouncilDelaySeconds is the council review delay of the DEC-008 devnet
+	// test parameter, labelled PROPOSED_TEST_PARAMETER (genesis.DevnetTestLabel)
+	// like every devnet test parameter: a proposal becomes executable this
+	// many seconds after it reaches the threshold. Zero, the default, is
+	// no delay. It must be in [0, genesis.UnixSecondsMax]. It is a test
+	// parameter for timing tests, not an approved DEC-008 value.
+	CouncilDelaySeconds int64
 }
 
 // validatorPower returns the power Init gives every genesis validator.
@@ -158,6 +165,9 @@ func Init(opts Options) (layout Layout, err error) {
 	}
 	if opts.Power, err = validatorPower(opts.Power); err != nil {
 		return Layout{}, err
+	}
+	if opts.CouncilDelaySeconds < 0 || opts.CouncilDelaySeconds > genesis.UnixSecondsMax {
+		return Layout{}, fmt.Errorf("council delay %d seconds is outside [0, %d]", opts.CouncilDelaySeconds, genesis.UnixSecondsMax)
 	}
 	if opts.Peers == "" {
 		opts.Peers = PeerLoopback
@@ -536,9 +546,10 @@ func document(opts Options, nodes []prepared, accounts []accountKey, seats []cou
 			// DEC-003 lets the council force-withdraw content on the devnet.
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-003", RoleName: "DEVNET_TEST_ONLY"},
 			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-005", NumericValue: 3600},
-			// Four seats and three approvals is DEC-008. Delay 0 is the
-			// devnet test parameter. Activation is still strictly later.
-			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-008", NumericValue: 3, DelaySeconds: 0},
+			// Four seats and three approvals is DEC-008. The review delay
+			// is Options.CouncilDelaySeconds, 0 unless a test sets it.
+			// Activation is still strictly later.
+			{Label: genesis.DevnetTestLabel, DecisionID: "DEC-008", NumericValue: 3, DelaySeconds: opts.CouncilDelaySeconds},
 		},
 		SafetyCaps: genesis.DefaultSafetyCaps(),
 	}
@@ -558,10 +569,14 @@ func cometValidators(nodes []prepared, power int64) []cmttypes.GenesisValidator 
 	return out
 }
 
+// consensusParams are the genesis consensus params: the CometBFT defaults
+// with the protocol gas cap, and Version.App app.GenesisAppVersion, the app
+// version every chain starts at (it is not genesis.ProtocolVersion, the
+// protocol schema line). InitChain refuses any other Version.App.
 func consensusParams() *cmttypes.ConsensusParams {
 	params := cmttypes.DefaultConsensusParams()
 	params.Block.MaxGas = int64(genesis.MaxGasPerTx)
-	params.Version.App = genesis.ProtocolVersion
+	params.Version.App = app.GenesisAppVersion
 	return params
 }
 

@@ -2,6 +2,7 @@ package policy_test
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -99,7 +100,7 @@ func TestSetLimitAndSchedulePending(t *testing.T) {
 	e.rejects("schedule bad proposal id", msgkit.Bounds, schedule(key, 1, h+1, "p 1", 2))
 	e.rejects("activation at height (effective-1)", msgkit.OutOfRange, schedule(key, 1, h, "p1", 2))
 	e.rejects("activation 0", msgkit.OutOfRange, schedule(key, 1, 0, "p1", 2))
-	e.rejects("activation above the lead", msgkit.Bounds, schedule(key, 1, h+policy.MaxActivationLeadBlocks+1, "p1", 2))
+	e.rejects("activation above the lead", msgkit.Bounds, schedule(key, 1, h+msgkit.MaxActivationLeadBlocks+1, "p1", 2))
 	e.rejects("policy version 1", msgkit.OutOfRange, schedule(key, 1, h+1, "p1", 1))
 	e.rejects("policy version 0", msgkit.OutOfRange, schedule(key, 1, h+1, "p1", 0))
 	high := e.ctx.WithBlockHeight(genesis.SafeIntegerMax).WithEventManager(sdk.NewEventManager())
@@ -129,7 +130,7 @@ func TestSetLimitAndSchedulePending(t *testing.T) {
 	if code := e.k.SchedulePending(e.fresh(), key, 8, h+1, "p1", 2); code != msgkit.OK {
 		t.Fatal(code)
 	}
-	if code := e.k.SchedulePending(e.fresh(), msgkit.LimitMaxPageLimit, 8, h+policy.MaxActivationLeadBlocks, "p2", 3); code != msgkit.OK {
+	if code := e.k.SchedulePending(e.fresh(), msgkit.LimitMaxPageLimit, 8, h+msgkit.MaxActivationLeadBlocks, "p2", 3); code != msgkit.OK {
 		t.Fatalf("activation at the lead: %q", code)
 	}
 	p, found := pendingOf(t, e, key)
@@ -253,10 +254,15 @@ func TestDamagedPendingRowPanics(t *testing.T) {
 	}
 }
 
-// TestPlanScheduleReplaceCancel: the plan writer's checks, replacement by a
-// plan of another name or of the same name and digest, CONFLICT for the
-// same name with another digest, DUPLICATE_ID for an applied name, cancel,
-// and the upgrade_plan events.
+// lead is the PROPOSED minimum lead of an upgrade plan (msgkit, Q3).
+const lead = msgkit.MinActivationLeadBlocks
+
+// TestPlanScheduleReplaceCancel: the plan writer's checks, the height
+// window (OUT_OF_RANGE one below the minimum lead, accepted at it; BOUNDS
+// one above the maximum lead, accepted at it), replacement by a plan of
+// another name or of the same name and digest, CONFLICT for a name
+// scheduled before with another digest (pending, replaced, or cancelled),
+// DUPLICATE_ID for an applied name, cancel, and the upgrade_plan events.
 func TestPlanScheduleReplaceCancel(t *testing.T) {
 	e := newEnv(t)
 	d1, d2 := digestOf("release-1"), digestOf("release-2")
@@ -269,30 +275,43 @@ func TestPlanScheduleReplaceCancel(t *testing.T) {
 	e.rejects("short digest", msgkit.Bounds, schedule("up-1", h+5, d1[:31], "p1"))
 	e.rejects("nil digest", msgkit.Bounds, schedule("up-1", h+5, nil, "p1"))
 	e.rejects("height at block height", msgkit.OutOfRange, schedule("up-1", h, d1, "p1"))
-	e.rejects("height above the lead", msgkit.Bounds, schedule("up-1", h+policy.MaxActivationLeadBlocks+1, d1, "p1"))
+	e.rejects("height one above the block", msgkit.OutOfRange, schedule("up-1", h+1, d1, "p1"))
+	e.rejects("height one below the minimum lead", msgkit.OutOfRange, schedule("up-1", h+lead-1, d1, "p1"))
+	e.rejects("height above the lead", msgkit.Bounds, schedule("up-1", h+msgkit.MaxActivationLeadBlocks+1, d1, "p1"))
+	high := e.ctx.WithBlockHeight(genesis.SafeIntegerMax - 50).WithEventManager(sdk.NewEventManager())
+	before := e.snapshot()
+	if code := e.k.ScheduleUpgrade(high, "up-1", uint64(genesis.SafeIntegerMax)+50, d1, "p1"); code != msgkit.Bounds {
+		t.Fatalf("plan height above 2^53-1: %q", code)
+	}
+	if !bytes.Equal(before, e.snapshot()) || len(high.EventManager().Events()) != 0 {
+		t.Fatal("plan height above 2^53-1 wrote or emitted")
+	}
 	e.rejects("cancel without a plan", msgkit.NotFound, func(ctx sdk.Context) msgkit.Code { return e.k.CancelUpgrade(ctx, "up-1") })
 	e.rejects("cancel bad name", msgkit.Bounds, func(ctx sdk.Context) msgkit.Code { return e.k.CancelUpgrade(ctx, "UP") })
 
 	ctx := e.fresh()
-	if code := e.k.ScheduleUpgrade(ctx, "up-1", h+1, d1, "p1"); code != msgkit.OK {
-		t.Fatalf("height one above the block: %q", code)
+	if code := e.k.ScheduleUpgrade(ctx, "up-1", h+lead, d1, "p1"); code != msgkit.OK {
+		t.Fatalf("height at the minimum lead: %q", code)
 	}
 	plan, found := e.k.Plan(e.ctx)
-	if !found || !equalPlan(plan, policy.Plan{Name: "up-1", Height: h + 1, Digest: d1, ProposalID: "p1"}) {
+	if !found || !equalPlan(plan, policy.Plan{Name: "up-1", Height: h + lead, Digest: d1, ProposalID: "p1"}) {
 		t.Fatalf("plan %+v %t", plan, found)
 	}
+	if raw := e.store().Get(policy.PlanNameKey("up-1")); !bytes.Equal(raw, d1) {
+		t.Fatalf("plan-name row %x", raw)
+	}
 	ev := attrs(t, ctx.EventManager().Events(), policy.EventUpgradePlan)
-	if ev["name"] != "up-1" || ev["height"] != "8" || ev["release_digest"] != msgkit.Hex(d1) || ev["action"] != "scheduled" ||
+	if ev["name"] != "up-1" || ev["height"] != msgkit.Dec(h+lead) || ev["release_digest"] != msgkit.Hex(d1) || ev["action"] != "scheduled" ||
 		ev["proposal_id"] != "p1" || ev["replaced_name"] != "" {
 		t.Fatalf("scheduled event %v", ev)
 	}
-	e.rejects("same name, other digest", msgkit.Conflict, schedule("up-1", h+9, d2, "p2"))
+	e.rejects("same name, other digest", msgkit.Conflict, schedule("up-1", h+lead+2, d2, "p2"))
 
 	ctx = e.fresh()
-	if code := e.k.ScheduleUpgrade(ctx, "up-1", h+9, d1, "p3"); code != msgkit.OK {
+	if code := e.k.ScheduleUpgrade(ctx, "up-1", h+lead+2, d1, "p3"); code != msgkit.OK {
 		t.Fatalf("same name and digest: %q", code)
 	}
-	if plan, _ := e.k.Plan(e.ctx); plan.Height != h+9 || plan.ProposalID != "p3" {
+	if plan, _ := e.k.Plan(e.ctx); plan.Height != h+lead+2 || plan.ProposalID != "p3" {
 		t.Fatalf("same-name replacement %+v", plan)
 	}
 	if ev := attrs(t, ctx.EventManager().Events(), policy.EventUpgradePlan); ev["action"] != "replaced" || ev["replaced_name"] != "up-1" {
@@ -300,7 +319,7 @@ func TestPlanScheduleReplaceCancel(t *testing.T) {
 	}
 
 	ctx = e.fresh()
-	if code := e.k.ScheduleUpgrade(ctx, "up-2", h+policy.MaxActivationLeadBlocks, d2, "p4"); code != msgkit.OK {
+	if code := e.k.ScheduleUpgrade(ctx, "up-2", h+msgkit.MaxActivationLeadBlocks, d2, "p4"); code != msgkit.OK {
 		t.Fatalf("other name at the lead: %q", code)
 	}
 	if plan, _ := e.k.Plan(e.ctx); plan.Name != "up-2" || !bytes.Equal(plan.Digest, d2) {
@@ -323,31 +342,58 @@ func TestPlanScheduleReplaceCancel(t *testing.T) {
 		t.Fatalf("cancelled event %v", ev)
 	}
 
+	// A name is never reused with another digest: not after a cancel, not
+	// after a replacement. The same digest may be scheduled again.
+	e.rejects("cancelled name, other digest", msgkit.Conflict, schedule("up-2", h+lead, d1, "p6"))
+	e.rejects("replaced name, other digest", msgkit.Conflict, schedule("up-1", h+lead, d2, "p6"))
+	ctx = e.fresh()
+	if code := e.k.ScheduleUpgrade(ctx, "up-2", h+lead, d2, "p7"); code != msgkit.OK {
+		t.Fatalf("cancelled name, same digest: %q", code)
+	}
+	if ev := attrs(t, ctx.EventManager().Events(), policy.EventUpgradePlan); ev["action"] != "scheduled" || ev["proposal_id"] != "p7" {
+		t.Fatalf("rescheduled event %v", ev)
+	}
+	if !bytes.Equal(e.store().Get(policy.PlanNameKey("up-1")), d1) || !bytes.Equal(e.store().Get(policy.PlanNameKey("up-2")), d2) {
+		t.Fatal("a plan-name row changed")
+	}
+	e.mustCheck()
+
 	// An applied name can never be scheduled again.
 	e.store().Set(policy.AppliedKey("done"), policy.EncodeU64(3))
-	e.rejects("applied name", msgkit.DuplicateID, schedule("done", h+5, d1, "p5"))
+	e.rejects("applied name", msgkit.DuplicateID, schedule("done", h+lead, d1, "p5"))
 	if !e.k.UpgradeApplied(e.ctx, "done") || e.k.UpgradeApplied(e.ctx, "up-1") || e.k.UpgradeApplied(e.ctx, "Not An Id") {
 		t.Fatal("UpgradeApplied")
 	}
 	e.store().Set(policy.AppliedKey("bad"), policy.EncodeU64(0))
 	mustPanic(t, `policy: applied upgrade "bad"`, func() { e.k.UpgradeApplied(e.ctx, "bad") })
+	e.store().Set(policy.PlanNameKey("short"), make([]byte, 31))
+	mustPanic(t, `policy: plan name "short" holds a 31-byte digest`, func() { e.k.ScheduleUpgrade(e.fresh(), "short", h+lead, d1, "p8") })
 	e.store().Set(policy.PlanKey(), []byte{1})
 	mustPanic(t, "policy: plan value is 1 bytes", func() { e.k.Plan(e.ctx) })
 }
 
 // TestRecordUpgrade: RecordUpgrade replaces the version map, bumps the app
-// version by one, records the applied height, and deletes the plan; each
-// refusal writes nothing.
+// version by one, records the applied height, and deletes the plan; it
+// needs the stored plan of that upgrade (owner question Q2, a council plan);
+// each refusal writes nothing.
 func TestRecordUpgrade(t *testing.T) {
 	newVM := testVersionMap()
 	newVM["leases"] = 3
 	delete(newVM, "svn")
 	newVM["extra"] = 1
+	const ph = h + lead // the plan height, scheduled at h
 	e := newEnv(t)
-	if code := e.k.ScheduleUpgrade(e.fresh(), "up-1", 20, digestOf("r"), "p1"); code != msgkit.OK {
+	before := e.snapshot()
+	if err := e.k.RecordUpgrade(e.at(ph), "up-1", ph, newVM, 2); err == nil || !strings.Contains(err.Error(), `no stored plan for upgrade "up-1"`) {
+		t.Fatalf("record without a plan row: %v", err)
+	}
+	if !bytes.Equal(before, e.snapshot()) {
+		t.Fatal("a record without a plan wrote")
+	}
+	if code := e.k.ScheduleUpgrade(e.fresh(), "up-1", ph, digestOf("r"), "p1"); code != msgkit.OK {
 		t.Fatal(code)
 	}
-	at20 := e.at(20)
+	atPlan := e.at(ph)
 	refusals := []struct {
 		name string
 		ctx  sdk.Context
@@ -357,17 +403,18 @@ func TestRecordUpgrade(t *testing.T) {
 		app  uint64
 		want string
 	}{
-		{"name pattern", at20, "Up", 20, newVM, 2, "outside the id pattern"},
-		{"height not the block", at20, "up-1", 21, newVM, 2, "upgrade height 21"},
+		{"name pattern", atPlan, "Up", ph, newVM, 2, "outside the id pattern"},
+		{"height not the block", atPlan, "up-1", ph + 1, newVM, 2, fmt.Sprintf("upgrade height %d", ph+1)},
 		{"height 0", e.at(0), "up-1", 0, newVM, 2, "upgrade height 0"},
-		{"other plan name", at20, "up-2", 20, newVM, 2, "stored plan is"},
-		{"app version skips", at20, "up-1", 20, newVM, 3, "app version 3 after stored app version 1"},
-		{"app version same", at20, "up-1", 20, newVM, 1, "app version 1 after"},
-		{"empty map", at20, "up-1", 20, module.VersionMap{}, 2, "0 modules"},
-		{"bad module name", at20, "up-1", 20, module.VersionMap{policy.ModuleName: 2, "Bad": 1}, 2, "is not a module name"},
-		{"module version 0", at20, "up-1", 20, module.VersionMap{policy.ModuleName: 2, "x": 0}, 2, "is not a module name"},
-		{"map without policy", at20, "up-1", 20, module.VersionMap{"x": 1}, 2, "version map gives policy version 0"},
-		{"policy entry not the layout", at20, "up-1", 20, module.VersionMap{policy.ModuleName: 3}, 2, "the store layout is 2"},
+		{"other plan name", atPlan, "up-2", ph, newVM, 2, "stored plan is"},
+		{"other plan height", e.at(ph + 1), "up-1", ph + 1, newVM, 2, "stored plan is"},
+		{"app version skips", atPlan, "up-1", ph, newVM, 3, "app version 3 after stored app version 1"},
+		{"app version same", atPlan, "up-1", ph, newVM, 1, "app version 1 after"},
+		{"empty map", atPlan, "up-1", ph, module.VersionMap{}, 2, "0 modules"},
+		{"bad module name", atPlan, "up-1", ph, module.VersionMap{policy.ModuleName: 2, "Bad": 1}, 2, "is not a module name"},
+		{"module version 0", atPlan, "up-1", ph, module.VersionMap{policy.ModuleName: 2, "x": 0}, 2, "is not a module name"},
+		{"map without policy", atPlan, "up-1", ph, module.VersionMap{"x": 1}, 2, "version map gives policy version 0"},
+		{"policy entry not the layout", atPlan, "up-1", ph, module.VersionMap{policy.ModuleName: 3}, 2, "the store layout is 2"},
 	}
 	for _, r := range refusals {
 		before := e.snapshot()
@@ -379,17 +426,20 @@ func TestRecordUpgrade(t *testing.T) {
 			t.Fatalf("%s: a refused record wrote", r.name)
 		}
 	}
-	if err := e.k.RecordUpgrade(at20, "up-1", 20, newVM, 2); err != nil {
+	if err := e.k.RecordUpgrade(atPlan, "up-1", ph, newVM, 2); err != nil {
 		t.Fatal(err)
 	}
 	if e.k.AppVersion(e.ctx) != 2 || !e.k.UpgradeApplied(e.ctx, "up-1") {
 		t.Fatal("app version or applied row not written")
 	}
-	if raw := e.store().Get(policy.AppliedKey("up-1")); !bytes.Equal(raw, policy.EncodeU64(20)) {
+	if raw := e.store().Get(policy.AppliedKey("up-1")); !bytes.Equal(raw, policy.EncodeU64(ph)) {
 		t.Fatalf("applied height %x", raw)
 	}
 	if _, found := e.k.Plan(e.ctx); found {
 		t.Fatal("plan survived the upgrade")
+	}
+	if raw := e.store().Get(policy.PlanNameKey("up-1")); !bytes.Equal(raw, digestOf("r")) {
+		t.Fatalf("the upgrade changed its plan-name row: %x", raw)
 	}
 	vm := e.k.VersionMap(e.ctx)
 	if len(vm) != len(newVM) || vm["leases"] != 3 || vm["extra"] != 1 {
@@ -398,19 +448,25 @@ func TestRecordUpgrade(t *testing.T) {
 	if _, kept := vm["svn"]; kept {
 		t.Fatal("a module missing from the new map kept its row")
 	}
-	if err := policyCheckAt(e, 20); err != nil {
+	if err := policyCheckAt(e, ph); err != nil {
 		t.Fatal(err)
 	}
-	before := e.snapshot()
-	if err := e.k.RecordUpgrade(e.at(30), "up-1", 30, newVM, 3); err == nil || !strings.Contains(err.Error(), "already applied") {
+	const ph2 = ph + lead
+	before = e.snapshot()
+	if err := e.k.RecordUpgrade(e.at(ph2), "up-1", ph2, newVM, 3); err == nil || !strings.Contains(err.Error(), "already applied") {
 		t.Fatalf("second record of one name: %v", err)
 	}
-	if !bytes.Equal(before, e.snapshot()) {
-		t.Fatal("refused second record wrote")
+	if err := e.k.RecordUpgrade(e.at(ph2), "up-2", ph2, newVM, 3); err == nil || !strings.Contains(err.Error(), "no stored plan") {
+		t.Fatalf("second upgrade without a plan row: %v", err)
 	}
-	// A compiled plan source has no plan row: the record still applies.
-	if err := e.k.RecordUpgrade(e.at(30), "up-2", 30, newVM, 3); err != nil {
-		t.Fatalf("record without a plan row: %v", err)
+	if !bytes.Equal(before, e.snapshot()) {
+		t.Fatal("a refused second record wrote")
+	}
+	if code := e.k.ScheduleUpgrade(e.at(ph), "up-2", ph2, digestOf("r2"), "p2"); code != msgkit.OK {
+		t.Fatal(code)
+	}
+	if err := e.k.RecordUpgrade(e.at(ph2), "up-2", ph2, newVM, 3); err != nil {
+		t.Fatalf("second upgrade from its plan: %v", err)
 	}
 	if e.k.AppVersion(e.ctx) != 3 {
 		t.Fatal("app version after the second upgrade")
@@ -421,23 +477,36 @@ func TestRecordUpgrade(t *testing.T) {
 		if err := b.k.InitGenesis(b.ctx, policy.DefaultGenesisState()); err != nil {
 			t.Fatal(err)
 		}
-		if err := b.k.RecordUpgrade(b.at(20), "up-1", 20, newVM, 2); err == nil || !strings.Contains(err.Error(), "stored app version 0") {
+		if code := b.k.ScheduleUpgrade(b.fresh(), "up-1", ph, digestOf("r"), "p1"); code != msgkit.OK {
+			t.Fatal(code)
+		}
+		if err := b.k.RecordUpgrade(b.at(ph), "up-1", ph, newVM, 2); err == nil || !strings.Contains(err.Error(), "stored app version 0") {
 			t.Fatalf("record before InitVersions: %v", err)
 		}
 	})
 	t.Run("damaged app version", func(t *testing.T) {
 		d := newEnv(t)
+		if code := d.k.ScheduleUpgrade(d.fresh(), "up-1", ph, digestOf("r"), "p1"); code != msgkit.OK {
+			t.Fatal(code)
+		}
 		d.store().Set(policy.AppVersionKey(), policy.EncodeU64(0))
-		if err := d.k.RecordUpgrade(d.at(20), "up-1", 20, newVM, 1); err == nil || !strings.Contains(err.Error(), "app version is not") {
+		if err := d.k.RecordUpgrade(d.at(ph), "up-1", ph, newVM, 1); err == nil || !strings.Contains(err.Error(), "app version is not") {
 			t.Fatalf("record on a damaged app version: %v", err)
 		}
 		mustPanic(t, "policy: app version is not", func() { d.k.AppVersion(d.ctx) })
 	})
+	t.Run("damaged plan", func(t *testing.T) {
+		d := newEnv(t)
+		d.store().Set(policy.PlanKey(), []byte{1})
+		if err := d.k.RecordUpgrade(d.at(ph), "up-1", ph, newVM, 2); err == nil || !strings.Contains(err.Error(), "plan value is 1 bytes") {
+			t.Fatalf("record on a damaged plan: %v", err)
+		}
+	})
 }
 
-func policyCheckAt(e *env, height int64) error {
+func policyCheckAt(e *env, height uint64) error {
 	saved := e.ctx
-	e.ctx = e.ctx.WithBlockHeight(height)
+	e.ctx = e.ctx.WithBlockHeight(int64(height))
 	defer func() { e.ctx = saved }()
 	return e.check()
 }
@@ -489,7 +558,7 @@ func TestInitVersions(t *testing.T) {
 	if !bytes.Equal(before, b.snapshot()) {
 		t.Fatal("second InitVersions wrote")
 	}
-	for name, row := range map[string][]byte{"plan": policy.PlanKey(), "applied": policy.AppliedKey("x")} {
+	for name, row := range map[string][]byte{"plan": policy.PlanKey(), "applied": policy.AppliedKey("x"), "plan name": policy.PlanNameKey("x")} {
 		t.Run("refuses a store with "+name, func(t *testing.T) {
 			d := newBareEnv(t)
 			if err := d.k.InitGenesis(d.ctx, policy.DefaultGenesisState()); err != nil {
@@ -515,7 +584,7 @@ func bigMap(n int) module.VersionMap {
 // with a zero context, as the app's load-time gate does.
 func TestWithStore(t *testing.T) {
 	e := newEnv(t)
-	if code := e.k.ScheduleUpgrade(e.fresh(), "up-1", 50, digestOf("r"), "p1"); code != msgkit.OK {
+	if code := e.k.ScheduleUpgrade(e.fresh(), "up-1", h+lead, digestOf("r"), "p1"); code != msgkit.OK {
 		t.Fatal(code)
 	}
 	if code := e.k.SetLimit(e.fresh(), msgkit.LimitMaxPageLimit, 10, "p2"); code != msgkit.OK {

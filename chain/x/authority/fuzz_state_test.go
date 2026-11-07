@@ -169,6 +169,10 @@ type fuzzHarness struct {
 	c         fuzzCounters
 	trace     []string // one token per operation (traceToken)
 	registry  *specRegistry
+	// policy is the committed fake x/policy; each step runs on a clone that
+	// becomes the committed one only on success, as Keeper.transition's
+	// nested cache does for the policy store.
+	policy *fakePolicy
 }
 
 // fuzzRecord is the part of a proposal record the harness uses.
@@ -238,6 +242,7 @@ func runFuzzTrace(t testing.TB, raw []byte) (fuzzCounters, []string) {
 		records:   map[string]fuzzRecord{},
 		dump:      dumpKV(kv),
 		registry:  emptySpecRegistry(),
+		policy:    newFakePolicy(),
 	}
 	h.vals = h.validatorBytes(h.load(kv, h.height, h.unix).Validators())
 	for i := 0; i < len(raw) && h.c.Ops < fuzzMaxOps; i += 2 {
@@ -281,6 +286,8 @@ func (h *fuzzHarness) step(b, v byte) {
 	st := h.load(trial, height, unix)
 	reg := h.registry.clone()
 	st.Registry = reg
+	pol := h.policy.clone()
+	st.Policy = pol
 	r := h.run(st, op, int(b>>3)%4, b>>5, v)
 	h.trace = append(h.trace, traceToken(r))
 	if r.want != "" && r.out.Code != r.want {
@@ -288,6 +295,9 @@ func (h *fuzzHarness) step(b, v byte) {
 	}
 	if (!r.out.Success() || r.out.Idempotent) && !reg.equal(h.registry) {
 		t.Fatalf("op %d (%d) outcome %+v wrote to the registry", index, op, r.out)
+	}
+	if (!r.out.Success() || r.out.Idempotent) && !pol.sameState(h.policy) {
+		t.Fatalf("op %d (%d) outcome %+v wrote to the policy store", index, op, r.out)
 	}
 	switch {
 	case r.out.Idempotent:
@@ -308,6 +318,7 @@ func (h *fuzzHarness) step(b, v byte) {
 	trial.Write()
 	if r.out.Success() {
 		h.registry = reg
+		h.policy = pol
 	}
 	h.c.Committed++
 	h.height, h.unix = height, unix

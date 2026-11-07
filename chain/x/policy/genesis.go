@@ -17,13 +17,17 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-// Module genesis (protocol v0, svn.policy.v1.GenesisState). The document
-// holds policy_version 1, the protocol safety caps, and the eight blocked
-// decision rows; it has no field for governed values, pending changes, an
-// upgrade plan, applied upgrades, or versions. InitGenesis stores only the
-// layout version and the safety caps: the policy version and the decision
-// rows live in the authority store, and the app cross-checks the decision
-// rows against the authority genesis in InitChain.
+// Module genesis (svn.policy.v1.GenesisState). The document holds
+// policy_version 1, the protocol safety caps, and the eight blocked
+// decision rows. The PolicyState fields of protocol schema version 2
+// (governed_limits, pending_limit_changes, upgrade_plan, app_version) are
+// query fields: a genesis document leaves them empty ("Genesis carries no
+// governed value, pending change, or plan", docs/protocol.md), and the app
+// writes the app version from the binary through InitVersions. The document
+// has no field for applied upgrades or the version map. InitGenesis stores
+// only the layout version and the safety caps: the policy version and the
+// decision rows live in the authority store, and the app cross-checks the
+// decision rows against the authority genesis in InitChain.
 //
 // Export carries policy_version 1, the stored caps, and the authority's
 // decision rows. It is refused (ErrExportRefused) once any governance state
@@ -99,6 +103,8 @@ func hasUnknown(m protoreflect.ProtoMessage) bool {
 //
 //   - the policy state is present ("{}" is refused); no message carries
 //     unknown fields
+//   - governed_limits, pending_limit_changes, and upgrade_plan empty, and
+//     app_version 0 (query fields of schema version 2)
 //   - policy_version 1
 //   - safety_caps equal to the protocol caps (genesis.DefaultSafetyCaps)
 //   - blocked_decisions: exactly one row per genesis.DecisionIDs entry, each
@@ -115,6 +121,9 @@ func ValidateGenesis(state *policyv1.GenesisState) error {
 	if hasUnknown(state) || hasUnknown(policy) {
 		return errors.New("policy genesis: unknown fields")
 	}
+	if err := validateQueryFieldsEmpty(policy); err != nil {
+		return err
+	}
 	if policy.GetPolicyVersion() != 1 {
 		return fmt.Errorf("policy genesis: policy_version %d, want 1", policy.GetPolicyVersion())
 	}
@@ -129,6 +138,22 @@ func ValidateGenesis(state *policyv1.GenesisState) error {
 		return errors.New("policy genesis: safety caps differ from the protocol caps")
 	}
 	return validateDecisions(policy.GetBlockedDecisions())
+}
+
+// validateQueryFieldsEmpty refuses a document that sets any query field of
+// schema version 2.
+func validateQueryFieldsEmpty(policy *policyv1.PolicyState) error {
+	switch {
+	case len(policy.GetGovernedLimits()) != 0:
+		return fmt.Errorf("policy genesis: %d governed_limits rows; genesis carries no governed value", len(policy.GetGovernedLimits()))
+	case len(policy.GetPendingLimitChanges()) != 0:
+		return fmt.Errorf("policy genesis: %d pending_limit_changes rows; genesis carries no pending change", len(policy.GetPendingLimitChanges()))
+	case policy.GetUpgradePlan() != nil:
+		return errors.New("policy genesis: upgrade_plan is set; genesis carries no plan")
+	case policy.GetAppVersion() != 0:
+		return fmt.Errorf("policy genesis: app_version %d; the app version comes from the binary at InitChain", policy.GetAppVersion())
+	}
+	return nil
 }
 
 func validateDecisions(rows []*typesv1.BlockedDecisionParameter) error {
@@ -191,12 +216,14 @@ var refusedRows = []struct {
 	{[]byte{PendingPrefix}, "pending governed changes"},
 	{PlanKey(), "an upgrade plan"},
 	{[]byte{AppliedPrefix}, "applied upgrades"},
+	{[]byte{PlanNamePrefix}, "plan names"},
 }
 
 // ExportCheck refuses, with ErrExportRefused naming the prefix, while the
 // store holds a governed value (0x02), a pending change (0x03), a plan
-// (0x06), or an applied upgrade (0x07), or while the app version (0x04) is
-// not 1 (absent included), or the policy version is not 1. The version map
+// (0x06), an applied upgrade (0x07), or a plan name (0x08), or while the
+// app version (0x04) is not 1 (absent included), or the policy version is
+// not 1. The version map
 // (0x05) is derived from the binary and is not exported. App.Export calls
 // it before the module manager export, because a module ExportGenesis can
 // only panic. It reads at most one key per refused prefix.

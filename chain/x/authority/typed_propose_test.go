@@ -3,6 +3,7 @@ package authority
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -19,7 +20,12 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-var _ PolicyWriter = localPolicy{}
+var (
+	_ PolicyWriter  = boundPolicy{}
+	_ Accounts      = boundAccounts{}
+	_ PolicyKeeper  = (*recordingPolicyKeeper)(nil)
+	_ AccountKeeper = (*recordingAccounts)(nil)
+)
 
 // nonGovernedKeys are limit keys outside the governed_limit_caps table: the
 // two safety caps, two compile-time quotas, and an unknown key. All match the
@@ -222,19 +228,21 @@ func TestSafetyCapsNotGovernable(t *testing.T) {
 				t.Fatalf("execute %s=%d: %+v", key, value, got)
 			}
 			wantUnchanged(t, kv, before, "execute "+key)
-			if kv.Has(governedKey(key)) {
-				t.Fatalf("%s has a governed row", key)
+			if _, found := policyFor(t, kv).limit(key); found || len(policyFor(t, kv).calls) != 0 {
+				t.Fatalf("%s reached the policy writer: %v", key, policyFor(t, kv).calls)
 			}
 		}
 	}
 }
 
 // TestExecuteRechecksCeiling: after D-1 no message can store a governed
-// limit outside the table, so the execute-side check (PolicyWriter.SetLimit)
-// is reached only through a record written directly. An over-ceiling value
-// and an unknown key are BOUNDS at execute, the proposal stays QUEUED, and
-// the store is byte-identical; the same record shape with an in-range value
-// executes, so the BOUNDS comes from the recheck and not an earlier check.
+// limit outside the table, so the execute-side check (applyPayload, before
+// the policy writer is called; x/policy's SetLimit checks again) is reached
+// only through a record written directly. An over-ceiling value and an
+// unknown key are BOUNDS at execute, the proposal stays QUEUED, the store is
+// byte-identical and the policy writer is not called; the same record shape
+// with an in-range value executes and sets the value through the writer, so
+// the BOUNDS comes from the recheck and not an earlier check.
 func TestExecuteRechecksCeiling(t *testing.T) {
 	rows := []struct {
 		key   string
@@ -261,69 +269,122 @@ func TestExecuteRechecksCeiling(t *testing.T) {
 			if st.executed != nil || recordOf(t, kv, "rq").state() != authorityv1.ProposalState_PROPOSAL_STATE_QUEUED {
 				t.Fatalf("%s: executed %+v", r.key, st.executed)
 			}
+			if calls := policyFor(t, kv).calls; len(calls) != 0 {
+				t.Fatalf("%s: policy writer called %v", r.key, calls)
+			}
 			continue
 		}
-		raw := kv.Get(governedKey(r.key))
-		if value, good := decodeU64(raw); !good || value != r.value {
-			t.Fatalf("%s: stored %x", r.key, raw)
+		if value, found := policyFor(t, kv).limit(r.key); !found || value != r.value {
+			t.Fatalf("%s: governed value %d, %t", r.key, value, found)
 		}
 	}
 }
 
-// TestLocalPolicyWriter: SetLimit checks the key and the ceiling before it
-// adds one write to the execute's batch and writes nothing to the store
-// itself; the methods the layout cannot serve refuse with MALFORMED and add
-// nothing.
-func TestLocalPolicyWriter(t *testing.T) {
-	kv, _, _ := readyStore(t)
-	before := dumpKV(kv)
-	st := loadAt(t, kv, testHeight, testTime)
-	var b batch
-	w := st.policyWriter(&b)
-	if out := w.SetLimit(msgkit.LimitMaxOpenOffers, 7, "p"); !out.Success() {
-		t.Fatal(out)
-	}
-	if len(b.keys) != 1 || !bytes.Equal(b.keys[0], governedKey(msgkit.LimitMaxOpenOffers)) || !bytes.Equal(b.values[0], encodeU64(7)) {
-		t.Fatalf("batch %x %x", b.keys, b.values)
-	}
-	wantUnchanged(t, kv, before, "SetLimit before the flush")
-	for _, r := range []struct {
-		key   string
-		value uint64
-	}{{msgkit.LimitMaxOpenOffers, 0}, {msgkit.LimitMaxOpenOffers, 1025}, {"max_tx_bytes", 1}, {"", 1}} {
-		if out := w.SetLimit(r.key, r.value, "p"); out.Code != CodeBounds {
-			t.Fatalf("SetLimit(%q, %d): %+v", r.key, r.value, out)
+// TestBoundPolicyAndAccounts: the bound adapters forward each method to the
+// keeper method of the same name with the bound context and every argument,
+// map the keeper's code to the outcome (OK to success, any other code to a
+// failure with that code, never a keep or an idempotent result), and a
+// keeper without a policy or account keeper binds nil, so the engine reports
+// those payloads as MALFORMED. WithPolicy and WithAccounts refuse nil.
+func TestBoundPolicyAndAccounts(t *testing.T) {
+	e := readyKeeper(t)
+	ctx := e.txCtx()
+	rec := &recordingPolicyKeeper{applied: true}
+	w := e.keeper.WithPolicy(rec).policyWriter(ctx)
+	digest := pub(9)
+	for _, out := range []Outcome{
+		w.SetLimit(msgkit.LimitMaxOpenOffers, 7, "p1"),
+		w.SchedulePending(msgkit.LimitMaxOpenOffers, 8, 240, "p2", 5),
+		w.ScheduleUpgrade("up-1", 300, digest, "p3"),
+		w.CancelUpgrade("up-1"),
+	} {
+		if !out.Success() || out.Keep || out.Idempotent {
+			t.Fatalf("OK mapped to %+v", out)
 		}
 	}
-	if out := w.SchedulePending(msgkit.LimitMaxOpenOffers, 7, 100, "p", 2); out.Code != CodeMalformed {
-		t.Fatalf("SchedulePending: %+v", out)
+	if !w.UpgradeApplied("up-1") {
+		t.Fatal("UpgradeApplied did not forward the keeper's answer")
 	}
-	if out := w.ScheduleUpgrade("rehearsal-1", 300, pub(1), "p"); out.Code != CodeMalformed {
-		t.Fatalf("ScheduleUpgrade: %+v", out)
+	want := []string{
+		"SetLimit max_open_offers 7 p1",
+		"SchedulePending max_open_offers 8 240 p2 5",
+		"ScheduleUpgrade up-1 300 " + hex.EncodeToString(digest) + " p3",
+		"CancelUpgrade up-1",
+		"UpgradeApplied up-1",
 	}
-	if out := w.CancelUpgrade("rehearsal-1"); out.Code != CodeMalformed {
-		t.Fatalf("CancelUpgrade: %+v", out)
+	if !slices.Equal(rec.calls, want) {
+		t.Fatalf("calls %q, want %q", rec.calls, want)
 	}
-	if w.UpgradeApplied("rehearsal-1") {
-		t.Fatal("UpgradeApplied")
+	for _, h := range rec.heights {
+		if h != ctx.BlockHeight() {
+			t.Fatalf("a call ran on height %d, the bound context is %d", h, ctx.BlockHeight())
+		}
 	}
-	if len(b.keys) != 1 {
-		t.Fatalf("refusals added writes: %x", b.keys)
+	rec.code = msgkit.Conflict
+	for _, out := range []Outcome{
+		w.SetLimit(msgkit.LimitMaxOpenOffers, 7, "p1"),
+		w.SchedulePending(msgkit.LimitMaxOpenOffers, 8, 240, "p2", 5),
+		w.ScheduleUpgrade("up-1", 300, digest, "p3"),
+		w.CancelUpgrade("up-1"),
+	} {
+		if out.Code != CodeConflict || out.Keep || out.Idempotent {
+			t.Fatalf("CONFLICT mapped to %+v", out)
+		}
 	}
-	wantUnchanged(t, kv, before, "writer refusals")
+
+	accounts := &recordingAccounts{}
+	a := e.keeper.WithAccounts(accounts).accountCreator(ctx)
+	if out := a.EnsureAccount(bytes20(7)); !out.Success() {
+		t.Fatalf("EnsureAccount: %+v", out)
+	}
+	accounts.code = msgkit.Integrity
+	if out := a.EnsureAccount(bytes20(8)); out.Code != CodeIntegrity {
+		t.Fatalf("EnsureAccount refusal: %+v", out)
+	}
+	if len(accounts.calls) != 2 || !bytes.Equal(accounts.calls[0], bytes20(7)) || accounts.heights[0] != ctx.BlockHeight() {
+		t.Fatalf("account calls %x at %v", accounts.calls, accounts.heights)
+	}
+
+	if bare := NewKeeper(e.key); bare.policyWriter(ctx) != nil || bare.accountCreator(ctx) != nil {
+		t.Fatal("a keeper without hooks bound a policy writer or an account creator")
+	}
+	for name, wire := range map[string]func(){
+		"WithPolicy(nil)":   func() { e.keeper.WithPolicy(nil) },
+		"WithAccounts(nil)": func() { e.keeper.WithAccounts(nil) },
+	} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("%s did not panic", name)
+				}
+			}()
+			wire()
+		}()
+	}
 }
 
 // TestPolicyWriterCallSites: in the non-test files of this package, every
-// call of a PolicyWriter method, and of policyWriter, is inside
-// applyPayload, so no other path writes governed values.
+// call of a PolicyWriter or Accounts method is inside applyPayload, except
+// that each bound adapter method (boundPolicy, boundAccounts) calls the
+// keeper method of its own name, which is how it forwards; and
+// policyWriter and accountCreator, which bind the hooks, are called only by
+// Keeper.transition. So no other path writes governed values, plans, or
+// accounts.
 func TestPolicyWriterCallSites(t *testing.T) {
-	methods := []string{"SetLimit", "SchedulePending", "ScheduleUpgrade", "CancelUpgrade", "UpgradeApplied", "policyWriter"}
-	calls := 0
+	methods := []string{"SetLimit", "SchedulePending", "ScheduleUpgrade", "CancelUpgrade", "UpgradeApplied", "EnsureAccount"}
+	binders := []string{"policyWriter", "accountCreator"}
+	calls, forwards, binds := 0, 0, 0
 	for path, file := range parsePackage(t, ".") {
 		for _, decl := range file.Decls {
 			fn, isFunc := decl.(*ast.FuncDecl)
 			if !isFunc || fn.Body == nil {
 				continue
+			}
+			adapter := ""
+			if fn.Recv != nil && len(fn.Recv.List) == 1 {
+				if ident, ok := fn.Recv.List[0].Type.(*ast.Ident); ok && (ident.Name == "boundPolicy" || ident.Name == "boundAccounts") {
+					adapter = ident.Name
+				}
 			}
 			ast.Inspect(fn.Body, func(node ast.Node) bool {
 				call, isCall := node.(*ast.CallExpr)
@@ -337,19 +398,29 @@ func TestPolicyWriterCallSites(t *testing.T) {
 				case *ast.Ident:
 					name = callee.Name
 				}
-				if !slices.Contains(methods, name) {
-					return true
-				}
-				if fn.Name.Name != "applyPayload" {
+				switch {
+				case slices.Contains(binders, name):
+					if fn.Name.Name != "transition" {
+						t.Errorf("%s: %s calls %s; only Keeper.transition may", path, fn.Name.Name, name)
+					}
+					binds++
+				case !slices.Contains(methods, name):
+				case adapter != "":
+					if name != fn.Name.Name {
+						t.Errorf("%s: %s.%s calls %s; an adapter method forwards only to its own name", path, adapter, fn.Name.Name, name)
+					}
+					forwards++
+				case fn.Name.Name != "applyPayload":
 					t.Errorf("%s: %s calls %s; only applyPayload may", path, fn.Name.Name, name)
+				default:
+					calls++
 				}
-				calls++
 				return true
 			})
 		}
 	}
-	if calls == 0 {
-		t.Fatal("no PolicyWriter call found: the scan is broken")
+	if calls < len(methods) || forwards != len(methods) || binds != len(binders) {
+		t.Fatalf("found %d applyPayload calls, %d forwards, %d binds: the scan is broken", calls, forwards, binds)
 	}
 }
 

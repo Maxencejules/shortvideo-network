@@ -89,9 +89,12 @@ func kvMap(kv KV) map[string]string {
 	return out
 }
 
-// TestBumpPolicyVersionCallSites (DR-10-38): no non-test Go file of the
-// chain module outside chain/upgrade names BumpPolicyVersionForUpgrade, so
-// only the upgrade runner can bump the policy version outside an execute.
+// TestBumpPolicyVersionCallSites (DR-10-38; owner ruling Q2 "Council plan,
+// fail closed (Recommended)": approved but unexecuted proposals become
+// stale at the upgrade): no non-test Go file of the chain module outside
+// chain/upgrade names BumpPolicyVersionForUpgrade, so only the upgrade
+// runner can bump the policy version outside an execute; and chain/upgrade
+// does name it (the runner's call), so the scan is not vacuous.
 func TestBumpPolicyVersionCallSites(t *testing.T) {
 	root, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
@@ -102,7 +105,7 @@ func TestBumpPolicyVersionCallSites(t *testing.T) {
 		t.Fatalf("%s is not the chain module root (%v)", root, err)
 	}
 	fset := token.NewFileSet()
-	scanned := 0
+	scanned, runner := 0, 0
 	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -127,9 +130,14 @@ func TestBumpPolicyVersionCallSites(t *testing.T) {
 		}
 		ast.Inspect(file, func(node ast.Node) bool {
 			sel, isSel := node.(*ast.SelectorExpr)
-			if isSel && sel.Sel.Name == "BumpPolicyVersionForUpgrade" && !strings.HasPrefix(filepath.ToSlash(rel), "upgrade/") {
-				t.Errorf("%s names BumpPolicyVersionForUpgrade; only chain/upgrade may", fset.Position(sel.Pos()))
+			if !isSel || sel.Sel.Name != "BumpPolicyVersionForUpgrade" {
+				return true
 			}
+			if !strings.HasPrefix(filepath.ToSlash(rel), "upgrade/") {
+				t.Errorf("%s names BumpPolicyVersionForUpgrade; only chain/upgrade may", fset.Position(sel.Pos()))
+				return true
+			}
+			runner++
 			return true
 		})
 		return nil
@@ -137,7 +145,7 @@ func TestBumpPolicyVersionCallSites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if scanned < 50 {
-		t.Fatalf("scanned %d files: the walk is broken", scanned)
+	if scanned < 50 || runner == 0 {
+		t.Fatalf("scanned %d files, %d calls in chain/upgrade: the walk is broken", scanned, runner)
 	}
 }

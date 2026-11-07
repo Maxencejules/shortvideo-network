@@ -65,7 +65,7 @@ type storedRecord struct {
 func (h *harness) records(ctx sdk.Context) []storedRecord {
 	h.tb.Helper()
 	var out []storedRecord
-	eachRow(ctx.KVStore(h.keys[0]), prefixProposal, func(key, value []byte) {
+	eachRow(ctx.KVStore(h.keys[storeAuthority]), prefixProposal, func(key, value []byte) {
 		var rec storedRecord
 		if err := json.Unmarshal(value, &rec); err != nil {
 			h.tb.Fatalf("proposal record %q does not decode: %v", key[1:], err)
@@ -122,14 +122,16 @@ func (h *harness) councilProjection(ctx sdk.Context, c *committed) councilView {
 			ExecuteAfterUnixSeconds: dec64(p.GetExecuteAfterUnixSeconds()), Approvers: approvers,
 		})
 	}
-	store := ctx.KVStore(h.keys[0])
-	eachRow(store, prefixExecuted, func(key, value []byte) {
+	eachRow(ctx.KVStore(h.keys[storeAuthority]), prefixExecuted, func(key, value []byte) {
 		v.ExecutedParams = append(v.ExecutedParams, executedView{ParameterKey: string(key[1:]), PayloadDigest: hexOf(value)})
 	})
-	eachRow(store, prefixGoverned, func(key, value []byte) {
+	// The governed values are x/policy's (the authority hook writes them
+	// through policy.Keeper.SetLimit); the read surface the registries use
+	// must return each stored row.
+	eachRow(ctx.KVStore(h.keys[storePolicy]), prefixGoverned, func(key, value []byte) {
 		limit := string(key[1:])
 		stored := decodeU64(h.tb, "governed value "+limit, value)
-		read, found := h.auth.GovernedLimit(ctx, limit)
+		read, found := h.pol.GovernedLimit(ctx, limit)
 		if !found || read != stored {
 			h.tb.Fatalf("governed row %s=%d but GovernedLimit reads %d, %t", limit, stored, read, found)
 		}
@@ -228,9 +230,9 @@ func (h *harness) businessIDs(ctx sdk.Context) []string {
 		key    *storetypes.KVStoreKey
 		prefix byte
 	}{
-		{"authority", h.keys[0], prefixBusiness},
-		{providers.ModuleName, h.keys[1], providers.BusinessKeyPrefix},
-		{content.ModuleName, h.keys[2], content.BusinessPrefix},
+		{"authority", h.keys[storeAuthority], prefixBusiness},
+		{providers.ModuleName, h.keys[storeProviders], providers.BusinessKeyPrefix},
+		{content.ModuleName, h.keys[storeContent], content.BusinessPrefix},
 	}
 	ids := []string{}
 	for _, ledger := range ledgers {

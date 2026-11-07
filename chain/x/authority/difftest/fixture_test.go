@@ -63,8 +63,8 @@ func runFixture(tb testing.TB, report testing.TB, cfg *config, steps []*step, di
 	return run
 }
 
-// names reports whether a deviation string names rule.
-func names(deviation, rule string) bool {
+// namesRule reports whether a deviation string names rule.
+func namesRule(deviation, rule string) bool {
 	return strings.Contains("+"+deviation+"+", "+"+rule+"+")
 }
 
@@ -75,6 +75,14 @@ type ruleFixture struct {
 	at    int
 	// every is the projection interval of the run.
 	every int
+	// rule is the rule the step carries when it is not the fixture's name
+	// (the G-11 fixtures, one per condition).
+	rule string
+	// chain and specOff, when set, are the chain's code at the rule step
+	// and spec_machine.py's code there with the rule off; both reject, and
+	// with the rule off no projection field may differ (G-11: neither side
+	// changes state).
+	chain, specOff msgkit.Code
 }
 
 func delayConfig(delay int64) *config {
@@ -93,11 +101,12 @@ func bulkConfig(delay int64) *config {
 }
 
 // ruleFixtures are the directed traces of every council rule a message can
-// reach on the chain. G-2 (the Go message always carries both integers)
-// and G-8 (every scheduled change was projected) cannot be reached by a
-// message; the oracle self-test covers them.
+// reach on the chain, by subtest name; G-11 has one per condition. G-2 (the
+// Go message always carries both integers) and G-8 (every scheduled change
+// was projected) cannot be reached by a message; the oracle self-test
+// covers them.
 func ruleFixtures() map[string]func() ruleFixture {
-	return map[string]func() ruleFixture{
+	fixtures := map[string]func() ruleFixture{
 		"G-1": func() ruleFixture {
 			q := newSequence()
 			q.add(buildPropose(proposeParams{
@@ -166,4 +175,17 @@ func ruleFixtures() map[string]func() ruleFixture {
 			return ruleFixture{cfg: defaultConfig(), steps: q.steps, at: len(q.steps) - 1, every: 1}
 		},
 	}
+	for _, c := range shapeCases() {
+		fixtures["G-11/"+c.name] = func() ruleFixture {
+			s := buildPropose(proposeParams{
+				signer: seatAcct(1), business: "bp-u", proposalID: "u1", base: 1,
+				expiry: startTime + 100, payload: c.payload,
+			}, "")
+			return ruleFixture{
+				cfg: defaultConfig(), steps: []*step{s}, at: 0, every: 1, rule: "G-11",
+				chain: msgkit.Bounds, specOff: msgkit.Malformed,
+			}
+		}
+	}
+	return fixtures
 }

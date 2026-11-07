@@ -11,10 +11,13 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
+	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 )
 
@@ -112,7 +115,10 @@ func TestComparatorDetectsMismatch(t *testing.T) {
 // that writes a key and then returns the real handler's result is reported
 // for a rejected propose and for an idempotent execute replay, while the
 // unwrapped handler is not. It is the mutant that proves the bytes check of
-// FuzzGovernanceTransitions can fail.
+// FuzzGovernanceTransitions can fail. The idempotent replay commits its
+// early write, so the mutant replay runs through deliver (the trial check)
+// and the test then requires the I12 step check to report the committed
+// write exactly when it went to the x/policy store.
 func TestTrialSnapshotDetectsEarlyWrite(t *testing.T) {
 	q := passedFixture()
 	h := newHarness(t, defaultConfig())
@@ -146,21 +152,29 @@ func TestTrialSnapshotDetectsEarlyWrite(t *testing.T) {
 		if len(rec.errors) != before+1 || !strings.Contains(rec.errors[before], "changed the trial state") {
 			t.Fatalf("store %s: the early write of a rejected message was not reported: %v", key.Name(), rec.errors[before:])
 		}
-		if out := h.apply(replay); !out.idempotent {
+		policyBefore := policyRows(h.unmetered().KVStore(h.keys[storePolicy]))
+		out := h.deliver(replay)
+		if !out.idempotent {
 			t.Fatalf("store %d mutant replay is not idempotent", i)
 		}
 		if len(rec.errors) != before+2 || !strings.Contains(rec.errors[before+1], "idempotent") {
 			t.Fatalf("store %s: the write of an idempotent replay was not reported: %v", key.Name(), rec.errors[before:])
 		}
+		err := h.checkPolicyWrites(replay, out, nil, policyBefore, policyRows(h.unmetered().KVStore(h.keys[storePolicy])))
+		if got := err != nil && strings.HasPrefix(err.Error(), "I12:"); got != (i == storePolicy) {
+			t.Fatalf("store %s: the I12 step check returned %v", key.Name(), err)
+		}
 	}
 }
 
-// TestStoreLayout ties the authority prefixes the projection and the
-// invariant checker read to the keeper's own surfaces: the business row is
-// what BusinessDigest returns, the governed row what GovernedLimit
-// returns, the policy row what PolicyVersion returns, the open count and
-// the executed digest have the documented shapes, and the pending key is
-// authority.PendingKey.
+// TestStoreLayout ties the prefixes the projection and the invariant
+// checker read to the keepers' own surfaces: the business row is what
+// BusinessDigest returns, the x/policy governed row what policy
+// GovernedLimit returns, the policy row what PolicyVersion returns, the
+// open count and the executed digest have the documented shapes, and the
+// pending key is authority.PendingKey. The authority layout key holds
+// layout version 2 and no authority row uses the retired governed prefix
+// 0x13.
 func TestStoreLayout(t *testing.T) {
 	q := newSequence()
 	q.pass("e1", governedPayload(msgkit.LimitMaxPageLimit, 50), 1, 10)
@@ -173,17 +187,24 @@ func TestStoreLayout(t *testing.T) {
 		}
 	}
 	ctx := h.unmetered()
-	store := ctx.KVStore(h.keys[0])
+	store := ctx.KVStore(h.keys[storeAuthority])
 	for _, id := range []string{q.steps[0].spec["business_id"].(string), q.steps[len(q.steps)-1].spec["business_id"].(string)} {
 		want, found := h.auth.BusinessDigest(ctx, id)
 		if !found || !bytes.Equal(store.Get(append([]byte{prefixBusiness}, id...)), want) {
 			t.Errorf("business row of %s does not match BusinessDigest", id)
 		}
 	}
-	value, found := h.auth.GovernedLimit(ctx, msgkit.LimitMaxPageLimit)
-	if raw := store.Get(append([]byte{prefixGoverned}, msgkit.LimitMaxPageLimit...)); !found || len(raw) != 8 || binary.BigEndian.Uint64(raw) != value {
-		t.Errorf("governed row does not match GovernedLimit")
+	value, found := h.pol.GovernedLimit(ctx, msgkit.LimitMaxPageLimit)
+	raw := ctx.KVStore(h.keys[storePolicy]).Get(append([]byte{prefixGoverned}, msgkit.LimitMaxPageLimit...))
+	if !found || value != 50 || len(raw) != 8 || binary.BigEndian.Uint64(raw) != value {
+		t.Errorf("policy governed row %x does not match GovernedLimit %d, %t", raw, value, found)
 	}
+	if layout, found, err := msgkit.ReadLayoutVersion(store); err != nil || !found || layout != authority.ConsensusVersion {
+		t.Errorf("authority layout key %d (found %t, %v), want %d", layout, found, err, authority.ConsensusVersion)
+	}
+	eachRow(store, prefixRetiredGoverned, func(key, _ []byte) {
+		t.Errorf("authority row %x under the retired governed prefix", key)
+	})
 	if raw := store.Get([]byte{prefixPolicy}); len(raw) != 8 || binary.BigEndian.Uint64(raw) != h.auth.PolicyVersion(ctx) {
 		t.Errorf("policy row does not match PolicyVersion")
 	}
@@ -204,8 +225,11 @@ func TestStoreLayout(t *testing.T) {
 }
 
 // TestCouncilInvariantsSelfTest injects one violation per invariant the
-// checker covers, by writing the authority store directly after a valid
-// sequence, and requires checkInvariants to name that invariant.
+// checker covers, by writing the authority or x/policy store directly
+// after a valid sequence (or by changing the harness's own record), and
+// requires checkInvariants to name that invariant. The I3, I4 and I5 rows
+// of x/policy's own checker (policytest) are injected here too, so a
+// harness that stopped calling it fails.
 func TestCouncilInvariantsSelfTest(t *testing.T) {
 	setup := func(t *testing.T) *harness {
 		q := newSequence()
@@ -231,10 +255,10 @@ func TestCouncilInvariantsSelfTest(t *testing.T) {
 		if err != nil {
 			h.tb.Fatal(err)
 		}
-		ctx.KVStore(h.keys[0]).Set([]byte{0x01}, raw)
+		ctx.KVStore(h.keys[storeAuthority]).Set([]byte{0x01}, raw)
 	}
 	rewriteRecord := func(h *harness, id, from, to string) {
-		store := h.unmetered().KVStore(h.keys[0])
+		store := h.unmetered().KVStore(h.keys[storeAuthority])
 		key := append([]byte{prefixProposal}, id...)
 		raw := string(store.Get(key))
 		if !strings.Contains(raw, from) {
@@ -247,9 +271,9 @@ func TestCouncilInvariantsSelfTest(t *testing.T) {
 		rule   string
 		inject func(*harness)
 	}{
-		{"I1", func(h *harness) { h.unmetered().KVStore(h.keys[0]).Set([]byte{prefixPolicy}, be(5)) }},
+		{"I1", func(h *harness) { h.unmetered().KVStore(h.keys[storeAuthority]).Set([]byte{prefixPolicy}, be(5)) }},
 		{"I2", func(h *harness) {
-			h.unmetered().KVStore(h.keys[0]).Set(append([]byte{prefixGoverned}, "foo"...), be(5))
+			h.unmetered().KVStore(h.keys[storePolicy]).Set(append([]byte{prefixGoverned}, "foo"...), be(5))
 		}},
 		{"I7", func(h *harness) {
 			rewriteConfig(h, func(c *authorityv1.GenesisState) { c.BlockedDecisions[0].Approved = true })
@@ -258,7 +282,7 @@ func TestCouncilInvariantsSelfTest(t *testing.T) {
 			rewriteConfig(h, func(c *authorityv1.GenesisState) { c.DevnetTestParameters[3].DelaySeconds = 99 })
 		}},
 		{"I8", func(h *harness) {
-			h.unmetered().KVStore(h.keys[0]).Set(append([]byte{prefixRetired}, seatPub(1)...), []byte(seatID(1)))
+			h.unmetered().KVStore(h.keys[storeAuthority]).Set(append([]byte{prefixRetired}, seatPub(1)...), []byte(seatID(1)))
 		}},
 		{"I8", func(h *harness) {
 			rewriteConfig(h, func(c *authorityv1.GenesisState) {
@@ -266,10 +290,43 @@ func TestCouncilInvariantsSelfTest(t *testing.T) {
 			})
 		}},
 		{"I9", func(h *harness) { rewriteRecord(h, "o1", `"approvers":["seat-1"]`, `"approvers":["seat-1","seat-1"]`) }},
-		{"I10", func(h *harness) { h.unmetered().KVStore(h.keys[0]).Set([]byte(openKey(seatID(2), 2)), be(2)) }},
+		{"I10", func(h *harness) {
+			h.unmetered().KVStore(h.keys[storeAuthority]).Set([]byte(openKey(seatID(2), 2)), be(2))
+		}},
 		{"I10", func(h *harness) { h.proposers["o1"] = seatID(3) }},
 		{"I11", func(h *harness) {
 			rewriteConfig(h, func(c *authorityv1.GenesisState) { c.Authority.Validators[0].Power = 1000 })
+		}},
+		// I3, state form: a pending row that did not activate at its height.
+		{"I3", func(h *harness) {
+			policyStore(h).Set(policy.PendingKey(msgkit.LimitMaxOpenOffers), policy.EncodePending(policy.Pending{
+				Activation: uint64(h.height), Value: 5, PolicyVersion: 2, ProposalID: "e1",
+			}))
+		}},
+		// I3, exact form: a governed value no executed decision set.
+		{"I3", func(h *harness) { policyStore(h).Set(policy.GovernedKey(msgkit.LimitMaxPageLimit), be(60)) }},
+		{"I3", func(h *harness) { delete(h.decisions, msgkit.LimitMaxPageLimit) }},
+		// I4: a plan at or below the current height.
+		{"I4", func(h *harness) {
+			policyStore(h).Set(policy.PlanKey(), policy.EncodePlan(policy.Plan{
+				Name: "up-1", Height: uint64(h.height), Digest: sha("release"), ProposalID: "e1",
+			}))
+		}},
+		// I5 (policytest): the app version is not 1 + the applied upgrades.
+		{"I5", func(h *harness) { policyStore(h).Set(policy.AppVersionKey(), be(2)) }},
+		// I5 (keeper part): a consistent applied upgrade, so the stored app
+		// version (2) is not the binary's (1).
+		{"I5", func(h *harness) {
+			store := policyStore(h)
+			store.Set(policy.AppliedKey("up-1"), be(1))
+			store.Set(policy.PlanNameKey("up-1"), sha("release"))
+			store.Set(policy.AppVersionKey(), be(2))
+		}},
+		// I6: the persisted version map is not the binary's.
+		{"I6", func(h *harness) { policyStore(h).Set(policy.VersionMapKey(providers.ModuleName), be(3)) }},
+		// I6: a module's layout key is not its version map entry.
+		{"I6", func(h *harness) {
+			msgkit.WriteLayoutVersion(h.unmetered().KVStore(h.keys[storeContent]), 3)
 		}},
 	}
 	for _, c := range cases {
@@ -281,5 +338,85 @@ func TestCouncilInvariantsSelfTest(t *testing.T) {
 				t.Fatalf("injected %s violation: checker returned %v", c.rule, err)
 			}
 		})
+	}
+}
+
+func policyStore(h *harness) storetypes.KVStore { return h.unmetered().KVStore(h.keys[storePolicy]) }
+
+// TestPolicyWriteCheckSelfTest shows the I12 step check (checkPolicyWrites)
+// fails where it should: a registry transaction or a governed execute
+// whose handler also writes another policy row, a block that changes a
+// governed value with nothing due, a block whose due change of one key
+// also changes another key, and a block that applies a change not yet
+// due. The control rows pass: a plain governed execute (the setup's e1,
+// which apply checks), and a block that applies exactly the due key's
+// rows. The live rows run through deliver, after the last apply, because
+// they commit a write the harness's bookkeeping does not know.
+func TestPolicyWriteCheckSelfTest(t *testing.T) {
+	q := newSequence()
+	q.pass("e1", governedPayload(msgkit.LimitMaxPageLimit, 50), 1, 10)
+	q.pass("e2", governedPayload(msgkit.LimitMaxPageLimit, 60), 2, 10)
+	h := newHarness(t, defaultConfig())
+	for _, s := range q.steps[:len(q.steps)-1] {
+		if out := h.apply(s); out.code != msgkit.OK {
+			t.Fatalf("setup %s: %s", s.op, out.code)
+		}
+	}
+	be := func(v uint64) []byte { return binary.BigEndian.AppendUint64(nil, v) }
+	execute := q.steps[len(q.steps)-1]
+	register := buildRegisterProvider(providerAccount(0), "bpr-1", "pr-1")
+	extra := string(policy.GovernedKey(msgkit.LimitMaxOpenOffers))
+	h.intercept = func(ctx sdk.Context, msg proto.Message, next func(sdk.Context, proto.Message) error) error {
+		ctx.KVStore(h.keys[storePolicy]).Set([]byte(extra), be(7))
+		return next(ctx, msg)
+	}
+	for _, live := range []struct {
+		s       *step
+		payload *authorityv1.ProposalPayload
+	}{{register, nil}, {execute, h.payloads["e2"]}} {
+		before := policyRows(policyStore(h))
+		out := h.deliver(live.s)
+		if out.code != msgkit.OK {
+			t.Fatalf("%s: %s", live.s.op, out.code)
+		}
+		err := h.checkPolicyWrites(live.s, out, live.payload, before, policyRows(policyStore(h)))
+		if err == nil || !strings.HasPrefix(err.Error(), "I12:") || !strings.Contains(err.Error(), hexOf([]byte(extra))) {
+			t.Fatalf("%s with an extra policy write: I12 check returned %v", live.s.op, err)
+		}
+		policyStore(h).Delete([]byte(extra))
+	}
+	h.intercept = nil
+	pending := func(activation uint64) []byte {
+		return policy.EncodePending(policy.Pending{Activation: activation, Value: 5, PolicyVersion: 2, ProposalID: "e1"})
+	}
+	due, other := msgkit.LimitMaxPageLimit, msgkit.LimitMaxOpenOffers
+	block := blockStep(h.now + 1)
+	ok := outcome{code: msgkit.OK}
+	rows := func(pairs ...string) map[string][]byte {
+		m := map[string][]byte{}
+		for i := 0; i < len(pairs); i += 2 {
+			m[pairs[i]] = []byte(pairs[i+1])
+		}
+		return m
+	}
+	duePending := string(pending(uint64(h.height)))
+	cases := []struct {
+		name          string
+		before, after map[string][]byte
+		fails         bool
+	}{
+		{"nothing due, a governed value changes", rows(), rows(string(policy.GovernedKey(other)), "x"), true},
+		{"a due change applies", rows(string(policy.PendingKey(due)), duePending),
+			rows(string(policy.GovernedKey(due)), string(be(5))), false},
+		{"a due change applies and another key changes", rows(string(policy.PendingKey(due)), duePending),
+			rows(string(policy.GovernedKey(due)), string(be(5)), string(policy.GovernedKey(other)), "x"), true},
+		{"a change due later applies", rows(string(policy.PendingKey(due)), string(pending(uint64(h.height)+1))),
+			rows(string(policy.GovernedKey(due)), string(be(5))), true},
+	}
+	for _, c := range cases {
+		err := h.checkPolicyWrites(block, ok, nil, c.before, c.after)
+		if fails := err != nil && strings.HasPrefix(err.Error(), "I12:"); fails != c.fails {
+			t.Errorf("%s: I12 check returned %v, want a failure %t", c.name, err, c.fails)
+		}
 	}
 }

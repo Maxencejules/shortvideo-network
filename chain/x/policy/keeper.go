@@ -7,9 +7,11 @@
 // every governed change and calls the writer methods below (SetLimit,
 // SchedulePending, ScheduleUpgrade, CancelUpgrade) on the nested cache of an
 // executed proposal, so a policy write never outlives a failed or kept
-// proposal. The app writes the version rows (InitVersions at InitChain,
-// RecordUpgrade from the upgrade runner). Each writer runs every check
-// before its first write, so a failure writes nothing.
+// proposal. The module's BeginBlock (ApplyDue) applies the pending governed
+// changes whose activation height has come. The app writes the version rows
+// (InitVersions at InitChain, RecordUpgrade from the upgrade runner). Each
+// writer runs every check before its first write, so a failure writes
+// nothing.
 //
 // Everything in this directory except the _test.go files (and the
 // policytest subpackage, which is test support) runs inside chain
@@ -42,13 +44,6 @@ const (
 	// migration from version 1 is registered; homes from goal 09 are
 	// re-initialized (decision request DR-10-04, interim).
 	ConsensusVersion uint64 = 2
-
-	// MaxActivationLeadBlocks bounds the distance between the block that
-	// writes a pending change or an upgrade plan and its height. It is a
-	// chain safety constant, PROPOSED in decision request DR-10-15; it is
-	// not an owner decision and not fail-closed (a new number). Changing it
-	// is a binary upgrade.
-	MaxActivationLeadBlocks uint64 = 1_000_000
 
 	// MaxVersionMapModules bounds the persisted module version map. It is an
 	// implementation bound above the module count of the app (eight), not a

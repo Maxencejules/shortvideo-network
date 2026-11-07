@@ -104,13 +104,18 @@ func readyStore(t testing.TB) (storetypes.KVStore, []testSeat, []byte) {
 	return storeFrom(t, gen), seats, authority
 }
 
-// loadAt is LoadState on the test chain id at one height and time.
+// loadAt is LoadState on the test chain id at one height and time, with the
+// policy and account hooks bound to the store's fakes (hooksFor), as
+// Keeper.transition binds x/policy and the auth store to every message.
 func loadAt(t testing.TB, kv KV, height, unix int64) *State {
 	t.Helper()
 	st, err := LoadState(kv, testChainID, height, unix)
 	if err != nil {
 		t.Fatal(err)
 	}
+	hooks := hooksFor(t, kv)
+	st.Policy = hooks.policy
+	st.Accounts = hooks.accounts
 	return st
 }
 
@@ -344,4 +349,49 @@ func timeEntry(id, node string, key []byte, power, unix int64) *authorityv1.Pend
 	entry := heightEntry(id, node, key, power, 1)
 	entry.Activation = &authorityv1.ActivationPoint{Point: &authorityv1.ActivationPoint_UnixSeconds{UnixSeconds: unix}}
 	return entry
+}
+
+// scheduledMsg changes one governed limit at an activation height (schema
+// version 2; 0 is the v0 form).
+func scheduledMsg(key string, value, activation uint64) *authorityv1.MsgProposeChange {
+	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_GovernedLimit{
+		GovernedLimit: &authorityv1.GovernedLimitChange{LimitKey: key, Value: value, ActivationHeight: activation},
+	}}, key)
+}
+
+// upgradeMsg schedules the upgrade plan name at height with a SHA-256
+// release digest of value.
+func upgradeMsg(name string, height uint64, value []byte) *authorityv1.MsgProposeChange {
+	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_SoftwareUpgrade{
+		SoftwareUpgrade: &authorityv1.SoftwareUpgradeChange{
+			Name: name, Height: height,
+			ReleaseDigest: &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: value},
+		},
+	}}, upgradeParameterKey)
+}
+
+// cancelMsg cancels the pending upgrade plan name.
+func cancelMsg(name string) *authorityv1.MsgProposeChange {
+	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_CancelUpgrade{
+		CancelUpgrade: &authorityv1.CancelUpgradeChange{Name: name},
+	}}, upgradeParameterKey)
+}
+
+// seatMsg replaces the key of seat seatID with key.
+func seatMsg(seatID string, key []byte) *authorityv1.MsgProposeChange {
+	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_CouncilSeat{
+		CouncilSeat: &authorityv1.CouncilSeatChange{SeatId: seatID, NewPublicKey: key},
+	}}, "seat-"+seatID)
+}
+
+// rawPayloadMsg wraps a payload the chain may refuse at parse with the
+// digest of canon, the canonical text the test states for it, and the
+// parameter key.
+func rawPayloadMsg(payload *authorityv1.ProposalPayload, parameter, canon string) *authorityv1.MsgProposeChange {
+	sum := sha256.Sum256([]byte(canon))
+	return &authorityv1.MsgProposeChange{
+		ParameterKey:  parameter,
+		Payload:       payload,
+		PayloadDigest: &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: sum[:]},
+	}
 }

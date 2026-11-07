@@ -6,7 +6,11 @@ package genesis
 // key: ProtocolVersion and MinValidators follow the spec machine
 // (protocol_version 1, MIN_VALIDATOR_COUNT 4), and MaxChainIDLen is the
 // CometBFT chain id limit, which the same test compares. They are not
-// sponsorship allowances. DEC-005 stays unset.
+// sponsorship allowances. DEC-005 stays unset. ProtocolVersion is the genesis
+// protocol_version of the svn protocol schema line; it is not the app
+// version of a binary (chain/app AppVersion, stored in x/policy and in
+// ConsensusParams.Version.App), which an upgrade moves without a protocol
+// schema change. Both are 1 today.
 const (
 	ProtocolVersion = 1
 

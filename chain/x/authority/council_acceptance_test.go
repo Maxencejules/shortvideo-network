@@ -22,15 +22,16 @@ import (
 // refusal. The app-level tests through FinalizeBlock are separate.
 
 // refused runs one keeper call that must fail with code, and checks that
-// the authority store and the registry store are unchanged and that no
-// typed event was emitted.
+// the authority store, the registry store and the x/policy store are
+// unchanged and that no typed event was emitted.
 func (e *keeperEnv) refused(t *testing.T, name, code string, call func() ([]string, error)) {
 	t.Helper()
-	before, beforeRegistry := dumpKV(e.kv()), dumpKV(e.registryKV())
+	before, beforeRegistry, beforePolicy := dumpKV(e.kv()), dumpKV(e.registryKV()), dumpKV(e.policyKV())
 	typed, err := call()
 	assertCode(t, err, code)
 	wantUnchanged(t, e.kv(), before, name)
 	wantUnchanged(t, e.registryKV(), beforeRegistry, name+" (registry store)")
+	wantUnchanged(t, e.policyKV(), beforePolicy, name+" (policy store)")
 	if len(typed) != 0 {
 		t.Fatalf("%s emitted typed events %v", name, typed)
 	}
@@ -236,7 +237,7 @@ func TestKeeperConcurrentProposalsOnOneKey(t *testing.T) {
 	if _, err := e.executeAs(t, k, e.authority, "ex-cp-a", "cp-a"); err != nil {
 		t.Fatal(err)
 	}
-	if value, found := k.GovernedLimit(e.blockCtx(), msgkit.LimitMaxPageLimit); !found || value != 10 {
+	if value, found := e.governed(msgkit.LimitMaxPageLimit); !found || value != 10 {
 		t.Fatalf("value %d %v", value, found)
 	}
 	e.refused(t, "another value of the executed key", CodeConflict, func() ([]string, error) {
@@ -255,7 +256,7 @@ func TestKeeperConcurrentProposalsOnOneKey(t *testing.T) {
 	if _, err := e.executeAs(t, k, e.authority, "ex-cp-e", "cp-e"); err != nil {
 		t.Fatal(err)
 	}
-	if value, _ := k.GovernedLimit(e.blockCtx(), msgkit.LimitMaxPageLimit); value != 20 || e.policy(t) != 3 {
+	if value, _ := e.governed(msgkit.LimitMaxPageLimit); value != 20 || e.policy(t) != 3 {
 		t.Fatalf("value %d version %d", value, e.policy(t))
 	}
 	// cp-b carries the payload cp-e executed, on an older base.
@@ -431,8 +432,9 @@ func TestKeeperUnauthorizedWritesFailAtExecution(t *testing.T) {
 	}
 }
 
-// TestNoPayloadApprovesDecision: executing every v0 payload kind, and
-// applying the scheduled validator change, leaves the blocked decision rows,
+// TestNoPayloadApprovesDecision: executing every payload kind (the schema
+// version 2 kinds included), and applying the scheduled validator change,
+// leaves the blocked decision rows,
 // the devnet test parameter rows, the approved council (empty) and the
 // quorum-loss behaviour (UNSET) of the config exactly as at genesis.
 func TestNoPayloadApprovesDecision(t *testing.T) {
@@ -479,6 +481,10 @@ func TestNoPayloadApprovesDecision(t *testing.T) {
 		{"nd-admit", admitProposal("prov-1")},
 		{"nd-disable", disableProposal("prov-1")},
 		{"nd-withdraw", withdrawProposal("content-1", 1, reasonValue)},
+		{"nd-scheduled", scheduledMsg(msgkit.LimitMaxOpenOffers, 7, activation)},
+		{"nd-upgrade", upgradeMsg("up-nd", uint64(e.height)+msgkit.MinActivationLeadBlocks, pub(9))},
+		{"nd-cancel", cancelMsg("up-nd")},
+		{"nd-seat", seatMsg(e.seats[3].ID, pub(90))},
 	} {
 		e.queueWith(t, k, row.id, row.msg)
 		if _, err := e.executeAs(t, k, e.authority, "ex-"+row.id, row.id); err != nil {

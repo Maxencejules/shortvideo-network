@@ -10,10 +10,13 @@
 //	I2      every governed value row (0x02) names a governed limit key and holds an
 //	        8-byte value in 1..ceiling
 //	I3      every pending row (0x03) names a governed limit key and decodes; its value is
-//	        in 1..ceiling, its activation height is above h, and its policy version is
-//	        at most the current policy version
-//	I4      the plan row (0x06), when present, decodes; its height is above h; its name
-//	        has no applied row (0x07)
+//	        in 1..ceiling, its activation height is above h (none survives the BeginBlock
+//	        of its height), and its policy version is at most the current policy version
+//	I4      every plan-name row (0x08) names an upgrade in the id pattern and holds a
+//	        32-byte digest; the plan row (0x06), when present, decodes, its height is
+//	        above h, its name has no applied row (0x07), and its plan-name row holds its
+//	        digest; every applied name has a plan-name row (an upgrade applies only from
+//	        a stored plan)
 //	I5      (policy part) the app version row (0x04) and the version map rows (0x05)
 //	        exist together; when present, the app version is 1 + the number of applied
 //	        rows; every applied row holds a height of at least 1 and at most h
@@ -22,11 +25,19 @@
 //	        the row of this module equals the layout version
 //	I7      (policy part) the safety caps row decodes and equals the protocol caps
 //
+// h is the last committed height (or the height of the block whose
+// BeginBlock already ran on the context's state); a check at height b on
+// state committed at b-1 sees the rows due at b as violations of I3.
+//
+// CheckDecisions checks the exact form of I3 ("the latest executed decision
+// for a key wins") for a harness that counts the executed decisions.
+//
 // I1 and I8-I11 are authority invariants; I5, I6 (the binary and consensus
 // parts), and I13 need the app; I12 is shown by tests with snapshots.
 package policytest
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"sort"
@@ -72,7 +83,11 @@ func CheckInvariantsAt(ctx sdk.Context, k policy.Keeper, versions policy.Version
 	if err != nil {
 		return err
 	}
-	if err := checkPlan(rows, height, applied); err != nil {
+	names, err := checkPlanNames(rows, applied)
+	if err != nil {
+		return err
+	}
+	if err := checkPlan(rows, height, applied, names); err != nil {
 		return err
 	}
 	if err := checkVersions(rows, layout, len(applied)); err != nil {
@@ -148,7 +163,7 @@ func checkLayout(rows map[string][]byte, layout uint64) error {
 			continue
 		}
 		switch key[0] {
-		case policy.GovernedPrefix, policy.PendingPrefix, policy.VersionMapPrefix, policy.AppliedPrefix:
+		case policy.GovernedPrefix, policy.PendingPrefix, policy.VersionMapPrefix, policy.AppliedPrefix, policy.PlanNamePrefix:
 			if len(key) == 1 {
 				return fmt.Errorf("layout: bare prefix row %x", key)
 			}
@@ -211,7 +226,35 @@ func checkApplied(rows map[string][]byte, height uint64) (map[string]bool, error
 	return applied, nil
 }
 
-func checkPlan(rows map[string][]byte, height uint64, applied map[string]bool) error {
+// checkPlanNames reads the plan-name rows and checks that every applied
+// name has one.
+func checkPlanNames(rows map[string][]byte, applied map[string]bool) (map[string][]byte, error) {
+	names := map[string][]byte{}
+	for _, name := range under(rows, policy.PlanNamePrefix) {
+		digest := rows[string(policy.PlanNameKey(name))]
+		if !msgkit.ValidID(name) || len(digest) != msgkit.DigestBytes {
+			return nil, fmt.Errorf("I4: plan-name row %x is not an upgrade name with a %d-byte digest (%d bytes stored)", name, msgkit.DigestBytes, len(digest))
+		}
+		names[name] = digest
+	}
+	for _, name := range sortedNames(applied) {
+		if _, found := names[name]; !found {
+			return nil, fmt.Errorf("I4: applied upgrade %q has no plan-name row", name)
+		}
+	}
+	return names, nil
+}
+
+func sortedNames(set map[string]bool) []string {
+	out := make([]string, 0, len(set))
+	for name := range set {
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func checkPlan(rows map[string][]byte, height uint64, applied map[string]bool, names map[string][]byte) error {
 	raw, found := rows[string(policy.PlanKey())]
 	if !found {
 		return nil
@@ -225,6 +268,9 @@ func checkPlan(rows map[string][]byte, height uint64, applied map[string]bool) e
 	}
 	if applied[plan.Name] {
 		return fmt.Errorf("I4: plan %q names an applied upgrade", plan.Name)
+	}
+	if digest, named := names[plan.Name]; !named || !bytes.Equal(digest, plan.Digest) {
+		return fmt.Errorf("I4: plan %q has no plan-name row holding its digest", plan.Name)
 	}
 	return nil
 }
@@ -267,6 +313,71 @@ func checkCaps(rows map[string][]byte) error {
 	}
 	if _, err := policy.DecodeSafetyCaps(raw); err != nil {
 		return fmt.Errorf("I7: %v", err)
+	}
+	return nil
+}
+
+// Decision is the latest executed council decision for one governed limit
+// key, as a harness that counts operations recorded it: the value, the
+// activation height (0 for an immediate change), the policy version its
+// execute produced, and the executing proposal id.
+type Decision struct {
+	Value         uint64
+	Activation    uint64
+	PolicyVersion uint64
+	ProposalID    string
+}
+
+// CheckDecisions checks the exact form of I3, "the latest executed decision
+// for a key wins", against latest: the latest executed decision per
+// governed limit key since genesis. With h the context's block height:
+//
+//   - a governed limit key without a decision has no governed value row and
+//     no pending row
+//   - a decision with activation 0, or at or below h, left no pending row,
+//     and the governed value row holds its value
+//   - a decision with activation above h is the pending row of its key:
+//     activation height, value, policy version, and proposal id
+//
+// A key in latest that is not a governed limit key is an error. The error
+// text starts with "I3:".
+func CheckDecisions(ctx sdk.Context, k policy.Keeper, latest map[string]Decision) error {
+	if k.StoreKey() == nil {
+		return fmt.Errorf("policytest: nil store key")
+	}
+	for key := range latest {
+		if _, known := msgkit.Ceiling(key); !known {
+			return fmt.Errorf("I3: decision for %q, which is not a governed limit key", key)
+		}
+	}
+	rows := readRows(ctx.MultiStore().GetKVStore(k.StoreKey()))
+	height := uint64(0)
+	if h := ctx.BlockHeight(); h > 0 {
+		height = uint64(h)
+	}
+	for _, key := range msgkit.LimitKeys() {
+		governed, hasGoverned := rows[string(policy.GovernedKey(key))]
+		pendingRaw, hasPending := rows[string(policy.PendingKey(key))]
+		d, decided := latest[key]
+		switch {
+		case !decided:
+			if hasGoverned || hasPending {
+				return fmt.Errorf("I3: %q has a governed row (%t) or a pending row (%t) without an executed decision", key, hasGoverned, hasPending)
+			}
+		case d.Activation == 0 || d.Activation <= height:
+			if hasPending {
+				return fmt.Errorf("I3: %q keeps a pending row after its latest decision (%s, activation %d) took effect", key, d.ProposalID, d.Activation)
+			}
+			if !bytes.Equal(governed, policy.EncodeU64(d.Value)) {
+				return fmt.Errorf("I3: %q holds governed value %x, the latest decision (%s) set %d", key, governed, d.ProposalID, d.Value)
+			}
+		default:
+			p, err := policy.DecodePending(pendingRaw)
+			want := policy.Pending{Activation: d.Activation, Value: d.Value, PolicyVersion: d.PolicyVersion, ProposalID: d.ProposalID}
+			if !hasPending || err != nil || p != want {
+				return fmt.Errorf("I3: pending row of %q is %+v (present %t), the latest decision is %+v", key, p, hasPending, want)
+			}
+		}
 	}
 	return nil
 }

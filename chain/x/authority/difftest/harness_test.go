@@ -17,6 +17,7 @@ import (
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
@@ -24,6 +25,8 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
@@ -31,18 +34,46 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-// The real x/authority keeper is the read surface the registries consume
-// and a business-id source, and the real registries are its council hooks.
+// The real x/authority keeper is the role read surface the registries
+// consume, a business-id source, and x/policy's version and decision
+// source; the real registries are its council hooks; the real x/policy
+// keeper is its policy writer and the governed limit source of the
+// registries (as chain/app wires them).
 var (
 	_ authority.ProviderAdmission = providers.Keeper{}
 	_ authority.ContentRemoval    = content.Keeper{}
+	_ authority.PolicyKeeper      = policy.Keeper{}
 	_ providers.Roles             = authority.Keeper{}
-	_ providers.Limits            = authority.Keeper{}
+	_ providers.Limits            = policy.Keeper{}
 	_ content.Roles               = authority.Keeper{}
 	_ content.DevnetParams        = authority.Keeper{}
-	_ content.Limits              = authority.Keeper{}
+	_ content.Limits              = policy.Keeper{}
 	_ msgkit.BusinessSource       = authority.Keeper{}
+	_ policy.VersionSource        = authority.Keeper{}
+	_ policy.DecisionSource       = authority.Keeper{}
 )
+
+// Indexes of harness.keys.
+const (
+	storeAuthority = iota
+	storeProviders
+	storeContent
+	storePolicy
+)
+
+// binaryAppVersion and binaryVersions are the app version and the module
+// version map the harness writes at genesis through policy.InitVersions,
+// as the app's InitChainer does with the binary's module manager (I5, I6).
+const binaryAppVersion uint64 = 1
+
+func binaryVersions() module.VersionMap {
+	return module.VersionMap{
+		authority.ModuleName: authority.ConsensusVersion,
+		content.ModuleName:   content.ConsensusVersion,
+		policy.ModuleName:    policy.ConsensusVersion,
+		providers.ModuleName: providers.ConsensusVersion,
+	}
+}
 
 const (
 	// txGasLimit is the gas meter limit of one transaction (the protocol's
@@ -203,10 +234,11 @@ type harness struct {
 	tb   testing.TB
 	cfg  *config
 	ctx  sdk.Context
-	keys []*storetypes.KVStoreKey // authority, providers, content
+	keys []*storetypes.KVStoreKey // indexed by storeAuthority .. storePolicy
 	auth authority.Keeper
 	prov providers.Keeper
 	cont content.Keeper
+	pol  policy.Keeper
 	now  int64
 	// height is the current block height; transactions run at it.
 	height int64
@@ -215,30 +247,39 @@ type harness struct {
 	// executes counts successful executes (I1, exact form).
 	executes uint64
 	// proposers maps each committed proposal id to its proposing seat id
-	// (I10).
+	// (I10), and payloads to its payload (I3, I12).
 	proposers map[string]string
+	payloads  map[string]*authorityv1.ProposalPayload
+	// decisions is the latest executed governed limit decision per key
+	// (I3, exact form: policytest.CheckDecisions).
+	decisions map[string]policytest.Decision
 	// last is the committed state after the latest step (or genesis): the
 	// one read the invariants, the projection, and the generator share.
 	last *committed
 	// intercept wraps message routing; only the trial-snapshot mutant test
-	// sets it.
+	// and the I12 self-test set it.
 	intercept func(ctx sdk.Context, msg proto.Message, next func(sdk.Context, proto.Message) error) error
 }
 
 func newHarness(tb testing.TB, cfg *config) *harness {
 	tb.Helper()
-	ctx, keys := msgkittest.NewContext(tb, authority.ModuleName, providers.ModuleName, content.ModuleName)
+	ctx, keys := msgkittest.NewContext(tb, authority.ModuleName, providers.ModuleName, content.ModuleName, policy.ModuleName)
 	h := &harness{
 		tb: tb, cfg: cfg, now: startTime, height: startHeight, proposers: map[string]string{},
-		keys: []*storetypes.KVStoreKey{keys[authority.ModuleName], keys[providers.ModuleName], keys[content.ModuleName]},
+		payloads: map[string]*authorityv1.ProposalPayload{}, decisions: map[string]policytest.Decision{},
+		keys: []*storetypes.KVStoreKey{
+			storeAuthority: keys[authority.ModuleName], storeProviders: keys[providers.ModuleName],
+			storeContent: keys[content.ModuleName], storePolicy: keys[policy.ModuleName],
+		},
 	}
 	h.ctx = ctx.WithBlockTime(time.Unix(h.now, 0).UTC()).WithBlockHeight(h.height).
 		WithGasMeter(storetypes.NewInfiniteGasMeter())
 	read := authority.NewKeeper(keys[authority.ModuleName])
+	h.pol = policy.NewKeeper(keys[policy.ModuleName], policy.Deps{Versions: read, Decisions: read})
 	peers := msgkit.NewPeers()
-	h.prov = providers.NewKeeper(keys[providers.ModuleName], providers.Deps{Roles: read, Limits: read, Peers: peers})
-	h.cont = content.NewKeeper(keys[content.ModuleName], content.Deps{Roles: read, Params: read, Limits: read, Peers: peers})
-	h.auth = read.WithRegistry(h.prov, h.cont).WithPeers(peers)
+	h.prov = providers.NewKeeper(keys[providers.ModuleName], providers.Deps{Roles: read, Limits: h.pol, Peers: peers})
+	h.cont = content.NewKeeper(keys[content.ModuleName], content.Deps{Roles: read, Params: read, Limits: h.pol, Peers: peers})
+	h.auth = read.WithRegistry(h.prov, h.cont).WithPolicy(h.pol).WithPeers(peers)
 	peers.Add(authority.ModuleName, h.auth)
 	peers.Add(content.ModuleName, h.cont)
 	peers.Add(providers.ModuleName, h.prov)
@@ -253,6 +294,12 @@ func newHarness(tb testing.TB, cfg *config) *harness {
 	}
 	if err := h.cont.InitGenesis(h.ctx, &contentv1.GenesisState{}); err != nil {
 		tb.Fatalf("content genesis: %v", err)
+	}
+	if err := h.pol.InitGenesis(h.ctx, policy.DefaultGenesisState()); err != nil {
+		tb.Fatalf("policy genesis: %v", err)
+	}
+	if err := h.pol.InitVersions(h.ctx, binaryVersions(), binaryAppVersion); err != nil {
+		tb.Fatalf("policy versions: %v", err)
 	}
 	h.last = h.read(h.unmetered())
 	return h
@@ -293,7 +340,7 @@ func (h *harness) unmetered() sdk.Context {
 	return h.ctx.WithGasMeter(storetypes.NewInfiniteGasMeter()).WithEventManager(sdk.NewEventManager())
 }
 
-// snapshot is every key of the three stores at ctx.
+// snapshot is every key of the four stores at ctx.
 func (h *harness) snapshot(ctx sdk.Context) []byte {
 	var out []byte
 	for _, key := range h.keys {
@@ -322,9 +369,12 @@ func codeOf(tb testing.TB, err error) msgkit.Code {
 	return msgkit.Code(name)
 }
 
-// apply runs one step and returns the Go outcome.
+// apply runs one step and returns the Go outcome. After the step it checks
+// which policy rows the step changed (I12, keeper part) and, with
+// cfg.invariants, every invariant over the committed state.
 func (h *harness) apply(s *step) outcome {
 	h.tb.Helper()
+	before := policyRows(h.unmetered().KVStore(h.keys[storePolicy]))
 	var out outcome
 	if s.op == fxBlock {
 		out = h.block(s.headerTime)
@@ -333,18 +383,43 @@ func (h *harness) apply(s *step) outcome {
 	}
 	if msg, ok := s.msg.(*authorityv1.MsgProposeChange); ok && out.code == msgkit.OK && !out.idempotent {
 		h.proposers[msg.GetProposalId()] = h.seatOf(msg.GetSigner())
+		h.payloads[msg.GetProposalId()] = msg.GetPayload()
 	}
-	if s.op == opExecute && out.code == msgkit.OK && !out.idempotent {
+	executed := h.executedPayload(s, out)
+	if executed != nil {
 		h.executes++
 	}
 	ctx := h.unmetered()
 	h.last = h.read(ctx)
+	if limit := executed.GetGovernedLimit(); limit != nil {
+		id, _ := s.spec["proposal_id"].(string)
+		h.decisions[limit.GetLimitKey()] = policytest.Decision{
+			Value: limit.GetValue(), Activation: limit.GetActivationHeight(), PolicyVersion: h.last.version, ProposalID: id,
+		}
+	}
+	if err := h.checkPolicyWrites(s, out, executed, before, policyRows(ctx.KVStore(h.keys[storePolicy]))); err != nil {
+		h.tb.Fatalf("after %s (%s): %v", s.op, out.codeName(), err)
+	}
 	if h.cfg.invariants {
 		if err := h.checkCommitted(ctx, h.last); err != nil {
 			h.tb.Fatalf("after %s (%s): %v", s.op, out.codeName(), err)
 		}
 	}
 	return out
+}
+
+// executedPayload is the payload of the proposal a successful,
+// non-idempotent execute step executed, or nil for any other step.
+func (h *harness) executedPayload(s *step, out outcome) *authorityv1.ProposalPayload {
+	if s.op != opExecute || out.code != msgkit.OK || out.idempotent {
+		return nil
+	}
+	id, _ := s.spec["proposal_id"].(string)
+	payload, found := h.payloads[id]
+	if !found {
+		h.tb.Fatalf("execute of %s succeeded, but no propose of it committed", id)
+	}
+	return payload
 }
 
 // seatOf is the seat id of a seat account, or "".
@@ -450,12 +525,15 @@ func (h *harness) dispatch(ctx sdk.Context, msg proto.Message) error {
 	return err
 }
 
-// block starts a new block at header time t and runs the x/authority
-// EndBlock body (the due validator changes), as spec CommitBlock does at
-// its new height. It is the only place the harness moves the clock and the
-// height. An EndBlock error is a chain halt: nothing of the block commits,
-// the clock and the height stay where they were, and the code is the
-// outcome (G-8).
+// block starts a new block at header time t: the x/policy BeginBlock body
+// (ApplyDue, the pending governed changes due at the new height), then the
+// x/authority EndBlock body (the due validator changes), as spec
+// CommitBlock does at its new height. The two touch different stores, so
+// their order here does not change the result. It is the only place the
+// harness moves the clock and the height. An EndBlock error is a chain
+// halt: nothing of the block commits, the clock and the height stay where
+// they were, and the code is the outcome (G-8). An ApplyDue error fails the
+// test: only a damaged pending row causes one, and no step writes one.
 func (h *harness) block(t int64) outcome {
 	h.tb.Helper()
 	if t <= h.now {
@@ -464,6 +542,9 @@ func (h *harness) block(t int64) outcome {
 	next := h.ctx.WithBlockTime(time.Unix(t, 0).UTC()).WithBlockHeight(h.height + 1)
 	ctx := next.WithEventManager(sdk.NewEventManager()).WithGasMeter(storetypes.NewInfiniteGasMeter())
 	cache, write := ctx.CacheContext()
+	if err := h.pol.ApplyDue(cache); err != nil {
+		h.tb.Fatalf("policy BeginBlock at height %d: %v", h.height+1, err)
+	}
 	if _, err := h.auth.EndBlock(cache); err != nil {
 		return outcome{code: codeOf(h.tb, err)}
 	}
@@ -528,17 +609,21 @@ func eventVersion(msg proto.Message) uint64 {
 }
 
 // Authority store layout read by the projection and the invariant checker
-// (chain/x/authority/store.go; README "Store layout"). TestStoreLayout ties
-// each prefix to the keeper's own read surface.
+// (chain/x/authority/store.go; README "Store layout"), and the governed
+// value prefix of the x/policy store. TestStoreLayout ties each prefix to
+// the keeper's own read surface. prefixRetiredGoverned is the authority
+// prefix layout version 1 kept governed values under (retired by layout
+// version 2); TestStoreLayout requires that no row uses it.
 const (
-	prefixPending  byte = 0x03
-	prefixPolicy   byte = 0x04
-	prefixProposal byte = 0x10
-	prefixBusiness byte = 0x11
-	prefixExecuted byte = 0x12
-	prefixGoverned byte = 0x13
-	prefixOpen     byte = 0x14
-	prefixRetired  byte = 0x15
+	prefixPending         byte = 0x03
+	prefixPolicy          byte = 0x04
+	prefixProposal        byte = 0x10
+	prefixBusiness        byte = 0x11
+	prefixExecuted        byte = 0x12
+	prefixRetiredGoverned byte = 0x13
+	prefixOpen            byte = 0x14
+	prefixRetired         byte = 0x15
+	prefixGoverned             = policy.GovernedPrefix
 )
 
 func eachRow(store storetypes.KVStore, prefix byte, visit func(key, value []byte)) {

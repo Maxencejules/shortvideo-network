@@ -122,18 +122,227 @@ func (x *SafetyCaps) GetSafetyMaxOpenOffersPerProvider() uint32 {
 	return 0
 }
 
+// Schema version 2. The value in force for one governed limit key.
+type GovernedLimitValue struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LimitKey      string                 `protobuf:"bytes,1,opt,name=limit_key,json=limitKey,proto3" json:"limit_key,omitempty"`
+	Value         uint64                 `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GovernedLimitValue) Reset() {
+	*x = GovernedLimitValue{}
+	mi := &file_svn_policy_v1_state_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GovernedLimitValue) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GovernedLimitValue) ProtoMessage() {}
+
+func (x *GovernedLimitValue) ProtoReflect() protoreflect.Message {
+	mi := &file_svn_policy_v1_state_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GovernedLimitValue.ProtoReflect.Descriptor instead.
+func (*GovernedLimitValue) Descriptor() ([]byte, []int) {
+	return file_svn_policy_v1_state_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GovernedLimitValue) GetLimitKey() string {
+	if x != nil {
+		return x.LimitKey
+	}
+	return ""
+}
+
+func (x *GovernedLimitValue) GetValue() uint64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+// Schema version 2. A governed limit change that ExecuteChange scheduled.
+// A committed block at activation_height applies it. policy_version is the
+// policy version that execute produced.
+type PendingLimitChange struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	LimitKey         string                 `protobuf:"bytes,1,opt,name=limit_key,json=limitKey,proto3" json:"limit_key,omitempty"`
+	Value            uint64                 `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
+	ActivationHeight uint64                 `protobuf:"varint,3,opt,name=activation_height,json=activationHeight,proto3" json:"activation_height,omitempty"`
+	ProposalId       string                 `protobuf:"bytes,4,opt,name=proposal_id,json=proposalId,proto3" json:"proposal_id,omitempty"`
+	PolicyVersion    uint64                 `protobuf:"varint,5,opt,name=policy_version,json=policyVersion,proto3" json:"policy_version,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PendingLimitChange) Reset() {
+	*x = PendingLimitChange{}
+	mi := &file_svn_policy_v1_state_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PendingLimitChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PendingLimitChange) ProtoMessage() {}
+
+func (x *PendingLimitChange) ProtoReflect() protoreflect.Message {
+	mi := &file_svn_policy_v1_state_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PendingLimitChange.ProtoReflect.Descriptor instead.
+func (*PendingLimitChange) Descriptor() ([]byte, []int) {
+	return file_svn_policy_v1_state_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *PendingLimitChange) GetLimitKey() string {
+	if x != nil {
+		return x.LimitKey
+	}
+	return ""
+}
+
+func (x *PendingLimitChange) GetValue() uint64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+func (x *PendingLimitChange) GetActivationHeight() uint64 {
+	if x != nil {
+		return x.ActivationHeight
+	}
+	return 0
+}
+
+func (x *PendingLimitChange) GetProposalId() string {
+	if x != nil {
+		return x.ProposalId
+	}
+	return ""
+}
+
+func (x *PendingLimitChange) GetPolicyVersion() uint64 {
+	if x != nil {
+		return x.PolicyVersion
+	}
+	return 0
+}
+
+// Schema version 2. The pending upgrade plan that an executed
+// SoftwareUpgradeChange stored.
+type UpgradePlan struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Height        uint64                 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	ReleaseDigest *v1.Digest             `protobuf:"bytes,3,opt,name=release_digest,json=releaseDigest,proto3" json:"release_digest,omitempty"`
+	ProposalId    string                 `protobuf:"bytes,4,opt,name=proposal_id,json=proposalId,proto3" json:"proposal_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpgradePlan) Reset() {
+	*x = UpgradePlan{}
+	mi := &file_svn_policy_v1_state_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpgradePlan) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpgradePlan) ProtoMessage() {}
+
+func (x *UpgradePlan) ProtoReflect() protoreflect.Message {
+	mi := &file_svn_policy_v1_state_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpgradePlan.ProtoReflect.Descriptor instead.
+func (*UpgradePlan) Descriptor() ([]byte, []int) {
+	return file_svn_policy_v1_state_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *UpgradePlan) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *UpgradePlan) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *UpgradePlan) GetReleaseDigest() *v1.Digest {
+	if x != nil {
+		return x.ReleaseDigest
+	}
+	return nil
+}
+
+func (x *UpgradePlan) GetProposalId() string {
+	if x != nil {
+		return x.ProposalId
+	}
+	return ""
+}
+
 type PolicyState struct {
 	state            protoimpl.MessageState         `protogen:"open.v1"`
 	PolicyVersion    uint64                         `protobuf:"varint,1,opt,name=policy_version,json=policyVersion,proto3" json:"policy_version,omitempty"`
 	SafetyCaps       *SafetyCaps                    `protobuf:"bytes,2,opt,name=safety_caps,json=safetyCaps,proto3" json:"safety_caps,omitempty"`
 	BlockedDecisions []*v1.BlockedDecisionParameter `protobuf:"bytes,3,rep,name=blocked_decisions,json=blockedDecisions,proto3" json:"blocked_decisions,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Schema version 2. Query fields: the governed values in force, the
+	// scheduled changes, the pending upgrade plan, and the application
+	// version. Genesis carries no governed value, scheduled change, or plan.
+	GovernedLimits      []*GovernedLimitValue `protobuf:"bytes,4,rep,name=governed_limits,json=governedLimits,proto3" json:"governed_limits,omitempty"`
+	PendingLimitChanges []*PendingLimitChange `protobuf:"bytes,5,rep,name=pending_limit_changes,json=pendingLimitChanges,proto3" json:"pending_limit_changes,omitempty"`
+	UpgradePlan         *UpgradePlan          `protobuf:"bytes,6,opt,name=upgrade_plan,json=upgradePlan,proto3" json:"upgrade_plan,omitempty"`
+	AppVersion          uint64                `protobuf:"varint,7,opt,name=app_version,json=appVersion,proto3" json:"app_version,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *PolicyState) Reset() {
 	*x = PolicyState{}
-	mi := &file_svn_policy_v1_state_proto_msgTypes[1]
+	mi := &file_svn_policy_v1_state_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -145,7 +354,7 @@ func (x *PolicyState) String() string {
 func (*PolicyState) ProtoMessage() {}
 
 func (x *PolicyState) ProtoReflect() protoreflect.Message {
-	mi := &file_svn_policy_v1_state_proto_msgTypes[1]
+	mi := &file_svn_policy_v1_state_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -158,7 +367,7 @@ func (x *PolicyState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PolicyState.ProtoReflect.Descriptor instead.
 func (*PolicyState) Descriptor() ([]byte, []int) {
-	return file_svn_policy_v1_state_proto_rawDescGZIP(), []int{1}
+	return file_svn_policy_v1_state_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *PolicyState) GetPolicyVersion() uint64 {
@@ -182,6 +391,34 @@ func (x *PolicyState) GetBlockedDecisions() []*v1.BlockedDecisionParameter {
 	return nil
 }
 
+func (x *PolicyState) GetGovernedLimits() []*GovernedLimitValue {
+	if x != nil {
+		return x.GovernedLimits
+	}
+	return nil
+}
+
+func (x *PolicyState) GetPendingLimitChanges() []*PendingLimitChange {
+	if x != nil {
+		return x.PendingLimitChanges
+	}
+	return nil
+}
+
+func (x *PolicyState) GetUpgradePlan() *UpgradePlan {
+	if x != nil {
+		return x.UpgradePlan
+	}
+	return nil
+}
+
+func (x *PolicyState) GetAppVersion() uint64 {
+	if x != nil {
+		return x.AppVersion
+	}
+	return 0
+}
+
 var File_svn_policy_v1_state_proto protoreflect.FileDescriptor
 
 const file_svn_policy_v1_state_proto_rawDesc = "" +
@@ -195,12 +432,33 @@ const file_svn_policy_v1_state_proto_rawDesc = "" +
 	"\x15safety_max_page_limit\x18\x04 \x01(\rR\x12safetyMaxPageLimit\x12-\n" +
 	"\x13safety_max_tx_bytes\x18\x05 \x01(\x04R\x10safetyMaxTxBytes\x120\n" +
 	"\x15safety_max_gas_per_tx\x18\x06 \x01(\x04R\x11safetyMaxGasPerTx\x12K\n" +
-	"#safety_max_open_offers_per_provider\x18\a \x01(\rR\x1esafetyMaxOpenOffersPerProvider\"\xc5\x01\n" +
+	"#safety_max_open_offers_per_provider\x18\a \x01(\rR\x1esafetyMaxOpenOffersPerProvider\"G\n" +
+	"\x12GovernedLimitValue\x12\x1b\n" +
+	"\tlimit_key\x18\x01 \x01(\tR\blimitKey\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x04R\x05value\"\xbc\x01\n" +
+	"\x12PendingLimitChange\x12\x1b\n" +
+	"\tlimit_key\x18\x01 \x01(\tR\blimitKey\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x04R\x05value\x12+\n" +
+	"\x11activation_height\x18\x03 \x01(\x04R\x10activationHeight\x12\x1f\n" +
+	"\vproposal_id\x18\x04 \x01(\tR\n" +
+	"proposalId\x12%\n" +
+	"\x0epolicy_version\x18\x05 \x01(\x04R\rpolicyVersion\"\x97\x01\n" +
+	"\vUpgradePlan\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
+	"\x06height\x18\x02 \x01(\x04R\x06height\x12;\n" +
+	"\x0erelease_digest\x18\x03 \x01(\v2\x14.svn.types.v1.DigestR\rreleaseDigest\x12\x1f\n" +
+	"\vproposal_id\x18\x04 \x01(\tR\n" +
+	"proposalId\"\xc8\x03\n" +
 	"\vPolicyState\x12%\n" +
 	"\x0epolicy_version\x18\x01 \x01(\x04R\rpolicyVersion\x12:\n" +
 	"\vsafety_caps\x18\x02 \x01(\v2\x19.svn.policy.v1.SafetyCapsR\n" +
 	"safetyCaps\x12S\n" +
-	"\x11blocked_decisions\x18\x03 \x03(\v2&.svn.types.v1.BlockedDecisionParameterR\x10blockedDecisionsBLZJgithub.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1;policyv1b\x06proto3"
+	"\x11blocked_decisions\x18\x03 \x03(\v2&.svn.types.v1.BlockedDecisionParameterR\x10blockedDecisions\x12J\n" +
+	"\x0fgoverned_limits\x18\x04 \x03(\v2!.svn.policy.v1.GovernedLimitValueR\x0egovernedLimits\x12U\n" +
+	"\x15pending_limit_changes\x18\x05 \x03(\v2!.svn.policy.v1.PendingLimitChangeR\x13pendingLimitChanges\x12=\n" +
+	"\fupgrade_plan\x18\x06 \x01(\v2\x1a.svn.policy.v1.UpgradePlanR\vupgradePlan\x12\x1f\n" +
+	"\vapp_version\x18\a \x01(\x04R\n" +
+	"appVersionBLZJgithub.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1;policyv1b\x06proto3"
 
 var (
 	file_svn_policy_v1_state_proto_rawDescOnce sync.Once
@@ -214,20 +472,28 @@ func file_svn_policy_v1_state_proto_rawDescGZIP() []byte {
 	return file_svn_policy_v1_state_proto_rawDescData
 }
 
-var file_svn_policy_v1_state_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_svn_policy_v1_state_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_svn_policy_v1_state_proto_goTypes = []any{
 	(*SafetyCaps)(nil),                  // 0: svn.policy.v1.SafetyCaps
-	(*PolicyState)(nil),                 // 1: svn.policy.v1.PolicyState
-	(*v1.BlockedDecisionParameter)(nil), // 2: svn.types.v1.BlockedDecisionParameter
+	(*GovernedLimitValue)(nil),          // 1: svn.policy.v1.GovernedLimitValue
+	(*PendingLimitChange)(nil),          // 2: svn.policy.v1.PendingLimitChange
+	(*UpgradePlan)(nil),                 // 3: svn.policy.v1.UpgradePlan
+	(*PolicyState)(nil),                 // 4: svn.policy.v1.PolicyState
+	(*v1.Digest)(nil),                   // 5: svn.types.v1.Digest
+	(*v1.BlockedDecisionParameter)(nil), // 6: svn.types.v1.BlockedDecisionParameter
 }
 var file_svn_policy_v1_state_proto_depIdxs = []int32{
-	0, // 0: svn.policy.v1.PolicyState.safety_caps:type_name -> svn.policy.v1.SafetyCaps
-	2, // 1: svn.policy.v1.PolicyState.blocked_decisions:type_name -> svn.types.v1.BlockedDecisionParameter
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	5, // 0: svn.policy.v1.UpgradePlan.release_digest:type_name -> svn.types.v1.Digest
+	0, // 1: svn.policy.v1.PolicyState.safety_caps:type_name -> svn.policy.v1.SafetyCaps
+	6, // 2: svn.policy.v1.PolicyState.blocked_decisions:type_name -> svn.types.v1.BlockedDecisionParameter
+	1, // 3: svn.policy.v1.PolicyState.governed_limits:type_name -> svn.policy.v1.GovernedLimitValue
+	2, // 4: svn.policy.v1.PolicyState.pending_limit_changes:type_name -> svn.policy.v1.PendingLimitChange
+	3, // 5: svn.policy.v1.PolicyState.upgrade_plan:type_name -> svn.policy.v1.UpgradePlan
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_svn_policy_v1_state_proto_init() }
@@ -241,7 +507,7 @@ func file_svn_policy_v1_state_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_svn_policy_v1_state_proto_rawDesc), len(file_svn_policy_v1_state_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -231,6 +231,103 @@ func withdrawWith(contentID string, version uint64, reason *typesv1.Digest) payl
 	}
 }
 
+// The schema version 2 payloads (owner ruling Q1 "Minimal additive
+// (Recommended)"; deviations D-4 and D-5). spec_machine.py parses each as
+// MALFORMED, so the generator never sends one; only
+// TestSchemaTwoPayloadsD5 does.
+
+// scheduledGovernedPayload is a governed limit change that takes effect at
+// block height activation (D-4).
+func scheduledGovernedPayload(key string, value, activation uint64) payload {
+	p := governedPayload(key, value)
+	p.msg.GetGovernedLimit().ActivationHeight = activation
+	p.json["governedLimit"].(map[string]any)["activationHeight"] = strconv.FormatUint(activation, 10)
+	p.kind = "scheduled governed"
+	return p
+}
+
+// upgradePayload is a software upgrade plan (D-5); its parameter key is
+// "upgrade".
+func upgradePayload(name string, height uint64, release *typesv1.Digest) payload {
+	body := map[string]any{}
+	if release != nil {
+		body["releaseDigest"] = digestJSON(release)
+	}
+	if name != "" {
+		body["name"] = name
+	}
+	if height != 0 {
+		body["height"] = strconv.FormatUint(height, 10)
+	}
+	return payload{
+		msg: &authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_SoftwareUpgrade{
+			SoftwareUpgrade: &authorityv1.SoftwareUpgradeChange{Name: name, Height: height, ReleaseDigest: release},
+		}},
+		json: map[string]any{"softwareUpgrade": body},
+		key:  "upgrade",
+		kind: "software upgrade",
+	}
+}
+
+// cancelPayload cancels the pending plan name (D-5).
+func cancelPayload(name string) payload {
+	return payload{
+		msg: &authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_CancelUpgrade{
+			CancelUpgrade: &authorityv1.CancelUpgradeChange{Name: name},
+		}},
+		json: map[string]any{"cancelUpgrade": idBody("name", name)},
+		key:  "upgrade",
+		kind: "cancel upgrade",
+	}
+}
+
+// seatPayload replaces the key of council seat seatID (D-5).
+func seatPayload(seatID string, key []byte) payload {
+	body := idBody("seatId", seatID)
+	if len(key) > 0 {
+		body["newPublicKey"] = base64.StdEncoding.EncodeToString(key)
+	}
+	return payload{
+		msg: &authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_CouncilSeat{
+			CouncilSeat: &authorityv1.CouncilSeatChange{SeatId: seatID, NewPublicKey: bytes.Clone(key)},
+		}},
+		json: map[string]any{"councilSeat": body},
+		key:  "seat-" + seatID,
+		kind: "council seat",
+	}
+}
+
+// shapeCase is one payload of a G-11 condition (oracle rule "payload field
+// shape: chain BOUNDS where the spec says MALFORMED"), with a parameter key
+// the propose can carry (the payload may omit the field its key names).
+type shapeCase struct {
+	name    string
+	payload payload
+}
+
+// shapeCases are the eight G-11 conditions of spec_oracle.py
+// shape_condition, in its order (the empty provider id once for admit and
+// once for disable, which share the parse).
+func shapeCases() []shapeCase {
+	short := &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: sha("r")[:31]}
+	noAlgorithm := &typesv1.Digest{Value: sha("r")}
+	keyed := func(p payload, key string) payload {
+		p.key = key
+		return p
+	}
+	return []shapeCase{
+		{"validator reason digest of 31 bytes", validatorPayload("v9", consensusKey("v9"), 10, short, atHeight(9))},
+		{"negative validator power", validatorPayload("v9", consensusKey("v9"), -5, digest(sha("r")), atHeight(9))},
+		{"empty consensus key", validatorPayload("v9", nil, 10, digest(sha("r")), atHeight(9))},
+		{"withdraw reason digest of 31 bytes", withdrawWith("c1", 1, short)},
+		{"withdraw content id outside the pattern, reason without algorithm", keyed(withdrawWith("-bad", 1, noAlgorithm), "withdraw-x")},
+		{"governed value 0 (proto3 default)", governedPayload(msgkit.LimitMaxPageLimit, 0)},
+		{"governed empty limit key (proto3 default)", keyed(governedPayload("", 5), msgkit.LimitMaxPageLimit)},
+		{"admit empty provider id (proto3 default)", keyed(admitPayload(""), "admit-x")},
+		{"disable empty provider id (proto3 default)", keyed(disablePayload(""), "disable-x")},
+	}
+}
+
 // payloadDigest is SHA-256 of the SVN-JCS-1 text of the payload's proto3
 // JSON (chain/jcs, the goal-02 canonicalizer port), computed without the
 // x/authority payload code, so a canonicalization difference there shows

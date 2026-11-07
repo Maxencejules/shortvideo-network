@@ -17,4 +17,7 @@
 // Validate requires at least MinValidators validators with distinct node ids
 // and keys, equal positive powers, and a total power of at most
 // SafeIntegerMax. The power rules are the spec validate_genesis_view check.
+// Two council seat rules are stricter than the spec, as in x/authority's
+// genesis check: a seat id has at most MaxSeatIDLength characters (D-10),
+// and no seat key is a validator consensus key (D-7).
 package genesis

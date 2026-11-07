@@ -270,14 +270,27 @@ func TestGovernanceQueryResponseBound(t *testing.T) {
 	for _, item := range items {
 		maxItem = max(maxItem, proto.Size(item))
 	}
+	// Every page carries the devnet test rows in effect (schema version 2).
+	// They are fixed at genesis; this genesis has one row per decision id,
+	// each with the largest numeric value and delay.
+	gen, seats, authority := readyGenesis()
+	for _, decision := range genesis.DecisionIDs {
+		if decision != "DEC-008" {
+			gen.DevnetTestParameters = append(gen.DevnetTestParameters, &typesv1.DevnetTestParameter{
+				Label: genesis.DevnetTestLabel, DecisionId: decision, NumericValue: math.MaxUint64,
+				RoleName: devnetTestRole, DelaySeconds: unixMax,
+			})
+		}
+	}
 	fixed := proto.Size(&authorityv1.QueryGovernanceResponse{
-		State: &authorityv1.AuthorityState{QuorumLoss: authorityv1.QuorumLossBehavior_QUORUM_LOSS_BEHAVIOR_UNSET},
-		Page:  &typesv1.PageResponse{NextPageKey: make([]byte, msgkit.PageKeyMaxBytes)},
+		State:                &authorityv1.AuthorityState{QuorumLoss: authorityv1.QuorumLossBehavior_QUORUM_LOSS_BEHAVIOR_UNSET},
+		Page:                 &typesv1.PageResponse{NextPageKey: make([]byte, msgkit.PageKeyMaxBytes)},
+		DevnetTestParameters: gen.GetDevnetTestParameters(),
 	}) + 3 // the state's length prefix grows from 1 to at most 3 bytes
 	limit := int(genesis.MaxPageLimit)
 	bound := limit*maxItem + fixed
 
-	e := readyKeeper(t)
+	e := newKeeperEnv(t, gen, seats, authority)
 	for i := 0; i <= limit; i++ {
 		rec := &proposalRecord{
 			ProposalID: id("p", i), ParameterKey: id("k", i), BasePolicyVersion: math.MaxUint64, PayloadDigest: key(9),
@@ -297,6 +310,9 @@ func TestGovernanceQueryResponseBound(t *testing.T) {
 	}
 	if len(page.GetState().GetProposals()) != limit || string(page.GetPage().GetNextPageKey()) != id("p", limit) {
 		t.Fatalf("%d proposals, next %q", len(page.GetState().GetProposals()), page.GetPage().GetNextPageKey())
+	}
+	if len(page.GetDevnetTestParameters()) != len(genesis.DecisionIDs) {
+		t.Fatalf("%d devnet rows on the page, want %d", len(page.GetDevnetTestParameters()), len(genesis.DecisionIDs))
 	}
 	size := proto.Size(page)
 	t.Logf("maximal page: %d bytes; bound %d (%d items of at most %d bytes + %d)", size, bound, limit, maxItem, fixed)

@@ -26,7 +26,9 @@ func (f *fakeAuthority) BlockedDecisions(sdk.Context) []*typesv1.BlockedDecision
 	return policy.DefaultGenesisState().GetPolicy().GetBlockedDecisions()
 }
 
-const height = 7 // msgkittest.BlockHeight
+// height is the block height of every fixture context: far enough above 1
+// that a plan applied before it could be scheduled with the minimum lead.
+const height = 1000
 
 type fixture struct {
 	ctx  sdk.Context
@@ -43,12 +45,13 @@ func versionMap() module.VersionMap {
 }
 
 // healthy builds a store that holds every kind of row through the keeper:
-// a governed value, a pending change, an applied upgrade (app version 2),
-// and a plan.
+// a governed value, a pending change, an applied upgrade (scheduled at
+// height 300 for height 400; app version 2), and a plan with its plan-name
+// row. Its context is at block height 1000.
 func healthy(t testing.TB) *fixture {
 	t.Helper()
 	ctx, keys := msgkittest.NewContext(t, policy.ModuleName)
-	ctx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
+	ctx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter()).WithBlockHeight(height)
 	auth := &fakeAuthority{version: 3}
 	f := &fixture{ctx: ctx, k: policy.NewKeeper(keys[policy.ModuleName], policy.Deps{Versions: auth, Decisions: auth}), auth: auth}
 	if err := f.k.InitGenesis(ctx, policy.DefaultGenesisState()); err != nil {
@@ -63,17 +66,25 @@ func healthy(t testing.TB) *fixture {
 	if code := f.k.SchedulePending(ctx, msgkit.LimitMaxOpenOffers, 8, height+5, "p2", 2); code != msgkit.OK {
 		t.Fatal(code)
 	}
-	if err := f.k.RecordUpgrade(ctx.WithBlockHeight(5), "up-0", 5, versionMap(), 2); err != nil {
+	if code := f.k.ScheduleUpgrade(ctx.WithBlockHeight(300), "up-0", 300+msgkit.MinActivationLeadBlocks, digest("release-0"), "p0"); code != msgkit.OK {
+		t.Fatal(code)
+	}
+	applyAt := int64(300 + msgkit.MinActivationLeadBlocks)
+	if err := f.k.RecordUpgrade(ctx.WithBlockHeight(applyAt), "up-0", uint64(applyAt), versionMap(), 2); err != nil {
 		t.Fatal(err)
 	}
-	sum := sha256.Sum256([]byte("release"))
-	if code := f.k.ScheduleUpgrade(ctx, "up-1", height+10, sum[:], "p3"); code != msgkit.OK {
+	if code := f.k.ScheduleUpgrade(ctx, "up-1", height+msgkit.MinActivationLeadBlocks, digest("release"), "p3"); code != msgkit.OK {
 		t.Fatal(code)
 	}
 	if err := f.check(); err != nil {
 		t.Fatalf("healthy store: %v", err)
 	}
 	return f
+}
+
+func digest(label string) []byte {
+	sum := sha256.Sum256([]byte(label))
+	return sum[:]
 }
 
 // TestPolicyInvariantsSelfTest injects one violation per rule into a
@@ -110,13 +121,19 @@ func TestPolicyInvariantsSelfTest(t *testing.T) {
 		{"pending version above current", "I3:", func(f *fixture) { f.auth.version = 1 }},
 		{"plan undecodable", "I4:", func(f *fixture) { f.store().Set(policy.PlanKey(), []byte{1}) }},
 		{"plan at height", "I4:", func(f *fixture) {
-			sum := sha256.Sum256([]byte("r"))
-			f.store().Set(policy.PlanKey(), policy.EncodePlan(policy.Plan{Name: "up-1", Height: height, Digest: sum[:], ProposalID: "p3"}))
+			f.store().Set(policy.PlanKey(), policy.EncodePlan(policy.Plan{Name: "up-1", Height: height, Digest: digest("release"), ProposalID: "p3"}))
 		}},
 		{"plan names an applied upgrade", "I4:", func(f *fixture) {
-			sum := sha256.Sum256([]byte("r"))
-			f.store().Set(policy.PlanKey(), policy.EncodePlan(policy.Plan{Name: "up-0", Height: height + 3, Digest: sum[:], ProposalID: "p3"}))
+			f.store().Set(policy.PlanKey(), policy.EncodePlan(policy.Plan{Name: "up-0", Height: height + 3, Digest: digest("release-0"), ProposalID: "p3"}))
 		}},
+		{"plan without a plan-name row", "I4:", func(f *fixture) { f.store().Delete(policy.PlanNameKey("up-1")) }},
+		{"plan digest differs from its plan-name row", "I4:", func(f *fixture) {
+			f.store().Set(policy.PlanNameKey("up-1"), digest("other"))
+		}},
+		{"plan-name row of 31 bytes", "I4:", func(f *fixture) { f.store().Set(policy.PlanNameKey("old"), make([]byte, 31)) }},
+		{"plan-name row with a bad name", "I4:", func(f *fixture) { f.store().Set(policy.PlanNameKey("Old"), digest("x")) }},
+		{"applied upgrade without a plan-name row", "I4:", func(f *fixture) { f.store().Delete(policy.PlanNameKey("up-0")) }},
+		{"bare plan-name prefix", "layout:", func(f *fixture) { f.store().Set([]byte{policy.PlanNamePrefix}, digest("x")) }},
 		{"app version not 1 + applied", "I5:", func(f *fixture) { f.store().Set(policy.AppVersionKey(), policy.EncodeU64(3)) }},
 		{"app version 3 bytes", "I5:", func(f *fixture) { f.store().Set(policy.AppVersionKey(), []byte{0, 0, 2}) }},
 		{"app version without version map", "I5:", func(f *fixture) {
@@ -212,4 +229,117 @@ func TestStoreSnapshot(t *testing.T) {
 	if string(policytest.StoreSnapshot(a.ctx, a.k.StoreKey())) == string(policytest.StoreSnapshot(b.ctx, b.k.StoreKey())) {
 		t.Fatal("a changed value kept the snapshot")
 	}
+}
+
+// decided builds a store from genesis through the keeper at height 1000 and
+// returns the latest executed decision per key: an immediate change of
+// max_page_limit, a scheduled change of max_open_offers that is not due,
+// and a scheduled change of max_expiry_steps that ApplyDue applied at 950
+// after an older scheduled change of the same key was replaced.
+func decided(t testing.TB) (*fixture, map[string]policytest.Decision) {
+	t.Helper()
+	ctx, keys := msgkittest.NewContext(t, policy.ModuleName)
+	ctx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter()).WithBlockHeight(height)
+	auth := &fakeAuthority{version: 5}
+	f := &fixture{ctx: ctx, k: policy.NewKeeper(keys[policy.ModuleName], policy.Deps{Versions: auth, Decisions: auth}), auth: auth}
+	if err := f.k.InitGenesis(ctx, policy.DefaultGenesisState()); err != nil {
+		t.Fatal(err)
+	}
+	at900 := ctx.WithBlockHeight(900)
+	if code := f.k.SchedulePending(at900, msgkit.LimitMaxExpirySteps, 9, 990, "p1", 2); code != msgkit.OK {
+		t.Fatal(code)
+	}
+	if code := f.k.SchedulePending(at900, msgkit.LimitMaxExpirySteps, 3, 950, "p2", 3); code != msgkit.OK {
+		t.Fatal(code)
+	}
+	if err := f.k.ApplyDue(ctx.WithBlockHeight(950)); err != nil {
+		t.Fatal(err)
+	}
+	if code := f.k.SetLimit(ctx, msgkit.LimitMaxPageLimit, 40, "p3"); code != msgkit.OK {
+		t.Fatal(code)
+	}
+	if code := f.k.SchedulePending(ctx, msgkit.LimitMaxOpenOffers, 8, height+5, "p4", 5); code != msgkit.OK {
+		t.Fatal(code)
+	}
+	latest := map[string]policytest.Decision{
+		msgkit.LimitMaxExpirySteps: {Value: 3, Activation: 950, PolicyVersion: 3, ProposalID: "p2"},
+		msgkit.LimitMaxPageLimit:   {Value: 40, PolicyVersion: 4, ProposalID: "p3"},
+		msgkit.LimitMaxOpenOffers:  {Value: 8, Activation: height + 5, PolicyVersion: 5, ProposalID: "p4"},
+	}
+	if err := policytest.CheckDecisions(f.ctx, f.k, latest); err != nil {
+		t.Fatalf("decided store: %v", err)
+	}
+	if err := f.check(); err != nil {
+		t.Fatalf("decided store invariants: %v", err)
+	}
+	return f, latest
+}
+
+// TestCheckDecisionsSelfTest injects one violation of the exact I3 form per
+// rule and asserts CheckDecisions reports it.
+func TestCheckDecisionsSelfTest(t *testing.T) {
+	pendingRow := func(a, v, pv uint64, id string) []byte {
+		return policy.EncodePending(policy.Pending{Activation: a, Value: v, PolicyVersion: pv, ProposalID: id})
+	}
+	cases := []struct {
+		name  string
+		apply func(*fixture, map[string]policytest.Decision)
+	}{
+		{"immediate decision keeps a pending row", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Set(policy.PendingKey(msgkit.LimitMaxPageLimit), pendingRow(height+9, 7, 3, "p0"))
+		}},
+		{"immediate decision, other governed value", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Set(policy.GovernedKey(msgkit.LimitMaxPageLimit), policy.EncodeU64(41))
+		}},
+		{"due decision not applied", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Delete(policy.GovernedKey(msgkit.LimitMaxExpirySteps))
+		}},
+		{"due decision still pending", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Set(policy.PendingKey(msgkit.LimitMaxExpirySteps), pendingRow(height+1, 3, 3, "p2"))
+		}},
+		{"scheduled decision without its pending row", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Delete(policy.PendingKey(msgkit.LimitMaxOpenOffers))
+		}},
+		{"pending row older than the latest decision", func(_ *fixture, latest map[string]policytest.Decision) {
+			d := latest[msgkit.LimitMaxOpenOffers]
+			d.PolicyVersion = 6
+			latest[msgkit.LimitMaxOpenOffers] = d
+		}},
+		{"pending row of another proposal", func(_ *fixture, latest map[string]policytest.Decision) {
+			d := latest[msgkit.LimitMaxOpenOffers]
+			d.ProposalID = "p9"
+			latest[msgkit.LimitMaxOpenOffers] = d
+		}},
+		{"pending row with another activation", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Set(policy.PendingKey(msgkit.LimitMaxOpenOffers), pendingRow(height+6, 8, 5, "p4"))
+		}},
+		{"pending row undecodable", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Set(policy.PendingKey(msgkit.LimitMaxOpenOffers), []byte{1})
+		}},
+		{"governed row without a decision", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Set(policy.GovernedKey(msgkit.LimitMaxEvidenceBatch), policy.EncodeU64(2))
+		}},
+		{"pending row without a decision", func(f *fixture, _ map[string]policytest.Decision) {
+			f.store().Set(policy.PendingKey(msgkit.LimitMaxPackageBytes), pendingRow(height+2, 2, 5, "p5"))
+		}},
+		{"decision for an unknown key", func(_ *fixture, latest map[string]policytest.Decision) {
+			latest["max_tx_bytes"] = policytest.Decision{Value: 1, PolicyVersion: 2, ProposalID: "p6"}
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f, latest := decided(t)
+			c.apply(f, latest)
+			err := policytest.CheckDecisions(f.ctx, f.k, latest)
+			if err == nil || !strings.HasPrefix(err.Error(), "I3:") {
+				t.Fatalf("%v, want an error starting %q", err, "I3:")
+			}
+		})
+	}
+	t.Run("nil store key", func(t *testing.T) {
+		f, latest := decided(t)
+		if err := policytest.CheckDecisions(f.ctx, policy.Keeper{}, latest); err == nil {
+			t.Fatal("zero keeper accepted")
+		}
+	})
 }

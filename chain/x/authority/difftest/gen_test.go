@@ -18,19 +18,28 @@ var d1Keys = []string{"max_tx_bytes", "max_gas_per_tx", "max_open_proposals", "m
 
 // gen is the seeded step generator. It reads committed state through the
 // harness (never through the oracle) and keeps only the bookkeeping it
-// needs to replay ids. Its input domain excludes, by construction: an
-// absent message integer (G-2; a Go message always carries one); a zero
-// payload integer other than a validator removal's power; an empty payload
-// string or consensus key; a reason digest whose value is not 32 bytes; a
-// negative validator power; a force-withdraw content id outside the id
-// pattern with an unparseable reason digest. Apart from G-2 these are
-// proto3 presence and parse-order cases where the chain and spec_machine.py
-// answer different reject codes and no G or D rule names the difference;
-// they are reported as open divergences (TestUnnamedParseDivergences).
+// needs to replay ids. It sends the payloads of the G-11 conditions
+// (shapeCases) in place of half of its "malformed reason" validator
+// payloads. Its input domain excludes, by construction:
+// an absent message integer (G-2; a Go message always carries one); a
+// schema version 2 payload (D-4, D-5: spec_machine.py has no such field or
+// alternative; TestSchemaTwoPayloadsD5); and, outside the G-11 cases, a
+// zero payload integer other than a validator removal's power, an empty
+// payload string or consensus key, a reason digest whose value is not 32
+// bytes, a negative validator power, and a force-withdraw content id
+// outside the id pattern with an unparseable or absent reason digest or an
+// absent version. The rows of TestUnnamedParseDivergences are in that
+// excluded part: parse cases where the chain and spec_machine.py answer
+// different reject codes and no rule names the difference (open
+// divergences).
 type gen struct {
 	rng *rand.Rand
-	h   *harness
-	n   int
+	// side draws only the G-11 replacements, so the draws of rng, and with
+	// them every committed state of a seed, stay what they were without
+	// G-11 (a replaced payload is rejected at the payload parse either way).
+	side *rand.Rand
+	h    *harness
+	n    int
 	// steps are the transaction steps sent so far, for replays.
 	steps []*step
 	// proposed are the proposal ids sent in proposes, committed or not.
@@ -42,7 +51,9 @@ type gen struct {
 }
 
 func newGen(seed uint64, h *harness) *gen {
-	g := &gen{rng: rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)), h: h}
+	g := &gen{
+		rng: rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)), side: rand.New(rand.NewPCG(seed^0x5bd1e995, seed)), h: h,
+	}
 	for _, seed := range h.cfg.seeds {
 		g.providerIDs = append(g.providerIDs, seed.GetProviderId())
 	}
@@ -347,7 +358,12 @@ func (g *gen) validator(v genView) (payload, string) {
 		return validatorPayload("-bad", consensusKey("g10"), 10, bad, points[g.rng.IntN(2)]), "G-10"
 	default:
 		bad := []*typesv1.Digest{nil, {Value: sha("no-algorithm")}}[g.rng.IntN(2)]
-		return validatorPayload(g.fresh("n"), consensusKey("malformed"), 10, bad, at), "malformed reason"
+		malformed := validatorPayload(g.fresh("n"), consensusKey("malformed"), 10, bad, at)
+		if g.side.IntN(2) == 0 {
+			cases := shapeCases()
+			return cases[g.side.IntN(len(cases))].payload, "G-11"
+		}
+		return malformed, "malformed reason"
 	}
 }
 

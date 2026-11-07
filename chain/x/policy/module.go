@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -22,11 +23,12 @@ type InitRecorder interface {
 	Record(name string)
 }
 
-// AppModule is x/policy. It has genesis, the query service, and a consensus
-// version. It has no message service, no BeginBlock, and no EndBlock, and it
-// returns no validator updates: x/authority stays the only validator-set
-// writer. The app does not wire it yet; the policy slot of chain/app is
-// still the scaffold module.
+// AppModule is x/policy. It has genesis, the query service, a consensus
+// version, and a BeginBlock that applies the due pending governed changes
+// (ApplyDue). It has no message service and no EndBlock, and it returns no
+// validator updates: x/authority stays the only validator-set writer. The
+// app must order this module's BeginBlock before x/leases (deviation D-8),
+// so a value activated at height a governs that block's lease expiry.
 type AppModule struct {
 	keeper Keeper
 	order  InitRecorder
@@ -112,6 +114,17 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // ConsensusVersion is the store layout version.
 func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
+// BeginBlock runs ApplyDue on the block's context. An error (a damaged
+// pending row) is returned to the module manager, which fails
+// FinalizeBlock: the block is not committed.
+func (am AppModule) BeginBlock(goCtx context.Context) error {
+	ctx, err := sdkContext(goCtx)
+	if err != nil {
+		return err
+	}
+	return am.keeper.ApplyDue(ctx)
+}
+
 // migrations maps a from-version to the in-place migration to from+1.
 // Version 2 is the first policy layout, so the table is empty. Version 1 is
 // the scaffold layout and has no step on purpose: RunMigrations from it
@@ -140,4 +153,5 @@ var (
 	_ module.HasServices         = AppModule{}
 	_ module.HasConsensusVersion = AppModule{}
 	_ appmodule.AppModule        = AppModule{}
+	_ appmodule.HasBeginBlocker  = AppModule{}
 )

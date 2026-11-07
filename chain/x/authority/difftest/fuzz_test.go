@@ -29,11 +29,15 @@ func FuzzCouncilDifferential(f *testing.F) {
 }
 
 // FuzzGovernanceTransitions runs a generated council sequence on the real
-// keepers without the oracle (keeper level, v0 payload kinds) and checks,
-// after every step, the council invariants (I1 exact, I2, I7, I8, I9, I10,
-// I11; checkInvariants) and that every rejected or idempotent message left
-// the trial branch of every store byte-identical. TestTrialSnapshotDetectsEarlyWrite
-// shows the bytes check fails on a handler that writes before it rejects.
+// keepers without the oracle (keeper level, v0 payload kinds and the G-11
+// shapes) and checks, after every step, the invariants of checkInvariants
+// (I1 exact, I2, I3 in both forms, I4, I5 and I6 at keeper level, I7, I8,
+// I9, I10, I11), the policy rows the step may change (I12, keeper part),
+// and that every rejected or idempotent message left the trial branch of
+// every store byte-identical. TestTrialSnapshotDetectsEarlyWrite shows the
+// bytes check fails on a handler that writes before it rejects;
+// TestCouncilInvariantsSelfTest and TestPolicyWriteCheckSelfTest show each
+// invariant check fails on an injected violation.
 func FuzzGovernanceTransitions(f *testing.F) {
 	for _, seed := range []uint64{2, 11, 23, 77, 512} {
 		f.Add(seed, uint8(120), uint8(1))

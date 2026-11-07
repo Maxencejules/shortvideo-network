@@ -19,6 +19,10 @@ message QueryGovernanceRequest {
 message QueryGovernanceResponse {
   AuthorityState state = 1;
   svn.types.v1.PageResponse page = 2;
+  // Schema version 2. The labeled devnet test parameters, including the
+  // DEC-008 review delay. Each row keeps label PROPOSED_TEST_PARAMETER and
+  // approved_policy false; it is not an approved policy.
+  repeated svn.types.v1.DevnetTestParameter devnet_test_parameters = 3;
 }
 
 service Query {

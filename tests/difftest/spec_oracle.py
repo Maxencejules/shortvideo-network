@@ -145,10 +145,14 @@ parameter key of PolicyChanged and the proposal id of ProposalExecuted.
 
 Council rules, each applied only to the step class named and reported in
 "deviation". G-1 to G-5 and G-7 are the differences goal 06 recorded
-(docs/evidence/goal-06.md, Deviations); G-6 and G-8 to G-10 are further
+(docs/evidence/goal-06.md, Deviations); G-6 and G-8 to G-11 are further
 shape and check-order differences of the same code; authority D-1, D-2 and
-D-7 are goal 10's. chain/x/authority/README.md lists every rule, and the
-open differences no rule names (the oracle maps none of those):
+D-7 are goal 10's. The scopes of G-6 and G-10 below are the implemented
+ones (orchestrator decision ORCH-2, accepted as implemented; not an owner
+decision). G-11 is orchestrator decision ORCH-1 (a reversible
+implementation choice, not an owner decision; open request DR-10-44).
+chain/x/authority/README.md lists every rule, and the open differences no
+rule names (the oracle maps none of those):
 
 - G-1: a propose whose digest_algorithm is not SHA-256 is MALFORMED once
   the spec's validated_payload got past the INTEGRITY check (it passed, or
@@ -167,9 +171,18 @@ open differences no rule names (the oracle maps none of those):
   projection); the proposal stays QUEUED.
 - G-5: a non-idempotent approve success that queues the proposal when
   chain_time + delay_seconds is above unix_seconds_max is OVERFLOW.
-- G-6: the chain accepts only the approved council shape (approved_seats
-  seats, threshold approved_threshold). Any other shape makes every step
-  that reaches spec council_ready DECISION_BLOCKED there.
+- G-6 (exact scope as implemented): when the reset config's council shape
+  is not the approved one (the number of seats differs from
+  approved_seats, or threshold differs from approved_threshold), every
+  council step (propose, approve or execute) during which spec_machine.py
+  called council_ready answers DECISION_BLOCKED, whatever code the spec
+  then returned (also a later NOT_FOUND or a success), and nothing is
+  kept. The rule is checked per step, after the G-2 request mapping and
+  before every other council rule; it is not reported when the spec's own
+  code was already DECISION_BLOCKED (its council_ready refuses a DEC-008
+  threshold above the seat count). A step that stops before council_ready
+  (for example a non-AUTHORITY execute, FORBIDDEN or UNAUTHORIZED) is not
+  changed. With the approved shape the rule never fires.
 - G-7 (a label): a keep outcome commits with ABCI code 0 on the chain and
   carries its code in an authority_result event (DR-06-05). The adapter
   reports the spec's code and keep flag unchanged and names the rule.
@@ -180,11 +193,28 @@ open differences no rule names (the oracle maps none of those):
 - G-9: a validator payload whose activation is unixSeconds outside
   [unix_seconds_min, unix_seconds_max], with a well-formed key, node id and
   reason digest, is BOUNDS on the chain; the spec parses it as MALFORMED.
-- G-10: a validator payload with a well-formed consensus key and a node id
-  outside the id pattern is BOUNDS on the chain whatever its reason digest,
-  activation and power hold, absent ones included (the chain checks the
-  node id first); the spec answers MALFORMED when one of those is absent or
-  does not parse.
+- G-10 (exact scope as implemented, validator_parse_rule): a propose whose
+  spec validated_payload answered MALFORMED, with a payload that is
+  exactly {"validatorPower": body}, body keys within consensusPubkey,
+  nodeId, reasonDigest, activation and power, both consensusPubkey and
+  nodeId present, consensusPubkey the canonical standard base64 of
+  consensus_pubkey_bytes bytes, and nodeId outside the id pattern, is
+  BOUNDS. reasonDigest, activation and power are not read: absent ones are
+  included (the chain checks the node id before them). An absent nodeId
+  (the proto3 empty string) is not included; it is an open divergence.
+- G-11 (payload field shape: chain BOUNDS where the spec says MALFORMED):
+  a propose whose spec validated_payload answered MALFORMED, with a payload
+  that meets one of exactly eight conditions (shape_condition), is BOUNDS.
+  Both sides reject and neither changes state. The conditions: a
+  validator reason digest that names SHA-256 with a value that is not 32
+  bytes; a negative validator power (every earlier validator field well
+  formed); an empty (omitted) consensus key; a force-withdraw reason
+  digest that names SHA-256 with a value that is not 32 bytes (content id
+  in the pattern, version at least 1); a force-withdraw content id outside
+  the id pattern with a reason digest whose algorithm is omitted; a
+  governed value of 0 (omitted); an empty (omitted) governed limit key;
+  an empty provider id in an admit or a disable payload (one parse).
+  shape_condition gives each exactly; G-9, G-10 and G-11 are disjoint.
 - authority D-1: whenever the spec's validated_payload passed for a
   governed limit whose key is not in governed_limit_caps or whose value is
   above its ceiling, the chain answers BOUNDS (right after the payload
@@ -208,6 +238,8 @@ reason_digest), and pending_power in spec activation order.
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import copy
 import json
 import sys
@@ -357,15 +389,31 @@ COUNCIL_RULES: Final = frozenset(
         "G-8",
         "G-9",
         "G-10",
+        "G-11",
         "authority D-1",
         "authority D-2",
         "authority D-7",
     }
 )
+SHAPE_RULE: Final = "G-11"
 SHA256_ALGORITHM: Final = "DIGEST_ALGORITHM_SHA256"
 # The integer fields of a propose that proto3 cannot leave absent (G-2).
 PROPOSE_INTEGERS: Final = ("base_policy_version", "expiry_unix_seconds")
 VALIDATOR_BODY_KEYS: Final = frozenset({"consensusPubkey", "nodeId", "reasonDigest", "activation"})
+GOVERNED_BODY_KEYS: Final = frozenset({"limitKey", "value"})
+WITHDRAW_BODY_KEYS: Final = frozenset({"contentId", "contentVersion", "reasonDigest"})
+DIGEST_KEYS: Final = frozenset({"algorithm", "value"})
+# The eight G-11 conditions, by the name shape_condition returns.
+SHAPE_CONDITIONS: Final = (
+    "validator reason digest not 32 bytes",
+    "negative validator power",
+    "empty consensus key",
+    "withdraw reason digest not 32 bytes",
+    "withdraw content id outside the pattern, reason without algorithm",
+    "governed value 0",
+    "empty governed limit key",
+    "empty provider id",
+)
 OPEN_STATES: Final = frozenset({"OPEN", "QUEUED"})
 
 
@@ -795,6 +843,179 @@ def validator_parse_rule(payload: object) -> str | None:
     if int(sm.BOUNDS["unix_seconds_min"]) <= number <= int(sm.BOUNDS["unix_seconds_max"]):
         return None
     return "G-9"
+
+
+def b64_bytes(value: object) -> bytes | None:
+    """The bytes of a proto3 JSON bytes value, or None.
+
+    The Go encoder writes standard base64 with padding and omits an empty
+    value, so anything else (not a string, not canonical, or empty) is
+    None.
+    """
+    if not isinstance(value, str):
+        return None
+    try:
+        raw = base64.b64decode(value, validate=True)
+    except (binascii.Error, ValueError):
+        return None
+    if not raw or sm.standard_b64(raw) != value:
+        return None
+    return raw
+
+
+def digest_parts(digest: object) -> tuple[str | None, bytes | None] | None:
+    """A proto3 JSON Digest as (algorithm name or None, value bytes or None), or None.
+
+    None for the whole result means the object is not a Digest the Go
+    encoder can write (not a dict, an unknown key, or a value that is not
+    canonical base64). An omitted algorithm (DIGEST_ALGORITHM_UNSPECIFIED)
+    or an omitted value (empty bytes) reads as None in its part.
+    """
+    if not isinstance(digest, dict) or not set(digest) <= DIGEST_KEYS:
+        return None
+    algorithm = digest.get("algorithm")
+    if algorithm is not None and not isinstance(algorithm, str):
+        return None
+    value = None
+    if "value" in digest:
+        value = b64_bytes(digest["value"])
+        if value is None:
+            return None
+    return algorithm, value
+
+
+def sha256_not_32_bytes(digest: object) -> bool:
+    """A Digest that names SHA-256 and whose value is not digest_bytes long (empty included)."""
+    parts = digest_parts(digest)
+    if parts is None or parts[0] != SHA256_ALGORITHM:
+        return False
+    return parts[1] is None or len(parts[1]) != int(sm.BOUNDS["digest_bytes"])
+
+
+def without_algorithm(digest: object) -> bool:
+    """A Digest whose algorithm is omitted (DIGEST_ALGORITHM_UNSPECIFIED)."""
+    parts = digest_parts(digest)
+    return parts is not None and parts[0] is None
+
+
+def negative_int64(value: object) -> bool:
+    """A proto3 JSON int64 below zero, in the canonical decimal form the Go encoder writes."""
+    if not isinstance(value, str) or not value.startswith("-"):
+        return False
+    try:
+        number = int(value, 10)
+    except ValueError:
+        return False
+    return str(number) == value and -sm.INT64_MAX - 1 <= number < 0
+
+
+def validator_shape_condition(body: JSON) -> str | None:
+    """The G-11 condition of a validatorPower body, or None (see shape_condition)."""
+    if not set(body) <= VALIDATOR_BODY_KEYS | {"power"}:
+        return None
+    if "consensusPubkey" not in body:
+        return "empty consensus key"
+    key = b64_bytes(body["consensusPubkey"])
+    if key is None or len(key) != int(sm.BOUNDS["consensus_pubkey_bytes"]):
+        return None
+    node_id = body.get("nodeId")
+    if not isinstance(node_id, str) or sm.check_id(node_id) is not None:
+        return None
+    reason = body.get("reasonDigest")
+    if sha256_not_32_bytes(reason):
+        return "validator reason digest not 32 bytes"
+    if sm.digest_message(reason) is None:
+        return None
+    if "activation" not in body or sm.parse_activation(body["activation"]) is None:
+        return None
+    if negative_int64(body.get("power")):
+        return "negative validator power"
+    return None
+
+
+def withdraw_shape_condition(body: JSON) -> str | None:
+    """The G-11 condition of a forceWithdraw body, or None (see shape_condition)."""
+    if not set(body) <= WITHDRAW_BODY_KEYS:
+        return None
+    content_id = body.get("contentId")
+    if not isinstance(content_id, str):
+        return None
+    if sm.check_id(content_id) is not None:
+        if "reasonDigest" in body and without_algorithm(body["reasonDigest"]):
+            return "withdraw content id outside the pattern, reason without algorithm"
+        return None
+    version = sm.decimal_uint(body.get("contentVersion"))
+    if version is None or version < 1:
+        return None
+    if sha256_not_32_bytes(body.get("reasonDigest")):
+        return "withdraw reason digest not 32 bytes"
+    return None
+
+
+def shape_condition(payload: object) -> str | None:
+    """G-11: the payload field shape condition the payload meets, or None.
+
+    The payload is proto3 JSON as the Go encoder writes it: a zero integer,
+    an empty string or bytes value, and DIGEST_ALGORITHM_UNSPECIFIED are
+    omitted. Each condition names the check at which the chain's payload
+    parse (chain/x/authority/payload.go) first fails with BOUNDS, with every
+    earlier check of that parse passing; spec parse_proposal_payload answers
+    MALFORMED for every payload that meets one (the caller applies the rule
+    only when the spec answered MALFORMED). The conditions, exactly:
+
+    - "validator reason digest not 32 bytes": validatorPower with a 32-byte
+      consensus key (canonical base64), a node id in the id pattern, and a
+      reason digest that names SHA-256 with a value that is not 32 bytes
+      (an omitted value included); activation and power are not read.
+    - "negative validator power": validatorPower with a 32-byte consensus
+      key, a node id in the id pattern, a reason digest the spec parses, an
+      activation the spec parses (the chain accepts exactly those), and a
+      negative power.
+    - "empty consensus key": validatorPower without consensusPubkey;
+      nothing else is read.
+    - "withdraw reason digest not 32 bytes": forceWithdraw with a content id
+      in the id pattern, a content version of at least 1, and a reason
+      digest that names SHA-256 with a value that is not 32 bytes (an
+      omitted value included).
+    - "withdraw content id outside the pattern, reason without algorithm":
+      forceWithdraw with a non-empty content id outside the id pattern and
+      a reason digest whose algorithm is omitted; the content version is
+      not read.
+    - "governed value 0": governedLimit (keys limitKey and value only)
+      without value.
+    - "empty governed limit key": governedLimit (keys limitKey and value
+      only) without limitKey.
+    - "empty provider id": admitProvider or disableProvider with an empty
+      body (both use the same parse).
+
+    A body with a key outside its v0 message (a schema version 2 field such
+    as activationHeight) meets none. The same check failing with another
+    combination (a consensus key of another length with a field omitted,
+    an omitted node id, a content id outside the pattern with an omitted or
+    SHA-256 reason digest or an omitted version) meets none either: those
+    are open divergences that no rule names (TestUnnamedParseDivergences in
+    chain/x/authority/difftest pins them).
+    """
+    if not isinstance(payload, dict) or len(payload) != 1:
+        return None
+    field, body = next(iter(payload.items()))
+    if not isinstance(body, dict):
+        return None
+    if field == "validatorPower":
+        return validator_shape_condition(body)
+    if field == "forceWithdraw":
+        return withdraw_shape_condition(body)
+    if field == "governedLimit":
+        if not set(body) <= GOVERNED_BODY_KEYS:
+            return None
+        if "value" not in body:
+            return "governed value 0"
+        if "limitKey" not in body:
+            return "empty governed limit key"
+        return None
+    if field in ("admitProvider", "disableProvider") and not body:
+        return "empty provider id"
+    return None
 
 
 class Oracle:
@@ -1314,9 +1535,9 @@ class Oracle:
     ) -> tuple[str, str] | None:
         """The chain's propose outcome where it differs from the spec: (rule, code), or None.
 
-        In the chain's order: G-9 and G-10 inside the payload parse, G-1
-        after the digest value, authority D-1 after validated_payload, and
-        G-3 last.
+        In the chain's order: G-9, G-10 and G-11 inside the payload parse
+        (their conditions are disjoint), G-1 after the digest value,
+        authority D-1 after validated_payload, and G-3 last.
         """
         if probe.reached("validated_payload"):
             checked = probe.result("validated_payload")
@@ -1325,7 +1546,10 @@ class Oracle:
             failed = "ok" in checked
             spec_code = str(checked["error"]) if failed else ""
             if failed and spec_code == MALFORMED:
-                rule = validator_parse_rule(spec.get("payload"))
+                payload = spec.get("payload")
+                rule = validator_parse_rule(payload)
+                if rule is None and shape_condition(payload) is not None:
+                    rule = SHAPE_RULE
                 if rule is not None and self.on(rule):
                     return rule, BOUNDS_CODE
             if algorithm != SHA256_ALGORITHM and self.on("G-1"):
@@ -2325,6 +2549,136 @@ def parse_segment() -> list[CouncilCase]:
     ]
 
 
+def shape_step(proposal_id: str, payload: JSON, parameter_key: str) -> JSON:
+    """A propose with an explicit parameter key (the payload may omit the field it names)."""
+    step = propose_step(
+        1, proposal_id, {"governedLimit": {"limitKey": "max_page_limit", "value": "1"}}
+    )
+    step["payload"] = payload
+    step["parameter_key"] = parameter_key
+    step["payload_digest"] = sm.payload_digest(payload)
+    return step
+
+
+def shape_payloads() -> list[tuple[str, JSON, str]]:
+    """One payload per G-11 condition (two for the empty provider id): (condition, payload, key)."""
+    short = sm.standard_b64(bytes.fromhex(sm.REASON)[:31])
+    sha_short = {"algorithm": SHA256_ALGORITHM, "value": short}
+    sha_empty = {"algorithm": SHA256_ALGORITHM}
+    no_algorithm = {"value": sm.digest_json(sm.REASON)["value"]}
+    negative = sm.validator_power_payload("v7", 10, {"height": "9"})
+    negative["validatorPower"]["power"] = "-5"
+    no_key = sm.validator_power_payload("v7", 10, {"height": "9"})
+    del no_key["validatorPower"]["consensusPubkey"]
+    return [
+        (SHAPE_CONDITIONS[0], raw_validator("v7", {"height": "9"}, sha_short), "validator-v7"),
+        (SHAPE_CONDITIONS[0], raw_validator("v7", {"height": "9"}, sha_empty), "validator-v7"),
+        (SHAPE_CONDITIONS[1], negative, "validator-v7"),
+        (SHAPE_CONDITIONS[2], no_key, "validator-v7"),
+        (SHAPE_CONDITIONS[3], withdraw_body("c1", "1", sha_short), "withdraw-c1"),
+        (SHAPE_CONDITIONS[4], withdraw_body("-bad", "1", no_algorithm), "withdraw-x"),
+        (SHAPE_CONDITIONS[5], {"governedLimit": {"limitKey": "max_page_limit"}}, "max_page_limit"),
+        (SHAPE_CONDITIONS[6], {"governedLimit": {"value": "5"}}, "max_page_limit"),
+        (SHAPE_CONDITIONS[7], {"admitProvider": {}}, "admit-x"),
+        (SHAPE_CONDITIONS[7], {"disableProvider": {}}, "disable-x"),
+    ]
+
+
+def withdraw_body(content_id: str | None, version: str | None, reason: JSON | None) -> JSON:
+    """A forceWithdraw payload; None omits the field (as proto3 JSON omits a default)."""
+    body: JSON = {}
+    for name, value in (
+        ("contentId", content_id),
+        ("contentVersion", version),
+        ("reasonDigest", reason),
+    ):
+        if value is not None:
+            body[name] = value
+    return {"forceWithdraw": body}
+
+
+def shape_controls() -> list[tuple[JSON, str, str]]:
+    """Near misses of the G-11 conditions that the rule must leave alone: (payload, key, code).
+
+    Each answers the same code with the rule on and off. In order: six
+    payloads the chain also answers MALFORMED for (a reason digest without
+    algorithm, 32 or 31 bytes, in a validator and in a withdraw payload; a
+    withdraw version 0; a negative power with an activation height of 0,
+    which the chain refuses before the power), checked against the chain
+    by TestShapeRuleNearMisses; two the spec also answers BOUNDS for; the
+    five open divergences TestUnnamedParseDivergences pins (the chain
+    answers BOUNDS, no rule maps them); and two schema version 2 governed
+    bodies (D-4, D-5; TestSchemaTwoPayloadsD5).
+    """
+    reason = sm.digest_json(sm.REASON)
+    short = sm.standard_b64(bytes.fromhex(sm.REASON)[:31])
+    no_algorithm = {"value": reason["value"]}
+    short_no_algorithm = {"value": short}
+    sha_short = {"algorithm": SHA256_ALGORITHM, "value": short}
+    short_key = sm.validator_power_payload("v7", 10, {"height": "9"})
+    short_key["validatorPower"]["consensusPubkey"] = sm.standard_b64(
+        bytes.fromhex(sm.pubkey_for("v7"))[:31]
+    )
+    del short_key["validatorPower"]["reasonDigest"]
+    no_node = sm.validator_power_payload("v7", 10, {"height": "9"})
+    del no_node["validatorPower"]["nodeId"]
+    negative_height_zero = sm.validator_power_payload("v7", 10, {"height": "0"})
+    negative_height_zero["validatorPower"]["power"] = "-5"
+    scheduled = {"activationHeight": "500", "limitKey": "max_page_limit", "value": "5"}
+    scheduled_no_value = {"activationHeight": "500", "limitKey": "max_page_limit"}
+    return [
+        (raw_validator("v7", {"height": "9"}, no_algorithm), "validator-v7", MALFORMED),
+        (raw_validator("v7", {"height": "9"}, short_no_algorithm), "validator-v7", MALFORMED),
+        (withdraw_body("c1", "1", no_algorithm), "withdraw-c1", MALFORMED),
+        (withdraw_body("c1", "1", short_no_algorithm), "withdraw-c1", MALFORMED),
+        (withdraw_body("c1", None, reason), "withdraw-c1", MALFORMED),
+        (negative_height_zero, "validator-v7", MALFORMED),
+        ({"governedLimit": {"limitKey": "-bad", "value": "5"}}, "max_page_limit", BOUNDS_CODE),
+        (withdraw_body("-bad", "1", reason), "withdraw-x", BOUNDS_CODE),
+        (short_key, "validator-v7", MALFORMED),
+        (no_node, "validator-v7", MALFORMED),
+        (withdraw_body("-bad", "1", None), "withdraw-x", MALFORMED),
+        (withdraw_body("-bad", None, reason), "withdraw-x", MALFORMED),
+        (withdraw_body("-bad", "1", sha_short), "withdraw-x", MALFORMED),
+        ({"governedLimit": scheduled}, "max_page_limit", MALFORMED),
+        ({"governedLimit": scheduled_no_value}, "max_page_limit", MALFORMED),
+    ]
+
+
+def shape_segment() -> list[CouncilCase]:
+    """G-11 on every condition, then the near misses it must leave alone."""
+    cases: list[CouncilCase] = []
+    for index, (_, payload, key) in enumerate(shape_payloads()):
+        cases.append(
+            (shape_step(f"f{index}", payload, key), BOUNDS_CODE, SHAPE_RULE, MALFORMED, None)
+        )
+    for index, (payload, key, code) in enumerate(shape_controls()):
+        cases.append(same(shape_step(f"n{index}", payload, key), code))
+    return cases
+
+
+def shape_condition_self_test() -> int:
+    """Each G-11 row meets exactly its condition, and every near miss meets none."""
+    rows = shape_payloads()
+    for condition, payload, _ in rows:
+        if shape_condition(payload) != condition:
+            raise AssertionError(f"{payload} meets {shape_condition(payload)!r}, not {condition!r}")
+        if validator_parse_rule(payload) is not None:
+            raise AssertionError(f"a G-11 payload {payload} also meets G-9 or G-10")
+    if sorted({condition for condition, _, _ in rows}) != sorted(SHAPE_CONDITIONS):
+        raise AssertionError("a G-11 condition has no self-test payload")
+    for payload, _, _ in shape_controls():
+        if shape_condition(payload) is not None:
+            raise AssertionError(f"near miss {payload} meets {shape_condition(payload)!r}")
+    for payload in (
+        raw_validator("-bad", {"unixSeconds": "0"}),
+        raw_validator("v7", {"unixSeconds": "0"}),
+    ):
+        if shape_condition(payload) is not None:
+            raise AssertionError(f"a G-9 or G-10 payload {payload} meets a G-11 condition")
+    return len(rows) + len(shape_controls()) + 2
+
+
 def g3_segment() -> list[CouncilCase]:
     """G-3 with a quota of 2 (delay 10)."""
     return [
@@ -2402,6 +2756,7 @@ def council_segments() -> list[tuple[str, JSON, list[str], list[CouncilCase]]]:
         ("G-1", council_config(), ["G-1"], g1_segment()),
         ("G-2", council_config(), ["G-2"], g2_segment()),
         ("G-9/G-10", council_config(), ["G-9", "G-10"], parse_segment()),
+        ("G-11", council_config(), [SHAPE_RULE], shape_segment()),
         ("G-3", council_config(quota=2), ["G-3"], g3_segment()),
         ("G-4", council_config(delay=0, pending_cap=2), ["G-4"], g4_segment()),
         ("D-7", council_config(delay=0), ["authority D-7"], d7_segment()),
@@ -2466,6 +2821,7 @@ def council_self_test() -> int:
             check_flow(off, d2_on=False)
         steps += 2 * len(cases)
     steps += g8_self_test()
+    steps += shape_condition_self_test()
     # A council step needs the council config, and council rule names are
     # unknown without it.
     oracle = Oracle()

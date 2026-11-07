@@ -59,9 +59,17 @@ type governanceCursor struct {
 // has no field for the approving seat ids. approved_council is always empty
 // (DEC-008) and quorum_loss is the stored value on every page.
 //
-//   - limit: msgkit.CheckPage against the effective max_page_limit (governed
-//     value, at most the protocol ceiling 100); 0 or an absent page uses the
-//     cap; a limit above the cap is BOUNDS.
+// Every page also carries devnet_test_parameters (schema version 2, D-9):
+// the labelled devnet test rows that take effect on this chain under the
+// State.devnet rule (a shortvideo-dev- chain id, label
+// PROPOSED_TEST_PARAMETER, approved_policy false), in stored order, so the
+// DEC-008 review delay in use is published (REQ-GOV-003). On any other
+// chain id no row takes effect and the field is empty. These rows are test
+// stand-ins, never approved policy; they do not count against the limit.
+//
+//   - limit: msgkit.CheckPage against the effective max_page_limit (the
+//     governed value read from x/policy, at most the protocol ceiling 100);
+//     0 or an absent page uses the cap; a limit above the cap is BOUNDS.
 //   - page_key: empty starts the walk. A key over 64 bytes, a tag byte with a
 //     cursor of the wrong shape (a consensus key that is not 32 bytes, an
 //     address that is not 20 bytes, a seat id outside the id pattern, a
@@ -73,14 +81,21 @@ type governanceCursor struct {
 //     heights should query at the height of its first page.
 //
 // The work of one call is the config key, the pending prefix (at most
-// MaxPendingChanges entries), and at most limit+1 proposal records. A
-// stored record or entry that does not decode is a plain error.
+// MaxPendingChanges entries), at most limit+1 proposal records, and one
+// x/policy read. A stored record or entry that does not decode is a plain
+// error, and so is a keeper without a policy keeper (WithPolicy): it cannot
+// read the governed page cap, and the protocol ceiling would be wrong when a
+// lower value is set.
 func (k Keeper) Governance(goCtx context.Context, req *authorityv1.QueryGovernanceRequest) (*authorityv1.QueryGovernanceResponse, error) {
 	ctx, err := sdkContext(goCtx)
 	if err != nil {
 		return nil, err
 	}
-	limit, _, code := msgkit.CheckPage(&typesv1.PageRequest{Limit: req.GetPage().GetLimit()}, k.pageLimit(ctx))
+	pageCap, err := k.pageLimit(ctx)
+	if err != nil {
+		return nil, err
+	}
+	limit, _, code := msgkit.CheckPage(&typesv1.PageRequest{Limit: req.GetPage().GetLimit()}, pageCap)
 	if code != msgkit.OK {
 		return nil, code.QueryErr()
 	}
@@ -106,9 +121,11 @@ func (k Keeper) Governance(goCtx context.Context, req *authorityv1.QueryGovernan
 			return nil, err
 		}
 	}
+	view := State{ChainID: ctx.ChainID(), config: cfg}
 	return &authorityv1.QueryGovernanceResponse{
-		State: page.state,
-		Page:  &typesv1.PageResponse{NextPageKey: page.next},
+		State:                page.state,
+		Page:                 &typesv1.PageResponse{NextPageKey: page.next},
+		DevnetTestParameters: view.devnetRows(),
 	}, nil
 }
 
@@ -278,11 +295,15 @@ func proposalView(rec *proposalRecord) *authorityv1.Proposal {
 	}
 }
 
-// pageLimit is the effective max_page_limit: the governed value (0x13) or
-// the protocol ceiling.
-func (k Keeper) pageLimit(ctx sdk.Context) uint32 {
-	governed, found := k.GovernedLimit(ctx, msgkit.LimitMaxPageLimit)
-	return uint32(msgkit.Effective(msgkit.LimitMaxPageLimit, governed, found))
+// pageLimit is the effective max_page_limit: the governed value x/policy
+// stores, or the protocol ceiling when none is set. Without a policy keeper
+// it is an error.
+func (k Keeper) pageLimit(ctx sdk.Context) (uint32, error) {
+	if k.policy == nil {
+		return 0, fmt.Errorf("authority governance query: no policy keeper is wired (WithPolicy)")
+	}
+	governed, found := k.policy.GovernedLimit(ctx, msgkit.LimitMaxPageLimit)
+	return uint32(msgkit.Effective(msgkit.LimitMaxPageLimit, governed, found)), nil
 }
 
 // sdkContext unwraps the SDK context of a query.

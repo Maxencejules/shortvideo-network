@@ -86,8 +86,8 @@ func newBareEnv(t testing.TB) *env {
 func (e *env) store() storetypes.KVStore { return e.ctx.KVStore(e.key) }
 
 // at returns a fresh event manager context at block height h.
-func (e *env) at(h int64) sdk.Context {
-	return e.ctx.WithBlockHeight(h).WithEventManager(sdk.NewEventManager())
+func (e *env) at(h uint64) sdk.Context {
+	return e.ctx.WithBlockHeight(int64(h)).WithEventManager(sdk.NewEventManager())
 }
 
 func (e *env) fresh() sdk.Context { return e.ctx.WithEventManager(sdk.NewEventManager()) }
@@ -116,6 +116,14 @@ func (e *env) rejects(name string, want msgkit.Code, op func(sdk.Context) msgkit
 	}
 	if n := len(ctx.EventManager().Events()); n != 0 {
 		e.t.Fatalf("%s: a rejected write emitted %d events", name, n)
+	}
+}
+
+// mustOK fails the test unless a writer returned OK.
+func mustOK(t testing.TB, code msgkit.Code) {
+	t.Helper()
+	if code != msgkit.OK {
+		t.Fatalf("code %q, want OK", code)
 	}
 }
 

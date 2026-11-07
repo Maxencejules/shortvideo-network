@@ -9,12 +9,15 @@
 //     differs from the binary's fails.
 //   - Runner: runs one upgrade in a cache context and writes it back only
 //     after every check passed.
-//   - PlanSource: where the scheduled upgrade is read from. This package
-//     defines the interface only.
+//   - PlanSource: where the scheduled upgrade is read from.
+//     CouncilPlans (plans.go) is the production source: the plan row an
+//     executed council proposal wrote into the x/policy store, read through
+//     PlanRows.
 //
 // The package imports no app, module keeper, node, or command code. The
 // app composes it: it supplies the stores through the interfaces of
-// runner.go and the migrations through Migrate.
+// runner.go and plans.go (for the plan row, a small adapter over the
+// x/policy keeper) and the migrations through Migrate.
 //
 // Every non-test file runs inside chain execution or in the load gate. It
 // reads block data only from sdk.Context, iterates maps in sorted key

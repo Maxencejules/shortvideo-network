@@ -44,7 +44,7 @@ const (
 // OPEN (approve) and from QUEUED (execute), REJECTED, the execute's stale
 // branch with both codes, the EXECUTED -> EXPIRED relabel, an applied due
 // validator change, and the chain-only rules a message can reach in random
-// sequences (authority D-1, D-2, D-7, G-1, G-7, G-9, G-10).
+// sequences (authority D-1, D-2, D-7, G-1, G-7, G-9, G-10, G-11).
 func TestDifferentialReachability(t *testing.T) {
 	total := newStats()
 	for seed := uint64(reachFirstSeed); seed < reachFirstSeed+reachSeeds; seed++ {
@@ -62,7 +62,7 @@ func TestDifferentialReachability(t *testing.T) {
 			t.Errorf("transition %q never reached", want)
 		}
 	}
-	for _, rule := range []string{"authority D-1", "authority D-2", "authority D-7", "G-1", "G-7", "G-9", "G-10"} {
+	for _, rule := range []string{"authority D-1", "authority D-2", "authority D-7", "G-1", "G-7", "G-9", "G-10", "G-11"} {
 		if total.rules[rule] == 0 {
 			t.Errorf("rule %s never applied", rule)
 		}
@@ -155,25 +155,32 @@ func TestNonAuthorityExecuteDifferential(t *testing.T) {
 }
 
 // TestCouncilRulesAreLoadBearing runs one directed trace per council rule a
-// message can reach on the chain. With every oracle rule on, every step
+// message can reach on the chain (one per condition for G-11, the eight
+// payload field shapes of ORCH-1). With every oracle rule on, every step
 // agrees and the rule step names its rule. With that one rule off, the
 // first divergence is exactly the rule step. So each rule is needed, and it
-// fires only where the chain differs.
+// fires only where the chain differs. For G-11 the chain answers BOUNDS,
+// spec_machine.py alone MALFORMED, and with the rule off no projection
+// field differs: both sides reject and neither changes state.
 func TestCouncilRulesAreLoadBearing(t *testing.T) {
 	fixtures := ruleFixtures()
-	rules := make([]string, 0, len(fixtures))
-	for rule := range fixtures {
-		rules = append(rules, rule)
+	names := make([]string, 0, len(fixtures))
+	for name := range fixtures {
+		names = append(names, name)
 	}
-	sort.Strings(rules)
-	for _, rule := range rules {
-		t.Run(rule, func(t *testing.T) {
-			f := fixtures[rule]()
+	sort.Strings(names)
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			f := fixtures[name]()
+			rule := name
+			if f.rule != "" {
+				rule = f.rule
+			}
 			on := runFixture(t, t, f.cfg, f.steps, false, f.every)
 			if on.firstMismatch != -1 {
 				t.Fatalf("with every rule on, step %d diverged", on.firstMismatch)
 			}
-			if got := on.specs[f.at].deviation(); !names(got, rule) {
+			if got := on.specs[f.at].deviation(); !namesRule(got, rule) {
 				t.Fatalf("rule step %d: deviation %q does not name %s", f.at, got, rule)
 			}
 			rec := &recorder{TB: t}
@@ -181,7 +188,17 @@ func TestCouncilRulesAreLoadBearing(t *testing.T) {
 			if off.firstMismatch != f.at || len(rec.errors) == 0 {
 				t.Fatalf("with %s off, the first divergence is step %d, want %d", rule, off.firstMismatch, f.at)
 			}
-			t.Logf("%s: chain %s at step %d; without the rule spec_machine.py says %s", rule,
+			if f.chain != "" {
+				if got, spec := on.outs[f.at].code, off.specs[f.at]; got != f.chain || spec.Code != string(f.specOff) || spec.Deviation != nil {
+					t.Fatalf("chain %s, spec with %s off %s (deviation %q); want chain %s, spec %s, no rule", got, rule, spec.Code, spec.deviation(), f.chain, f.specOff)
+				}
+				for _, report := range rec.errors {
+					if strings.Contains(report, "projection.") {
+						t.Fatalf("with %s off the states differ, not only the codes: %s", rule, report)
+					}
+				}
+			}
+			t.Logf("%s: chain %s at step %d; without the rule spec_machine.py says %s", name,
 				on.outs[f.at].codeName(), f.at, off.specs[f.at].Code)
 		})
 	}
@@ -189,31 +206,31 @@ func TestCouncilRulesAreLoadBearing(t *testing.T) {
 
 // TestUnnamedParseDivergences pins the propose payloads on which the chain
 // and spec_machine.py answer different reject codes and no G or D rule
-// names the difference. The generator never sends them. Each is reported
-// as an open divergence that needs a decision (a named oracle rule or a
+// names the difference. The eight payload field shapes Wave 0 found here
+// are now oracle rule G-11 (orchestrator decision ORCH-1) and are tested in
+// TestCouncilRulesAreLoadBearing. The rows below are the same parse checks
+// failing in combinations G-11's conditions do not include, found while
+// G-11 was written down: the chain's first failing check is a BOUNDS check
+// (the consensus key length, the node id pattern, the content id pattern)
+// while the spec answers MALFORMED for an omitted field or an unparseable
+// reason digest. The generator never sends them. Each is reported as an
+// open divergence that needs a decision (a wider G-11, another rule, or a
 // chain change); none changes state on either side, which the harness's
 // trial check and the projection compare confirm here. The oracle applies
-// no rule to them. The governed value 0 row has G-2's cause (proto3 has no
-// absent integer), but G-2 as recorded covers the message's
-// base_policy_version and expiry_unix_seconds, not a payload field.
+// no rule to them.
 func TestUnnamedParseDivergences(t *testing.T) {
 	short := &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: sha("r")[:31]}
-	noAlgorithm := &typesv1.Digest{Value: sha("r")}
-	withdraw := func(id string, reason *typesv1.Digest) payload { return withdrawWith(id, 1, reason) }
 	cases := []struct {
 		name        string
 		payload     payload
 		key         string
 		chain, spec msgkit.Code
 	}{
-		{"validator reason digest of 31 bytes", validatorPayload("v9", consensusKey("v9"), 10, short, atHeight(9)), "", msgkit.Bounds, msgkit.Malformed},
-		{"negative validator power", validatorPayload("v9", consensusKey("v9"), -5, digest(sha("r")), atHeight(9)), "", msgkit.Bounds, msgkit.Malformed},
-		{"empty consensus key", validatorPayload("v9", nil, 10, digest(sha("r")), atHeight(9)), "", msgkit.Bounds, msgkit.Malformed},
-		{"withdraw reason digest of 31 bytes", withdraw("c1", short), "", msgkit.Bounds, msgkit.Malformed},
-		{"withdraw content id outside the pattern, reason without algorithm", withdraw("-bad", noAlgorithm), "withdraw-x", msgkit.Bounds, msgkit.Malformed},
-		{"governed value 0 (proto3 default)", governedPayload(msgkit.LimitMaxPageLimit, 0), "", msgkit.Bounds, msgkit.Malformed},
-		{"governed empty limit key (proto3 default)", governedPayload("", 5), msgkit.LimitMaxPageLimit, msgkit.Bounds, msgkit.Malformed},
-		{"admit empty provider id (proto3 default)", admitPayload(""), "admit-x", msgkit.Bounds, msgkit.Malformed},
+		{"validator consensus key of 31 bytes without a reason digest", validatorPayload("v9", consensusKey("v9")[:31], 10, nil, atHeight(9)), "", msgkit.Bounds, msgkit.Malformed},
+		{"validator empty node id (proto3 default)", validatorPayload("", consensusKey("v9"), 10, digest(sha("r")), atHeight(9)), "validator-v9", msgkit.Bounds, msgkit.Malformed},
+		{"withdraw content id outside the pattern without a reason digest", withdrawWith("-bad", 1, nil), "withdraw-x", msgkit.Bounds, msgkit.Malformed},
+		{"withdraw content id outside the pattern with version 0 (proto3 default)", withdrawWith("-bad", 0, digest(sha("r"))), "withdraw-x", msgkit.Bounds, msgkit.Malformed},
+		{"withdraw content id outside the pattern with a 31-byte reason digest", withdrawWith("-bad", 1, short), "withdraw-x", msgkit.Bounds, msgkit.Malformed},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -236,6 +253,49 @@ func TestUnnamedParseDivergences(t *testing.T) {
 				}
 			}
 			t.Logf("%s: chain %s, spec_machine.py %s", c.name, out.code, spec.Code)
+		})
+	}
+}
+
+// TestShapeRuleNearMisses sends the near misses of the G-11 conditions on
+// which the chain and spec_machine.py agree (spec_oracle.py shape_controls,
+// first two groups) and requires, with every rule on, that every step
+// agrees and that no rule is named: six payloads both answer MALFORMED for
+// (a reason digest without algorithm, 32 or 31 bytes, in a validator and in
+// a withdraw payload; a withdraw version 0; a negative power with an
+// activation height of 0, refused at the activation) and two both answer
+// BOUNDS for. So G-11 fires only on its conditions.
+func TestShapeRuleNearMisses(t *testing.T) {
+	noAlgorithm := &typesv1.Digest{Value: sha("r")}
+	shortNoAlgorithm := &typesv1.Digest{Value: sha("r")[:31]}
+	cases := []struct {
+		name    string
+		payload payload
+		key     string
+		code    msgkit.Code
+	}{
+		{"validator reason without algorithm", validatorPayload("v9", consensusKey("v9"), 10, noAlgorithm, atHeight(9)), "", msgkit.Malformed},
+		{"validator 31-byte reason without algorithm", validatorPayload("v9", consensusKey("v9"), 10, shortNoAlgorithm, atHeight(9)), "", msgkit.Malformed},
+		{"withdraw reason without algorithm", withdrawWith("c1", 1, noAlgorithm), "", msgkit.Malformed},
+		{"withdraw 31-byte reason without algorithm", withdrawWith("c1", 1, shortNoAlgorithm), "", msgkit.Malformed},
+		{"withdraw version 0 (proto3 default)", withdrawWith("c1", 0, digest(sha("r"))), "", msgkit.Malformed},
+		{"negative power with activation height 0", validatorPayload("v9", consensusKey("v9"), -5, digest(sha("r")), atHeight(0)), "", msgkit.Malformed},
+		{"governed limit key outside the pattern", governedPayload("-bad", 5), msgkit.LimitMaxPageLimit, msgkit.Bounds},
+		{"withdraw content id outside the pattern, well-formed otherwise", withdrawWith("-bad", 1, digest(sha("r"))), "withdraw-x", msgkit.Bounds},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := buildPropose(proposeParams{
+				signer: seatAcct(1), business: "bp-n", proposalID: "n1", parameterKey: c.key, base: 1,
+				expiry: startTime + 100, payload: c.payload,
+			}, "")
+			run := runFixture(t, t, defaultConfig(), []*step{s}, false, 1)
+			if run.firstMismatch != -1 {
+				t.Fatalf("diverged")
+			}
+			if got := run.specs[0]; got.Code != string(c.code) || got.Deviation != nil {
+				t.Fatalf("spec %s (deviation %q), want %s with no rule", got.Code, got.deviation(), c.code)
+			}
 		})
 	}
 }

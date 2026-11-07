@@ -4,24 +4,44 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"maps"
 	"slices"
 
 	"google.golang.org/protobuf/proto"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 )
 
 // safeMax is bounds.json safe_integer_max.
 const safeMax int64 = 9007199254740991
 
-// checkInvariants checks the council invariants of plan section 10 that a
-// keeper-level harness can see without x/policy or the app (I3-I6 and I13
-// need them): I1 in its exact form, I2, I7, I8, I9, I10, and I11. It reads
-// committed state at ctx and returns the first violation.
+// checkInvariants checks the invariants of plan section 10 that a
+// keeper-level harness can see over committed state at ctx, and returns the
+// first violation:
+//
+//   - I1 in its exact form (the harness counts the successful executes; no
+//     upgrade applies here)
+//   - x/policy's keeper-level checker (policytest.CheckInvariantsAt at the
+//     binary's layout version): the layout, I2, I3 (state form), I4, the
+//     policy parts of I5 and I6, and the safety caps of I7
+//   - I3 in its exact form (policytest.CheckDecisions over the latest
+//     executed governed decision per key, which the harness records)
+//   - I5 (keeper part): the stored app version is the binary's
+//   - I6 (keeper part): the persisted version map is the binary's, and the
+//     layout key of every module store equals its map entry
+//   - I7 (authority config), I8, I9, I10, I11
+//
+// I12 is a property of a step, not of a state: apply checks it
+// (checkPolicyWrites). The consensus parameter part of I5 and I13 need the
+// app (chain/app); this harness has no consensus parameters and no upgrade
+// runner.
 func (h *harness) checkInvariants(ctx sdk.Context) error {
 	return h.checkCommitted(ctx, h.read(ctx))
 }
@@ -31,22 +51,16 @@ func (h *harness) checkCommitted(ctx sdk.Context, c *committed) error {
 	if v := c.version; v != 1+h.executes {
 		return fmt.Errorf("I1: policy version %d, want 1 + %d successful executes", v, h.executes)
 	}
-	store := ctx.KVStore(h.keys[0])
-	var err error
-	eachRow(store, prefixGoverned, func(key, value []byte) {
-		ceiling, known := msgkit.Ceiling(string(key[1:]))
-		if len(value) != 8 {
-			err = fmt.Errorf("I2: governed row %q holds %d bytes", key[1:], len(value))
-			return
-		}
-		got := binary.BigEndian.Uint64(value)
-		if err == nil && (!known || got < 1 || got > ceiling) {
-			err = fmt.Errorf("I2: governed row %q=%d outside the msgkit table", key[1:], got)
-		}
-	})
-	if err != nil {
+	if err := policytest.CheckInvariantsAt(ctx, h.pol, h.auth, policy.ConsensusVersion); err != nil {
 		return err
 	}
+	if err := policytest.CheckDecisions(ctx, h.pol, h.decisions); err != nil {
+		return err
+	}
+	if err := h.checkVersions(ctx); err != nil {
+		return err
+	}
+	store := ctx.KVStore(h.keys[storeAuthority])
 	if err := h.checkConfig(c.cfg); err != nil {
 		return err
 	}
@@ -57,6 +71,91 @@ func (h *harness) checkCommitted(ctx sdk.Context, c *committed) error {
 		return err
 	}
 	return checkPowerSets(c.gov.GetValidators(), c.gov.GetPendingValidatorPower())
+}
+
+// checkVersions is the keeper part of I5 and I6. It runs after
+// policytest.CheckInvariantsAt, which already refused a damaged app version
+// or version map row, so the keeper reads below do not panic.
+func (h *harness) checkVersions(ctx sdk.Context) error {
+	if v := h.pol.AppVersion(ctx); v != binaryAppVersion {
+		return fmt.Errorf("I5: stored app version %d, the binary's is %d", v, binaryAppVersion)
+	}
+	stored, want := h.pol.VersionMap(ctx), binaryVersions()
+	if !maps.Equal(stored, want) {
+		return fmt.Errorf("I6: persisted version map %v, the binary's is %v", stored, want)
+	}
+	for _, key := range h.keys {
+		layout, found, err := msgkit.ReadLayoutVersion(ctx.KVStore(key))
+		if err != nil || !found || layout != want[key.Name()] {
+			return fmt.Errorf("I6: %s layout key %d (found %t, %v), version map entry %d", key.Name(), layout, found, err, want[key.Name()])
+		}
+	}
+	return nil
+}
+
+// policyRows is every row of the x/policy store, keyed by the raw key.
+func policyRows(store storetypes.KVStore) map[string][]byte {
+	rows := map[string][]byte{}
+	it := store.Iterator(nil, nil)
+	defer it.Close()
+	for ; it.Valid(); it.Next() {
+		rows[string(it.Key())] = bytes.Clone(it.Value())
+	}
+	return rows
+}
+
+// checkPolicyWrites is I12 (keeper part): only the authority hook and the
+// x/policy BeginBlock write the policy store, and each writes only the rows
+// of its own decision. It compares the policy rows before and after one
+// step and allows a changed row only for
+//
+//   - a successful, non-idempotent execute (executed is its payload): of a
+//     governed limit, the governed value and pending rows of its key; of a
+//     software upgrade, the plan and plan-name rows; of a cancel, the plan
+//     row
+//   - a committed block: the governed value and pending rows of every key
+//     whose pending change was due at the new height
+//
+// Every other step (a propose, an approve, a keep, a registry transaction,
+// a block with nothing due, a halted block) leaves the policy store
+// byte-identical. A rejected or idempotent message is also covered by the
+// trial check of deliver.
+func (h *harness) checkPolicyWrites(s *step, out outcome, executed *authorityv1.ProposalPayload, before, after map[string][]byte) error {
+	allowed := map[string]bool{}
+	switch {
+	case executed != nil:
+		switch change := executed.GetChange().(type) {
+		case *authorityv1.ProposalPayload_GovernedLimit:
+			key := change.GovernedLimit.GetLimitKey()
+			allowed[string(policy.GovernedKey(key))], allowed[string(policy.PendingKey(key))] = true, true
+		case *authorityv1.ProposalPayload_SoftwareUpgrade:
+			allowed[string(policy.PlanKey())], allowed[string(policy.PlanNameKey(change.SoftwareUpgrade.GetName()))] = true, true
+		case *authorityv1.ProposalPayload_CancelUpgrade:
+			allowed[string(policy.PlanKey())] = true
+		}
+	case s.op == fxBlock && out.code == msgkit.OK:
+		for _, key := range msgkit.LimitKeys() {
+			raw, pending := before[string(policy.PendingKey(key))]
+			if !pending {
+				continue
+			}
+			row, err := policy.DecodePending(raw)
+			if err != nil {
+				return fmt.Errorf("I12: pending row of %q before the block does not decode: %v", key, err)
+			}
+			if row.Activation <= uint64(h.height) {
+				allowed[string(policy.GovernedKey(key))], allowed[string(policy.PendingKey(key))] = true, true
+			}
+		}
+	}
+	for _, rows := range []map[string][]byte{before, after} {
+		for key := range rows {
+			if !bytes.Equal(before[key], after[key]) && !allowed[key] {
+				return fmt.Errorf("I12: %s (%s) changed policy row %x", s.op, out.codeName(), key)
+			}
+		}
+	}
+	return nil
 }
 
 // checkConfig is I7: decision rows, devnet rows, approved council and
@@ -174,7 +273,7 @@ func (h *harness) checkProposals(ctx sdk.Context, records []storedRecord) error 
 	}
 	got := map[string]uint64{}
 	var err error
-	eachRow(ctx.KVStore(h.keys[0]), prefixOpen, func(key, value []byte) {
+	eachRow(ctx.KVStore(h.keys[storeAuthority]), prefixOpen, func(key, value []byte) {
 		if len(value) != 8 || binary.BigEndian.Uint64(value) == 0 {
 			err = fmt.Errorf("I10: open count %x holds %x", key, value)
 			return

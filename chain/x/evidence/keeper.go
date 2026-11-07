@@ -51,8 +51,9 @@ const (
 	// registered.
 	ConsensusVersion uint64 = 2
 
-	// SchemaVersion is the only accepted message schema version (bounds.json
-	// schema_version). Every record stores it.
+	// SchemaVersion is the only accepted evidence message schema version
+	// (svn.evidence.v1 schema_version, separate from the bounds.json document
+	// schema version). Every record stores it.
 	SchemaVersion uint32 = 1
 
 	// EpochSeconds is the length of one audit round in seconds of block

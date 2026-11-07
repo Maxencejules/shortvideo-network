@@ -25,6 +25,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
@@ -33,9 +34,9 @@ import (
 )
 
 // The real keepers satisfy the read surfaces x/leases declares (the real
-// x/authority keeper too, although these tests use a fake of it), the
-// lease keeper is the content withdrawal hook the app wires, and the fake
-// authority satisfies every surface it stands in for.
+// x/authority and x/policy keepers too, although these tests use a fake of
+// them), the lease keeper is the content withdrawal hook the app wires, and
+// the fake authority satisfies every surface it stands in for.
 var (
 	_ leases.Providers          = providers.Keeper{}
 	_ leases.Content            = content.Keeper{}
@@ -43,7 +44,7 @@ var (
 	_ content.WithdrawalHook    = leases.Keeper{}
 	_ msgkit.BusinessSource     = leases.Keeper{}
 	_ leases.Roles              = authority.Keeper{}
-	_ leases.Limits             = authority.Keeper{}
+	_ leases.Limits             = policy.Keeper{}
 	_ leases.DevnetParams       = authority.Keeper{}
 	_ leases.Policy             = authority.Keeper{}
 	_ leases.InitRecorder       = (*authority.Order)(nil)

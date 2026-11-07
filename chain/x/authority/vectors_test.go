@@ -69,12 +69,15 @@ func readPayloadVectors(t *testing.T) []payloadVector {
 // text; its SHA-256 is the stored digest; the kind and parameter key match.
 // A full ProposeChange of the vector on a fresh store succeeds when
 // chain_propose_code is empty and returns that code otherwise (D-1), with
-// the store unchanged. The file covers every v0 payload kind and every
-// governed limit key at 1 and at its ceiling.
+// the store unchanged. The file covers every payload kind, the schema
+// version 2 kinds and a governed limit with an activation height included,
+// and every governed limit key at 1 and at its ceiling. The propose runs at
+// testHeight (5), the height the vector file names for its windows.
 func TestPayloadVectors(t *testing.T) {
 	vectors := readPayloadVectors(t)
 	kinds := map[string]bool{}
 	governed := map[string]bool{}
+	scheduled := 0
 	ids := map[string]bool{}
 	for _, v := range vectors {
 		if ids[v.ID] {
@@ -103,10 +106,13 @@ func TestPayloadVectors(t *testing.T) {
 			Payload:       &payload,
 			PayloadDigest: &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: digest},
 		}
-		if got := parameterKey(kind, change.NodeID, limitKey(msg), providerID(msg), contentID(msg)); got != v.ParameterKey {
+		if got := parameterKey(decodedFrom(kind, change, msg)); got != v.ParameterKey {
 			t.Fatalf("%s: parameter key %q, want %q", v.ID, got, v.ParameterKey)
 		}
-		if body := payload.GetGovernedLimit(); body != nil && v.ChainProposeCode == "" {
+		if payload.GetGovernedLimit().GetActivationHeight() != 0 {
+			scheduled++
+		}
+		if body := payload.GetGovernedLimit(); body != nil && body.GetActivationHeight() == 0 && v.ChainProposeCode == "" {
 			ceiling, _ := msgkit.Ceiling(body.GetLimitKey())
 			switch body.GetValue() {
 			case 1:
@@ -125,10 +131,14 @@ func TestPayloadVectors(t *testing.T) {
 			wantUnchanged(t, kv, before, v.ID)
 		}
 	}
-	for _, kind := range []string{kindValidatorPower, kindGovernedLimit, kindAdmitProvider, kindDisableProvider, kindForceWithdraw} {
+	for _, kind := range []string{kindValidatorPower, kindGovernedLimit, kindAdmitProvider, kindDisableProvider, kindForceWithdraw,
+		kindSoftwareUpgrade, kindCancelUpgrade, kindCouncilSeat} {
 		if !kinds[kind] {
 			t.Errorf("no vector of kind %s", kind)
 		}
+	}
+	if scheduled == 0 {
+		t.Error("no vector of a governed limit with an activation height")
 	}
 	for _, key := range msgkit.LimitKeys() {
 		for _, at := range []string{"1", "ceiling"} {

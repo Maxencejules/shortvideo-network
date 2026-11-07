@@ -55,14 +55,26 @@ func runVersion(t *testing.T, upgrades []upgrade.Upgrade, info *debug.BuildInfo,
 
 // TestVersionCommandFields: `version` prints, one per line, the main
 // module version, the Go version, vcs.revision, vcs.modified, the three
-// pinned framework modules (with a replacement when there is one), and the
-// compiled upgrade handlers ("upgrades none" for svnd). Without a VCS stamp
-// the vcs fields read unknown; without build info the command fails.
+// pinned framework modules (with a replacement when there is one), the app
+// version P and every module's consensus version as the application
+// declares them, and the compiled upgrade handlers ("upgrades none" for
+// svnd). A binary with a handler from app version 1 to 2 runs app version
+// 2. Without a VCS stamp the vcs fields read unknown; without build info
+// the command fails.
 func TestVersionCommandFields(t *testing.T) {
 	got, err := runVersion(t, nil, syntheticBuildInfo(), true)
 	if err != nil {
 		t.Fatal(err)
 	}
+	modules := `module auth 7
+module authority 2
+module content 2
+module evidence 2
+module leases 2
+module policy 2
+module providers 2
+module svn 1
+`
 	want := `svnd (devel)
 go go1.26.10
 vcs.revision ff951fc0123456789abcdef0123456789abcdef0
@@ -70,14 +82,15 @@ vcs.modified true
 github.com/cosmos/cosmos-sdk v0.55.0
 github.com/cosmos/cosmos-sdk/store/v2 v2.0.0 => ../store (devel)
 github.com/cometbft/cometbft v0.40.0
-upgrades none
+app_version 1
+` + modules + `upgrades none
 `
 	if got != want {
 		t.Fatalf("version output:\n%s\nwant:\n%s", got, want)
 	}
 
 	got, err = runVersion(t, rehearsalUpgrades(), syntheticBuildInfo(), true)
-	if err != nil || !strings.HasSuffix(got, "github.com/cometbft/cometbft v0.40.0\nupgrade rehearsal-1 from_app_version 1 to_app_version 2\n") {
+	if err != nil || !strings.HasSuffix(got, "github.com/cometbft/cometbft v0.40.0\napp_version 2\n"+modules+"upgrade rehearsal-1 from_app_version 1 to_app_version 2\n") {
 		t.Fatalf("version with a handler: %v\n%s", err, got)
 	}
 	if strings.Contains(got, "upgrades none") {
@@ -123,9 +136,9 @@ func TestRootHelpText(t *testing.T) {
 }
 
 // TestStartPassesUpgradesToTheNode: `start` hands the binary's handlers to
-// the node, which refuses them (the application cannot run upgrade
-// handlers yet) before it reads the home; without handlers start reads the
-// home and fails on the missing node.json. Root keeps its own copy of the
+// the node, which reads the home first with or without handlers, so both
+// fail on the missing node.json (chain/node TestStartWithPassesUpgradeHandlers
+// shows the handlers reach the application). Root keeps its own copy of the
 // handler list: version lists the handlers as Root received them after the
 // caller renamed one in its own slice.
 func TestStartPassesUpgradesToTheNode(t *testing.T) {
@@ -136,7 +149,7 @@ func TestStartPassesUpgradesToTheNode(t *testing.T) {
 	root.SetArgs([]string{"start", "--home", home})
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
-	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "declares 1 upgrade handlers") {
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "node.json") {
 		t.Fatalf("start with a handler: %v", err)
 	}
 	plain := Root(Options{})

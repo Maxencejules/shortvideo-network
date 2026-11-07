@@ -39,10 +39,11 @@ func typedEvents(t *testing.T, events sdk.Events) ([]proto.Message, []int) {
 	return out, at
 }
 
-// TestExecuteEmitsPolicyEventsD2: a successful execute of every v0 payload
-// kind emits PolicyChanged{new version, parameter key} (the spec event,
-// spec_machine.py:1524-1527) and then ProposalExecuted{proposal id, new
-// version} (D-2), after the events of a registry hook. A propose, an
+// TestExecuteEmitsPolicyEventsD2: a successful execute of every payload
+// kind, the schema version 2 kinds included, emits PolicyChanged{new
+// version, parameter key} (the spec event, spec_machine.py:1524-1527) and
+// then ProposalExecuted{proposal id, new version} (D-2), after the events of
+// a registry hook or of x/policy (policy_pending, upgrade_plan). A propose, an
 // approve, an idempotent retry, a keep (REJECTED, EXPIRED), and a refusal
 // (insufficient approval, a registry refusal) emit no typed event; the keep,
 // refusal and retry outcomes carry authority_result.
@@ -77,12 +78,17 @@ func TestExecuteEmitsPolicyEventsD2(t *testing.T) {
 		id       string
 		msg      *authorityv1.MsgProposeChange
 		registry bool
+		hook     string // the x/policy event before the typed events, if any
 	}{
-		{"ev-power", powerMsg("v5", pub(5), 1, uint64(e.height)+10), false},
-		{"ev-limit", governedMsg(msgkit.LimitMaxOpenOffers, 8), false},
-		{"ev-admit", admitProposal("prov-1"), true},
-		{"ev-disable", disableProposal("prov-1"), true},
-		{"ev-withdraw", withdrawProposal("content-1", 1, reasonValue), true},
+		{"ev-power", powerMsg("v5", pub(5), 1, uint64(e.height)+10), false, ""},
+		{"ev-limit", governedMsg(msgkit.LimitMaxOpenOffers, 8), false, ""},
+		{"ev-admit", admitProposal("prov-1"), true, ""},
+		{"ev-disable", disableProposal("prov-1"), true, ""},
+		{"ev-withdraw", withdrawProposal("content-1", 1, reasonValue), true, ""},
+		{"ev-scheduled", scheduledMsg(msgkit.LimitMaxOpenOffers, 7, uint64(e.height)+20), false, "policy_pending"},
+		{"ev-upgrade", upgradeMsg("up-ev", uint64(e.height)+msgkit.MinActivationLeadBlocks, pub(9)), false, "upgrade_plan"},
+		{"ev-cancel", cancelMsg("up-ev"), false, "upgrade_plan"},
+		{"ev-seat", seatMsg(e.seats[3].ID, pub(90)), false, ""},
 	}
 	for _, row := range rows {
 		before := e.policy(t)
@@ -109,10 +115,13 @@ func TestExecuteEmitsPolicyEventsD2(t *testing.T) {
 		if e.policy(t) != before+1 {
 			t.Fatalf("%s: policy version %d after %d", row.id, e.policy(t), before)
 		}
-		registryAt := -1
+		registryAt, hookAt := -1, -1
 		for i, ev := range events {
 			if ev.Type == "fake_registry" {
 				registryAt = i
+			}
+			if row.hook != "" && ev.Type == row.hook {
+				hookAt = i
 			}
 			if ev.Type == "authority_result" {
 				t.Fatalf("%s: authority_result on a success", row.id)
@@ -120,6 +129,9 @@ func TestExecuteEmitsPolicyEventsD2(t *testing.T) {
 		}
 		if row.registry && (registryAt < 0 || registryAt > at[0]) {
 			t.Fatalf("%s: registry event at %d, typed events at %v", row.id, registryAt, at)
+		}
+		if row.hook != "" && (hookAt < 0 || hookAt > at[0]) {
+			t.Fatalf("%s: %s event at %d, typed events at %v", row.id, row.hook, hookAt, at)
 		}
 
 		// The idempotent retry of the same execute emits no typed event.
@@ -146,6 +158,18 @@ func TestExecuteEmitsPolicyEventsD2(t *testing.T) {
 		t.Fatal("a refused hook's event survived")
 	}
 	hooks.code = msgkit.OK
+
+	// An x/policy refusal (cancel of a plan that is not pending: NOT_FOUND)
+	// fails the execute: no typed event and no upgrade_plan event.
+	e.queueWith(t, k, "ev-no-plan", cancelMsg("up-none"))
+	ctx = e.txCtx()
+	if _, err := k.Execute(ctx, execute(e.authority, "ex-no-plan", "ev-no-plan")); err == nil {
+		t.Fatal("cancel of a missing plan succeeded")
+	}
+	noTyped("policy refusal", ctx)
+	if eventCount(ctx.EventManager().Events(), "upgrade_plan") != 0 {
+		t.Fatal("a refused policy writer's event survived")
+	}
 
 	// A REJECTED keep: a removal that leaves three validators (it applies
 	// before the pending v5 addition).

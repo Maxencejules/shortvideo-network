@@ -22,11 +22,13 @@ listed in `chain/x/evidence/README.md`; none of them is owner approval.
 
 `app.New` builds the keepers in this order:
 
-1. The `x/authority` read keeper (`Role`, `GovernedLimit`, `DevnetRole`, `DevnetNumeric`, `PolicyVersion`).
+1. The `x/authority` read keeper (`Role`, `DevnetRole`, `DevnetNumeric`, `PolicyVersion`), and since goal 10 the
+   `x/policy` keeper for the governed limits (`GovernedLimit`).
 2. `x/providers`, and the hook-less `x/content` copy, with one shared `msgkit.Peers` set.
 3. `leasesRead`: an `x/leases` keeper with no evidence reader. x/evidence reads leases only through it (`Lease`, one
    read of the leases store). It is never registered as a module or on a router.
-4. The `x/evidence` keeper: `Roles` and `Limits` are the authority read keeper, `Leases` is `leasesRead`, `Content` is
+4. The `x/evidence` keeper: `Roles` is the authority read keeper, `Limits` the `x/policy` keeper (the authority read
+   keeper before goal 10), `Leases` is `leasesRead`, `Content` is
    the hook-less content copy, `Peers` is the shared set.
 5. The `x/leases` keeper the app runs: the same dependencies as before Goal 09, with `Evidence` set to the x/evidence
    keeper. A renewal that names an `evidence_id` reads the committed record and is always rejected: `NOT_FOUND` (no
@@ -38,19 +40,20 @@ listed in `chain/x/evidence/README.md`; none of them is owner approval.
 
 Both lease keeper copies share the leases store key, so they read the same committed state. The compile-time checks
 `var _ leases.Evidence = evidence.Keeper{}`, `var _ evidence.Leases = leases.Keeper{}`, `var _ evidence.Content =
-content.Keeper{}`, `var _ evidence.Roles = authority.Keeper{}`, and `var _ evidence.Limits = authority.Keeper{}` are in
-`chain/app/app.go`.
+content.Keeper{}`, `var _ evidence.Roles = authority.Keeper{}`, and `var _ evidence.Limits = policy.Keeper{}` (goal 10;
+`authority.Keeper{}` before) are in `chain/app/app.go`.
 
 `evidence.AppModule` replaces the scaffold slot. `RegisterServices` registers `svn.evidence.v1.Msg` on the message router
 and `svn.evidence.v1.Query` on the gRPC query router; the closed evidence stub, `register`, `methodSpec`,
 `rejectHandler`, and `checkEvidence` are gone from `chain/app`. x/evidence has no BeginBlock and no EndBlock: a
 `RECORDED` record reads `EXPIRED` from the first committed time at or after its expiry, computed when it is read; nothing
 is swept, and evidence takes no share of the lease expiry budget (owner ruling on Q4; x/evidence deviation D-4). The
-evidence store is in `checkRegistryLayouts`: a committed evidence store without the layout key or with another layout
-version stops `app.New` (`TestAppRefusesScaffoldLayout`). A node reopened from disk loads every store, the evidence
+evidence store is in the app's layout table (`checkRegistryLayouts` before goal 10, the load gate since): a committed
+evidence store without the layout key or with another layout version than the persisted version map stops `app.New`
+(`TestAppRefusesScaffoldLayout`). A node reopened from disk loads every store, the evidence
 store included (`TestRestartLoadsCommittedState`, with the layout key only; `TestDevnetAuditLifecycle` stops two
-validators after evidence records commit, restarts them, and they reach the other nodes' app hash). The svn header and
-policy slots stay scaffolding until Goal 10 (`chain/x/scaffold`).
+validators after evidence records commit, restarts them, and they reach the other nodes' app hash). The svn header
+slot stays scaffolding (`chain/x/scaffold`, DR-10-28); x/policy replaced the policy slot in Goal 10.
 
 Genesis and export:
 

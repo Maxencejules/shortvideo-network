@@ -29,6 +29,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest"
 	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
 	policyv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1"
+	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
 // routers is a real SDK message router and gRPC query router wired through
@@ -58,9 +59,11 @@ type recorder struct{ names []string }
 
 func (r *recorder) Record(name string) { r.names = append(r.names, name) }
 
-// TestModule: the module's identity, interfaces, default genesis, and that
-// it registers the query service and no message service; InitGenesis
-// records the call and panics on a bad document.
+// TestModule: the module's identity, interfaces (a BeginBlock, no
+// EndBlock, no validator updates), default genesis, and that it registers
+// the query service and no message service; InitGenesis records the call
+// and panics on a bad document; BeginBlock runs ApplyDue and refuses a
+// context without an SDK context.
 func TestModule(t *testing.T) {
 	e := newBareEnv(t)
 	rec := &recorder{}
@@ -75,8 +78,8 @@ func TestModule(t *testing.T) {
 		_ module.HasConsensusVersion = am
 		_ appmodule.AppModule        = am
 	)
-	if _, ok := any(am).(appmodule.HasBeginBlocker); ok {
-		t.Fatal("the v0 module has a BeginBlock")
+	if _, ok := any(am).(appmodule.HasBeginBlocker); !ok {
+		t.Fatal("the module has no BeginBlock")
 	}
 	if _, ok := any(am).(appmodule.HasEndBlocker); ok {
 		t.Fatal("the module has an EndBlock")
@@ -117,12 +120,32 @@ func TestModule(t *testing.T) {
 	if r.msg.HandlerByTypeURL("/svn.policy.v1.MsgUpdateLimits") != nil {
 		t.Fatal("a policy message is routed")
 	}
+	e.auth.version = 2
+	mustOK(t, e.k.SchedulePending(e.fresh(), msgkit.LimitMaxPageLimit, 9, h+1, "p1", 2))
+	if err := am.BeginBlock(e.at(h)); err != nil {
+		t.Fatal(err)
+	}
+	if _, found := e.k.GovernedLimit(e.ctx, msgkit.LimitMaxPageLimit); found {
+		t.Fatal("BeginBlock below the activation height applied the change")
+	}
+	if err := am.BeginBlock(e.at(h + 1)); err != nil {
+		t.Fatal(err)
+	}
+	if v, found := e.k.GovernedLimit(e.ctx, msgkit.LimitMaxPageLimit); !found || v != 9 {
+		t.Fatalf("BeginBlock at the activation height: (%d, %t)", v, found)
+	}
+	if err := am.BeginBlock(context.Background()); err == nil || !strings.Contains(err.Error(), "no SDK context") {
+		t.Fatalf("BeginBlock on a plain context: %v", err)
+	}
 }
 
 // TestPolicyQuery: Query/Policy over the real gRPC query router and the
-// interceptor path returns the v0 PolicyState (the policy version and the
-// decision rows from the authority source, the stored caps); a plain
-// context is MALFORMED and missing caps are an error.
+// interceptor path returns the PolicyState of schema version 2: the policy
+// version and the decision rows from the authority source, the stored caps,
+// the value in force of all five governed keys in key order (the ceiling
+// where no value is set), the pending changes in key order, the plan, and
+// the app version. A plain context is MALFORMED; missing caps or a damaged
+// governed, pending, plan, or app version row is an error, not a panic.
 func TestPolicyQuery(t *testing.T) {
 	e := newEnv(t)
 	e.auth.version = 4
@@ -133,6 +156,21 @@ func TestPolicyQuery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ceilings := func() []*policyv1.GovernedLimitValue {
+		var out []*policyv1.GovernedLimitValue
+		for _, key := range msgkit.LimitKeys() {
+			c, _ := msgkit.Ceiling(key)
+			out = append(out, &policyv1.GovernedLimitValue{LimitKey: key, Value: c})
+		}
+		return out
+	}
+	want := &policyv1.PolicyState{
+		PolicyVersion:    4,
+		SafetyCaps:       policy.DefaultSafetyCaps(),
+		BlockedDecisions: cloneDecisions(e.auth.decisions),
+		GovernedLimits:   ceilings(),
+		AppVersion:       1,
+	}
 	res, err := handler(e.ctx, &abci.RequestQuery{Data: reqBytes, Path: "/svn.policy.v1.Query/Policy"})
 	if err != nil {
 		t.Fatal(err)
@@ -141,20 +179,51 @@ func TestPolicyQuery(t *testing.T) {
 	if err := proto.Unmarshal(res.Value, &out); err != nil {
 		t.Fatal(err)
 	}
-	want := &policyv1.PolicyState{
-		PolicyVersion:    4,
-		SafetyCaps:       policy.DefaultSafetyCaps(),
-		BlockedDecisions: cloneDecisions(e.auth.decisions),
-	}
 	if !proto.Equal(out.GetState(), want) {
-		t.Fatalf("query state %v", out.GetState())
+		t.Fatalf("fresh query state %v", out.GetState())
 	}
-	// Governed rows, pending rows, and a plan do not change the v0 answer.
-	e.k.SetLimit(e.fresh(), msgkit.LimitMaxPageLimit, 3, "p1")
-	e.k.ScheduleUpgrade(e.fresh(), "up-1", h+3, digestOf("r"), "p2")
+	if keys := out.GetState().GetGovernedLimits(); len(keys) != 5 || keys[0].GetLimitKey() != msgkit.LimitMaxEvidenceBatch || keys[4].GetLimitKey() != msgkit.LimitMaxPageLimit {
+		t.Fatalf("governed limits not the five keys in key order: %v", keys)
+	}
+
+	// A governed value, two pending changes, and a plan.
+	mustOK(t, e.k.SetLimit(e.fresh(), msgkit.LimitMaxPageLimit, 3, "p1"))
+	mustOK(t, e.k.SchedulePending(e.fresh(), msgkit.LimitMaxPageLimit, 7, h+20, "p2", 3))
+	mustOK(t, e.k.SchedulePending(e.fresh(), msgkit.LimitMaxEvidenceBatch, 2, h+9, "p3", 4))
+	mustOK(t, e.k.ScheduleUpgrade(e.fresh(), "up-1", h+lead, digestOf("r"), "p4"))
+	for _, g := range want.GovernedLimits {
+		if g.LimitKey == msgkit.LimitMaxPageLimit {
+			g.Value = 3
+		}
+	}
+	want.PendingLimitChanges = []*policyv1.PendingLimitChange{
+		{LimitKey: msgkit.LimitMaxEvidenceBatch, Value: 2, ActivationHeight: h + 9, ProposalId: "p3", PolicyVersion: 4},
+		{LimitKey: msgkit.LimitMaxPageLimit, Value: 7, ActivationHeight: h + 20, ProposalId: "p2", PolicyVersion: 3},
+	}
+	want.UpgradePlan = &policyv1.UpgradePlan{
+		Name: "up-1", Height: h + lead, ProposalId: "p4",
+		ReleaseDigest: &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: digestOf("r")},
+	}
 	direct, err := e.k.Policy(e.ctx, &policyv1.QueryPolicyRequest{})
 	if err != nil || !proto.Equal(direct.GetState(), want) {
-		t.Fatalf("direct query %v %v", direct, err)
+		t.Fatalf("query state %v %v", direct, err)
+	}
+	// After BeginBlock at h+9 the evidence batch change is in force.
+	if err := e.k.ApplyDue(e.at(h + 9)); err != nil {
+		t.Fatal(err)
+	}
+	for _, g := range want.GovernedLimits {
+		if g.LimitKey == msgkit.LimitMaxEvidenceBatch {
+			g.Value = 2
+		}
+	}
+	want.PendingLimitChanges = want.PendingLimitChanges[1:]
+	if got, err := e.k.Policy(e.ctx, &policyv1.QueryPolicyRequest{}); err != nil || !proto.Equal(got.GetState(), want) {
+		t.Fatalf("query state after activation %v %v", got, err)
+	}
+	direct.State.UpgradePlan.ReleaseDigest.Value[0] ^= 0xff
+	if plan, _ := e.k.Plan(e.ctx); plan.Digest[0] == direct.State.UpgradePlan.ReleaseDigest.Value[0] {
+		t.Fatal("the query shares the stored digest")
 	}
 	direct.State.BlockedDecisions[0].Approved = true
 	if e.auth.decisions[0].GetApproved() {
@@ -189,6 +258,25 @@ func TestPolicyQuery(t *testing.T) {
 	e.store().Delete(policy.SafetyCapsKey())
 	if _, err := e.k.Policy(e.ctx, &policyv1.QueryPolicyRequest{}); err == nil || !strings.Contains(err.Error(), "safety caps row missing") {
 		t.Fatalf("missing caps: %v", err)
+	}
+	damage := map[string]struct {
+		key   []byte
+		value []byte
+		want  string
+	}{
+		"governed": {policy.GovernedKey(msgkit.LimitMaxOpenOffers), []byte{1}, `governed limit "max_open_offers"`},
+		"pending":  {policy.PendingKey(msgkit.LimitMaxOpenOffers), []byte{1}, `pending change of "max_open_offers"`},
+		"plan":     {policy.PlanKey(), []byte{1}, "plan value is 1 bytes"},
+		"app":      {policy.AppVersionKey(), policy.EncodeU64(0), "app version is not"},
+	}
+	for name, d := range damage {
+		t.Run("damaged "+name, func(t *testing.T) {
+			e := newEnv(t)
+			e.store().Set(d.key, d.value)
+			if _, err := e.k.Policy(e.ctx, &policyv1.QueryPolicyRequest{}); err == nil || !strings.Contains(err.Error(), d.want) {
+				t.Fatalf("%v, want %q", err, d.want)
+			}
+		})
 	}
 }
 
@@ -358,7 +446,7 @@ func TestKeeperImports(t *testing.T) {
 func TestNoForbiddenNames(t *testing.T) {
 	patterns, exemptions := msgkittest.ForbiddenNamePatterns(t)
 	names := []string{
-		policy.EventPolicyPending, policy.EventUpgradePlan,
+		policy.EventPolicyPending, policy.EventPolicyActivated, policy.EventUpgradePlan,
 		policy.AttrParameterKey, policy.AttrValue, policy.AttrActivationHeight, policy.AttrProposalID,
 		policy.AttrSupersededProposalID, policy.AttrName, policy.AttrHeight, policy.AttrReleaseDigest,
 		policy.AttrAction, policy.AttrReplacedName,
@@ -372,12 +460,16 @@ func TestNoForbiddenNames(t *testing.T) {
 	e := newEnv(t)
 	e.auth.version = 3
 	ctx := e.fresh()
-	e.k.SchedulePending(ctx, msgkit.LimitMaxPageLimit, 2, h+2, "p1", 2)
-	e.k.SetLimit(ctx, msgkit.LimitMaxPageLimit, 3, "p2")
-	e.k.ScheduleUpgrade(ctx, "up-1", h+2, digestOf("r"), "p3")
-	e.k.CancelUpgrade(ctx, "up-1")
+	mustOK(t, e.k.SchedulePending(ctx, msgkit.LimitMaxPageLimit, 2, h+2, "p1", 2))
+	mustOK(t, e.k.SetLimit(ctx, msgkit.LimitMaxPageLimit, 3, "p2"))
+	mustOK(t, e.k.ScheduleUpgrade(ctx, "up-1", h+lead, digestOf("r"), "p3"))
+	mustOK(t, e.k.CancelUpgrade(ctx, "up-1"))
+	mustOK(t, e.k.SchedulePending(ctx, msgkit.LimitMaxOpenOffers, 2, h+2, "p4", 3))
+	if err := e.k.ApplyDue(ctx.WithBlockHeight(h + 2)); err != nil {
+		t.Fatal(err)
+	}
 	events := ctx.EventManager().Events().ToABCIEvents()
-	if len(events) != 4 {
+	if len(events) != 6 {
 		t.Fatalf("%d events", len(events))
 	}
 	for _, ev := range events {

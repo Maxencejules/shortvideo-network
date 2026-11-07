@@ -12,7 +12,7 @@ The interfaces in this document are frozen-pending-Gate-A for Goals 03 through 1
 
 ## Freeze
 
-Protocol name: `svn-protocol-v0`. Schema version: 1. Canonical profile: `SVN-JCS-1`.
+Protocol name: `svn-protocol-v0`. Schema version: 2 (see "Goal 10 additive revision"; message-level `schema_version` fields stay 1). Canonical profile: `SVN-JCS-1`.
 
 Machine-readable files:
 
@@ -336,6 +336,47 @@ These are protocol invariants. They are not library choices:
 - A governed limit is stored only when it is at or below that key's ceiling in `governed_limit_caps`. Package bytes, open offers, expiry steps, and evidence batch size then read the stored value for that key.
 
 The executable checks are `docs/evidence/goal-02/check_protocol.py`, `spec_machine.py`, `cases.py`, `jcs.py`, and the Go and TypeScript vector programs. They are specification checks. They are not the chain and they are not a devnet.
+
+## Goal 10 additive revision
+
+On 2026-11-07 the owner answered goal 10 question Q1 (DR-10-01) with the option "Minimal additive (Recommended)". This section is that revision. On the same day the owner answered Q2 (DR-10-02) with "Council plan, fail closed (Recommended)" and Q3 (DR-10-03) with "3 of 4 + min notice (Recommended)"; the rows below follow those answers. The two numbers in them, `MinActivationLeadBlocks` = 100 blocks and `MaxActivationLeadBlocks` = 1,000,000 blocks, remain PROPOSED constants: the owner chose the option text that contained them, not the numbers as policy. Using the same maximum for a governed-limit activation height is an interim implementation choice (DR-10-15), not an owner decision. The auditor admission option was not chosen, so this revision has no auditor payload. `docs/decision-register.md` is not changed by these answers.
+
+Versioning:
+
+- The protocol document schema version moves from 1 to 2 (`docs/protocol/bounds.json` `schema_version`, and "Freeze" above).
+- These stay as they are: every message-level `schema_version` (1), including evidence batches and records, provider capability manifests, and blocked-decision rows; the protocol name `svn-protocol-v0`; the peer media type `application/vnd.svn.v0+json`; the genesis `protocol_version` 1; the canonical profile `SVN-JCS-1`. Peer version negotiation ("Privacy, tombstones, and reconciliation") is unchanged.
+- Every added field is optional. A zero or empty value is absent on the wire and omitted from SVN-JCS-1, so every v0 payload keeps its canonical form and its payload digest, including the two vectors in "Canonicalization" (`be9df594c416ecbaf50512e298a73fecf9f7a56e7ac83a0cf4edf87a6b522c48` and `7eeb7c6d8fadfb2b28fea5d2cd42f1a85eaf2b773e79b24399d350b9b9be675a`). `docs/protocol/fixtures/vectors.json` is unchanged.
+- No error code, enum value, message type, RPC, or event message is added. Unknown fields are still rejected: a decoder built from schema version 1 rejects every field below as unknown.
+
+Added fields:
+
+- `svn.authority.v1.GovernedLimitChange.activation_height` (field 3). 0 applies the value inside `ExecuteChange`, as in v0. A positive height schedules it.
+- `svn.authority.v1.ProposalPayload` alternatives `software_upgrade` (6, `SoftwareUpgradeChange{name, height, release_digest}`), `cancel_upgrade` (7, `CancelUpgradeChange{name}`), and `council_seat` (8, `CouncilSeatChange{seat_id, new_public_key}`).
+- `svn.policy.v1.PolicyState` fields `governed_limits` (4, `GovernedLimitValue{limit_key, value}`), `pending_limit_changes` (5, `PendingLimitChange{limit_key, value, activation_height, proposal_id, policy_version}`), `upgrade_plan` (6, `UpgradePlan{name, height, release_digest, proposal_id}`), and `app_version` (7).
+- `svn.authority.v1.QueryGovernanceResponse.devnet_test_parameters` (field 3): the labeled `DevnetTestParameter` rows, so the DEC-008 review delay in use is published. Each row keeps `label` `PROPOSED_TEST_PARAMETER` and `approved_policy` false.
+
+Canonical payload JSON uses the mapping in "Canonicalization". The new alternatives are `softwareUpgrade`, `cancelUpgrade`, and `councilSeat`:
+
+- `{"governedLimit":{"activationHeight":"240","limitKey":"max_open_offers","value":"8"}}`. With `activation_height` 0 the object is the v0 form without `activationHeight`.
+- `{"softwareUpgrade":{"height":"300","name":"rehearsal-1","releaseDigest":{"algorithm":"DIGEST_ALGORITHM_SHA256","value":"<standard base64 of 32 bytes>"}}}`
+- `{"cancelUpgrade":{"name":"rehearsal-1"}}`
+- `{"councilSeat":{"newPublicKey":"<standard base64 of 32 bytes>","seatId":"seat-2"}}`
+
+`payload_digest` is still SHA-256 over the UTF-8 SVN-JCS-1 bytes. The parameter key binding is `<limit_key>` for a governed limit (unchanged), `upgrade` for a software upgrade and for a cancel, and `seat-<seat_id>` for a council seat change; a mismatch is `ERROR_CODE_MALFORMED`, as in v0. The goal-02 spec machine (`docs/evidence/goal-02/spec_machine.py`) is unchanged: it parses each new alternative, and a `governedLimit` that carries `activationHeight`, as `ERROR_CODE_MALFORMED`. The chain's handling of them is a deviation from that machine.
+
+Approvals do not change: every payload kind, old and new, needs three distinct seats of four and the DEC-008 review delay, and there is no per-kind threshold. Seats still sign only `ProposeChange` and `ApproveChange`; the AUTHORITY submitter still signs `ExecuteChange`. In the rows below, "height" is the committed height of the block that runs the transaction, and every `ExecuteChange` failure other than `ERROR_CODE_FORBIDDEN` leaves the proposal `QUEUED`, as in v0.
+
+| Transition | Signer | Who may relay | Replay and idempotency | Capacity |
+| --- | --- | --- | --- | --- |
+| `ProposeChange` with a schema version 2 payload | A council seat | Any node may gossip; execution still checks the seat | Unchanged: proposal id, business id, and base policy version | No capacity change. After the v0 payload check: a governed-limit activation height is 0 or in `(height, height + MaxActivationLeadBlocks]`; at or below the height is `ERROR_CODE_OUT_OF_RANGE`, above the lead or above `safe_integer_max` is `ERROR_CODE_BOUNDS`. A software upgrade name must match `id_pattern` (`ERROR_CODE_BOUNDS`); its height must be in `[height + MinActivationLeadBlocks, height + MaxActivationLeadBlocks]` and at most `safe_integer_max` (`ERROR_CODE_OUT_OF_RANGE` below, `ERROR_CODE_BOUNDS` above); its release digest must name SHA-256 (`ERROR_CODE_MALFORMED`) and hold 32 bytes (`ERROR_CODE_BOUNDS`). A cancel name must match `id_pattern` (`ERROR_CODE_BOUNDS`). A council seat change needs a seat id on `id_pattern` and a 32-byte key (`ERROR_CODE_BOUNDS`). |
+| `ExecuteChange` of a governed limit with an activation height | Authority submitter | Not a substitute for council signatures | Business id | The activation height must still be in `(height, height + MaxActivationLeadBlocks]` (`ERROR_CODE_OUT_OF_RANGE` at or below, `ERROR_CODE_BOUNDS` above). Success stores a pending change (key, value, activation height, proposal id, and the policy version this execute produces) and replaces any pending change of that key. An `activation_height` 0 execute writes the value at once and deletes any pending change of that key. The latest executed decision for a key wins. The policy version moves at execute, not at activation. |
+| Begin-block activation | No user signer | Not a transaction | At most one pending change per governed key | At height `a` every pending change with activation height at or below `a` is applied in key order and deleted. Block `a - 1` reads the old value; block `a` reads the new one. |
+| `ExecuteChange` of a software upgrade | Authority submitter | Not a substitute for council signatures | Business id. A plan name is never reused with a different release digest. | The plan height must still be in `[height + MinActivationLeadBlocks, height + MaxActivationLeadBlocks]` (`ERROR_CODE_OUT_OF_RANGE` below, `ERROR_CODE_BOUNDS` above). Then a name that was already applied is `ERROR_CODE_DUPLICATE_ID`; otherwise a name that an earlier plan used with another release digest is `ERROR_CODE_CONFLICT`, whether that plan is pending, cancelled, or replaced. Success stores the plan (name, height, release digest, proposal id) and replaces any pending plan. The plan names only a height. The release digest is informational: the chain does not compare it with the running binary. |
+| `ExecuteChange` of a cancel | Authority submitter | Not a substitute for council signatures | Business id | No pending plan with that name is `ERROR_CODE_NOT_FOUND`. Success deletes the plan. Only the council cancels, and only before the plan height. There is no skip height and no node-local halt height. |
+| Upgrade at the plan height | No user signer | Not a transaction | Once per plan name | Before any transaction at the plan height, a binary that carries the upgrade for that name runs it, sets the application version to the previous version plus 1, records the name as applied, deletes the plan, and adds 1 to the policy version. Proposals approved but not executed before the upgrade then fail at execute with `ERROR_CODE_STALE_VERSION`, or `ERROR_CODE_CONFLICT` under the v0 rule for a key that last executed another digest. A binary without that upgrade stops at the plan height before it writes anything. Every block checks the application version, so a binary whose version differs from the committed one does not execute the block. |
+| `ExecuteChange` of a council seat change | Authority submitter | Not a substitute for council signatures | Business id | An absent seat is `ERROR_CODE_NOT_FOUND`. A key equal to another seat's key is `ERROR_CODE_DUPLICATE_ID`. A retired key, or the seat's own key, is `ERROR_CODE_CONFLICT`. A key whose account address holds a submitter role is `ERROR_CODE_DUPLICATE_ID`. A key equal to a current or pending validator consensus key is `ERROR_CODE_DUPLICATE_ID`. Success replaces the seat's key and keeps the seat id, retires the old key for good, and creates the account for the new key's address. The council keeps four seats (DEC-008); no payload removes a seat. The policy version bump makes every other proposal in flight unexecutable. |
+
+Queries: `svn.policy.v1.Query/Policy` returns the governed value in force for each of the five `governed_limit_caps` keys in key order, the pending changes, the pending plan, and the application version, beside the v0 fields. `svn.authority.v1.Query/Governance` adds the labeled devnet test parameters. Genesis carries no governed value, pending change, or plan, and the chain starts at application version 1. An untyped chain event emitted for these transitions is outside the event list in "API contracts" until a recorded decision adds it.
 
 ## Handoff
 

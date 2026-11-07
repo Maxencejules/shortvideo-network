@@ -53,15 +53,11 @@ func Start(home string) error {
 }
 
 // StartWith runs one validator until SIGINT or SIGTERM. It does not delete
-// data.
-//
-// The application (app.Config) does not take upgrade handlers yet, so
-// StartWith refuses a non-empty cfg.Upgrades before it reads the home:
-// a binary that declares a handler must not run as if it had none.
+// data. cfg.Upgrades go to the application (app.Config.Upgrades), which
+// takes the binary's app version from them and runs the load gate before
+// CometBFT starts: a refusal is an error here, so svnd exits 1 without
+// starting consensus or loading the validator key.
 func StartWith(cfg Config) error {
-	if len(cfg.Upgrades) > 0 {
-		return fmt.Errorf("node: this binary declares %d upgrade handlers, and the application cannot run upgrade handlers yet; refusing to start", len(cfg.Upgrades))
-	}
 	home := cfg.Home
 	logger := log.NewLogger(os.Stdout).With("home", home)
 	saved, err := loadNodeFile(home)
@@ -80,7 +76,9 @@ func StartWith(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	application, err := app.New(AppConfig(logger, db, chainID, saved))
+	appConfig := AppConfig(logger, db, chainID, saved)
+	appConfig.Upgrades = cfg.Upgrades
+	application, err := app.New(appConfig)
 	if err != nil {
 		_ = db.Close()
 		return err

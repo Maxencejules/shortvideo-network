@@ -15,8 +15,8 @@ import (
 // PlanSource reads the scheduled upgrade. found is false when no upgrade
 // is scheduled. A source never reports an upgrade that has applied: once
 // the runner records an upgrade (VersionStore.RecordUpgrade), the source
-// stops reporting it, and the runner checks that it did. This package has
-// no production source.
+// stops reporting it, and the runner checks that it did. CouncilPlans
+// (plans.go) is the production source.
 type PlanSource interface {
 	Plan(ctx sdk.Context) (plan Plan, found bool, err error)
 }

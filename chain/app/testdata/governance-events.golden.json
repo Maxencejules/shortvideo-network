@@ -1,0 +1,393 @@
+[
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "2"
+      },
+      {
+        "key": "parameter_key",
+        "value": "max_open_offers"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "gov-imm"
+      },
+      {
+        "key": "policy_version",
+        "value": "2"
+      }
+    ]
+  },
+  {
+    "type": "policy_pending",
+    "attributes": [
+      {
+        "key": "parameter_key",
+        "value": "max_open_offers"
+      },
+      {
+        "key": "value",
+        "value": "9"
+      },
+      {
+        "key": "activation_height",
+        "value": "13"
+      },
+      {
+        "key": "proposal_id",
+        "value": "gov-sched"
+      },
+      {
+        "key": "superseded_proposal_id",
+        "value": ""
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "3"
+      },
+      {
+        "key": "parameter_key",
+        "value": "max_open_offers"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "gov-sched"
+      },
+      {
+        "key": "policy_version",
+        "value": "3"
+      }
+    ]
+  },
+  {
+    "type": "policy_activated",
+    "attributes": [
+      {
+        "key": "parameter_key",
+        "value": "max_open_offers"
+      },
+      {
+        "key": "value",
+        "value": "9"
+      },
+      {
+        "key": "activation_height",
+        "value": "13"
+      },
+      {
+        "key": "proposal_id",
+        "value": "gov-sched"
+      }
+    ]
+  },
+  {
+    "type": "policy_pending",
+    "attributes": [
+      {
+        "key": "parameter_key",
+        "value": "max_page_limit"
+      },
+      {
+        "key": "value",
+        "value": "40"
+      },
+      {
+        "key": "activation_height",
+        "value": "1018"
+      },
+      {
+        "key": "proposal_id",
+        "value": "gov-sched-2"
+      },
+      {
+        "key": "superseded_proposal_id",
+        "value": ""
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "4"
+      },
+      {
+        "key": "parameter_key",
+        "value": "max_page_limit"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "gov-sched-2"
+      },
+      {
+        "key": "policy_version",
+        "value": "4"
+      }
+    ]
+  },
+  {
+    "type": "policy_pending",
+    "attributes": [
+      {
+        "key": "parameter_key",
+        "value": "max_page_limit"
+      },
+      {
+        "key": "value",
+        "value": "50"
+      },
+      {
+        "key": "activation_height",
+        "value": "0"
+      },
+      {
+        "key": "proposal_id",
+        "value": "gov-imm-2"
+      },
+      {
+        "key": "superseded_proposal_id",
+        "value": "gov-sched-2"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "5"
+      },
+      {
+        "key": "parameter_key",
+        "value": "max_page_limit"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "gov-imm-2"
+      },
+      {
+        "key": "policy_version",
+        "value": "5"
+      }
+    ]
+  },
+  {
+    "type": "upgrade_plan",
+    "attributes": [
+      {
+        "key": "name",
+        "value": "up-1"
+      },
+      {
+        "key": "height",
+        "value": "138"
+      },
+      {
+        "key": "release_digest",
+        "value": "8f2a3cb6f5f8d1559f0decbc797e66b6ec973a54a1d3660124c38cc818b2cbd7"
+      },
+      {
+        "key": "proposal_id",
+        "value": "up-1"
+      },
+      {
+        "key": "action",
+        "value": "scheduled"
+      },
+      {
+        "key": "replaced_name",
+        "value": ""
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "6"
+      },
+      {
+        "key": "parameter_key",
+        "value": "upgrade"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "up-1"
+      },
+      {
+        "key": "policy_version",
+        "value": "6"
+      }
+    ]
+  },
+  {
+    "type": "upgrade_plan",
+    "attributes": [
+      {
+        "key": "name",
+        "value": "up-2"
+      },
+      {
+        "key": "height",
+        "value": "143"
+      },
+      {
+        "key": "release_digest",
+        "value": "db5ea94aeb753a4fffc4dd322a08ffb2d82fbb6377de08aa2239d97f64d5842b"
+      },
+      {
+        "key": "proposal_id",
+        "value": "up-2"
+      },
+      {
+        "key": "action",
+        "value": "replaced"
+      },
+      {
+        "key": "replaced_name",
+        "value": "up-1"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "7"
+      },
+      {
+        "key": "parameter_key",
+        "value": "upgrade"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "up-2"
+      },
+      {
+        "key": "policy_version",
+        "value": "7"
+      }
+    ]
+  },
+  {
+    "type": "upgrade_plan",
+    "attributes": [
+      {
+        "key": "name",
+        "value": "up-2"
+      },
+      {
+        "key": "height",
+        "value": "143"
+      },
+      {
+        "key": "release_digest",
+        "value": "db5ea94aeb753a4fffc4dd322a08ffb2d82fbb6377de08aa2239d97f64d5842b"
+      },
+      {
+        "key": "proposal_id",
+        "value": "up-2"
+      },
+      {
+        "key": "action",
+        "value": "cancelled"
+      },
+      {
+        "key": "replaced_name",
+        "value": ""
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "8"
+      },
+      {
+        "key": "parameter_key",
+        "value": "upgrade"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "cancel-up-2"
+      },
+      {
+        "key": "policy_version",
+        "value": "8"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "9"
+      },
+      {
+        "key": "parameter_key",
+        "value": "seat-seat-4"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "seat-4-key"
+      },
+      {
+        "key": "policy_version",
+        "value": "9"
+      }
+    ]
+  }
+]
