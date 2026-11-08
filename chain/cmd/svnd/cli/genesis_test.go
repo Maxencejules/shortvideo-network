@@ -238,11 +238,18 @@ func TestValidateGenesisChecksTheConsensusAppVersion(t *testing.T) {
 // holding that genesis is refused by the CometBFT handshake's InitChain
 // with the same error `genesis validate` returns, before the node starts
 // (no port is bound). It shows that the validate rule is InitChain's rule
-// on the document the node actually reads. A start that does not return
-// within startRefusalWait has started the node: the test fails then, and
-// that node runs until the test binary exits.
+// on the document the node actually reads. The rows come from
+// appVersionRows itself, so a row added there is start-tested too. A
+// refused start leaves CometBFT's databases of that home open and its
+// services running until the test binary exits (NewNode returns without
+// closing them; as in TestStartHandsTheHandlersToTheNodeOnAHome). A start
+// that does not return within startRefusalWait has started the node: the
+// test fails then, and that node runs, with the devnet ports bound, until
+// the test binary exits.
 func TestStartRefusesWhatValidateRefusesForTheAppVersion(t *testing.T) {
-	for i, name := range []string{"Version.App 0", "Version.App 2", "no version params", "no consensus params"} {
+	names := appVersionRows(t, []byte(`{"consensus_params":{}}`))
+	for i, named := range names {
+		name := named.name
 		t.Run(name, func(t *testing.T) {
 			layout, err := devnet.Init(devnet.Options{Home: t.TempDir(), ChainID: "shortvideo-dev-cli-appversion"})
 			if err != nil {
@@ -253,10 +260,11 @@ func TestStartRefusesWhatValidateRefusesForTheAppVersion(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			row := appVersionRows(t, raw)[i]
-			if row.name != name {
-				t.Fatalf("row %d is %q, want %q", i, row.name, name)
+			rows := appVersionRows(t, raw)
+			if len(rows) != len(names) || rows[i].name != name {
+				t.Fatalf("appVersionRows gave %d rows on the devnet genesis and %d on the placeholder; row %d differs", len(rows), len(names), i)
 			}
+			row := rows[i]
 			if err := validateGenesisFile(row.doc); err == nil || !strings.Contains(err.Error(), genesisAppVersionRefusal) {
 				t.Fatalf("validate: %v, want %q", err, genesisAppVersionRefusal)
 			}

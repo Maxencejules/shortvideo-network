@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/spf13/cobra"
 
@@ -45,7 +44,7 @@ func validateGenesisFile(raw []byte) error {
 		// has filled in CometBFT's defaults (Version.App 0) for missing
 		// consensus params.
 		params := genDoc.ConsensusParams.ToProto()
-		if err := app.ValidateGenesisConsensusParams(&abci.RequestInitChain{ConsensusParams: &params}); err != nil {
+		if err := app.ValidateGenesisConsensusParams(&params); err != nil {
 			return err
 		}
 		var modules map[string]json.RawMessage

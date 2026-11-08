@@ -369,6 +369,11 @@ func TestGenesisPolicyRules(t *testing.T) {
 			if _, err := chainApp.InitChain(req); err == nil || !strings.Contains(err.Error(), "genesis consensus params Version.App must be 1") {
 				t.Fatalf("InitChain: %v", err)
 			}
+			for _, store := range []string{app.ModulePolicy, authority.ModuleName, app.ModuleProviders} {
+				if keys := chainApp.FinalizeStoreRowsForTest(store); keys != 0 {
+					t.Fatalf("InitChain refused but wrote %d %s rows", keys, store)
+				}
+			}
 		})
 	}
 	chainApp, err := initChain(t, n.doc, base, 1)
