@@ -476,9 +476,31 @@ func (app *App) gateOn(ctx sdk.Context, height uint64) (decision upgrade.Decisio
 	return decision, app.policy.AppVersion(ctx), nil
 }
 
+// ValidateGenesisConsensusParams applies InitChain's genesis consensus
+// params rule (validateGenesisConsensusParams) to params. `svnd genesis
+// validate` passes the params CometBFT's handshake hands InitChain for the
+// same genesis file (GenesisDoc.ConsensusParams.ToProto()), so a file the
+// command accepts is not refused by this rule when a new node runs
+// InitChain on it. A home that has started before runs the genesis
+// document CometBFT stored in its state database, not the file.
+func ValidateGenesisConsensusParams(params *cmtproto.ConsensusParams) error {
+	return validateGenesisConsensusParams(&abci.RequestInitChain{ConsensusParams: params})
+}
+
+// validateGenesisConsensusParams is InitChain's rule on the genesis
+// consensus params: Version.App must be GenesisAppVersion, and params or
+// version params that are missing are refused. It reads only
+// req.ConsensusParams.
+func validateGenesisConsensusParams(req *abci.RequestInitChain) error {
+	if req.ConsensusParams == nil || req.ConsensusParams.Version == nil || req.ConsensusParams.Version.App != GenesisAppVersion {
+		return fmt.Errorf("genesis consensus params Version.App must be %d", GenesisAppVersion)
+	}
+	return nil
+}
+
 // InitChainer initializes a new chain. Before any module writes, it
 // refuses a binary whose app version P is not GenesisAppVersion, genesis
-// consensus params whose Version.App is not GenesisAppVersion, a document
+// consensus params validateGenesisConsensusParams refuses, a document
 // genesis.Validate refuses, and the module genesis ValidateAuthorityGenesis
 // refuses (the authority rules, the policy genesis, and the blocked
 // decision rows of both). After every module's InitGenesis it checks that
@@ -492,8 +514,8 @@ func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.
 		return nil, fmt.Errorf("this binary runs app version %d, and a chain starts at app version %d: initialize a node with the genesis binary and switch binaries at the upgrade height",
 			binary.AppVersion, GenesisAppVersion)
 	}
-	if req.ConsensusParams == nil || req.ConsensusParams.Version == nil || req.ConsensusParams.Version.App != GenesisAppVersion {
-		return nil, fmt.Errorf("genesis consensus params Version.App must be %d", GenesisAppVersion)
+	if err := validateGenesisConsensusParams(req); err != nil {
+		return nil, err
 	}
 	var modules map[string]json.RawMessage
 	if err := json.Unmarshal(req.AppStateBytes, &modules); err != nil {
