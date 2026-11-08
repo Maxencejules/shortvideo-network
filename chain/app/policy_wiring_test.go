@@ -291,9 +291,10 @@ func TestGovernanceQueryThroughABCI(t *testing.T) {
 // policy genesis whose blocked decision rows differ from the authority
 // genesis rows (another order, or a changed row) or that sets a query field
 // of schema version 2 (app_version, governed_limits), and genesis consensus
-// params whose Version.App is not app.GenesisAppVersion (2, or no version
-// params). An accepted InitChain writes the binary's module version map
-// and app version 1 into x/policy, and the policy version is 1.
+// params whose Version.App is not app.GenesisAppVersion (2, 0, no version
+// params, or no consensus params). An accepted InitChain writes the
+// binary's module version map and app version 1 into x/policy, and the
+// policy version is 1.
 func TestGenesisPolicyRules(t *testing.T) {
 	n := newRegNet()
 	codec := codecFromApp(t, n.doc.ChainID)
@@ -353,7 +354,9 @@ func TestGenesisPolicyRules(t *testing.T) {
 		params func(*abci.RequestInitChain)
 	}{
 		{"Version.App 2", func(req *abci.RequestInitChain) { req.ConsensusParams.Version.App = 2 }},
+		{"Version.App 0", func(req *abci.RequestInitChain) { req.ConsensusParams.Version.App = 0 }},
 		{"no version params", func(req *abci.RequestInitChain) { req.ConsensusParams.Version = nil }},
+		{"no consensus params", func(req *abci.RequestInitChain) { req.ConsensusParams = nil }},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			chainApp := newTestApp(t, n.doc.ChainID, nil)
