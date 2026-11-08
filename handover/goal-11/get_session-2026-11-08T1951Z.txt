@@ -1,0 +1,10 @@
+get_session (claude-code-remote MCP), called by the orchestrator at about 2026-11-08T19:51Z, before the goal 11 code commit. Fields copied from the tool output:
+session id: session_014mwakeb27YrugDfwAx8vXL
+session_context.model: claude-opus-5-5
+session_context.effort_level: ultracode
+configured_model: claude-opus-5-5
+external_metadata.last_served_model: claude-opus-5-5
+external_metadata.is_ultracode_active: true
+external_metadata.flag_settings.fastMode: true
+permission_mode: auto
+No get_session call was saved at the start of goal 11 (about 05:33Z); the earlier call at the goal 10 evidence stage reported the same model and effort.
