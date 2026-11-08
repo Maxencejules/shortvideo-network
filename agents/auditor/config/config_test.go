@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -369,5 +370,30 @@ func TestLoadBoundsTheFile(t *testing.T) {
 	}
 	if _, err := Load(path); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("%v", err)
+	}
+}
+
+// TestMaxAuditsIsTheRunLimit: the configuration admits exactly the audits
+// one pending run can hold (batch.MaxRunAudits, which
+// TestWorstCaseRunFitsTheEncodingLimit checks against the encoding limit):
+// MaxAudits audits parse and MaxAudits+1 are refused.
+func TestMaxAuditsIsTheRunLimit(t *testing.T) {
+	if MaxAudits != batch.MaxRunAudits {
+		t.Fatalf("MaxAudits %d, batch.MaxRunAudits %d", MaxAudits, batch.MaxRunAudits)
+	}
+	audits := func(n int) []any {
+		list := make([]any, n)
+		for i := range list {
+			list[i] = map[string]any{"lease_id": fmt.Sprintf("lease-%03d", i), "provider_id": "p1", "content_id": "c1",
+				"endpoint_index": 0, "manifest_path": "m", "endpoints": []any{map[string]any{"name": "a", "url": "https://p.test/"}}, "mode": "WHOLE_PACKAGE"}
+		}
+		return list
+	}
+	if _, err := Parse(edit(t, []any{"audits"}, audits(MaxAudits), false)); err != nil {
+		t.Fatalf("%d audits: %v", MaxAudits, err)
+	}
+	_, err := Parse(edit(t, []any{"audits"}, audits(MaxAudits+1), false))
+	if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "audits must hold 1 to 48 items") {
+		t.Fatalf("%d audits: %v, want the audit count refusal", MaxAudits+1, err)
 	}
 }
