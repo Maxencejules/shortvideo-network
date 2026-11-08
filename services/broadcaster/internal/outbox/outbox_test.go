@@ -1349,6 +1349,9 @@ func TestNamesRoundTrip(t *testing.T) {
 			t.Fatalf("reason %v: %v %v", r, got, err)
 		}
 	}
+	if got, err := outbox.ParseReason("PROVIDER_MUST_RESIGN"); err != nil || got != outbox.ReasonProviderMustResign {
+		t.Fatalf("reason PROVIDER_MUST_RESIGN: %v %v", got, err)
+	}
 	for o := outbox.SendUnknown; o <= outbox.SendAck; o++ {
 		if got, err := outbox.ParseSendOutcome(o.String()); err != nil || got != o {
 			t.Fatalf("send outcome %v: %v %v", o, got, err)

@@ -27,10 +27,22 @@
 // include argument values; database errors are wrapped with their SQLSTATE
 // and primary message.
 //
-// Scope (Wave 0). No owner answer to goal 11 Q1-Q4 is assumed: there are no
-// key classes, no kind allowlist, no content ownership rows, no caller
-// permissions and no clearing of stored authorizations. Kinds and reasons are
-// checked for syntax only.
+// The owner's answers to goal 11 Q1-Q4 (2026-11-08T07:44Z, all four the
+// recommended option) add, in migration 0002 and the matching functions:
+//
+//   - Q1: request kinds bound to a signer class, and key signers registered
+//     with their class and key name (RegisterSigner);
+//   - Q2: FORWARD_PROVIDER_TX, a provider-signed transaction stored and sent
+//     verbatim, driven by the forwarder session (LockForwarder,
+//     PersistForward);
+//   - Q3: content owner rows, PENDING at enqueue, EFFECTIVE only after the
+//     chain confirmed our registration, VOID when the register failed
+//     (ConfirmContentOwner, ContentOwnerFor, CallerScheduledOffer);
+//   - Q4: a FAILED intent none of whose attempts started a send loses its
+//     request, request JSON, authorization context and attempt bytes in the
+//     transaction that failed it; their digests stay.
+//
+// Reasons are checked for syntax only; the reason set is internal/outbox's.
 package store
 
 import (
@@ -56,12 +68,15 @@ const (
 	// WorkChannel is the LISTEN/NOTIFY channel an enqueue notifies at commit.
 	WorkChannel = "broadcaster_work"
 
-	// lockClassMigration and lockClassSigner are the first keys of the
-	// two-key advisory locks of the migration runner (second key 0) and of
-	// signer sessions. register_caller (0001_outbox.pgsql) takes
-	// lockClassMigration with second key 1.
+	// lockClassMigration, lockClassSigner and lockClassForwarder are the
+	// first keys of the two-key advisory locks of the migration runner
+	// (second key 0), of key signer sessions (second key: the signer's lock
+	// key) and of the one forwarder session (second key 0).
+	// register_caller (0001_outbox.pgsql) takes lockClassMigration with
+	// second key 1.
 	lockClassMigration int32 = 0x53564e00
 	lockClassSigner    int32 = 0x53564e01
+	lockClassForwarder int32 = 0x53564e02
 
 	// maxIntentBytes bounds request, request_json and tx bytes: the chain's
 	// MaxTxBytes (chain/genesis/bounds.go).
@@ -162,10 +177,21 @@ var (
 	ErrTxOpen              = errors.New("store: a SignerTx is open on this signer session")
 	ErrConflictCleared     = errors.New("store: an operator already cleared this signer event")
 	ErrOpenIntentsBound    = errors.New("store: more open intents than one stall transition covers")
+	ErrUnsentNotCleared    = errors.New("store: a FAILED intent that never started a send keeps its authorizations")
+	ErrSignerClass         = errors.New("store: signer class does not fit the intent's kind")
+	ErrForward             = errors.New("store: forwarded transaction and its intent or attempt disagree")
+	ErrContentOwner        = errors.New("store: content owner row and its register intent disagree")
+	// ErrContentUnavailable is the one answer for a content id that another
+	// non-VOID owner row holds (plan 5.2 CONTENT_ID_UNAVAILABLE); it never
+	// says whose.
+	ErrContentUnavailable = errors.New("store: content id unavailable")
+	// ErrTxTracked: another intent already tracks these forwarded bytes.
+	ErrTxTracked = errors.New("store: transaction already tracked by another intent")
 )
 
-// sqlstateErrors maps the schema's SQLSTATEs (0001_outbox.pgsql header) and
-// two PostgreSQL ones to this package's errors.
+// sqlstateErrors maps the schema's SQLSTATEs (0001_outbox.pgsql and
+// 0002_answers.pgsql headers) and two PostgreSQL ones to this package's
+// errors.
 var sqlstateErrors = map[string]error{
 	"SV001": ErrImmutable,
 	"SV002": ErrAppendOnly,
@@ -177,6 +203,10 @@ var sqlstateErrors = map[string]error{
 	"SV008": ErrEvidence,
 	"SV009": ErrLiveAttempt,
 	"SV010": ErrChainUnbound,
+	"SV011": ErrUnsentNotCleared,
+	"SV012": ErrSignerClass,
+	"SV013": ErrForward,
+	"SV014": ErrContentOwner,
 	"55P03": ErrLockTimeout,
 	"57014": ErrStatementTimeout,
 }

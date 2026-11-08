@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 // errNoRowsIsNotFound maps sql.ErrNoRows to ErrNotFound and wraps any other
@@ -17,13 +19,16 @@ func errNoRowsIsNotFound(err error, what string) error {
 	return fmt.Errorf("store: %s: %w", what, mapErr(err))
 }
 
-// Intent is the status view of one intent. It carries no request bytes and
-// no authorization context.
+// Intent is the status view of one intent (plan 5.8): states, digests,
+// the validated object, the latest attempt's answer, the live attempt's
+// landing height and, for a COMMITTED intent, its commitment. It carries no
+// request bytes, no request JSON and no authorization context.
 type Intent struct {
 	ID                    string
 	CallerPrincipal       string
 	IdempotencyKey        string
 	Kind                  string
+	Entry                 string
 	State                 State
 	Phase                 Phase
 	Reason                string
@@ -37,6 +42,125 @@ type Intent struct {
 	OwnTransaction        *bool
 	TransitionsRecorded   int
 	TransitionsSuppressed int
+	// RequestDigest is nil for an unvalidated SQL-path intent; SQLDigest is
+	// nil for an HTTP-path intent.
+	RequestDigest []byte
+	SQLDigest     []byte
+	// AuthContextDigest is the SHA-256 of the authorization context's jsonb
+	// text: computed from the stored context, or the digest kept by a Q4
+	// clearing.
+	AuthContextDigest []byte
+	// ClearedAt is set when a Q4 clearing removed the stored authorizations.
+	ClearedAt *time.Time
+	// Object and SignerAddress are nil before validation.
+	Object        *ObjectRef
+	SignerAddress []byte
+	// LastOutcome and LastAck are the latest attempt's last send outcome
+	// class and its last CheckTx code (an ACK or a rejection).
+	LastOutcome string
+	LastAck     *ChainCode
+	// LandingHeight is the timeout height of the live attempt, the last
+	// height at which it can still commit; 0 without a live attempt.
+	LandingHeight uint64
+	// Commitment is set for a COMMITTED intent.
+	Commitment *CommitmentRecord
+}
+
+// CommitmentRecord is a stored commitments row (plan 9.5).
+type CommitmentRecord struct {
+	ChainID           string
+	BusinessID        string
+	Height            uint64
+	BlockHash         []byte
+	TxHash            []byte
+	FirstCommitTxHash []byte
+	TxIndex           uint32
+	MsgIndex          uint32
+	Code              uint32
+	Codespace         string
+	GasWanted         uint64
+	GasUsed           uint64
+	Events            []byte
+	IdempotentReplay  bool
+	CommittingSigner  []byte
+	RecordedAt        time.Time
+}
+
+// intentSelect reads the Intent view; the caller appends WHERE, ORDER BY
+// and LIMIT clauses over alias i.
+const intentSelect = `SELECT i.intent_id, i.caller_principal, i.idempotency_key, i.kind, i.entry, i.state, i.phase,
+		i.reason, i.failure_code, i.failure_codespace, i.business_id, i.attempt_count, i.created_at, i.expires_at,
+		i.final_at, i.committed_tx_hash, i.own_transaction, i.transitions_recorded, i.transitions_suppressed,
+		i.request_digest, i.sql_digest,
+		COALESCE(i.auth_context_digest, sha256(convert_to(i.auth_context::text, 'UTF8'))),
+		i.cleared_at, i.object_type, i.object_id, i.object_version, i.signer_address,
+		la.last_outcome, la.ack_code, la.ack_codespace, lv.timeout_height,
+		c.chain_id, c.business_id, c.height, c.block_hash, c.tx_hash, c.first_commit_tx_hash, c.tx_index,
+		c.msg_index, c.code, c.codespace, c.gas_wanted, c.gas_used, c.events::text, c.idempotent_replay,
+		c.committing_signer, c.recorded_at
+	FROM broadcaster.intents i
+	LEFT JOIN LATERAL (SELECT a.last_outcome, a.ack_code, a.ack_codespace FROM broadcaster.attempts a
+		WHERE a.intent_id = i.intent_id ORDER BY a.n DESC LIMIT 1) la ON true
+	LEFT JOIN LATERAL (SELECT a.timeout_height FROM broadcaster.attempts a
+		WHERE a.intent_id = i.intent_id AND a.dead_at IS NULL AND a.committed_height IS NULL LIMIT 1) lv ON true
+	LEFT JOIN broadcaster.commitments c ON c.intent_id = i.intent_id `
+
+// scanIntent scans one intentSelect row.
+func scanIntent(sc interface{ Scan(...any) error }) (Intent, error) {
+	var (
+		it                           Intent
+		phase, reason, codespace     sql.NullString
+		bizID, objType, objID        sql.NullString
+		lastOutcome, ackSpace        sql.NullString
+		code, objVer, ackCode, land  sql.NullInt64
+		final, cleared               sql.NullTime
+		own                          sql.NullBool
+		cChain, cBiz, cSpace, cEvent sql.NullString
+		cHeight, cIndex, cMsg, cCode sql.NullInt64
+		cWanted, cUsed               sql.NullInt64
+		cBlock, cTx, cFirst, cSigner []byte
+		cReplay                      sql.NullBool
+		cAt                          sql.NullTime
+	)
+	if err := sc.Scan(&it.ID, &it.CallerPrincipal, &it.IdempotencyKey, &it.Kind, &it.Entry, &it.State, &phase, &reason,
+		&code, &codespace, &bizID, &it.AttemptCount, &it.CreatedAt, &it.ExpiresAt, &final, &it.CommittedTxHash, &own,
+		&it.TransitionsRecorded, &it.TransitionsSuppressed, &it.RequestDigest, &it.SQLDigest, &it.AuthContextDigest,
+		&cleared, &objType, &objID, &objVer, &it.SignerAddress, &lastOutcome, &ackCode, &ackSpace, &land,
+		&cChain, &cBiz, &cHeight, &cBlock, &cTx, &cFirst, &cIndex, &cMsg, &cCode, &cSpace, &cWanted, &cUsed, &cEvent,
+		&cReplay, &cSigner, &cAt); err != nil {
+		return Intent{}, err
+	}
+	it.Phase = Phase(phase.String)
+	it.Reason = reason.String
+	it.BusinessID = bizID.String
+	it.LastOutcome = lastOutcome.String
+	it.LandingHeight = uint64(land.Int64)
+	if code.Valid {
+		it.Failure = &ChainCode{Code: uint32(code.Int64), Codespace: codespace.String}
+	}
+	if final.Valid {
+		it.FinalAt = &final.Time
+	}
+	if cleared.Valid {
+		it.ClearedAt = &cleared.Time
+	}
+	if own.Valid {
+		it.OwnTransaction = &own.Bool
+	}
+	if objType.Valid {
+		it.Object = &ObjectRef{Type: ObjectType(objType.String), ID: objID.String, Version: uint64(objVer.Int64)}
+	}
+	if ackCode.Valid {
+		it.LastAck = &ChainCode{Code: uint32(ackCode.Int64), Codespace: ackSpace.String}
+	}
+	if cHeight.Valid {
+		it.Commitment = &CommitmentRecord{ChainID: cChain.String, BusinessID: cBiz.String, Height: uint64(cHeight.Int64),
+			BlockHash: cBlock, TxHash: cTx, FirstCommitTxHash: cFirst, TxIndex: uint32(cIndex.Int64),
+			MsgIndex: uint32(cMsg.Int64), Code: uint32(cCode.Int64), Codespace: cSpace.String,
+			GasWanted: uint64(cWanted.Int64), GasUsed: uint64(cUsed.Int64), Events: []byte(cEvent.String),
+			IdempotentReplay: cReplay.Bool, CommittingSigner: cSigner, RecordedAt: cAt.Time}
+	}
+	return it, nil
 }
 
 // GetIntent returns the caller's own intent. Another caller's intent and an
@@ -45,37 +169,78 @@ func (s *Store) GetIntent(ctx context.Context, callerPrincipal, intentID string)
 	if !idRE.MatchString(callerPrincipal) || !uuidRE.MatchString(intentID) {
 		return Intent{}, ErrNotFound
 	}
-	var (
-		it               Intent
-		phase, reason    sql.NullString
-		code             sql.NullInt64
-		codespace, bizID sql.NullString
-		final            sql.NullTime
-		own              sql.NullBool
-	)
-	err := s.db.QueryRowContext(ctx, `SELECT intent_id, caller_principal, idempotency_key, kind, state, phase, reason,
-			failure_code, failure_codespace, business_id, attempt_count, created_at, expires_at, final_at,
-			committed_tx_hash, own_transaction, transitions_recorded, transitions_suppressed
-		FROM broadcaster.intents WHERE intent_id = $1 AND caller_principal = $2`, intentID, callerPrincipal).Scan(
-		&it.ID, &it.CallerPrincipal, &it.IdempotencyKey, &it.Kind, &it.State, &phase, &reason, &code, &codespace,
-		&bizID, &it.AttemptCount, &it.CreatedAt, &it.ExpiresAt, &final, &it.CommittedTxHash, &own,
-		&it.TransitionsRecorded, &it.TransitionsSuppressed)
+	it, err := scanIntent(s.db.QueryRowContext(ctx, intentSelect+`WHERE i.intent_id = $1 AND i.caller_principal = $2`,
+		intentID, callerPrincipal))
 	if err != nil {
 		return Intent{}, errNoRowsIsNotFound(err, "read intent")
 	}
-	it.Phase = Phase(phase.String)
-	it.Reason = reason.String
-	it.BusinessID = bizID.String
-	if code.Valid {
-		it.Failure = &ChainCode{Code: uint32(code.Int64), Codespace: codespace.String}
-	}
-	if final.Valid {
-		it.FinalAt = &final.Time
-	}
-	if own.Valid {
-		it.OwnTransaction = &own.Bool
-	}
 	return it, nil
+}
+
+// IntentFilter selects a page of a caller's intents (plan 5.2 GET
+// /v1/intents).
+type IntentFilter struct {
+	// States keeps intents in these states; empty keeps every state.
+	States []State
+	// After is the id of the last intent of the previous page, empty for
+	// the first page. It must be one of the caller's intents.
+	After string
+	// Limit is the page size, 1 to 100.
+	Limit int
+}
+
+// ListIntents returns a page of the caller's own intents in creation order
+// (created_at, then id). A full page means more may follow: pass the last
+// id as the next After. An After that is not one of the caller's intents is
+// ErrNotFound.
+func (s *Store) ListIntents(ctx context.Context, callerPrincipal string, f IntentFilter) ([]Intent, error) {
+	if !idRE.MatchString(callerPrincipal) || f.Limit < 1 || f.Limit > 100 {
+		return nil, fmt.Errorf("%w: caller or limit", ErrInvalid)
+	}
+	states := []string{string(StateRequested), string(StateInFlight), string(StateCommitted), string(StateFailed)}
+	if len(f.States) > 0 {
+		states = states[:0]
+		for _, st := range f.States {
+			switch st {
+			case StateRequested, StateInFlight, StateCommitted, StateFailed:
+				states = append(states, string(st))
+			default:
+				return nil, fmt.Errorf("%w: state", ErrInvalid)
+			}
+		}
+	}
+	afterAt := time.Time{}
+	afterID := "00000000-0000-0000-0000-000000000000"
+	if f.After != "" {
+		if !uuidRE.MatchString(f.After) {
+			return nil, ErrNotFound
+		}
+		if err := s.db.QueryRowContext(ctx, `SELECT created_at FROM broadcaster.intents
+			WHERE intent_id = $1 AND caller_principal = $2`, f.After, callerPrincipal).Scan(&afterAt); err != nil {
+			return nil, errNoRowsIsNotFound(err, "read page token")
+		}
+		afterID = f.After
+	}
+	rows, err := s.db.QueryContext(ctx, intentSelect+`WHERE i.caller_principal = $1 AND i.state = ANY($2::text[])
+		AND (i.created_at, i.intent_id) > ($3::timestamptz, $4::uuid)
+		ORDER BY i.created_at, i.intent_id LIMIT $5`,
+		callerPrincipal, pq.Array(states), afterAt, afterID, f.Limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: list intents: %w", mapErr(err))
+	}
+	defer rows.Close()
+	var out []Intent
+	for rows.Next() {
+		it, err := scanIntent(rows)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan intent: %w", err)
+		}
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list intents: %w", err)
+	}
+	return out, nil
 }
 
 // DueIntents lists up to limit (1 to 1,000) validated REQUESTED intents of a
@@ -151,12 +316,18 @@ func (s *Store) listIDs(ctx context.Context, query string, args ...any) ([]strin
 
 // Attempt is one attempts row without its transaction bytes.
 type Attempt struct {
-	ID              string
-	N               int
-	BusinessN       int
-	Sequence        uint64
-	TimeoutHeight   uint64
-	TxHash          []byte
+	ID            string
+	IntentID      string
+	N             int
+	BusinessN     int
+	SignerAddress []byte
+	AccountNumber uint64
+	Sequence      uint64
+	TimeoutHeight uint64
+	Gas           uint64
+	TxHash        []byte
+	// BytesCleared says a Q4 clearing removed the transaction bytes.
+	BytesCleared    bool
 	Phase           AttemptPhase
 	SendsStarted    int
 	SendsRecorded   int
@@ -164,6 +335,9 @@ type Attempt struct {
 	CacheAnswers    int
 	CountedRefusals int
 	Acked           bool
+	LastOutcome     string
+	// Ack is the CheckTx code of the last ACK or rejection recorded.
+	Ack             *ChainCode
 	DeadReason      string
 	CommittedHeight uint64
 	CommittedCode   *ChainCode
@@ -171,46 +345,93 @@ type Attempt struct {
 	WorkerInstance  string
 }
 
-// Attempts lists an intent's attempts in order (at most 32).
-func (s *Store) Attempts(ctx context.Context, intentID string) ([]Attempt, error) {
-	if !uuidRE.MatchString(intentID) {
-		return nil, fmt.Errorf("%w: intent id", ErrInvalid)
+// AttemptTx is an attempt with its stored transaction bytes, the bytes a
+// rebroadcast sends unchanged.
+type AttemptTx struct {
+	Attempt
+	TxBytes []byte
+}
+
+// attemptColumns are the columns scanAttempt reads, over alias a.
+const attemptColumns = `a.attempt_id, a.intent_id, a.n, a.business_n, a.signer_address, a.account_number, a.sequence,
+	a.timeout_height, a.gas, a.tx_hash, a.tx_bytes IS NULL, a.phase, a.sends_started, a.sends_recorded,
+	a.unknown_sends, a.cache_answers, a.counted_refusals, a.acked, a.last_outcome, a.ack_code, a.ack_codespace,
+	a.dead_reason, a.committed_height, a.committed_code, a.committed_codespace, a.acc_seq_present,
+	a.worker_instance`
+
+// scanAttempt scans attemptColumns, followed by tx_bytes when withBytes.
+func scanAttempt(sc interface{ Scan(...any) error }, withBytes bool) (AttemptTx, error) {
+	var (
+		a                                      AttemptTx
+		acct, seq, timeout, gas                int64
+		lastOutcome, ackSpace, dead, codespace sql.NullString
+		ackCode, height, code                  sql.NullInt64
+		accSeq                                 sql.NullBool
+	)
+	dest := []any{&a.ID, &a.IntentID, &a.N, &a.BusinessN, &a.SignerAddress, &acct, &seq, &timeout, &gas, &a.TxHash,
+		&a.BytesCleared, &a.Phase, &a.SendsStarted, &a.SendsRecorded, &a.UnknownSends, &a.CacheAnswers,
+		&a.CountedRefusals, &a.Acked, &lastOutcome, &ackCode, &ackSpace, &dead, &height, &code, &codespace, &accSeq,
+		&a.WorkerInstance}
+	if withBytes {
+		dest = append(dest, &a.TxBytes)
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT attempt_id, n, business_n, sequence, timeout_height, tx_hash, phase,
-			sends_started, sends_recorded, unknown_sends, cache_answers, counted_refusals, acked, dead_reason,
-			committed_height, committed_code, committed_codespace, acc_seq_present, worker_instance
-		FROM broadcaster.attempts WHERE intent_id = $1 ORDER BY n LIMIT 32`, intentID)
+	if err := sc.Scan(dest...); err != nil {
+		return AttemptTx{}, err
+	}
+	a.AccountNumber, a.Sequence, a.TimeoutHeight, a.Gas = uint64(acct), uint64(seq), uint64(timeout), uint64(gas)
+	a.LastOutcome = lastOutcome.String
+	a.DeadReason = dead.String
+	a.CommittedHeight = uint64(height.Int64)
+	if ackCode.Valid {
+		a.Ack = &ChainCode{Code: uint32(ackCode.Int64), Codespace: ackSpace.String}
+	}
+	if code.Valid {
+		a.CommittedCode = &ChainCode{Code: uint32(code.Int64), Codespace: codespace.String}
+	}
+	if accSeq.Valid {
+		a.AccSeqPresent = &accSeq.Bool
+	}
+	return a, nil
+}
+
+// queryAttempts runs SELECT attemptColumns [, tx_bytes] FROM attempts a
+// followed by tail.
+func (s *Store) queryAttempts(ctx context.Context, withBytes bool, tail string, args ...any) ([]AttemptTx, error) {
+	cols := attemptColumns
+	if withBytes {
+		cols += `, a.tx_bytes`
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT `+cols+` FROM broadcaster.attempts a `+tail, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list attempts: %w", mapErr(err))
 	}
 	defer rows.Close()
-	var out []Attempt
+	var out []AttemptTx
 	for rows.Next() {
-		var (
-			a               Attempt
-			seq, timeout    int64
-			dead, codespace sql.NullString
-			height, code    sql.NullInt64
-			accSeq          sql.NullBool
-		)
-		if err := rows.Scan(&a.ID, &a.N, &a.BusinessN, &seq, &timeout, &a.TxHash, &a.Phase, &a.SendsStarted,
-			&a.SendsRecorded, &a.UnknownSends, &a.CacheAnswers, &a.CountedRefusals, &a.Acked, &dead, &height, &code,
-			&codespace, &accSeq, &a.WorkerInstance); err != nil {
+		a, err := scanAttempt(rows, withBytes)
+		if err != nil {
 			return nil, fmt.Errorf("store: scan attempt: %w", err)
-		}
-		a.Sequence, a.TimeoutHeight = uint64(seq), uint64(timeout)
-		a.DeadReason = dead.String
-		a.CommittedHeight = uint64(height.Int64)
-		if code.Valid {
-			a.CommittedCode = &ChainCode{Code: uint32(code.Int64), Codespace: codespace.String}
-		}
-		if accSeq.Valid {
-			a.AccSeqPresent = &accSeq.Bool
 		}
 		out = append(out, a)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: list attempts: %w", err)
+	}
+	return out, nil
+}
+
+// Attempts lists an intent's attempts in order (at most 32).
+func (s *Store) Attempts(ctx context.Context, intentID string) ([]Attempt, error) {
+	if !uuidRE.MatchString(intentID) {
+		return nil, fmt.Errorf("%w: intent id", ErrInvalid)
+	}
+	atts, err := s.queryAttempts(ctx, false, `WHERE a.intent_id = $1 ORDER BY a.n LIMIT 32`, intentID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Attempt, len(atts))
+	for i, a := range atts {
+		out[i] = a.Attempt
 	}
 	return out, nil
 }

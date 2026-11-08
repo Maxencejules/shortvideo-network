@@ -91,7 +91,7 @@ func (r CommittedResult) phase() AttemptPhase {
 }
 
 // ResolveCommitted records a committed result on a live attempt of the
-// session's signer and raises the signer's observed height to the committed
+// session and raises the attempt signer's observed height to the committed
 // height, so a later SyncSequence answered from older state is
 // ErrStaleObservation. A terminal attempt is ErrImmutable: a result for an
 // attempt already marked DEAD is the 8.5 integrity alert and nothing is
@@ -139,7 +139,7 @@ func (t *SignerTx) ResolveCommitted(ctx context.Context, attemptID string, r Com
 		return err
 	}
 	res, err = t.tx.ExecContext(ctx, `UPDATE broadcaster.signers SET observed_height = GREATEST(observed_height, $2)
-		WHERE address = $1`, t.ss.address, height)
+		WHERE address = $1`, a.signer, height)
 	if err := oneRow(res, err, "raise observed height"); err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ const (
 	DeadD3SequenceUsed   DeadReason = "D3_SEQUENCE_USED"
 )
 
-// MarkDead marks a live attempt of the session's signer DEAD. The database
+// MarkDead marks a live attempt of the session DEAD. The database
 // refuses D2_REFUSED unless at least one send was started, every send was
 // recorded and every recorded outcome was a counted refusal (ErrInvalid via
 // the check constraint, SQLSTATE 23514).
@@ -198,7 +198,7 @@ func (t *SignerTx) observe(ctx context.Context, cur lockedIntent, attemptID, rea
 }
 
 // lockExpected locks the intent and checks it is in the expected state and
-// phase.
+// phase and that the session drives it.
 func (t *SignerTx) lockExpected(ctx context.Context, intentID string, from Expect) (lockedIntent, error) {
 	cur, err := lockIntent(ctx, t.tx, intentID)
 	if err != nil {
@@ -207,7 +207,7 @@ func (t *SignerTx) lockExpected(ctx context.Context, intentID string, from Expec
 	if cur.state != from.State || cur.phase != from.Phase {
 		return lockedIntent{}, fmt.Errorf("%w: intent is %s/%s", ErrStateChanged, cur.state, cur.phase)
 	}
-	if !bytes.Equal(cur.signerAddress, t.ss.address) {
+	if !t.ss.owns(cur) {
 		return lockedIntent{}, fmt.Errorf("%w: intent belongs to another signer", ErrStateChanged)
 	}
 	return cur, nil
@@ -304,7 +304,11 @@ type ChainCode struct {
 
 // FailIntent is T6, T7, T13 or T14 ending in FAILED: the intent, in the
 // expected non-terminal state, becomes FAILED with reason
-// (^[A-Z][A-Z0-9_]{0,39}$) and an optional chain code.
+// (^[A-Z][A-Z0-9_]{0,39}$) and an optional chain code. In the same
+// transaction its PENDING content owner row becomes VOID (Q3) and, when no
+// attempt of it ever started a send, its stored authorizations are cleared
+// (Q4); an attempt still live at that point is ErrLiveAttempt, so resolve or
+// kill it first.
 func (t *SignerTx) FailIntent(ctx context.Context, intentID string, from Expect, reason string, code *ChainCode) error {
 	if from.State != StateRequested && from.State != StateInFlight {
 		return fmt.Errorf("%w: FAILED only from REQUESTED or IN_FLIGHT", ErrInvalid)
@@ -325,8 +329,12 @@ func (t *SignerTx) FailIntent(ctx context.Context, intentID string, from Expect,
 	if err != nil {
 		return err
 	}
+	clear, obs, err := failingObservation(ctx, t.tx, intentID)
+	if err != nil {
+		return err
+	}
 	if err := t.ss.s.recordTransition(ctx, t.tx, cur, transition{
-		intentID: intentID, from: &from, to: Expect{StateFailed, PhaseNone}, reason: reason,
+		intentID: intentID, from: &from, to: Expect{StateFailed, PhaseNone}, reason: reason, observation: obs,
 	}); err != nil {
 		return err
 	}
@@ -334,12 +342,20 @@ func (t *SignerTx) FailIntent(ctx context.Context, intentID string, from Expect,
 		failure_code = $3, failure_codespace = $4, final_at = clock_timestamp()
 		WHERE intent_id = $1 AND state = $5 AND phase = $6`,
 		intentID, reason, fcode, fspace, string(from.State), string(from.Phase))
-	return oneRow(res, err, "fail intent")
+	if err := oneRow(res, err, "fail intent"); err != nil {
+		return err
+	}
+	return settleFailed(ctx, t.tx, intentID, clear)
 }
+
+// errForwardOnce refuses a second attempt or business id for a forwarded
+// intent: its bytes are the provider's and cannot be re-signed here.
+var errForwardOnce = fmt.Errorf("%w: a forwarded intent has one attempt and one business id", ErrInvalid)
 
 // RetryWait is T13 or T14 ending in REQUESTED/RETRY_WAIT: the next attempt
 // may start after delay (0 to 600 s) on the database clock; next_attempt_at
-// is stored, so a restart keeps the schedule.
+// is stored, so a restart keeps the schedule. A forwarded intent never
+// retries (ErrInvalid): it fails, PROVIDER_MUST_RESIGN in plan 7.3.
 func (t *SignerTx) RetryWait(ctx context.Context, intentID string, from Expect, delay time.Duration, reason string) error {
 	if from.State != StateInFlight && from.State != StateRequested {
 		return fmt.Errorf("%w: RETRY_WAIT only from IN_FLIGHT or REQUESTED", ErrInvalid)
@@ -350,6 +366,9 @@ func (t *SignerTx) RetryWait(ctx context.Context, intentID string, from Expect, 
 	cur, err := t.lockExpected(ctx, intentID, from)
 	if err != nil {
 		return err
+	}
+	if cur.class == ClassForwardSource {
+		return errForwardOnce
 	}
 	if err := t.ss.s.recordTransition(ctx, t.tx, cur, transition{
 		intentID: intentID, from: &from, to: Expect{StateRequested, PhaseRetryWait}, reason: reason,
@@ -392,7 +411,8 @@ func (t *SignerTx) AwaitDeadline(ctx context.Context, intentID string, from Expe
 // id was taken by another payload gets a new random business id, bounded by
 // Limits.BusinessAttempts (ErrBusinessAttemptCap at the bound). The previous
 // business attempt keeps outcome (^[A-Z][A-Z0-9_]{0,39}$). It returns the new
-// business id.
+// business id. A forwarded intent's business id is the provider's and never
+// changes (ErrInvalid).
 func (t *SignerTx) OpenBusinessAttempt(ctx context.Context, intentID string, from Expect, outcome string) (string, error) {
 	if from.State != StateRequested || !codeRE.MatchString(outcome) {
 		return "", fmt.Errorf("%w: business attempt", ErrInvalid)
@@ -400,6 +420,9 @@ func (t *SignerTx) OpenBusinessAttempt(ctx context.Context, intentID string, fro
 	cur, err := t.lockExpected(ctx, intentID, from)
 	if err != nil {
 		return "", err
+	}
+	if cur.class == ClassForwardSource {
+		return "", errForwardOnce
 	}
 	if !cur.businessAttempt.Valid {
 		return "", fmt.Errorf("%w: intent not validated", ErrStateChanged)
@@ -438,8 +461,8 @@ func (t *SignerTx) OpenBusinessAttempt(ctx context.Context, intentID string, fro
 	return businessID, nil
 }
 
-// RecordObservation appends an observation row for a non-terminal intent of
-// the session's signer without changing its state: a row when reason (the
+// RecordObservation appends an observation row for a non-terminal intent the
+// session drives without changing its state: a row when reason (the
 // observation class) differs from the intent's last transitions reason,
 // otherwise only transitions_suppressed grows (m11).
 func (t *SignerTx) RecordObservation(ctx context.Context, intentID, reason string, observation json.RawMessage) error {
@@ -453,7 +476,7 @@ func (t *SignerTx) RecordObservation(ctx context.Context, intentID, reason strin
 	if cur.state == StateCommitted || cur.state == StateFailed {
 		return fmt.Errorf("%w: intent is %s", ErrImmutable, cur.state)
 	}
-	if !bytes.Equal(cur.signerAddress, t.ss.address) {
+	if !t.ss.owns(cur) {
 		return fmt.Errorf("%w: intent belongs to another signer", ErrStateChanged)
 	}
 	if cur.lastReason.Valid && cur.lastReason.String == reason {

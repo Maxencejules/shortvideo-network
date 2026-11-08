@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -25,6 +26,13 @@ func TestMigrationsChecksumGapForwardOnly(t *testing.T) {
 	if err := CheckSchema(ctx, e.owner); !errors.Is(err, ErrSchemaBehind) {
 		t.Fatalf("CheckSchema on an empty database: want ErrSchemaBehind, got %v", err)
 	}
+	embedded, err := loadMigrations(migrationFS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(embedded) != 2 {
+		t.Fatalf("%d embedded migrations, want 0001_outbox and 0002_answers", len(embedded))
+	}
 
 	var wg sync.WaitGroup
 	results := make([][]int, 2)
@@ -40,10 +48,16 @@ func TestMigrationsChecksumGapForwardOnly(t *testing.T) {
 	if errs[0] != nil || errs[1] != nil {
 		t.Fatalf("concurrent migrate: %v %v", errs[0], errs[1])
 	}
-	if len(results[0])+len(results[1]) != 1 {
-		t.Fatalf("concurrent migrate applied %v and %v, want version 1 exactly once", results[0], results[1])
+	applied := map[int]int{}
+	for _, r := range results {
+		for _, v := range r {
+			applied[v]++
+		}
 	}
-	if got := e.count(`SELECT count(*) FROM broadcaster.schema_migrations`); got != 1 {
+	if len(results[0])+len(results[1]) != len(embedded) || len(applied) != len(embedded) {
+		t.Fatalf("concurrent migrate applied %v and %v, want each version exactly once", results[0], results[1])
+	}
+	if got := e.count(`SELECT count(*) FROM broadcaster.schema_migrations`); got != len(embedded) {
 		t.Fatalf("%d schema_migrations rows", got)
 	}
 	if again, err := Migrate(ctx, e.owner); err != nil || len(again) != 0 {
@@ -52,67 +66,76 @@ func TestMigrationsChecksumGapForwardOnly(t *testing.T) {
 	if err := CheckSchema(ctx, e.runtime); err != nil {
 		t.Fatalf("CheckSchema as runtime: %v", err)
 	}
-	embedded, err := loadMigrations(migrationFS)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var sum []byte
-	if err := e.super.QueryRowContext(ctx, `SELECT sha256 FROM broadcaster.schema_migrations WHERE version = 1`).Scan(&sum); err != nil {
-		t.Fatal(err)
-	}
-	if string(sum) != string(embedded[0].sum[:]) {
-		t.Fatal("recorded checksum differs from the embedded file")
+	for _, m := range embedded {
+		var sum []byte
+		if err := e.super.QueryRowContext(ctx, `SELECT sha256 FROM broadcaster.schema_migrations WHERE version = $1`,
+			m.version).Scan(&sum); err != nil {
+			t.Fatal(err)
+		}
+		if string(sum) != string(m.sum[:]) {
+			t.Fatalf("recorded checksum of version %d differs from the embedded file", m.version)
+		}
 	}
 
-	orig := embedded[0].sql
 	file := func(body string) *fstest.MapFile { return &fstest.MapFile{Data: []byte(body)} }
+	// with returns the embedded files plus extra (an extra name replaces a
+	// file of the same name).
+	with := func(extra fstest.MapFS) fstest.MapFS {
+		out := fstest.MapFS{}
+		for _, m := range embedded {
+			out[fmt.Sprintf("migrations/%04d_%s.pgsql", m.version, m.name)] = file(m.sql)
+		}
+		for k, v := range extra {
+			out[k] = v
+		}
+		return out
+	}
+	first := "migrations/0001_outbox.pgsql"
 
-	changed := fstest.MapFS{"migrations/0001_outbox.pgsql": file(orig + "\n-- changed\n")}
+	changed := with(fstest.MapFS{first: file(embedded[0].sql + "\n-- changed\n")})
 	if _, err := migrate(ctx, e.owner, changed); !errors.Is(err, ErrMigrationChecksum) {
 		t.Fatalf("changed checksum: want ErrMigrationChecksum, got %v", err)
 	}
-	renamed := fstest.MapFS{"migrations/0001_other.pgsql": file(orig)}
+	renamed := with(nil)
+	delete(renamed, first)
+	renamed["migrations/0001_other.pgsql"] = file(embedded[0].sql)
 	if _, err := migrate(ctx, e.owner, renamed); !errors.Is(err, ErrMigrationChecksum) {
 		t.Fatalf("renamed migration: want ErrMigrationChecksum, got %v", err)
 	}
 	gapFiles := fstest.MapFS{
-		"migrations/0001_outbox.pgsql": file(orig),
-		"migrations/0003_next.pgsql":   file("SELECT 1"),
+		first:                        file(embedded[0].sql),
+		"migrations/0003_next.pgsql": file("SELECT 1"),
 	}
 	if _, err := migrate(ctx, e.owner, gapFiles); !errors.Is(err, ErrMigrationFiles) {
 		t.Fatalf("file gap: want ErrMigrationFiles, got %v", err)
 	}
-	stray := fstest.MapFS{
-		"migrations/0001_outbox.pgsql": file(orig),
-		"migrations/README":            file("x"),
-	}
+	stray := with(fstest.MapFS{"migrations/README": file("x")})
 	if _, err := migrate(ctx, e.owner, stray); !errors.Is(err, ErrMigrationFiles) {
 		t.Fatalf("stray file: want ErrMigrationFiles, got %v", err)
 	}
 	if _, err := migrate(ctx, e.owner, fstest.MapFS{"migrations/x": file("")}); !errors.Is(err, ErrMigrationFiles) {
 		t.Fatalf("no migration: want ErrMigrationFiles, got %v", err)
 	}
-
-	failing := fstest.MapFS{
-		"migrations/0001_outbox.pgsql": file(orig),
-		"migrations/0002_bad.pgsql":    file("CREATE TABLE broadcaster.half (v integer); SELECT no_such_function();"),
+	if _, err := migrate(ctx, e.owner, fstest.MapFS{first: file(embedded[0].sql)}); !errors.Is(err, ErrDatabaseNewer) {
+		t.Fatalf("binary with fewer migrations: want ErrDatabaseNewer, got %v", err)
 	}
+
+	failing := with(fstest.MapFS{
+		"migrations/0003_bad.pgsql": file("CREATE TABLE broadcaster.half (v integer); SELECT no_such_function();"),
+	})
 	if _, err := migrate(ctx, e.owner, failing); err == nil {
 		t.Fatal("failing migration succeeded")
 	}
 	if got := e.count(`SELECT count(*) FROM pg_tables WHERE schemaname = 'broadcaster' AND tablename = 'half'`); got != 0 {
 		t.Fatal("failing migration left its table")
 	}
-	if got := e.count(`SELECT count(*) FROM broadcaster.schema_migrations`); got != 1 {
+	if got := e.count(`SELECT count(*) FROM broadcaster.schema_migrations`); got != len(embedded) {
 		t.Fatalf("failing migration recorded: %d rows", got)
 	}
 
-	next := fstest.MapFS{
-		"migrations/0001_outbox.pgsql": file(orig),
-		"migrations/0002_next.pgsql":   file("CREATE TABLE broadcaster.next_table (v integer);"),
-	}
-	if done, err := migrate(ctx, e.owner, next); err != nil || len(done) != 1 || done[0] != 2 {
-		t.Fatalf("apply 0002: %v %v", done, err)
+	next := with(fstest.MapFS{"migrations/0003_next.pgsql": file("CREATE TABLE broadcaster.next_table (v integer);")})
+	if done, err := migrate(ctx, e.owner, next); err != nil || len(done) != 1 || done[0] != 3 {
+		t.Fatalf("apply 0003: %v %v", done, err)
 	}
 	if err := CheckSchema(ctx, e.owner); !errors.Is(err, ErrDatabaseNewer) {
 		t.Fatalf("binary older than database: want ErrDatabaseNewer, got %v", err)
@@ -121,7 +144,7 @@ func TestMigrationsChecksumGapForwardOnly(t *testing.T) {
 		t.Fatalf("Migrate with an older binary: want ErrDatabaseNewer, got %v", err)
 	}
 
-	mustExec(t, e.owner, `INSERT INTO broadcaster.schema_migrations (version, name, sha256) VALUES (4, 'later', $1)`,
+	mustExec(t, e.owner, `INSERT INTO broadcaster.schema_migrations (version, name, sha256) VALUES (5, 'later', $1)`,
 		make([]byte, 32))
 	if _, err := migrate(ctx, e.owner, next); !errors.Is(err, ErrMigrationGap) {
 		t.Fatalf("database gap: want ErrMigrationGap, got %v", err)
@@ -181,7 +204,7 @@ func TestRuntimeRoleCannotWriteCallers(t *testing.T) {
 		`INSERT INTO broadcaster.chain_binding (chain_id) VALUES ('other')`,
 		`UPDATE broadcaster.chain_binding SET chain_id = 'other'`,
 		`SELECT broadcaster.register_caller('p-two', 4096, NULL)`,
-		`SELECT * FROM broadcaster.enqueue_intent('K', '{}'::jsonb, '{}'::jsonb, 'k', interval '1 hour')`,
+		`SELECT * FROM broadcaster.enqueue_intent('OFFER_LEASE', '{}'::jsonb, '{}'::jsonb, 'k', interval '1 hour')`,
 		`INSERT INTO broadcaster.schema_migrations (version, name, sha256) VALUES (9, 'x', decode(repeat('00', 32), 'hex'))`,
 	} {
 		_, err := e.runtime.ExecContext(e.ctx, q)
@@ -474,7 +497,7 @@ func TestTerminalRowsImmutable(t *testing.T) {
 
 	live := e.enqueue("p", "live", signer, time.Hour)
 	for _, q := range []string{
-		`UPDATE broadcaster.intents SET kind = 'OTHER_KIND' WHERE intent_id = $1`,
+		`UPDATE broadcaster.intents SET kind = 'WITHDRAW_CONTENT' WHERE intent_id = $1`,
 		`UPDATE broadcaster.intents SET expires_at = expires_at + interval '1 day' WHERE intent_id = $1`,
 		`UPDATE broadcaster.intents SET auth_context = '{}'::jsonb WHERE intent_id = $1`,
 		`UPDATE broadcaster.intents SET request = '\x00'::bytea WHERE intent_id = $1`,
@@ -629,18 +652,18 @@ func TestSQLPathErrorsNotLogged(t *testing.T) {
 	e := newEnv(t)
 	const canary = "zz-log-canary-7f3e1b"
 	callerDB := e.caller("p-log", 1)
-	mustExec(t, callerDB, `SELECT * FROM broadcaster.enqueue_intent('TEST_KIND', '{"v":"first"}'::jsonb,
+	mustExec(t, callerDB, `SELECT * FROM broadcaster.enqueue_intent('OFFER_LEASE', '{"v":"first"}'::jsonb,
 		'{}'::jsonb, 'log-key', interval '1 hour')`)
 	cases := map[string]struct{ q, code string }{
-		"cap reached": {`SELECT * FROM broadcaster.enqueue_intent('TEST_KIND', '{"v":"` + canary + `"}'::jsonb,
+		"cap reached": {`SELECT * FROM broadcaster.enqueue_intent('OFFER_LEASE', '{"v":"` + canary + `"}'::jsonb,
 			'{}'::jsonb, 'other-key', interval '1 hour')`, "SV005"},
-		"idempotency conflict": {`SELECT * FROM broadcaster.enqueue_intent('TEST_KIND', '{"v":"` + canary + `"}'::jsonb,
+		"idempotency conflict": {`SELECT * FROM broadcaster.enqueue_intent('OFFER_LEASE', '{"v":"` + canary + `"}'::jsonb,
 			'{}'::jsonb, 'log-key', interval '1 hour')`, "SV006"},
-		"bad json": {`SELECT * FROM broadcaster.enqueue_intent('TEST_KIND', '{"v": ` + canary + `'::jsonb,
+		"bad json": {`SELECT * FROM broadcaster.enqueue_intent('OFFER_LEASE', '{"v": ` + canary + `'::jsonb,
 			'{}'::jsonb, 'k2', interval '1 hour')`, "22P02"},
-		"bad interval": {`SELECT * FROM broadcaster.enqueue_intent('TEST_KIND', '{}'::jsonb,
+		"bad interval": {`SELECT * FROM broadcaster.enqueue_intent('OFFER_LEASE', '{}'::jsonb,
 			'{}'::jsonb, 'k3', interval '` + canary + `')`, "22007"},
-		"bad key": {`SELECT * FROM broadcaster.enqueue_intent('TEST_KIND', '{}'::jsonb,
+		"bad key": {`SELECT * FROM broadcaster.enqueue_intent('OFFER_LEASE', '{}'::jsonb,
 			'{}'::jsonb, 'BAD ` + canary + `', interval '1 hour')`, "SV004"},
 	}
 	for name, c := range cases {

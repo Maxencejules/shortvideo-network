@@ -10,51 +10,94 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 )
 
-// EnsureSigner registers a signer address with its advisory lock key, or
-// checks that the registered key is the same (ErrSignerConfig otherwise).
-// The key class and key name of a signer are not stored here (goal 11 Q1).
-func (s *Store) EnsureSigner(ctx context.Context, address []byte, lockKey int32) error {
-	if len(address) != 20 || lockKey < 0 {
-		return fmt.Errorf("%w: signer address or lock key", ErrInvalid)
+// SignerKey is one key the signer process holds (goal 11 Q1): its address,
+// class (ClassService or ClassBroadcaster), key name and advisory lock key.
+type SignerKey struct {
+	Address []byte
+	Class   SignerClass
+	// KeyName is the signer process's name for the key, ^[a-z][a-z0-9_-]{0,31}$.
+	KeyName string
+	// LockKey is the second key of the signer session's advisory lock.
+	LockKey int32
+}
+
+var keyNameRE = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
+
+// RegisterSigner registers a key signer, or checks that the registered row
+// has the same class, key name and lock key (ErrSignerConfig otherwise; an
+// address registered as a FORWARD_SOURCE is ErrSignerConfig too). A key name
+// or lock key that another address holds is ErrSignerConfig.
+func (s *Store) RegisterSigner(ctx context.Context, k SignerKey) error {
+	if len(k.Address) != 20 || k.LockKey < 0 || !keyNameRE.MatchString(k.KeyName) ||
+		(k.Class != ClassService && k.Class != ClassBroadcaster) {
+		return fmt.Errorf("%w: signer key", ErrInvalid)
 	}
-	if _, err := s.db.ExecContext(ctx, `INSERT INTO broadcaster.signers (address, lock_key) VALUES ($1, $2)
-		ON CONFLICT (address) DO NOTHING`, address, lockKey); err != nil {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO broadcaster.signers (address, class, key_name, lock_key)
+		VALUES ($1, $2, $3, $4) ON CONFLICT (address) DO NOTHING`, k.Address, string(k.Class), k.KeyName, k.LockKey)
+	if SQLState(err) == "23505" {
+		return ErrSignerConfig
+	}
+	if err != nil {
 		return fmt.Errorf("store: register signer: %w", mapErr(err))
 	}
-	var got int32
-	if err := s.db.QueryRowContext(ctx, `SELECT lock_key FROM broadcaster.signers WHERE address = $1`,
-		address).Scan(&got); err != nil {
+	var (
+		class   SignerClass
+		keyName sql.NullString
+		lockKey sql.NullInt32
+	)
+	if err := s.db.QueryRowContext(ctx, `SELECT class, key_name, lock_key FROM broadcaster.signers WHERE address = $1`,
+		k.Address).Scan(&class, &keyName, &lockKey); err != nil {
 		return fmt.Errorf("store: read signer: %w", mapErr(err))
 	}
-	if got != lockKey {
+	if class != k.Class || keyName.String != k.KeyName || !lockKey.Valid || lockKey.Int32 != k.LockKey {
 		return ErrSignerConfig
 	}
 	return nil
 }
 
-// SignerSession is the one connection that drives a signer (plan 8.1). It
-// holds the signer's session-level advisory lock; every attempt write for the
-// signer runs on it, inside a transaction that first checks the lock is
-// still held by this backend. If the connection dies or PostgreSQL restarts,
-// the lock is gone and every later write fails, so nothing is persisted or
-// marked as sent until a new session takes the lock.
+// SignerSession is the one connection that drives a key signer, or, opened
+// by LockForwarder, every FORWARD_SOURCE account (plan 8.1). It holds a
+// session-level advisory lock; every attempt write it makes runs inside a
+// transaction that first checks the lock is still held by this backend. If
+// the connection dies or PostgreSQL restarts, the lock is gone and every
+// later write fails, so nothing is persisted or marked as sent until a new
+// session takes the lock.
 //
 // A session runs one transaction at a time and is not safe for concurrent
 // use. While a SignerTx is open every other method returns ErrTxOpen instead
 // of waiting for the connection.
 type SignerSession struct {
-	s       *Store
-	conn    *sql.Conn
-	address []byte
-	key     int32
-	open    *SignerTx
+	s    *Store
+	conn *sql.Conn
+	// address is the key signer's address; nil in the forwarder session.
+	address   []byte
+	lockClass int32
+	key       int32
+	open      *SignerTx
 }
 
-// LockSigner opens a dedicated connection and takes the signer's advisory
-// lock with pg_try_advisory_lock. A lock held by another session is
-// ErrSignerLockHeld; an unregistered signer is ErrNotFound.
+// forwarder reports whether this is the forwarder session.
+func (ss *SignerSession) forwarder() bool { return ss.address == nil }
+
+// owns reports whether the session drives the locked intent: the key
+// signer's own intents, or, for the forwarder, every forwarded intent.
+func (ss *SignerSession) owns(cur lockedIntent) bool {
+	if ss.forwarder() {
+		return cur.class == ClassForwardSource
+	}
+	return bytes.Equal(cur.signerAddress, ss.address)
+}
+
+// errForwarder refuses a key-signer operation on the forwarder session.
+var errForwarder = fmt.Errorf("%w: not a forwarder operation", ErrInvalid)
+
+// LockSigner opens a dedicated connection and takes the key signer's
+// advisory lock with pg_try_advisory_lock. A lock held by another session is
+// ErrSignerLockHeld; an unregistered signer is ErrNotFound; a FORWARD_SOURCE
+// address is ErrInvalid (LockForwarder drives those).
 func (s *Store) LockSigner(ctx context.Context, address []byte) (*SignerSession, error) {
 	if len(address) != 20 {
 		return nil, fmt.Errorf("%w: signer address", ErrInvalid)
@@ -63,7 +106,7 @@ func (s *Store) LockSigner(ctx context.Context, address []byte) (*SignerSession,
 	if err != nil {
 		return nil, fmt.Errorf("store: signer connection: %w", err)
 	}
-	var key int32
+	var key sql.NullInt32
 	err = conn.QueryRowContext(ctx, `SELECT lock_key FROM broadcaster.signers WHERE address = $1`, address).Scan(&key)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Join(ErrNotFound, conn.Close())
@@ -71,14 +114,33 @@ func (s *Store) LockSigner(ctx context.Context, address []byte) (*SignerSession,
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("store: read signer: %w", mapErr(err)), conn.Close())
 	}
+	if !key.Valid {
+		return nil, errors.Join(fmt.Errorf("%w: a forward source has no signer session", ErrInvalid), conn.Close())
+	}
+	return s.takeLock(ctx, conn, append([]byte(nil), address...), lockClassSigner, key.Int32)
+}
+
+// LockForwarder opens the forwarder session (plan 7.3 P3): one advisory
+// lock drives every FORWARD_SOURCE account's forwarded attempts. A lock held
+// by another session is ErrSignerLockHeld.
+func (s *Store) LockForwarder(ctx context.Context) (*SignerSession, error) {
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("store: forwarder connection: %w", err)
+	}
+	return s.takeLock(ctx, conn, nil, lockClassForwarder, 0)
+}
+
+// takeLock takes the session-level advisory lock (class, key) on conn.
+func (s *Store) takeLock(ctx context.Context, conn *sql.Conn, address []byte, class, key int32) (*SignerSession, error) {
 	var got bool
-	if err := conn.QueryRowContext(ctx, `SELECT pg_try_advisory_lock($1, $2)`, lockClassSigner, key).Scan(&got); err != nil {
-		return nil, errors.Join(fmt.Errorf("store: signer lock: %w", mapErr(err)), conn.Close())
+	if err := conn.QueryRowContext(ctx, `SELECT pg_try_advisory_lock($1, $2)`, class, key).Scan(&got); err != nil {
+		return nil, errors.Join(fmt.Errorf("store: session lock: %w", mapErr(err)), conn.Close())
 	}
 	if !got {
 		return nil, errors.Join(ErrSignerLockHeld, conn.Close())
 	}
-	return &SignerSession{s: s, conn: conn, address: append([]byte(nil), address...), key: key}, nil
+	return &SignerSession{s: s, conn: conn, address: address, lockClass: class, key: key}, nil
 }
 
 // Close rolls back a SignerTx left open, releases the advisory lock, and
@@ -93,24 +155,24 @@ func (ss *SignerSession) Close() error {
 			errs = append(errs, err)
 		}
 	}
-	if _, err := ss.conn.ExecContext(context.Background(), `SELECT pg_advisory_unlock($1, $2)`, lockClassSigner, ss.key); err != nil &&
+	if _, err := ss.conn.ExecContext(context.Background(), `SELECT pg_advisory_unlock($1, $2)`, ss.lockClass, ss.key); err != nil &&
 		!errors.Is(err, sql.ErrConnDone) && !errors.Is(err, driver.ErrBadConn) {
-		errs = append(errs, fmt.Errorf("store: signer unlock: %w", err))
+		errs = append(errs, fmt.Errorf("store: session unlock: %w", err))
 	}
 	// Returning driver.ErrBadConn from Raw makes database/sql close the
 	// driver connection rather than pool it.
 	if err := ss.conn.Raw(func(any) error { return driver.ErrBadConn }); err != nil &&
 		!errors.Is(err, driver.ErrBadConn) && !errors.Is(err, sql.ErrConnDone) {
-		errs = append(errs, fmt.Errorf("store: discard signer connection: %w", err))
+		errs = append(errs, fmt.Errorf("store: discard session connection: %w", err))
 	}
 	if err := ss.conn.Close(); err != nil && !errors.Is(err, sql.ErrConnDone) {
-		errs = append(errs, fmt.Errorf("store: close signer connection: %w", err))
+		errs = append(errs, fmt.Errorf("store: close session connection: %w", err))
 	}
 	return errors.Join(errs...)
 }
 
 // begin starts a READ COMMITTED transaction on the session connection and
-// checks that this backend still holds the signer lock.
+// checks that this backend still holds the session's advisory lock.
 func (ss *SignerSession) begin(ctx context.Context) (*sql.Tx, error) {
 	if ss.open != nil {
 		return nil, ErrTxOpen
@@ -124,7 +186,7 @@ func (ss *SignerSession) begin(ctx context.Context) (*sql.Tx, error) {
 		WHERE locktype = 'advisory' AND pid = pg_backend_pid() AND granted
 		  AND database = (SELECT oid FROM pg_catalog.pg_database WHERE datname = current_database())
 		  AND classid = $1::bigint::oid AND objid = $2::bigint::oid AND objsubid = 2)`,
-		lockClassSigner, ss.key).Scan(&held); err != nil {
+		ss.lockClass, ss.key).Scan(&held); err != nil {
 		return nil, rollback(tx, fmt.Errorf("store: fence check: %w", err))
 	}
 	if !held {
@@ -184,6 +246,9 @@ type PersistResult struct {
 // IN_FLIGHT/SIGNED and append a transitions row. Any failed condition rolls
 // back and returns a refusal.
 func (ss *SignerSession) PersistAttempt(ctx context.Context, d AttemptDraft) (PersistResult, error) {
+	if ss.forwarder() {
+		return PersistResult{}, errForwarder
+	}
 	if !uuidRE.MatchString(d.IntentID) {
 		return PersistResult{}, fmt.Errorf("%w: intent id", ErrInvalid)
 	}
@@ -325,6 +390,7 @@ func (ss *SignerSession) persistTx(ctx context.Context, tx *sql.Tx, d AttemptDra
 // lockedAttempt is an attempt row read under FOR UPDATE.
 type lockedAttempt struct {
 	id            string
+	signer        []byte
 	phase         AttemptPhase
 	txHash        []byte
 	sendsStarted  int
@@ -333,14 +399,24 @@ type lockedAttempt struct {
 }
 
 // lockAttempt locks the attempt's intent row, then the attempt row, which
-// must belong to the session's signer.
+// must belong to the session: an attempt of the key signer, or, in the
+// forwarder session, an attempt of a FORWARD_SOURCE account.
 func (ss *SignerSession) lockAttempt(ctx context.Context, tx *sql.Tx, attemptID string) (lockedIntent, lockedAttempt, error) {
 	if !uuidRE.MatchString(attemptID) {
 		return lockedIntent{}, lockedAttempt{}, fmt.Errorf("%w: attempt id", ErrInvalid)
 	}
-	var intentID string
-	err := tx.QueryRowContext(ctx, `SELECT intent_id FROM broadcaster.attempts WHERE attempt_id = $1 AND signer_address = $2`,
-		attemptID, ss.address).Scan(&intentID)
+	var (
+		intentID string
+		err      error
+	)
+	if ss.forwarder() {
+		err = tx.QueryRowContext(ctx, `SELECT a.intent_id FROM broadcaster.attempts a
+			JOIN broadcaster.signers s ON s.address = a.signer_address
+			WHERE a.attempt_id = $1 AND s.class = 'FORWARD_SOURCE'`, attemptID).Scan(&intentID)
+	} else {
+		err = tx.QueryRowContext(ctx, `SELECT intent_id FROM broadcaster.attempts WHERE attempt_id = $1 AND signer_address = $2`,
+			attemptID, ss.address).Scan(&intentID)
+	}
 	if errors.Is(err, sql.ErrNoRows) {
 		return lockedIntent{}, lockedAttempt{}, ErrNotFound
 	}
@@ -352,9 +428,10 @@ func (ss *SignerSession) lockAttempt(ctx context.Context, tx *sql.Tx, attemptID 
 		return lockedIntent{}, lockedAttempt{}, err
 	}
 	var a lockedAttempt
-	if err := tx.QueryRowContext(ctx, `SELECT attempt_id, phase, tx_hash, sends_started, sends_recorded, last_outcome
+	if err := tx.QueryRowContext(ctx, `SELECT attempt_id, signer_address, phase, tx_hash, sends_started, sends_recorded,
+			last_outcome
 		FROM broadcaster.attempts WHERE attempt_id = $1 FOR UPDATE`, attemptID).Scan(
-		&a.id, &a.phase, &a.txHash, &a.sendsStarted, &a.sendsRecorded, &a.lastOutcome); err != nil {
+		&a.id, &a.signer, &a.phase, &a.txHash, &a.sendsStarted, &a.sendsRecorded, &a.lastOutcome); err != nil {
 		return lockedIntent{}, lockedAttempt{}, fmt.Errorf("store: lock attempt: %w", mapErr(err))
 	}
 	return cur, a, nil
@@ -554,12 +631,16 @@ func (ss *SignerSession) recordSendTx(ctx context.Context, tx *sql.Tx, attemptID
 	return true, nil
 }
 
-// SyncSequence stores the signer's committed account number and next
-// sequence read from the chain at observedHeight (plan 8.1). It refuses
+// SyncSequence stores the key signer's committed account number and next
+// sequence read from the chain at observedHeight (plan 8.1); the forwarder
+// session allocates no sequence (ErrInvalid). It refuses
 // while the signer has a live attempt (ErrSignerBusy) and when
 // observedHeight is below the stored observed height (ErrStaleObservation:
 // the node answered from older state).
 func (ss *SignerSession) SyncSequence(ctx context.Context, accountNumber, nextSequence, observedHeight uint64) error {
+	if ss.forwarder() {
+		return errForwarder
+	}
 	acct, err := toInt64("account number", accountNumber)
 	if err != nil {
 		return err
@@ -604,11 +685,15 @@ func (ss *SignerSession) syncTx(ctx context.Context, tx *sql.Tx, acct, next, hei
 	return oneRow(res, err, "sync sequence")
 }
 
-// Halt stops the signer with reason (^[A-Z][A-Z0-9_]{0,39}$); PersistAttempt
-// refuses a halted signer. A signer that is already halted keeps its first
+// Halt stops the key signer with reason (^[A-Z][A-Z0-9_]{0,39}$);
+// PersistAttempt refuses a halted signer. The forwarder session halts
+// nothing (ErrInvalid). A signer that is already halted keeps its first
 // reason. SIGNER_CONFLICT is ErrInvalid here: only HaltForConflict sets it,
 // together with the signer event that ClearConflict acknowledges.
 func (ss *SignerSession) Halt(ctx context.Context, reason string) error {
+	if ss.forwarder() {
+		return errForwarder
+	}
 	if !codeRE.MatchString(reason) || reason == haltSignerConflict {
 		return fmt.Errorf("%w: halt reason", ErrInvalid)
 	}
@@ -627,14 +712,19 @@ func (ss *SignerSession) Halt(ctx context.Context, reason string) error {
 // use of its sequence.
 const haltSignerConflict = "SIGNER_CONFLICT"
 
-// HaltForConflict records a foreign use of the signer's sequence (a
-// signer_events row) and halts the signer with SIGNER_CONFLICT (DR-11-15).
+// HaltForConflict records a foreign use of the key signer's sequence (a
+// signer_events row) and halts the signer with SIGNER_CONFLICT (DR-11-15);
+// a provider's own use of its sequence is no conflict, so the forwarder
+// session refuses it (ErrInvalid).
 // Detecting an uncleared event again changes nothing. An event an operator
 // already cleared with signer-clear is ErrConflictCleared and the signer is
 // not halted: the worker treats that hash as an acknowledged foreign
 // transaction (plan 8.1), and a halt that no uncleared event explains could
 // never be lifted by ClearConflict.
 func (ss *SignerSession) HaltForConflict(ctx context.Context, sequence uint64, foreignTxHash [32]byte) error {
+	if ss.forwarder() {
+		return errForwarder
+	}
 	seq, err := toInt64("sequence", sequence)
 	if err != nil {
 		return err
@@ -666,10 +756,14 @@ func (ss *SignerSession) HaltForConflict(ctx context.Context, sequence uint64, f
 }
 
 // ClearConflict records the operator's acknowledgement of one signer event
-// (the signer-clear command, named in command) and, when the signer was
+// of the key signer (the signer-clear command, named in command; ErrInvalid
+// on the forwarder session) and, when the signer was
 // halted for SIGNER_CONFLICT and no uncleared event remains, lifts the halt.
 // An unknown or already cleared event is ErrNotFound.
 func (ss *SignerSession) ClearConflict(ctx context.Context, sequence uint64, foreignTxHash [32]byte, command string) error {
+	if ss.forwarder() {
+		return errForwarder
+	}
 	if !commandRE.MatchString(command) {
 		return fmt.Errorf("%w: command", ErrInvalid)
 	}

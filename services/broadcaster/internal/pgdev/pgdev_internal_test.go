@@ -125,8 +125,14 @@ func TestStartRefusesUntraversableTempDir(t *testing.T) {
 	if err := os.Mkdir(target, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := checkTraversable(target, 65534, 65534, nil); !errors.Is(err, ErrNotTraversable) {
-		t.Fatalf("want ErrNotTraversable for uid 65534, got %v", err)
+	// Another uid than the test's own: 65534 (nobody), or 65533 when the
+	// test itself runs as nobody and owns the directory.
+	other := 65534
+	if os.Geteuid() == other {
+		other = 65533
+	}
+	if err := checkTraversable(target, other, other, nil); !errors.Is(err, ErrNotTraversable) {
+		t.Fatalf("want ErrNotTraversable for uid %d, got %v", other, err)
 	}
 }
 

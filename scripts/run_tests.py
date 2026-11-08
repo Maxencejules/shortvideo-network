@@ -148,13 +148,15 @@ def run_node() -> int:
     return 0
 
 
-GO_MODULES = ("chain", "proto", "agents/provider", "agents/auditor")
+# services/broadcaster's tests start a disposable PostgreSQL 18.6 cluster
+# from /usr/lib/postgresql/18/bin and fail without it; no variable skips them.
+GO_MODULES = ("chain", "proto", "agents/provider", "agents/auditor", "services/broadcaster")
 # An explicit per-binary limit instead of go test's 10-minute default: the
-# chain/devnet package takes about 9.5 minutes on one machine and up to
-# about 6.5 minutes more when TestDevnetAuditLifecycle waits for an audit
-# round boundary. A hang still ends with a goroutine dump. The CI go job sets
-# SVN_SKIP_DEVNET=1 and leaves those multi-process tests to the go-race
-# devnet and devnet-evidence shards.
+# chain/devnet package took 922 s on one machine at goal 10
+# (docs/evidence/logs/goal-10/tests-go.txt), and goal 11 adds the broadcaster
+# devnet tests to it. A hang still ends with a goroutine dump. The CI go job
+# sets SVN_SKIP_DEVNET=1 and leaves those multi-process tests to the go-race
+# devnet shards.
 GO_TEST_TIMEOUT = "30m"
 
 

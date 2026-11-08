@@ -42,17 +42,26 @@ type Expect struct {
 type EnqueueRequest struct {
 	CallerPrincipal string
 	IdempotencyKey  string
-	// Kind is checked for syntax only, ^[A-Z][A-Z0-9_]{0,39}$.
+	// Kind is one of the request kinds (KindRegisterContent, ...).
 	Kind string
 	// Request is the deterministic protobuf of the chain message, 1 to
-	// 65,536 bytes.
+	// 65,536 bytes; for KindForwardProvider it is the provider-signed
+	// transaction, verbatim.
 	Request       []byte
 	RequestDigest [32]byte
-	// AuthContext is a JSON object of at most Limits.AuthContextBytes.
+	// AuthContext is a JSON object of at most Limits.AuthContextBytes. For
+	// KindRegisterContent its "principal_id" becomes the content owner
+	// principal.
 	AuthContext json.RawMessage
-	// SignerAddress is the 20-byte outer signer; it must be a registered
-	// signer.
+	// SignerAddress is the 20-byte account whose sequence the transaction
+	// uses: a registered key signer of the kind's class, or, for
+	// KindForwardProvider, the provider account that signed the forwarded
+	// transaction (registered here as a FORWARD_SOURCE signer).
 	SignerAddress []byte
+	// Object is the chain object the request acts on.
+	Object ObjectRef
+	// Forward is required for KindForwardProvider and refused otherwise.
+	Forward *ForwardFields
 	// ExpiresIn is within [Limits.MinLifetime, Limits.MaxLifetime].
 	ExpiresIn time.Duration
 }
@@ -86,21 +95,24 @@ func (s *Store) checkAuthContext(raw json.RawMessage) (string, error) {
 	return string(raw), nil
 }
 
-// EnqueueHTTP inserts an intent, its first business attempt and its first
-// transitions row in one transaction, after taking the caller's row lock
-// under the configured lock and statement timeouts, and notifies WorkChannel
-// at commit. The same caller and idempotency key with the same digest
-// returns the existing intent; with another digest it is
-// ErrIdempotencyConflict. A full caller is ErrCapReached; a lock wait beyond
-// the timeout is ErrLockTimeout. Nothing is written on any error.
+// EnqueueHTTP inserts an intent, its first business attempt, the content
+// owner row of a REGISTER_CONTENT intent, the forwarded_txs row of a
+// FORWARD_PROVIDER_TX intent and the first transitions row in one
+// transaction, after taking the caller's row lock under the configured lock
+// and statement timeouts, and notifies WorkChannel at commit. The same
+// caller and idempotency key with the same digest returns the existing
+// intent; with another digest it is ErrIdempotencyConflict. A full caller is
+// ErrCapReached; a lock wait beyond the timeout is ErrLockTimeout; a content
+// id that another non-VOID owner row holds is ErrContentUnavailable;
+// forwarded bytes another intent tracks are ErrTxTracked; a signer of
+// another class than the kind's is ErrSignerClass. Nothing is written on any
+// error.
 func (s *Store) EnqueueHTTP(ctx context.Context, r EnqueueRequest) (EnqueueResult, error) {
 	switch {
 	case !idRE.MatchString(r.CallerPrincipal):
 		return EnqueueResult{}, fmt.Errorf("%w: caller principal", ErrInvalid)
 	case !idRE.MatchString(r.IdempotencyKey):
 		return EnqueueResult{}, fmt.Errorf("%w: idempotency key", ErrInvalid)
-	case !codeRE.MatchString(r.Kind):
-		return EnqueueResult{}, fmt.Errorf("%w: kind", ErrInvalid)
 	case len(r.Request) == 0 || len(r.Request) > maxIntentBytes:
 		return EnqueueResult{}, fmt.Errorf("%w: request size", ErrInvalid)
 	case len(r.SignerAddress) != 20:
@@ -108,11 +120,15 @@ func (s *Store) EnqueueHTTP(ctx context.Context, r EnqueueRequest) (EnqueueResul
 	case r.ExpiresIn < s.lim.MinLifetime || r.ExpiresIn > s.lim.MaxLifetime:
 		return EnqueueResult{}, fmt.Errorf("%w: expires_in outside the configured lifetime", ErrInvalid)
 	}
+	v, err := checkValidated(r.Kind, r.Request, r.Object, r.Forward)
+	if err != nil {
+		return EnqueueResult{}, err
+	}
 	authContext, err := s.checkAuthContext(r.AuthContext)
 	if err != nil {
 		return EnqueueResult{}, err
 	}
-	businessID, err := newBusinessID()
+	businessID, err := businessIDFor(v)
 	if err != nil {
 		return EnqueueResult{}, err
 	}
@@ -120,7 +136,7 @@ func (s *Store) EnqueueHTTP(ctx context.Context, r EnqueueRequest) (EnqueueResul
 	if err != nil {
 		return EnqueueResult{}, err
 	}
-	res, err := s.enqueueHTTPTx(ctx, tx, r, authContext, businessID)
+	res, err := s.enqueueHTTPTx(ctx, tx, r, v, authContext, businessID)
 	if err != nil {
 		return EnqueueResult{}, rollback(tx, err)
 	}
@@ -130,7 +146,16 @@ func (s *Store) EnqueueHTTP(ctx context.Context, r EnqueueRequest) (EnqueueResul
 	return res, nil
 }
 
-func (s *Store) enqueueHTTPTx(ctx context.Context, tx *sql.Tx, r EnqueueRequest, authContext, businessID string) (EnqueueResult, error) {
+// businessIDFor returns the business id of a validated intent: the
+// forwarded message's own for a forward, else a fresh random one.
+func businessIDFor(v validFields) (string, error) {
+	if v.forward != nil {
+		return v.forward.BusinessID, nil
+	}
+	return newBusinessID()
+}
+
+func (s *Store) enqueueHTTPTx(ctx context.Context, tx *sql.Tx, r EnqueueRequest, v validFields, authContext, businessID string) (EnqueueResult, error) {
 	for name, d := range map[string]time.Duration{
 		"lock_timeout":      s.lim.EnqueueLockTimeout,
 		"statement_timeout": s.lim.EnqueueStatementTimeout,
@@ -179,18 +204,24 @@ func (s *Store) enqueueHTTPTx(ctx context.Context, tx *sql.Tx, r EnqueueRequest,
 	if open >= openCap {
 		return EnqueueResult{}, ErrCapReached
 	}
+	if v.forward != nil {
+		if err := ensureForwardSource(ctx, tx, r.SignerAddress); err != nil {
+			return EnqueueResult{}, err
+		}
+	}
 
 	var intentID string
 	err = tx.QueryRowContext(ctx, `WITH t AS (SELECT clock_timestamp() AS now)
 		INSERT INTO broadcaster.intents (caller_principal, idempotency_key, kind, entry, request_digest, request,
-			auth_context, validated, chain_id, signer_address, business_id, business_attempt, state, phase,
-			created_at, expires_at, next_attempt_at, transitions_recorded)
-		SELECT $1, $2, $3, 'HTTP', $4, $5, $6::jsonb, true, b.chain_id, $7, $8, 1, 'REQUESTED', 'QUEUED',
-			t.now, t.now + $9::bigint * interval '1 microsecond', t.now, 1
+			auth_context, validated, chain_id, signer_address, business_id, business_attempt, object_type,
+			object_id, object_version, state, phase, created_at, expires_at, next_attempt_at, transitions_recorded)
+		SELECT $1, $2, $3, 'HTTP', $4, $5, $6::jsonb, true, b.chain_id, $7, $8, 1, $9, $10, $11, 'REQUESTED', 'QUEUED',
+			t.now, t.now + $12::bigint * interval '1 microsecond', t.now, 1
 		FROM t, broadcaster.chain_binding b
 		RETURNING intent_id`,
 		r.CallerPrincipal, r.IdempotencyKey, r.Kind, r.RequestDigest[:], r.Request, authContext,
-		r.SignerAddress, businessID, r.ExpiresIn.Microseconds()).Scan(&intentID)
+		r.SignerAddress, businessID, v.objectType, v.objectID, v.objectVersion,
+		r.ExpiresIn.Microseconds()).Scan(&intentID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return EnqueueResult{}, ErrChainUnbound
 	}
@@ -200,9 +231,8 @@ func (s *Store) enqueueHTTPTx(ctx context.Context, tx *sql.Tx, r EnqueueRequest,
 	if err != nil {
 		return EnqueueResult{}, fmt.Errorf("store: insert intent: %w", mapErr(err))
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO broadcaster.business_attempts (intent_id, n, business_id)
-		VALUES ($1, 1, $2)`, intentID, businessID); err != nil {
-		return EnqueueResult{}, fmt.Errorf("store: insert business attempt: %w", mapErr(err))
+	if err := insertValidatedRows(ctx, tx, intentID, r.Kind, 1, businessID, v); err != nil {
+		return EnqueueResult{}, err
 	}
 	if err := s.insertTransition(ctx, tx, transition{
 		intentID: intentID, to: Expect{StateRequested, PhaseQueued}, reason: "CREATED",
@@ -215,17 +245,86 @@ func (s *Store) enqueueHTTPTx(ctx context.Context, tx *sql.Tx, r EnqueueRequest,
 	return EnqueueResult{IntentID: intentID, Created: true, BusinessID: businessID}, nil
 }
 
+// ensureForwardSource registers address as a FORWARD_SOURCE signer unless it
+// is registered; a key signer at that address makes the intent insert fail
+// with ErrSignerClass.
+func ensureForwardSource(ctx context.Context, tx *sql.Tx, address []byte) error {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO broadcaster.signers (address, class) VALUES ($1, 'FORWARD_SOURCE')
+		ON CONFLICT (address) DO NOTHING`, address); err != nil {
+		return fmt.Errorf("store: register forward source: %w", mapErr(err))
+	}
+	return nil
+}
+
+// insertValidatedRows writes what a validated intent needs next to its row:
+// business attempt n with businessID (FORWARDED for a forward), the PENDING
+// content owner row of a REGISTER_CONTENT intent, derived from the intent
+// row (object id and version, caller, signer, and the authorization
+// context's principal_id), and the forwarded_txs row of a forward.
+func insertValidatedRows(ctx context.Context, tx *sql.Tx, intentID, kind string, n int, businessID string, v validFields) error {
+	source := "DRAWN"
+	if v.forward != nil {
+		source = "FORWARDED"
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO broadcaster.business_attempts (intent_id, n, business_id, source)
+		VALUES ($1, $2, $3, $4)`, intentID, n, businessID, source); err != nil {
+		return fmt.Errorf("store: insert business attempt: %w", mapErr(err))
+	}
+	if kind == KindRegisterContent {
+		var id int64
+		err := tx.QueryRowContext(ctx, `INSERT INTO broadcaster.content_owners (content_id, content_version,
+				caller_principal, principal_id, signer_address, intent_id, status)
+			SELECT i.object_id, i.object_version, i.caller_principal, i.auth_context ->> 'principal_id',
+				i.signer_address, i.intent_id, 'PENDING'
+			FROM broadcaster.intents i WHERE i.intent_id = $1
+			ON CONFLICT (content_id) WHERE status <> 'VOID' DO NOTHING
+			RETURNING id`, intentID).Scan(&id)
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrContentUnavailable
+		case SQLState(err) == "23502" || SQLState(err) == "23514":
+			return fmt.Errorf("%w: content owner principal: %w", ErrInvalid, err)
+		case err != nil:
+			return fmt.Errorf("store: insert content owner: %w", mapErr(err))
+		}
+	}
+	if f := v.forward; f != nil {
+		var got string
+		err := tx.QueryRowContext(ctx, `INSERT INTO broadcaster.forwarded_txs (intent_id, tx_hash, message_type,
+				outer_signer, provider_id, account_number, sequence, timeout_height, gas)
+			SELECT i.intent_id, $2, $3, i.signer_address, $4, $5, $6, $7, $8
+			FROM broadcaster.intents i WHERE i.intent_id = $1
+			ON CONFLICT (tx_hash) DO NOTHING
+			RETURNING intent_id`, intentID, f.txHash[:], f.MessageType, f.ProviderID, f.accountNumber, f.sequence,
+			f.timeoutHeight, f.gas).Scan(&got)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrTxTracked
+		}
+		if err != nil {
+			return fmt.Errorf("store: insert forwarded transaction: %w", mapErr(err))
+		}
+	}
+	return nil
+}
+
 // Validation is what the worker's full validation of a SQL-path intent
-// produced.
+// produced; its fields mean what the same EnqueueRequest fields mean.
 type Validation struct {
 	Request       []byte
 	RequestDigest [32]byte
 	SignerAddress []byte
+	Object        ObjectRef
+	Forward       *ForwardFields
 }
 
 // MarkValidated stores the validation of a SQL-path intent that is still
-// REQUESTED/QUEUED and unvalidated, draws its business id, inserts business
-// attempt 1 and a transitions row. Another state is ErrStateChanged.
+// REQUESTED/QUEUED and unvalidated: its business id (drawn, or the forwarded
+// message's), business attempt 1, the content owner row of a
+// REGISTER_CONTENT intent, the forwarded_txs row of a forward and a
+// transitions row. Another state is ErrStateChanged; a held content id is
+// ErrContentUnavailable and forwarded bytes another intent tracks are
+// ErrTxTracked, with nothing written (the worker then fails the intent with
+// FailValidation).
 func (s *Store) MarkValidated(ctx context.Context, intentID string, v Validation) error {
 	if !uuidRE.MatchString(intentID) {
 		return fmt.Errorf("%w: intent id", ErrInvalid)
@@ -233,21 +332,17 @@ func (s *Store) MarkValidated(ctx context.Context, intentID string, v Validation
 	if len(v.Request) == 0 || len(v.Request) > maxIntentBytes || len(v.SignerAddress) != 20 {
 		return fmt.Errorf("%w: validation", ErrInvalid)
 	}
-	businessID, err := newBusinessID()
-	if err != nil {
-		return err
-	}
 	tx, err := s.beginTx(ctx)
 	if err != nil {
 		return err
 	}
-	if err := s.markValidatedTx(ctx, tx, intentID, v, businessID); err != nil {
+	if err := s.markValidatedTx(ctx, tx, intentID, v); err != nil {
 		return rollback(tx, err)
 	}
 	return commit(tx)
 }
 
-func (s *Store) markValidatedTx(ctx context.Context, tx *sql.Tx, intentID string, v Validation, businessID string) error {
+func (s *Store) markValidatedTx(ctx context.Context, tx *sql.Tx, intentID string, v Validation) error {
 	cur, err := lockIntent(ctx, tx, intentID)
 	if err != nil {
 		return err
@@ -255,15 +350,29 @@ func (s *Store) markValidatedTx(ctx context.Context, tx *sql.Tx, intentID string
 	if cur.state != StateRequested || cur.phase != PhaseQueued || cur.validated || cur.entry != "SQL" {
 		return fmt.Errorf("%w: intent is not an unvalidated queued SQL-path intent", ErrStateChanged)
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO broadcaster.business_attempts (intent_id, n, business_id)
-		VALUES ($1, 1, $2)`, intentID, businessID); err != nil {
-		return fmt.Errorf("store: insert business attempt: %w", mapErr(err))
+	checked, err := checkValidated(cur.kind, v.Request, v.Object, v.Forward)
+	if err != nil {
+		return err
+	}
+	businessID, err := businessIDFor(checked)
+	if err != nil {
+		return err
+	}
+	if checked.forward != nil {
+		if err := ensureForwardSource(ctx, tx, v.SignerAddress); err != nil {
+			return err
+		}
 	}
 	res, err := tx.ExecContext(ctx, `UPDATE broadcaster.intents SET validated = true, request = $2,
-		request_digest = $3, signer_address = $4, business_id = $5, business_attempt = 1
+		request_digest = $3, signer_address = $4, business_id = $5, business_attempt = 1, object_type = $6,
+		object_id = $7, object_version = $8
 		WHERE intent_id = $1 AND state = 'REQUESTED' AND phase = 'QUEUED' AND NOT validated`,
-		intentID, v.Request, v.RequestDigest[:], v.SignerAddress, businessID)
+		intentID, v.Request, v.RequestDigest[:], v.SignerAddress, businessID, checked.objectType, checked.objectID,
+		checked.objectVersion)
 	if err := oneRow(res, err, "mark validated"); err != nil {
+		return err
+	}
+	if err := insertValidatedRows(ctx, tx, intentID, cur.kind, 1, businessID, checked); err != nil {
 		return err
 	}
 	return s.recordTransition(ctx, tx, cur, transition{
@@ -274,6 +383,8 @@ func (s *Store) markValidatedTx(ctx context.Context, tx *sql.Tx, intentID string
 // lockedIntent is an intent row read under FOR UPDATE.
 type lockedIntent struct {
 	id              string
+	kind            string
+	class           SignerClass
 	state           State
 	phase           Phase
 	validated       bool
@@ -298,13 +409,15 @@ func lockIntent(ctx context.Context, tx *sql.Tx, intentID string) (lockedIntent,
 		li    lockedIntent
 		phase sql.NullString
 	)
-	err := tx.QueryRowContext(ctx, `SELECT intent_id, state, phase, validated, entry, caller_principal,
-			signer_address, business_id, business_attempt, attempt_count, clock_timestamp() < expires_at,
-			transitions_recorded,
+	err := tx.QueryRowContext(ctx, `SELECT i.intent_id, i.kind, k.signer_class, i.state, i.phase, i.validated, i.entry,
+			i.caller_principal, i.signer_address, i.business_id, i.business_attempt, i.attempt_count,
+			clock_timestamp() < i.expires_at, i.transitions_recorded,
 			(SELECT t.reason FROM broadcaster.transitions t WHERE t.intent_id = i.intent_id ORDER BY t.id DESC LIMIT 1)
-		FROM broadcaster.intents i WHERE intent_id = $1 FOR UPDATE OF i`, intentID).Scan(
-		&li.id, &li.state, &phase, &li.validated, &li.entry, &li.callerPrincipal, &li.signerAddress,
-		&li.businessID, &li.businessAttempt, &li.attemptCount, &li.beforeExpiry, &li.recorded, &li.lastReason)
+		FROM broadcaster.intents i JOIN broadcaster.kinds k ON k.kind = i.kind
+		WHERE i.intent_id = $1 FOR UPDATE OF i`, intentID).Scan(
+		&li.id, &li.kind, &li.class, &li.state, &phase, &li.validated, &li.entry, &li.callerPrincipal,
+		&li.signerAddress, &li.businessID, &li.businessAttempt, &li.attemptCount, &li.beforeExpiry, &li.recorded,
+		&li.lastReason)
 	if errors.Is(err, sql.ErrNoRows) {
 		return lockedIntent{}, ErrNotFound
 	}
@@ -459,12 +572,20 @@ func (s *Store) failRequestedTx(ctx context.Context, tx *sql.Tx, intentID string
 	if cur.state != StateRequested {
 		return fmt.Errorf("%w: intent is %s", ErrStateChanged, cur.state)
 	}
+	clear, obs, err := failingObservation(ctx, tx, intentID)
+	if err != nil {
+		return err
+	}
 	if err := s.recordTransition(ctx, tx, cur, transition{
 		intentID: intentID, from: &Expect{cur.state, cur.phase}, to: Expect{StateFailed, PhaseNone}, reason: reason,
+		observation: obs,
 	}); err != nil {
 		return err
 	}
 	res, err := tx.ExecContext(ctx, `UPDATE broadcaster.intents SET state = 'FAILED', phase = NULL, reason = $2,
 		final_at = clock_timestamp() WHERE intent_id = $1 AND state = 'REQUESTED'`, intentID, reason)
-	return oneRow(res, err, "fail requested intent")
+	if err := oneRow(res, err, "fail requested intent"); err != nil {
+		return err
+	}
+	return settleFailed(ctx, tx, intentID, clear)
 }

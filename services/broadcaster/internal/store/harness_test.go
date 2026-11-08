@@ -28,6 +28,10 @@ import (
 
 const testChainID = "shortvideo-dev-storetest"
 
+// testOffer is the object of the synthetic OFFER_LEASE intents of these
+// tests.
+var testOffer = ObjectRef{Type: ObjectOffer, ID: "test-offer"}
+
 var (
 	srv         *pgtest.Server
 	ownerPass   string
@@ -213,14 +217,21 @@ func (e *env) principal(principal string, cap int) {
 	}
 }
 
-// signer registers a synthetic 20-byte signer with lock key n and syncs it
-// to account 7, next sequence 0, height 1.
+// signer registers a synthetic 20-byte SERVICE key signer "key-<n>" with
+// lock key n and syncs it to account 7, next sequence 0, height 1.
 func (e *env) signer(n int32) []byte {
+	e.t.Helper()
+	return e.keySigner(n, ClassService)
+}
+
+// keySigner is signer with the given key class.
+func (e *env) keySigner(n int32, class SignerClass) []byte {
 	e.t.Helper()
 	addr := make([]byte, 20)
 	addr[0], addr[19] = 0xaa, byte(n)
 	addr[18] = byte(n >> 8)
-	if err := e.st.EnsureSigner(e.ctx, addr, n); err != nil {
+	if err := e.st.RegisterSigner(e.ctx, SignerKey{Address: addr, Class: class, KeyName: fmt.Sprintf("key-%d", n),
+		LockKey: n}); err != nil {
 		e.t.Fatal(err)
 	}
 	ss := e.lock(addr)
@@ -247,18 +258,20 @@ func request(tag string) ([]byte, [32]byte) {
 	return b, sha256.Sum256(b)
 }
 
-// enqueue creates an HTTP-path intent of principal for signer.
+// enqueue creates an HTTP-path OFFER_LEASE intent of principal for a
+// SERVICE signer, for offer id key.
 func (e *env) enqueue(principal, key string, signer []byte, lifetime time.Duration) EnqueueResult {
 	e.t.Helper()
 	req, digest := request(key)
 	res, err := e.st.EnqueueHTTP(e.ctx, EnqueueRequest{
 		CallerPrincipal: principal,
 		IdempotencyKey:  key,
-		Kind:            "TEST_KIND",
+		Kind:            KindOfferLease,
 		Request:         req,
 		RequestDigest:   digest,
 		AuthContext:     json.RawMessage(`{"principal_kind":"DEV_FIXTURE","principal_id":"p1"}`),
 		SignerAddress:   signer,
+		Object:          ObjectRef{Type: ObjectOffer, ID: key},
 		ExpiresIn:       lifetime,
 	})
 	if err != nil {
@@ -322,6 +335,16 @@ func wantCode(t *testing.T, err error, code string) {
 	}
 }
 
+// wantMessage fails unless err carries SQLSTATE code and primary message
+// msg (the schema's RAISE messages are codes, never argument values).
+func wantMessage(t *testing.T, err error, code, msg string) {
+	t.Helper()
+	var pe *pq.Error
+	if !errors.As(err, &pe) || string(pe.Code) != code || pe.Message != msg {
+		t.Fatalf("want %s %s, got %v", code, msg, err)
+	}
+}
+
 // wantErr fails unless errors.Is(err, target).
 func wantErr(t *testing.T, err, target error) {
 	t.Helper()
@@ -330,7 +353,8 @@ func wantErr(t *testing.T, err, target error) {
 	}
 }
 
-// sqlEnqueue calls enqueue_intent on db with bind parameters.
+// sqlEnqueue calls enqueue_intent on db with bind parameters, kind
+// OFFER_LEASE.
 func sqlEnqueue(ctx context.Context, q interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }, key, requestJSON string) (string, bool, error) {
@@ -339,7 +363,7 @@ func sqlEnqueue(ctx context.Context, q interface {
 		created bool
 	)
 	err := q.QueryRowContext(ctx, `SELECT intent_id, created FROM broadcaster.enqueue_intent($1, $2::jsonb, $3::jsonb, $4, $5::interval)`,
-		"TEST_KIND", requestJSON, `{"principal_kind":"DEV_FIXTURE"}`, key, "1 hour").Scan(&id, &created)
+		KindOfferLease, requestJSON, `{"principal_kind":"DEV_FIXTURE"}`, key, "1 hour").Scan(&id, &created)
 	return id, created, err
 }
 
