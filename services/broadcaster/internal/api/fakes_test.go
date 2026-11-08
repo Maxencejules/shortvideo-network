@@ -37,6 +37,10 @@ type fakeStore struct {
 	// enqueueErr, when set, is returned by EnqueueHTTP with nothing stored.
 	enqueueErr error
 	enqueued   []store.EnqueueRequest
+	// missReplays makes the next IntentByIdempotencyKey calls answer
+	// ErrNotFound, as a lookup that ran before a concurrent create with the
+	// same key committed.
+	missReplays int
 }
 
 func newFakeStore() *fakeStore {
@@ -182,6 +186,10 @@ func (f *fakeStore) OpenStallEpisode(context.Context) (store.StallEpisode, error
 func (f *fakeStore) IntentByIdempotencyKey(_ context.Context, caller, key string) (store.Intent, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.missReplays > 0 {
+		f.missReplays--
+		return store.Intent{}, store.ErrNotFound
+	}
 	for _, it := range f.intents {
 		if it.CallerPrincipal == caller && it.IdempotencyKey == key {
 			return it, nil

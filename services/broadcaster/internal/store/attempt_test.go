@@ -469,6 +469,19 @@ func TestCommitNeedsEvidence(t *testing.T) {
 	if err := tx.Commit(); !errors.Is(err, ErrEvidence) {
 		t.Fatalf("COMMITTED without a commitment: want ErrEvidence, got %v", err)
 	}
+	// own_transaction false (an effect another transaction committed) with
+	// no attempt passes the ownership check, so only the evidence check
+	// refuses it.
+	tx, err = ss.Begin(e.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	mustExec(t, tx.tx, `UPDATE broadcaster.intents SET state = 'COMMITTED', phase = NULL, final_at = now(),
+		committed_tx_hash = decode(repeat('ab', 32), 'hex'), own_transaction = false WHERE intent_id = $1`, in.IntentID)
+	if err := tx.Commit(); !errors.Is(err, ErrEvidence) {
+		t.Fatalf("COMMITTED (own_transaction false) without a commitment: want ErrEvidence, got %v", err)
+	}
 	tx, err = ss.Begin(e.ctx)
 	if err != nil {
 		t.Fatal(err)

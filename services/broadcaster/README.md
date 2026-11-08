@@ -87,7 +87,7 @@ HTTP/1.1 JSON over mTLS on loopback. The caller's principal is the client certif
 
 | Method and path | Effect |
 | --- | --- |
-| `POST /v1/intents` | validate, then insert the intent and its outbox rows in one database transaction; 201 new, 200 for the same idempotency key and request digest, 409 `IDEMPOTENCY_CONFLICT` for the same key with another digest |
+| `POST /v1/intents` | validate, then insert the intent and its outbox rows in one database transaction; 201 new, 200 for the same idempotency key and request digest (also for concurrent creates), 409 `IDEMPOTENCY_CONFLICT` for the same key with another digest |
 | `GET /v1/intents/{intent_id}` | the status view; another caller's intent answers 404 |
 | `GET /v1/intents?status=&page_token=&limit=` | the caller's own intents, at most 100 per page (PROPOSED) |
 | `POST /v1/intents/{intent_id}/cancel` | only while REQUESTED with no attempt ever persisted; otherwise 409 `NOT_CANCELLABLE` |
@@ -140,7 +140,7 @@ Schema `broadcaster`. Migration `0001_outbox.pgsql` has the tables `schema_migra
 Every text, bytea and jsonb column has a length check. COMMITTED and FAILED rows cannot be updated, except for that
 clearing, and `transitions` and `commitments` are append-only. At commit the database checks that a COMMITTED intent's
 evidence agrees with its own attempts. Refusals carry SQLSTATEs SV001 to SV014. There is no lease, offer or content state
-table, so the broadcaster cannot create a final lease. Migrations are embedded `.pgsql` files, because `.gitignore`
+table, so the broadcaster cannot create a final lease (`TestNoLeaseOrProjectionTable`). Migrations are embedded `.pgsql` files, because `.gitignore`
 ignores `*.sql`. Retention is unset (DEC-004). Design section 11 has the columns and constraints.
 
 ## Configuration and operation notes

@@ -251,7 +251,8 @@ intent-key registry file (public keys only): written by the operator; writable b
   U_serve equals its own uid while distinct uids are configured, and refuses an intent-key registry file or directory
   that U_serve owns or that has any group or other write bit (section 7). The command smoke test (`TestSmokeProcesses`,
   `services/broadcaster/cmd/svn-broadcaster`) prints `boundary_uids=signer:<u1>,serve:<u2>` for its distinct-uid run,
-  and the planned devnet test prints the same line. The root-only tests `TestServeUIDCannotReadKeyFiles` and
+  and the devnet tests `TestDevnetBroadcasterLifecycle` and `TestDevnetBroadcasterQuorumStall` (`chain/devnet`) print the
+  same line under a root launcher (`boundary_uids=same:<u>` otherwise). The root-only tests `TestServeUIDCannotReadKeyFiles` and
   `TestSignerRefusesOtherUIDPeer` (`internal/signer`) and `TestLoadRefusesOtherOwner` (`internal/keys`) build only with
   `-tags svn_roottest` and skip with a reason unless the test process is root; CI compiles them but does not run them.
 - Same-uid limit. When the launcher is not root, both processes run as one uid and the run prints
@@ -486,9 +487,13 @@ id, or set an unbounded deadline. With one uid (section 4.2) it can also read th
 - Key files, certificates and data directories live in ignored or temporary paths (`.gitignore:12,24-25`). SQL files are
   ignored by `.gitignore:70`, so migrations use the `.pgsql` suffix.
 - Names avoid the patterns of `scripts/scan_secrets.py`, and test canary strings are generated at run time.
-- A planned log canary test plants unique run-time strings in a key file, a database password, an authorization context
-  id, an inner signature and a request body. It first checks that each was processed, then searches the broadcaster,
-  signer, PostgreSQL and node logs and the test output. Zero hits is the pass condition.
+- Phase L of `TestDevnetBroadcasterLifecycle` uses run-time canaries: the two signer key files, the runtime and owner
+  database passwords, an authorization context id, an inner signature and a request body. It first checks that each was
+  processed, then searches every broadcaster process's log and standard output, the PostgreSQL log, the node logs and the
+  test's own standard output up to that point (not the testing framework's lines). Node logs are searched for the
+  canaries that never enter a transaction, because a node logs the transactions it commits, and a restarted validator's
+  log holds only what it wrote after its last start. Zero hits is the pass condition. The logs are not kept; the test
+  prints each one's size, sha256 and hit count.
 
 ## 10. Service API (PROPOSED)
 
@@ -543,7 +548,10 @@ queues, and the worker validates later.
 ### 10.4 Idempotency keys and request digests
 
 - Every create carries a caller-chosen `idempotency_key` (same id pattern). `UNIQUE(caller_principal, idempotency_key)`
-  decides in PostgreSQL. The same key and digest returns the existing intent; another digest is 409.
+  decides in PostgreSQL. The same key and digest returns the existing intent; another digest is 409. This holds for
+  concurrent creates too: when a create with the same key commits between a create's replay check and its permission
+  check, the permission check's refusal (its `PENDING` owner row) is answered by a second replay check
+  (`TestDuplicateCreateAfterMissedReplay`, devnet phase DU).
 - HTTP digest (`request.Digest`): SHA-256 over 8-byte length-prefixed frames of a fixed label, the kind name, the stored
   request (above), and the authorization context re-serialized from its typed struct with permissions sorted and
   deduplicated. JSON key order, whitespace and number spelling do not change it. The relay locators (`provider_id`,
@@ -605,8 +613,10 @@ queues, and the worker validates later.
   offers should bind the principal too is an open question for the owner (section 18.17).
 - On the SQL path these checks run only in the worker, at validation and again before signing; on both paths the worker
   checks again before signing.
-- Per-caller open-intent counters are updated in the enqueue transaction under local lock and statement timeouts
-  (PROPOSED 2 s and 5 s). A timeout is 503 and writes nothing. No global row is locked.
+- Each enqueue first updates the caller's `caller_limits` row (`enqueue_count`, a running count that serialises the
+  caller's enqueues), then checks the open-intent cap against a count of the caller's open rows, in one transaction under
+  local lock and statement timeouts (PROPOSED 2 s and 5 s). No stored open-intent counter exists. A timeout is 503 and
+  writes nothing. No global row is locked.
 
 ### 10.8 Status shown to callers (DR-11-09; no protocol change)
 
@@ -648,7 +658,9 @@ queues, and the worker validates later.
 - The devnet test's own database role is SELECT-only on every table.
 - Every query is parameterized (REQ-SEC-009); every function has a fixed `search_path`.
 - There is no intent-key table (section 7) and no lease, offer or content state table. The broadcaster cannot create a final
-  lease or any projection in the database (goal spec :28-29).
+  lease or any projection in the database (goal spec :28-29). `TestNoLeaseOrProjectionTable` (`internal/store`) lists every
+  relation the runtime role can reach (the outbox's 16 tables and the view `caller_intents`) and shows the role can
+  create no schema object or temporary table.
 
 ### 11.2 Tables (every text, bytea and jsonb column has a length `CHECK`)
 
@@ -757,8 +769,10 @@ already holds signer rows or validated intents.
   (`chain/app/tx_deadline_test.go`) shows that the gRPC-routed Simulate returns the gas of a successful message of each of
   the six key-signed kinds, that this gas plus the PROPOSED 30 % margin commits, and that a withdrawal with 24 open offers
   simulates to more gas than one without. That test builds its own simulation transaction with the same shape as
-  `chain.Codec.SimulationTx` (both tests assert the shape); the broadcaster's own simulation bytes reach a real node only
-  in the planned devnet test. No fallback to declared withdraw gas was needed.
+  `chain.Codec.SimulationTx` (both tests assert the shape). The broadcaster's own simulation bytes reach a real node in
+  phase H of `TestDevnetBroadcasterLifecycle`, which commits a `WITHDRAW_CONTENT`; with the route changed to `/app/simulate`
+  that phase fails (devnet mutant `dv-r3-simulate-through-app-path`), and `TestSimulateUsesTxService` pins the route at
+  unit level. No fallback to declared withdraw gas was needed.
 - Before each new attempt, in this order: the effect check (section 12.6, before the first attempt and before every
   retry); the request is validated again with the same policy checks the API runs; the sequence is allocated (a foreign
   use found by the `tx.acc_seq` search halts the signer); the deadline and gas are set; the signature is requested; the
@@ -1076,8 +1090,9 @@ connections at once; the start-up governance read takes at most 64 pages; the lo
 bytes; `SEQUENCE_GAP` halts above 256 sequences to check; a worker pass handles at most 64 intents per list; `dev-ca`
 certificates are valid 1 to 30 days, 7 by default; the registry file is at most 1 MiB with labels of at most 64 bytes.
 
-The planned devnet tests run at the lower bound wherever a phase does not depend on the value, and print the values they
-used.
+The devnet tests print the numbers they set: one `numbers=` line for the run and one `numbers_override` line for each
+phase-specific serve configuration (the stall test, WD, PG, FR2's rerun and RS). These are values chosen to keep the run
+inside the CI shard timeout, not the lower bounds.
 
 ## 17. Owner questions Q1 to Q4 (answered 2026-11-08)
 
@@ -1484,15 +1499,17 @@ The goal 11 plan changes no `.proto` file, `bounds.json`, `docs/protocol.md` or 
 - One live transaction per signer limits throughput to about one transaction per block per signer.
 - `LISTEN/NOTIFY` is a hint only. Correctness rests on polling under per-signer advisory locks and compare-and-set updates.
 - Mempool gossip timing and same-sequence transactions in different mempools are outside the broadcaster's control. The
-  planned tests check outcomes, not mempool internals.
+  tests check outcomes, not mempool internals.
 - An effect can land after the caller's `expires_at`, up to the live attempt's `timeout_height` (`last_landing_height`).
 - PostgreSQL crash safety depends on `fsync=on`. The outbox is not backed up in goal 11 (goal 26). The log settings of
   section 9 are checked only on the development cluster; an operator must apply them.
 - The stall report differs from the reference outbox: no `ERROR_CODE_QUORUM` is returned (DR-11-19).
 - Raw `/store` queries are unmetered and unpaged on the node, so the node RPC must stay private
   (`chain/x/leases/README.md:692`).
-- The planned fault proxy covers lost requests and answers on one loopback link, not real network partitions. The planned
-  PostgreSQL faults are process crashes, not host power loss.
+- The devnet fault proxy covers lost requests and answers on one loopback link, not real network partitions. The devnet
+  PostgreSQL fault (phase PG) is a crash restart: every process frozen, one backend killed, the postmaster pid unchanged.
+  An immediate stop and a postmaster kill with a restart run only in the store test
+  `TestImmediateStopKeepsCommittedAttempts`, without a chain. All of them are process crashes, not host power loss.
 - A halt other than `SIGNER_CONFLICT` stops that signer for the life of the database (section 4.3).
 - Offer and relay rights are per caller, not per principal (section 10.7).
 - The owner row's `principal_id` is kept after the Q4 clearing (section 8).
@@ -1502,8 +1519,10 @@ The goal 11 plan changes no `.proto` file, `bounds.json`, `docs/protocol.md` or 
 
 ## 22. Steps that need a human approval or an independent review
 
-1. Answers to Q1 to Q4, and approval of this file at a pinned commit and sha256 (DR-11-01).
-2. The fate of goal 09's outbox deferral, through the Q2 answer (DR-11-06).
+1. Approval of this file at a pinned commit and sha256 (DR-11-01). Q1 to Q4 were answered on 2026-11-08 (section 17);
+   the answers approve neither this file nor any PROPOSED number.
+2. Recording goal 09's outbox deferral against the Q2 answer in `docs/progress.md` (DR-11-06, settled by Q2: audit
+   batches stay on the auditor's own path); this is the orchestrator's update, not an open question.
 3. Acceptance of the PROPOSED number labels (DR-11-10), of the language and layout change, and of the goal 01
    `SOURCE_ALLOW` edit it causes (DR-11-20).
 4. Production key custody for service and broadcaster keys (DEC-001; goal 26), and any non-devnet chain id.
