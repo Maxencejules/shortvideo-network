@@ -1761,15 +1761,32 @@ func TestUpgradeWindowCheckTxAndQueries(t *testing.T) {
 		t.Logf("%s: CheckTx code %s/%d %s", label, res.GetCodespace(), res.GetCode(), res.GetLog())
 	}
 	const sigFailed = 4
+	// The probes need a signer whose account number is not 0: before the
+	// first commit after a load the check state verifies signatures with
+	// account number 0, so a signer numbered 0 would pass. Account numbers
+	// follow address order and the test keys are new on every run, so the
+	// probes use the first approving seat whose number is not 0; at most
+	// one account is numbered 0.
+	var approver *actor
+	for _, seat := range e.seats[1:] {
+		if e.numbers[seat.hexAddr()] != 0 {
+			approver = seat
+			break
+		}
+	}
+	if approver == nil {
+		t.Fatal("every approving seat has account number 0")
+	}
+	t.Logf("probe signer %s, account number %d", approver.name, e.numbers[approver.hexAddr()])
 	gateRow(t, d, id, binaryV1, 1)
-	control := r.approveRaw(t, e.seats[1], "window-ap-0", "window-0")
+	control := r.approveRaw(t, approver, "window-ap-0", "window-0")
 	checkTx("v1 after a restart, before a commit", control, sigFailed)
 	r.c.block(t)
 	checkTx("v1 after a commit", control, 0)
 
 	r.blocksTo(t, r.h-1)
 	gateRow(t, d, id, binaryV2, 3)
-	inWindow := r.approveRaw(t, e.seats[1], "window-ap-1", "window-1")
+	inWindow := r.approveRaw(t, approver, "window-ap-1", "window-1")
 	checkTx("v2 in the upgrade window", inWindow, sigFailed)
 	state := queryPolicy(t, d.run.app)
 	if state.GetAppVersion() != 1 || state.GetUpgradePlan().GetName() != rehearsal.UpgradeName || abciAppVersion(t, d.run.app) != 1 {
