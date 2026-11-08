@@ -564,6 +564,10 @@ func TestCommitBlockHash(t *testing.T) {
 	}
 }
 
+// txServiceSimulate is the route ruling R3 fixes for gas simulation: the
+// SDK transaction service's Simulate method, never /app/simulate.
+const txServiceSimulate = "/cosmos.tx.v1beta1.Service/Simulate"
+
 // TestSimulateUsesTxService: Simulate sends the transaction bytes to the
 // SDK transaction service's Simulate method as a gRPC-routed ABCI query
 // and reads gas used from the protobuf answer, encoded as the node's query
@@ -596,12 +600,12 @@ func TestSimulateUsesTxService(t *testing.T) {
 			t.Errorf("simulate request: %v", err)
 		}
 	}
-	n.handle("abci_query", answerQuery(t, pathSimulate, 40, 0, value, checkReq))
+	n.handle("abci_query", answerQuery(t, txServiceSimulate, 40, 0, value, checkReq))
 	res, err := c.Simulate(context.Background(), raw)
 	if err != nil || res.GasUsed != 71_234 || res.Height != 40 {
 		t.Fatalf("simulate %+v %v", res, err)
 	}
-	n.handle("abci_query", answerQuery(t, pathSimulate, 40, 111222, nil, nil))
+	n.handle("abci_query", answerQuery(t, txServiceSimulate, 40, 111222, nil, nil))
 	var qerr *QueryError
 	if _, err := c.Simulate(context.Background(), raw); !errors.As(err, &qerr) {
 		t.Fatalf("rejected simulation: %v", err)
@@ -610,7 +614,7 @@ func TestSimulateUsesTxService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n.handle("abci_query", answerQuery(t, pathSimulate, 40, 0, empty, nil))
+	n.handle("abci_query", answerQuery(t, txServiceSimulate, 40, 0, empty, nil))
 	if _, err := c.Simulate(context.Background(), raw); !errors.Is(err, ErrResponse) {
 		t.Fatalf("answer without gas: %v", err)
 	}

@@ -186,8 +186,9 @@ func (s *Store) enqueueHTTPTx(ctx context.Context, tx *sql.Tx, r EnqueueRequest,
 		r.CallerPrincipal, r.IdempotencyKey).Scan(&existingID, &existingEntry, &existingDigest, &existingBizID)
 	switch {
 	case err == nil:
-		// A SQL-path intent's digest is of another form, so the same key
-		// from the SQL path is never the same request.
+		// An SQL-path intent under the key is never the same request: the
+		// entry decides, because a validated SQL-path intent holds the
+		// HTTP form of the digest and can match it byte for byte.
 		if existingEntry != "HTTP" || !bytes.Equal(existingDigest, r.RequestDigest[:]) {
 			return EnqueueResult{}, ErrIdempotencyConflict
 		}

@@ -138,6 +138,12 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) (int, intentView
 	}
 	az, apiErr := s.authorize(ctx, caller, auth, dec)
 	if apiErr != nil {
+		// A create with the same key that committed after the replay
+		// check above can be what authorize refused on (its PENDING owner
+		// row): the key then names an intent, and the replay answers.
+		if status, v, replayErr, done := s.replay(ctx, caller.Principal, env.IdempotencyKey, digest); done {
+			return status, v, replayErr
+		}
 		return 0, intentView{}, apiErr
 	}
 	res, err := s.deps.Store.EnqueueHTTP(ctx, store.EnqueueRequest{

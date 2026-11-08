@@ -190,6 +190,61 @@ func TestRuntimeRoleHasNoDDL(t *testing.T) {
 	}
 }
 
+// TestNoLeaseOrProjectionTable (plan 13.6, Req. 4 "no final leases"): every
+// table, view or foreign table in a schema the runtime role can use is one of
+// the outbox's own: intents, their attempts, transitions and evidence,
+// signers, callers, configuration, content_owners (the caller's ownership of
+// a content id, plan 5.7) and the view caller_intents (a SQL-path caller's
+// own intents, status fields and digests only). No relation holds lease, offer or
+// provider state, so the broadcaster has no place to keep a final lease or
+// a projection of chain state. The runtime role can create no schema object
+// and no temporary table.
+func TestNoLeaseOrProjectionTable(t *testing.T) {
+	e := newEnv(t)
+	rows, err := e.runtime.QueryContext(e.ctx, `SELECT n.nspname, c.relname, c.relkind::text FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+		  AND n.nspname NOT LIKE 'pg\_%' AND has_schema_privilege(current_user, n.oid, 'USAGE')
+		ORDER BY 1, 2`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var got []string
+	for rows.Next() {
+		var schema, name, kind string
+		if err := rows.Scan(&schema, &name, &kind); err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, schema+"."+name+":"+kind)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"broadcaster.attempts:r", "broadcaster.business_attempts:r", "broadcaster.caller_intents:v", "broadcaster.caller_limits:r",
+		"broadcaster.callers:r", "broadcaster.chain_binding:r", "broadcaster.chain_health:r",
+		"broadcaster.commitments:r", "broadcaster.content_owners:r", "broadcaster.forwarded_txs:r",
+		"broadcaster.intents:r", "broadcaster.kinds:r", "broadcaster.schema_migrations:r",
+		"broadcaster.signer_events:r", "broadcaster.signers:r", "broadcaster.stall_episodes:r",
+		"broadcaster.transitions:r",
+	}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("relations the runtime role can reach:\n got %v\nwant %v", got, want)
+	}
+	var create, temp bool
+	if err := e.runtime.QueryRowContext(e.ctx, `SELECT
+		EXISTS (SELECT 1 FROM pg_namespace n WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+		          AND has_schema_privilege(current_user, n.oid, 'CREATE')),
+		has_database_privilege(current_user, current_database(), 'CREATE')
+		  OR has_database_privilege(current_user, current_database(), 'TEMPORARY')`).Scan(&create, &temp); err != nil {
+		t.Fatal(err)
+	}
+	if create || temp {
+		t.Fatalf("the runtime role may create objects: schema CREATE %t, database CREATE or TEMPORARY %t", create, temp)
+	}
+}
+
 // TestRuntimeRoleCannotWriteCallers (plan 13.2): callers, caller caps and the
 // chain binding are owner-written; the runtime role cannot write them, cannot
 // call register_caller, and cannot call the SQL-path enqueue function.

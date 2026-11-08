@@ -675,6 +675,27 @@ func TestEnqueueHTTPRefusals(t *testing.T) {
 	if got := e.count(`SELECT count(*) FROM broadcaster.intents`); got != 0 {
 		t.Fatalf("%d intents written by refused requests", got)
 	}
+	// A validated SQL-path intent holds the HTTP form of the digest (the
+	// worker computes it with request.Digest), so an HTTP create with the
+	// same key and the same digest matches it byte for byte; the entry
+	// alone makes it another request.
+	callerDB := e.caller("p-sql", 4)
+	sqlID, _, err := sqlEnqueue(e.ctx, callerDB, "k-sql", `{"v":1}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.st.MarkValidated(e.ctx, sqlID, Validation{Request: req, RequestDigest: digest, SignerAddress: signer,
+		Object: testOffer}); err != nil {
+		t.Fatal(err)
+	}
+	r = base
+	r.CallerPrincipal, r.IdempotencyKey = "p-sql", "k-sql"
+	if _, err := e.st.EnqueueHTTP(e.ctx, r); !errors.Is(err, ErrIdempotencyConflict) {
+		t.Fatalf("HTTP create with a validated SQL-path intent's key and digest: want ErrIdempotencyConflict, got %v", err)
+	}
+	if got := e.count(`SELECT count(*) FROM broadcaster.intents`); got != 1 {
+		t.Fatalf("%d intents after the refused HTTP create, want the SQL-path one", got)
+	}
 
 	raw := newRawEnv(t)
 	if _, err := Migrate(raw.ctx, raw.owner); err != nil {

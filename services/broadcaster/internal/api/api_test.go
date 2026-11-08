@@ -261,6 +261,88 @@ func TestIdempotencyConflict(t *testing.T) {
 	if c := e.createRegister("sql-1", "video-4"); c.status != http.StatusConflict {
 		t.Fatalf("SQL-path key: %d %s", c.status, c.body)
 	}
+	// A validated SQL-path intent carries the HTTP form of the digest (the
+	// worker sets it with request.Digest), so the same request over HTTP
+	// matches it digest for digest; the entry alone makes it another
+	// request.
+	sqlBody := envelope(t, "REGISTER_CONTENT", "sql-2", 600, authContext("creator-7", "PUBLISH_CONTENT"),
+		registerRequest(t, "video-5", intentKey()))
+	e.st.put(store.Intent{ID: "00000000-0000-4000-8000-0000000000ab", CallerPrincipal: "app-fixture",
+		IdempotencyKey: "sql-2", Kind: "REGISTER_CONTENT", Entry: "SQL", State: store.StateRequested,
+		Phase: store.PhaseQueued, SQLDigest: bytes.Repeat([]byte{2}, 32), RequestDigest: httpDigest(t, sqlBody)})
+	if c := e.do(e.as("app-fixture"), http.MethodPost, "/v1/intents", sqlBody); c.status != http.StatusConflict || c.code(t) != codeIdempotency {
+		t.Fatalf("validated SQL-path key, same request over HTTP: %d %s", c.status, c.body)
+	}
+}
+
+// httpDigest is the request digest the API computes for an HTTP create
+// body (request.Digest over the canonical request and context).
+func httpDigest(t *testing.T, body []byte) []byte {
+	t.Helper()
+	env, err := request.DecodeEnvelope(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	spec, err := request.LookupKind(env.Kind)
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, _, err := request.DecodeAuthContext(env.AuthContext, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dec, err := request.DecodeRequest(spec.Kind, env.Request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored, err := dec.Stored()
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest, err := request.Digest(spec.Kind, stored, auth)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return digest[:]
+}
+
+// TestDuplicateCreateAfterMissedReplay replays phase DU's interleaving
+// deterministically: a duplicate create's replay lookup runs before the
+// first create commits (one missed lookup), and its authorize runs after,
+// when the first create's PENDING owner row exists and refuses the content
+// id. The duplicate still gets the existing intent with 200, and nothing
+// new is enqueued.
+func TestDuplicateCreateAfterMissedReplay(t *testing.T) {
+	e := newEnv(t)
+	first := e.createRegister("reg-1", "video-1")
+	if first.status != http.StatusCreated {
+		t.Fatalf("%d %s", first.status, first.body)
+	}
+	id := first.json(t)["intent_id"]
+	e.st.mu.Lock()
+	e.st.missReplays = 1
+	e.st.mu.Unlock()
+	again := e.createRegister("reg-1", "video-1")
+	if again.status != http.StatusOK || again.json(t)["intent_id"] != id {
+		t.Fatalf("duplicate create whose replay lookup missed: %d %s, want 200 naming %v", again.status, again.body, id)
+	}
+	// Another body under the key is still a conflict, not the content
+	// id refusal.
+	e.st.mu.Lock()
+	e.st.missReplays = 1
+	e.st.mu.Unlock()
+	other := envelope(t, "REGISTER_CONTENT", "reg-1", 600, authContext("creator-7", "PUBLISH_CONTENT", "SCHEDULE_HOSTING"),
+		registerRequest(t, "video-1", intentKey()))
+	if c := e.do(e.as("app-fixture"), http.MethodPost, "/v1/intents", other); c.status != http.StatusConflict || c.code(t) != codeIdempotency {
+		t.Fatalf("other body whose replay lookup missed: %d %s", c.status, c.body)
+	}
+	// A refusal with no intent under the key keeps its own answer.
+	if c := e.createRegister("reg-2", "video-1"); c.status != http.StatusConflict || c.code(t) == codeIdempotency {
+		t.Fatalf("another key for a held content id: %d %s", c.status, c.body)
+	}
+	if e.st.enqueueCount() != 1 {
+		t.Fatalf("%d enqueues, want 1", e.st.enqueueCount())
+	}
 }
 
 func mustMarshal(t *testing.T, v any) string {
