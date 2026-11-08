@@ -209,13 +209,15 @@ func TestEnqueueRollbackLeavesNothing(t *testing.T) {
 	e.enqueue("p-http", "first", signer, time.Hour)
 	before := e.count(`SELECT count(*) FROM broadcaster.intents`) + e.count(`SELECT count(*) FROM broadcaster.business_attempts`)
 	req, digest := request("second")
-	_, err = e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-http", IdempotencyKey: "second", Kind: "TEST_KIND",
-		Request: req, RequestDigest: digest, AuthContext: []byte(`{}`), SignerAddress: signer, ExpiresIn: time.Hour})
+	_, err = e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-http", IdempotencyKey: "second", Kind: KindOfferLease,
+		Request: req, RequestDigest: digest, AuthContext: []byte(`{}`), SignerAddress: signer,
+		Object: ObjectRef{Type: ObjectOffer, ID: "second"}, ExpiresIn: time.Hour})
 	wantErr(t, err, ErrCapReached)
 	unknownSigner := make([]byte, 20)
 	e.principal("p-http2", 4)
-	_, err = e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-http2", IdempotencyKey: "third", Kind: "TEST_KIND",
-		Request: req, RequestDigest: digest, AuthContext: []byte(`{}`), SignerAddress: unknownSigner, ExpiresIn: time.Hour})
+	_, err = e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-http2", IdempotencyKey: "third", Kind: KindOfferLease,
+		Request: req, RequestDigest: digest, AuthContext: []byte(`{}`), SignerAddress: unknownSigner,
+		Object: ObjectRef{Type: ObjectOffer, ID: "third"}, ExpiresIn: time.Hour})
 	wantCode(t, err, "23503")
 	after := e.count(`SELECT count(*) FROM broadcaster.intents`) + e.count(`SELECT count(*) FROM broadcaster.business_attempts`)
 	if after != before {
@@ -331,15 +333,21 @@ func TestSQLMetacharactersAreData(t *testing.T) {
 	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent($1, '{}'::jsonb, '{}'::jsonb, 'k-ok', interval '1 hour')`,
 		"KIND'); --").Scan(&dummy)
 	wantCode(t, err, "SV004")
-	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent('K', '[1]'::jsonb, '{}'::jsonb, 'k-arr', interval '1 hour')`).Scan(&dummy)
-	wantCode(t, err, "SV004")
-	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent('K', '{}'::jsonb, '{}'::jsonb, 'k-exp', interval '4 seconds')`).Scan(&dummy)
-	wantCode(t, err, "SV004")
-	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent('K', '{}'::jsonb, '{}'::jsonb, 'k-exp', interval '8 days')`).Scan(&dummy)
-	wantCode(t, err, "SV004")
+	// A listed kind, so each refusal below is for its own argument.
+	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent('OFFER_LEASE', '[1]'::jsonb, '{}'::jsonb, 'k-arr', interval '1 hour')`).Scan(&dummy)
+	wantMessage(t, err, "SV004", "SVN_BAD_REQUEST")
+	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent('OFFER_LEASE', '{}'::jsonb, '{}'::jsonb, 'k-exp', interval '4 seconds')`).Scan(&dummy)
+	wantMessage(t, err, "SV004", "SVN_BAD_EXPIRY")
+	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent('OFFER_LEASE', '{}'::jsonb, '{}'::jsonb, 'k-exp', interval '8 days')`).Scan(&dummy)
+	wantMessage(t, err, "SV004", "SVN_BAD_EXPIRY")
 	big := `{"x":"` + strings.Repeat("y", 65536) + `"}`
-	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent('K', $1::jsonb, '{}'::jsonb, 'k-big', interval '1 hour')`, big).Scan(&dummy)
-	wantCode(t, err, "SV004")
+	err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent('OFFER_LEASE', $1::jsonb, '{}'::jsonb, 'k-big', interval '1 hour')`, big).Scan(&dummy)
+	wantMessage(t, err, "SV004", "SVN_BAD_REQUEST")
+	for _, kind := range []string{"K", "FORWARD_AUDIT_BATCH", "TEST_KIND"} {
+		err = callerDB.QueryRowContext(e.ctx, `SELECT intent_id FROM broadcaster.enqueue_intent($1, '{}'::jsonb, '{}'::jsonb,
+			'k-kind', interval '1 hour')`, kind).Scan(&dummy)
+		wantMessage(t, err, "SV004", "SVN_BAD_KIND")
+	}
 	if got := e.count(`SELECT count(*) FROM broadcaster.intents`); got != 1 {
 		t.Fatalf("%d intents, want 1", got)
 	}
@@ -348,7 +356,7 @@ func TestSQLMetacharactersAreData(t *testing.T) {
 	signer := e.signer(1)
 	authCtx := `{"principal_id":"x'); DROP TABLE broadcaster.callers; --","policy_ref":"$$"}`
 	req, digest := request("meta")
-	res, err := e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-http", IdempotencyKey: "meta-http", Kind: "TEST_KIND",
+	res, err := e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-http", IdempotencyKey: "meta-http", Kind: KindOfferLease, Object: testOffer,
 		Request: req, RequestDigest: digest, AuthContext: []byte(authCtx), SignerAddress: signer, ExpiresIn: time.Hour})
 	if err != nil {
 		t.Fatal(err)
@@ -357,8 +365,10 @@ func TestSQLMetacharactersAreData(t *testing.T) {
 		res.IntentID, authCtx).Scan(&same); err != nil || !same {
 		t.Fatalf("auth context not stored verbatim: %v %v", same, err)
 	}
-	if got := e.count(`SELECT count(*) FROM pg_tables WHERE schemaname = 'broadcaster'`); got != 13 {
-		t.Fatalf("broadcaster has %d tables, want 13", got)
+	// 13 tables of 0001_outbox, plus kinds, forwarded_txs and
+	// content_owners of 0002_answers.
+	if got := e.count(`SELECT count(*) FROM pg_tables WHERE schemaname = 'broadcaster'`); got != 16 {
+		t.Fatalf("broadcaster has %d tables, want 16", got)
 	}
 }
 
@@ -406,7 +416,7 @@ func TestIdempotencyUniqueUnderConcurrency(t *testing.T) {
 	req, digest := request("race")
 	other, otherDigest := request("race-other")
 	enq := func(key string, r []byte, d [32]byte) (EnqueueResult, error) {
-		return e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-race", IdempotencyKey: key, Kind: "TEST_KIND",
+		return e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-race", IdempotencyKey: key, Kind: KindOfferLease, Object: testOffer,
 			Request: r, RequestDigest: d, AuthContext: []byte(`{}`), SignerAddress: signer, ExpiresIn: time.Hour})
 	}
 
@@ -540,7 +550,7 @@ func TestPerCallerCapNoGlobalLock(t *testing.T) {
 		t.Fatalf("other caller, SQL path, blocked: %v", err)
 	}
 	req, digest := request("http-1")
-	if _, err := e.st.EnqueueHTTP(quick, EnqueueRequest{CallerPrincipal: "p-http", IdempotencyKey: "http-1", Kind: "TEST_KIND",
+	if _, err := e.st.EnqueueHTTP(quick, EnqueueRequest{CallerPrincipal: "p-http", IdempotencyKey: "http-1", Kind: KindOfferLease, Object: testOffer,
 		Request: req, RequestDigest: digest, AuthContext: []byte(`{}`), SignerAddress: signer, ExpiresIn: time.Hour}); err != nil {
 		t.Fatalf("other caller, HTTP path, blocked: %v", err)
 	}
@@ -552,7 +562,7 @@ func TestPerCallerCapNoGlobalLock(t *testing.T) {
 
 	began := time.Now()
 	req2, digest2 := request("slow-2")
-	_, err = e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-slow", IdempotencyKey: "slow-2", Kind: "TEST_KIND",
+	_, err = e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-slow", IdempotencyKey: "slow-2", Kind: KindOfferLease, Object: testOffer,
 		Request: req2, RequestDigest: digest2, AuthContext: []byte(`{}`), SignerAddress: signer, ExpiresIn: time.Hour})
 	wantErr(t, err, ErrLockTimeout)
 	if waited := time.Since(began); waited < 1500*time.Millisecond || waited > 4*time.Second {
@@ -571,7 +581,7 @@ func TestPerCallerCapNoGlobalLock(t *testing.T) {
 	}
 	_, _, err = sqlEnqueue(e.ctx, slow, "slow-3", `{"v":4}`)
 	wantCode(t, err, "SV005")
-	_, err = e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-slow", IdempotencyKey: "slow-2", Kind: "TEST_KIND",
+	_, err = e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p-slow", IdempotencyKey: "slow-2", Kind: KindOfferLease, Object: testOffer,
 		Request: req2, RequestDigest: digest2, AuthContext: []byte(`{}`), SignerAddress: signer, ExpiresIn: time.Hour})
 	wantErr(t, err, ErrCapReached)
 
@@ -634,7 +644,7 @@ func TestEnqueueHTTPRefusals(t *testing.T) {
 	e.principal("p", 4)
 	signer := e.signer(1)
 	req, digest := request("x")
-	base := EnqueueRequest{CallerPrincipal: "p", IdempotencyKey: "k", Kind: "TEST_KIND", Request: req,
+	base := EnqueueRequest{CallerPrincipal: "p", IdempotencyKey: "k", Kind: KindOfferLease, Object: testOffer, Request: req,
 		RequestDigest: digest, AuthContext: []byte(`{"a":1}`), SignerAddress: signer, ExpiresIn: time.Hour}
 	mutate := map[string]func(*EnqueueRequest){
 		"bad principal":   func(r *EnqueueRequest) { r.CallerPrincipal = "P" },
@@ -673,7 +683,8 @@ func TestEnqueueHTTPRefusals(t *testing.T) {
 	if err := RegisterCaller(raw.ctx, raw.owner, "p", 4, ""); err != nil {
 		t.Fatal(err)
 	}
-	if err := raw.st.EnsureSigner(raw.ctx, signer, 1); err != nil {
+	if err := raw.st.RegisterSigner(raw.ctx, SignerKey{Address: signer, Class: ClassService, KeyName: "key-1",
+		LockKey: 1}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := raw.st.EnqueueHTTP(raw.ctx, base); !errors.Is(err, ErrChainUnbound) {
@@ -713,14 +724,14 @@ func TestMarkValidatedSQLPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	list, err := e.st.UnvalidatedIntents(e.ctx, 10)
-	if err != nil || len(list) != 2 || list[0].ID != id || list[0].Kind != "TEST_KIND" || string(list[0].RequestJSON) != `{"v": 1}` {
+	if err != nil || len(list) != 2 || list[0].ID != id || list[0].Kind != KindOfferLease || string(list[0].RequestJSON) != `{"v": 1}` {
 		t.Fatalf("unvalidated list %+v %v", list, err)
 	}
 	if due, err := e.st.DueIntents(e.ctx, signer, 10); err != nil || len(due) != 0 {
 		t.Fatalf("unvalidated intents due: %v %v", due, err)
 	}
 	req, digest := request("validated")
-	v := Validation{Request: req, RequestDigest: digest, SignerAddress: signer}
+	v := Validation{Request: req, RequestDigest: digest, SignerAddress: signer, Object: ObjectRef{Type: ObjectOffer, ID: "o1"}}
 	if err := e.st.MarkValidated(e.ctx, id, v); err != nil {
 		t.Fatal(err)
 	}

@@ -23,6 +23,7 @@ import (
 
 	chainaddress "github.com/Maxencejules/shortvideo-network/chain/address"
 	"github.com/Maxencejules/shortvideo-network/chain/app"
+	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
@@ -47,7 +48,13 @@ import (
 //     service route of abci_query. The /app/simulate route of abci_query
 //     runs the same simulation but cannot JSON-encode its answer for an svn
 //     message (TestAppSimulatePathCannotEncodeSvnResults, a record of
-//     current behaviour).
+//     current behaviour);
+//   - the tx service route returns gas for a successful message of every
+//     kind the broadcaster signs, built the way the broadcaster builds its
+//     simulation transaction (declared gas 0, timeout_height set, an empty
+//     signature), and that gas plus the PROPOSED 30 % margin is enough for
+//     the signed transaction to commit (TestSimulateRouteGasForBroadcasterKinds,
+//     orchestrator ruling R3).
 //
 // CheckTx verifies signatures with the account number only once the check
 // state has a non-zero height (DR-10-41), so every test that requires a
@@ -756,4 +763,156 @@ func TestAppSimulatePathCannotEncodeSvnResults(t *testing.T) {
 		}
 	}
 	sameStores(t, "after the simulations", chainApp, before)
+}
+
+// broadcasterSimulationTx returns msg from who at who's next sequence in the
+// shape of the broadcaster's simulation transaction
+// (services/broadcaster/internal/chain Codec.SimulationTx): declared gas 0,
+// the given timeout_height, SIGN_MODE_DIRECT signer info with who's public
+// key, and an empty signature. It checks the encoded envelope.
+func (n *regNet) broadcasterSimulationTx(t *testing.T, c *cluster, who *actor, timeoutHeight uint64, msg sdk.Msg) []byte {
+	t.Helper()
+	cfg := c.app().EncodingConfig().TxConfig
+	builder := cfg.NewTxBuilder()
+	if err := builder.SetMsgs(msg); err != nil {
+		t.Fatal(err)
+	}
+	builder.SetGasLimit(0)
+	builder.SetTimeoutHeight(timeoutHeight)
+	if err := builder.SetSignatures(signingtypes.SignatureV2{
+		PubKey:   who.key.PubKey(),
+		Data:     &signingtypes.SingleSignatureData{SignMode: signingtypes.SignMode_SIGN_MODE_DIRECT},
+		Sequence: n.seq[who.hexAddr()],
+	}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := cfg.TxEncoder()(builder.GetTx())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var envelope txtypes.TxRaw
+	if err := gogoproto.Unmarshal(raw, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if len(envelope.Signatures) != 1 || len(envelope.Signatures[0]) != 0 {
+		t.Fatalf("simulation transaction carries %d signatures, want one empty signature", len(envelope.Signatures))
+	}
+	var body txtypes.TxBody
+	if err := gogoproto.Unmarshal(envelope.BodyBytes, &body); err != nil {
+		t.Fatal(err)
+	}
+	var info txtypes.AuthInfo
+	if err := gogoproto.Unmarshal(envelope.AuthInfoBytes, &info); err != nil {
+		t.Fatal(err)
+	}
+	if body.TimeoutHeight != timeoutHeight || info.Fee == nil || info.Fee.GasLimit != 0 {
+		t.Fatalf("simulation transaction timeout_height %d, fee %v; want %d and gas 0", body.TimeoutHeight, info.Fee, timeoutHeight)
+	}
+	return raw
+}
+
+// simulateMarginPercent is the PROPOSED withdraw simulation margin of goal 11
+// plan section 11 (DR-11-10, not an owner decision): declared gas is the
+// simulated gas plus 30 % of it, capped at genesis.MaxGasPerTx.
+const simulateMarginPercent = 30
+
+// broadcasterTimeoutOffset is the PROPOSED timeout_height offset K of goal
+// 11 plan section 11 (DR-11-10).
+const broadcasterTimeoutOffset = 40
+
+// TestSimulateRouteGasForBroadcasterKinds (orchestrator ruling R3): the
+// broadcaster measures gas through the SDK tx service route of abci_query
+// (txSimulatePath), not /app/simulate. For one successful message of every
+// kind the broadcaster signs, from the account class that signs it (the
+// service account: register, offer, withdraw; the BROADCASTER account:
+// accept, renew, provider end), the transaction built in the broadcaster's
+// simulation shape (broadcasterSimulationTx: declared gas 0, a timeout
+// height K blocks ahead, an empty signature) is answered with code 0, gas
+// used of at least msgkit.FixedMessageGas and the kind's typed event, and
+// changes no committed store and no sequence. The same message signed with
+// that timeout height and the simulated gas plus the PROPOSED 30 % margin as
+// its gas limit commits with code 0, its acc_seq, and gas used not above the
+// declared limit. A withdrawal of content with 24 open offers simulates to
+// more gas than one without offers (the reason plan 8.2 sizes withdrawals by
+// simulation) and also commits within its margin. The test logs every
+// estimate, declared limit and gas used; they are observations of this
+// application build, not bounds.
+func TestSimulateRouteGasForBroadcasterKinds(t *testing.T) {
+	n := newRegNet()
+	c := n.start(t, 1)
+	chainApp := c.app()
+	registerTxService(chainApp)
+	leaseBasics(t, n, c)
+	now := c.now()
+
+	run := func(label string, who *actor, msg sdk.Msg, event string) uint64 {
+		t.Helper()
+		timeout := uint64(c.height()) + broadcasterTimeoutOffset
+		seq := n.seq[who.hexAddr()]
+		before := takeStores(t, chainApp)
+		res, sim := txServiceSimulate(t, chainApp, n.broadcasterSimulationTx(t, c, who, timeout, msg))
+		if res.Code != 0 || sim == nil {
+			t.Fatalf("%s: simulate code %s/%d log %s", label, res.Codespace, res.Code, res.Log)
+		}
+		if sim.GasInfo == nil || sim.GasInfo.GasUsed < msgkit.FixedMessageGas {
+			t.Fatalf("%s: gas info %v, want gas used of at least %d", label, sim.GasInfo, msgkit.FixedMessageGas)
+		}
+		if sim.Result == nil || !containsString(eventTypes(typedEvents(sim.Result.Events)), event) {
+			t.Fatalf("%s: the simulation result has no %s event", label, event)
+		}
+		sameStores(t, label+": after the simulation", chainApp, before)
+		wantSequence(t, label+": after the simulation", chainApp, who, seq)
+
+		estimate := sim.GasInfo.GasUsed
+		declared := estimate + estimate*simulateMarginPercent/100
+		if declared > genesis.MaxGasPerTx {
+			declared = genesis.MaxGasPerTx
+		}
+		builder := chainApp.EncodingConfig().TxConfig.NewTxBuilder()
+		if err := builder.SetMsgs(msg); err != nil {
+			t.Fatal(err)
+		}
+		builder.SetTimeoutHeight(timeout)
+		committed := n.deliverRaw(t, c, who, n.signBuilt(t, c, who, declared, builder))
+		wantCode(t, label+": signed with the margin", committed, msgkit.OK)
+		wantAccSeq(t, label+": signed with the margin", committed, who, seq)
+		if committed.GasUsed < 0 || uint64(committed.GasUsed) > declared {
+			t.Fatalf("%s: gas used %d above the declared %d", label, committed.GasUsed, declared)
+		}
+		t.Logf("%s: simulated %d, declared %d, used %d", label, estimate, declared, committed.GasUsed)
+		return estimate
+	}
+
+	run("register c9", n.service, n.registerContent(t, n.service, "reg-c9", "c9", 1, packageManifest("c9"), sizeSmall),
+		"svn.events.v1.ContentRegistered")
+	offer := n.offerMsg(n.service, "of-o1", "o1", "c1", "p1", sizeSmall, now+1800, now+600)
+	run("offer o1", n.service, offer, evOffered)
+	run("accept o1 as l1", n.broadcaster, n.acceptMsg(t, n.broadcaster, "ac-l1", offer, "l1"), evAccepted)
+	run("renew l1", n.broadcaster, n.renewMsg(t, n.broadcaster, "rn-l1", "l1", "p1", "c1", sizeSmall, 2, now+1800+leaseTerm),
+		evRenewed)
+	run("end l1", n.broadcaster, n.endMsg(t, n.broadcaster, "en-l1", "l1", "p1", 2), evEnded)
+
+	bare := run("withdraw c3 without offers", n.service,
+		n.withdrawContent(t, n.service, "wd-c3", "c3", 1, reasonDigest("c3")), "svn.events.v1.ContentWithdrawn")
+	var offers []sdk.Msg
+	for i := 0; i < 24; i++ {
+		provider := []string{"p1", "p2"}[i%2]
+		id := fmt.Sprintf("o-c2-%02d", i)
+		offers = append(offers, n.offerMsg(n.service, "of-"+id, id, "c2", provider, sizeSmall, now+1800, now+600))
+	}
+	n.sendMulti(t, c, n.service, "24 open offers on c2", offers)
+	loaded := run("withdraw c2 with 24 open offers", n.service,
+		n.withdrawContent(t, n.service, "wd-c2", "c2", 1, reasonDigest("c2")), "svn.events.v1.ContentWithdrawn")
+	if loaded <= bare {
+		t.Fatalf("withdrawal with 24 open offers simulated to %d gas, not above %d without offers", loaded, bare)
+	}
+}
+
+// eventTypes returns the type of each event.
+func eventTypes(events []abci.Event) []string {
+	out := make([]string, 0, len(events))
+	for _, ev := range events {
+		out = append(out, ev.Type)
+	}
+	return out
 }

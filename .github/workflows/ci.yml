@@ -76,14 +76,81 @@ jobs:
           cache: false
       - name: Install protoc
         run: bash scripts/install_toolchains.sh --protoc-only
+      # services/broadcaster's tests start a disposable PostgreSQL 18.6
+      # cluster from /usr/lib/postgresql/18/bin (internal/pgtest), and no
+      # variable skips them. This step installs the goal 04 pin of
+      # docs/dependencies.md from apt.postgresql.org after checking the
+      # signing key fingerprint, falls back to apt-archive.postgresql.org for
+      # the same version when the main suite no longer lists it, and
+      # otherwise fails. policy-rc.d keeps the package from starting a
+      # cluster. tests/unit/test_ci_broadcaster.py fails if a job runs the
+      # module's tests without this step, or if the copies of it differ.
+      - name: Install PostgreSQL 18.6
+        run: |
+          set -euo pipefail
+          pg_ver="18.6-1.pgdg24.04+2"
+          pg_fpr="B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8"
+          key=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          fpr="$(gpg --batch --show-keys --with-colons "${key}" | awk -F: '$1 == "fpr" { print $10; exit }')"
+          if [ "${fpr}" != "${pg_fpr}" ]; then
+            echo "PostgreSQL apt key fingerprint ${fpr} is not ${pg_fpr}"
+            exit 1
+          fi
+          for f in /etc/apt/sources.list.d/*; do
+            if [ -f "${f}" ] && grep -q 'apt.postgresql.org' "${f}"; then
+              sudo rm -f "${f}"
+            fi
+          done
+          write_source() {
+            printf '%s\n' 'Types: deb' "URIs: $2" "Suites: $3" 'Architectures: amd64' \
+              'Components: main' "Signed-By: ${key}" | sudo tee "/etc/apt/sources.list.d/$1.sources" >/dev/null
+          }
+          has_pin() {
+            local found
+            found="$(apt-cache madison postgresql-18)"
+            awk -F'|' -v want="${pg_ver}" '{ gsub(/[[:space:]]/, "", $2); if ($2 == want) hit = 1 } END { exit hit ? 0 : 1 }' <<<"${found}"
+          }
+          write_source pgdg https://apt.postgresql.org/pub/repos/apt noble-pgdg
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+          if ! has_pin; then
+            echo "apt.postgresql.org no longer lists postgresql-18 ${pg_ver}; trying apt-archive.postgresql.org"
+            write_source pgdg-archive https://apt-archive.postgresql.org/pub/repos/apt noble-pgdg-archive
+            sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+            if ! has_pin; then
+              echo "postgresql-18 ${pg_ver} is in neither PGDG archive; update the pin in docs/dependencies.md, scripts/env/install.sh and this workflow"
+              exit 1
+            fi
+          fi
+          created_policy=0
+          if [ ! -e /usr/sbin/policy-rc.d ]; then
+            printf '#!/bin/sh\nexit 101\n' | sudo tee /usr/sbin/policy-rc.d >/dev/null
+            sudo chmod 755 /usr/sbin/policy-rc.d
+            created_policy=1
+          fi
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            "postgresql-18=${pg_ver}" "postgresql-client-18=${pg_ver}"
+          if [ "${created_policy}" = 1 ]; then
+            sudo rm -f /usr/sbin/policy-rc.d
+          fi
+          installed="$(dpkg-query -W -f '${Version}' postgresql-18)"
+          if [ "${installed}" != "${pg_ver}" ]; then
+            echo "installed postgresql-18 ${installed}, want ${pg_ver}"
+            exit 1
+          fi
+          /usr/lib/postgresql/18/bin/postgres --version
       # SVN_SKIP_DEVNET=1 skips the multi-process chain/devnet tests in this
       # job. Without -race they take about 9.5 minutes, plus up to about 6.5
       # minutes when TestDevnetAuditLifecycle waits for an audit round
       # boundary, plus the Goal 10 upgrade rehearsal, which can reach the
       # 20-minute job cap, and they would only repeat the go-race "devnet",
-      # "devnet-evidence", and "devnet-upgrade" shards, which run every
-      # chain/devnet test under -race. tests/unit/test_ci_devnet_coverage.py
-      # fails if this skip is set while those shards stop covering the package.
+      # "devnet-evidence", "devnet-upgrade", "devnet-broadcaster", and
+      # "devnet-broadcaster-stall" shards, which run every chain/devnet test
+      # under -race. tests/unit/test_ci_devnet_coverage.py fails if this skip
+      # is set while those shards stop covering the package.
+      # scripts/run_tests.py also runs the services/broadcaster module, whose
+      # PostgreSQL tests need the step above.
       - name: Format, generate, and test
         env:
           SVN_SKIP_DEVNET: "1"
@@ -97,15 +164,19 @@ jobs:
             exit 1
           fi
           git diff --exit-code -- proto/svn proto/gen/python
-          echo "SVN_SKIP_DEVNET=1: the multi-process chain/devnet tests run in the go-race devnet, devnet-evidence, and devnet-upgrade shards"
+          echo "SVN_SKIP_DEVNET=1: the multi-process chain/devnet tests run in the go-race devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, and devnet-broadcaster-stall shards"
           python3 scripts/run_tests.py --only go
           go vet ./chain/...
           go vet ./proto/...
           go vet ./agents/provider/...
           go vet ./agents/auditor/...
+          go vet ./services/broadcaster/...
+          go vet -tags svn_faultpoint ./services/broadcaster/...
+          go vet -tags svn_roottest ./services/broadcaster/internal/signer/ ./services/broadcaster/internal/keys/
+          go test -count=1 -timeout 2m -tags svn_faultpoint ./services/broadcaster/internal/faultpoint/
 
-  # The race detector run of ./chain/..., ./proto/..., ./agents/provider/...
-  # and ./agents/auditor/... with the same flags as before, split into five
+  # The race detector run of ./chain/..., ./proto/..., ./agents/provider/...,
+  # ./agents/auditor/... and ./services/broadcaster/..., split into eight
   # shards so that each job stays within the 20-minute cap of
   # scripts/workflow_policy.py. chain/app and chain/devnet are the two slowest
   # packages under -race. chain/devnet is split by test name: "devnet-evidence"
@@ -114,10 +185,15 @@ jobs:
   # TestDevnetUpgrade, TestDevnetMinority, or TestDevnetGovernedChange (the
   # Goal 10 upgrade rehearsal, the minority wrong-migration run, and the
   # governed change timing, which build svnd and the rehearsal binaries and
-  # call the state-check library), and "devnet" every other test of the
-  # package (its -skip regex is the union of the other two), so the three
-  # together run the whole package once. "rest" is every other ./chain/...
-  # package (computed, so a new package lands there) plus ./proto/...,
+  # call the state-check library), "devnet-broadcaster" the tests matching
+  # TestDevnetBroadcasterLifecycle and "devnet-broadcaster-stall" the tests
+  # matching TestDevnetBroadcasterQuorumStall (the Goal 11 broadcaster
+  # lifecycle and quorum-stall runs, which build svnd and the broadcaster and
+  # start PostgreSQL), and "devnet" every other test of the package (its
+  # -skip regex is the union of the other four), so the five together run the
+  # whole package once. "broadcaster" is the services/broadcaster module,
+  # whose tests start PostgreSQL. "rest" is every other ./chain/... package
+  # (computed, so a new package lands there) plus ./proto/...,
   # ./agents/provider/... and ./agents/auditor/....
   go-race:
     runs-on: ubuntu-24.04
@@ -125,7 +201,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [app, devnet, devnet-evidence, devnet-upgrade, rest]
+        shard: [app, devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, devnet-broadcaster-stall, broadcaster, rest]
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -136,6 +212,65 @@ jobs:
         with:
           go-version: "1.26.10"
           cache: false
+      # The same PostgreSQL 18.6 install as in the go job, for the shards whose
+      # tests start PostgreSQL. tests/unit/test_ci_broadcaster.py reads this
+      # condition and fails if a shard that runs those tests is missing.
+      - name: Install PostgreSQL 18.6
+        if: contains(fromJSON('["broadcaster", "devnet-broadcaster", "devnet-broadcaster-stall"]'), matrix.shard)
+        run: |
+          set -euo pipefail
+          pg_ver="18.6-1.pgdg24.04+2"
+          pg_fpr="B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8"
+          key=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          fpr="$(gpg --batch --show-keys --with-colons "${key}" | awk -F: '$1 == "fpr" { print $10; exit }')"
+          if [ "${fpr}" != "${pg_fpr}" ]; then
+            echo "PostgreSQL apt key fingerprint ${fpr} is not ${pg_fpr}"
+            exit 1
+          fi
+          for f in /etc/apt/sources.list.d/*; do
+            if [ -f "${f}" ] && grep -q 'apt.postgresql.org' "${f}"; then
+              sudo rm -f "${f}"
+            fi
+          done
+          write_source() {
+            printf '%s\n' 'Types: deb' "URIs: $2" "Suites: $3" 'Architectures: amd64' \
+              'Components: main' "Signed-By: ${key}" | sudo tee "/etc/apt/sources.list.d/$1.sources" >/dev/null
+          }
+          has_pin() {
+            local found
+            found="$(apt-cache madison postgresql-18)"
+            awk -F'|' -v want="${pg_ver}" '{ gsub(/[[:space:]]/, "", $2); if ($2 == want) hit = 1 } END { exit hit ? 0 : 1 }' <<<"${found}"
+          }
+          write_source pgdg https://apt.postgresql.org/pub/repos/apt noble-pgdg
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+          if ! has_pin; then
+            echo "apt.postgresql.org no longer lists postgresql-18 ${pg_ver}; trying apt-archive.postgresql.org"
+            write_source pgdg-archive https://apt-archive.postgresql.org/pub/repos/apt noble-pgdg-archive
+            sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+            if ! has_pin; then
+              echo "postgresql-18 ${pg_ver} is in neither PGDG archive; update the pin in docs/dependencies.md, scripts/env/install.sh and this workflow"
+              exit 1
+            fi
+          fi
+          created_policy=0
+          if [ ! -e /usr/sbin/policy-rc.d ]; then
+            printf '#!/bin/sh\nexit 101\n' | sudo tee /usr/sbin/policy-rc.d >/dev/null
+            sudo chmod 755 /usr/sbin/policy-rc.d
+            created_policy=1
+          fi
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            "postgresql-18=${pg_ver}" "postgresql-client-18=${pg_ver}"
+          if [ "${created_policy}" = 1 ]; then
+            sudo rm -f /usr/sbin/policy-rc.d
+          fi
+          installed="$(dpkg-query -W -f '${Version}' postgresql-18)"
+          if [ "${installed}" != "${pg_ver}" ]; then
+            echo "installed postgresql-18 ${installed}, want ${pg_ver}"
+            exit 1
+          fi
+          /usr/lib/postgresql/18/bin/postgres --version
       - name: Race tests
         env:
           SHARD: ${{ matrix.shard }}
@@ -149,7 +284,7 @@ jobs:
               # TestDevnetRunsBuiltSvnd builds svnd inside its timeout;
               # building it first fills the build cache.
               go build -C chain -o /dev/null ./cmd/svnd
-              go test -race -count=1 -timeout 12m -skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange' ./chain/devnet
+              go test -race -count=1 -timeout 12m -skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange|TestDevnetBroadcasterLifecycle|TestDevnetBroadcasterQuorumStall' ./chain/devnet
               ;;
             devnet-evidence)
               # TestDevnetAuditLifecycle builds agents/auditor with these
@@ -169,6 +304,25 @@ jobs:
               go build -C chain -tags svn_rehearsal_bad -o /dev/null ./cmd/svnd
               go build -C chain ./internal/...
               go test -race -count=1 -timeout 15m -run 'TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange' ./chain/devnet
+              ;;
+            devnet-broadcaster)
+              # TestDevnetBroadcasterLifecycle builds svnd, and the
+              # broadcaster with -race and -tags svn_faultpoint, inside its
+              # timeout; building them first fills the build cache, so that
+              # compile time stays outside the 15m limit.
+              go build -C chain -o /dev/null ./cmd/svnd
+              go build -C services/broadcaster -race -tags svn_faultpoint -o /dev/null ./cmd/svn-broadcaster
+              go test -race -count=1 -timeout 15m -run TestDevnetBroadcasterLifecycle ./chain/devnet
+              ;;
+            devnet-broadcaster-stall)
+              # The same prebuilds as devnet-broadcaster, for
+              # TestDevnetBroadcasterQuorumStall.
+              go build -C chain -o /dev/null ./cmd/svnd
+              go build -C services/broadcaster -race -tags svn_faultpoint -o /dev/null ./cmd/svn-broadcaster
+              go test -race -count=1 -timeout 12m -run TestDevnetBroadcasterQuorumStall ./chain/devnet
+              ;;
+            broadcaster)
+              go test -race -count=1 -timeout 12m ./services/broadcaster/...
               ;;
             rest)
               pkgs="$(go list ./chain/... | grep -v -x -e "${mod}/chain/app" -e "${mod}/chain/devnet")"

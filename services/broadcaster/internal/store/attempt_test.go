@@ -110,7 +110,8 @@ func TestPersistAttemptConditions(t *testing.T) {
 	defer ssC.Close()
 	unsynced := make([]byte, 20)
 	unsynced[0] = 0xbb
-	if err := e.st.EnsureSigner(e.ctx, unsynced, 4); err != nil {
+	if err := e.st.RegisterSigner(e.ctx, SignerKey{Address: unsynced, Class: ClassService, KeyName: "unsynced",
+		LockKey: 4}); err != nil {
 		t.Fatal(err)
 	}
 	ssU := e.lock(unsynced)
@@ -573,6 +574,13 @@ func TestLiveAttemptInvariant(t *testing.T) {
 	att := e.persist(ss, in.IntentID, 0, 100)
 	attHash := draft(in.IntentID, 0, 100).TxHash
 	inFlight := Expect{StateInFlight, PhaseSigned}
+	// A started send keeps the Q4 clearing out of FailIntent, so failing
+	// with the attempt still live reaches the commit-time check;
+	// TestFailIntentUnsentWithLiveAttempt covers the never-sent case, which
+	// FailIntent refuses before commit.
+	if ok, err := ss.BeginSend(e.ctx, att); err != nil || !ok {
+		t.Fatalf("begin send: %v %v", ok, err)
+	}
 
 	steps := map[string]func(*SignerTx) error{
 		"resolve without transition": func(tx *SignerTx) error {

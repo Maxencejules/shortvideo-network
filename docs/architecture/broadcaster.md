@@ -8,8 +8,9 @@ Approval. The goal 11 prerequisite "approved service/provider signing boundaries
 (`docs/goals/11-transaction-broadcaster-and-outbox.md:8`) has no approved document behind it. Gate A accepted "the proposed
 signing domains" (`docs/decision-register.md:23`), not a broadcaster boundary. The prerequisite is recorded BLOCKED as
 DR-11-01. The owner will be asked to approve or reject this file at a pinned commit and file sha256 when a goal 11 pull
-request is ready, as was done for the goal 10 specification (DR-10-00, `docs/evidence/goal-10.md:89`). The owner questions
-Q1 to Q4 (section 17) are unanswered. No sentence in this file is an owner decision unless it quotes one (section 2).
+request is ready, as was done for the goal 10 specification (DR-10-00, `docs/evidence/goal-10.md:89`). The owner answered
+Q1 to Q4 on 2026-11-08, each with option (a) (sections 2 and 17). Those answers do not approve this file, any PROPOSED
+number or any pull request. No sentence in this file is an owner decision unless it quotes one (section 2).
 
 How to read this file.
 
@@ -17,9 +18,11 @@ How to read this file.
 - Framework citations name module-cache copies of the pinned versions: `cosmos-sdk@v0.55.0/...` is
   `$(go env GOMODCACHE)/github.com/cosmos/cosmos-sdk@v0.55.0/...`; `cometbft@v0.40.0/...` and `lib/pq@v1.12.3/...` likewise.
 - "Goal spec :N" means `docs/goals/11-transaction-broadcaster-and-outbox.md` line N.
-- Sections 4 to 16 describe the design under the recommended answers to Q1 to Q4. They are a proposal. If the owner picks
-  another option, the sections that depend on it change; section 17 says which.
-- This file does not say which parts are built or tested. `docs/evidence/goal-11.md` records that, with logs.
+- Sections 4 to 16 describe the design under the owner's answers to Q1 to Q4 (option (a) of each, section 2), as the code
+  of `services/broadcaster` on the goal 11 working tree implements it. They are still a proposal (DR-11-01). Section 17
+  keeps the options as they were asked.
+- This file does not say which parts are tested or verified. `docs/evidence/goal-11.md` records that, with logs. Code
+  names (packages, functions, test names) are given so a reviewer can find the code; they are not test results.
 - Every number is either cited or labelled PROPOSED. A PROPOSED number is a proposal with a decision request (DR-11-10), not
   policy and not a service level.
 - Labels. "Interim" marks a rule that answers an open decision request; the goal 11 plan implements and tests it and
@@ -45,7 +48,7 @@ How to read this file.
 14. Canonical commitment evidence for the indexer
 15. Chain outage behaviour
 16. Configuration and PROPOSED numbers
-17. Owner questions Q1 to Q4 (unanswered)
+17. Owner questions Q1 to Q4 (answered 2026-11-08)
 18. Security-relevant decision requests with interim rules (open)
 19. Reversible implementation choices
 20. Protocol additions recorded, not made
@@ -77,7 +80,14 @@ Out of scope for goal 11: the API service (goal 13), creator UI states (goal 21)
 
 ## 2. Owner rulings that bind goal 11
 
-No owner ruling about goal 11 itself exists. These earlier rulings constrain it. Each is quoted from the record.
+The owner's answers to Q1 to Q4 are the only owner rulings about goal 11 itself. These earlier rulings also constrain it.
+Each is quoted from the record.
+
+- Goal 11 Q1 to Q4, answered 2026-11-08T07:44Z, asked through the Claude Code question dialog: Q1 "Both keys, separate
+  signer (Recommended)"; Q2 "Relay + verbatim forward (Recommended)"; Q3 "Operator-registered intent keys (Recommended)";
+  Q4 "Minimal + clear unsent (Recommended)". Each is option (a) of section 17, which quotes the option text the owner saw.
+  They answer those four questions only. They do not approve this file (DR-11-01, asked at PR time on a pinned commit and
+  sha256), any PROPOSED number, or any pull request or merge. The goal 11 evidence file will quote the record.
 
 - DR-06-06: "seat-only admission, owner ruling 2026-11-02" (`docs/progress.md:38`). A council seat key signs only
   `MsgProposeChange` and `MsgApproveChange` (`chain/app/ante.go:161-166`). The broadcaster never holds a seat key.
@@ -90,7 +100,9 @@ No owner ruling about goal 11 itself exists. These earlier rulings constrain it.
 
 Not an owner ruling. `[Educated Guess]` Goal 09 Q1 forbids a broadcaster-signed audit batch. It does not decide whether an
 AUDITOR-signed batch may pass through the outbox unchanged. Goal 09 recorded "Outbox submission: Goal 11" as deferred
-(`docs/evidence/goal-09.md:39`). That item stays DEFERRED until the owner answers Q2 (DR-11-06).
+(`docs/evidence/goal-09.md:39`). The owner answered Q2 with option (a), whose text says "Audit batches stay on the auditor's
+own path (not through the outbox)." (section 17.2, DR-11-06). Updating goal 09's item in `docs/progress.md` is the
+orchestrator's.
 
 ## 3. Chain facts the design depends on
 
@@ -148,8 +160,8 @@ AUDITOR-signed batch may pass through the outbox unchanged. Goal 09 recorded "Ou
   `SimulateRequest{tx_bytes}` (`chain/app/tx_deadline_test.go:654`, `TestSimulateWithEmptySignature`); svnd registers that
   service after the node starts (`chain/node/start.go:120`), and the moment right after start, before it is registered, is
   untested. The chain client uses that route (`services/broadcaster/internal/chain/rpc.go:88`). The plan named
-  `/app/simulate` (DR-11-27); the route is pending the orchestrator's ruling. In simulate mode signature verification is
-  skipped (`cosmos-sdk@v0.55.0/x/auth/ante/sigverify.go:387`) and a missing public key is accepted
+  `/app/simulate` (DR-11-27); the orchestrator chose this route (ruling R3, section 19.1). In simulate mode signature
+  verification is skipped (`cosmos-sdk@v0.55.0/x/auth/ante/sigverify.go:387`) and a missing public key is accepted
   (`cosmos-sdk@v0.55.0/x/auth/ante/sigverify.go:209-213`), so a simulation transaction with an empty signature is accepted
   (`TestSimulateWithEmptySignature`).
 - Signing is deterministic. SDK secp256k1 signing uses `ecdsa.SignCompact`, which is RFC 6979 deterministic
@@ -215,36 +227,73 @@ svn-broadcaster serve   (uid U_serve)   API, validation, outbox writes, per-sign
    v                                                 v
 svn-broadcaster signer  (uid U_signer)   PostgreSQL (schema broadcaster), run as `postgres`
    key directory owned by U_signer; allowlist, intent-key check, deadline bound, outer signing only
-   +--> /status of the configured node (loopback), for its own deadline bound only
+   +--> /status (its own deadline bound) and, at start, Query/Governance (its role check) of the configured node
 
 serve --> CometBFT RPC of ONE configured node (loopback): status, abci_query, broadcast_tx_sync, tx, tx_search, commit
 
 intent-key registry file (public keys only): written by the operator; writable by neither U_serve nor U_signer
 ```
 
-- One binary, several subcommands: `serve`, `signer`, `migrate`, `reconcile-once`, `status`, `signer-clear`, `dev-ca`,
-  `dev-db`.
+- One binary, `svn-broadcaster`, with eight subcommands: `serve`, `signer`, `migrate`, `reconcile-once`, `status`,
+  `signer-clear`, `dev-ca`, `dev-db` (section 4.3).
 - Python services (goal 13 onward) never load keys. They reach the broadcaster through its HTTP API or the granted SQL
   enqueue function (section 11.3).
-- PostgreSQL 18.6 is the goal 04 pin (`docs/dependencies.md:39`). The SQL avoids 18-only features so a 16.x server also
-  works. RabbitMQ is not used: the outbox is the queue (`docs/blueprint.md:385`).
-- Under Q1 option (b) the signer is a package inside `serve`. Under option (c) only the `BROADCASTER` key exists and the
-  service kinds are not built.
+- PostgreSQL 18.6 is the goal 04 pin (`docs/dependencies.md:39`). The SQL is written without 18-only features, but it has run only on
+  18.6; a 16.x server is untested. RabbitMQ is not used: the outbox is the queue (`docs/blueprint.md:385`).
+- The owner chose Q1 option (a). Options (b) (keys inside `serve`) and (c) (`BROADCASTER` key only) are kept in section
+  17.1 as they were asked; neither is built.
 
 ### 4.2 The uid rule and the same-uid limit
 
 - Uid rule (DR-11-35, reversible). When the launcher runs as root, it starts `signer` and `serve` under two distinct
   non-root uids with no supplementary groups. The key directory belongs to U_signer and is closed to everyone else. The
   signer accepts a peer only when the socket's peer credentials report the configured U_serve. It refuses to start when
-  U_serve equals its own uid while distinct uids are configured. The planned devnet test
-  prints `boundary_uids=signer:<u1>,serve:<u2>`.
+  U_serve equals its own uid while distinct uids are configured, and refuses an intent-key registry file or directory
+  that U_serve owns or that has any group or other write bit (section 7). The command smoke test (`TestSmokeProcesses`,
+  `services/broadcaster/cmd/svn-broadcaster`) prints `boundary_uids=signer:<u1>,serve:<u2>` for its distinct-uid run,
+  and the planned devnet test prints the same line. The root-only tests `TestServeUIDCannotReadKeyFiles` and
+  `TestSignerRefusesOtherUIDPeer` (`internal/signer`) and `TestLoadRefusesOtherOwner` (`internal/keys`) build only with
+  `-tags svn_roottest` and skip with a reason unless the test process is root; CI compiles them but does not run them.
 - Same-uid limit. When the launcher is not root, both processes run as one uid and the run prints
   `boundary_uids=same:<u>`. Then the process split separates key bytes in memory only. A compromised `serve` can read the
   key files or trace the signer. The boundary protects nothing once `serve` is compromised.
-- `[Educated Guess]` The CI runner is one non-root user, so a CI run uses the same-uid fallback. The development boundary
-  counts as VERIFIED only from a logged root run with distinct uids. A same-uid run counts as IMPLEMENTED.
+- `[Educated Guess]` The CI runner is one non-root user, so a CI run uses the same-uid fallback; the smoke test then logs
+  that its distinct-uid run did not execute. The development boundary counts as VERIFIED only from a logged root run with
+  distinct uids. A same-uid run counts as IMPLEMENTED.
 - The workspace where goal 11 is built runs as uid 0 (`id -u`), and root bypasses file permission checks. A root process on the host can
   read every key file. The uid rule separates `serve` from `signer`; it does not protect against the host's root.
+
+### 4.3 Operator commands and exit codes
+
+The package comment of `services/broadcaster/cmd/svn-broadcaster/main.go` is the source. Each process reads its own
+configuration file (section 16): the `signer` file and the `serve` file are different files.
+
+| Subcommand and flags | What it does |
+| --- | --- |
+| `serve --config FILE` | The caller API and the submission engine: per-signer workers, the forwarder, housekeeping and the chain observer. It refuses to start unless it runs as the configured serve uid, the schema is the binary's, and the node and the database serve the configured chain id; then it asks the signer for exactly one `SERVICE` and one `BROADCASTER` key. It never reads a key file. |
+| `signer --config FILE` | The signing boundary: the only process that reads key files. It runs as the configured signer uid, never as root, and serves only the serve uid. |
+| `migrate --config FILE [--callers]` | Applies the embedded migrations as the owner role and binds the database to the chain id; with `--callers` it registers each configured caller's open-intent cap and SQL role. |
+| `reconcile-once --config FILE` | One pass of every worker loop with the serve configuration; the signer must run, and a pass may sign. It fails with exit 4, naming the session, while another process holds a signer's or the forwarder's lock. |
+| `status --config FILE` | Prints the schema, chain binding, signers, observer record and open stall episode as one JSON object. It calls only read functions of the store (a static test checks this; it opens no read-only database transaction) and never reaches the node or the signer. |
+| `signer-clear --config FILE --signer ADDRESS --sequence N --foreign-hash HEX` | Records the operator's acknowledgement of one foreign use of a signer's sequence and lifts the `SIGNER_CONFLICT` halt when no uncleared event remains (DR-11-15). It takes the signer's lock, so it fails while `serve` holds it. |
+| `dev-ca --out DIR --principal ID... [--days N] [--serve-uid UID]` | A development CA: a P-256 CA, a server certificate for 127.0.0.1 and ::1 only, and one client certificate per principal whose only URI SAN is `svn://principal/<id>`, in a new 0700 directory (0711 when `--serve-uid` names another uid, which then owns the server key). The CA key is never written. It prints `dir`, `ca_cert_file`, `server_cert_file`, `server_key_file`, `clients[{principal, cert_file, key_file}]` and `not_after` as JSON. |
+| `dev-db --chain-id ID --secrets-dir DIR [--serve-uid UID] [--login-role NAME]... [--bin-dir DIR] [--start-timeout DURATION]` | A disposable PostgreSQL cluster in `os.TempDir()/svn-pg-*` for a `shortvideo-dev-` chain id: the owner role `svn_broadcaster_owner`, the runtime role `svn_broadcaster`, the database `broadcaster` and any `--login-role` roles, each role's password in `<secrets-dir>/<role>.password` (mode 0600; the runtime role's file belongs to `--serve-uid`). It prints `chain_id`, `cluster_dir`, `socket_dir`, `port`, `database`, `postgres_version` and `roles[{role, use, password_file}]` as one JSON line, and removes the cluster and the password files at SIGINT or SIGTERM. |
+
+Exit codes: 0 success, or a clean stop on SIGINT or SIGTERM; 1 failure at run time (database, node, signer, file system);
+2 usage error; 3 refused configuration or environment (an invalid configuration file, a `PG*` or `PQGO_DEBUG` variable,
+a uid the configuration does not name for the process, root where it is refused, a node or database that serves another
+chain id, a schema that is not the binary's); 4 another process holds a signer's or the forwarder's advisory lock; 5
+`signer-clear` names no open signer event. Every subcommand checks the environment before it parses its flags.
+
+- Start order on a devnet: `dev-db`; `migrate`; `signer` (wait for its socket); `serve`. `serve`, `reconcile-once` and
+  `signer-clear` connect as `svn_broadcaster`, `migrate` as `svn_broadcaster_owner`. A SQL-path caller needs a
+  `dev-db --login-role`, the same name in `callers[].sql_role`, and `migrate --callers`.
+- No flag lets the signer run as root. A root launcher starts `signer` and `serve` under non-root uids (section 4.2).
+- Halts. Only a `SIGNER_CONFLICT` halt can be lifted, by `signer-clear`. A signer halted for `INTEGRITY`,
+  `UNAUTHORIZED`, `SEQUENCE_GAP` or `ACCOUNT_NUMBER_CHANGED` (section 12.1) stays halted for the life of the database: no
+  command lifts it. On the devnet the recovery is to stop `serve`, create a new database with `dev-db` and `migrate`, and
+  start again; the outbox history of the old database is not carried over. Lifting a fail-closed halt is security
+  relevant, so a lift command is an open question (section 18.17), not an implementation choice.
 
 ## 5. Signing boundary (PROPOSED; under Q1 option (a))
 
@@ -257,10 +306,14 @@ intent-key registry file (public keys only): written by the operator; writable b
 
 - `Query/Governance` returns the submitters with their roles and the seats (`chain/x/authority/README.md:160-166`;
   `docs/protocol/proto/svn/authority/v1/state.proto:70-78`).
-- Start-up refuses: a key whose address has another role, no role, or is a council seat; two keys with one address; a key
-  file that is a symlink, not regular, readable by group or others, not owned by the signer uid, or not the devnet hex
-  format (the auditor loader rules, `agents/auditor/keys/keys.go:12-18`, plus an owner check); a chain id outside `shortvideo-dev-` while
-  development keys are configured.
+- Start-up refuses (`policy.ReadGovernance`, at most 64 pages, a code bound; `policy.CheckKeyRoles`; `keys.Load`): a key
+  whose address has the `AUTHORITY`, `AUDITOR` or a provider role, no role, or the role of the other class, or is a
+  council seat; two keys with one address, name or class; a key file that is a symlink, not regular, has any group or
+  other permission bit, is not owned by the signer uid, is malformed or all zero, or sits in a key directory that is not
+  mode 0700 and owned by the signer uid (the auditor loader rules, `agents/auditor/keys/keys.go:12-18`, plus the owner
+  and directory checks); a chain id outside `shortvideo-dev-` while development keys are configured. The loader reads
+  secp256k1 keys (64 hex characters) and ed25519 keys (128), so an auditor or seat key file is refused by its role, not by
+  its format.
 - One message per transaction (DR-11-14). A multi-message transaction is atomic, so batching unrelated intents would couple
   their failures.
 - The signer of an intent is fixed when the intent is created and never changes. An offer replay by another scheduler is
@@ -270,20 +323,34 @@ intent-key registry file (public keys only): written by the operator; writable b
 ### 5.2 Signer checks
 
 - Only `svn-broadcaster signer` reads key files. It listens on a Unix socket in a directory owned by U_signer.
-- Request: key name, chain id, account number, sequence, gas, timeout height, and one message.
-- Checks, in this order: decode the message with the app interface registry; type URL in the key's allowlist; the
-  message's `signer` equals the key's address; `authority_end = false` for `MsgEndLease`; chain id equals the signer's own
-  configuration; gas within bounds; `timeout_height` not 0 and not above the signer's own observed height plus K_max
-  (PROPOSED, section 16). The signer reads `/status` of the configured node itself and refuses while it has no fresh height.
+- Transport: one request per connection on the Unix socket, framed as a 4-byte length and strict JSON, at most 16
+  connections at once (a code bound; one more is answered `OVERLOADED`). A connection whose `SO_PEERCRED` uid is not the
+  configured serve uid gets `PEER_REFUSED` and nothing else.
+- Request: key name, chain id, account number, sequence, gas, timeout height, and one message as type URL and bytes.
+- Checks, in this order (`internal/signer`): the key name; the type URL is registered by the application and in the key
+  class's allowlist, before anything is decoded; the message decodes from its canonical deterministic encoding with no
+  unknown field; `policy.CheckSignable` (the message's `signer` equals the key's address, `authority_end = false` for
+  `MsgEndLease`, and the allowlist again); the chain id equals the signer's own configuration; the gas is within the
+  chain's bounds (`chain/genesis/bounds.go:30-31`); `timeout_height` is not 0 and not above the signer's own fresh height
+  plus K_max (PROPOSED, section 16). The signer reads `/status` of the configured node itself and refuses with
+  `NO_FRESH_HEIGHT` while its last successful read is older than the poll interval times the freshness polls (both
+  PROPOSED).
 - For `MsgRegisterContent` and `MsgWithdrawContent` it also checks that the hosting intent's public key is in the
   operator's intent-key registry (section 7), and that the intent signature verifies over the payload rebuilt with
   `content.RegisterIntentSignBytes` or `content.WithdrawIntentSignBytes` (`chain/x/content/intent.go:83,98`), with its own
   address as submitting host and role `DEVNET_TEST_ONLY`.
-- It then builds and signs the outer transaction with `SIGN_MODE_DIRECT`, re-decodes it with the strict decoder, and
+- It then builds and signs the outer transaction with `SIGN_MODE_DIRECT` (`chain.Codec.Prepare`, then `Assemble`),
+  re-decodes it with the strict decoder, and
   returns the bytes and the hash. It signs nothing else: no inner-signature domain and no arbitrary bytes. It keeps no
   state, so its death mid-request leaves no attempt and consumes no sequence.
-- No broadcaster package outside the signer calls an ed25519 or SDK signing function, and the module has no
-  `SVN-PROVIDER-` or `SVN-HOSTING-INTENT-` string literal. Planned static tests check both.
+- The client, `signer.Client.RequestSignature`, holds no key. It runs `policy.CheckSignable` before it connects, so a
+  disallowed request never reaches the socket, and it accepts an answer only when the transaction it rebuilds from the
+  request with the returned signature is byte for byte the returned one. The worker reaches the signer only through it.
+- Static tests of `internal/policy`: `TestNoSigningOutsideSigner` refuses, outside `internal/signer`, any use of a signing
+  function or method (called, or taken as a value that other code can call) and any import of `internal/keys`, and,
+  outside `internal/signer` and `internal/keys`, building or generating a private key (the crypto/ecdsa TLS keys of
+  `dev-ca` excepted); `TestNoLocalPreimageCopy` refuses a provider or hosting-intent signature domain string literal in
+  the module; `TestConfigHasNoIntentKey` refuses any struct field that could hold a hosting-intent key.
 
 ### 5.3 What a compromised `serve` can still do
 
@@ -304,20 +371,31 @@ id, or set an unbounded deadline. With one uid (section 4.2) it can also read th
 ## 6. Externally signed submissions (PROPOSED; under Q2 option (a))
 
 - P1, relay. Before enqueue and again before signing, the broadcaster reads the provider (`Query/Provider`), checks that it
-  is admitted, rebuilds the payload with `leases.AcceptSignBytes` from the committed open offer, or with
+  is admitted for an accept (renew and end are allowed in every provider state, DR-08-01), rebuilds the payload with `leases.AcceptSignBytes` from the committed open offer, or with
   `RenewSignBytes`/`EndSignBytes` from the message and the held lease, and verifies the inner signature with
   `msgkit.VerifyInner` against the provider's current key. A signature by the service key, the broadcaster key, another
   provider's key, a retired key or any unregistered key is refused with `PROVIDER_SIGNATURE_INVALID` and no row. The chain
   verifies again; the pre-check only fails fast (`docs/protocol.md:183`).
-- No query returns an offer by id. `Query/Deadlines` returns full offers but pages by deadline, so the pre-check pages it
-  within a PROPOSED page budget. An offer not found within the budget fails the pre-check (`OFFER_NOT_FOUND`); the check
-  is never skipped.
-- P3, verbatim forward. The broadcaster strictly decodes the raw bytes, requires exactly one message of an allowed relay
-  type, an outer signer that is an `ADMITTED_PROVIDER` whose provider record names that account, a valid inner signature
-  as in P1, the configured chain id (checked by verifying the outer signature with the account's public key and account
-  number), and a `timeout_height` within a PROPOSED forward window. Bytes without a deadline are refused, because they
-  could commit at any later time. Forwarded bytes are never edited. The outbox tracks them by hash and allocates no
-  sequence. When they can no longer commit, the intent fails with `PROVIDER_MUST_RESIGN`.
+- No query returns an offer or a lease by id (DR-08-08). `Query/Deadlines` returns full offers and leases but pages by
+  deadline, so the pre-check pages it within a PROPOSED page budget. An offer not found within the budget fails the
+  pre-check (`OFFER_NOT_FOUND`); the check is never skipped. A renew or end request names the lease's `provider_id` and
+  `content_id`, which locate it through `Query/ActiveLeases`. The HTTP path does not store those two locators, so before
+  signing the worker finds the held lease by paging `Query/Deadlines` within the same budget; a lease not found is
+  `LEASE_NOT_FOUND` and the intent fails `INVALID`.
+- P3, verbatim forward (`policy.CheckForwardedTx`, at enqueue and again before the bytes are stored as an attempt). The
+  broadcaster strictly decodes the raw bytes and requires: exactly one message from one signer with a bare envelope (no
+  memo, no fee); an allowed relay type, with `authority_end = false`; a `timeout_height` above the observed height and at
+  most the PROPOSED forward window above it (bytes without a deadline are refused, because they could commit at any later
+  time); an outer signer with the `ADMITTED_PROVIDER` role whose provider record, named by the caller's `provider_id`,
+  names that account; a valid inner signature as in P1; an outer signature that verifies, by a public key whose address is
+  the signer, for the configured chain id and the account number read from the chain; and a sequence not below the
+  committed one. The caller must also have relay authority (section 10.7). A renew or end forward also needs the caller's
+  `content_id`, because no query returns a lease by id (DR-08-08).
+- Forwarded bytes are never edited. The provider account becomes a `FORWARD_SOURCE` signer row with no key and no lock
+  key; the bytes are the intent's stored request, `forwarded_txs` keeps the decoded fields, and one forwarder lock drives
+  every forwarded intent. No sequence is allocated and nothing is signed. The intent's business id is the provider's. A
+  forwarded intent never retries: when its bytes can no longer commit it fails with `PROVIDER_MUST_RESIGN`, because only
+  the provider can sign new bytes. The same bytes under another idempotency key are 409 `TRANSACTION_ALREADY_TRACKED`.
 - P2, the provider submits its own transaction: goal 16. Goal 11 reconciles by object state when a provider's own
   submission commits the effect first.
 - Audit batches stay on the auditor's own path (DR-11-06). The broadcaster carries no audit batch and holds no `AUDITOR`
@@ -326,12 +404,21 @@ id, or set an unbounded deadline. With one uid (section 4.2) it can also read th
 
 ## 7. Hosting intents and the publication permission (PROPOSED; under Q3 option (a))
 
-- The broadcaster never holds an intent key. A separate devnet fixture signer stands in for the account host and signs
-  intents that name the service signer's address as `submittingHost`. It is a test stand-in, not DEC-001 custody.
-- Intent-key registry: a file `intent-keys.json` that maps a `principal_id` to one ed25519 public key and a label. It holds
-  public keys only. The operator writes it, as a uid that is neither U_serve nor U_signer, in a directory neither of them
-  can write. `serve` and `signer` read it at start and refuse to start if the file or its directory is writable by their own
-  uid. A change takes a restart. No broadcaster command and no caller writes it.
+- The broadcaster never holds an intent key. In goal 11 the tests sign hosting intents with generated development keys
+  that name the service signer's address as `submittingHost`, as a stand-in for the account host. That is test code, not
+  DEC-001 custody.
+- Intent-key registry (`policy.LoadRegistry`): a JSON file `{"entries":[{"principal_id","public_key_hex","label"}]}`
+  that maps a `principal_id` to one ed25519 public key (32 bytes in lowercase hex) and a printable label of at most 64
+  bytes. Unknown fields, a principal or key listed twice, and a file above 1 MiB are refused (code bounds). It holds
+  public keys only. The operator writes it, as a uid that is neither U_serve nor U_signer, in its own directory (mode
+  0755, not `/tmp` itself). `serve` and `signer` read it at start; a change takes a restart. No broadcaster command and no
+  caller writes it.
+- Writability. Under distinct uids each process refuses to run as root and refuses a registry file or directory that its
+  own uid could change (as owner, through a group write bit for one of its groups, or through the other write bit). The
+  signer also refuses a file or directory that the serve uid owns or that has any group or other write bit
+  (`policy.CheckRegistryForServe`), because the two processes have separate configuration files and could name different
+  paths. Under the same-uid fallback the file must have no write bit at all and the directory no group or other write
+  bit; that keeps accidental edits out and is not a boundary.
 - For `REGISTER_CONTENT` and `WITHDRAW_CONTENT`, `serve` checks that the authenticated caller may send the kind; that the
   authorization context grants `PUBLISH_CONTENT` (or `WITHDRAW_CONTENT`) to `principal_id`; that the intent's public key
   equals the key the registry lists for that principal; that the intent signature verifies over the payload rebuilt with
@@ -350,29 +437,43 @@ id, or set an unbounded deadline. With one uid (section 4.2) it can also read th
 
 ## 8. Chain id binding and stored authorizations (PROPOSED; under Q4 option (a))
 
-- Every intent row stores the configured chain id. `serve` refuses to start when `/status` reports another network, and
-  refuses to relay an intent created under another chain id.
+- The database is bound to one chain id (`chain_binding`, written by `migrate`), and every intent, commitment, stall
+  episode and health row references it. `serve` and `reconcile-once` refuse to start (exit 3) when `/status` reports
+  another network or the database is bound to another chain id.
 - Inner signatures carry no chain id, and RENEW and END never expire on chain (section 3.4). Unbroadcast inner signatures
-  are sensitive data: never logged, and returned only as a digest. RENEW and END relays carry a local expiry (PROPOSED) and
-  are refused after it. ACCEPT relays are refused after the offer's expiry.
+  are sensitive data: never logged, and returned only as a digest. A RENEW or END relay intent may not live longer than
+  the relay local expiry (PROPOSED; the API and the SQL-path validation refuse a longer lifetime), and no attempt starts
+  after an intent's expiry. ACCEPT relays are refused after the offer's expiry.
 - Local expiry revokes nothing on chain. Only a renewal (D-12, `chain/x/leases/README.md:164-168`) or a provider key
   rotation does.
-- When an intent ends FAILED with nothing ever sent, its stored inner signatures, hosting intent and full authorization
-  context are cleared and their digests kept. This is data minimization, not a retention period. Every other row is kept;
-  retention is unset (DEC-004, `docs/decision-register.md:127`).
+- Q4 clearing (migration 0002). Every transition into FAILED clears the intent when none of its attempts ever started a
+  send: the stored request (inner signatures, hosting intent, forwarded bytes), the SQL-path request JSON, the
+  authorization context and every attempt's transaction bytes become NULL, and `cleared_at` is set. Kept:
+  `request_digest`, `sql_digest`, each attempt's `tx_hash`, and `auth_context_digest` (the SHA-256 of the cleared
+  context's jsonb text). The FAILED transition's observation and the status view say `authorizations_cleared`. The
+  terminal-row triggers accept exactly this update and nothing else, and a commit that leaves a never-sent FAILED intent
+  uncleared is refused (SQLSTATE SV011). Migration 0002 also clears such rows that already exist. This is data
+  minimization, not a retention period. Every other row is kept; retention is unset (DEC-004,
+  `docs/decision-register.md:127`).
+- Not cleared: the content owner row's `principal_id` (person-linked) stays after the row turns VOID, because Q4 named
+  only the signatures, the intent and the authorization context. Whether it should be cleared too is an open question for
+  the owner (section 18.17).
 
 ## 9. Redaction and secret hygiene
 
-- Logs are JSON through `log/slog` with a replace hook that drops attributes named or typed as key material, transaction
-  bytes, signature bytes, connection strings, passwords, certificates, authorization contexts or request bodies. Values
-  are logged only as hashes or ids. API errors never echo internal errors.
+- Logs are JSON through `log/slog` (`internal/logx`). The handler redacts every attribute whose name is on its deny list
+  (key material, transaction and signature bytes, connection strings, passwords, certificates, authorization contexts,
+  request bodies), every byte slice, every value that is not a plain scalar or an error, every string longer than 256
+  bytes (a code bound) and every string that looks like JSON. Values are logged only as hashes or ids. API errors never
+  echo internal errors. `serve` logs each PROPOSED number in its own record at start.
 - Database connection. The configuration builds a `pq.Config` field by field and opens it with `pq.NewConnectorConfig`,
   which reads no environment (`lib/pq@v1.12.3/connector.go:205-207`). `pq.NewConfig` merges the process environment
   (`lib/pq@v1.12.3/connector.go:511-512`), and `pq.NewConnector` calls it (`lib/pq@v1.12.3/connector.go:193-199`). The
   environment tags include `PGPASSWORD`, `PGPASSFILE` and `PGSERVICEFILE` (`lib/pq@v1.12.3/connector.go:286,291,431`), and
   `PQGO_DEBUG=1` prints the connection config and protocol traffic to stderr outside any logger
   (`lib/pq@v1.12.3/conn.go:68-73`). So every subcommand refuses to start, before any connection, if any `PG*` variable or
-  `PQGO_DEBUG` is set. The password comes only from a passfile owned by the reading uid.
+  `PQGO_DEBUG` is set. The password comes only from the configured `password_file`: a regular file, not a symlink, owned by the process's
+  effective uid, with no group or other bit, checked again on the open descriptor (`internal/config/secretfile`).
 - PostgreSQL server logs (DR-11-37). The development cluster runs with five settings
   (`services/broadcaster/internal/pgdev/pgdev.go:115-119`): `log_min_error_statement=panic`, `log_statement=none` and
   `log_parameter_max_length_on_error=0`, so no statement text or bind parameter is logged (PostgreSQL's default
@@ -398,23 +499,23 @@ id, or set an unbounded deadline. With one uid (section 4.2) it can also read th
 | `REGISTER_CONTENT` | `MsgRegisterContent` | `ADMITTED_SERVICE` key | content id, version, manifest digest, package bytes, hosting intent signed by a key the broadcaster does not hold | signer, business id |
 | `WITHDRAW_CONTENT` | `MsgWithdrawContent` | the service key that registered the content | content id, version, reason digest, withdraw intent | signer, business id |
 | `OFFER_LEASE` | `MsgOfferLease` | `ADMITTED_SERVICE` key, pinned per offer | offer id, provider id, content id and version, manifest digest, bytes, start, deadline, expiry, terms digest | signer, business id, term version 1 |
-| `RELAY_ACCEPT_LEASE` | `MsgAcceptLease` | `BROADCASTER` key | offer id, lease id, provider acceptance | signer, business id |
-| `RELAY_RENEW_LEASE` | `MsgRenewLease` | `BROADCASTER` key | lease id, term version, deadline, manifest digest, bytes, evidence id (empty), provider signature | signer, business id |
-| `RELAY_END_LEASE` | `MsgEndLease{authority_end=false}` | `BROADCASTER` key | lease id, provider signature | signer, business id |
-| `FORWARD_PROVIDER_TX` (Q2 (a) or (c)) | the provider's own signed bytes, unchanged | the provider's `ADMITTED_PROVIDER` account | raw transaction bytes | nothing; no sequence allocated |
-| `FORWARD_AUDIT_BATCH` (Q2 (c) only; not recommended) | an `AUDITOR`-signed `MsgSubmitAuditBatch` transaction, unchanged | the auditor's `AUDITOR` account | raw transaction bytes | nothing; no sequence allocated |
+| `RELAY_ACCEPT_LEASE` | `MsgAcceptLease` | `BROADCASTER` key | offer id, lease id, provider acceptance; optional `provider_id` and `content_id` | signer, business id |
+| `RELAY_RENEW_LEASE` | `MsgRenewLease` | `BROADCASTER` key | lease id, term version, deadline, manifest digest, bytes, provider signature, and the lease's `provider_id` and `content_id` (an evidence id is refused; the message's is empty) | signer, business id |
+| `RELAY_END_LEASE` | `MsgEndLease{authority_end=false}` | `BROADCASTER` key | lease id, provider signature, and the lease's `provider_id` and `content_id` | signer, business id |
+| `FORWARD_PROVIDER_TX` | the provider's own signed bytes, unchanged | the provider's `ADMITTED_PROVIDER` account | the raw transaction bytes (`tx_base64`), the provider's `provider_id`, optional `content_id` | nothing; no sequence allocated |
 
-No kind exists for provider registry messages, council messages or `authority_end` (DR-11-12). An unknown kind is 422 and
-writes nothing.
+No kind exists for provider registry messages, council messages, `authority_end` (DR-11-12) or audit batches (the Q2
+answer). Migration 0002's `broadcaster.kinds` lists exactly these seven kinds with the signer class each needs. An unknown
+kind is 422 and writes nothing.
 
 ### 10.2 Endpoints (HTTP/1.1 JSON over mTLS on loopback)
 
 | Method and path | Effect | Errors |
 | --- | --- | --- |
-| `POST /v1/intents` | validate, then insert intent and outbox rows in one database transaction; 201 new, 200 existing (same idempotency key and request digest) | 400 malformed, 401 no client certificate, 403 kind not allowed or permission missing, 404 object not visible to the caller, 409 same key with another digest or `CONTENT_ID_UNAVAILABLE`, 413 body above the cap, 422 invalid request or provider signature, 429 open-intent cap, 503 database unavailable |
-| `GET /v1/intents/{intent_id}` | status view (section 10.8) | 404 unknown or another caller's |
+| `POST /v1/intents` | validate, then insert intent and outbox rows in one database transaction; 201 new, 200 existing (same idempotency key and request digest) | 400 `MALFORMED` (including a refused authorization context); 401 `UNAUTHENTICATED` (a verified certificate without exactly one principal SAN; a client without a certificate fails the TLS handshake); 403 `CALLER_UNKNOWN`, `KIND_NOT_ALLOWED`, `PERMISSION_MISSING`, `INTENT_KEY_UNREGISTERED`, `RELAY_NOT_ALLOWED`; 404 `NOT_FOUND` (object not visible to the caller); 409 `IDEMPOTENCY_CONFLICT`, `CONTENT_ID_UNAVAILABLE`, `TRANSACTION_ALREADY_TRACKED`; 413 `BODY_TOO_LARGE`; 422 `INVALID_REQUEST`, `UNKNOWN_KIND`, `LIFETIME_OUTSIDE_BOUNDS` and the other policy refusal codes (provider signature, offer, lease and forward rules); 429 `OPEN_INTENT_CAP`; 500 `INTERNAL`; 503 `UNAVAILABLE` (a chain or database read failed; retry) or `OVERLOADED` |
+| `GET /v1/intents/{intent_id}` | status view (section 10.8) | 404 unknown or another caller's; 500 `INTEGRITY` for a COMMITTED row without valid evidence |
 | `GET /v1/intents?status=&page_token=&limit=` | the caller's own intents, at most 100 per page (PROPOSED) | 400 |
-| `POST /v1/intents/{intent_id}/cancel` | only while REQUESTED with no attempt ever persisted: FAILED(`CANCELLED`) (T3) | 409 once an attempt exists (signed bytes cannot be unsent) |
+| `POST /v1/intents/{intent_id}/cancel` | only while REQUESTED with no attempt ever persisted: FAILED(`CANCELLED`) (T3) | 404 another caller's (the intent is not changed); 409 `NOT_CANCELLABLE` once an attempt exists (signed bytes cannot be unsent) |
 | `GET /v1/signers` | public signer addresses and public keys per class, so an account host can name `submittingHost` in an intent (`chain/x/content/intent.go:16-22`) | none |
 | `GET /v1/health` | chain id, latest height and time seen, observer freshness, stall flag, database reachability; no secrets | none |
 
@@ -422,14 +523,20 @@ writes nothing.
 chain, or void after another caller's failed register. It never says which, so it reveals nothing about another caller's
 object (DR-11-34).
 
+The HTTP create path reads the chain for its checks, so with the node unreachable it answers 503; the SQL path still
+queues, and the worker validates later.
+
 ### 10.3 Request decoding and limits
 
-- One Go struct per kind, decoded with unknown fields refused and a body cap of 65,536 bytes (PROPOSED; equal to
+- One Go struct per kind (`internal/api/request`), decoded strictly: no duplicate key at any depth, no `null`, no unknown
+  field, no trailing data, and a body cap of 65,536 bytes (PROPOSED; equal to
   `chain/genesis/bounds.go:29`). Ids are checked against the chain pattern `^[a-z0-9][a-z0-9._-]{0,63}$`
   (`chain/msgkit/ids.go:29-44`). Digests are 32 bytes. Integers are range-checked against the chain bounds before any
   insert.
-- The typed request is converted to the protocol message and encoded with the app codec. The stored `request` column is
-  that protobuf, so the worker never re-parses caller JSON.
+- The typed request is converted to the protocol message. The stored `request` column is its deterministic protobuf
+  encoding with `signer` and `business_id` empty (for a forward, the raw bytes), so the worker never re-parses HTTP
+  caller JSON. The SQL path stores `request_json`, which the worker decodes with the same package; `jsonb` keeps the last
+  of duplicate keys, so the duplicate-key refusal applies to the HTTP path only.
 - No new `.proto` file (DR-11-30). The bodies are JSON. The status field reuses the frozen `OperationStatus` names
   (`docs/protocol/proto/svn/offchain/v1/records.proto:45-52`).
 
@@ -437,12 +544,14 @@ object (DR-11-34).
 
 - Every create carries a caller-chosen `idempotency_key` (same id pattern). `UNIQUE(caller_principal, idempotency_key)`
   decides in PostgreSQL. The same key and digest returns the existing intent; another digest is 409.
-- HTTP digest: SHA-256 over a length-prefixed framing of the kind name, the deterministic protobuf encoding of the request
-  message with `signer` and `business_id` empty, and the authorization context re-serialized from its typed struct with
-  permissions sorted and deduplicated. JSON key order, whitespace and number spelling do not change it.
+- HTTP digest (`request.Digest`): SHA-256 over 8-byte length-prefixed frames of a fixed label, the kind name, the stored
+  request (above), and the authorization context re-serialized from its typed struct with permissions sorted and
+  deduplicated. JSON key order, whitespace and number spelling do not change it. The relay locators (`provider_id`,
+  `content_id`) are not covered: a wrong one only fails the pre-check.
 - SQL digest: the request is stored as `jsonb`, whose text form has a fixed key order and no insignificant whitespace, so
   `sha256(convert_to(request_json::text, 'UTF8'))` ignores key order. The worker later computes the HTTP digest from the
-  decoded request and stores it next to the SQL digest.
+  decoded request and stores it next to the SQL digest. An SQL-path replay must also repeat the kind and the authorization
+  context, or it is refused (ruling R6, section 19.1).
 - The idempotency key is the caller's dedupe; the business id is the chain's (section 12.2). Two keys with the same chain
   effect are two intents. The chain keeps one effect, and the second intent reports it honestly (DR-11-28).
 
@@ -450,17 +559,19 @@ object (DR-11-34).
 
 - Allowed fields only: `principal_kind` (`DEV_FIXTURE` in goal 11), `principal_id` (opaque, id pattern), `permissions`
   (`PUBLISH_CONTENT`, `WITHDRAW_CONTENT`, `SCHEDULE_HOSTING`, `RELAY_PROVIDER_SIGNED`) and `policy_ref` (id pattern). The
-  server adds `caller_principal` and `request_digest`.
-- Refused with 400 and no row: any other key, any email, IP address, user agent, token, cookie, header copy or free text.
+  intent row stores the caller principal and the request digest beside it.
+- Refused with 400 and no row: any other key, any email, IP address (also an id shaped like one), user agent, token,
+  cookie, header copy or free text.
 - Stored as bounded `jsonb` (PROPOSED cap 2,048 bytes); never logged; returned to its own caller only as a digest.
 - Opaque ids and digests are still linkable (REQ-OFF-004).
 
 ### 10.6 Caller authentication (DR-11-32, reversible)
 
-- HTTP: TLS 1.3 with a required, verified client certificate. A development CA is generated at run time by
-  `svn-broadcaster dev-ca` into an ignored directory (`.gitignore:12`) or a test temp directory. The principal is the
-  certificate's single URI SAN `svn://principal/<id>`; a certificate without exactly one such SAN is refused. The listener
-  binds loopback only.
+- HTTP: TLS 1.3 with a required, verified client certificate, HTTP/1.1 only. A development CA is generated at run time by
+  `svn-broadcaster dev-ca` (section 4.3) into an ignored directory (`.gitignore:12`) or a test temp directory. The
+  principal is the certificate's single URI SAN `svn://principal/<id>`; a certificate without exactly one such SAN is
+  refused. No code reads a header for identity. Loopback is enforced in the configuration and on the listener. Requests
+  are bounded by code constants (section 16).
 - SQL path: each caller service connects with its own PostgreSQL role. `broadcaster.callers` maps the role name to the
   principal. Only the owner role writes that table, through `svn-broadcaster migrate --callers`.
 - Development principals refuse to load when the chain id lacks the `shortvideo-dev-` prefix (`docs/protocol.md:136`), so a
@@ -475,31 +586,42 @@ object (DR-11-34).
   `provider_id` for a provider-agent principal). Start-up refuses caps that sum above the global bound (section 16).
 - Read, list and cancel only intents whose `caller_principal` equals the requester. Another caller's intent answers 404, so
   ids cannot be probed.
-- `REGISTER_CONTENT` needs `PUBLISH_CONTENT` and the check of section 7. The enqueue transaction inserts a
-  `content_owners` row with status `PENDING`. One non-`VOID` row may exist per content id and version; a conflict is
-  `CONTENT_ID_UNAVAILABLE`. The row becomes `EFFECTIVE` only when the register intent is COMMITTED with the pinned service
-  address as signer and `Query/Content` shows that address as `submitting_host`. A FAILED register turns the row `VOID`.
+- `REGISTER_CONTENT` needs `PUBLISH_CONTENT` and the check of section 7. The HTTP enqueue transaction, or the SQL-path
+  validation, inserts a `content_owners` row with status `PENDING` and the context's `principal_id`. One non-`VOID` row
+  may exist per content id, in any version, because the chain refuses a second record of an id in any version; a conflict
+  is `CONTENT_ID_UNAVAILABLE`. The row becomes `EFFECTIVE` only when the register intent is COMMITTED with the pinned
+  service address as committing signer and `Query/Content` shows that address as `submitting_host`; when the node shows
+  another host the row stays `PENDING` and the worker raises `CONTENT_HOST_MISMATCH`, so a later read can still confirm
+  it. The transaction that fails a register turns its row `VOID`.
 - `WITHDRAW_CONTENT` needs `WITHDRAW_CONTENT`, an `EFFECTIVE` row with the same caller and principal, and `Query/Content`
   showing our service address as host, at enqueue and again before signing. Otherwise the answer is a uniform 404.
 - `OFFER_LEASE` needs `SCHEDULE_HOSTING`, an `EFFECTIVE` row of this caller, the on-chain host match and content not
   withdrawn, at enqueue and again before signing.
-- Relay kinds need `RELAY_PROVIDER_SIGNED`, and either a caller bound to that provider id or a COMMITTED `OFFER_LEASE`
-  intent of this caller for that offer, committed by our service address. The provider signature pre-check always runs.
+- Relay kinds and verbatim forwards need `RELAY_PROVIDER_SIGNED`, and either a caller bound to that provider id or a
+  COMMITTED `OFFER_LEASE` intent of this caller for that offer, committed by our service address. The provider signature
+  pre-check always runs.
+- Offer and relay rights are per caller, not per principal. Within one caller that serves several principals, principal
+  B's context can schedule an offer for principal A's `EFFECTIVE` content; a withdrawal binds the principal. Whether
+  offers should bind the principal too is an open question for the owner (section 18.17).
+- On the SQL path these checks run only in the worker, at validation and again before signing; on both paths the worker
+  checks again before signing.
 - Per-caller open-intent counters are updated in the enqueue transaction under local lock and statement timeouts
   (PROPOSED 2 s and 5 s). A timeout is 503 and writes nothing. No global row is locked.
 
 ### 10.8 Status shown to callers (DR-11-09; no protocol change)
 
 ```
-{ "intent_id", "kind", "status": "OPERATION_STATUS_REQUESTED|SUBMITTED|COMMITTED|FAILED|PENDING_STALL",
+{ "intent_id", "kind", "idempotency_key",
+  "status": "OPERATION_STATUS_REQUESTED|SUBMITTED|COMMITTED|FAILED|PENDING_STALL",
   "detail": { "phase": "QUEUED|RETRY_WAIT|SIGNED|ACKNOWLEDGED|UNCERTAIN|AWAITING_DEADLINE",
-              "reason", "attempts", "last_ack": {"code","codespace"},
+              "reason", "attempts", "last_outcome", "last_ack": {"code","codespace"},
               "last_landing_height",                          // timeout_height of the live attempt, if any
               "observer": "FRESH|OBSERVER_UNAVAILABLE",
-              "stall": {"since_height","since_time"} },       // only while a stall episode is open
+              "stall": {"since_height","since_time","reason"} },  // only while a stall episode is open
   "commitment": { ... section 14 ... },                       // only when COMMITTED
   "failure": { "reason", "code", "codespace" },               // only when FAILED
-  "expires_at", "created_at" }
+  "business_id", "request_digest", "sql_digest", "auth_context_digest", "authorizations_cleared",
+  "created_at", "expires_at", "final_at" }
 ```
 
 - The protocol's client states are "requested, submitted, committed, failed, and pending while the chain is stalled"
@@ -509,6 +631,10 @@ object (DR-11-34).
   (section 15).
 - `last_landing_height` is the last height at which a live attempt can still commit. `expires_at` bounds new attempts and
   sends only; it does not bound when an effect can land.
+- Before it shows COMMITTED the API checks the commitment: the configured chain id, code 0, a 32-byte block hash and
+  transaction hash, a non-zero height, the canonical hash equal to the first commitment, and `own_transaction` set.
+  Otherwise it answers 500 `INTEGRITY` and never shows COMMITTED. Answers carry digests only, never signatures, hosting
+  intents or the authorization context.
 
 ## 11. Outbox schema (PROPOSED)
 
@@ -532,19 +658,28 @@ object (DR-11-34).
 | `chain_binding` | singleton PK, chain_id UNIQUE, bound_at | the one chain the database serves; every intent, commitment, stall episode and health row references it; written by the owner role |
 | `caller_limits` | principal PK, open_intent_cap (1 to 4,096), enqueue_count | per-caller open-intent cap on both paths; the caller's row lock serializes only that caller's enqueues; `register_caller` refuses a cap that takes the sum of all caps above 16,384 |
 | `callers` | role_name PK, principal UNIQUE | SQL-path mapping; written by the owner role only |
-| `signers` | address bytea(20) PK, account_number, next_sequence, observed_height, lock_key UNIQUE, halted_reason, halted_at | the row lock serializes sequence allocation; `halted_reason` is set on a signer conflict (DR-11-15); `observed_height` also rises to every stored committed height. The key class (`SERVICE`, `BROADCASTER`) and key name depend on Q1 and are not in migration 0001 |
+| `kinds` (0002) | kind PK, signer_class, object_type | the seven kinds of section 10.1 and the class of the account whose sequence each uses (`SERVICE`, `BROADCASTER`, `FORWARD_SOURCE`); fixed rows; `intents.kind` references it |
+| `signers` | address bytea(20) PK, class (0002), key_name UNIQUE (0002), account_number, next_sequence, observed_height, lock_key UNIQUE, halted_reason, halted_at | the row lock serializes sequence allocation; `halted_reason` is `SIGNER_CONFLICT` (DR-11-15), `INTEGRITY`, `UNAUTHORIZED`, `SEQUENCE_GAP` or `ACCOUNT_NUMBER_CHANGED` (section 12.1); `observed_height` also rises to every stored committed height. A `SERVICE` or `BROADCASTER` row has a key name and a lock key; a `FORWARD_SOURCE` row (a provider account of a verbatim forward) has neither, is never synced and never halted. Address, class, key name and lock key never change; rows are never deleted |
 | `signer_events` | id, signer_address, sequence, foreign_tx_hash, detected_at, cleared_at, cleared_by_command | one row per foreign use of a signer sequence; `signer-clear` sets the `cleared_*` columns |
-| `intents` | intent_id uuid PK, caller_principal, idempotency_key, request_digest bytea(32), sql_digest bytea(32) NULL, kind, request bytea, request_json jsonb NULL, auth_context jsonb, validated bool, chain_id, signer_address FK, business_id, business_attempt, state, phase, reason, created_at, expires_at, next_attempt_at, attempt_count, final_at, committed_tx_hash, own_transaction bool, transitions_suppressed | `UNIQUE(caller_principal, idempotency_key)`; `CHECK(expires_at > created_at)`; partial index on non-final state and `next_attempt_at`; `chain_id` must equal the configured chain id; a trigger refuses any UPDATE or DELETE of a COMMITTED or FAILED row |
-| `business_attempts` | intent_id, n, business_id UNIQUE, created_at, outcome | a new business id only after reconciliation shows no effect; n bounded (PROPOSED) |
-| `attempts` | attempt_id uuid PK, intent_id FK, n, signer_address, account_number, sequence, timeout_height, gas, tx_bytes, tx_hash bytea(32) UNIQUE, created_at, phase, sends_started, sends_recorded, unknown_sends, cache_answers, counted_refusals, acked, ack_code, ack_codespace, ack_log (clipped), committed_height, committed_index, committed_code, committed_codespace, acc_seq_present, gas_used, dead_reason, dead_at, worker_instance | partial `UNIQUE(signer_address, sequence) WHERE dead_at IS NULL AND committed_height IS NULL` (at most one live transaction per signer sequence); `CHECK(timeout_height > 0)`; `CHECK(sends_recorded <= sends_started)`; n from 1 to 32 (the hard bound of section 16; the PROPOSED cap is 16) |
+| `intents` | intent_id uuid PK, caller_principal, idempotency_key, request_digest bytea(32), sql_digest bytea(32) NULL, kind FK, request bytea, request_json jsonb NULL, auth_context jsonb, auth_context_digest bytea(32) (0002), cleared_at (0002), validated bool, object_type, object_id, object_version (0002), chain_id, signer_address FK, business_id, business_attempt, state, phase, reason, created_at, expires_at, next_attempt_at, attempt_count, final_at, committed_tx_hash, own_transaction bool, transitions_suppressed | `UNIQUE(caller_principal, idempotency_key)`; `CHECK(expires_at > created_at)`; partial index on non-final state and `next_attempt_at`; `chain_id` must equal the bound chain id; the signer's class must be the one the kind needs (SV012); what validation sets never changes once validated; a trigger refuses any UPDATE or DELETE of a COMMITTED or FAILED row except the Q4 clearing of section 8 |
+| `business_attempts` | intent_id, n, business_id, source (`DRAWN`, `FORWARDED`; 0002), created_at, outcome | a new business id only after reconciliation shows no effect; n bounded (PROPOSED); a drawn business id is unique (`UNIQUE(business_id) WHERE source = 'DRAWN'`), a forwarded one is the provider's and may repeat after a dead forward is re-signed |
+| `attempts` | attempt_id uuid PK, intent_id FK, n, signer_address, account_number, sequence, timeout_height, gas, tx_bytes, tx_hash bytea(32) UNIQUE, created_at, phase, sends_started, sends_recorded, unknown_sends, cache_answers, counted_refusals, acked, ack_code, ack_codespace, ack_log (clipped), committed_height, committed_index, committed_code, committed_codespace, acc_seq_present, gas_used, dead_reason, dead_at, worker_instance | partial `UNIQUE(signer_address, sequence) WHERE dead_at IS NULL AND committed_height IS NULL` (at most one live transaction per signer sequence); `CHECK(timeout_height > 0)`; `CHECK(sends_recorded <= sends_started)`; n from 1 to 32 (the hard bound of section 16; the PROPOSED cap is 16); an attempt names its intent's signer (SV012); a live attempt keeps its bytes, and only a never-sent attempt of a FAILED intent loses them (Q4) |
+| `forwarded_txs` (0002) | intent_id PK, tx_hash UNIQUE, message_type, outer_signer FK, provider_id, account_number, sequence, timeout_height, gas, recorded_at | the decoded, validated fields of a verbatim forward, written once; the bytes are the intent's request; a forward's attempt is checked against this row (SV013) |
 | `commitments` | intent_id PK, chain_id, height, block_hash, tx_hash, tx_index, msg_index, code, codespace, gas_wanted, gas_used, events jsonb, idempotent_replay, first_commit_tx_hash, committing_signer bytea(20) | written once, only from a committed result (section 14). At commit the database checks the evidence against the intent's attempts: an intent that is not COMMITTED has no attempt resolved `COMMITTED_OK` or `COMMITTED_IDEMPOTENT`; `own_transaction` is true exactly when `first_commit_tx_hash` is an attempt of this intent resolved `COMMITTED_OK`, and no attempt of this intent in another phase carries it; an idempotent replay is read from an attempt of this intent resolved `COMMITTED_IDEMPOTENT`. A COMMITTED intent has no `reason` |
-| `content_owners` | id PK, content_id, content_version, caller_principal, principal_id, signer_address, intent_id, status (`PENDING`, `EFFECTIVE`, `VOID`), status_at | depends on Q3; not in migration 0001, added by a later migration. Partial `UNIQUE(content_id, content_version) WHERE status <> 'VOID'` |
+| `content_owners` (0002) | id PK, content_id, content_version, caller_principal, principal_id, signer_address, intent_id UNIQUE, status (`PENDING`, `EFFECTIVE`, `VOID`), created_at, status_at | partial `UNIQUE(content_id) WHERE status <> 'VOID'` (one live claim per content id, in any version); derived from the register intent, its principal is the context's `principal_id`, checked by the database (SV014); `EFFECTIVE` needs a COMMITTED intent committed by the row's signer and the host the worker observed; `VOID` is set in the transaction that fails the intent; `EFFECTIVE` and `VOID` rows never change |
 | `transitions` | id, intent_id, attempt_id, at, from_state, to_state, phase, reason, observation jsonb (bounded), worker_instance | append-only (a trigger refuses UPDATE and DELETE); a row only on a change of state, phase or observation class; at most 256 rows per intent (PROPOSED), then only `intents.transitions_suppressed` grows |
 | `stall_episodes` | id, chain_id, reason (`HEIGHT_STALLED`, `NODE_UNREACHABLE`, `CATCHING_UP`), started_height, started_at, ended_height, ended_at | one open episode at a time; written by the observer |
 | `chain_health` | chain_id PK, latest_height, latest_time, seen_at, observer_instance | updated every poll; its freshness decides between the stall overlay and `OBSERVER_UNAVAILABLE` |
 
 - `worker_instance` is a boot nonce plus the process id, written on every attempt and transition, so a test can tell which
   process wrote a row.
+- Refusals carry SQLSTATEs of class SV: SV001 a terminal or immutable row or column was changed; SV002 an append-only
+  table was changed; SV003 the session user is not a registered caller; SV004 an argument is outside its bounds; SV005
+  the open-intent cap is reached; SV006 the idempotency key is in use with another digest; SV007 the isolation is not READ
+  COMMITTED; SV008 a COMMITTED intent and its commitment disagree; SV009 an intent's state and its live attempts
+  disagree; SV010 no chain id is bound; SV011 a FAILED never-sent intent keeps its authorizations; SV012 a signer class
+  does not fit the kind, or an attempt names another signer than its intent; SV013 a forwarded transaction and its intent
+  or attempt disagree; SV014 a content owner row and its register intent disagree.
 - Every state UPDATE is a compare-and-set on the expected state and phase, and its row count is checked. A zero count is a
   lost race and is handled.
 - Retention: no column is deleted automatically (DEC-004). The protocol's retained reconciliation fields are listed at
@@ -559,9 +694,13 @@ object (DR-11-34).
 - SQL path, for goal 13 and later services that write their own application row in the same transaction:
   `broadcaster.enqueue_intent(kind, request_json, auth_context, idempotency_key, expires_in)`. It is `SECURITY DEFINER`,
   has a fixed `search_path` and `REVOKE ALL FROM PUBLIC`, and takes the caller principal from `session_user` through
-  `callers`. It checks size, kind and the per-caller cap, and inserts the row with `phase = QUEUED, validated = false`.
-  Its error messages carry codes only, never argument values. The worker runs the full validation before any signing
-  and fails the intent with `UNAUTHORIZED` or `INVALID` and no attempt if it does not pass (T2).
+  `callers`. It checks size, that the kind is one of `broadcaster.kinds`, and the per-caller cap, and inserts the row with
+  `phase = QUEUED, validated = false`. Its error messages carry codes only, never argument values. The worker runs the
+  full validation before any signing (the caller and its kinds, the context under the configured cap, the lifetime
+  bounds and, for a RENEW or END relay, the relay local expiry, the typed request, then the checks of sections 6, 7 and
+  10.7) and fails the intent with `UNAUTHORIZED`, `INVALID` or `PROVIDER_SIGNATURE_INVALID` and no attempt if it does not
+  pass (T2). A content id another owner row holds, or forwarded bytes another intent tracks, also fail it `INVALID`;
+  there is no dedicated reason (section 18.17).
 - The worker re-runs validation immediately before signing on both paths, because chain state can change after enqueue.
 - Coupling proof: a test-only fixture schema writes its own row and calls the enqueue function in one transaction. Commit
   leaves both rows; rollback leaves neither; killing the client process in the middle leaves neither.
@@ -570,7 +709,9 @@ object (DR-11-34).
 
 Embedded `NNNN_name.pgsql` files, applied in order, each in its own transaction under a constant advisory transaction lock,
 recorded with sha256, forward-only (DR-11-23). `migrate` runs as the owner role. `serve` refuses to start unless the schema
-version equals the binary's.
+version equals the binary's. `0001_outbox.pgsql` creates the outbox; `0002_answers.pgsql` adds what the Q1 to Q4 answers
+decide (kinds, signer classes, `forwarded_txs`, `content_owners`, the Q4 clearing) and refuses a 0001 database that
+already holds signer rows or validated intents.
 
 ## 12. Submission engine (PROPOSED)
 
@@ -579,7 +720,7 @@ version equals the binary's.
 - One worker loop per signer. It takes a session advisory lock on a pinned connection, and every allocation and attempt
   write for that signer uses that connection. If the connection dies, the lock is gone and the next write fails, so nothing
   is signed or sent until the lock is held again. A second broadcaster process does not drive that signer.
-- `reconcile-once` and `signer-clear` try the same lock and exit with an error if it is held. `status` only reads.
+- `reconcile-once` and `signer-clear` try the same lock and exit 4 if it is held. `status` only reads.
 - One live transaction per signer (DR-11-26). A later sequence becomes invalid when an earlier one dies, and there is no gap
   queue. Concurrency comes from several signers.
 - Next sequence: with no live attempt, read the committed account through the node. The answer's height must be at least
@@ -587,7 +728,12 @@ version equals the binary's.
   auditor's account read ignores that height (`agents/auditor/chainclient/rpc.go:305-337`).
 - Signer conflict (DR-11-15). If the chain sequence is above `next_sequence` and a `tx.acc_seq` lookup names a hash that is
   not one of our attempts, the signer halts: `halted_reason = SIGNER_CONFLICT`, a `signer_events` row and an operator
-  alert. It signs nothing until an operator runs `signer-clear` for that signer and hash.
+  alert. It signs nothing until an operator runs `signer-clear` for that signer, sequence and hash.
+- Other halts, which no command lifts (section 4.3): `INTEGRITY` (an integrity error, a stored attempt that does not
+  decode, a commitment check refused at commit with SV008 or SV009, or a signed transaction that does not match its
+  request), `UNAUTHORIZED` (the node answers svn `UNAUTHORIZED` for our signer), `SEQUENCE_GAP` (more than 256 sequences
+  between the stored and the chain sequence to check; a code bound, PROPOSED) and `ACCOUNT_NUMBER_CHANGED` (the chain
+  reports another account number for the signer).
 
 ### 12.2 Building an attempt
 
@@ -595,15 +741,28 @@ version equals the binary's.
   in lowercase base32, inside the chain id pattern; reused for every attempt of that business attempt (DR-11-07).
 - Deadline: `timeout_height = latest committed height + K` (K PROPOSED), strictly above the `timeout_height` of every
   earlier attempt with the same signer and sequence. Because signing is deterministic (section 3.1), this keeps two attempts
-  from having the same bytes. No `timeout_timestamp`.
-- Gas: a fixed declared gas per kind (PROPOSED 2,000,000; the devnet and auditor use the same value,
+  from having the same bytes. No `timeout_timestamp`. After an sdk 4 refusal the next attempt's `timeout_height` must
+  exceed the dead one's by more than one block, so those retries are at least two blocks apart, across restarts too
+  (DR-11-18).
+- Gas: a fixed declared gas (`declared_gas`, PROPOSED 2,000,000, with optional `declared_gas_by_kind` overrides in the
+  same bounds; the devnet and auditor use the same value,
   `chain/devnet/lifecycle_test.go:340`, `agents/auditor/config/config.go:100`). `WithdrawContent` is sized by simulation,
   because open offers raise its gas (`docs/architecture/leases.md:140`): `serve` builds the simulation transaction with the
   signer's public key and an empty signature, without calling the signer, and sends it to the tx service Simulate route of
-  section 3.1, not to `/app/simulate`, which cannot encode an svn message response (route pending the orchestrator's
-  ruling). The declared gas is the simulated gas plus a PROPOSED margin; a simulated gas above 20,000,000 is refused rather
+  section 3.1, not to `/app/simulate`, which cannot encode an svn message response (ruling R3, section 19.1). The
+  declared gas is the simulated gas plus a PROPOSED margin; a simulated gas above 20,000,000 is refused rather
   than capped, because such a transaction could only fail out of gas (DR-11-27). A wrong answer from the node can only make
   the transaction fail with out-of-gas, which reconciliation handles.
+- Ruling R3 is checked against the real application: `TestSimulateRouteGasForBroadcasterKinds`
+  (`chain/app/tx_deadline_test.go`) shows that the gRPC-routed Simulate returns the gas of a successful message of each of
+  the six key-signed kinds, that this gas plus the PROPOSED 30 % margin commits, and that a withdrawal with 24 open offers
+  simulates to more gas than one without. That test builds its own simulation transaction with the same shape as
+  `chain.Codec.SimulationTx` (both tests assert the shape); the broadcaster's own simulation bytes reach a real node only
+  in the planned devnet test. No fallback to declared withdraw gas was needed.
+- Before each new attempt, in this order: the effect check (section 12.6, before the first attempt and before every
+  retry); the request is validated again with the same policy checks the API runs; the sequence is allocated (a foreign
+  use found by the `tx.acc_seq` search halts the signer); the deadline and gas are set; the signature is requested; the
+  returned transaction is decoded again and compared with the request.
 - The worker re-decodes the signed bytes and checks that the single message equals the stored request with signer and
   business id filled in.
 
@@ -631,7 +790,10 @@ leave an on-chain effect under a FAILED row.
 
 Fault points for tests exist only in a build with the tag `svn_faultpoint`: `after-sign-before-persist`,
 `after-persist-commit`, `after-sends-started`, `after-broadcast-before-record`, and in the signer
-`after-decode-before-reply`. The default build has none.
+`after-decode-before-reply`. A point is armed by creating `$SVN_FAULTPOINT_DIR/<point>.arm`; it fires once (the file is
+renamed `<point>.hit`) and then blocks. The default build has a no-op; `TestDefaultBuildHasNoFaultPoints` checks that
+neither the worker test binary nor the `svn-broadcaster` binary links a fault point symbol in the default build, and that
+both link them under the tag.
 
 ### 12.4 Classifying answers
 
@@ -668,7 +830,8 @@ public in the block) can have them included again until their `timeout_height`, 
 when the block had no gas left (sdk 11). So the attempt stays live, the same stored bytes may be rebroadcast, and it is
 resolved `INCLUDED_ANTE_FAILED` only once the node's committed height, read before `/tx`, is at least T + L and `/tx(H)`
 still shows the failure. A retry or a FAILED intent therefore never leaves bytes behind that can still commit. A failure
-with this attempt's `tx.acc_seq` consumed the sequence, so those bytes can never pass the ante again.
+with this attempt's `tx.acc_seq` consumed the sequence, so those bytes can never pass the ante again. This rule replaced
+the first (d1) of the goal 11 plan after the Wave 0 review; the orchestrator kept it (ruling R2, section 19.1).
 
 ### 12.5 When an attempt can no longer commit (the dead rule)
 
@@ -711,15 +874,22 @@ new attempt.
      (a `BROADCASTER` or the provider's own account may commit it): COMMITTED, `own_transaction` true only for our hash.
      The Wave 0 chain client is stricter for relay kinds: a committing transaction signed by our pinned key whose hash we
      never stored is a signer conflict there too (`services/broadcaster/internal/chain/effect.go:263-266`). This deviation
-     is fail-closed and pending the orchestrator's ruling.
+     is fail-closed; the orchestrator kept it (ruling R4, section 19.1).
    - Business fields differ: FAILED(`OBJECT_TAKEN`). The Wave 0 chain client leaves `business_id` out of this comparison,
-     because each business attempt and each second intent draws its own id; also pending the orchestrator's ruling.
+     because each business attempt and each second intent draws its own id; the orchestrator kept that (ruling R5,
+     section 19.1).
    - The object changed state with no such transaction (begin-block expiry `LeaseEnded{EXPIRED}`,
      `chain/x/leases/README.md:323-337`; a council force-withdraw inside `MsgExecuteChange`,
-     `chain/x/content/msg_server.go:250-254`; or a transaction of another kind): FAILED(`OBJECT_STATE_CHANGED`). Never
-     COMMITTED.
+     `chain/x/content/msg_server.go:250-254`; or a transaction of another kind): FAILED(`OBJECT_STATE_CHANGED`), but only
+     once the read height is at least L blocks above the height at which this process first saw the change, so a
+     transaction that changed it would be indexed. That first height is kept in memory, so a restart starts the wait
+     again. Never COMMITTED.
+   - An effect check that keeps finding a foreign transaction an operator already cleared with `signer-clear` holds the
+     intent and raises `SIGNER_CONFLICT_CLEARED` on every pass until the intent expires (open, section 18.17).
 4. Only if no effect exists and the intent may still start an attempt (below caps, before expiry, not stalled, signer not
-   halted) is a new attempt signed: same business id, sequence from section 12.1, deadline from section 12.2.
+   halted) is a new attempt signed: same business id, sequence from section 12.1, deadline from section 12.2. A signer
+   refusal of the message itself fails the intent (T2); `NO_FRESH_HEIGHT`, a bound, an unknown key, or an overloaded or
+   unreachable signer leaves it REQUESTED and raises an alert.
 5. A committed `REPLAY` with no effect means another payload took our business id: open a new business attempt with a new
    random id, bounded; at the bound, FAILED(`BUSINESS_ID_TAKEN`). Any other committed code with no effect: retryable codes go
    to RETRY_WAIT, the rest to FAILED(`EXECUTION_FAILED{code}`). A resend's code is never mapped onto an earlier attempt.
@@ -850,18 +1020,22 @@ table.
 
 ## 16. Configuration and PROPOSED numbers (DR-11-10)
 
-Configuration is a typed JSON file plus flags. There are no defaults for the chain id or the gateway.
+Configuration is one strict JSON file per process (unknown fields refused) plus the `--config` flag. There are no
+defaults for the chain id or the gateway. The `signer` file refuses `database`, `listen` and `callers`; the `serve` file
+refuses `keys`.
 
 | Key | Rule |
 | --- | --- |
-| `chain_id` | required; must equal the `/status` network at start and before each signing round; development keys refuse a chain id without `shortvideo-dev-` |
-| `rpc_url` | required; loopback `http` by default; a non-loopback URL needs `https` and `allow_remote_rpc: true`; one node, disclosed as trusted for reads |
-| `database` | Unix socket directory or loopback host, database, role, `sslmode` (required; lib/pq defaults to `require`, `lib/pq@v1.12.3/connector.go:304-306`); password only from a passfile owned by the reading uid; any `PG*` variable or `PQGO_DEBUG` refuses start |
-| `listen` | loopback address; TLS server certificate, key and client CA paths |
-| `signer` | socket path, expected serve uid and signer uid (Q1 (a)); or key names and paths (Q1 (b)) |
-| `keys` (signer only) | name to file and class; no intent-key field exists |
+| `chain_id` | required; must equal the `/status` network and the database's bound chain id at start; development keys and principals refuse a chain id without `shortvideo-dev-` |
+| `rpc_url` | required; `http` on a loopback IP literal, or `https` elsewhere only with `allow_remote_rpc: true`; one node, disclosed as trusted for reads |
+| `database` | `socket_dir`, `port`, `name`, `role`, `password_file`, `application_name`, `connect_timeout_seconds`. A Unix socket with SSL off is the only connection: the plan's `sslmode` field and loopback TCP are not implemented (lib/pq defaults to `require`, `lib/pq@v1.12.3/connector.go:304-306`). `serve`, `reconcile-once` and `signer-clear` need the runtime role, `migrate` the owner role; any `PG*` variable or `PQGO_DEBUG` refuses start |
+| `listen` (serve) | `address` (loopback), `tls_cert_file`, `tls_key_file`, `client_ca_file` |
+| `signer` | `socket_path`, `serve_uid`, `signer_uid`; neither uid may be 0; each process checks that it runs as its own configured uid |
+| `keys` (signer) | `name`, `class` (`SERVICE` or `BROADCASTER`), `path`; no intent-key field exists |
 | `intent_key_registry` | path of the operator-written public-key file (section 7) |
-| `callers` | principal to kinds, per-caller cap and bindings |
+| `callers` (serve) | `principal`, `kinds`, `open_intent_cap`, `bound_provider_id`, `sql_role` |
+| `numbers` | any number of the table below by its name; a number left out takes its PROPOSED value |
+| `declared_gas_by_kind` | optional per-kind declared gas, in the declared-gas bounds |
 
 Every number below is PROPOSED: the value and the hard bounds are new, none is a service level, and the owner is asked to
 accept the labels, not the values. Each has hard lower and upper bounds in code.
@@ -896,14 +1070,21 @@ accept the labels, not the values. Each has hard lower and upper bounds in code.
 | `transitions` rows per intent | 256 | 16 to 4,096 |
 | Enqueue lock / statement timeout (s) | 2 / 5 | 0.1 to 30 / 1 to 60 |
 
+Code constants that are not configuration, also PROPOSED: the API serves at most 64 requests at once, 25 s per request,
+with a 5 s header timeout, 15 s read, 30 s write, 60 s idle and 16 KiB of headers; the signer serves at most 16
+connections at once; the start-up governance read takes at most 64 pages; the log handler redacts strings above 256
+bytes; `SEQUENCE_GAP` halts above 256 sequences to check; a worker pass handles at most 64 intents per list; `dev-ca`
+certificates are valid 1 to 30 days, 7 by default; the registry file is at most 1 MiB with labels of at most 64 bytes.
+
 The planned devnet tests run at the lower bound wherever a phase does not depend on the value, and print the values they
 used.
 
-## 17. Owner questions Q1 to Q4 (unanswered)
+## 17. Owner questions Q1 to Q4 (answered 2026-11-08)
 
-These four questions are security-critical or privacy questions. Each recommendation below is a proposal, not a decision.
-The owner may combine options. None of them is answered. The parts of goal 11 that depend on an answer are not built until
-the answer exists; nothing answer-dependent is built as an interim.
+These four questions are security-critical or privacy questions. The owner answered all four on 2026-11-08T07:44Z through
+the Claude Code question dialog, each with option (a), the recommended one; each status line below quotes the selected label
+and the option text the owner saw. The answers decide these questions only. They do not approve this file (DR-11-01), any
+PROPOSED number, or any pull request or merge. The facts and options below are kept as they were asked.
 
 Under every option: the broadcaster never holds a council seat, `AUTHORITY`, `AUDITOR`, provider, validator, creator or user
 key; it never signs a provider's consent or a hosting intent; it never reports COMMITTED from a broadcast acknowledgement;
@@ -938,7 +1119,11 @@ Options:
   would sign them. The chain refuses content messages from the broadcaster's key, so the publication permission is enforced
   by chain role for this key. Goal 11 cannot show content and offer submission, and goal 13 and later need a second signer.
 
-Status: unanswered. Recommended option: (a). Sections 4, 5, 7, 10.1 and 16 (`signer`, `keys`) assume (a). Under (b) the
+Status: answered 2026-11-08T07:44Z. Selected: "Both keys, separate signer (Recommended)", option (a). Option text: "One
+BROADCASTER key and one ADMITTED_SERVICE key, read only by a separate signer process running as its own non-root user. The
+signer checks message type, chain id, deadline and (for content) an operator-registered intent key. An API/database bug
+can't reach key bytes. CI can only show the uid split in-memory; the real split is verified in a root run." Sections 4, 5,
+7, 10.1 and 16 (`signer`, `keys`) follow (a). Under (b) the
 signer process, the uid rule and the socket checks disappear and the checks run inside `serve`. Under (c) the service kinds
 and the service key disappear.
 
@@ -966,8 +1151,11 @@ Options:
 - (d) P2 only: the broadcaster never carries provider consent. No relay; every provider submits from its own admitted
   account; goal 11's relay tests become reconciliation-only.
 
-Status: unanswered. Recommended option: (a). Sections 6 and 10.1 assume (a). Goal 09's "Outbox submission" item stays
-DEFERRED until the answer.
+Status: answered 2026-11-08T07:44Z. Selected: "Relay + verbatim forward (Recommended)", option (a). Option text: "Relay:
+provider returns its signature, broadcaster relays it after checking it against the provider's registered key. Forward:
+broadcaster forwards a provider-signed transaction byte-for-byte only if it carries a short deadline. Provider
+self-submission arrives in goal 16. Audit batches stay on the auditor's own path (not through the outbox)." Sections 6 and
+10.1 follow (a). Recording goal 09's "Outbox submission" item against this answer is the orchestrator's (DR-11-06).
 
 ### 17.3 Q3 (DR-11-03): the publication permission, devnet hosting-intent keys and object permissions
 
@@ -991,7 +1179,11 @@ Options:
   offers for content without that approval; intents as in (b). No approval service exists until a later goal, so goal 11
   would test against a fixture flag, and registration itself stays unguarded.
 
-Status: unanswered. Recommended option: (a). Sections 7, 10.5 and 10.7 assume (a).
+Status: answered 2026-11-08T07:44Z. Selected: "Operator-registered intent keys (Recommended)", option (a). Option text: "Each
+caller principal gets PUBLISH/WITHDRAW permissions; the hosting intent must be signed by the key an operator registered for
+that principal in a file the broadcaster can't write (a devnet fixture holds those keys, as a test stand-in, not DEC-001
+custody). Ownership counts only after the chain confirms our registration; other callers' objects answer 'not found'."
+Sections 7, 10.5 and 10.7 follow (a).
 
 ### 17.4 Q4 (DR-11-04): what may the outbox store, and how is it minimized?
 
@@ -1024,12 +1216,16 @@ Options:
   reconciliation rows can conflict with the protocol's retained-fields list, so the period would apply only to the extra
   items above.
 
-Status: unanswered. Recommended option: (a). Sections 8, 10.5 and 11.2 assume (a).
+Status: answered 2026-11-08T07:44Z. Selected: "Minimal + clear unsent (Recommended)", option (a). Option text: "Only the minimal
+fields; answers return digests, not raw signatures. Relayed renew/end signatures get a proposed local expiry. When an
+intent fails without anything ever being sent, its stored signatures, intent and full auth context are cleared (digests
+kept). Other rows kept; retention stays unset." Sections 8, 10.5 and 11.2 follow (a).
 
 ## 18. Security-relevant decision requests with interim rules (open)
 
 Each request below has an interim rule. The interim is the recommended option. It is not an owner decision. The goal 11
-plan implements and tests it and reports the request open. None of these requests is answered.
+plan implements and tests it and reports the request open. None of these requests is answered, except DR-11-06,
+which the owner's Q2 answer covers (section 18.2).
 
 ### 18.1 DR-11-05: commit, failure, uncertainty and deadlines
 
@@ -1050,7 +1246,8 @@ plan implements and tests it and reports the request open. None of these request
   batch is not an option: the goal 09 ruling forbids it (`docs/evidence/goal-09.md:74`).
 - Recommended: (a). Until the answer, no audit-batch kind exists, and goal 09's item (`docs/evidence/goal-09.md:39`) stays
   DEFERRED.
-- Status: open; part of Q2; unanswered.
+- Status: answered through Q2 on 2026-11-08T07:44Z (section 17.2): the selected option says "Audit batches stay on
+  the auditor's own path (not through the outbox)."
 
 ### 18.3 DR-11-07: business ids
 
@@ -1176,6 +1373,20 @@ plan implements and tests it and reports the request open. None of these request
 - Recommended: (a). Fail-closed. It overlaps Q3; the Q3 answer can change it.
 - Status: open; unanswered.
 
+### 18.17 Raised during the goal 11 implementation (not yet numbered)
+
+These came up while building and reviewing Wave 1. Each has the interim behaviour described; none is an owner decision.
+The orchestrator assigns decision-request numbers.
+
+- Lifting halts other than `SIGNER_CONFLICT` (section 4.3). Interim: no command lifts `INTEGRITY`, `UNAUTHORIZED`,
+  `SEQUENCE_GAP` or `ACCOUNT_NUMBER_CHANGED`; the devnet recovery is a new database. Fail-closed.
+- Offer and relay rights per principal (section 10.7). Interim: per caller, as plan 5.7 says; a multi-principal caller's
+  principals can schedule offers for each other's content.
+- The owner row's `principal_id` after the Q4 clearing (section 8). Interim: kept.
+- A reason for an SQL-path content-id conflict or tracked forwarded bytes (section 11.3). Interim: `INVALID`.
+- An operator-cleared foreign transaction found again by the effect check (section 12.6). Interim: the intent is held
+  with an alert until it expires. Fail-closed.
+
 ## 19. Reversible implementation choices
 
 These are reversible choices made while planning goal 11. They need no owner input to proceed. They are not owner
@@ -1190,7 +1401,7 @@ decisions.
 | DR-11-24 | One development cluster helper used by tests and `dev-db`; crash hooks only in test code; `dev-db` refuses data directories outside the system temp directory and chain ids without `shortvideo-dev-`. |
 | DR-11-25 | CI installs PostgreSQL in the jobs that run the module's tests; new race shards; no PostgreSQL skip variable. New required check names need the owner's branch-protection update. |
 | DR-11-26 | One live transaction per signer. |
-| DR-11-27 | Fixed gas per kind; withdraw gas from simulation with a PROPOSED margin; a simulated gas above 20,000,000 is refused. The plan named `/app/simulate`; the Wave 0 client uses the tx service Simulate route (section 3.1), pending the orchestrator's ruling. |
+| DR-11-27 | Fixed gas per kind; withdraw gas from simulation with a PROPOSED margin; a simulated gas above 20,000,000 is refused. The plan named `/app/simulate`; the Wave 0 client uses the tx service Simulate route (section 3.1), which the orchestrator chose (ruling R3, section 19.1). |
 | DR-11-28 | A second intent with an identical effect reports COMMITTED with `own_transaction = false`. |
 | DR-11-29 | Devnet tests in `chain/devnet` drive the built binary through a loopback fault proxy and build-tagged fault points. |
 | DR-11-30 | JSON bodies, no new `.proto`; status names reuse `OperationStatus`. |
@@ -1200,6 +1411,47 @@ decisions.
 | DR-11-35 | Distinct uids for `signer` and `serve` when the launcher is root; same-uid runs are labelled and do not verify the boundary (section 4.2). |
 | DR-11-36 | A phase-selection variable for devnet mutation killers only; CI never sets it. |
 | DR-11-37 | Development cluster log settings (section 9). |
+
+### 19.1 Orchestrator rulings on Wave 0 (2026-11-08)
+
+The goal 11 orchestrator made these reversible implementation choices after the Wave 0 review. They are not owner decisions
+and they answer no decision request.
+
+- R1. The module-pinning gate of goal 11 step 0 passes when every dependency line of `go list -m all` in `chain` is
+  unchanged, the `GOWORK=off` listing of `chain` is byte-identical, and `go version -m` of an svnd build is identical after
+  its first line (the binary's own path) is normalized. In workspace mode `go list -m all` always adds the new main module
+  line `github.com/Maxencejules/shortvideo-network/services/broadcaster`.
+- R2. The ante-failure rule of sections 12.4 and 12.5 (d1) stands: a committed failure without this attempt's `tx.acc_seq`
+  keeps the attempt live until the committed height is at least T + L.
+- R3. Simulation uses the gRPC-routed `/cosmos.tx.v1beta1.Service/Simulate` through `abci_query` (section 3.1). Goal 11
+  must show in a `chain/app` test against the real application that this route returns the gas of a successful svn
+  message. If it cannot, the broadcaster uses a declared gas per kind instead, with PROPOSED values and hard bounds,
+  fail-closed, and the change is reported.
+- R4. The stricter relay signer rule of section 12.6 stands: for relay kinds too, a committing transaction signed by our
+  pinned key whose hash we never stored is a signer conflict.
+- R5. `business_id` is left out of the effect field comparison of section 12.6, because one business attempt reuses its id
+  for every attempt.
+- R6. An SQL-path replay must repeat the kind and the authorization context (section 10.4).
+
+### 19.2 Reversible choices made in Wave 1 and its review
+
+Made while implementing; not owner decisions and not answers to a decision request.
+
+- Content ownership is unique per content id, not per content id and version (section 10.7).
+- The Q4 clearing also removes never-sent attempts' transaction bytes, which contain the inner signature or hosting
+  intent (section 8). An owner row whose observed host does not match stays `PENDING` rather than `VOID`.
+- The signer checks the intent-key registry against the serve uid as well as its own (section 7).
+- The signer client's request method is `RequestSignature`, and the static scan refuses signing functions used as values,
+  not only calls (section 5.2).
+- Renew and end relays do not require an admitted provider (DR-08-01); renew, end and forward requests name the lease's
+  provider and content as locators (DR-08-08); the worker finds a held lease by paging `Query/Deadlines` when the HTTP
+  path did not store them (section 6).
+- The sdk 4 retry gap is enforced through `timeout_height`, not a timer (section 12.2). New halts `SEQUENCE_GAP` and
+  `ACCOUNT_NUMBER_CHANGED` (section 12.1). A forward that would retry fails `PROVIDER_MUST_RESIGN` (section 6).
+- The database connection is a Unix socket with SSL off only; one configuration file per process; transport limits are
+  code constants (section 16). A client without a certificate fails the TLS handshake rather than getting 401.
+- No root override for the signer; `status` calls only read functions instead of opening a read-only transaction
+  (section 4.3). `reconcile-once` names the session whose lock is held.
 
 ## 20. Protocol additions recorded, not made (DR-11-40)
 
@@ -1241,6 +1493,12 @@ The goal 11 plan changes no `.proto` file, `bounds.json`, `docs/protocol.md` or 
   (`chain/x/leases/README.md:692`).
 - The planned fault proxy covers lost requests and answers on one loopback link, not real network partitions. The planned
   PostgreSQL faults are process crashes, not host power loss.
+- A halt other than `SIGNER_CONFLICT` stops that signer for the life of the database (section 4.3).
+- Offer and relay rights are per caller, not per principal (section 10.7).
+- The owner row's `principal_id` is kept after the Q4 clearing (section 8).
+- The schema has run only on PostgreSQL 18.6.
+- CI runs the module's tests as one non-root uid: the distinct-uid smoke run and the `svn_roottest` tests run only in a
+  root run, which only a local capture provides.
 
 ## 22. Steps that need a human approval or an independent review
 
@@ -1255,3 +1513,5 @@ The goal 11 plan changes no `.proto` file, `bounds.json`, `docs/protocol.md` or 
 7. Branch-protection updates for new CI checks; a goal 11 draft pull request and its merge.
 8. An independent security review of the signer, the policy pre-checks, the reconciliation rules and the SQL privilege
    model (REQ-SEC-011; goal 29). A model-assisted review is not that review.
+9. Answers to the questions of section 18.17 (halt lifting, per-principal offers, `principal_id` after clearing, the
+   SQL-path conflict reason, operator-cleared foreign transactions).

@@ -285,17 +285,17 @@ func TestSQLReplayNeedsSameKindAndContext(t *testing.T) {
 			$3::jsonb, $4, $5::interval)`, kind, `{"a":1}`, auth, "replay-key", "1 hour").Scan(&id, &created)
 		return id, created, err
 	}
-	id, created, err := enq("TEST_KIND", `{"principal_kind":"DEV_FIXTURE","principal_id":"p1"}`)
+	id, created, err := enq(KindOfferLease, `{"principal_kind":"DEV_FIXTURE","principal_id":"p1"}`)
 	if err != nil || !created {
 		t.Fatalf("first enqueue: %v %v", created, err)
 	}
-	again, created, err := enq("TEST_KIND", `{"principal_id":"p1","principal_kind":"DEV_FIXTURE"}`)
+	again, created, err := enq(KindOfferLease, `{"principal_id":"p1","principal_kind":"DEV_FIXTURE"}`)
 	if err != nil || created || again != id {
 		t.Fatalf("replay with reordered context keys: %s %v %v", again, created, err)
 	}
-	_, _, err = enq("OTHER_KIND", `{"principal_kind":"DEV_FIXTURE","principal_id":"p1"}`)
+	_, _, err = enq(KindWithdrawContent, `{"principal_kind":"DEV_FIXTURE","principal_id":"p1"}`)
 	wantCode(t, err, "SV006")
-	_, _, err = enq("TEST_KIND", `{"principal_kind":"DEV_FIXTURE","principal_id":"p2"}`)
+	_, _, err = enq(KindOfferLease, `{"principal_kind":"DEV_FIXTURE","principal_id":"p2"}`)
 	wantCode(t, err, "SV006")
 	if got := e.count(`SELECT count(*) FROM broadcaster.intents`); got != 1 {
 		t.Fatalf("%d intents", got)
@@ -319,7 +319,7 @@ func TestHTTPAuthContextDatabaseChecks(t *testing.T) {
 		"number out of range":        {`{"n":1e200000}`, "22003"},
 	} {
 		req, digest := request(name)
-		_, err := e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p", IdempotencyKey: "auth-check", Kind: "TEST_KIND",
+		_, err := e.st.EnqueueHTTP(e.ctx, EnqueueRequest{CallerPrincipal: "p", IdempotencyKey: "auth-check", Kind: KindOfferLease, Object: testOffer,
 			Request: req, RequestDigest: digest, AuthContext: json.RawMessage(c.ctx), SignerAddress: signer, ExpiresIn: time.Hour})
 		if !errors.Is(err, ErrInvalid) || SQLState(err) != c.state {
 			t.Errorf("%s: want ErrInvalid with SQLSTATE %s, got %q %v", name, c.state, SQLState(err), err)
@@ -354,7 +354,7 @@ func TestCapSumAndStallBound(t *testing.T) {
 
 	mustExec(t, e.super, `INSERT INTO broadcaster.intents (caller_principal, idempotency_key, kind, entry, sql_digest,
 			request_json, auth_context, validated, chain_id, state, phase, expires_at, next_attempt_at)
-		SELECT 'p-1', 'k' || g, 'TEST_KIND', 'SQL', sha256(int4send(g)), '{}'::jsonb, '{}'::jsonb, false, b.chain_id,
+		SELECT 'p-1', 'k' || g, 'OFFER_LEASE', 'SQL', sha256(int4send(g)), '{}'::jsonb, '{}'::jsonb, false, b.chain_id,
 			'REQUESTED', 'QUEUED', clock_timestamp() + interval '1 hour', clock_timestamp()
 		FROM generate_series(1, $1::int) g, broadcaster.chain_binding b`, maxStallIntents+1)
 	if _, err := e.st.OpenStall(e.ctx, StallHeight, 10); !errors.Is(err, ErrOpenIntentsBound) {

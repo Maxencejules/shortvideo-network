@@ -125,6 +125,10 @@ func ParseDeadReason(name string) (DeadReason, error) {
 // Reason is the reason of a FAILED intent (plan 9.1), plus
 // ReasonExpiredAwaitingChain, which Present shows for an IN_FLIGHT intent
 // whose expiry passed while its attempt may still commit.
+// ReasonProviderMustResign is the reason of a forwarded provider-signed
+// intent (plan 7.3 P3, owner answer Q2) whose bytes can no longer commit:
+// the worker writes it instead of a retry, because only the provider can
+// sign new bytes; the state machine never produces it.
 type Reason uint8
 
 // Reasons.
@@ -142,16 +146,19 @@ const (
 	ReasonProviderSignatureInvalid
 	ReasonCancelled
 	ReasonExpiredAwaitingChain
+	ReasonProviderMustResign
 )
 
 var reasonNames = []string{"", "EXECUTION_FAILED", "REJECTED", "EXPIRED_NOT_SENT", "EXPIRED_DEAD",
 	"ATTEMPTS_EXHAUSTED", "OBJECT_TAKEN", "OBJECT_STATE_CHANGED", "BUSINESS_ID_TAKEN", "UNAUTHORIZED",
-	"INVALID", "PROVIDER_SIGNATURE_INVALID", "CANCELLED", "EXPIRED_AWAITING_CHAIN"}
+	"INVALID", "PROVIDER_SIGNATURE_INVALID", "CANCELLED", "EXPIRED_AWAITING_CHAIN", "PROVIDER_MUST_RESIGN"}
 
 func (r Reason) String() string { return enumName(reasonNames, uint8(r), "Reason") }
 
 // failure reports whether r is a reason a FAILED intent can carry.
-func (r Reason) failure() bool { return r >= ReasonExecutionFailed && r <= ReasonCancelled }
+func (r Reason) failure() bool {
+	return (r >= ReasonExecutionFailed && r <= ReasonCancelled) || r == ReasonProviderMustResign
+}
 
 // withCode reports whether a FAILED intent with reason r carries the chain
 // code that caused it.
