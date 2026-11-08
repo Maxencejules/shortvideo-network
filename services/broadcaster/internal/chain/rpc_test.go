@@ -98,6 +98,31 @@ func TestStatusChecksChainID(t *testing.T) {
 	}
 }
 
+// TestAppFloor: the read floor of a status is its height minus one (the
+// block the application has certainly committed while the node executes
+// the block it reported), at least 1; an answer at the floor is accepted
+// and an answer two blocks below the status height is still stale.
+func TestAppFloor(t *testing.T) {
+	for _, tc := range []struct{ height, floor int64 }{{1, 1}, {2, 1}, {3, 2}, {100, 99}} {
+		if got := (Status{Height: tc.height}).AppFloor(); got != tc.floor {
+			t.Fatalf("AppFloor of height %d = %d, want %d", tc.height, got, tc.floor)
+		}
+	}
+	n := newFakeNode(t)
+	c := n.client(t)
+	addr := testKey("broadcaster").PubKey().Address()
+	st := Status{Height: 10}
+	n.handle("abci_query", answerQuery(t, pathAccount, 9, 0, accountValue(t, addr, 5, 17), nil))
+	if acc, err := c.Account(context.Background(), addr, st.AppFloor()); err != nil || acc.Height != 9 {
+		t.Fatalf("answer at status height minus one: %+v %v", acc, err)
+	}
+	n.handle("abci_query", answerQuery(t, pathAccount, 8, 0, accountValue(t, addr, 5, 17), nil))
+	var stale *StaleError
+	if _, err := c.Account(context.Background(), addr, st.AppFloor()); !errors.As(err, &stale) || stale.Want != 9 || stale.Got != 8 {
+		t.Fatalf("answer at status height minus two: %v", err)
+	}
+}
+
 // accountValue encodes the Query/Account answer for addr as a node does.
 func accountValue(t *testing.T, addr []byte, number, seq uint64) []byte {
 	t.Helper()

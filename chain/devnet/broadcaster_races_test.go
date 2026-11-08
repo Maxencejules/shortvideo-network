@@ -671,6 +671,17 @@ func phaseSignerConflict(n *bnet, name string) {
 		n.t.Fatalf("phase %s: the foreign transaction: check %s/%d deliver %s/%d %s", name, res.check.Codespace, res.check.Code,
 			res.deliver.Codespace, res.deliver.Code, res.deliver.Log)
 	}
+	// broadcast_tx_commit answers as soon as node 0 publishes the
+	// transaction's event; node 0's indexer service writes the transaction
+	// to the tx index after that, in its own goroutine (CometBFT
+	// state/txindex/indexer_service.go), so a search sent right after the
+	// answer can miss it. The kv indexer writes the hash entry and the
+	// event entries in one batch (state/txindex/kv/kv.go AddBatch): once
+	// /tx finds the hash at the committed height, the acc_seq entry is
+	// written too.
+	if indexed := n.committedTx(res.hash, 30*time.Second); indexed.Height != res.height {
+		n.t.Fatalf("phase %s: node 0 indexed the foreign %X at height %d, committed at %d", name, res.hash, indexed.Height, res.height)
+	}
 	if named := n.accSeqHashes(n.bcastAddr(), seq); len(named) != 1 || !bytes.Equal(named[0], res.hash) {
 		n.t.Fatalf("phase %s: acc_seq %d names %v, want the foreign %X", name, seq, sortedHex(named), res.hash)
 	}

@@ -285,9 +285,14 @@ func start(ctx context.Context, cfg Config, rpc chain.RPC, euid uint32) (*Server
 	if err != nil {
 		return nil, fmt.Errorf("signer: read node status: %w", err)
 	}
-	view, err := policy.ReadGovernance(ctx, client, st.Height)
+	// The governance read must be answered at least at the status's read
+	// floor (chain.Status.AppFloor): the node may report a block its
+	// application is still executing, so an answer one block below the
+	// status height is current. An answer below the floor is refused.
+	view, err := policy.ReadGovernance(ctx, client, st.AppFloor())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("signer: start-up governance read at least at height %d (status height %d minus one): %w",
+			st.AppFloor(), st.Height, err)
 	}
 	if err := policy.CheckKeyRoles(ids, view); err != nil {
 		return nil, err

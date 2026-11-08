@@ -181,6 +181,11 @@ reported by two sources is listed once):
   phase DU's defect needed, the "local clock decides death" row (expiry
   ends a live attempt), and the "no final leases" rule of plan 13.6 (a
   lease table added to the schema).
+- w3fix-*: the Wave 3 flake fix round. Its review found that the full-jitter
+  delay of plan 8.7 was checked only by the RETRY_WAIT-after-a-full-pass
+  assertions that the round replaced (TestEffectCheckBeforeRetry and
+  TestDeadlinePassedRetriesAtTheSameSequence now end the attempt with
+  settleLive); TestBackoffIsFullJitter checks it now.
 - dv-*: the devnet killers of plan 13.7 (see the devnet group).
 
 Plan 13.7 rows and the mutants that cover them (a killer the plan names that
@@ -231,8 +236,9 @@ did not fail on its mutant in this runner's dry runs is not named):
 
 Rows outside plan 13.7: the R3 simulation route (b10-r3-simulate-through-app-path,
 dv-r3-simulate-through-app-path), a concurrent duplicate create refused by
-its own PENDING owner row (b11-replay-after-authorize-dropped) and the
-schema's lack of lease state (b11-lease-table-added).
+its own PENDING owner row (b11-replay-after-authorize-dropped), the
+schema's lack of lease state (b11-lease-table-added) and the full-jitter
+retry delay of plan 8.7 (w3fix-backoff-never-waits).
 
 Candidate mutants of the package and review runners that are not listed,
 and why:
@@ -1737,6 +1743,11 @@ MUTANTS: list[Mutant] = [
         "\t\tout = append(out, atts[n-1].TimeoutHeight+outbox.Sdk4RetryGapBlocks-2)",
         K(WK, "TestSdk4RetryWaitsTwoBlocks"),
         "an sdk 4 retry waits two blocks (DR-10-41)"),
+    one("w3fix-backoff-never-waits", WORKER, WK + "/settle.go",
+        "\treturn time.Duration(rand.Int64N(int64(ceiling) + 1))",
+        "\t_ = rand.Int64N(int64(ceiling) + 1)\n\treturn 0",
+        K(WK, "TestBackoffIsFullJitter"),
+        "the retry delay is drawn from [0, min(cap, base * 2^(n-1))], not always 0 (plan 8.7)"),
     one("w1b8-signed-tx-signer-unchecked", WORKER, WK + "/attempt.go",
         "\tcase !bytes.Equal(own.Signer.Address, s.key.Address) || own.Signer.Sequence != req.Sequence:",
         "\tcase !bytes.Equal(own.Signer.Address, own.Signer.Address):",

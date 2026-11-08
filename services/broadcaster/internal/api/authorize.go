@@ -25,9 +25,11 @@ type authorized struct {
 // request, after the caller's kind and the context's permission were
 // checked: the publication permission (7.4), the object permissions
 // (5.7), the provider signature pre-check (7.3 P1) or the forward checks
-// (7.3 P3). It reads the latest committed header first, so every chain
-// read is answered at that height or later. The worker runs the same
-// checks again before it signs.
+// (7.3 P3). It reads the latest header first, and every chain read is
+// answered at that header's read floor or later (chain.Status.AppFloor:
+// its height minus one, because the node may report a block its
+// application is still executing); a read below the floor is a failed
+// read, 503. The worker runs the same checks again before it signs.
 func (s *Server) authorize(ctx context.Context, caller policy.Caller, auth policy.AuthContext, dec request.Decoded) (authorized, *apiError) {
 	st, err := s.deps.Chain.Status(ctx)
 	if err != nil {
@@ -35,9 +37,9 @@ func (s *Server) authorize(ctx context.Context, caller policy.Caller, auth polic
 	}
 	switch dec.Kind {
 	case policy.KindRegisterContent, policy.KindWithdrawContent:
-		return s.authorizeContent(ctx, caller, auth, dec, st.Height)
+		return s.authorizeContent(ctx, caller, auth, dec, st.AppFloor())
 	case policy.KindOfferLease:
-		return s.authorizeOffer(ctx, caller, auth, dec, st.Height)
+		return s.authorizeOffer(ctx, caller, auth, dec, st.AppFloor())
 	case policy.KindRelayAcceptLease, policy.KindRelayRenewLease, policy.KindRelayEndLease:
 		return s.authorizeRelay(ctx, caller, auth, dec, st)
 	case policy.KindForwardProviderTx:
@@ -62,10 +64,10 @@ func (s *Server) owner(ctx context.Context, caller, contentID string) (*policy.C
 	}, nil
 }
 
-// onChain reads Query/Content for a content version; no record and no
-// tombstone is nil.
-func (s *Server) onChain(ctx context.Context, contentID string, version uint64, height int64) (*contentv1.QueryContentResponse, *apiError) {
-	resp, found, _, err := s.deps.Chain.Content(ctx, contentID, version, height)
+// onChain reads Query/Content for a content version, answered at floor or
+// later; no record and no tombstone is nil.
+func (s *Server) onChain(ctx context.Context, contentID string, version uint64, floor int64) (*contentv1.QueryContentResponse, *apiError) {
+	resp, found, _, err := s.deps.Chain.Content(ctx, contentID, version, floor)
 	if err != nil {
 		return nil, fail(http.StatusServiceUnavailable, codeUnavailable, err)
 	}
@@ -75,13 +77,13 @@ func (s *Server) onChain(ctx context.Context, contentID string, version uint64, 
 	return resp, nil
 }
 
-func (s *Server) authorizeContent(ctx context.Context, caller policy.Caller, auth policy.AuthContext, dec request.Decoded, height int64) (authorized, *apiError) {
+func (s *Server) authorizeContent(ctx context.Context, caller policy.Caller, auth policy.AuthContext, dec request.Decoded, floor int64) (authorized, *apiError) {
 	service := s.signers[policy.ClassService].Address
 	owner, apiErr := s.owner(ctx, caller.Principal, dec.Object.ID)
 	if apiErr != nil {
 		return authorized{}, apiErr
 	}
-	onchain, apiErr := s.onChain(ctx, dec.Object.ID, dec.Object.Version, height)
+	onchain, apiErr := s.onChain(ctx, dec.Object.ID, dec.Object.Version, floor)
 	if apiErr != nil {
 		return authorized{}, apiErr
 	}
@@ -94,7 +96,7 @@ func (s *Server) authorizeContent(ctx context.Context, caller policy.Caller, aut
 	return authorized{signer: service, object: dec.Object}, nil
 }
 
-func (s *Server) authorizeOffer(ctx context.Context, caller policy.Caller, auth policy.AuthContext, dec request.Decoded, height int64) (authorized, *apiError) {
+func (s *Server) authorizeOffer(ctx context.Context, caller policy.Caller, auth policy.AuthContext, dec request.Decoded, floor int64) (authorized, *apiError) {
 	service := s.signers[policy.ClassService].Address
 	msg := dec.WithSigner(service)
 	offer, ok := msg.(interface {
@@ -108,7 +110,7 @@ func (s *Server) authorizeOffer(ctx context.Context, caller policy.Caller, auth 
 	if apiErr != nil {
 		return authorized{}, apiErr
 	}
-	onchain, apiErr := s.onChain(ctx, offer.GetContentId(), offer.GetContentVersion(), height)
+	onchain, apiErr := s.onChain(ctx, offer.GetContentId(), offer.GetContentVersion(), floor)
 	if apiErr != nil {
 		return authorized{}, apiErr
 	}
@@ -137,7 +139,7 @@ func (s *Server) authorizeRelay(ctx context.Context, caller policy.Caller, auth 
 		return authorized{}, policyError(err)
 	}
 	found, err := policy.PrecheckRelay(ctx, s.deps.Chain, policy.RelayInput{
-		Msg: msg, ProviderID: dec.ProviderID, ContentID: dec.ContentID, MinHeight: st.Height, ChainTime: st.Time,
+		Msg: msg, ProviderID: dec.ProviderID, ContentID: dec.ContentID, MinHeight: st.AppFloor(), ChainTime: st.Time,
 		DeadlinePages: s.cfg.DeadlinePages,
 	})
 	if err != nil {
@@ -150,12 +152,12 @@ func (s *Server) authorizeRelay(ctx context.Context, caller policy.Caller, auth 
 }
 
 func (s *Server) authorizeForward(ctx context.Context, caller policy.Caller, auth policy.AuthContext, dec request.Decoded, st chain.Status) (authorized, *apiError) {
-	roles, err := policy.ReadGovernance(ctx, s.deps.Chain, st.Height)
+	roles, err := policy.ReadGovernance(ctx, s.deps.Chain, st.AppFloor())
 	if err != nil {
 		return authorized{}, fail(http.StatusServiceUnavailable, codeUnavailable, err)
 	}
 	fwd, err := policy.CheckForwardedTx(ctx, s.deps.Codec, s.deps.Chain, policy.ForwardInput{
-		Raw: dec.Raw, ProviderID: dec.ProviderID, ContentID: dec.ContentID, ObservedHeight: st.Height,
+		Raw: dec.Raw, ProviderID: dec.ProviderID, ContentID: dec.ContentID, ObservedHeight: st.Height, MinHeight: st.AppFloor(),
 		ChainTime: st.Time, Window: s.cfg.ForwardWindow, DeadlinePages: s.cfg.DeadlinePages, Roles: roles,
 	})
 	if err != nil {

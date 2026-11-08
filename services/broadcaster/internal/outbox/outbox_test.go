@@ -1319,6 +1319,13 @@ func TestLimitsValidate(t *testing.T) {
 			t.Errorf("field %d: a value outside its bounds passed", i)
 		}
 	}
+	// L = 1 is refused: a node reporting height H+1 may not have indexed
+	// block H yet (the CometBFT ordering note at MinIndexingMargin).
+	one := low
+	one.IndexingMargin = 1
+	if err := one.Validate(); err == nil || !strings.Contains(err.Error(), "indexing margin 1") {
+		t.Fatalf("indexing margin 1: %v, want a refusal", err)
+	}
 }
 
 // TestNamesRoundTrip: every stored name parses back to its value; unknown

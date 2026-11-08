@@ -9,6 +9,7 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/chain"
+	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/outbox"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy"
 )
 
@@ -25,7 +26,8 @@ type Numbers struct {
 	// SignerMaxTimeoutOffsetBlocks is K_max: the signer refuses a
 	// timeout_height above its own fresh height plus K_max. K <= K_max.
 	SignerMaxTimeoutOffsetBlocks int64 `json:"signer_max_timeout_offset_blocks"`
-	// IndexingMarginBlocks is L of the dead rule (d3).
+	// IndexingMarginBlocks is L of the dead rule (d3) and the effect
+	// check's index wait; at least outbox.MinIndexingMargin (2).
 	IndexingMarginBlocks int64 `json:"indexing_margin_blocks"`
 	// StallWindowSeconds is T: a stall episode opens when the height has
 	// not advanced for T seconds of database clock.
@@ -104,7 +106,7 @@ type bound struct {
 var numberBounds = map[string]bound{
 	"timeout_offset_blocks":              {chain.MinTimeoutOffset, chain.MaxTimeoutOffset, 40},
 	"signer_max_timeout_offset_blocks":   {chain.MinTimeoutOffset, chain.MaxTimeoutOffset, 1000},
-	"indexing_margin_blocks":             {1, 20, 2},
+	"indexing_margin_blocks":             {outbox.MinIndexingMargin, outbox.MaxIndexingMargin, 2},
 	"stall_window_seconds":               {3, 600, 10},
 	"observer_freshness_polls":           {2, 20, 4},
 	"attempts_per_business_id":           {1, 16, 8},

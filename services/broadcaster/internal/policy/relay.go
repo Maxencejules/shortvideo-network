@@ -43,10 +43,17 @@ type RelayInput struct {
 	// when set they must match the stored offer.
 	ProviderID string
 	ContentID  string
-	// MinHeight is the lowest height a read may be answered at.
+	// MinHeight is the lowest height a read may be answered at: the read
+	// floor of the latest header (chain.Status.AppFloor).
 	MinHeight int64
-	// ChainTime is the latest committed header time (the chain's clock),
-	// for the offer expiry check of an accept.
+	// ChainTime is the time of the latest header the node reported
+	// (chain.Status.Time, the chain's clock), for the offer expiry check
+	// of an accept. It is not the time of the MinHeight block: any block
+	// that can include the message is above that header, and CometBFT
+	// block times strictly increase (cometbft@v0.40.0/state/validation.go:
+	// 132), so it is a lower bound of the inclusion block's time and the
+	// check refuses an offer the chain would find expired. The offer's
+	// expiry is a stored field that the reads do not change.
 	ChainTime time.Time
 	// DeadlinePages is the Query/Deadlines page budget (MinDeadlinePages
 	// to MaxDeadlinePages) for finding an accept's open offer.

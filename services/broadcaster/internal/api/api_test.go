@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/ed25519"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -15,13 +16,16 @@ import (
 	"testing"
 	"time"
 
+	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
+	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api/request"
+	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/chain"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/store"
 )
@@ -541,6 +545,86 @@ func TestRelayPrecheckAndAuthority(t *testing.T) {
 	if long.status != http.StatusUnprocessableEntity || long.code(t) != codeLifetime {
 		t.Fatalf("relay above the local expiry: %d %s", long.status, long.body)
 	}
+}
+
+// TestAuthorizeReadsAtTheApplicationFloor (findings D1/F1 of the goal 11
+// flake review): CometBFT's /status reports a block before the application
+// has committed it, so while block H executes every ABCI query answers at
+// H-1 (chain.Status.AppFloor). The fake chain answers every read one block
+// below its status height 100 and refuses a read below the asked minimum
+// as the chain client does. A register, an offer, a relayed end and a
+// forward must then be accepted (201), and the forward window still counts
+// from the status height; a chain answering two blocks below is still
+// stale: 503 UNAVAILABLE, nothing written.
+func TestAuthorizeReadsAtTheApplicationFloor(t *testing.T) {
+	t.Run("register", func(t *testing.T) {
+		e := newEnv(t)
+		e.ch.lag = 1
+		if a := e.createRegister("reg-1", "video-1"); a.status != http.StatusCreated || e.st.enqueueCount() != 1 {
+			t.Fatalf("register with reads one block below the status height: %d %s", a.status, a.body)
+		}
+	})
+	t.Run("offer", func(t *testing.T) {
+		e := newEnv(t)
+		e.ch.lag = 1
+		e.st.owners["video-1"] = store.ContentOwner{ContentID: "video-1", ContentVersion: 1, CallerPrincipal: "app-fixture",
+			PrincipalID: "creator-7", SignerAddress: serviceAddr, Status: store.OwnerEffective}
+		e.ch.content["video-1/1"] = &contentv1.QueryContentResponse{Content: &contentv1.Content{ContentId: "video-1",
+			ContentVersion: 1, SubmittingHost: serviceAddr}}
+		a := e.do(e.as("app-fixture"), http.MethodPost, "/v1/intents",
+			envelope(t, "OFFER_LEASE", "off-1", 600, authContext("creator-7", "SCHEDULE_HOSTING"), offerRequest("video-1", "offer-1")))
+		if a.status != http.StatusCreated || e.st.enqueueCount() != 1 {
+			t.Fatalf("offer with reads one block below the status height: %d %s", a.status, a.body)
+		}
+	})
+	t.Run("relayed end", func(t *testing.T) {
+		e := newEnv(t)
+		e.ch.lag = 1
+		e.ch.providers["provider-1"] = &providersv1.Provider{ProviderId: "provider-1", Account: bytes.Repeat([]byte{0x44}, 20),
+			SigningPubkey: providerKey().Public().(ed25519.PublicKey), SigningKeyId: "pkey-1",
+			State: providersv1.ProviderState_PROVIDER_STATE_ADMITTED}
+		e.ch.leases["provider-1/video-1"] = &leasesv1.Lease{LeaseId: "lease-1", OfferId: "offer-1", ContentId: "video-1",
+			ContentVersion: 1, ProviderId: "provider-1", TermVersion: 1}
+		a := e.do(e.as("provider-agent"), http.MethodPost, "/v1/intents",
+			envelope(t, "RELAY_END_LEASE", "end-1", 600, authContext("provider-1", "RELAY_PROVIDER_SIGNED"), endRequest(t, providerKey())))
+		if a.status != http.StatusCreated || e.st.enqueueCount() != 1 {
+			t.Fatalf("relayed end with reads one block below the status height: %d %s", a.status, a.body)
+		}
+	})
+	t.Run("forward", func(t *testing.T) {
+		e := newEnv(t)
+		e.ch.lag = 1
+		acct := sdksecp.GenPrivKeyFromSecret([]byte("api test provider account"))
+		addr := acct.PubKey().Address()
+		e.ch.providers["provider-1"] = &providersv1.Provider{ProviderId: "provider-1", Account: addr,
+			SigningPubkey: providerKey().Public().(ed25519.PublicKey), SigningKeyId: "pkey-1",
+			State: providersv1.ProviderState_PROVIDER_STATE_ADMITTED}
+		e.ch.leases["provider-1/video-1"] = &leasesv1.Lease{LeaseId: "lease-1", OfferId: "offer-1", ContentId: "video-1",
+			ContentVersion: 1, ProviderId: "provider-1", TermVersion: 1}
+		e.ch.submitters = []*typesv1.Submitter{{Address: addr, Role: typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER}}
+		e.ch.account = chain.Account{Number: 7, Sequence: 3, Height: 99}
+		post := func(key string, timeout uint64) answer {
+			return e.do(e.as("provider-agent"), http.MethodPost, "/v1/intents", envelope(t, "FORWARD_PROVIDER_TX", key, 600,
+				authContext("provider-1", "RELAY_PROVIDER_SIGNED"), map[string]any{
+					"tx_base64":   base64.StdEncoding.EncodeToString(forwardTx(t, acct, testChainID, timeout)),
+					"provider_id": "provider-1", "content_id": "video-1",
+				}))
+		}
+		if a := post("fwd-at-status", 100); a.status != http.StatusUnprocessableEntity || a.code(t) != string(policy.CodeForwardDeadline) {
+			t.Fatalf("timeout height at the status height 100: %d %s, want FORWARD_DEADLINE (the window counts from the status height)", a.status, a.body)
+		}
+		if a := post("fwd-1", 150); a.status != http.StatusCreated || e.st.enqueueCount() != 1 {
+			t.Fatalf("forward with reads one block below the status height: %d %s", a.status, a.body)
+		}
+	})
+	t.Run("two blocks behind is stale", func(t *testing.T) {
+		e := newEnv(t)
+		e.ch.lag = 2
+		if a := e.createRegister("reg-1", "video-1"); a.status != http.StatusServiceUnavailable || a.code(t) != codeUnavailable ||
+			e.st.enqueueCount() != 0 {
+			t.Fatalf("register with reads two blocks below the status height: %d %s", a.status, a.body)
+		}
+	})
 }
 
 func TestLifetimeBounds(t *testing.T) {

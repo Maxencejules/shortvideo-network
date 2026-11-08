@@ -347,6 +347,28 @@ func (e *env) pass(s *session) {
 	}
 }
 
+// settleLive runs the first step of a key signer pass (signerPass) and
+// stops there: it takes the session's lock and reconciles the signer's
+// live attempt, and does not go on to the due intents. A full pass that
+// ends an attempt with a retry goes on to list the due intents, and starts
+// the next attempt in the same pass when the retry's full-jitter delay,
+// drawn from [0, BackoffBase], has already passed on the database clock.
+// A test whose chain must change between the RETRY_WAIT and the retry
+// ends the attempt with settleLive.
+func (e *env) settleLive(s *session) {
+	e.t.Helper()
+	if err := s.open(e.ctx); err != nil {
+		e.t.Fatalf("%s lock: %v", s.name(), err)
+	}
+	live, err := e.st.LiveAttempt(e.ctx, s.key.Address)
+	if err != nil {
+		e.t.Fatalf("%s live attempt: %v", s.name(), err)
+	}
+	if err := s.reconcileLive(e.ctx, live); err != nil {
+		e.t.Fatalf("%s reconcile live attempt: %v", s.name(), err)
+	}
+}
+
 // fullAuth is a context that grants every permission to the registered
 // creator principal.
 func fullAuth() policy.AuthContext {

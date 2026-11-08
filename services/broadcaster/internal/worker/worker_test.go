@@ -200,7 +200,8 @@ func TestTimeoutBeforeSubmissionResendsSameBytes(t *testing.T) {
 // every broadcast is lost. The attempt stays live until the height reaches
 // timeout_height + L; then the account sequence, read at that height, is at
 // most the attempt's sequence and the attempt is DEAD by (d3), the effect
-// check finds no effect, and the intent waits (RETRY_WAIT). The next
+// check finds no effect, and the intent waits (RETRY_WAIT; the step that
+// ends the attempt reconciles the live attempt only, settleLive). The next
 // attempt reuses the sequence and the business id with a higher
 // timeout_height, and commits once broadcasts pass.
 func TestDeadlinePassedRetriesAtTheSameSequence(t *testing.T) {
@@ -216,7 +217,7 @@ func TestDeadlinePassedRetriesAtTheSameSequence(t *testing.T) {
 		t.Fatalf("attempt %s one block below timeout_height + L", got.Phase)
 	}
 	e.node.blocks(1)
-	e.pass(s)
+	e.settleLive(s)
 	atts := e.attempts(id)
 	if atts[0].Phase != store.AttemptDead || atts[0].DeadReason != string(store.DeadD3DeadlinePassed) {
 		t.Fatalf("attempt %s %s at timeout_height + L, want DEAD D3_DEADLINE_PASSED", atts[0].Phase, atts[0].DeadReason)
@@ -231,6 +232,32 @@ func TestDeadlinePassedRetriesAtTheSameSequence(t *testing.T) {
 	e.node.block()
 	e.pass(s)
 	e.wantState(id, "COMMITTED", "", "")
+}
+
+// TestBackoffIsFullJitter (plan 8.7: backoff with full jitter): the retry
+// delay after n stored attempts is uniform in [0, min(cap, base *
+// 2^(n-1))]. With the test numbers (base 100 ms, cap 1 s), n from 1 to 6
+// covers the doubling and the cap. 2,000 draws per n all lie in that range,
+// and both the lowest and the highest tenth of it are hit (each miss has
+// probability at most 0.9^2000, below 1e-91), so a worker that never waits,
+// always waits the ceiling, or skips the doubling or the cap fails.
+func TestBackoffIsFullJitter(t *testing.T) {
+	w := &Worker{cfg: Config{Numbers: testNumbers()}}
+	base, limit := w.cfg.Numbers.BackoffBase, w.cfg.Numbers.BackoffCap
+	for n := 1; n <= 6; n++ {
+		ceiling := min(base<<(n-1), limit)
+		lowest, highest := time.Duration(1<<62), time.Duration(-1)
+		for i := 0; i < 2000; i++ {
+			d := w.backoff(n)
+			if d < 0 || d > ceiling {
+				t.Fatalf("backoff(%d) = %s, outside [0, %s]", n, d, ceiling)
+			}
+			lowest, highest = min(lowest, d), max(highest, d)
+		}
+		if lowest > ceiling/10 || highest < ceiling-ceiling/10 {
+			t.Fatalf("backoff(%d) drew only [%s, %s] of [0, %s]", n, lowest, highest, ceiling)
+		}
+	}
 }
 
 // TestReplayOpensNewBusinessAttempt (plan 8.6 step 5): the attempt

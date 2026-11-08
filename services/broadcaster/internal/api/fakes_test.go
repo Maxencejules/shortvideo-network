@@ -225,6 +225,21 @@ type fakeChain struct {
 	submitters []*typesv1.Submitter
 	account    chain.Account
 	reads      int
+	// lag is how many blocks below the status height every read answers:
+	// 1 is CometBFT while the reported block executes
+	// (chain.Status.AppFloor). Account reads answer at account.Height.
+	lag int64
+}
+
+// answer returns the height a read answers at and applies the client's
+// height rule (chain.Client): an answer below minHeight is a
+// *chain.StaleError.
+func (c *fakeChain) answer(path string, minHeight int64) (int64, error) {
+	h := c.status.Height - c.lag
+	if h < minHeight {
+		return h, &chain.StaleError{Path: path, Want: minHeight, Got: h}
+	}
+	return h, nil
 }
 
 func newFakeChain(chainID string) *fakeChain {
@@ -243,53 +258,76 @@ func (c *fakeChain) Status(context.Context) (chain.Status, error) {
 	return c.status, c.statusErr
 }
 
-func (c *fakeChain) Content(_ context.Context, id string, version uint64, _ int64) (*contentv1.QueryContentResponse, bool, int64, error) {
+func (c *fakeChain) Content(_ context.Context, id string, version uint64, minHeight int64) (*contentv1.QueryContentResponse, bool, int64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.reads++
+	h, err := c.answer("content", minHeight)
+	if err != nil {
+		return nil, false, h, err
+	}
 	r, ok := c.content[fmt.Sprintf("%s/%d", id, version)]
-	return r, ok, c.status.Height, nil
+	return r, ok, h, nil
 }
 
-func (c *fakeChain) Provider(_ context.Context, id string, _ int64) (*providersv1.Provider, bool, int64, error) {
+func (c *fakeChain) Provider(_ context.Context, id string, minHeight int64) (*providersv1.Provider, bool, int64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.reads++
+	h, err := c.answer("provider", minHeight)
+	if err != nil {
+		return nil, false, h, err
+	}
 	p, ok := c.providers[id]
-	return p, ok, c.status.Height, nil
+	return p, ok, h, nil
 }
 
-func (c *fakeChain) HeldLease(_ context.Context, providerID, contentID string, _ int64) (*leasesv1.Lease, bool, int64, error) {
+func (c *fakeChain) HeldLease(_ context.Context, providerID, contentID string, minHeight int64) (*leasesv1.Lease, bool, int64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.reads++
+	h, err := c.answer("held lease", minHeight)
+	if err != nil {
+		return nil, false, h, err
+	}
 	l, ok := c.leases[providerID+"/"+contentID]
-	return l, ok, c.status.Height, nil
+	return l, ok, h, nil
 }
 
-func (c *fakeChain) Deadlines(context.Context, int64, []byte, uint32, int64) (*leasesv1.QueryDeadlinesResponse, int64, error) {
+func (c *fakeChain) Deadlines(_ context.Context, _ int64, _ []byte, _ uint32, minHeight int64) (*leasesv1.QueryDeadlinesResponse, int64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.reads++
-	return &leasesv1.QueryDeadlinesResponse{Offers: c.offers}, c.status.Height, nil
+	h, err := c.answer("deadlines", minHeight)
+	if err != nil {
+		return nil, h, err
+	}
+	return &leasesv1.QueryDeadlinesResponse{Offers: c.offers}, h, nil
 }
 
-func (c *fakeChain) Account(context.Context, []byte, int64) (chain.Account, error) {
+func (c *fakeChain) Account(_ context.Context, _ []byte, minHeight int64) (chain.Account, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.reads++
 	if c.account.Height == 0 {
 		return chain.Account{}, errors.New("fake chain: no account")
 	}
+	if c.account.Height < minHeight {
+		return chain.Account{}, &chain.StaleError{Path: "account", Want: minHeight, Got: c.account.Height}
+	}
 	return c.account, nil
 }
 
 // Governance answers one page with the submitters.
-func (c *fakeChain) Governance(context.Context, []byte, uint32, int64) (*authorityv1.QueryGovernanceResponse, int64, error) {
+func (c *fakeChain) Governance(_ context.Context, _ []byte, _ uint32, minHeight int64) (*authorityv1.QueryGovernanceResponse, int64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.reads++
-	return &authorityv1.QueryGovernanceResponse{State: &authorityv1.AuthorityState{Submitters: c.submitters}}, c.status.Height, nil
+	h, err := c.answer("governance", minHeight)
+	if err != nil {
+		return nil, h, err
+	}
+	return &authorityv1.QueryGovernanceResponse{State: &authorityv1.AuthorityState{Submitters: c.submitters}}, h, nil
 }
 
 func (c *fakeChain) readCount() int {

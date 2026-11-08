@@ -224,10 +224,41 @@ func New(rpc RPC, codec *Codec) (*Client, error) {
 // Status is the node's latest committed header.
 type Status struct {
 	ChainID string
-	Height  int64
-	// Time is the header time: the chain's clock, not a local one.
+	// Height is the node's block store height, the latest block it saved
+	// (cometbft@v0.40.0/rpc/core/status.go: BlockStore.Height()). The
+	// application may still be executing that block: see AppFloor.
+	Height int64
+	// Time is the header time of block Height: the chain's clock, not a
+	// local one.
 	Time time.Time
 }
+
+// AppFloor is the read floor of s: the highest height the node's
+// application has certainly committed when the node reported s. It is
+// s.Height - 1, and at least 1. Callers pass it as the minimum height of
+// the ABCI queries they make after reading s.
+//
+// CometBFT v0.40.0 saves block H in the block store before it executes
+// and commits it, in consensus (consensus/state.go finalizeCommit:
+// SaveBlock at :1772-1774, ApplyVerifiedBlock at :1812) and in block sync
+// (blocksync/reactor.go: SaveBlock at :677-683, ApplyVerifiedBlock at
+// :688), and saves block H only after block H-1 was committed. So while
+// block H executes, /status reports H and an ABCI query answers at H-1.
+// When the node reports H, its application has committed H-1, and
+// possibly H.
+//
+// What the floor guarantees: a read answered at AppFloor or later shows
+// the state after block H-1 or a later block, so it is at most one block
+// older than the header s names, and never older than the floor. A node
+// whose application answers below the floor (two or more blocks behind
+// its own block store) is still refused (StaleError). At height 1 the
+// floor is 1, which the application may not have committed yet; a query
+// then fails and the caller reads again later.
+//
+// The floor is for reads only. A bound on future heights (a timeout
+// height above the latest block, the forward window) and the dead rule's
+// indexing margin use Height; the header time stays Time.
+func (s Status) AppFloor() int64 { return max(1, s.Height-1) }
 
 // Status reads the latest committed header. A node that reports another
 // chain id than the configured one is refused (ErrChainID), and so is a

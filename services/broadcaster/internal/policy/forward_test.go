@@ -3,6 +3,7 @@ package policy
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"testing"
 
 	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -94,8 +95,8 @@ func (w *world) forwardSpec(t testing.TB) txSpec {
 }
 
 func (w *world) forwardInput(raw []byte) ForwardInput {
-	return ForwardInput{Raw: raw, ProviderID: "provider-1", ObservedHeight: w.chain.height, ChainTime: w.chain.time,
-		Window: 100, DeadlinePages: 10, Roles: w.view()}
+	return ForwardInput{Raw: raw, ProviderID: "provider-1", ObservedHeight: w.chain.height, MinHeight: w.chain.height,
+		ChainTime: w.chain.time, Window: 100, DeadlinePages: 10, Roles: w.view()}
 }
 
 // view is the governance view of the world's submitters.
@@ -215,6 +216,36 @@ func TestForwardedTxChecks(t *testing.T) {
 		for _, bad := range [][]byte{nil, {0x0a}, raw[:len(raw)/2], append(append([]byte(nil), raw...), 0xff)} {
 			_, err := CheckForwardedTx(ctx, codec, c, w.forwardInput(bad))
 			wantCode(t, err, CodeForwardShape)
+		}
+	})
+	t.Run("reads use the read floor, the window the observed height", func(t *testing.T) {
+		// The node reported block height+1 while its application answers
+		// at height (chain.Status.AppFloor): the reads pass at the floor,
+		// and the window still counts from the observed height.
+		in := w.forwardInput(buildTx(t, w.forwardSpec(t)))
+		in.ObservedHeight, in.MinHeight = w.chain.height+1, w.chain.height
+		if _, err := CheckForwardedTx(ctx, codec, c, in); err != nil {
+			t.Fatalf("reads at the floor one block below the observed height: %v", err)
+		}
+		in.MinHeight = in.ObservedHeight
+		var stale *chain.StaleError
+		if _, err := CheckForwardedTx(ctx, codec, c, in); !errors.As(err, &stale) || CodeOf(err) != "" {
+			t.Fatalf("reads answered below the floor: %v, want a StaleError that is not a refusal", err)
+		}
+		spec := w.forwardSpec(t)
+		spec.timeoutHeight = uint64(w.chain.height) + 1
+		in = w.forwardInput(buildTx(t, spec))
+		in.ObservedHeight, in.MinHeight = w.chain.height+1, w.chain.height
+		_, err := CheckForwardedTx(ctx, codec, c, in)
+		wantCode(t, err, CodeForwardDeadline)
+	})
+	t.Run("read floor bounds", func(t *testing.T) {
+		in := w.forwardInput(buildTx(t, w.forwardSpec(t)))
+		for _, floor := range []int64{0, -1, in.ObservedHeight + 1} {
+			in.MinHeight = floor
+			if _, err := CheckForwardedTx(ctx, codec, c, in); err == nil || CodeOf(err) != "" {
+				t.Fatalf("read floor %d with observed height %d: %v", floor, in.ObservedHeight, err)
+			}
 		}
 	})
 	t.Run("window bounds", func(t *testing.T) {

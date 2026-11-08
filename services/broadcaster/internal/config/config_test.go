@@ -202,6 +202,23 @@ func TestNumbersHaveHardBounds(t *testing.T) {
 	}
 }
 
+// TestIndexingMarginOneRefused: indexing_margin_blocks 1 is refused at
+// parse time (a node reporting height H+1 may not have indexed block H yet,
+// outbox.MinIndexingMargin); 2, the lowest allowed value, is accepted and
+// reaches the outbox limits.
+func TestIndexingMarginOneRefused(t *testing.T) {
+	m := serveFile()
+	m["numbers"] = map[string]any{"indexing_margin_blocks": 1}
+	if _, err := parse(t, m); err == nil || !strings.Contains(err.Error(), "indexing_margin_blocks") {
+		t.Fatalf("indexing_margin_blocks 1: %v, want a refusal", err)
+	}
+	m["numbers"] = map[string]any{"indexing_margin_blocks": 2}
+	c := mustParse(t, m)
+	if c.Numbers.IndexingMarginBlocks != 2 || numberBounds["indexing_margin_blocks"].proposed != 2 {
+		t.Fatalf("indexing margin %d, PROPOSED %d", c.Numbers.IndexingMarginBlocks, numberBounds["indexing_margin_blocks"].proposed)
+	}
+}
+
 func TestNumbersRelations(t *testing.T) {
 	cases := map[string]map[string]any{
 		"K above K_max":          {"timeout_offset_blocks": 100, "signer_max_timeout_offset_blocks": 50},

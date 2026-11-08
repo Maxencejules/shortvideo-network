@@ -600,6 +600,34 @@ func TestSignerStartupRefusals(t *testing.T) {
 	})
 }
 
+// TestSignerStartupReadsAtTheApplicationFloor: CometBFT's /status reports
+// a block before the application has committed it, so while block H
+// executes an ABCI query answers at H-1 (chain.Status.AppFloor). The
+// start-up governance read must accept an answer one block below the
+// status height, and still refuse one two blocks below it, naming the
+// floor.
+func TestSignerStartupReadsAtTheApplicationFloor(t *testing.T) {
+	f := newFixture(t)
+	f.node.queryLag = 1
+	logs := &syncBuffer{}
+	f.cfg.Logger = newTestLogger(logs)
+	_, client := f.run(t)
+	if _, err := client.Keys(context.Background()); err != nil {
+		t.Fatalf("signer started on a one-block-behind governance answer but does not serve: %v", err)
+	}
+	if !strings.Contains(logs.String(), `"governance_height":99`) {
+		t.Fatalf("start-up log does not name the governance height 99 (status 100):\n%s", logs.String())
+	}
+
+	g := newFixture(t)
+	g.node.queryLag = 2
+	_, err := start(context.Background(), g.cfg, g.node, uint32(os.Geteuid()))
+	var stale *chain.StaleError
+	if !errors.As(err, &stale) || stale.Want != 99 || stale.Got != 98 || !strings.Contains(err.Error(), "at least at height 99") {
+		t.Fatalf("governance answered two blocks below status height 100: start = %v, want a StaleError for floor 99", err)
+	}
+}
+
 // TestClientRejectsAlteredTransaction runs the client against a signer
 // stand-in that answers with a transaction for another request (another
 // sequence, another message, a wrong hash): the client must refuse each.
