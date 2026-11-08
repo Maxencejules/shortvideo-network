@@ -301,12 +301,12 @@ func finalizeRecovering(node *running, when time.Time, txs ...[]byte) (panicked 
 }
 
 // TestDamagedExpiryLimitHalts: x/leases BeginBlock reads the governed
-// max_expiry_steps (authority key 0x13 || "max_expiry_steps") in every
-// block, through x/authority GovernedLimit, which panics on a stored value
+// max_expiry_steps (x/policy key 0x02 || "max_expiry_steps") in every
+// block, through x/policy GovernedLimit, which panics on a stored value
 // that is not 8 bytes in 1..ceiling. A council GovernedLimitChange sets
 // the value to 2 and a block commits with it. A test-only writer then
 // replaces the stored value in the uncommitted working state, outside any
-// transaction, with a value x/authority never writes: 3 bytes, the 8-byte
+// transaction, with a value x/policy never writes: 3 bytes, the 8-byte
 // value 0, or the 8-byte value ceiling+1. On both nodes the next
 // FinalizeBlock, which carries a valid OfferLease and has nothing due,
 // panics with GovernedLimit's message instead of returning, and a second
@@ -346,7 +346,7 @@ func TestDamagedExpiryLimitHalts(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			want := fmt.Sprintf("authority: governed limit %q is not an 8-byte value in 1..ceiling (%d bytes stored)",
+			want := fmt.Sprintf("policy: governed limit %q is not an 8-byte value in 1..ceiling (%d bytes stored)",
 				msgkit.LimitMaxExpirySteps, len(damage.raw))
 			for i, node := range c.nodes {
 				committed := node.app.LastCommitID()

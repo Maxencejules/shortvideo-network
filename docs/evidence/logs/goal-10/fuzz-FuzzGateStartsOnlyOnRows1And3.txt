@@ -1,0 +1,35 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzGateStartsOnlyOnRows1And3\$\'\ -fuzztime=60s\ -count=1\ ./chain/upgrade/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \'new\ or\ changed\ files\ outside\ docs/evidence\ after\ the\ run:\'\;\ git\ status\ --porcelain\ --untracked-files=all\ \|\ grep\ -v\ \'\ docs/evidence/\'\;\ echo\ \'\(end\ of\ list\)\'\;\ exit\ \$s
+DATE 2026-11-07T23:58:51Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+loadavg before: 9.82 6.38 5.30 1/185 19292
+fuzz: elapsed: 0s, gathering baseline coverage: 0/81 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 71/81 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 81/81 completed, now fuzzing with 4 workers
+fuzz: elapsed: 6s, execs: 12846 (4258/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 9s, execs: 27807 (4985/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 12s, execs: 43318 (5172/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 15s, execs: 58135 (4940/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 18s, execs: 72957 (4940/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 21s, execs: 87434 (4825/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 24s, execs: 102786 (5117/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 27s, execs: 117860 (5025/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 30s, execs: 133554 (5231/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 33s, execs: 148577 (5007/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 36s, execs: 164569 (5330/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 39s, execs: 179123 (4852/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 42s, execs: 194055 (4970/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 45s, execs: 208283 (4750/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 48s, execs: 223536 (5084/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 51s, execs: 238778 (5081/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 54s, execs: 254232 (5151/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 57s, execs: 269156 (4974/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 1m0s, execs: 283084 (4644/sec), new interesting: 0 (total: 81)
+fuzz: elapsed: 1m0s, execs: 283084 (0/sec), new interesting: 0 (total: 81)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade	60.180s
+loadavg after: 6.36 6.01 5.24 1/186 19434
+new or changed files outside docs/evidence after the run:
+(end of list)
+EXIT:0

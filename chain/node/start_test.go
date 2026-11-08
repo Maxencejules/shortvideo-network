@@ -1,15 +1,22 @@
 package node
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	dbm "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/log/v2"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
+
 	"github.com/Maxencejules/shortvideo-network/chain/app"
+	"github.com/Maxencejules/shortvideo-network/chain/upgrade"
 )
 
 // TestNodeFileQueryGasLimit: query_gas_limit in node.json reaches the app
@@ -47,5 +54,29 @@ func TestNodeFileQueryGasLimit(t *testing.T) {
 	}
 	if _, err := loadNodeFile(t.TempDir()); err == nil {
 		t.Fatal("a home without node.json loaded")
+	}
+}
+
+// TestStartWithReadsTheHomeWithUpgradeHandlers: StartWith no longer refuses
+// a binary that declares upgrade handlers; it reads the home first with or
+// without handlers (the home here has no node.json, which StartWith reports
+// as a file error). TestStartWithPassesUpgradeHandlers shows the handlers
+// reach the application.
+func TestStartWithReadsTheHomeWithUpgradeHandlers(t *testing.T) {
+	home := t.TempDir()
+	handler := func(ctx sdk.Context, from module.VersionMap, migrate upgrade.Migrate) (module.VersionMap, error) {
+		return migrate(ctx, from)
+	}
+	for name, start := range map[string]func() error{
+		"Start":     func() error { return Start(home) },
+		"StartWith": func() error { return StartWith(Config{Home: home}) },
+		"StartWith and handler": func() error {
+			return StartWith(Config{Home: home, Upgrades: []upgrade.Upgrade{{Name: "v2", FromAppVersion: 1, ToAppVersion: 2, Handler: handler}}})
+		},
+	} {
+		err := start()
+		if !errors.Is(err, fs.ErrNotExist) || !strings.Contains(err.Error(), "node.json") {
+			t.Fatalf("%s on a home without node.json: %v", name, err)
+		}
 	}
 }

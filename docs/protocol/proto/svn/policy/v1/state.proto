@@ -24,8 +24,41 @@ message SafetyCaps {
   uint32 safety_max_open_offers_per_provider = 7;
 }
 
+// Schema version 2. The value in force for one governed limit key.
+message GovernedLimitValue {
+  string limit_key = 1;
+  uint64 value = 2;
+}
+
+// Schema version 2. A governed limit change that ExecuteChange scheduled.
+// A committed block at activation_height applies it. policy_version is the
+// policy version that execute produced.
+message PendingLimitChange {
+  string limit_key = 1;
+  uint64 value = 2;
+  uint64 activation_height = 3;
+  string proposal_id = 4;
+  uint64 policy_version = 5;
+}
+
+// Schema version 2. The pending upgrade plan that an executed
+// SoftwareUpgradeChange stored.
+message UpgradePlan {
+  string name = 1;
+  uint64 height = 2;
+  svn.types.v1.Digest release_digest = 3;
+  string proposal_id = 4;
+}
+
 message PolicyState {
   uint64 policy_version = 1;
   SafetyCaps safety_caps = 2;
   repeated svn.types.v1.BlockedDecisionParameter blocked_decisions = 3;
+  // Schema version 2. Query fields: the governed values in force, the
+  // scheduled changes, the pending upgrade plan, and the application
+  // version. Genesis carries no governed value, scheduled change, or plan.
+  repeated GovernedLimitValue governed_limits = 4;
+  repeated PendingLimitChange pending_limit_changes = 5;
+  UpgradePlan upgrade_plan = 6;
+  uint64 app_version = 7;
 }

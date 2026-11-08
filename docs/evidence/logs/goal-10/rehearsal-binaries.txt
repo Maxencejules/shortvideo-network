@@ -1,0 +1,15 @@
+COMMAND bash -c grep\ -a\ -E\ \'\^phase=\(binary\|devnet-start\)\'\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-10/docs/evidence/logs/goal-10/devnet-upgrade.txt
+DATE 2026-11-07T22:45:15Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+phase=binary name=svnd-b1 tags="" sha256=3e25db0b52c04a395cbc2bdfcc1b631711641b676ea84f9a68ff55f83a3401bb app_version=1 version_line="upgrades none"
+phase=binary name=svnd-b2 tags="svn_rehearsal" sha256=d8614c1b75df86eeecba481a193a364793d2efbe79c66817a49cbee327098f9b app_version=2 version_line="upgrade rehearsal-1 from_app_version 1 to_app_version 2"
+phase=devnet-start chain_id=shortvideo-dev-e8247acb3a7822f1 genesis_sha256=fd7d4efa62b3d01d5c40f4bd6fded2b1fd632809644271cbde22763c14e0099b council_delay_seconds=0 label="single-machine four-process devnet (not independent operators)"
+phase=binary name=svnd-b1 tags="" sha256=3e25db0b52c04a395cbc2bdfcc1b631711641b676ea84f9a68ff55f83a3401bb app_version=1 version_line="upgrades none"
+phase=binary name=svnd-b2 tags="svn_rehearsal" sha256=d8614c1b75df86eeecba481a193a364793d2efbe79c66817a49cbee327098f9b app_version=2 version_line="upgrade rehearsal-1 from_app_version 1 to_app_version 2"
+phase=binary name=svnd-b2-bad tags="svn_rehearsal_bad" sha256=da7ede83d68fcb6a0828d9c6cce6ae493dce7f9a6ecb91b5aaf0c36114a150cc app_version=2 version_line="upgrade rehearsal-1 from_app_version 1 to_app_version 2"
+phase=devnet-start chain_id=shortvideo-dev-74c4dd3ae635e536 genesis_sha256=63b06740b181eee091ea1452f1f3ff032ec10229fa40940acba35835249b76d7 council_delay_seconds=0 label="single-machine four-process devnet (not independent operators)"
+phase=binary name=svnd-b1 tags="" sha256=3e25db0b52c04a395cbc2bdfcc1b631711641b676ea84f9a68ff55f83a3401bb app_version=1 version_line="upgrades none"
+phase=devnet-start chain_id=shortvideo-dev-a44bbf3b04e0989c genesis_sha256=46718ce847748b5326ff20a742a660e7cf04dbb0638b7bedf57588b1135a6d9d council_delay_seconds=6 label="single-machine four-process devnet (not independent operators)"
+EXIT:0

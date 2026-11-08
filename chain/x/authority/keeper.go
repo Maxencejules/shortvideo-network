@@ -19,14 +19,19 @@ const ModuleName = "authority"
 // key change when its activation point is due. No other module returns
 // validator updates.
 //
-// providers and content are the council hooks (WithRegistry). peers joins
-// the business-id ledgers of the other modules (WithPeers). Both are wiring,
-// not state: a Keeper value without them still reads and writes authority
-// state, and executes registry payloads as MALFORMED.
+// providers and content are the council registry hooks (WithRegistry);
+// policy is x/policy, the store of governed values and upgrade plans
+// (WithPolicy); accounts creates the account of a new council seat key
+// (WithAccounts). peers joins the business-id ledgers of the other modules
+// (WithPeers). All are wiring, not state: a Keeper value without them still
+// reads and writes authority state, executes the payloads of a missing hook
+// as MALFORMED, and refuses Query/Governance without a policy keeper.
 type Keeper struct {
 	storeKey  *storetypes.KVStoreKey
 	providers ProviderAdmission
 	content   ContentRemoval
+	policy    PolicyKeeper
+	accounts  AccountKeeper
 	peers     *msgkit.Peers
 }
 

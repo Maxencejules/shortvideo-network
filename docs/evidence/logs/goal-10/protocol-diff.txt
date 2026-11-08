@@ -1,0 +1,245 @@
+COMMAND bash -c git\ diff\ --stat\ ff951fc334cd15fee37cd62c6d32422a3bf1b695..HEAD\ --\ docs/protocol\ proto\ docs/evidence/goal-02\;\ echo\;\ echo\ \'files\ that\ must\ stay\ byte-equal\ \(empty\ diff\ expected\):\'\;\ git\ diff\ --exit-code\ --stat\ ff951fc334cd15fee37cd62c6d32422a3bf1b695..HEAD\ --\ docs/protocol/fixtures/vectors.json\ docs/evidence/goal-02/spec_machine.py\ docs/evidence/goal-02/cases.py\ docs/evidence/goal-02/jcs.py\ docs/evidence/goal-02/go\ docs/evidence/goal-02/ts\;\ a=\$\?\;\ echo\ \"byte-equal\ check\ exit\ \$a\"\;\ echo\;\ echo\ \'goal\ 02\ checker\ and\ bounds\ changes:\'\;\ git\ diff\ ff951fc334cd15fee37cd62c6d32422a3bf1b695..HEAD\ --\ docs/evidence/goal-02/check_protocol.py\ docs/protocol/bounds.json\;\ exit\ \$a
+DATE 2026-11-07T22:19:51Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+ docs/evidence/goal-02/check_protocol.py          |  31 ++
+ docs/protocol/bounds.json                        |   2 +-
+ docs/protocol/proto/svn/authority/v1/query.proto |   4 +
+ docs/protocol/proto/svn/authority/v1/tx.proto    |  35 +++
+ docs/protocol/proto/svn/policy/v1/state.proto    |  33 ++
+ proto/gen/python/svn/authority/v1/query_pb2.py   |  10 +-
+ proto/gen/python/svn/authority/v1/tx_pb2.py      |  54 ++--
+ proto/gen/python/svn/policy/v1/state_pb2.py      |  12 +-
+ proto/svn/authority/v1/query.pb.go               |  42 ++-
+ proto/svn/authority/v1/tx.pb.go                  | 368 +++++++++++++++++++----
+ proto/svn/policy/v1/state.pb.go                  | 302 +++++++++++++++++--
+ 11 files changed, 767 insertions(+), 126 deletions(-)
+
+files that must stay byte-equal (empty diff expected):
+byte-equal check exit 0
+
+goal 02 checker and bounds changes:
+diff --git a/docs/evidence/goal-02/check_protocol.py b/docs/evidence/goal-02/check_protocol.py
+index 98bf39b..fe6ad0b 100644
+--- a/docs/evidence/goal-02/check_protocol.py
++++ b/docs/evidence/goal-02/check_protocol.py
+@@ -93,6 +93,9 @@ PINNED_ONEOF_MEMBERS = (
+     "admit_provider",
+     "disable_provider",
+     "force_withdraw",
++    "software_upgrade",
++    "cancel_upgrade",
++    "council_seat",
+ )
+ PINNED_RPCS = (
+     "RegisterProvider",
+@@ -233,11 +236,13 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'enum_value:SUBMITTER_ROLE_UNSPECIFIED',
+     'field:account',
+     'field:activation',
++    'field:activation_height',
+     'field:address',
+     'field:admit_provider',
+     'field:admitted_capacity_bytes',
+     'field:algorithm',
+     'field:allow_devnet_test_parameters',
++    'field:app_version',
+     'field:approved',
+     'field:approved_council',
+     'field:approved_policy',
+@@ -251,6 +256,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'field:blocked_decisions',
+     'field:business_id',
+     'field:byte_count',
++    'field:cancel_upgrade',
+     'field:canonical_profile_version',
+     'field:chain_id',
+     'field:committed_unix_seconds',
+@@ -259,6 +265,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'field:content_id',
+     'field:content_version',
+     'field:contents',
++    'field:council_seat',
+     'field:current_epoch',
+     'field:current_key_signature',
+     'field:deadline_unix_seconds',
+@@ -282,6 +289,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'field:generation',
+     'field:genesis_unix_seconds',
+     'field:governed_limit',
++    'field:governed_limits',
+     'field:height',
+     'field:history_erased',
+     'field:hosting_intent',
+@@ -299,6 +307,8 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'field:manifest_sha256',
+     'field:message_type',
+     'field:mint_module_enabled',
++    'field:name',
++    'field:new_public_key',
+     'field:new_signing_key_id',
+     'field:new_signing_pubkey',
+     'field:next_page_key',
+@@ -316,6 +326,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'field:parameter_key',
+     'field:payload',
+     'field:payload_digest',
++    'field:pending_limit_changes',
+     'field:pending_validator_power',
+     'field:permissionless_validator_creation',
+     'field:policy',
+@@ -334,6 +345,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'field:quorum_loss',
+     'field:reason_digest',
+     'field:records',
++    'field:release_digest',
+     'field:released_bytes',
+     'field:reservation_delta',
+     'field:reservation_held',
+@@ -361,6 +373,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'field:signing_key_id',
+     'field:signing_pubkey',
+     'field:slashing_module_enabled',
++    'field:software_upgrade',
+     'field:staking_module_enabled',
+     'field:start_unix_seconds',
+     'field:state',
+@@ -372,17 +385,20 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'field:tombstones',
+     'field:tx_hash',
+     'field:unix_seconds',
++    'field:upgrade_plan',
+     'field:validator_power',
+     'field:validators',
+     'field:value',
+     'field:value_version',
+     'json_name:account',
+     'json_name:activation',
++    'json_name:activationHeight',
+     'json_name:address',
+     'json_name:admitProvider',
+     'json_name:admittedCapacityBytes',
+     'json_name:algorithm',
+     'json_name:allowDevnetTestParameters',
++    'json_name:appVersion',
+     'json_name:approved',
+     'json_name:approvedCouncil',
+     'json_name:approvedPolicy',
+@@ -396,6 +412,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'json_name:blockedDecisions',
+     'json_name:businessId',
+     'json_name:byteCount',
++    'json_name:cancelUpgrade',
+     'json_name:canonicalProfileVersion',
+     'json_name:chainId',
+     'json_name:committedUnixSeconds',
+@@ -404,6 +421,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'json_name:contentId',
+     'json_name:contentVersion',
+     'json_name:contents',
++    'json_name:councilSeat',
+     'json_name:currentEpoch',
+     'json_name:currentKeySignature',
+     'json_name:deadlineUnixSeconds',
+@@ -427,6 +445,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'json_name:generation',
+     'json_name:genesisUnixSeconds',
+     'json_name:governedLimit',
++    'json_name:governedLimits',
+     'json_name:height',
+     'json_name:historyErased',
+     'json_name:hostingIntent',
+@@ -444,6 +463,8 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'json_name:manifestSha256',
+     'json_name:messageType',
+     'json_name:mintModuleEnabled',
++    'json_name:name',
++    'json_name:newPublicKey',
+     'json_name:newSigningKeyId',
+     'json_name:newSigningPubkey',
+     'json_name:nextPageKey',
+@@ -461,6 +482,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'json_name:parameterKey',
+     'json_name:payload',
+     'json_name:payloadDigest',
++    'json_name:pendingLimitChanges',
+     'json_name:pendingValidatorPower',
+     'json_name:permissionlessValidatorCreation',
+     'json_name:policy',
+@@ -479,6 +501,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'json_name:quorumLoss',
+     'json_name:reasonDigest',
+     'json_name:records',
++    'json_name:releaseDigest',
+     'json_name:releasedBytes',
+     'json_name:reservationDelta',
+     'json_name:reservationHeld',
+@@ -506,6 +529,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'json_name:signingKeyId',
+     'json_name:signingPubkey',
+     'json_name:slashingModuleEnabled',
++    'json_name:softwareUpgrade',
+     'json_name:stakingModuleEnabled',
+     'json_name:startUnixSeconds',
+     'json_name:state',
+@@ -517,6 +541,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'json_name:tombstones',
+     'json_name:txHash',
+     'json_name:unixSeconds',
++    'json_name:upgradePlan',
+     'json_name:validatorPower',
+     'json_name:validators',
+     'json_name:value',
+@@ -526,9 +551,11 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'message:AppGenesis',
+     'message:AuthorityState',
+     'message:BlockedDecisionParameter',
++    'message:CancelUpgradeChange',
+     'message:Content',
+     'message:ContentRegistered',
+     'message:ContentWithdrawn',
++    'message:CouncilSeatChange',
+     'message:DevnetTestParameter',
+     'message:DevnetTestSeat',
+     'message:Digest',
+@@ -539,6 +566,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'message:ForceWithdrawChange',
+     'message:GenesisState',
+     'message:GovernedLimitChange',
++    'message:GovernedLimitValue',
+     'message:InnerSignature',
+     'message:Lease',
+     'message:LeaseAccepted',
+@@ -576,6 +604,7 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'message:Offer',
+     'message:PageRequest',
+     'message:PageResponse',
++    'message:PendingLimitChange',
+     'message:PendingValidatorPower',
+     'message:PolicyChanged',
+     'message:PolicyState',
+@@ -604,8 +633,10 @@ PINNED_DESCRIPTOR_NAMES: tuple[str, ...] = (
+     'message:QueryProvidersResponse',
+     'message:ReconciliationRecord',
+     'message:SafetyCaps',
++    'message:SoftwareUpgradeChange',
+     'message:Submitter',
+     'message:Tombstone',
++    'message:UpgradePlan',
+     'message:ValidatorPower',
+     'message:ValidatorPowerChange',
+     'oneof:change',
+diff --git a/docs/protocol/bounds.json b/docs/protocol/bounds.json
+index 6db823e..0fcb313 100644
+--- a/docs/protocol/bounds.json
++++ b/docs/protocol/bounds.json
+@@ -1,6 +1,6 @@
+ {
+   "protocol": "svn-protocol-v0",
+-  "schema_version": 1,
++  "schema_version": 2,
+   "canonical_profile": "SVN-JCS-1",
+   "canonical_profile_version": 1,
+   "digest_algorithm": "SHA-256",
+EXIT:0

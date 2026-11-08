@@ -1,0 +1,360 @@
+COMMAND go test -count=1 -v ./chain/x/leases/difftest/
+DATE 2026-11-07T22:26:55Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+=== RUN   TestCapacityBoundaryAgainstSpecMachine
+    capacity_test.go:102: accept l0: ok, reserved 1000 of 2001 (spec_machine.py ok)
+    capacity_test.go:102: accept l1: ok, reserved 2000 of 2001 (spec_machine.py ok)
+    capacity_test.go:102: accept to exactly the capacity: ok, reserved 2001 of 2001 (spec_machine.py ok)
+    capacity_test.go:102: accept one byte over the capacity: ERROR_CODE_CAPACITY, reserved 2001 of 2001 (spec_machine.py ERROR_CODE_CAPACITY)
+    capacity_test.go:102: offer one byte over the capacity: ERROR_CODE_CAPACITY, reserved 2001 of 2001 (spec_machine.py ERROR_CODE_CAPACITY)
+    capacity_test.go:102: renewal at full capacity: ok, reserved 2001 of 2001 (spec_machine.py ok)
+    capacity_test.go:102: end l0: ok, reserved 1001 of 2001 (spec_machine.py ok)
+    capacity_test.go:102: the rejected offer, resent: ok, reserved 1001 of 2001 (spec_machine.py ok)
+    capacity_test.go:102: the rejected acceptance, resent: ok, reserved 1002 of 2001 (spec_machine.py ok)
+--- PASS: TestCapacityBoundaryAgainstSpecMachine (0.08s)
+=== RUN   TestDifferentialAgainstSpecMachine
+=== RUN   TestDifferentialAgainstSpecMachine/default
+=== RUN   TestDifferentialAgainstSpecMachine/tight
+=== RUN   TestDifferentialAgainstSpecMachine/near-max
+=== RUN   TestDifferentialAgainstSpecMachine/no-dec005
+=== NAME  TestDifferentialAgainstSpecMachine
+    diff_test.go:79: 256 sequences, 22862 compared steps, 0 divergences
+--- PASS: TestDifferentialAgainstSpecMachine (37.32s)
+    --- PASS: TestDifferentialAgainstSpecMachine/default (10.12s)
+    --- PASS: TestDifferentialAgainstSpecMachine/tight (10.14s)
+    --- PASS: TestDifferentialAgainstSpecMachine/near-max (9.73s)
+    --- PASS: TestDifferentialAgainstSpecMachine/no-dec005 (7.33s)
+=== RUN   TestDifferentialCoverage
+    diff_test.go:89: differential coverage (113 classes):
+          AcceptLease CAPACITY                                             86
+          AcceptLease DUPLICATE_ID(lease)                                 106
+          AcceptLease DUPLICATE_ID(pair)                                  136
+          AcceptLease EXPIRED(D-3)                                        229
+          AcceptLease EXPIRED(backlog)                                     22
+          AcceptLease FORBIDDEN(account)                                   45
+          AcceptLease FORBIDDEN(provider state)                           278
+          AcceptLease FORBIDDEN(role)                                     180
+          AcceptLease NOT_FOUND                                          1774
+          AcceptLease OVERFLOW                                             20
+          AcceptLease REPLAY                                               43
+          AcceptLease UNAUTHORIZED(mutated terms)                          97
+          AcceptLease UNAUTHORIZED(other provider key)                     75
+          AcceptLease UNAUTHORIZED(retired key)                            10
+          AcceptLease UNAUTHORIZED(retry)                                   4
+          AcceptLease UNAUTHORIZED(role)                                  134
+          AcceptLease UNAUTHORIZED(service key, own key id)                63
+          AcceptLease UNAUTHORIZED(service key, provider key id)           81
+          AcceptLease WRONG_DOMAIN                                        191
+          AcceptLease idempotent                                           53
+          AcceptLease ok                                                 1149
+          Block backlog left                                               41
+          Block drained                                                   402
+          Block idle                                                     1418
+          CouncilAdmit FORBIDDEN                                          113
+          CouncilAdmit NOT_FOUND                                           20
+          CouncilAdmit ok                                                 653
+          CouncilDisable CONFLICT                                          14
+          CouncilDisable NOT_FOUND                                          5
+          CouncilDisable ok                                               164
+          CouncilForceWithdraw NOT_FOUND                                    7
+          CouncilForceWithdraw STALE_VERSION                               22
+          CouncilForceWithdraw WITHDRAWN                                   13
+          CouncilForceWithdraw ok                                         176
+          DrainProvider CONFLICT                                           17
+          DrainProvider FORBIDDEN                                          13
+          DrainProvider NOT_FOUND                                           8
+          DrainProvider idempotent                                          7
+          DrainProvider ok                                                167
+          EndLease FORBIDDEN                                               98
+          EndLease MALFORMED                                               21
+          EndLease NOT_FOUND                                              291
+          EndLease REPLAY                                                  23
+          EndLease UNAUTHORIZED                                            69
+          EndLease UNDERFLOW(after expiry)                                 83
+          EndLease UNDERFLOW(repeat)                                      252
+          EndLease UNKNOWN_FIELD                                           12
+          EndLease WRONG_DOMAIN                                            25
+          EndLease idempotent                                              19
+          EndLease ok                                                     665
+          EndLease ok(provider not admitted)                               75
+          OfferLease BOUNDS(D-5)                                           54
+          OfferLease BOUNDS(provider cap)                                 105
+          OfferLease CAPACITY                                             370
+          OfferLease CONFLICT                                             123
+          OfferLease DECISION_BLOCKED                                    1638
+          OfferLease DUPLICATE_ID(D-4)                                     67
+          OfferLease DUPLICATE_ID(open id)                                 69
+          OfferLease DUPLICATE_ID(pair)                                   441
+          OfferLease EXPIRED                                              131
+          OfferLease FORBIDDEN                                            607
+          OfferLease INTEGRITY                                            434
+          OfferLease MALFORMED                                              9
+          OfferLease MALFORMED(huge int)                                  215
+          OfferLease NOT_FOUND                                            246
+          OfferLease OUT_OF_RANGE                                         164
+          OfferLease OVERFLOW                                             148
+          OfferLease REPLAY                                                66
+          OfferLease STALE_VERSION                                         60
+          OfferLease UNAUTHORIZED                                         138
+          OfferLease WITHDRAWN                                            180
+          OfferLease idempotent                                           108
+          OfferLease ok                                                  2220
+          RegisterContent DUPLICATE_ID                                     12
+          RegisterContent idempotent                                        1
+          RegisterContent ok                                             1415
+          RegisterProvider DUPLICATE_ID                                     1
+          RegisterProvider idempotent                                       6
+          RegisterProvider ok                                             823
+          RenewLease BOUNDS                                                14
+          RenewLease CONFLICT(bytes)                                       28
+          RenewLease CONFLICT(state)                                      419
+          RenewLease EXPIRED(D-2)                                          17
+          RenewLease FORBIDDEN                                             66
+          RenewLease MALFORMED                                              3
+          RenewLease MALFORMED(huge int)                                   76
+          RenewLease NOT_FOUND(evidence)                                   16
+          RenewLease NOT_FOUND(lease)                                     331
+          RenewLease OUT_OF_RANGE                                          37
+          RenewLease REPLAY                                                18
+          RenewLease STALE_VERSION                                         35
+          RenewLease UNAUTHORIZED                                         195
+          RenewLease WITHDRAWN                                             64
+          RenewLease WRONG_DOMAIN                                          71
+          RenewLease idempotent                                            13
+          RenewLease ok                                                   580
+          RenewLease ok(provider not admitted)                             52
+          RotateProviderKey CONFLICT                                       30
+          RotateProviderKey NOT_FOUND                                      13
+          RotateProviderKey STALE_VERSION                                  75
+          RotateProviderKey UNAUTHORIZED                                    7
+          RotateProviderKey ok                                            301
+          UpdateProvider CAPACITY                                         123
+          UpdateProvider FORBIDDEN                                         51
+          UpdateProvider NOT_FOUND                                         16
+          UpdateProvider idempotent                                        12
+          UpdateProvider ok                                               380
+          WithdrawContent FORBIDDEN                                        57
+          WithdrawContent NOT_FOUND                                        24
+          WithdrawContent STALE_VERSION                                    19
+          WithdrawContent WITHDRAWN                                         7
+          WithdrawContent idempotent                                       12
+          WithdrawContent ok                                              307
+--- PASS: TestDifferentialCoverage (0.00s)
+=== RUN   TestFuzzReachesStates
+    diff_test.go:150: fuzz seed corpus (15 inputs) coverage (93 classes):
+          AcceptLease CAPACITY                                             15
+          AcceptLease DUPLICATE_ID(lease)                                   9
+          AcceptLease DUPLICATE_ID(pair)                                   19
+          AcceptLease EXPIRED(D-3)                                         13
+          AcceptLease EXPIRED(backlog)                                      2
+          AcceptLease FORBIDDEN(account)                                    6
+          AcceptLease FORBIDDEN(provider state)                            13
+          AcceptLease FORBIDDEN(role)                                       7
+          AcceptLease NOT_FOUND                                            81
+          AcceptLease OVERFLOW                                              1
+          AcceptLease REPLAY                                                2
+          AcceptLease UNAUTHORIZED(mutated terms)                           9
+          AcceptLease UNAUTHORIZED(other provider key)                      9
+          AcceptLease UNAUTHORIZED(retired key)                             1
+          AcceptLease UNAUTHORIZED(role)                                    8
+          AcceptLease UNAUTHORIZED(service key, own key id)                 4
+          AcceptLease UNAUTHORIZED(service key, provider key id)            3
+          AcceptLease WRONG_DOMAIN                                         10
+          AcceptLease idempotent                                            2
+          AcceptLease ok                                                   75
+          Block backlog left                                                6
+          Block drained                                                    14
+          Block idle                                                       61
+          CouncilAdmit FORBIDDEN                                           10
+          CouncilAdmit ok                                                  38
+          CouncilDisable ok                                                 6
+          CouncilForceWithdraw STALE_VERSION                                1
+          CouncilForceWithdraw ok                                           9
+          DrainProvider FORBIDDEN                                           2
+          DrainProvider NOT_FOUND                                           2
+          DrainProvider ok                                                  5
+          EndLease FORBIDDEN                                                3
+          EndLease MALFORMED                                                1
+          EndLease NOT_FOUND                                               10
+          EndLease REPLAY                                                   1
+          EndLease UNAUTHORIZED                                             2
+          EndLease UNDERFLOW(after expiry)                                  4
+          EndLease UNDERFLOW(repeat)                                       11
+          EndLease UNKNOWN_FIELD                                            1
+          EndLease WRONG_DOMAIN                                             2
+          EndLease idempotent                                               1
+          EndLease ok                                                      32
+          EndLease ok(provider not admitted)                                2
+          OfferLease BOUNDS(D-5)                                            1
+          OfferLease BOUNDS(provider cap)                                  11
+          OfferLease CAPACITY                                              15
+          OfferLease CONFLICT                                              12
+          OfferLease DECISION_BLOCKED                                      65
+          OfferLease DUPLICATE_ID(D-4)                                      5
+          OfferLease DUPLICATE_ID(open id)                                  7
+          OfferLease DUPLICATE_ID(pair)                                    25
+          OfferLease EXPIRED                                                9
+          OfferLease FORBIDDEN                                             17
+          OfferLease INTEGRITY                                             15
+          OfferLease MALFORMED(huge int)                                    4
+          OfferLease NOT_FOUND                                             11
+          OfferLease OUT_OF_RANGE                                          12
+          OfferLease OVERFLOW                                              18
+          OfferLease REPLAY                                                 5
+          OfferLease STALE_VERSION                                          5
+          OfferLease UNAUTHORIZED                                           8
+          OfferLease WITHDRAWN                                              4
+          OfferLease idempotent                                             5
+          OfferLease ok                                                   133
+          RegisterContent ok                                               79
+          RegisterProvider ok                                              44
+          RenewLease BOUNDS                                                 3
+          RenewLease CONFLICT(bytes)                                        3
+          RenewLease CONFLICT(state)                                       25
+          RenewLease EXPIRED(D-2)                                           2
+          RenewLease FORBIDDEN                                              5
+          RenewLease MALFORMED(huge int)                                    4
+          RenewLease NOT_FOUND(evidence)                                    1
+          RenewLease NOT_FOUND(lease)                                      11
+          RenewLease OUT_OF_RANGE                                           2
+          RenewLease STALE_VERSION                                          1
+          RenewLease UNAUTHORIZED                                          10
+          RenewLease WITHDRAWN                                              2
+          RenewLease WRONG_DOMAIN                                           6
+          RenewLease idempotent                                             3
+          RenewLease ok                                                    53
+          RenewLease ok(provider not admitted)                              1
+          RotateProviderKey NOT_FOUND                                       1
+          RotateProviderKey UNAUTHORIZED                                    1
+          RotateProviderKey ok                                             13
+          UpdateProvider CAPACITY                                           7
+          UpdateProvider FORBIDDEN                                          5
+          UpdateProvider NOT_FOUND                                          2
+          UpdateProvider ok                                                17
+          WithdrawContent FORBIDDEN                                         1
+          WithdrawContent NOT_FOUND                                         1
+          WithdrawContent idempotent                                        1
+          WithdrawContent ok                                               13
+--- PASS: TestFuzzReachesStates (1.74s)
+=== RUN   TestDeviationRulesAreLoadBearing
+=== RUN   TestDeviationRulesAreLoadBearing/D-2
+    mutant_test.go:277: D-2: chain ERROR_CODE_EXPIRED at step 11; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-3
+    mutant_test.go:277: D-3: chain ERROR_CODE_EXPIRED at step 8; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-4
+    mutant_test.go:277: D-4: chain ERROR_CODE_DUPLICATE_ID at step 8; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-5
+    mutant_test.go:277: D-5: chain ERROR_CODE_BOUNDS at step 6; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-6
+    mutant_test.go:277: D-6: chain ERROR_CODE_BOUNDS at step 262; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-10
+    mutant_test.go:277: D-10: chain ERROR_CODE_BOUNDS at step 134; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-11
+    mutant_test.go:277: D-11: chain ERROR_CODE_FORBIDDEN at step 7; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-12
+    mutant_test.go:277: D-12: chain ERROR_CODE_UNAUTHORIZED at step 9; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/D-13
+    mutant_test.go:277: D-13: chain ERROR_CODE_FORBIDDEN at step 10; spec_machine.py alone: ok
+--- PASS: TestDeviationRulesAreLoadBearing (5.43s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-2 (0.03s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-3 (0.02s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-4 (0.02s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-5 (0.02s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-6 (4.14s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-10 (1.14s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-11 (0.02s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-12 (0.02s)
+    --- PASS: TestDeviationRulesAreLoadBearing/D-13 (0.03s)
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences/DR-08-10_capacity_2^53
+    mutant_test.go:319: DR-08-10 capacity 2^53: chain ok, spec_machine.py ERROR_CODE_MALFORMED (idempotent false)
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences/DR-07-08_registration_replay_by_another_account
+    mutant_test.go:319: DR-07-08 registration replay by another account: chain ERROR_CODE_FORBIDDEN, spec_machine.py ok (idempotent true)
+--- PASS: TestGeneratorRestrictionsHideKnownDivergences (0.02s)
+    --- PASS: TestGeneratorRestrictionsHideKnownDivergences/DR-08-10_capacity_2^53 (0.01s)
+    --- PASS: TestGeneratorRestrictionsHideKnownDivergences/DR-07-08_registration_replay_by_another_account (0.01s)
+=== RUN   TestComparatorDetectsMismatch
+    mutant_test.go:383: 18 spec mutants and 1 Go mutant detected
+--- PASS: TestComparatorDetectsMismatch (0.01s)
+=== RUN   TestTrialSnapshotDetectsEarlyWrite
+--- PASS: TestTrialSnapshotDetectsEarlyWrite (0.00s)
+=== RUN   TestExpiryWorkIndependentOfBacklog
+    scale_test.go:230: 1,024 leases + 256 offers: 10 blocks; items per block [128 128 128 128 128 128 128 128 128 128]
+    scale_test.go:231: 1,024 leases + 256 offers: store gas per block [2596919 2596919 2596919 2596919 2596919 2596919 2596679 2591975 1922407 1911767]
+    scale_test.go:230: 4,096 leases + 256 offers: 34 blocks; items per block [128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128]
+    scale_test.go:231: 4,096 leases + 256 offers: store gas per block [2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596919 2596679 2591975 1922407 1911767]
+    scale_test.go:236: first full block (128 lease expiries): store gas 2596919 at backlog 1,280 and at backlog 4,352
+--- PASS: TestExpiryWorkIndependentOfBacklog (9.23s)
+=== RUN   TestWithdrawalAtContentCapGas
+    scale_test.go:296: WithdrawContent (message path) at 256 open offers: gas 3975642 (ceiling 10000000)
+    scale_test.go:296: ForceWithdrawByCouncil (council path) at 256 open offers: gas 3906553 (ceiling 10000000)
+--- PASS: TestWithdrawalAtContentCapGas (0.09s)
+=== RUN   FuzzLeaseDifferential
+=== RUN   FuzzLeaseDifferential/seed#0
+=== RUN   FuzzLeaseDifferential/seed#1
+=== RUN   FuzzLeaseDifferential/seed#2
+=== RUN   FuzzLeaseDifferential/seed#3
+=== RUN   FuzzLeaseDifferential/seed#4
+=== RUN   FuzzLeaseDifferential/seed#5
+=== RUN   FuzzLeaseDifferential/seed#6
+=== RUN   FuzzLeaseDifferential/seed#7
+=== RUN   FuzzLeaseDifferential/seed#8
+=== RUN   FuzzLeaseDifferential/seed#9
+=== RUN   FuzzLeaseDifferential/seed#10
+=== RUN   FuzzLeaseDifferential/seed#11
+=== RUN   FuzzLeaseDifferential/seed#12
+=== RUN   FuzzLeaseDifferential/seed#13
+=== RUN   FuzzLeaseDifferential/seed#14
+--- PASS: FuzzLeaseDifferential (2.11s)
+    --- PASS: FuzzLeaseDifferential/seed#0 (0.14s)
+    --- PASS: FuzzLeaseDifferential/seed#1 (0.11s)
+    --- PASS: FuzzLeaseDifferential/seed#2 (0.15s)
+    --- PASS: FuzzLeaseDifferential/seed#3 (0.09s)
+    --- PASS: FuzzLeaseDifferential/seed#4 (0.15s)
+    --- PASS: FuzzLeaseDifferential/seed#5 (0.14s)
+    --- PASS: FuzzLeaseDifferential/seed#6 (0.09s)
+    --- PASS: FuzzLeaseDifferential/seed#7 (0.10s)
+    --- PASS: FuzzLeaseDifferential/seed#8 (0.19s)
+    --- PASS: FuzzLeaseDifferential/seed#9 (0.18s)
+    --- PASS: FuzzLeaseDifferential/seed#10 (0.16s)
+    --- PASS: FuzzLeaseDifferential/seed#11 (0.17s)
+    --- PASS: FuzzLeaseDifferential/seed#12 (0.15s)
+    --- PASS: FuzzLeaseDifferential/seed#13 (0.16s)
+    --- PASS: FuzzLeaseDifferential/seed#14 (0.13s)
+=== RUN   FuzzLeaseTransitions
+=== RUN   FuzzLeaseTransitions/seed#0
+=== RUN   FuzzLeaseTransitions/seed#1
+=== RUN   FuzzLeaseTransitions/seed#2
+=== RUN   FuzzLeaseTransitions/seed#3
+=== RUN   FuzzLeaseTransitions/seed#4
+=== RUN   FuzzLeaseTransitions/seed#5
+=== RUN   FuzzLeaseTransitions/seed#6
+=== RUN   FuzzLeaseTransitions/seed#7
+=== RUN   FuzzLeaseTransitions/seed#8
+=== RUN   FuzzLeaseTransitions/seed#9
+=== RUN   FuzzLeaseTransitions/seed#10
+=== RUN   FuzzLeaseTransitions/seed#11
+=== RUN   FuzzLeaseTransitions/seed#12
+=== RUN   FuzzLeaseTransitions/seed#13
+=== RUN   FuzzLeaseTransitions/seed#14
+--- PASS: FuzzLeaseTransitions (0.78s)
+    --- PASS: FuzzLeaseTransitions/seed#0 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#1 (0.04s)
+    --- PASS: FuzzLeaseTransitions/seed#2 (0.05s)
+    --- PASS: FuzzLeaseTransitions/seed#3 (0.03s)
+    --- PASS: FuzzLeaseTransitions/seed#4 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#5 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#6 (0.03s)
+    --- PASS: FuzzLeaseTransitions/seed#7 (0.02s)
+    --- PASS: FuzzLeaseTransitions/seed#8 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#9 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#10 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#11 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#12 (0.07s)
+    --- PASS: FuzzLeaseTransitions/seed#13 (0.06s)
+    --- PASS: FuzzLeaseTransitions/seed#14 (0.04s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest	56.845s
+EXIT:0

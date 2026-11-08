@@ -1,6 +1,7 @@
 package authority
 
 import (
+	"bytes"
 	"encoding/hex"
 	"maps"
 	"slices"
@@ -10,6 +11,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 )
 
@@ -62,7 +64,7 @@ func measureRound(t *testing.T, env *keeperEnv, id string) councilGas {
 func TestCouncilGasDoesNotGrowWithHistory(t *testing.T) {
 	env := readyKeeper(t)
 	// Warm-up: one executed governed limit, so the policy key (0x04) and the
-	// governed key (0x13||max_page_limit) exist on both sides.
+	// governed value of max_page_limit (x/policy 0x02) exist on both sides.
 	env.queue(t, "warm-up", governedMsg("max_page_limit", 40))
 	if _, err := env.keeper.Execute(env.txCtx(), execute(env.authority, "ex-warm-up", "warm-up")); err != nil {
 		t.Fatal(err)
@@ -159,10 +161,16 @@ func hexKeys(set map[string]bool) []string {
 // and write the proposer's 0x14 at the record's base; the stale branch reads
 // the parameter's 0x12; a rejected execute writes nothing. The second
 // fix-round review found the comment and the table left out the 0x14 reads of
-// a propose, an approve keep and an execute. An execute of an admit, disable
-// or force-withdraw payload reads and writes the keys of a governed execute
-// except 0x13: the registry hook writes x/providers or x/content, and no
-// authority key under the reserved 0x17 prefix is read or written.
+// a propose, an approve keep and an execute. Goal 10 moved governed values
+// to x/policy: a governed execute writes no authority key beyond the common
+// set (it wrote 0x13 before), and neither does an execute of an admit,
+// disable, force-withdraw, software upgrade or cancel payload: the hook
+// writes x/providers, x/content or x/policy, and no authority key under the
+// reserved 0x17 or the retired 0x13 prefix is read or written. A successful
+// validator execute reads the pending prefix and the 0x15 key of its
+// consensus key (goal 10, D-7) and writes its pending entry. A successful
+// council seat execute reads the new key's 0x15 key and the pending prefix
+// (D-7) and writes the config and the old key's 0x15 key.
 func TestMessageKeySets(t *testing.T) {
 	kv, seats, authority := readyStore(t)
 	cfg := []byte{configKey}
@@ -175,6 +183,8 @@ func TestMessageKeySets(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		hooks := hooksFor(t, kv)
+		st.Policy, st.Accounts = hooks.policy, hooks.accounts
 		if got := fn(st); got.Code != out {
 			t.Fatalf("%s: %+v, want %q", name, got, out)
 		}
@@ -200,7 +210,7 @@ func TestMessageKeySets(t *testing.T) {
 			func(st *State) Outcome { return st.ApproveChange(approve(seats[i].Signer, id, "p1")) })
 	}
 	run("execute", "", keySet(businessKey("e1"), proposalKey("p1"), policy, openKey(seat1, 1)),
-		keySet(governedKey("max_page_limit"), openKey(seat1, 1), proposalKey("p1"), executedKey("max_page_limit"), policy, businessKey("e1")),
+		keySet(openKey(seat1, 1), proposalKey("p1"), executedKey("max_page_limit"), policy, businessKey("e1")),
 		func(st *State) Outcome { return st.ExecuteChange(execute(authority, "e1", "p1")) })
 
 	// Stale branch: p5 executes (version 2 -> 3), then p4 on base 2 reads
@@ -255,5 +265,49 @@ func TestMessageKeySets(t *testing.T) {
 	}
 	if len(registry.calls) != 3 {
 		t.Fatalf("registry calls %+v", registry.calls)
+	}
+
+	// A successful validator execute also scans the pending prefix and,
+	// after the projection and the pending cap, reads the retired-seat key
+	// of its consensus key (D-7). It writes the pending entry.
+	add := powerMsg("v5", pub(5), 1, uint64(testHeight)+10)
+	queueAt(t, kv, seats, testHeight, unix, "p9", add)
+	entry := heightEntry("p9", "v5", pub(5), 1, uint64(testHeight)+10)
+	run("execute p9", "", keySet(businessKey("e9"), proposalKey("p9"), policy, []byte("scan:\x03"), retiredCouncilKey(pub(5)), openKey(seat1, 6)),
+		keySet(PendingKey(entry), openKey(seat1, 6), proposalKey("p9"), executedKey("validator-v5"), policy, businessKey("e9")),
+		func(st *State) Outcome { return st.ExecuteChange(execute(authority, "e9", "p9")) })
+
+	// Schema version 2 payloads. A software upgrade, a cancel and a
+	// scheduled governed limit touch no authority key beyond the common set;
+	// x/policy (the fake here) holds the plan and the pending change. A
+	// council seat execute also reads the new key's 0x15 key and the pending
+	// prefix and writes the config and the old key's 0x15 key.
+	for i, row := range []struct {
+		id  string
+		msg *authorityv1.MsgProposeChange
+	}{
+		{"p10", upgradeMsg("up-1", uint64(testHeight)+msgkit.MinActivationLeadBlocks, pub(9))},
+		{"p11", cancelMsg("up-1")},
+		{"p12", scheduledMsg(msgkit.LimitMaxOpenOffers, 9, uint64(testHeight)+1)},
+	} {
+		version := uint64(7 + i)
+		queueAt(t, kv, seats, testHeight, unix, row.id, row.msg)
+		param := recordOf(t, kv, row.id).ParameterKey
+		business := "e" + row.id[1:]
+		run("execute "+row.id, "", keySet(businessKey(business), proposalKey(row.id), policy, openKey(seat1, version)),
+			keySet(openKey(seat1, version), proposalKey(row.id), executedKey(param), policy, businessKey(business)),
+			func(st *State) Outcome { return st.ExecuteChange(execute(authority, business, row.id)) })
+	}
+	queueAt(t, kv, seats, testHeight, unix, "p13", seatMsg(seats[3].ID, pub(80)))
+	run("execute p13", "", keySet(businessKey("e13"), proposalKey("p13"), policy, retiredCouncilKey(pub(80)), []byte("scan:\x03"), openKey(seat1, 10)),
+		keySet(cfg, retiredCouncilKey(seats[3].Pub), openKey(seat1, 10), proposalKey("p13"), executedKey("seat-"+seats[3].ID), policy, businessKey("e13")),
+		func(st *State) Outcome { return st.ExecuteChange(execute(authority, "e13", "p13")) })
+	if calls := policyFor(t, kv).calls; !slices.Equal(calls[len(calls)-4:], []string{
+		"UpgradeApplied up-1", "ScheduleUpgrade up-1", "CancelUpgrade up-1", "SchedulePending " + msgkit.LimitMaxOpenOffers,
+	}) {
+		t.Fatalf("policy calls %v", calls)
+	}
+	if created := accountsFor(t, kv).created; len(created) != 1 || !bytes.Equal(created[0], SeatAddress(pub(80))) {
+		t.Fatalf("accounts created %x", created)
 	}
 }

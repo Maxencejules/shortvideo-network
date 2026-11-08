@@ -204,8 +204,8 @@ func TestEveryProtocolMessageDecodes(t *testing.T) {
 			t.Errorf("no variant set a %s", name)
 		}
 	}
-	if sent != 19 {
-		t.Fatalf("%d transactions, want 19", sent)
+	if sent != 21 {
+		t.Fatalf("%d transactions, want 21", sent)
 	}
 	t.Logf("%d transactions, %d nested message types", sent, len(want))
 }

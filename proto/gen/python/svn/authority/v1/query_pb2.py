@@ -26,7 +26,7 @@ from svn.types.v1 import types_pb2 as svn_dot_types_dot_v1_dot_types__pb2
 from svn.authority.v1 import state_pb2 as svn_dot_authority_dot_v1_dot_state__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1csvn/authority/v1/query.proto\x12\x10svn.authority.v1\x1a\x18svn/types/v1/types.proto\x1a\x1csvn/authority/v1/state.proto\"A\n\x16QueryGovernanceRequest\x12\'\n\x04page\x18\x01 \x01(\x0b\x32\x19.svn.types.v1.PageRequest\"t\n\x17QueryGovernanceResponse\x12/\n\x05state\x18\x01 \x01(\x0b\x32 .svn.authority.v1.AuthorityState\x12(\n\x04page\x18\x02 \x01(\x0b\x32\x1a.svn.types.v1.PageResponse2j\n\x05Query\x12\x61\n\nGovernance\x12(.svn.authority.v1.QueryGovernanceRequest\x1a).svn.authority.v1.QueryGovernanceResponseBRZPgithub.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1;authorityv1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1csvn/authority/v1/query.proto\x12\x10svn.authority.v1\x1a\x18svn/types/v1/types.proto\x1a\x1csvn/authority/v1/state.proto\"A\n\x16QueryGovernanceRequest\x12\'\n\x04page\x18\x01 \x01(\x0b\x32\x19.svn.types.v1.PageRequest\"\xb7\x01\n\x17QueryGovernanceResponse\x12/\n\x05state\x18\x01 \x01(\x0b\x32 .svn.authority.v1.AuthorityState\x12(\n\x04page\x18\x02 \x01(\x0b\x32\x1a.svn.types.v1.PageResponse\x12\x41\n\x16\x64\x65vnet_test_parameters\x18\x03 \x03(\x0b\x32!.svn.types.v1.DevnetTestParameter2j\n\x05Query\x12\x61\n\nGovernance\x12(.svn.authority.v1.QueryGovernanceRequest\x1a).svn.authority.v1.QueryGovernanceResponseBRZPgithub.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1;authorityv1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,8 +36,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'ZPgithub.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1;authorityv1'
   _globals['_QUERYGOVERNANCEREQUEST']._serialized_start=106
   _globals['_QUERYGOVERNANCEREQUEST']._serialized_end=171
-  _globals['_QUERYGOVERNANCERESPONSE']._serialized_start=173
-  _globals['_QUERYGOVERNANCERESPONSE']._serialized_end=289
-  _globals['_QUERY']._serialized_start=291
-  _globals['_QUERY']._serialized_end=397
+  _globals['_QUERYGOVERNANCERESPONSE']._serialized_start=174
+  _globals['_QUERYGOVERNANCERESPONSE']._serialized_end=357
+  _globals['_QUERY']._serialized_start=359
+  _globals['_QUERY']._serialized_end=465
 # @@protoc_insertion_point(module_scope)

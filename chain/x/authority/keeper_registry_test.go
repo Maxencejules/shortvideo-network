@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	errorsmod "cosmossdk.io/errors"
+	"google.golang.org/protobuf/proto"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,6 +14,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest"
 	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
@@ -436,8 +438,9 @@ func TestKeeperMalformedPeerBusinessDigestIsIntegrity(t *testing.T) {
 }
 
 // The read surface reads one key each. A malformed value fails closed:
-// Role and DevnetRole report nothing (callers then refuse), GovernedLimit
-// and BusinessDigest panic rather than report a ceiling or a free id.
+// Role and DevnetRole report nothing (callers then refuse), BusinessDigest
+// and BlockedDecisions panic rather than report a free id or no blocked
+// decision. Governed values are read from x/policy.
 func TestKeeperReadSurface(t *testing.T) {
 	e, provider := registryKeeper(t)
 	ctx := e.blockCtx()
@@ -515,52 +518,67 @@ func TestKeeperReadSurface(t *testing.T) {
 		}
 	})
 
-	t.Run("governed limit", func(t *testing.T) {
-		if value, found := e.keeper.GovernedLimit(ctx, msgkit.LimitMaxPageLimit); found {
+	t.Run("governed limit is x/policy state", func(t *testing.T) {
+		// Goal 10 moved governed values to x/policy: an executed governed
+		// limit is read there (its damaged-value panic is x/policy's
+		// TestGovernedLimitReadSurface), and nothing is written under the
+		// retired authority prefix 0x13.
+		if value, found := e.governed(msgkit.LimitMaxPageLimit); found {
 			t.Fatalf("before %d", value)
 		}
 		e.queue(t, "lim-1", governedMsg(msgkit.LimitMaxPageLimit, 50))
 		if _, err := e.keeper.Execute(e.txCtx(), execute(e.authority, "ex-lim-1", "lim-1")); err != nil {
 			t.Fatal(err)
 		}
-		if value, found := e.keeper.GovernedLimit(e.blockCtx(), msgkit.LimitMaxPageLimit); !found || value != 50 {
+		if value, found := e.governed(msgkit.LimitMaxPageLimit); !found || value != 50 {
 			t.Fatalf("after %d %v", value, found)
 		}
-		if _, found := e.keeper.GovernedLimit(e.blockCtx(), msgkit.LimitMaxPackageBytes); found {
+		if _, found := e.governed(msgkit.LimitMaxPackageBytes); found {
 			t.Fatal("an unset limit was found")
 		}
-		empty, keys := msgkittest.NewContext(t, ModuleName)
-		if _, found := NewKeeper(keys[ModuleName]).GovernedLimit(empty, msgkit.LimitMaxPageLimit); found {
-			t.Fatal("an empty store has a governed limit")
+		if n := countPrefix(store, governedPrefix); n != 0 {
+			t.Fatalf("%d keys under the retired prefix 0x13", n)
 		}
-		ceiling, _ := governedCeiling(msgkit.LimitMaxPageLimit)
-		for name, value := range map[string][]byte{
-			"7 bytes":         make([]byte, 7),
-			"zero":            encodeU64(0),
-			"above ceiling":   encodeU64(ceiling + 1),
-			"9 bytes":         make([]byte, 9),
-			"unknown key set": nil,
-		} {
-			key := governedKey(msgkit.LimitMaxPageLimit)
-			if value == nil {
-				key = governedKey("max_unknown_limit")
-				value = encodeU64(1)
+	})
+
+	t.Run("blocked decisions", func(t *testing.T) {
+		gen, seats, authority := readyGenesis()
+		gen.BlockedDecisions = policy.DefaultGenesisState().GetPolicy().GetBlockedDecisions()
+		be := newKeeperEnv(t, gen, seats, authority)
+		rows := be.keeper.BlockedDecisions(be.blockCtx())
+		if len(rows) == 0 || len(rows) != len(gen.GetBlockedDecisions()) {
+			t.Fatalf("%d rows, genesis holds %d", len(rows), len(gen.GetBlockedDecisions()))
+		}
+		for i, row := range rows {
+			if !proto.Equal(row, gen.GetBlockedDecisions()[i]) {
+				t.Fatalf("row %d %v, genesis %v", i, row, gen.GetBlockedDecisions()[i])
 			}
-			prev := store.Get(key)
-			store.Set(key, value)
+		}
+		rows[0].DecisionId = "DEC-999"
+		if again := be.keeper.BlockedDecisions(be.blockCtx()); again[0].GetDecisionId() == "DEC-999" {
+			t.Fatal("a change to the returned rows reached the next read")
+		}
+		if got := e.keeper.BlockedDecisions(ctx); len(got) != 0 {
+			t.Fatalf("a genesis without blocked decisions reports %d", len(got))
+		}
+		// Fails closed: no config, or an undecodable one, never reports
+		// that nothing is blocked.
+		empty, keys := msgkittest.NewContext(t, ModuleName)
+		for name, read := range map[string]func(){
+			"empty store": func() { NewKeeper(keys[ModuleName]).BlockedDecisions(empty) },
+			"undecodable": func() {
+				be.kv().Set([]byte{configKey}, []byte{0xff})
+				be.keeper.BlockedDecisions(be.blockCtx())
+			},
+		} {
 			func() {
 				defer func() {
 					if recover() == nil {
-						t.Fatalf("%s: GovernedLimit reported a value or the ceiling on damaged state", name)
+						t.Fatalf("%s: BlockedDecisions reported rows", name)
 					}
 				}()
-				e.keeper.GovernedLimit(e.blockCtx(), string(key[1:]))
+				read()
 			}()
-			if prev == nil {
-				store.Delete(key)
-			} else {
-				store.Set(key, prev)
-			}
 		}
 	})
 

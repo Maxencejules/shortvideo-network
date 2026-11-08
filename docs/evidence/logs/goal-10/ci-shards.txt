@@ -1,0 +1,109 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh bash -c $'# The go-race shard bodies of .github/workflows/ci.yml at this revision, run\n# one after another on this machine (CI runs them as five parallel jobs).\nmod="github.com/Maxencejules/shortvideo-network"\nrc_all=0\nfor SHARD in app devnet devnet-evidence devnet-upgrade rest; do\n  t0=$(date +%s)\n  echo "=== shard ${SHARD} start $(date -u +%H:%M:%SZ)"\n  (\n    set -e\n    case "${SHARD}" in\n      app)\n        go test -race -count=1 -timeout 12m ./chain/app\n        ;;\n      devnet)\n        go build -C chain -o /dev/null ./cmd/svnd\n        go test -race -count=1 -timeout 12m -skip \'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange\' ./chain/devnet\n        ;;\n      devnet-evidence)\n        go build -C agents/auditor -o /dev/null .\n        go test -race -count=1 -timeout 15m -run TestDevnetAudit ./chain/devnet\n        ;;\n      devnet-upgrade)\n        go build -C chain -o /dev/null ./cmd/svnd\n        go build -C chain -tags svn_rehearsal -o /dev/null ./cmd/svnd\n        go build -C chain -tags svn_rehearsal_bad -o /dev/null ./cmd/svnd\n        go build -C chain ./internal/...\n        go test -race -count=1 -timeout 15m -run \'TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange\' ./chain/devnet\n        ;;\n      rest)\n        pkgs="$(go list ./chain/... | grep -v -x -e "${mod}/chain/app" -e "${mod}/chain/devnet")"\n        if [ -z "${pkgs}" ]; then echo "no packages in the rest shard"; exit 1; fi\n        echo "${pkgs}"\n        go test -race -count=1 -timeout 12m ${pkgs}\n        go test -race -count=1 -timeout 2m ./proto/...\n        go test -race -count=1 -timeout 2m ./agents/provider/...\n        go test -race -count=1 -timeout 2m ./agents/auditor/...\n        ;;\n    esac\n  )\n  rc=$?\n  echo "=== shard ${SHARD} exit ${rc} seconds $(( $(date +%s) - t0 ))"\n  [ "$rc" = 0 ] || rc_all=1\ndone\nexit $rc_all'
+DATE 2026-11-07T23:23:47Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+=== shard app start 23:23:47Z
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	269.263s
+=== shard app exit 0 seconds 273
+=== shard devnet start 23:28:20Z
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	465.487s
+=== shard devnet exit 0 seconds 476
+=== shard devnet-evidence start 23:36:16Z
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	291.531s
+=== shard devnet-evidence exit 0 seconds 301
+=== shard devnet-upgrade start 23:41:17Z
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	346.498s
+=== shard devnet-upgrade exit 0 seconds 368
+=== shard rest start 23:47:25Z
+github.com/Maxencejules/shortvideo-network/chain/address
+github.com/Maxencejules/shortvideo-network/chain/cmd/svnd
+github.com/Maxencejules/shortvideo-network/chain/cmd/svnd/cli
+github.com/Maxencejules/shortvideo-network/chain/cometwrap
+github.com/Maxencejules/shortvideo-network/chain/genesis
+github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal
+github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal/scenario
+github.com/Maxencejules/shortvideo-network/chain/internal/statecheck
+github.com/Maxencejules/shortvideo-network/chain/internal/statecheck/testhome
+github.com/Maxencejules/shortvideo-network/chain/jcs
+github.com/Maxencejules/shortvideo-network/chain/msgkit
+github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest
+github.com/Maxencejules/shortvideo-network/chain/node
+github.com/Maxencejules/shortvideo-network/chain/svnerr
+github.com/Maxencejules/shortvideo-network/chain/upgrade
+github.com/Maxencejules/shortvideo-network/chain/upgrade/conformance
+github.com/Maxencejules/shortvideo-network/chain/upgrade/onchain
+github.com/Maxencejules/shortvideo-network/chain/x/authority
+github.com/Maxencejules/shortvideo-network/chain/x/authority/difftest
+github.com/Maxencejules/shortvideo-network/chain/x/content
+github.com/Maxencejules/shortvideo-network/chain/x/evidence
+github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest
+github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest
+github.com/Maxencejules/shortvideo-network/chain/x/leases
+github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest
+github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest
+github.com/Maxencejules/shortvideo-network/chain/x/policy
+github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest
+github.com/Maxencejules/shortvideo-network/chain/x/providers
+github.com/Maxencejules/shortvideo-network/chain/x/providers/capability
+github.com/Maxencejules/shortvideo-network/chain/x/scaffold
+?   	github.com/Maxencejules/shortvideo-network/chain/address	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	39.429s
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd/cli	1.857s
+?   	github.com/Maxencejules/shortvideo-network/chain/cometwrap	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	1.433s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal	1.267s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal/scenario	1.099s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck	12.763s
+?   	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck/testhome	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/jcs	2.324s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	1.354s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	1.102s
+ok  	github.com/Maxencejules/shortvideo-network/chain/node	2.004s
+ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	1.015s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade	2.270s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/conformance	1.175s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/onchain	1.327s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	42.762s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority/difftest	279.685s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	2.352s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	15.529s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest	357.100s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest	1.411s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases	11.564s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest	269.043s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest	1.213s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy	1.331s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest	1.193s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	8.556s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	1.156s
+?   	github.com/Maxencejules/shortvideo-network/chain/x/scaffold	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/protocol/check	1.015s
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/app/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/events/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/offchain/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider	1.012s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor	10.417s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	1.333s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient	3.821s
+?   	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient/chaintest	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/classify	1.060s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	1.264s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch	3.475s
+?   	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch/fetchtest	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/keys	1.118s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/labels	1.666s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/policy	1.032s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/report	1.064s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/review	1.479s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/store	1.057s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/verify	1.259s
+=== shard rest exit 0 seconds 421
+EXIT:0

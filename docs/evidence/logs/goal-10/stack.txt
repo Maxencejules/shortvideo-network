@@ -1,0 +1,17 @@
+COMMAND bash -c git\ ls-remote\ origin\ refs/heads/main\ refs/heads/goal-09\ refs/heads/goal-10\;\ for\ c\ in\ ff951fc334cd15fee37cd62c6d32422a3bf1b695\ d33751ecda37ae8d33fc4a170d5d52071eb1f5cd\;\ do\ if\ git\ merge-base\ --is-ancestor\ \$c\ HEAD\;\ then\ echo\ \"\$c\ is\ an\ ancestor\ of\ HEAD\"\;\ else\ echo\ \"\$c\ is\ NOT\ an\ ancestor\ of\ HEAD\"\;\ exit\ 1\;\ fi\;\ done\;\ git\ log\ --oneline\ ff951fc334cd15fee37cd62c6d32422a3bf1b695..HEAD
+DATE 2026-11-07T22:19:49Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+ff951fc334cd15fee37cd62c6d32422a3bf1b695	refs/heads/goal-09
+18fa31076f28b64f429efd5443461cbcfd1f73c0	refs/heads/goal-10
+d33751ecda37ae8d33fc4a170d5d52071eb1f5cd	refs/heads/main
+ff951fc334cd15fee37cd62c6d32422a3bf1b695 is an ancestor of HEAD
+d33751ecda37ae8d33fc4a170d5d52071eb1f5cd is an ancestor of HEAD
+18fa310 goal 10: fix two test defects found by the evidence run
+2cd8f4b goal 10: type the spec oracle payload helpers for strict mypy
+10b6806 goal 10: policy governance and chain upgrades
+640d789 goal 10: WIP Wave 1 (protocol revision, council kinds, policy activation, upgrade wiring)
+82652fd goal 10: WIP Wave 0 differential and review fixes
+4378f10 goal 10: WIP Wave 0 (x/policy core, authority v0 checks, upgrade core, spec draft)
+EXIT:0

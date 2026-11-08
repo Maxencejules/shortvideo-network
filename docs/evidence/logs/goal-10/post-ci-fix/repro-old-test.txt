@@ -1,0 +1,14 @@
+COMMAND bash -c cd\ chain\ \&\&\ go\ test\ -count=40\ -overlay\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/ci-fix-window/overlay-old.json\ -run\ \'\^TestUpgradeWindowCheckTxAndQueries\$\'\ ./app/\ 2\>\&1\ \|\ grep\ -a\ -E\ --\ \'---\ FAIL\|want\ code\|\^\(ok\|FAIL\)\'\;\ echo\ \"\(the\ overlay\ replaces\ the\ test\ file\ with\ its\ 18fa310\ version:\ /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/ci-fix-window/old_upgrade_rehearsal_test.go\)\"
+DATE 2026-11-08T03:16:27Z
+HEAD fc8c121f4cd9cbe132820c2f1cae8a0524c5f298
+TREE 24dad88e7803f1246cd3d16d7ed5db293df705be
+DIRTY no
+--- FAIL: TestUpgradeWindowCheckTxAndQueries (0.05s)
+    upgrade_rehearsal_test.go:1766: v1 after a restart, before a commit: CheckTx err <nil> code /0 log , want code 4
+--- FAIL: TestUpgradeWindowCheckTxAndQueries (0.04s)
+    upgrade_rehearsal_test.go:1766: v1 after a restart, before a commit: CheckTx err <nil> code /0 log , want code 4
+FAIL
+FAIL	github.com/Maxencejules/shortvideo-network/chain/app	6.707s
+FAIL
+(the overlay replaces the test file with its 18fa310 version: /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/ci-fix-window/old_upgrade_rehearsal_test.go)
+EXIT:0

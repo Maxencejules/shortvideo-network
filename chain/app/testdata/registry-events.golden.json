@@ -43,6 +43,32 @@
     ]
   },
   {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "2"
+      },
+      {
+        "key": "parameter_key",
+        "value": "admit-p1"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "prop-admit-p1"
+      },
+      {
+        "key": "policy_version",
+        "value": "2"
+      }
+    ]
+  },
+  {
     "type": "svn.events.v1.ProviderStateChanged",
     "attributes": [
       {
@@ -56,6 +82,32 @@
       {
         "key": "key_generation",
         "value": "1"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "3"
+      },
+      {
+        "key": "parameter_key",
+        "value": "admit-p2"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "prop-admit-p2"
+      },
+      {
+        "key": "policy_version",
+        "value": "3"
       }
     ]
   },
@@ -107,6 +159,32 @@
       {
         "key": "key_generation",
         "value": "1"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "4"
+      },
+      {
+        "key": "parameter_key",
+        "value": "disable-p2"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "prop-disable-p2"
+      },
+      {
+        "key": "policy_version",
+        "value": "4"
       }
     ]
   },
@@ -183,6 +261,32 @@
       {
         "key": "history_erased",
         "value": "false"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.PolicyChanged",
+    "attributes": [
+      {
+        "key": "policy_version",
+        "value": "5"
+      },
+      {
+        "key": "parameter_key",
+        "value": "withdraw-c2"
+      }
+    ]
+  },
+  {
+    "type": "svn.events.v1.ProposalExecuted",
+    "attributes": [
+      {
+        "key": "proposal_id",
+        "value": "prop-withdraw-c2"
+      },
+      {
+        "key": "policy_version",
+        "value": "5"
       }
     ]
   }

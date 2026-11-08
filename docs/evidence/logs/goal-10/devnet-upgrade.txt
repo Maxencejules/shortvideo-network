@@ -1,0 +1,504 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh go test -count=1 -timeout 1800s -v -run TestDevnetUpgrade\|TestDevnetMinority\|TestDevnetGovernedChange ./chain/devnet/
+DATE 2026-11-07T22:39:16Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+=== RUN   TestDevnetUpgradeRehearsal
+label=single-machine four-process devnet (not independent operators)
+phase=build binaries=2 wall_seconds=6.6 label="binaries built from one tree by go build; not independently built releases; not signed; not reviewed source"
+phase=binary name=svnd-b1 tags="" sha256=3e25db0b52c04a395cbc2bdfcc1b631711641b676ea84f9a68ff55f83a3401bb app_version=1 version_line="upgrades none"
+phase=binary name=svnd-b2 tags="svn_rehearsal" sha256=d8614c1b75df86eeecba481a193a364793d2efbe79c66817a49cbee327098f9b app_version=2 version_line="upgrade rehearsal-1 from_app_version 1 to_app_version 2"
+phase=devnet-start chain_id=shortvideo-dev-e8247acb3a7822f1 genesis_sha256=fd7d4efa62b3d01d5c40f4bd6fded2b1fd632809644271cbde22763c14e0099b council_delay_seconds=0 label="single-machine four-process devnet (not independent operators)"
+phase=start-history genesis_sha256=fd7d4efa62b3d01d5c40f4bd6fded2b1fd632809644271cbde22763c14e0099b earliest_block_height=1
+phase=reg-p1 height=7 code=0 txhash=B5CA0C1D701E723BDC562425CC7343271076FBFBCED70DC36BF36C9B6D56DBB7
+phase=admit-p1-propose height=8 code=0 txhash=26BE1018E7C8F601372C331882E0BC250604C0FACEEFAF25A50FAA148CFFBB05
+phase=admit-p1-approve-1 height=9 code=0 txhash=7BC90DF110C1B70BBFA0F86826C7AAC4F462BC11741364489A39CEC2747A4077
+phase=admit-p1-approve-2 height=10 code=0 txhash=432DAE3D0C7BB707A5B9FBF98B388784D42A22F0784F0BE315CD753509EAA6A4
+phase=admit-p1-approve-3 height=11 code=0 txhash=9944243833C5432A7B88AE9BA94517DB72783B00D0A3174020CBCB41282E3DE2
+phase=admit-p1-execute height=13 code=0 txhash=E36502F25F61B72EC87AA6380E3936D8EAB1D634E2B6D34A0B5DA05D92338ECE policy_version=2
+phase=reg-p2 height=14 code=0 txhash=A423074CC77FA9273F880751AEA8F873ED3922A6325612A309D36C8CEB9DD2D5
+phase=admit-p2-propose height=15 code=0 txhash=219A4B8C790CFAE8D193DD747E0BA59B3609AD3317A6DEE16F27C5C3CDB56BEE
+phase=admit-p2-approve-1 height=16 code=0 txhash=A2A26C81CCF7F4F5D3E1D5653467299502C01A229734EDA71573BBC30950BBFD
+phase=admit-p2-approve-2 height=17 code=0 txhash=DA19B60AED63F26D1861E96DC5C0F123B7CCBC8B8E2CD2D45BA3C065C0204C2A
+phase=admit-p2-approve-3 height=19 code=0 txhash=956F5821FAF66D38E1BCC1617C11C59C4664D4A01EC99F5EE5CD1A6E99AC29FF
+phase=admit-p2-execute height=20 code=0 txhash=F761D23CBE3017BA8CB183F8C568AA52DD166E3B6764B1B3763AD2BB4D5839D8 policy_version=3
+phase=reg-c1 height=21 code=0 txhash=151C85957981FC881B450CCC9C54847B40A6BEA937BD5292AC9C4FFE681A61B4
+phase=reg-c2 height=23 code=0 txhash=ED80494C247C76674E9A57E9A6C5F8EE92A533A7342F56BF73244AAB3195F6D2
+phase=reg-c3 height=24 code=0 txhash=4171ACB75434ACE59A5D225B925F5866C2F58153AF6D9A34C13AE80605ADE80A
+phase=reg-c4 height=25 code=0 txhash=045ABBAF3D694A97CE901377202AC884A5B6BDD2B611B3B3E83DD6E9845F7206
+phase=reg-c5 height=27 code=0 txhash=0A24B0CA3169D0875D340FC9C8878675B60474690D58F506002346CE35A53419
+phase=reg-c6 height=28 code=0 txhash=408A295CDF1473F1E917AE99C6E8A19AFD2206AB8AC02882774A3666CF6B79BB
+phase=scenario-times now=1794091174 seconds_per_tx=0.34 seconds_per_block=0.26 blocks_per_tx=1.28 evidence_expires_early=1794091216 lease_expires_early=1794091221 at_plan=1794091226 estimated_h_plus_2=1794091305 evidence_cross=1794091365 offer_cross=1794091373 lease_cross=1794091381 proposal_cross=1794091389 held_deadline=1794094174
+phase=offer-renewed height=29 code=0 txhash=C941D1D31F1AB9882763809CFD69CF4A23BCEF3F3B30D9746F8BB22DD1538BD4
+phase=accept-renewed height=30 code=0 txhash=19CC1E27C47138963F1DB717E9B56B73FC6D6A2C188D7D425C46AE7E2ED822DE
+phase=renew-renewed height=32 code=0 txhash=06F5573EF86552851E372DA628E9EE974AEA2103CB71C41A3AA2C56512D649A6
+phase=offer-cross height=33 code=0 txhash=1DD5A83E925383074BB7FB7474C79300438980DB5EE1AA8BF869B2A5D26B383C
+phase=accept-cross height=35 code=0 txhash=FDC77D6653BD4876AD20D1CEE593A697FFBBDC178BB18776288D1B64D840AEE6
+phase=offer-expired height=36 code=0 txhash=99053E21641032AF844A9CC30C6883A17E105E97597390C1A8F54537072F163D
+phase=accept-expired height=37 code=0 txhash=02B3A7A4D69A4CAA2F1D12E9016D988FF8D327CE8B71C5008C44AB415A0261AD
+phase=offer-ended height=39 code=0 txhash=BB8C12F5C4E816DDB90FB521650F6E4E78562FC7D6785442BA6D0D713E4C14A7
+phase=accept-ended height=41 code=0 txhash=FE6C576573E8D61523E66E73E044DB2270B59C35851125469490E8D7562E33F9
+phase=end-ended height=43 code=0 txhash=EB6A2852096F7EE27E6C599F76FA228A5782A88A68296293B6B65D67200A569B
+phase=offer-held height=45 code=0 txhash=80CB0AC75E2B63E6BFA85AC81865C3EC120A5D3D3BA8EC50E0F504D3A3366ED9
+phase=accept-held height=47 code=0 txhash=25BED9F63EC32B6CE796B538008C06927110B0C9CE604798F3717A27066C5146
+phase=offer-open height=49 code=0 txhash=8E5C3E39F4738F44FA471F505BE1A5F2CE8F81488E1744FD96A02F17E361452C
+phase=offer-ocross height=51 code=0 txhash=EB72E4F7B958D0566181B4CB648726B215950D36A1E94AFC7BE51743182C61A8
+phase=audit-recorded height=52 code=0 txhash=2CEE1C0CB346FFDE47C88B947CDB113F4E6412415F78D433C39DAD7B8B64CD5F
+phase=audit-rejected height=53 code=0 txhash=62F412F9954F4F444502EAD2F6B913C851615CC006DFA9ED22E071806453C383
+phase=audit-expired height=55 code=0 txhash=4BE1206FCBB60D86691CE02237CE030419F6B1D4ABF8CA45E15FE875464B073C
+phase=audit-cross height=57 code=0 txhash=98447287D4CCFF11967CDC60FADEDE2510C9F17ABF0A1C877EB426243942650D
+phase=drain-p2 height=59 code=0 txhash=698B5ABA312A2C7337ED97C0F2AF59F9D59C29EA0A75C02D3D6192C111F64C1A
+phase=plan-height current=258 header_time=1794091227 h=412 transactions_to_execute=20 blocks_per_tx=1.46 min_lead=100 (PROPOSED)
+phase=governed-now-propose height=260 code=0 txhash=B4DB133C7F649F4A3EAF498D80999140202DAA9AD2C68F556F4F1B97748F478D
+phase=governed-now-approve-1 height=261 code=0 txhash=7FCA194C98913CCC9CDD043EF336336E0102E83F045FF72AD863F5103ED3F96D
+phase=governed-now-approve-2 height=262 code=0 txhash=BE107B2DE877C213B3F17E96F0E25C5057D35C61ECD67B40541E70B096F50922
+phase=governed-now-approve-3 height=263 code=0 txhash=EF90D2BF59BF6DBB506F4625BBAA2DD6BB97224E42445609DD4352DE3D6156D4
+phase=governed-now-execute height=264 code=0 txhash=7AEF9FAB24FBEA85D613E137A07B0F2DF5A328121B953F0A54152DF81629A3DB policy_version=4
+phase=governed-later-propose height=265 code=0 txhash=60F7376705C1CDEBB4EEE86EA0580CEC82C4E183EEF9AA379C4A2ED44B9CFE65
+phase=governed-later-approve-1 height=266 code=0 txhash=69D29C4A6B005409AD2DB8A0F79AC7980C4EB46DC677F34612629614FDD8D7CA
+phase=governed-later-approve-2 height=267 code=0 txhash=A57C0C3715D8F2B40EC9B3AFE29D7B29E1341F4E612BF95F4A3AF45BF1B2B2A5
+phase=governed-later-approve-3 height=268 code=0 txhash=5279F237DE180F47DBC07998CE9638939E7B4EC011797220A19BAF7A1D1F1734
+phase=governed-later-execute height=269 code=0 txhash=04EE7E5386E2AB2EDE1F93B50FB703C242C6B8FAB725CE08E44F41C934477C8C policy_version=5
+phase=validator-later-propose height=270 code=0 txhash=F9C02092103EC685886E667D9AA5939A653BC69F8FA15791AE9F91CB53F7F338
+phase=validator-later-approve-1 height=271 code=0 txhash=0BDA05D2FCE32928DEFE12DC5BE7B2F46232B6FC89B864656B1C101C4F2F8FBA
+phase=validator-later-approve-2 height=272 code=0 txhash=21CBCCB8AA9CC23A728B810ACA94E0713E932800968E2050C70E66D737DE4A31
+phase=validator-later-approve-3 height=273 code=0 txhash=39B2A9392C50A982D7046C71BA74BBFC942BDEDDA2CDC3AA875C98F62F865BF4
+phase=validator-later-execute height=275 code=0 txhash=61CC90CDCCF952B5104C0FCB0C7A6F461AED6E385E17A042CCD8A5209AF08A27 policy_version=6
+phase=plan-propose height=276 code=0 txhash=060A2E4C0CB1DA2D9B3D2852202C021F985426884663FA368B7FEAA726DDEACF
+phase=plan-approve-1 height=277 code=0 txhash=E117F99EC7D6DA6C5B19A1802EF427BA4130DEF3B4CDA696C7F7DD91D902B300
+phase=plan-approve-2 height=278 code=0 txhash=9F86C3E6FCDE6D33322120F82DEEB1C1FAABD72CD383AC49C2604BF6DACE7123
+phase=plan-approve-3 height=279 code=0 txhash=6C688331C9AD7D5F9686A689DAFA354D2F7665EAE25CBD2D62E729019FEDE4D8
+phase=plan-execute height=280 code=0 txhash=6E5FA3E72138153B12FC89DC36BD6EC371F3E1B4031C698BECDD5AE048034A91 policy_version=7
+phase=plan-executed proposal=plan-rehearsal execute_height=280 h=412 lead=132 min_lead=100 (PROPOSED)
+phase=queued-propose height=281 code=0 txhash=6733A84F93212F0A6879294998C7C88893B1405A9DE9C99FC28896F143D31D4A
+phase=queued-approve-1 height=283 code=0 txhash=DB028BF66F82692E05EC634B67D1C25444128FDB23894171EF7DE7B22EEC1AB2
+phase=queued-approve-2 height=284 code=0 txhash=304F7F0B2863D37A6ED93A7B192CAEF60950FD65F5773D1704009520C0EFFD02
+phase=queued-approve-3 height=285 code=0 txhash=CA9F9CB3692BF7148972B3E12645954670551C5FF9123368D0D8247EF3BC823F
+phase=open-propose height=286 code=0 txhash=DA080FAB19081D40C3394CD39FACBF82D69168E34464CB42D96A40D530753CC3
+phase=open-approve-1 height=288 code=0 txhash=326257DC321B24CCD3326213AB6ABC519AE42D0894F971C5C217E393499637E7
+phase=open-approve-2 height=289 code=0 txhash=682B195033D79B4EB2ABF347ADF3D2C5F7634BE06515FA6B54634AA0AB0B9BC5
+phase=mempool-empty nodes=running num_unconfirmed_txs=0
+phase=copy-b-stop node=2 seconds=0.0
+phase=copy-b node=2 committed_height=289 h=412 restarted=B1
+phase=halt-log node=0 line="10:41PM ERR error in proxyAppConn.FinalizeBlock err=\"UPGRADE \\\"rehearsal-1\\\" NEEDED at height 412 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetUpgradeRehearsal140609001/002/nodes/v1 module=state"
+phase=halt-log node=0 line="10:41PM ERR CONSENSUS FAILURE!!! err=\"failed to apply block; error UPGRADE \\\"rehearsal-1\\\" NEEDED at height 412 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetUpgradeRehearsal140609001/002/nodes/v1 module=consensus stack=\"goroutine 117 [running"
+phase=halt-log node=1 line="10:41PM ERR error in proxyAppConn.FinalizeBlock err=\"UPGRADE \\\"rehearsal-1\\\" NEEDED at height 412 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetUpgradeRehearsal140609001/002/nodes/v2 module=state"
+phase=halt-log node=1 line="10:41PM ERR CONSENSUS FAILURE!!! err=\"failed to apply block; error UPGRADE \\\"rehearsal-1\\\" NEEDED at height 412 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetUpgradeRehearsal140609001/002/nodes/v2 module=consensus stack=\"goroutine 65 [running]"
+phase=halt-log node=2 line="10:41PM ERR error in proxyAppConn.FinalizeBlock err=\"UPGRADE \\\"rehearsal-1\\\" NEEDED at height 412 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetUpgradeRehearsal140609001/002/nodes/v3 module=state"
+phase=halt-log node=2 line="10:41PM ERR CONSENSUS FAILURE!!! err=\"failed to apply block; error UPGRADE \\\"rehearsal-1\\\" NEEDED at height 412 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetUpgradeRehearsal140609001/002/nodes/v3 module=consensus stack=\"goroutine 167 [running"
+phase=halt-log node=3 line="10:41PM ERR error in proxyAppConn.FinalizeBlock err=\"UPGRADE \\\"rehearsal-1\\\" NEEDED at height 412 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetUpgradeRehearsal140609001/002/nodes/v4 module=state"
+phase=halt-log node=3 line="10:41PM ERR CONSENSUS FAILURE!!! err=\"failed to apply block; error UPGRADE \\\"rehearsal-1\\\" NEEDED at height 412 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetUpgradeRehearsal140609001/002/nodes/v4 module=consensus stack=\"goroutine 81 [running]"
+phase=halt node=0 application_height=411 block_store_height=412 abci_app_version=1
+phase=halt node=1 application_height=411 block_store_height=412 abci_app_version=1
+phase=halt node=2 application_height=411 block_store_height=412 abci_app_version=1
+phase=halt node=3 application_height=411 block_store_height=412 abci_app_version=1
+phase=census-h-1 height=411 providers ADMITTED=1 providers DRAINING=1 leases ACTIVE=2 leases RENEWED=1 leases EXPIRED=1 leases ENDED=1 offers open=2 evidence RECORDED=2 evidence REJECTED=1 evidence EXPIRED (read time)=1 proposals OPEN=1 proposals QUEUED=1 proposals EXECUTED=6 pending validator changes=1 pending limit changes=1 governed values=1
+phase=halt-history genesis_sha256=fd7d4efa62b3d01d5c40f4bd6fded2b1fd632809644271cbde22763c14e0099b earliest_block_height=1
+phase=halt-stop node=0 seconds=0.0
+phase=halt-stop node=1 seconds=0.0
+phase=halt-stop node=2 seconds=0.0
+phase=halt-stop node=3 seconds=0.0
+phase=b1-after-halt exit=1 seconds=0.1 node_started=false refusal="Error: load gate at height 411 refused this binary (row 2): upgrade rehearsal-1 is due at height 412; install the binary for it (release digest 702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65)"
+phase=resumed height=414 seconds_from_halt_to_h_plus_2=2.5
+phase=upgrade-height node=0 height=411 block_hash=05F8236A5D35BE8620E100D33B4C9D314CA75966D5331DED303A576FC40F66F6 header_app_hash=AB8CF899512295E91870F9DA79222B3FCF844F76CB4147247FEE9BD347896545 header_version_app=1 block_time=1794091264 txs=0
+phase=upgrade-height node=1 height=411 block_hash=05F8236A5D35BE8620E100D33B4C9D314CA75966D5331DED303A576FC40F66F6 header_app_hash=AB8CF899512295E91870F9DA79222B3FCF844F76CB4147247FEE9BD347896545 header_version_app=1 block_time=1794091264 txs=0
+phase=upgrade-height node=2 height=411 block_hash=05F8236A5D35BE8620E100D33B4C9D314CA75966D5331DED303A576FC40F66F6 header_app_hash=AB8CF899512295E91870F9DA79222B3FCF844F76CB4147247FEE9BD347896545 header_version_app=1 block_time=1794091264 txs=0
+phase=upgrade-height node=3 height=411 block_hash=05F8236A5D35BE8620E100D33B4C9D314CA75966D5331DED303A576FC40F66F6 header_app_hash=AB8CF899512295E91870F9DA79222B3FCF844F76CB4147247FEE9BD347896545 header_version_app=1 block_time=1794091264 txs=0
+phase=upgrade-height node=0 height=412 block_hash=1375DAF8F39345C75911AD1C38C11A400290D05D2BB7288F6EE194449A789948 header_app_hash=AB8CF899512295E91870F9DA79222B3FCF844F76CB4147247FEE9BD347896545 header_version_app=1 block_time=1794091264 txs=0
+phase=upgrade-height node=1 height=412 block_hash=1375DAF8F39345C75911AD1C38C11A400290D05D2BB7288F6EE194449A789948 header_app_hash=AB8CF899512295E91870F9DA79222B3FCF844F76CB4147247FEE9BD347896545 header_version_app=1 block_time=1794091264 txs=0
+phase=upgrade-height node=2 height=412 block_hash=1375DAF8F39345C75911AD1C38C11A400290D05D2BB7288F6EE194449A789948 header_app_hash=AB8CF899512295E91870F9DA79222B3FCF844F76CB4147247FEE9BD347896545 header_version_app=1 block_time=1794091264 txs=0
+phase=upgrade-height node=3 height=412 block_hash=1375DAF8F39345C75911AD1C38C11A400290D05D2BB7288F6EE194449A789948 header_app_hash=AB8CF899512295E91870F9DA79222B3FCF844F76CB4147247FEE9BD347896545 header_version_app=1 block_time=1794091264 txs=0
+phase=upgrade-height node=0 height=413 block_hash=EE48A2425AE728880F8BC33D6BC2A757CF212C3B14C1A3D8796804A073037F6D header_app_hash=F6E82CB56D8E052F71B538E7D677212B4CEC72C16B8AD9D290A529458AD8A925 header_version_app=2 block_time=1794091264 txs=0
+phase=upgrade-height node=1 height=413 block_hash=EE48A2425AE728880F8BC33D6BC2A757CF212C3B14C1A3D8796804A073037F6D header_app_hash=F6E82CB56D8E052F71B538E7D677212B4CEC72C16B8AD9D290A529458AD8A925 header_version_app=2 block_time=1794091264 txs=0
+phase=upgrade-height node=2 height=413 block_hash=EE48A2425AE728880F8BC33D6BC2A757CF212C3B14C1A3D8796804A073037F6D header_app_hash=F6E82CB56D8E052F71B538E7D677212B4CEC72C16B8AD9D290A529458AD8A925 header_version_app=2 block_time=1794091264 txs=0
+phase=upgrade-height node=3 height=413 block_hash=EE48A2425AE728880F8BC33D6BC2A757CF212C3B14C1A3D8796804A073037F6D header_app_hash=F6E82CB56D8E052F71B538E7D677212B4CEC72C16B8AD9D290A529458AD8A925 header_version_app=2 block_time=1794091264 txs=0
+phase=upgrade-height node=0 height=414 block_hash=930D310B5E0D0F6615689077515DBCAF6B3DF65EA5BD5A5C7E691515C8EC3A66 header_app_hash=F6E82CB56D8E052F71B538E7D677212B4CEC72C16B8AD9D290A529458AD8A925 header_version_app=2 block_time=1794091270 txs=0
+phase=upgrade-height node=1 height=414 block_hash=930D310B5E0D0F6615689077515DBCAF6B3DF65EA5BD5A5C7E691515C8EC3A66 header_app_hash=F6E82CB56D8E052F71B538E7D677212B4CEC72C16B8AD9D290A529458AD8A925 header_version_app=2 block_time=1794091270 txs=0
+phase=upgrade-height node=2 height=414 block_hash=930D310B5E0D0F6615689077515DBCAF6B3DF65EA5BD5A5C7E691515C8EC3A66 header_app_hash=F6E82CB56D8E052F71B538E7D677212B4CEC72C16B8AD9D290A529458AD8A925 header_version_app=2 block_time=1794091270 txs=0
+phase=upgrade-height node=3 height=414 block_hash=930D310B5E0D0F6615689077515DBCAF6B3DF65EA5BD5A5C7E691515C8EC3A66 header_app_hash=F6E82CB56D8E052F71B538E7D677212B4CEC72C16B8AD9D290A529458AD8A925 header_version_app=2 block_time=1794091270 txs=0
+phase=resumed-history genesis_sha256=fd7d4efa62b3d01d5c40f4bd6fded2b1fd632809644271cbde22763c14e0099b earliest_block_height=1
+phase=compare-objects before=411 after=413 objects=14 equal=true
+phase=compare-policy before=411 after=413 app_version=1->2 plan=rehearsal-1->none policy_version=7->8 other_fields=equal
+phase=census-h+1 height=413 providers ADMITTED=1 providers DRAINING=1 leases ACTIVE=2 leases RENEWED=1 leases EXPIRED=1 leases ENDED=1 offers open=2 evidence RECORDED=2 evidence REJECTED=1 evidence EXPIRED (read time)=1 proposals OPEN=1 proposals QUEUED=1 proposals EXECUTED=6 pending validator changes=1 pending limit changes=1 governed values=1
+phase=queued-stale proposal=queued-limit height=416 code=ERROR_CODE_STALE_VERSION state=QUEUED
+phase=business-id-replay business_id=queued-limit-ap-1 height=418 code=0 idempotent=true
+phase=open-approve-3 height=419 code=0 txhash=B3217FC1AAA6019A54CFDBA1677D04A8FAC16EC69CB8C429E42949FDF2876D3A
+phase=b1-after-upgrade-stop node=1 seconds=0.0
+phase=b1-after-upgrade exit=1 seconds=0.1 node_started=false refusal="Error: load gate at height 419 refused this binary (row 5): state is newer than this binary (app version 2, binary 1)"
+phase=b2-too-early exit=1 seconds=0.1 node_started=false refusal="Error: load gate at height 289 refused this binary (row 4): too early: run the previous binary until height 411 (upgrade rehearsal-1 applies at height 412)"
+phase=b2-fresh-home exit=1 seconds=0.1 node_started=false refusal="Error: error during handshake: error on replay: this binary runs app version 2, and a chain starts at app version 1: initialize a node with the genesis binary and switch binaries at the upgrade height"
+phase=transition object=max_page_limit class="pending limit changes" before=pending at_height=414 header_time=1794091270 after=40 at_height=415 header_time=1794091271
+phase=transition object=v5 class="pending validator changes" before=pending at_height=415 header_time=1794091271 after=applied at_height=416 header_time=1794091271
+phase=transition object=e-cross class="evidence RECORDED" before=RECORDED at_height=571 header_time=1794091364 after=EXPIRED at_height=572 header_time=1794091365
+phase=transition object=o-cross class="offers open" before=open at_height=585 header_time=1794091372 after=closed at_height=586 header_time=1794091373
+phase=transition object=l-cross class="leases ACTIVE" before=ACTIVE at_height=599 header_time=1794091380 after=EXPIRED at_height=600 header_time=1794091381
+phase=transition object=open-limit class="proposals OPEN" before=QUEUED at_height=614 header_time=1794091389 after=EXPIRED at_height=615 header_time=1794091389
+phase=census-after-transitions height=615 providers ADMITTED=1 providers DRAINING=1 leases ACTIVE=1 leases RENEWED=1 leases EXPIRED=2 leases ENDED=1 offers open=1 evidence RECORDED=1 evidence REJECTED=1 evidence EXPIRED (read time)=2 proposals OPEN=0 proposals QUEUED=1 proposals EXECUTED=6 pending validator changes=0 pending limit changes=0 governed values=2
+phase=restart-stop node=0 seconds=0.0
+phase=restart-stop node=1 seconds=0.0
+phase=restart-stop node=2 seconds=0.0
+phase=restart-stop node=3 seconds=0.0
+phase=dr-10-41-before-commit node=0 application_height=615 check_tx=sdk/4 (refused; account number 5)
+phase=dr-10-41-after-commit node=0 height=616 check_tx=0
+phase=dr-10-41-committed height=619 code=0 txhash=7C126A0015BD9FEABE1A2806880D84B272EF9327FA4DDE7DDD4D2BC4C292AF63
+phase=restart-history genesis_sha256=fd7d4efa62b3d01d5c40f4bd6fded2b1fd632809644271cbde22763c14e0099b earliest_block_height=1
+phase=h-plus-5-height node=0 height=417 block_hash=6EFF62BDA5905C951AB326E44019BE3C6016EB094CB71D3BE96D5BA4D7A2ED56 header_app_hash=A3CA7420718BA1D6C4FF2E97684007133A26B74574A6CF98E28ACE882C8F05AD header_version_app=2 block_time=1794091271 txs=0
+phase=h-plus-5-height node=1 height=417 block_hash=6EFF62BDA5905C951AB326E44019BE3C6016EB094CB71D3BE96D5BA4D7A2ED56 header_app_hash=A3CA7420718BA1D6C4FF2E97684007133A26B74574A6CF98E28ACE882C8F05AD header_version_app=2 block_time=1794091271 txs=0
+phase=h-plus-5-height node=2 height=417 block_hash=6EFF62BDA5905C951AB326E44019BE3C6016EB094CB71D3BE96D5BA4D7A2ED56 header_app_hash=A3CA7420718BA1D6C4FF2E97684007133A26B74574A6CF98E28ACE882C8F05AD header_version_app=2 block_time=1794091271 txs=0
+phase=h-plus-5-height node=3 height=417 block_hash=6EFF62BDA5905C951AB326E44019BE3C6016EB094CB71D3BE96D5BA4D7A2ED56 header_app_hash=A3CA7420718BA1D6C4FF2E97684007133A26B74574A6CF98E28ACE882C8F05AD header_version_app=2 block_time=1794091271 txs=0
+phase=replay-two-phase v1_heights=1..411 v2_heights=412..619 app_hashes_equal=true
+phase=events heights=1..619 block_txs=69 events=261 typed=44 typed_tx_parsed_with_msg_index=42 typed_block_parsed_with_mode=2 canaries=0 forbidden_names=0
+phase=block-hashes heights=1..619 nodes=4 equal=true upgrade_applied_height=412
+phase=final-stop node=0 seconds=0.0
+phase=final-stop node=1 seconds=0.0
+phase=final-stop node=2 seconds=0.0
+phase=final-stop node=3 seconds=0.0
+phase=statecheck-copy-a-v1 statecheck="chain_id shortvideo-dev-e8247acb3a7822f1"
+phase=statecheck-copy-a-v1 statecheck="height 411"
+phase=statecheck-copy-a-v1 statecheck="app_hash ab8cf899512295e91870f9da79222b3fcf844f76cb4147247fee9bd347896545"
+phase=statecheck-copy-a-v1 statecheck="binary app_version 1"
+phase=statecheck-copy-a-v1 statecheck="binary module auth 7"
+phase=statecheck-copy-a-v1 statecheck="binary module authority 2"
+phase=statecheck-copy-a-v1 statecheck="binary module content 2"
+phase=statecheck-copy-a-v1 statecheck="binary module evidence 2"
+phase=statecheck-copy-a-v1 statecheck="binary module leases 2"
+phase=statecheck-copy-a-v1 statecheck="binary module policy 2"
+phase=statecheck-copy-a-v1 statecheck="binary module providers 2"
+phase=statecheck-copy-a-v1 statecheck="binary module svn 1"
+phase=statecheck-copy-a-v1 statecheck="binary upgrades none"
+phase=statecheck-copy-a-v1 statecheck="gate row 2 refused: upgrade rehearsal-1 is due at height 412; install the binary for it (release digest 702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65)"
+phase=statecheck-copy-a-v1 statecheck="store acc sha256 30b5cbdca96a71a0ea14e4f455fa76f3c4cef4fcdafb76402ea6a7f514442b38 account sequences"
+phase=statecheck-copy-a-v1 statecheck="store authority sha256 eede956bcca343482508563e92ca8c187fe01ef95ddb19fb05d9869d9d2189aa"
+phase=statecheck-copy-a-v1 statecheck="store content sha256 602907d6187bebc0336112b3ec1be41760c7fac24fcdb41fa8a8307c89dcabbf"
+phase=statecheck-copy-a-v1 statecheck="store evidence sha256 892791231f210bb034dc87528c78fdfbc97df5748ab94c9a8d74c809140efae9"
+phase=statecheck-copy-a-v1 statecheck="store leases sha256 4eb9bd910bb1a3fead73532994b936f44a440289003e67b58fd5a67bbd3d3b01"
+phase=statecheck-copy-a-v1 statecheck="store policy sha256 c5dc078906777b13ab4a9933b2d4a473d00bbdde355d100bcacb5f6fafd14f9f"
+phase=statecheck-copy-a-v1 statecheck="store providers sha256 85d82bb3e287fa21a1b0c3edbf6c334df874b52af7976d6d849f4775d240c5c0"
+phase=statecheck-copy-a-v1 statecheck="store svn sha256 a852297d7c50602f9e25c2c749c0e377608a611ada1096d8b3d8f02184e691af"
+phase=statecheck-copy-a-v1 statecheck="i13 sha256 8d8df05be863a4e955646d31ee196f6da7172e5a204e3f0d287b72dcf5a4aed1"
+phase=statecheck-copy-a-v1 statecheck="check authority ok"
+phase=statecheck-copy-a-v1 statecheck="check evidence ok"
+phase=statecheck-copy-a-v1 statecheck="check lease-offers ok"
+phase=statecheck-copy-a-v1 statecheck="check leases ok"
+phase=statecheck-copy-a-v1 statecheck="check policy ok"
+phase=statecheck-copy-a-v1 statecheck="check versions ok"
+phase=statecheck-copy-a-v1 statecheck="result PASS"
+phase=statecheck-copy-a-v1 homes=4 reports_byte_identical=true
+phase=statecheck-copy-a-v2 statecheck="chain_id shortvideo-dev-e8247acb3a7822f1"
+phase=statecheck-copy-a-v2 statecheck="height 411"
+phase=statecheck-copy-a-v2 statecheck="app_hash ab8cf899512295e91870f9da79222b3fcf844f76cb4147247fee9bd347896545"
+phase=statecheck-copy-a-v2 statecheck="binary app_version 2"
+phase=statecheck-copy-a-v2 statecheck="binary module auth 7"
+phase=statecheck-copy-a-v2 statecheck="binary module authority 2"
+phase=statecheck-copy-a-v2 statecheck="binary module content 2"
+phase=statecheck-copy-a-v2 statecheck="binary module evidence 2"
+phase=statecheck-copy-a-v2 statecheck="binary module leases 2"
+phase=statecheck-copy-a-v2 statecheck="binary module policy 2"
+phase=statecheck-copy-a-v2 statecheck="binary module providers 2"
+phase=statecheck-copy-a-v2 statecheck="binary module svn 1"
+phase=statecheck-copy-a-v2 statecheck="binary upgrade rehearsal-1 1 2"
+phase=statecheck-copy-a-v2 statecheck="gate row 3 start in the upgrade window: the next block applies rehearsal-1 (app version 1 to 2)"
+phase=statecheck-copy-a-v2 statecheck="store acc sha256 30b5cbdca96a71a0ea14e4f455fa76f3c4cef4fcdafb76402ea6a7f514442b38 account sequences"
+phase=statecheck-copy-a-v2 statecheck="store authority sha256 eede956bcca343482508563e92ca8c187fe01ef95ddb19fb05d9869d9d2189aa"
+phase=statecheck-copy-a-v2 statecheck="store content sha256 602907d6187bebc0336112b3ec1be41760c7fac24fcdb41fa8a8307c89dcabbf"
+phase=statecheck-copy-a-v2 statecheck="store evidence sha256 892791231f210bb034dc87528c78fdfbc97df5748ab94c9a8d74c809140efae9"
+phase=statecheck-copy-a-v2 statecheck="store leases sha256 4eb9bd910bb1a3fead73532994b936f44a440289003e67b58fd5a67bbd3d3b01"
+phase=statecheck-copy-a-v2 statecheck="store policy sha256 c5dc078906777b13ab4a9933b2d4a473d00bbdde355d100bcacb5f6fafd14f9f"
+phase=statecheck-copy-a-v2 statecheck="store providers sha256 85d82bb3e287fa21a1b0c3edbf6c334df874b52af7976d6d849f4775d240c5c0"
+phase=statecheck-copy-a-v2 statecheck="store svn sha256 a852297d7c50602f9e25c2c749c0e377608a611ada1096d8b3d8f02184e691af"
+phase=statecheck-copy-a-v2 statecheck="i13 sha256 8d8df05be863a4e955646d31ee196f6da7172e5a204e3f0d287b72dcf5a4aed1"
+phase=statecheck-copy-a-v2 statecheck="check authority ok"
+phase=statecheck-copy-a-v2 statecheck="check evidence ok"
+phase=statecheck-copy-a-v2 statecheck="check lease-offers ok"
+phase=statecheck-copy-a-v2 statecheck="check leases ok"
+phase=statecheck-copy-a-v2 statecheck="check policy ok"
+phase=statecheck-copy-a-v2 statecheck="check versions ok"
+phase=statecheck-copy-a-v2 statecheck="result PASS"
+phase=statecheck-copy-a-v2 homes=4 reports_byte_identical=true
+phase=statecheck-nodes-h-1-v1 statecheck="chain_id shortvideo-dev-e8247acb3a7822f1"
+phase=statecheck-nodes-h-1-v1 statecheck="height 411"
+phase=statecheck-nodes-h-1-v1 statecheck="app_hash ab8cf899512295e91870f9da79222b3fcf844f76cb4147247fee9bd347896545"
+phase=statecheck-nodes-h-1-v1 statecheck="binary app_version 1"
+phase=statecheck-nodes-h-1-v1 statecheck="binary module auth 7"
+phase=statecheck-nodes-h-1-v1 statecheck="binary module authority 2"
+phase=statecheck-nodes-h-1-v1 statecheck="binary module content 2"
+phase=statecheck-nodes-h-1-v1 statecheck="binary module evidence 2"
+phase=statecheck-nodes-h-1-v1 statecheck="binary module leases 2"
+phase=statecheck-nodes-h-1-v1 statecheck="binary module policy 2"
+phase=statecheck-nodes-h-1-v1 statecheck="binary module providers 2"
+phase=statecheck-nodes-h-1-v1 statecheck="binary module svn 1"
+phase=statecheck-nodes-h-1-v1 statecheck="binary upgrades none"
+phase=statecheck-nodes-h-1-v1 statecheck="gate row 2 refused: upgrade rehearsal-1 is due at height 412; install the binary for it (release digest 702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65)"
+phase=statecheck-nodes-h-1-v1 statecheck="store acc sha256 30b5cbdca96a71a0ea14e4f455fa76f3c4cef4fcdafb76402ea6a7f514442b38 account sequences"
+phase=statecheck-nodes-h-1-v1 statecheck="store authority sha256 eede956bcca343482508563e92ca8c187fe01ef95ddb19fb05d9869d9d2189aa"
+phase=statecheck-nodes-h-1-v1 statecheck="store content sha256 602907d6187bebc0336112b3ec1be41760c7fac24fcdb41fa8a8307c89dcabbf"
+phase=statecheck-nodes-h-1-v1 statecheck="store evidence sha256 892791231f210bb034dc87528c78fdfbc97df5748ab94c9a8d74c809140efae9"
+phase=statecheck-nodes-h-1-v1 statecheck="store leases sha256 4eb9bd910bb1a3fead73532994b936f44a440289003e67b58fd5a67bbd3d3b01"
+phase=statecheck-nodes-h-1-v1 statecheck="store policy sha256 c5dc078906777b13ab4a9933b2d4a473d00bbdde355d100bcacb5f6fafd14f9f"
+phase=statecheck-nodes-h-1-v1 statecheck="store providers sha256 85d82bb3e287fa21a1b0c3edbf6c334df874b52af7976d6d849f4775d240c5c0"
+phase=statecheck-nodes-h-1-v1 statecheck="store svn sha256 a852297d7c50602f9e25c2c749c0e377608a611ada1096d8b3d8f02184e691af"
+phase=statecheck-nodes-h-1-v1 statecheck="i13 sha256 8d8df05be863a4e955646d31ee196f6da7172e5a204e3f0d287b72dcf5a4aed1"
+phase=statecheck-nodes-h-1-v1 statecheck="check authority ok"
+phase=statecheck-nodes-h-1-v1 statecheck="check evidence ok"
+phase=statecheck-nodes-h-1-v1 statecheck="check lease-offers ok"
+phase=statecheck-nodes-h-1-v1 statecheck="check leases ok"
+phase=statecheck-nodes-h-1-v1 statecheck="check policy ok"
+phase=statecheck-nodes-h-1-v1 statecheck="check versions ok"
+phase=statecheck-nodes-h-1-v1 statecheck="result PASS"
+phase=statecheck-nodes-h-1-v1 homes=4 reports_byte_identical=true
+phase=statecheck-nodes-h-v2 statecheck="chain_id shortvideo-dev-e8247acb3a7822f1"
+phase=statecheck-nodes-h-v2 statecheck="height 412"
+phase=statecheck-nodes-h-v2 statecheck="app_hash f6e82cb56d8e052f71b538e7d677212b4cec72c16b8ad9d290a529458ad8a925"
+phase=statecheck-nodes-h-v2 statecheck="binary app_version 2"
+phase=statecheck-nodes-h-v2 statecheck="binary module auth 7"
+phase=statecheck-nodes-h-v2 statecheck="binary module authority 2"
+phase=statecheck-nodes-h-v2 statecheck="binary module content 2"
+phase=statecheck-nodes-h-v2 statecheck="binary module evidence 2"
+phase=statecheck-nodes-h-v2 statecheck="binary module leases 2"
+phase=statecheck-nodes-h-v2 statecheck="binary module policy 2"
+phase=statecheck-nodes-h-v2 statecheck="binary module providers 2"
+phase=statecheck-nodes-h-v2 statecheck="binary module svn 1"
+phase=statecheck-nodes-h-v2 statecheck="binary upgrade rehearsal-1 1 2"
+phase=statecheck-nodes-h-v2 statecheck="gate row 1 start"
+phase=statecheck-nodes-h-v2 statecheck="store acc sha256 30b5cbdca96a71a0ea14e4f455fa76f3c4cef4fcdafb76402ea6a7f514442b38 account sequences"
+phase=statecheck-nodes-h-v2 statecheck="store authority sha256 8257f7356a3cf518a2d6a4a9da5995b40b934558df8284bf4898123c45021557"
+phase=statecheck-nodes-h-v2 statecheck="store content sha256 602907d6187bebc0336112b3ec1be41760c7fac24fcdb41fa8a8307c89dcabbf"
+phase=statecheck-nodes-h-v2 statecheck="store evidence sha256 892791231f210bb034dc87528c78fdfbc97df5748ab94c9a8d74c809140efae9"
+phase=statecheck-nodes-h-v2 statecheck="store leases sha256 4eb9bd910bb1a3fead73532994b936f44a440289003e67b58fd5a67bbd3d3b01"
+phase=statecheck-nodes-h-v2 statecheck="store policy sha256 403df51f6c635c4efc30efe3575c4d51c100c6f7947beb12a05f74b5afc4ad79"
+phase=statecheck-nodes-h-v2 statecheck="store providers sha256 85d82bb3e287fa21a1b0c3edbf6c334df874b52af7976d6d849f4775d240c5c0"
+phase=statecheck-nodes-h-v2 statecheck="store svn sha256 4ef8074ce81792161ff8bd8c949e410402b89875280edda2d4e285ed6daa6a6c"
+phase=statecheck-nodes-h-v2 statecheck="i13 sha256 8d8df05be863a4e955646d31ee196f6da7172e5a204e3f0d287b72dcf5a4aed1"
+phase=statecheck-nodes-h-v2 statecheck="check authority ok"
+phase=statecheck-nodes-h-v2 statecheck="check evidence ok"
+phase=statecheck-nodes-h-v2 statecheck="check lease-offers ok"
+phase=statecheck-nodes-h-v2 statecheck="check leases ok"
+phase=statecheck-nodes-h-v2 statecheck="check policy ok"
+phase=statecheck-nodes-h-v2 statecheck="check versions ok"
+phase=statecheck-nodes-h-v2 statecheck="result PASS"
+phase=statecheck-nodes-h-v2 homes=4 reports_byte_identical=true
+phase=statecheck-nodes-h-plus-5-v2 statecheck="chain_id shortvideo-dev-e8247acb3a7822f1"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="height 417"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="app_hash a3ca7420718ba1d6c4ff2e97684007133a26b74574a6cf98e28ace882c8f05ad"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary app_version 2"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary module auth 7"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary module authority 2"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary module content 2"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary module evidence 2"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary module leases 2"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary module policy 2"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary module providers 2"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary module svn 1"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="binary upgrade rehearsal-1 1 2"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="gate row 1 start"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="store acc sha256 e73427ca359370984fdf8208b9d592aea2cc971fd435de1d697cf01fcf2420ad account sequences"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="store authority sha256 4831aa25699085e926a06cf62d4fd0c7d1a0ddcfe6f55876171595807af7c98e"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="store content sha256 602907d6187bebc0336112b3ec1be41760c7fac24fcdb41fa8a8307c89dcabbf"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="store evidence sha256 892791231f210bb034dc87528c78fdfbc97df5748ab94c9a8d74c809140efae9"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="store leases sha256 4eb9bd910bb1a3fead73532994b936f44a440289003e67b58fd5a67bbd3d3b01"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="store policy sha256 e25797fdba5eb7a96f19a79efe509d46fab6206ed111155b5bf318ca407ba424"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="store providers sha256 85d82bb3e287fa21a1b0c3edbf6c334df874b52af7976d6d849f4775d240c5c0"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="store svn sha256 4ef8074ce81792161ff8bd8c949e410402b89875280edda2d4e285ed6daa6a6c"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="i13 sha256 cc1c49d1e0bf01991bb79146d8eabc4213c007623473b9131c22da7c75c538b0"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="check authority ok"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="check evidence ok"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="check lease-offers ok"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="check leases ok"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="check policy ok"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="check versions ok"
+phase=statecheck-nodes-h-plus-5-v2 statecheck="result PASS"
+phase=statecheck-nodes-h-plus-5-v2 homes=4 reports_byte_identical=true
+phase=statecheck-nodes-tip-v2 statecheck="chain_id shortvideo-dev-e8247acb3a7822f1"
+phase=statecheck-nodes-tip-v2 statecheck="height 619"
+phase=statecheck-nodes-tip-v2 statecheck="app_hash 330bfa06ee984b72daae3658ea082fd403d85b12788b22fff126cf3f3e419b67"
+phase=statecheck-nodes-tip-v2 statecheck="binary app_version 2"
+phase=statecheck-nodes-tip-v2 statecheck="binary module auth 7"
+phase=statecheck-nodes-tip-v2 statecheck="binary module authority 2"
+phase=statecheck-nodes-tip-v2 statecheck="binary module content 2"
+phase=statecheck-nodes-tip-v2 statecheck="binary module evidence 2"
+phase=statecheck-nodes-tip-v2 statecheck="binary module leases 2"
+phase=statecheck-nodes-tip-v2 statecheck="binary module policy 2"
+phase=statecheck-nodes-tip-v2 statecheck="binary module providers 2"
+phase=statecheck-nodes-tip-v2 statecheck="binary module svn 1"
+phase=statecheck-nodes-tip-v2 statecheck="binary upgrade rehearsal-1 1 2"
+phase=statecheck-nodes-tip-v2 statecheck="gate row 1 start"
+phase=statecheck-nodes-tip-v2 statecheck="store acc sha256 dc2c40c1c6b7caf19a436d0d437d6a5ca5fa144ce58f11aa19ddf350f768e132 account sequences"
+phase=statecheck-nodes-tip-v2 statecheck="store authority sha256 c8431fbdcf4ee1a5d08e7a301603e6b0ca7588e08600681405ab4f8fd0df8590"
+phase=statecheck-nodes-tip-v2 statecheck="store content sha256 a016a16a308512424a14e7a7c102f8a783081a158c5c7240007697f3b82c79ea"
+phase=statecheck-nodes-tip-v2 statecheck="store evidence sha256 892791231f210bb034dc87528c78fdfbc97df5748ab94c9a8d74c809140efae9"
+phase=statecheck-nodes-tip-v2 statecheck="store leases sha256 a28b1df99dab6bfe4de33882d27b192353f36b3a0b694397f80437fb48bda67f"
+phase=statecheck-nodes-tip-v2 statecheck="store policy sha256 e25797fdba5eb7a96f19a79efe509d46fab6206ed111155b5bf318ca407ba424"
+phase=statecheck-nodes-tip-v2 statecheck="store providers sha256 cbf15293c95d2ee8665936d2476e48564711a612629b41c84920b114d6f806a9"
+phase=statecheck-nodes-tip-v2 statecheck="store svn sha256 4ef8074ce81792161ff8bd8c949e410402b89875280edda2d4e285ed6daa6a6c"
+phase=statecheck-nodes-tip-v2 statecheck="i13 sha256 7456aa698eea589d005cc83c41243a9e78d3eaf62f68c8502f982ece9d6d6bed"
+phase=statecheck-nodes-tip-v2 statecheck="check authority ok"
+phase=statecheck-nodes-tip-v2 statecheck="check evidence ok"
+phase=statecheck-nodes-tip-v2 statecheck="check lease-offers ok"
+phase=statecheck-nodes-tip-v2 statecheck="check leases ok"
+phase=statecheck-nodes-tip-v2 statecheck="check policy ok"
+phase=statecheck-nodes-tip-v2 statecheck="check versions ok"
+phase=statecheck-nodes-tip-v2 statecheck="result PASS"
+phase=statecheck-nodes-tip-v2 homes=4 reports_byte_identical=true
+phase=statecheck-nodes-tip-v1 statecheck="chain_id shortvideo-dev-e8247acb3a7822f1"
+phase=statecheck-nodes-tip-v1 statecheck="height 619"
+phase=statecheck-nodes-tip-v1 statecheck="app_hash 330bfa06ee984b72daae3658ea082fd403d85b12788b22fff126cf3f3e419b67"
+phase=statecheck-nodes-tip-v1 statecheck="binary app_version 1"
+phase=statecheck-nodes-tip-v1 statecheck="binary module auth 7"
+phase=statecheck-nodes-tip-v1 statecheck="binary module authority 2"
+phase=statecheck-nodes-tip-v1 statecheck="binary module content 2"
+phase=statecheck-nodes-tip-v1 statecheck="binary module evidence 2"
+phase=statecheck-nodes-tip-v1 statecheck="binary module leases 2"
+phase=statecheck-nodes-tip-v1 statecheck="binary module policy 2"
+phase=statecheck-nodes-tip-v1 statecheck="binary module providers 2"
+phase=statecheck-nodes-tip-v1 statecheck="binary module svn 1"
+phase=statecheck-nodes-tip-v1 statecheck="binary upgrades none"
+phase=statecheck-nodes-tip-v1 statecheck="gate row 5 refused: state is newer than this binary (app version 2, binary 1)"
+phase=statecheck-nodes-tip-v1 statecheck="store acc sha256 dc2c40c1c6b7caf19a436d0d437d6a5ca5fa144ce58f11aa19ddf350f768e132 account sequences"
+phase=statecheck-nodes-tip-v1 statecheck="store authority sha256 c8431fbdcf4ee1a5d08e7a301603e6b0ca7588e08600681405ab4f8fd0df8590"
+phase=statecheck-nodes-tip-v1 statecheck="store content sha256 a016a16a308512424a14e7a7c102f8a783081a158c5c7240007697f3b82c79ea"
+phase=statecheck-nodes-tip-v1 statecheck="store evidence sha256 892791231f210bb034dc87528c78fdfbc97df5748ab94c9a8d74c809140efae9"
+phase=statecheck-nodes-tip-v1 statecheck="store leases sha256 a28b1df99dab6bfe4de33882d27b192353f36b3a0b694397f80437fb48bda67f"
+phase=statecheck-nodes-tip-v1 statecheck="store policy sha256 e25797fdba5eb7a96f19a79efe509d46fab6206ed111155b5bf318ca407ba424"
+phase=statecheck-nodes-tip-v1 statecheck="store providers sha256 cbf15293c95d2ee8665936d2476e48564711a612629b41c84920b114d6f806a9"
+phase=statecheck-nodes-tip-v1 statecheck="store svn sha256 4ef8074ce81792161ff8bd8c949e410402b89875280edda2d4e285ed6daa6a6c"
+phase=statecheck-nodes-tip-v1 statecheck="i13 sha256 7456aa698eea589d005cc83c41243a9e78d3eaf62f68c8502f982ece9d6d6bed"
+phase=statecheck-nodes-tip-v1 statecheck="check authority ok"
+phase=statecheck-nodes-tip-v1 statecheck="check evidence ok"
+phase=statecheck-nodes-tip-v1 statecheck="check lease-offers ok"
+phase=statecheck-nodes-tip-v1 statecheck="check leases ok"
+phase=statecheck-nodes-tip-v1 statecheck="check policy ok"
+phase=statecheck-nodes-tip-v1 statecheck="check versions ok"
+phase=statecheck-nodes-tip-v1 statecheck="result FAIL"
+phase=statecheck-nodes-tip-v1 homes=4 reports_byte_identical=true
+phase=statecheck homes=4 copy_a_h_minus_1=row2(v1),row3(v2) nodes_h_minus_1_equal_copy_a=true h=row1(v2) h_plus_5=row1(v2) tip=619 row1(v2),row5(v1) i13_h_minus_1_equals_h=8d8df05be863a4e955646d31ee196f6da7172e5a204e3f0d287b72dcf5a4aed1
+phase=rehearsal-done h=412 tip=619 wall_seconds=242.7 label="single-machine four-process devnet (not independent operators)"
+--- PASS: TestDevnetUpgradeRehearsal (243.13s)
+=== RUN   TestDevnetMinorityWrongMigration
+label=single-machine four-process devnet (not independent operators)
+phase=build binaries=3 wall_seconds=7.3 label="binaries built from one tree by go build; not independently built releases; not signed; not reviewed source"
+phase=binary name=svnd-b1 tags="" sha256=3e25db0b52c04a395cbc2bdfcc1b631711641b676ea84f9a68ff55f83a3401bb app_version=1 version_line="upgrades none"
+phase=binary name=svnd-b2 tags="svn_rehearsal" sha256=d8614c1b75df86eeecba481a193a364793d2efbe79c66817a49cbee327098f9b app_version=2 version_line="upgrade rehearsal-1 from_app_version 1 to_app_version 2"
+phase=binary name=svnd-b2-bad tags="svn_rehearsal_bad" sha256=da7ede83d68fcb6a0828d9c6cce6ae493dce7f9a6ecb91b5aaf0c36114a150cc app_version=2 version_line="upgrade rehearsal-1 from_app_version 1 to_app_version 2"
+phase=devnet-start chain_id=shortvideo-dev-74c4dd3ae635e536 genesis_sha256=63b06740b181eee091ea1452f1f3ff032ec10229fa40940acba35835249b76d7 council_delay_seconds=0 label="single-machine four-process devnet (not independent operators)"
+phase=minority-plan-propose height=7 code=0 txhash=900D78E58CDA25923B64542DC33CFFB93E2796BE0089498901886A36D76936DD
+phase=minority-plan-approve-1 height=9 code=0 txhash=C0375A61B2F724D79CB696477DD9DB8C51C9EC64835F690835201F215BFE691A
+phase=minority-plan-approve-2 height=10 code=0 txhash=B416FFBB87EB13646708CB1D25AFBEB2FDD9AB3BEBB13EE4588B30C68E9F3F4C
+phase=minority-plan-approve-3 height=12 code=0 txhash=49759B16AFA8F34C633EC1C5C97084C68E4773F67F0332A67BA5195AF8BE24BD
+phase=minority-plan-execute height=13 code=0 txhash=FF59126851A30EC011B889F4A06DE76A30D4802FB1934184F9CB7131D31AFFE3 policy_version=2
+phase=minority-plan execute_height=13 h=135 lead=122 min_lead=100 (PROPOSED)
+phase=mempool-empty nodes=running num_unconfirmed_txs=0
+phase=minority-halt-log node=0 line="10:44PM ERR error in proxyAppConn.FinalizeBlock err=\"UPGRADE \\\"rehearsal-1\\\" NEEDED at height 135 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongMigration335403533/002/nodes/v1 module=state"
+phase=minority-halt-log node=0 line="10:44PM ERR CONSENSUS FAILURE!!! err=\"failed to apply block; error UPGRADE \\\"rehearsal-1\\\" NEEDED at height 135 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongMigration335403533/002/nodes/v1 module=consensus stack=\"goroutine 125 [r"
+phase=minority-halt-log node=1 line="10:44PM ERR error in proxyAppConn.FinalizeBlock err=\"UPGRADE \\\"rehearsal-1\\\" NEEDED at height 135 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongMigration335403533/002/nodes/v2 module=state"
+phase=minority-halt-log node=1 line="10:44PM ERR CONSENSUS FAILURE!!! err=\"failed to apply block; error UPGRADE \\\"rehearsal-1\\\" NEEDED at height 135 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongMigration335403533/002/nodes/v2 module=consensus stack=\"goroutine 154 [r"
+phase=minority-halt-log node=2 line="10:44PM ERR error in proxyAppConn.FinalizeBlock err=\"UPGRADE \\\"rehearsal-1\\\" NEEDED at height 135 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongMigration335403533/002/nodes/v3 module=state"
+phase=minority-halt-log node=2 line="10:44PM ERR CONSENSUS FAILURE!!! err=\"failed to apply block; error UPGRADE \\\"rehearsal-1\\\" NEEDED at height 135 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongMigration335403533/002/nodes/v3 module=consensus stack=\"goroutine 96 [ru"
+phase=minority-halt-log node=3 line="10:44PM ERR error in proxyAppConn.FinalizeBlock err=\"UPGRADE \\\"rehearsal-1\\\" NEEDED at height 135 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongMigration335403533/002/nodes/v4 module=state"
+phase=minority-halt-log node=3 line="10:44PM ERR CONSENSUS FAILURE!!! err=\"failed to apply block; error UPGRADE \\\"rehearsal-1\\\" NEEDED at height 135 release_digest=702862363f5f704ffc37148a84a70c566097d7c87c09296b9c1bc474d74cca65\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongMigration335403533/002/nodes/v4 module=consensus stack=\"goroutine 42 [ru"
+phase=minority-halt-stop node=0 seconds=0.0
+phase=minority-halt-stop node=1 seconds=0.0
+phase=minority-halt-stop node=2 seconds=0.0
+phase=minority-halt-stop node=3 seconds=0.0
+phase=minority-prevote-log node=3 line="10:44PM ERR prevote step: consensus deems this block invalid; prevoting nil err=\"wrong Block.Header.AppHash.  Expected AFDBE1756CF1BF82A6AA98ACF82CD7824AB66565CCC6100167A28EAB9E9846D4, got DD601FB09929F79F0D45C193B7393A2A4C43FA6A18E5066DBC795E25E0FD9D83\" height=136 home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWron"
+phase=minority-failure-log node=3 line="10:44PM ERR CONSENSUS FAILURE!!! err=\"precommit step; +2/3 prevoted for an invalid block: wrong Block.Header.AppHash.  Expected AFDBE1756CF1BF82A6AA98ACF82CD7824AB66565CCC6100167A28EAB9E9846D4, got DD601FB09929F79F0D45C193B7393A2A4C43FA6A18E5066DBC795E25E0FD9D83\" home=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/TestDevnetMinorityWrongM"
+phase=minority-diverged node=3 outcome="+2/3 prevoted for an invalid block" application_height=135 app_hash=AFDBE1756CF1BF82A6AA98ACF82CD7824AB66565CCC6100167A28EAB9E9846D4 majority_app_hash=DD601FB09929F79F0D45C193B7393A2A4C43FA6A18E5066DBC795E25E0FD9D83 majority_height=140 bad_row=ff->1
+phase=minority-stop node=3 seconds=0.0
+phase=statecheck-minority-before-restore statecheck="chain_id shortvideo-dev-74c4dd3ae635e536"
+phase=statecheck-minority-before-restore statecheck="height 135"
+phase=statecheck-minority-before-restore statecheck="app_hash afdbe1756cf1bf82a6aa98acf82cd7824ab66565ccc6100167a28eab9e9846d4"
+phase=statecheck-minority-before-restore statecheck="binary app_version 2"
+phase=statecheck-minority-before-restore statecheck="binary module auth 7"
+phase=statecheck-minority-before-restore statecheck="binary module authority 2"
+phase=statecheck-minority-before-restore statecheck="binary module content 2"
+phase=statecheck-minority-before-restore statecheck="binary module evidence 2"
+phase=statecheck-minority-before-restore statecheck="binary module leases 2"
+phase=statecheck-minority-before-restore statecheck="binary module policy 2"
+phase=statecheck-minority-before-restore statecheck="binary module providers 2"
+phase=statecheck-minority-before-restore statecheck="binary module svn 1"
+phase=statecheck-minority-before-restore statecheck="binary upgrade rehearsal-1 1 2"
+phase=statecheck-minority-before-restore statecheck="gate row 1 start"
+phase=statecheck-minority-before-restore statecheck="store acc sha256 b53b2d1553a34f3258999a1fdcb809339b1c8813457bcd4d92298a51e900891d account sequences"
+phase=statecheck-minority-before-restore statecheck="store authority sha256 08b6798b0a060aa9cf1384c4d44f0eb7dbbe31d6a4ae18c4da9d71fae81e50ea"
+phase=statecheck-minority-before-restore statecheck="store content sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576"
+phase=statecheck-minority-before-restore statecheck="store evidence sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576"
+phase=statecheck-minority-before-restore statecheck="store leases sha256 7eda8a1c490bc066e2825ab4e34181f34a226db718c3cb54160786cf713f4a6a"
+phase=statecheck-minority-before-restore statecheck="store policy sha256 35d76b629ea803f86569d11f9dc0af6de3faa11e6d56262e34e7d568cb31ad72"
+phase=statecheck-minority-before-restore statecheck="store providers sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576"
+phase=statecheck-minority-before-restore statecheck="store svn sha256 e98cf344427c82fff0642fc2f97f3ecf2103a747d486a483af968ff46283df27"
+phase=statecheck-minority-before-restore statecheck="i13 sha256 59d604f97bd6e40b1d0acdb1e080dec60fd4e429f95b3d04c99a9553308b7e58"
+phase=statecheck-minority-before-restore statecheck="check authority ok"
+phase=statecheck-minority-before-restore statecheck="check evidence ok"
+phase=statecheck-minority-before-restore statecheck="check lease-offers FAIL layout: row ff under unknown prefix 0xff"
+phase=statecheck-minority-before-restore statecheck="check leases FAIL layout: row ff under unknown prefix 0xff"
+phase=statecheck-minority-before-restore statecheck="check policy ok"
+phase=statecheck-minority-before-restore statecheck="check versions ok"
+phase=statecheck-minority-before-restore statecheck="result FAIL"
+phase=minority-restore node=3 restored=application.db,blockstore.db,state.db,evidence.db,cs.wal from=own-copy-at-halt kept_signing_state_height=136 round=0 copy_signing_state_height=135 round=0
+phase=minority-recovered-history genesis_sha256=63b06740b181eee091ea1452f1f3ff032ec10229fa40940acba35835249b76d7 earliest_block_height=1
+phase=minority-recovered node=3 height=145 app_hash=DD601FB09929F79F0D45C193B7393A2A4C43FA6A18E5066DBC795E25E0FD9D83 nodes=4 equal=true block_hashes_1_to_h_unchanged=true
+phase=minority-final-stop node=0 seconds=0.0
+phase=minority-final-stop node=1 seconds=0.0
+phase=minority-final-stop node=2 seconds=0.0
+phase=minority-final-stop node=3 seconds=0.0
+phase=statecheck-minority-recovered statecheck="chain_id shortvideo-dev-74c4dd3ae635e536"
+phase=statecheck-minority-recovered statecheck="height 145"
+phase=statecheck-minority-recovered statecheck="app_hash dd601fb09929f79f0d45c193b7393a2a4c43fa6a18e5066dbc795e25e0fd9d83"
+phase=statecheck-minority-recovered statecheck="binary app_version 2"
+phase=statecheck-minority-recovered statecheck="binary module auth 7"
+phase=statecheck-minority-recovered statecheck="binary module authority 2"
+phase=statecheck-minority-recovered statecheck="binary module content 2"
+phase=statecheck-minority-recovered statecheck="binary module evidence 2"
+phase=statecheck-minority-recovered statecheck="binary module leases 2"
+phase=statecheck-minority-recovered statecheck="binary module policy 2"
+phase=statecheck-minority-recovered statecheck="binary module providers 2"
+phase=statecheck-minority-recovered statecheck="binary module svn 1"
+phase=statecheck-minority-recovered statecheck="binary upgrade rehearsal-1 1 2"
+phase=statecheck-minority-recovered statecheck="gate row 1 start"
+phase=statecheck-minority-recovered statecheck="store acc sha256 b53b2d1553a34f3258999a1fdcb809339b1c8813457bcd4d92298a51e900891d account sequences"
+phase=statecheck-minority-recovered statecheck="store authority sha256 08b6798b0a060aa9cf1384c4d44f0eb7dbbe31d6a4ae18c4da9d71fae81e50ea"
+phase=statecheck-minority-recovered statecheck="store content sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576"
+phase=statecheck-minority-recovered statecheck="store evidence sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576"
+phase=statecheck-minority-recovered statecheck="store leases sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576"
+phase=statecheck-minority-recovered statecheck="store policy sha256 35d76b629ea803f86569d11f9dc0af6de3faa11e6d56262e34e7d568cb31ad72"
+phase=statecheck-minority-recovered statecheck="store providers sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576"
+phase=statecheck-minority-recovered statecheck="store svn sha256 e98cf344427c82fff0642fc2f97f3ecf2103a747d486a483af968ff46283df27"
+phase=statecheck-minority-recovered statecheck="i13 sha256 59d604f97bd6e40b1d0acdb1e080dec60fd4e429f95b3d04c99a9553308b7e58"
+phase=statecheck-minority-recovered statecheck="check authority ok"
+phase=statecheck-minority-recovered statecheck="check evidence ok"
+phase=statecheck-minority-recovered statecheck="check lease-offers ok"
+phase=statecheck-minority-recovered statecheck="check leases ok"
+phase=statecheck-minority-recovered statecheck="check policy ok"
+phase=statecheck-minority-recovered statecheck="check versions ok"
+phase=statecheck-minority-recovered statecheck="result PASS"
+phase=statecheck-minority-recovered homes=4 reports_byte_identical=true
+phase=minority-done h=135 recovered_height=145 reports_byte_identical=true wall_seconds=48.7 label="single-machine four-process devnet (not independent operators)"
+--- PASS: TestDevnetMinorityWrongMigration (48.93s)
+=== RUN   TestDevnetGovernedChangeTiming
+label=single-machine four-process devnet (not independent operators)
+phase=build binaries=1 wall_seconds=6.1 label="binaries built from one tree by go build; not independently built releases; not signed; not reviewed source"
+phase=binary name=svnd-b1 tags="" sha256=3e25db0b52c04a395cbc2bdfcc1b631711641b676ea84f9a68ff55f83a3401bb app_version=1 version_line="upgrades none"
+phase=devnet-start chain_id=shortvideo-dev-a44bbf3b04e0989c genesis_sha256=46718ce847748b5326ff20a742a660e7cf04dbb0638b7bedf57588b1135a6d9d council_delay_seconds=6 label="single-machine four-process devnet (not independent operators)"
+phase=timing-1-propose height=17 code=0 txhash=2423B230006B1DEB483D497684ECAFED526D46D464F7551D1CADCF8B49269804
+phase=timing-1-approve-1 height=18 code=0 txhash=7D22D09F966D6836253CF01D62F16FAAD27F0A09BA387BCED534C2E06E6B99BA
+phase=timing-1-approve-2 height=19 code=0 txhash=F48C9B36663A3B8377E449D370984B4AECE9F8C0041F0B761A943FD16A698B48
+phase=timing-1-approve-3 height=21 code=0 txhash=BC836C5CD441F45A0E7C50370D21631FD4A3DDC9CBFC152CBF58FEEFB4450049
+phase=timing-queued attempt=1 proposal=timing-1 threshold_height=21 header_time=1794091464 delay=6 execute_after=1794091470 activation=251
+phase=timing-execute attempt=1 height=37 header_time=1794091467 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=38 header_time=1794091467 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=40 header_time=1794091468 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=41 header_time=1794091468 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=42 header_time=1794091468 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=44 header_time=1794091468 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=45 header_time=1794091469 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=46 header_time=1794091469 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=48 header_time=1794091469 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=49 header_time=1794091469 execute_after=1794091470 code=ERROR_CODE_OUT_OF_RANGE
+phase=timing-execute attempt=1 height=50 header_time=1794091470 execute_after=1794091470 code=0 applied=true
+phase=timing-attempt attempt=1 last_rejected_header_time=1794091469 applied_header_time=1794091470 execute_after=1794091470 exact=true
+phase=timing-activation key=max_open_offers value=11 a_minus_1=250 governed_row_set=false in_force="1024" pending=true a=251 governed_row=11 in_force="11" pending=false policy_activated_height=251
+phase=timing-history genesis_sha256=46718ce847748b5326ff20a742a660e7cf04dbb0638b7bedf57588b1135a6d9d earliest_block_height=1
+phase=timing-done wall_seconds=63.7 label="single-machine four-process devnet (not independent operators)"
+--- PASS: TestDevnetGovernedChangeTiming (63.92s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	356.029s
+EXIT:0

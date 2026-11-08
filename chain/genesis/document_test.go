@@ -380,3 +380,30 @@ func TestSeatAddressIsNotASubmitter(t *testing.T) {
 		requireRejected(t, doc, "seat key seat-2")
 	})
 }
+
+// TestSeatRulesD7D10: two council seat rules are stricter than the spec, as
+// in x/authority's genesis check. A seat id of MaxSeatIDLength (59)
+// characters is accepted and one of 60 is refused, though both match the
+// id pattern (D-10: "seat-<id>" must stay an id). A seat key equal to a
+// validator consensus key is refused in either hex case; the fixture's
+// distinct keys are accepted (D-7).
+func TestSeatRulesD7D10(t *testing.T) {
+	longest := validFixture()
+	longest.DevnetTestSeats[0].SeatID = strings.Repeat("s", MaxSeatIDLength)
+	requireAccepted(t, longest)
+	tooLong := validFixture()
+	tooLong.DevnetTestSeats[0].SeatID = strings.Repeat("s", MaxSeatIDLength+1)
+	if !idPattern.MatchString(tooLong.DevnetTestSeats[0].SeatID) {
+		t.Fatal("the 60-character seat id must match the id pattern, so only D-10 refuses it")
+	}
+	requireRejected(t, tooLong, fmt.Sprintf("seat id %q is longer than %d characters", tooLong.DevnetTestSeats[0].SeatID, MaxSeatIDLength))
+	for _, upper := range []bool{false, true} {
+		doc := validFixture()
+		key := doc.Validators[2].ConsensusPubkeyHex
+		if upper {
+			key = strings.ToUpper(key)
+		}
+		doc.DevnetTestSeats[1].PublicKeyHex = key
+		requireRejected(t, doc, "seat seat-2 key is a validator consensus key")
+	}
+}

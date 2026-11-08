@@ -263,7 +263,7 @@ func validatorUpdates(t *testing.T, doc genesis.Document) []abci.ValidatorUpdate
 func consensusParams() cmtproto.ConsensusParams {
 	params := cmttypes.DefaultConsensusParams()
 	params.Block.MaxGas = int64(genesis.MaxGasPerTx)
-	params.Version.App = genesis.ProtocolVersion
+	params.Version.App = app.GenesisAppVersion
 	return params.ToProto()
 }
 

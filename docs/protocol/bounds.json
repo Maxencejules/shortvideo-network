@@ -1,6 +1,6 @@
 {
   "protocol": "svn-protocol-v0",
-  "schema_version": 1,
+  "schema_version": 2,
   "canonical_profile": "SVN-JCS-1",
   "canonical_profile_version": 1,
   "digest_algorithm": "SHA-256",

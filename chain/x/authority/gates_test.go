@@ -93,6 +93,7 @@ func TestCouncilGateIsDecisionBlocked(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			st.Policy = policyFor(t, kv)
 			return st
 		}
 		msgs := []struct {

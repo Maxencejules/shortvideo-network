@@ -28,6 +28,7 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/cometwrap"
+	"github.com/Maxencejules/shortvideo-network/chain/upgrade"
 )
 
 // Listen is the public bind file written next to the CometBFT config.
@@ -37,18 +38,40 @@ type Listen struct {
 	P2P  string `json:"p2p"`
 }
 
-// Start runs one validator until SIGINT or SIGTERM. It does not delete data.
+// Config is what StartWith runs: the validator home and the upgrade
+// handlers compiled into this binary. svnd passes none. There is no halt
+// height: a node never stops at a height of its own choosing.
+type Config struct {
+	Home     string
+	Upgrades []upgrade.Upgrade
+}
+
+// Start runs one validator from home with no upgrade handlers. It is
+// StartWith(Config{Home: home}).
 func Start(home string) error {
+	return StartWith(Config{Home: home})
+}
+
+// StartWith runs one validator until SIGINT or SIGTERM. It does not delete
+// data. cfg.Upgrades go to the application (app.Config.Upgrades), which
+// takes the binary's app version from them and runs the load gate before
+// CometBFT starts: a refusal is an error here, so svnd exits 1 without
+// starting consensus or loading the validator key. The application's
+// chain id is the one CometBFT runs (genesisChainID): a home whose state
+// database holds a genesis document of another chain id than its genesis
+// file is refused before any database of the application is opened.
+func StartWith(cfg Config) error {
+	home := cfg.Home
 	logger := log.NewLogger(os.Stdout).With("home", home)
 	saved, err := loadNodeFile(home)
 	if err != nil {
 		return err
 	}
-	cfg, err := cometConfig(home, saved)
+	comet, err := cometConfig(home, saved)
 	if err != nil {
 		return err
 	}
-	chainID, err := readChainID(cfg.GenesisFile())
+	chainID, err := genesisChainID(comet)
 	if err != nil {
 		return err
 	}
@@ -56,25 +79,27 @@ func Start(home string) error {
 	if err != nil {
 		return err
 	}
-	application, err := app.New(AppConfig(logger, db, chainID, saved))
+	appConfig := AppConfig(logger, db, chainID, saved)
+	appConfig.Upgrades = cfg.Upgrades
+	application, err := app.New(appConfig)
 	if err != nil {
 		_ = db.Close()
 		return err
 	}
-	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(comet.NodeKeyFile())
 	if err != nil {
 		_ = application.Close()
 		return err
 	}
 	cmtApp := cometwrap.New(application)
 	tmNode, err := node.NewNode(
-		cfg,
-		privval.LoadFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
+		comet,
+		privval.LoadFilePV(comet.PrivValidatorKeyFile(), comet.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.NewLocalClientCreator(cmtApp),
-		node.DefaultGenesisDocProviderFunc(cfg),
+		node.DefaultGenesisDocProviderFunc(comet),
 		dbProvider,
-		node.DefaultMetricsProvider(cfg.Instrumentation),
+		node.DefaultMetricsProvider(comet.Instrumentation),
 		servercmtlog.CometLoggerWrapper{Logger: logger},
 	)
 	if err != nil {
@@ -220,23 +245,6 @@ func applyDevnetTimeouts(cfg *cmtcfg.Config) {
 	cfg.Consensus.SkipTimeoutCommit = true
 	cfg.Consensus.CreateEmptyBlocks = true
 	cfg.Consensus.CreateEmptyBlocksInterval = 0
-}
-
-func readChainID(path string) (string, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	var header struct {
-		ChainID string `json:"chain_id"`
-	}
-	if err := json.Unmarshal(raw, &header); err != nil {
-		return "", err
-	}
-	if header.ChainID == "" {
-		return "", fmt.Errorf("genesis %s has no chain id", path)
-	}
-	return header.ChainID, nil
 }
 
 func readListen(home string) (Listen, error) {

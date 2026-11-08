@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from svn.types.v1 import types_pb2 as svn_dot_types_dot_v1_dot_types__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19svn/policy/v1/state.proto\x12\rsvn.policy.v1\x1a\x18svn/types/v1/types.proto\"\x84\x02\n\nSafetyCaps\x12 \n\x18safety_max_package_bytes\x18\x01 \x01(\x04\x12!\n\x19safety_max_evidence_batch\x18\x02 \x01(\r\x12)\n!safety_max_expiry_steps_per_block\x18\x03 \x01(\r\x12\x1d\n\x15safety_max_page_limit\x18\x04 \x01(\r\x12\x1b\n\x13safety_max_tx_bytes\x18\x05 \x01(\x04\x12\x1d\n\x15safety_max_gas_per_tx\x18\x06 \x01(\x04\x12+\n#safety_max_open_offers_per_provider\x18\x07 \x01(\r\"\x98\x01\n\x0bPolicyState\x12\x16\n\x0epolicy_version\x18\x01 \x01(\x04\x12.\n\x0bsafety_caps\x18\x02 \x01(\x0b\x32\x19.svn.policy.v1.SafetyCaps\x12\x41\n\x11\x62locked_decisions\x18\x03 \x03(\x0b\x32&.svn.types.v1.BlockedDecisionParameterBLZJgithub.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1;policyv1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19svn/policy/v1/state.proto\x12\rsvn.policy.v1\x1a\x18svn/types/v1/types.proto\"\x84\x02\n\nSafetyCaps\x12 \n\x18safety_max_package_bytes\x18\x01 \x01(\x04\x12!\n\x19safety_max_evidence_batch\x18\x02 \x01(\r\x12)\n!safety_max_expiry_steps_per_block\x18\x03 \x01(\r\x12\x1d\n\x15safety_max_page_limit\x18\x04 \x01(\r\x12\x1b\n\x13safety_max_tx_bytes\x18\x05 \x01(\x04\x12\x1d\n\x15safety_max_gas_per_tx\x18\x06 \x01(\x04\x12+\n#safety_max_open_offers_per_provider\x18\x07 \x01(\r\"6\n\x12GovernedLimitValue\x12\x11\n\tlimit_key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x04\"~\n\x12PendingLimitChange\x12\x11\n\tlimit_key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x04\x12\x19\n\x11\x61\x63tivation_height\x18\x03 \x01(\x04\x12\x13\n\x0bproposal_id\x18\x04 \x01(\t\x12\x16\n\x0epolicy_version\x18\x05 \x01(\x04\"n\n\x0bUpgradePlan\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06height\x18\x02 \x01(\x04\x12,\n\x0erelease_digest\x18\x03 \x01(\x0b\x32\x14.svn.types.v1.Digest\x12\x13\n\x0bproposal_id\x18\x04 \x01(\t\"\xdd\x02\n\x0bPolicyState\x12\x16\n\x0epolicy_version\x18\x01 \x01(\x04\x12.\n\x0bsafety_caps\x18\x02 \x01(\x0b\x32\x19.svn.policy.v1.SafetyCaps\x12\x41\n\x11\x62locked_decisions\x18\x03 \x03(\x0b\x32&.svn.types.v1.BlockedDecisionParameter\x12:\n\x0fgoverned_limits\x18\x04 \x03(\x0b\x32!.svn.policy.v1.GovernedLimitValue\x12@\n\x15pending_limit_changes\x18\x05 \x03(\x0b\x32!.svn.policy.v1.PendingLimitChange\x12\x30\n\x0cupgrade_plan\x18\x06 \x01(\x0b\x32\x1a.svn.policy.v1.UpgradePlan\x12\x13\n\x0b\x61pp_version\x18\x07 \x01(\x04\x42LZJgithub.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1;policyv1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,6 +35,12 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'ZJgithub.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1;policyv1'
   _globals['_SAFETYCAPS']._serialized_start=71
   _globals['_SAFETYCAPS']._serialized_end=331
-  _globals['_POLICYSTATE']._serialized_start=334
-  _globals['_POLICYSTATE']._serialized_end=486
+  _globals['_GOVERNEDLIMITVALUE']._serialized_start=333
+  _globals['_GOVERNEDLIMITVALUE']._serialized_end=387
+  _globals['_PENDINGLIMITCHANGE']._serialized_start=389
+  _globals['_PENDINGLIMITCHANGE']._serialized_end=515
+  _globals['_UPGRADEPLAN']._serialized_start=517
+  _globals['_UPGRADEPLAN']._serialized_end=627
+  _globals['_POLICYSTATE']._serialized_start=630
+  _globals['_POLICYSTATE']._serialized_end=979
 # @@protoc_insertion_point(module_scope)

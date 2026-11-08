@@ -110,11 +110,15 @@ func TestRegistryEventSchemas(t *testing.T) {
 		counts[ev.Type]++
 		got = append(got, row)
 	}
+	// Each of the four executed council proposals of the flow emits
+	// PolicyChanged and ProposalExecuted (x/authority deviation D-2).
 	want := map[string]int{
 		string(proto.MessageName(&eventsv1.ProviderRegistered{})):   2,
 		string(proto.MessageName(&eventsv1.ProviderStateChanged{})): 5,
 		string(proto.MessageName(&eventsv1.ContentRegistered{})):    2,
 		string(proto.MessageName(&eventsv1.ContentWithdrawn{})):     2,
+		string(proto.MessageName(&eventsv1.PolicyChanged{})):        4,
+		string(proto.MessageName(&eventsv1.ProposalExecuted{})):     4,
 	}
 	if len(counts) != len(want) {
 		t.Fatalf("event counts %v", counts)
@@ -215,16 +219,17 @@ func TestNoPrivateDataInStateOrEvents(t *testing.T) {
 		}
 	}
 
-	// The genesis export of every module except authority. App.Export
-	// refuses after council messages (DR-06-01); authority's state is
+	// The genesis export of every module except authority and policy.
+	// App.Export refuses after council messages (DR-06-01), and the policy
+	// export refuses governance state (DR-10-04); their state is
 	// scanned above through the dump of every store.
 	var names []string
 	for _, name := range chainApp.ModuleNames() {
-		if name != authority.ModuleName {
+		if name != authority.ModuleName && name != app.ModulePolicy {
 			names = append(names, name)
 		}
 	}
-	if len(names) != 7 {
+	if len(names) != 6 {
 		t.Fatalf("modules %v", names)
 	}
 	exported, err := chainApp.ExportModulesForTest(names...)

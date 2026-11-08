@@ -20,6 +20,7 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
@@ -411,8 +412,30 @@ func (c *council) reject(t *testing.T, row rejectRow) {
 // rows, pending entries, proposal records, business ids, counts) is
 // byte-identical afterwards. Setup steps between rows must succeed and must
 // change the store.
+//
+// The goal-10 rows (the last 26) cover the schema-version-2 payloads: the
+// propose-time height windows (both lead numbers are PROPOSED, owner
+// question Q3, "3 of 4 + min notice (Recommended)"), the upgrade, cancel,
+// and seat field shapes and parameter key bindings, and the execute-time
+// refusals of a cancel (no plan, a plan of another name), an upgrade name
+// reused with another release digest while its plan is pending and after
+// it was cancelled, a stale height window, and every council seat rule
+// (absent seat, another seat's key, the seat's own key, a validator
+// consensus key, a pending validator key, a submitter's key, a retired
+// key), plus the retired seat key's next approval refused in the ante. A
+// council seat row also requires the signer-blind auth store unchanged and
+// no account for the refused key. The genesis gains one ADMITTED_SERVICE
+// submitter whose address is an ed25519 key's account, so the submitter
+// rule is reachable; it never signs. An upgrade name that already applied
+// (ERROR_CODE_DUPLICATE_ID) needs an applied upgrade, which only the
+// rehearsal binary performs (P5a, plan 12.4); x/authority
+// TestSoftwareUpgradeAtExecute covers it at keeper level.
 func TestRejectedMessagesLeaveTheFullAuthorityState(t *testing.T) {
-	c := newCouncil(t, func(doc *genesis.Document) { doc.DevnetTestParameters[0].DelaySeconds = 100 })
+	edSubmitter := sdked.GenPrivKey()
+	c := newCouncil(t, func(doc *genesis.Document) {
+		doc.DevnetTestParameters[0].DelaySeconds = 100
+		doc.Submitters = append(doc.Submitters, genesis.Submitter{AddressHex: hexAddr(edSubmitter), Role: genesis.RoleAdmittedService})
+	})
 	s1, s2, s3, s4 := c.seat(0), c.seat(1), c.seat(2), c.seat(3)
 	auth, service := c.keys.authority, c.keys.service
 	outsider := sdksecp.GenPrivKey()
@@ -572,9 +595,191 @@ func TestRejectedMessagesLeaveTheFullAuthorityState(t *testing.T) {
 		msg:   change{id: "q-over", base: 2, node: "q99", pub: bytes32(250), power: 1, height: 1000}.msg(t, s4),
 		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
 
-	if rows != 37 {
-		t.Fatalf("%d reject rows, want 37", rows)
+	// Goal 10: schema-version-2 payloads. Policy version 2; seat 4 is at
+	// its open quota on base 2, so seats 1 to 3 propose.
+	next := func() uint64 { return uint64(c.run.height) + 1 }
+	proposal := func(key cryptotypes.PrivKey, id, parameterKey string, base uint64, payload *authorityv1.ProposalPayload) *authorityv1.MsgProposeChange {
+		return councilProposal(t, key, id, parameterKey, base, payload)
 	}
+	limit := msgkit.LimitMaxOpenOffers
+	reject(rejectRow{name: "scheduled limit activation at the block height", key: s1,
+		msg:   proposal(s1, "rj-act-now", limit, 2, scheduledPayload(limit, 5, next())),
+		space: "svn", code: 9, proto: authority.CodeOutOfRange, advances: true})
+	reject(rejectRow{name: "scheduled limit activation one above the max lead", key: s1,
+		msg:   proposal(s1, "rj-act-far", limit, 2, scheduledPayload(limit, 5, next()+msgkit.MaxActivationLeadBlocks+1)),
+		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
+	reject(rejectRow{name: "plan height one below the min lead", key: s1,
+		msg:   proposal(s1, "rj-plan-near", "upgrade", 2, upgradePayload("rj-near", next()+msgkit.MinActivationLeadBlocks-1, "release near")),
+		space: "svn", code: 9, proto: authority.CodeOutOfRange, advances: true})
+	reject(rejectRow{name: "plan height one above the max lead", key: s1,
+		msg:   proposal(s1, "rj-plan-far", "upgrade", 2, upgradePayload("rj-far", next()+msgkit.MaxActivationLeadBlocks+1, "release far")),
+		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
+	far := next() + 10_000
+	reject(rejectRow{name: "upgrade name outside the id pattern", key: s1,
+		msg:   proposal(s1, "rj-up-name", "upgrade", 2, upgradePayload("Bad-Name", far, "release bad")),
+		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
+	reject(rejectRow{name: "upgrade release digest without SHA-256", key: s1,
+		msg: proposal(s1, "rj-up-algo", "upgrade", 2, upgradeWith("rj-algo", far, &typesv1.Digest{
+			Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_UNSPECIFIED, Value: bytes32(5)})),
+		space: "svn", code: 7, proto: authority.CodeMalformed, advances: true})
+	reject(rejectRow{name: "upgrade release digest of 31 bytes", key: s1,
+		msg:   proposal(s1, "rj-up-short", "upgrade", 2, upgradeWith("rj-short", far, digestOf(bytes32(5)[:31]))),
+		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
+	reject(rejectRow{name: "cancel name outside the id pattern", key: s1,
+		msg:   proposal(s1, "rj-cancel-name", "upgrade", 2, cancelPayload("Bad-Name")),
+		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
+	reject(rejectRow{name: "seat id outside the id pattern", key: s1,
+		msg:   proposal(s1, "rj-seat-id", "seat-seat-x", 2, seatPayload("Seat-X", sdked.GenPrivKey().PubKey().Bytes())),
+		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
+	reject(rejectRow{name: "seat key of 31 bytes", key: s1,
+		msg:   proposal(s1, "rj-seat-short", "seat-seat-1", 2, seatPayload("seat-1", bytes32(6)[:31])),
+		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
+	reject(rejectRow{name: "software upgrade bound to a seat parameter key", key: s1,
+		msg:   proposal(s1, "rj-up-bind", "seat-seat-1", 2, upgradePayload("rj-bind", far, "release bind")),
+		space: "svn", code: 7, proto: authority.CodeMalformed, advances: true})
+	reject(rejectRow{name: "council seat bound to the upgrade parameter key", key: s1,
+		msg:   proposal(s1, "rj-seat-bind", "upgrade", 2, seatPayload("seat-1", sdked.GenPrivKey().PubKey().Bytes())),
+		space: "svn", code: 7, proto: authority.CodeMalformed, advances: true})
+
+	// queue proposes from s1 and approves with three seat keys; every step
+	// commits and changes the authority store.
+	queue := func(id, parameterKey string, base uint64, payload *authorityv1.ProposalPayload, approvers ...cryptotypes.PrivKey) {
+		t.Helper()
+		step(s1, proposal(s1, id, parameterKey, base, payload))
+		for i, seat := range approvers {
+			step(seat, approveMsg(seat, fmt.Sprintf("%s-ap-%d", id, i), id))
+		}
+	}
+	// seatReject is reject for the execute of a council seat payload with
+	// newKey: the signer-blind auth store is unchanged too, and newKey has
+	// no account unless it had one before.
+	seatReject := func(row rejectRow, newKey []byte) {
+		t.Helper()
+		had := c.run.app.AccountExistsForTest(authority.SeatAddress(newKey))
+		before, err := c.run.app.SignerBlindAuthSnapshotForTest()
+		if err != nil {
+			t.Fatal(err)
+		}
+		reject(row)
+		after, err := c.run.app.SignerBlindAuthSnapshotForTest()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(before, after) {
+			t.Fatalf("%s changed the auth store beyond what the ante writes for a signer", row.name)
+		}
+		if !had && c.run.app.AccountExistsForTest(authority.SeatAddress(newKey)) {
+			t.Fatalf("%s created an account for the refused key", row.name)
+		}
+	}
+	validatorKey, err := hex.DecodeString(c.doc.Validators[0].ConsensusPubkeyHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	absentKey := sdked.GenPrivKey().PubKey().Bytes()
+	seatRows := []struct {
+		id, name, seat string
+		key            []byte
+		code           uint32
+		proto          string
+	}{
+		{"rj-seat-absent", "execute: seat change of an absent seat", "seat-9", absentKey, 16, authority.CodeNotFound},
+		{"rj-seat-other", "execute: seat change to another seat's key", "seat-1", s2.PubKey().Bytes(), 4, authority.CodeDuplicate},
+		{"rj-seat-own", "execute: seat change to the seat's own key", "seat-1", s1.PubKey().Bytes(), 14, authority.CodeConflict},
+		{"rj-seat-validator", "execute: seat change to a validator consensus key", "seat-1", validatorKey, 4, authority.CodeDuplicate},
+		{"rj-seat-pending", "execute: seat change to a pending validator key", "seat-1", bytes32(9), 4, authority.CodeDuplicate},
+		{"rj-seat-submitter", "execute: seat change to a submitter's key", "seat-1", edSubmitter.PubKey().Bytes(), 4, authority.CodeDuplicate},
+	}
+	queue("rj-cancel-none", "upgrade", 2, cancelPayload("rj-plan"), s1, s2, s3)
+	queue("rj-act-passed", limit, 2, scheduledPayload(limit, 5, next()+1), s1, s2, s3)
+	queue("rj-plan-late", "upgrade", 2, upgradePayload("rj-late", next()+msgkit.MinActivationLeadBlocks, "release late"), s1, s2, s3)
+	for _, row := range seatRows {
+		queue(row.id, "seat-"+row.seat, 2, seatPayload(row.seat, row.key), s1, s2, s3)
+	}
+	c.run.when = c.run.when.Add(200 * time.Second)
+	reject(rejectRow{name: "execute: cancel with no plan", key: auth, msg: executeMsg(auth, "ex-rj-cancel-none", "rj-cancel-none"),
+		space: "svn", code: 16, proto: authority.CodeNotFound, advances: true})
+	reject(rejectRow{name: "execute: activation height no longer above the block", key: auth, msg: executeMsg(auth, "ex-rj-act-passed", "rj-act-passed"),
+		space: "svn", code: 9, proto: authority.CodeOutOfRange, advances: true})
+	reject(rejectRow{name: "execute: plan height below the min lead at execute", key: auth, msg: executeMsg(auth, "ex-rj-plan-late", "rj-plan-late"),
+		space: "svn", code: 9, proto: authority.CodeOutOfRange, advances: true})
+	for _, row := range seatRows {
+		seatReject(rejectRow{name: row.name, key: auth, msg: executeMsg(auth, "ex-"+row.id, row.id),
+			space: "svn", code: row.code, proto: row.proto, advances: true}, row.key)
+	}
+
+	// An upgrade plan executes (policy version 3); its name with another
+	// release digest is refused while the plan is pending and after the
+	// council cancels it.
+	queue("rj-up-x", "upgrade", 2, upgradePayload("rj-plan", far, "release x"), s1, s2, s3)
+	c.run.when = c.run.when.Add(200 * time.Second)
+	step(auth, executeMsg(auth, "ex-rj-up-x", "rj-up-x"))
+	queue("rj-up-y", "upgrade", 3, upgradePayload("rj-plan", far, "release y"), s1, s2, s3)
+	queue("rj-cancel-other", "upgrade", 3, cancelPayload("rj-other"), s1, s2, s3)
+	c.run.when = c.run.when.Add(200 * time.Second)
+	reject(rejectRow{name: "execute: plan name of the pending plan with another digest", key: auth, msg: executeMsg(auth, "ex-rj-up-y", "rj-up-y"),
+		space: "svn", code: 14, proto: authority.CodeConflict, advances: true})
+	reject(rejectRow{name: "execute: cancel of a name that is not the plan", key: auth, msg: executeMsg(auth, "ex-rj-cancel-other", "rj-cancel-other"),
+		space: "svn", code: 16, proto: authority.CodeNotFound, advances: true})
+	queue("rj-cancel", "upgrade", 3, cancelPayload("rj-plan"), s1, s2, s3)
+	c.run.when = c.run.when.Add(200 * time.Second)
+	step(auth, executeMsg(auth, "ex-rj-cancel", "rj-cancel"))
+	queue("rj-up-z", "upgrade", 4, upgradePayload("rj-plan", far, "release y"), s1, s2, s3)
+	c.run.when = c.run.when.Add(200 * time.Second)
+	reject(rejectRow{name: "execute: plan name of a cancelled plan with another digest", key: auth, msg: executeMsg(auth, "ex-rj-up-z", "rj-up-z"),
+		space: "svn", code: 14, proto: authority.CodeConflict, advances: true})
+
+	// seat-3's key is replaced (policy version 5). Its retired key's next
+	// approval is refused in the ante, and putting the retired key on
+	// seat-2 is refused at execute.
+	replacement := sdked.GenPrivKey()
+	queue("rj-seat-ok", "seat-seat-3", 4, seatPayload("seat-3", replacement.PubKey().Bytes()), s1, s2, s3)
+	c.run.when = c.run.when.Add(200 * time.Second)
+	step(auth, executeMsg(auth, "ex-rj-seat-ok", "rj-seat-ok"))
+	number, exists := c.run.app.AccountNumberForTest(replacement.PubKey().Address())
+	if !exists {
+		t.Fatal("the executed council seat payload created no account for the new key")
+	}
+	c.numbers[hexAddr(replacement)] = number
+	reject(rejectRow{name: "approve from the retired seat-3 key", key: s3, msg: approveMsg(s3, "rj-ap-retired", "rj-up-z"),
+		space: "svn", code: 1, proto: "signer is not an admitted application account"})
+	queue("rj-seat-retired", "seat-seat-2", 5, seatPayload("seat-2", s3.PubKey().Bytes()), s1, s2, replacement)
+	c.run.when = c.run.when.Add(200 * time.Second)
+	seatReject(rejectRow{name: "execute: seat change to a retired seat key", key: auth, msg: executeMsg(auth, "ex-rj-seat-retired", "rj-seat-retired"),
+		space: "svn", code: 14, proto: authority.CodeConflict, advances: true}, s3.PubKey().Bytes())
+
+	if rows != 63 {
+		t.Fatalf("%d reject rows, want 63", rows)
+	}
+}
+
+// councilProposal is a ProposeChange from key for payload on base. A
+// payload the chain refuses at parse has no canonical digest; it carries
+// the SHA-256 of a fixed text instead (the parse check comes before the
+// digest check).
+func councilProposal(t *testing.T, key cryptotypes.PrivKey, id, parameterKey string, base uint64, payload *authorityv1.ProposalPayload) *authorityv1.MsgProposeChange {
+	t.Helper()
+	digest, out := authority.PayloadDigest(payload)
+	if !out.Success() {
+		digest = sha([]byte("unparsed payload " + id))
+	}
+	return &authorityv1.MsgProposeChange{
+		Signer:            key.PubKey().Address(),
+		BusinessId:        "b-" + id,
+		ProposalId:        id,
+		ParameterKey:      parameterKey,
+		BasePolicyVersion: base,
+		Payload:           payload,
+		PayloadDigest:     &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: digest},
+		ExpiryUnixSeconds: 1_800_000_000,
+	}
+}
+
+// upgradeWith is a software upgrade payload with a given release digest.
+func upgradeWith(name string, height uint64, release *typesv1.Digest) *authorityv1.ProposalPayload {
+	return &authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_SoftwareUpgrade{
+		SoftwareUpgrade: &authorityv1.SoftwareUpgradeChange{Name: name, Height: height, ReleaseDigest: release},
+	}}
 }
 
 // TestRemovalBindHaltLeavesTheSnapshot writes a due removal with the wrong

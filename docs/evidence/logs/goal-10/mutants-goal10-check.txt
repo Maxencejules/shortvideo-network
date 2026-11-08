@@ -1,0 +1,10 @@
+COMMAND .venv/bin/python docs/evidence/goal-10/mutants.py --rev 18fa31076f28b64f429efd5443461cbcfd1f73c0 --check
+DATE 2026-11-08T00:02:07Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+revision 18fa31076f28b64f429efd5443461cbcfd1f73c0 commit 18fa31076f28b64f429efd5443461cbcfd1f73c0 tree dce9af14d32082c677f9ded2bf5ed09708f09792
+copy /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/goal10-mutants-dpyau6jh/tree (git archive)
+mutants 303 of 303 (council-acceptance=11, authority=49, policy=50, upgrade=77, payload=10, app=23, rehearsal=13, statecheck=27, difftest=29, docs=14)
+search strings: every one occurs exactly once; every named killer is defined
+EXIT:0

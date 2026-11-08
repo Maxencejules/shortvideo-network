@@ -18,23 +18,52 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
+	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/svnerr"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 )
 
 // keeperEnv is a keeper on a real rootmulti store (IAVL over an in-memory
 // cosmos-db). Contexts read and write through the SDK gas store. registryKey
-// is a second IAVL store that the registry test hooks write to; it stays
-// empty unless a test uses it (keeper_registry_test.go).
+// is a second IAVL store that the registry test hooks and the account hook
+// (storeAccounts) write to; it stays empty unless a test uses a hook.
+// policyKey is the real x/policy store with the default policy genesis;
+// keeper executes governed limit and upgrade payloads through the real
+// x/policy keeper (policyKeeper), whose version and decision sources are
+// this module's read surface, as in the app.
 type keeperEnv struct {
-	cms         storetypes.CommitMultiStore
-	key         *storetypes.KVStoreKey
-	registryKey *storetypes.KVStoreKey
-	keeper      Keeper
-	seats       []testSeat
-	authority   []byte
-	height      int64
-	unix        int64
+	cms          storetypes.CommitMultiStore
+	key          *storetypes.KVStoreKey
+	registryKey  *storetypes.KVStoreKey
+	policyKey    *storetypes.KVStoreKey
+	policyKeeper policy.Keeper
+	keeper       Keeper
+	seats        []testSeat
+	authority    []byte
+	height       int64
+	unix         int64
+}
+
+// storeAccounts is the keeper-level unit-test stand-in for the auth account
+// keeper: an account is a key "acct" || addr in the registry test store, so
+// a created account is visible in the store compare and is dropped with the
+// nested cache of a refused or failed execute. An address that already has
+// one is a success; an address that is not 20 bytes is BOUNDS.
+type storeAccounts struct {
+	key *storetypes.KVStoreKey
+}
+
+func accountKey(addr []byte) []byte {
+	return append([]byte("acct"), addr...)
+}
+
+func (a storeAccounts) EnsureAccount(ctx sdk.Context, addr []byte) msgkit.Code {
+	if len(addr) != 20 {
+		return msgkit.Bounds
+	}
+	ctx.KVStore(a.key).Set(accountKey(addr), []byte{1})
+	return msgkit.OK
 }
 
 func newKeeperEnv(t testing.TB, gen *authorityv1.GenesisState, seats []testSeat, authority []byte) *keeperEnv {
@@ -42,13 +71,24 @@ func newKeeperEnv(t testing.TB, gen *authorityv1.GenesisState, seats []testSeat,
 	cms := store.NewCommitMultiStore(dbm.NewMemDB(), log.NewNopLogger())
 	key := storetypes.NewKVStoreKey(ModuleName)
 	registryKey := storetypes.NewKVStoreKey("registry")
+	policyKey := storetypes.NewKVStoreKey(policy.ModuleName)
 	cms.MountStoreWithDB(key, storetypes.StoreTypeIAVL, nil)
 	cms.MountStoreWithDB(registryKey, storetypes.StoreTypeIAVL, nil)
+	cms.MountStoreWithDB(policyKey, storetypes.StoreTypeIAVL, nil)
 	if err := cms.LoadLatestVersion(); err != nil {
 		t.Fatal(err)
 	}
-	env := &keeperEnv{cms: cms, key: key, registryKey: registryKey, keeper: NewKeeper(key), seats: seats, authority: authority, height: testHeight, unix: testTime}
+	read := NewKeeper(key)
+	policyKeeper := policy.NewKeeper(policyKey, policy.Deps{Versions: read, Decisions: read})
+	env := &keeperEnv{
+		cms: cms, key: key, registryKey: registryKey, policyKey: policyKey, policyKeeper: policyKeeper,
+		keeper: read.WithPolicy(policyKeeper).WithAccounts(storeAccounts{key: registryKey}),
+		seats:  seats, authority: authority, height: testHeight, unix: testTime,
+	}
 	if err := env.keeper.Init(env.blockCtx(), gen); err != nil {
+		t.Fatal(err)
+	}
+	if err := policyKeeper.InitGenesis(env.blockCtx(), policy.DefaultGenesisState()); err != nil {
 		t.Fatal(err)
 	}
 	return env
@@ -78,6 +118,16 @@ func (e *keeperEnv) txCtx() sdk.Context {
 // kv is the authority store without gas.
 func (e *keeperEnv) kv() storetypes.KVStore {
 	return e.cms.GetKVStore(e.key)
+}
+
+// policyKV is the x/policy store without gas.
+func (e *keeperEnv) policyKV() storetypes.KVStore {
+	return e.cms.GetKVStore(e.policyKey)
+}
+
+// governed is the governed value x/policy holds for key.
+func (e *keeperEnv) governed(key string) (uint64, bool) {
+	return e.policyKeeper.GovernedLimit(e.blockCtx(), key)
 }
 
 func (e *keeperEnv) policy(t testing.TB) uint64 {
@@ -318,7 +368,7 @@ func TestExportGenesisPanicsOnSideState(t *testing.T) {
 // authority_result code) and the store is byte-identical. EndBlock never
 // applies the pending entries kept in the config: there is no 0x03 key, so
 // it returns no update at their height. ExportState refuses the config.
-// Pins README "No migration" and validator-lifecycle.md "Old devnet homes";
+// Pins README "Layout version 2 and no migration" and validator-lifecycle.md "Old devnet homes";
 // the second fix-round review found that deleting the old-layout check
 // passed every suite.
 func TestOldLayoutConfigIsIntegrity(t *testing.T) {

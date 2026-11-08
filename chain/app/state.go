@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,6 +18,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	contentv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
@@ -298,11 +300,12 @@ func authGenesis(cdc codec.Codec, doc genesis.Document) (json.RawMessage, error)
 // UNSET, well-formed seats and submitters, the validator power invariant,
 // and every pending validator change projected on the genesis set and
 // activating at or after the first block (authority.ValidateGenesisState).
-// Then it applies the app's AUDITOR prefix rule (validateAuditorPrefixes).
-// DocumentFromModules does not carry pending entries, proposals, or the
-// approved council, so genesis.Validate cannot check them. InitChain and
+// Then it applies the app's AUDITOR prefix rule (validateAuditorPrefixes)
+// and the policy genesis rules (validatePolicyGenesis). DocumentFromModules
+// does not carry pending entries, proposals, the approved council, or the
+// policy decision rows, so genesis.Validate cannot check them. InitChain and
 // `svnd genesis validate` both call this, so the command refuses every
-// authority genesis InitChain refuses.
+// authority and policy genesis InitChain refuses.
 func ValidateAuthorityGenesis(modules map[string]json.RawMessage, initialHeight, genesisUnixSeconds int64) error {
 	var state authorityv1.GenesisState
 	if err := protojson.Unmarshal(modules[authority.ModuleName], &state); err != nil {
@@ -314,7 +317,38 @@ func ValidateAuthorityGenesis(modules map[string]json.RawMessage, initialHeight,
 	}); err != nil {
 		return err
 	}
-	return validateAuditorPrefixes(state.GetAuthority().GetSubmitters())
+	if err := validateAuditorPrefixes(state.GetAuthority().GetSubmitters()); err != nil {
+		return err
+	}
+	return validatePolicyGenesis(modules[ModulePolicy], state.GetBlockedDecisions())
+}
+
+// validatePolicyGenesis parses the policy module genesis strictly and runs
+// x/policy's ValidateGenesis (policy_version 1, the protocol safety caps,
+// one unapproved row per blocked decision, and no governed value, pending
+// change, plan, or app version). Then it requires the policy decision rows
+// to equal the authority genesis rows, row for row: x/policy stores no copy
+// and reads the rows from x/authority (Query/Policy, export), so a policy
+// document with other rows would not round-trip.
+func validatePolicyGenesis(raw json.RawMessage, authorityRows []*typesv1.BlockedDecisionParameter) error {
+	state, err := policy.ParseGenesis(raw)
+	if err != nil {
+		return err
+	}
+	if err := policy.ValidateGenesis(state); err != nil {
+		return err
+	}
+	rows := state.GetPolicy().GetBlockedDecisions()
+	if len(rows) != len(authorityRows) {
+		return fmt.Errorf("policy genesis has %d blocked decision rows, the authority genesis %d", len(rows), len(authorityRows))
+	}
+	for i := range rows {
+		if !proto.Equal(rows[i], authorityRows[i]) {
+			return fmt.Errorf("policy genesis blocked decision row %d (%s) differs from the authority genesis row (%s)",
+				i, rows[i].GetDecisionId(), authorityRows[i].GetDecisionId())
+		}
+	}
+	return nil
 }
 
 // validateAuditorPrefixes refuses two AUDITOR submitters whose addresses

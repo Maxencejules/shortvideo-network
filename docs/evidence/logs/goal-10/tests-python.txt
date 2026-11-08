@@ -1,0 +1,24 @@
+COMMAND .venv/bin/python scripts/run_tests.py --only python
+DATE 2026-11-07T22:20:44Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+........................................................................ [ 21%]
+........................................................................ [ 42%]
+........................................................................ [ 64%]
+.......................................F................................ [ 85%]
+................................................                         [100%]
+=================================== FAILURES ===================================
+___________________ test_ignore_rules_cover_private_material ___________________
+tests/unit/test_repo_policy.py:140: in test_ignore_rules_cover_private_material
+    assert completed.returncode == 0, path
+E   AssertionError: node_modules/react/index.js
+E   assert 128 == 0
+E    +  where 128 = CompletedProcess(args=['git', 'check-ignore', '-q', '--', 'node_modules/react/index.js'], returncode=128).returncode
+----------------------------- Captured stderr call -----------------------------
+fatal: pathspec 'node_modules/react/index.js' is beyond a symbolic link
+=========================== short test summary info ============================
+FAILED tests/unit/test_repo_policy.py::test_ignore_rules_cover_private_material
+1 failed, 335 passed in 74.97s (0:01:14)
+python tests failed: 1
+EXIT:1
