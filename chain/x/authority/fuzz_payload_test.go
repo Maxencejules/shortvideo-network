@@ -94,13 +94,19 @@ func payloadKind(payload *authorityv1.ProposalPayload) string {
 		return kindDisableProvider
 	case *authorityv1.ProposalPayload_ForceWithdraw:
 		return kindForceWithdraw
+	case *authorityv1.ProposalPayload_SoftwareUpgrade:
+		return kindSoftwareUpgrade
+	case *authorityv1.ProposalPayload_CancelUpgrade:
+		return kindCancelUpgrade
+	case *authorityv1.ProposalPayload_CouncilSeat:
+		return kindCouncilSeat
 	default:
 		return ""
 	}
 }
 
-// payloadProtoSeeds are valid payloads: one of each kind, plus a removal and
-// a unix-time activation.
+// payloadProtoSeeds are valid payloads: one of each kind, plus a removal, a
+// unix-time activation and a scheduled governed change.
 func payloadProtoSeeds() []*authorityv1.ProposalPayload {
 	reason := &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: pub(7)}
 	return []*authorityv1.ProposalPayload{
@@ -113,5 +119,9 @@ func payloadProtoSeeds() []*authorityv1.ProposalPayload {
 		{Change: &authorityv1.ProposalPayload_ForceWithdraw{ForceWithdraw: &authorityv1.ForceWithdrawChange{
 			ContentId: "content-1", ContentVersion: 1, ReasonDigest: reason,
 		}}},
+		scheduledMsg("max_page_limit", 7, 400).GetPayload(),
+		upgradeMsg("rehearsal-1", 400, pub(8)).GetPayload(),
+		cancelMsg("rehearsal-1").GetPayload(),
+		seatMsg("seat-1", pub(11)).GetPayload(),
 	}
 }

@@ -72,11 +72,15 @@ func (x *QueryGovernanceRequest) GetPage() *v1.PageRequest {
 }
 
 type QueryGovernanceResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	State         *AuthorityState        `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-	Page          *v1.PageResponse       `protobuf:"bytes,2,opt,name=page,proto3" json:"page,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	State *AuthorityState        `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	Page  *v1.PageResponse       `protobuf:"bytes,2,opt,name=page,proto3" json:"page,omitempty"`
+	// Schema version 2. The labeled devnet test parameters, including the
+	// DEC-008 review delay. Each row keeps label PROPOSED_TEST_PARAMETER and
+	// approved_policy false; it is not an approved policy.
+	DevnetTestParameters []*v1.DevnetTestParameter `protobuf:"bytes,3,rep,name=devnet_test_parameters,json=devnetTestParameters,proto3" json:"devnet_test_parameters,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *QueryGovernanceResponse) Reset() {
@@ -123,16 +127,24 @@ func (x *QueryGovernanceResponse) GetPage() *v1.PageResponse {
 	return nil
 }
 
+func (x *QueryGovernanceResponse) GetDevnetTestParameters() []*v1.DevnetTestParameter {
+	if x != nil {
+		return x.DevnetTestParameters
+	}
+	return nil
+}
+
 var File_svn_authority_v1_query_proto protoreflect.FileDescriptor
 
 const file_svn_authority_v1_query_proto_rawDesc = "" +
 	"\n" +
 	"\x1csvn/authority/v1/query.proto\x12\x10svn.authority.v1\x1a\x18svn/types/v1/types.proto\x1a\x1csvn/authority/v1/state.proto\"G\n" +
 	"\x16QueryGovernanceRequest\x12-\n" +
-	"\x04page\x18\x01 \x01(\v2\x19.svn.types.v1.PageRequestR\x04page\"\x81\x01\n" +
+	"\x04page\x18\x01 \x01(\v2\x19.svn.types.v1.PageRequestR\x04page\"\xda\x01\n" +
 	"\x17QueryGovernanceResponse\x126\n" +
 	"\x05state\x18\x01 \x01(\v2 .svn.authority.v1.AuthorityStateR\x05state\x12.\n" +
-	"\x04page\x18\x02 \x01(\v2\x1a.svn.types.v1.PageResponseR\x04page2j\n" +
+	"\x04page\x18\x02 \x01(\v2\x1a.svn.types.v1.PageResponseR\x04page\x12W\n" +
+	"\x16devnet_test_parameters\x18\x03 \x03(\v2!.svn.types.v1.DevnetTestParameterR\x14devnetTestParameters2j\n" +
 	"\x05Query\x12a\n" +
 	"\n" +
 	"Governance\x12(.svn.authority.v1.QueryGovernanceRequest\x1a).svn.authority.v1.QueryGovernanceResponseBRZPgithub.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1;authorityv1b\x06proto3"
@@ -156,18 +168,20 @@ var file_svn_authority_v1_query_proto_goTypes = []any{
 	(*v1.PageRequest)(nil),          // 2: svn.types.v1.PageRequest
 	(*AuthorityState)(nil),          // 3: svn.authority.v1.AuthorityState
 	(*v1.PageResponse)(nil),         // 4: svn.types.v1.PageResponse
+	(*v1.DevnetTestParameter)(nil),  // 5: svn.types.v1.DevnetTestParameter
 }
 var file_svn_authority_v1_query_proto_depIdxs = []int32{
 	2, // 0: svn.authority.v1.QueryGovernanceRequest.page:type_name -> svn.types.v1.PageRequest
 	3, // 1: svn.authority.v1.QueryGovernanceResponse.state:type_name -> svn.authority.v1.AuthorityState
 	4, // 2: svn.authority.v1.QueryGovernanceResponse.page:type_name -> svn.types.v1.PageResponse
-	0, // 3: svn.authority.v1.Query.Governance:input_type -> svn.authority.v1.QueryGovernanceRequest
-	1, // 4: svn.authority.v1.Query.Governance:output_type -> svn.authority.v1.QueryGovernanceResponse
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	5, // 3: svn.authority.v1.QueryGovernanceResponse.devnet_test_parameters:type_name -> svn.types.v1.DevnetTestParameter
+	0, // 4: svn.authority.v1.Query.Governance:input_type -> svn.authority.v1.QueryGovernanceRequest
+	1, // 5: svn.authority.v1.Query.Governance:output_type -> svn.authority.v1.QueryGovernanceResponse
+	5, // [5:6] is the sub-list for method output_type
+	4, // [4:5] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_svn_authority_v1_query_proto_init() }

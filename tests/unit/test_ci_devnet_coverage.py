@@ -2,14 +2,22 @@
 
 The go job sets SVN_SKIP_DEVNET=1 so that its non-race run of the multi-process
 devnet tests does not reach the 20-minute job cap. Those tests then run only in
-the go-race "devnet" and "devnet-evidence" shards. This guard fails when the
-skip is set and those two shards no longer run every chain/devnet test under
--race, or could pass without running them or without failing when they fail:
-an operator or -args after go test, -exec, -count below 1, GOFLAGS, an `if:`,
-continue-on-error, a changed shell, `set +e`, or a trap. It reads the workflow
-text with its own small parser, not a shell, so it guards against edits like
-the mutations below; it does not prove that no shell construct can hide a
-failure. The mutated documents below are fixtures, not workflow files.
+the go-race devnet shards: the shards whose case branch runs `go test` on
+./chain/devnet. Exactly one of them selects tests with -skip ("devnet"); every
+other one selects with -run ("devnet-evidence", "devnet-upgrade", or any later
+shard). Each filter is a plain alternation of test-name prefixes, the -skip
+alternatives are exactly the union of the -run alternatives, no alternative or
+top-level test name of chain/devnet is selected by two -run shards, and every
+-run shard selects at least one top-level test: together the shards run every
+chain/devnet test once. This guard fails when the skip is set and those shards
+no longer run every chain/devnet test under -race, or could pass without
+running them or without failing when they fail: a devnet branch missing from
+the matrix, an operator or -args after go test, -exec, -count below 1,
+GOFLAGS, an `if:`, continue-on-error, a changed shell, `set +e`, or a trap. It
+reads the workflow text with its own small parser, not a shell, so it guards
+against edits like the mutations below; it does not prove that no shell
+construct can hide a failure. The mutated documents below are fixtures, not
+workflow files.
 """
 
 from __future__ import annotations
@@ -31,10 +39,11 @@ SKIP_ENV = "SVN_SKIP_DEVNET"
 GO_JOB = "go"
 RACE_JOB = "go-race"
 PACKAGE_ARGS = frozenset({"./chain/devnet", "./chain/devnet/"})
-# Shard name -> the filter flag it must use. Both use the same regex, so a
-# top-level test runs in "devnet-evidence" when the regex matches its name and
-# in "devnet" otherwise: together they run the whole package once.
-SHARD_FILTERS = {"devnet": "skip", "devnet-evidence": "run"}
+# A filter is an alternation of plain test-name prefixes: go test matches
+# each alternative unanchored, so a top-level test is selected by an
+# alternative when the alternative is a substring of its name.
+_ALTERNATIVE = re.compile(r"[A-Za-z0-9_]+")
+_TOP_LEVEL_TEST = re.compile(r"^func (Test\w+)\(t \*testing\.T\)", re.MULTILINE)
 # go test flags that take a value. A flag missing here is read as boolean,
 # which can only make a package argument look absent (fail closed).
 VALUE_FLAGS = frozenset(
@@ -262,12 +271,27 @@ def _count_problem(flags: dict[str, str]) -> str | None:
     return None if count >= 1 else f"-count {count} below 1"
 
 
-def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
-    """The filter regex of the shard's race run of ./chain/devnet, and errors."""
-    want = SHARD_FILTERS[shard]
-    other = "run" if want == "skip" else "skip"
+def devnet_test_names() -> list[str]:
+    """The top-level test functions of chain/devnet, from its _test.go files."""
+    names: list[str] = []
+    for path in sorted(DEVNET_DIR.glob("*_test.go")):
+        names.extend(_TOP_LEVEL_TEST.findall(path.read_text(encoding="utf-8")))
+    return sorted(set(names))
+
+
+@dataclass(frozen=True)
+class DevnetShard:
+    """One go-race shard that runs `go test` on ./chain/devnet."""
+
+    name: str
+    flag: str
+    regex: str
+
+
+def _devnet_filter(shard: str, lines: list[str]) -> tuple[DevnetShard | None, list[str]]:
+    """The filter of a branch's race run of ./chain/devnet, None when it has none."""
     errors: list[str] = []
-    found: list[str] = []
+    found: list[tuple[str, str]] = []
     for line in lines:
         command = parse_go_test(line)
         if command is None or PACKAGE_ARGS.isdisjoint(command.packages):
@@ -275,10 +299,14 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
         problems: list[str] = []
         if command.flags.get("race") not in ("true", "1"):
             problems.append("no -race")
-        if other in command.flags:
-            problems.append(f"-{other} present")
-        if want not in command.flags or not command.flags[want]:
-            problems.append(f"no -{want}")
+        selected = [flag for flag in ("run", "skip") if flag in command.flags]
+        if len(selected) != 1:
+            problems.append(
+                "needs exactly one of -run and -skip, has "
+                + (", ".join("-" + flag for flag in selected) or "neither")
+            )
+        elif not command.flags[selected[0]]:
+            problems.append(f"empty -{selected[0]}")
         blocked = sorted(NOT_RUNNING_FLAGS.intersection(command.flags))
         if blocked:
             problems.append("flags " + ", ".join("-" + name for name in blocked))
@@ -293,17 +321,86 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
             errors.append(
                 f"{RACE_JOB} shard {shard}: go test of ./chain/devnet: " + "; ".join(problems)
             )
+            # A refused command still marks the branch as a devnet branch.
+            found.append(("", ""))
             continue
-        found.append(command.flags[want])
+        found.append((selected[0], command.flags[selected[0]]))
     if not found:
+        return None, errors
+    if len(found) != 1:
+        errors.append(f"{RACE_JOB} shard {shard}: {len(found)} go test runs of ./chain/devnet")
+        return None, errors
+    flag, regex = found[0]
+    if not flag:
+        return None, errors
+    return DevnetShard(name=shard, flag=flag, regex=regex), errors
+
+
+def _alternatives(shard: DevnetShard) -> tuple[list[str], list[str]]:
+    """The alternatives of a shard's filter, and errors when one is not a plain prefix."""
+    if "/" in shard.regex:
+        return [], [
+            f"filter {shard.regex!r} of shard {shard.name} has a slash, so it also selects subtests"
+        ]
+    parts = shard.regex.split("|")
+    bad = [part for part in parts if not _ALTERNATIVE.fullmatch(part)]
+    if bad:
+        return [], [
+            f"filter {shard.regex!r} of shard {shard.name} is not a plain alternation "
+            f"of test-name prefixes ({bad})"
+        ]
+    return parts, []
+
+
+def _partition_errors(shards: list[DevnetShard], names: list[str]) -> list[str]:
+    """Errors unless the shards run every top-level devnet test exactly once."""
+    skips = [shard for shard in shards if shard.flag == "skip"]
+    runs = [shard for shard in shards if shard.flag == "run"]
+    if len(skips) != 1:
+        return [
+            f"{RACE_JOB}: {len(skips)} devnet shards select with -skip "
+            f"({[shard.name for shard in skips]}); "
+            "exactly one must run every test the -run shards leave"
+        ]
+    skip = skips[0]
+    errors: list[str] = []
+    skipped, skip_errors = _alternatives(skip)
+    errors.extend(skip_errors)
+    owner: dict[str, str] = {}
+    for shard in runs:
+        parts, part_errors = _alternatives(shard)
+        errors.extend(part_errors)
+        for part in parts:
+            if part in owner:
+                errors.append(
+                    f"regex overlap: {part} is selected by shards {owner[part]} and {shard.name}"
+                )
+            owner.setdefault(part, shard.name)
+    if errors:
+        return errors
+    missing = sorted(set(skipped) - set(owner))
+    if missing:
         errors.append(
-            f"{RACE_JOB} shard {shard}: no `go test -race -{want} <regex> ./chain/devnet` command"
+            f"shard {skip.name} -skip {skip.regex!r} skips {missing}, which no -run shard runs"
         )
-        return None, errors
-    if len(set(found)) != 1:
-        errors.append(f"{RACE_JOB} shard {shard}: several -{want} filters {sorted(set(found))}")
-        return None, errors
-    return found[0], errors
+    unskipped = sorted(set(owner) - set(skipped))
+    if unskipped:
+        errors.append(
+            f"shard {skip.name} -skip {skip.regex!r} does not skip {unskipped}, "
+            "so those tests run twice; "
+            "the -skip alternatives must be the union of the -run alternatives"
+        )
+    selected = {shard.name: 0 for shard in runs}
+    for name in names:
+        by = sorted({owner[part] for part in owner if part in name})
+        if len(by) > 1:
+            errors.append(f"regex overlap: {name} is selected by shards {by}")
+        for shard_name in by:
+            selected[shard_name] += 1
+    for shard_name, count in selected.items():
+        if count == 0:
+            errors.append(f"shard {shard_name} selects no top-level test of chain/devnet")
+    return errors
 
 
 def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
@@ -324,14 +421,6 @@ def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
     matrix = _mapping(_mapping(job.get("strategy")).get("matrix"))
     shards = matrix.get("shard")
     shard_list = [str(shard) for shard in shards] if isinstance(shards, list) else []
-    for shard in SHARD_FILTERS:
-        if shard not in shard_list:
-            errors.append(f"{RACE_JOB} matrix has no {shard} shard")
-    excludes = matrix.get("exclude")
-    if excludes is not None:
-        for entry in excludes if isinstance(excludes, list) else [excludes]:
-            if str(_mapping(entry).get("shard")) in SHARD_FILTERS or not isinstance(entry, dict):
-                errors.append(f"{RACE_JOB} matrix excludes {entry}")
     steps = [
         step
         for step in _steps(job)
@@ -352,25 +441,43 @@ def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
         errors.append(f"{RACE_JOB} race step turns errexit off or sets a trap")
     case = case_statement(script)
     errors.extend(f"{RACE_JOB} race step case: {line}" for line in case.unparsed)
-    filters: dict[str, str] = {}
-    for shard in SHARD_FILTERS:
+    # Every branch that runs ./chain/devnet must be a matrix shard, or the
+    # tests it would run run nowhere.
+    devnet_labels: set[str] = set()
+    for labels, body in case.branches:
+        found, branch_errors = _devnet_filter("|".join(labels), list(body))
+        if found is not None or branch_errors:
+            devnet_labels.update(labels)
+    for label in sorted(devnet_labels):
+        if label not in shard_list:
+            errors.append(
+                f"{RACE_JOB} case branch {label} runs ./chain/devnet "
+                f"but the matrix has no {label} shard"
+            )
+    devnet_shards: list[DevnetShard] = []
+    for shard in shard_list:
         lines = case.branch(shard)
         if lines is None:
             errors.append(f"{RACE_JOB} race step has no case branch for {shard}")
             continue
-        regex, shard_errors = _shard_filter(shard, lines)
+        found, shard_errors = _devnet_filter(shard, lines)
         errors.extend(shard_errors)
-        if regex is not None:
-            filters[shard] = regex
-    if len(filters) == len(SHARD_FILTERS):
-        skip, run_regex = filters["devnet"], filters["devnet-evidence"]
-        if skip != run_regex:
+        if found is not None:
+            devnet_shards.append(found)
+        elif shard in devnet_labels and not shard_errors:
             errors.append(
-                f"devnet -skip {skip!r} and devnet-evidence -run {run_regex!r} differ, "
-                "so together they need not cover chain/devnet"
+                f"{RACE_JOB} shard {shard}: its case branch runs ./chain/devnet, "
+                "but the shell runs an earlier case branch without that go test"
             )
-        elif "/" in skip:
-            errors.append(f"filter {skip!r} has a slash, so it also selects subtests")
+    if not devnet_shards:
+        return errors + [f"{RACE_JOB}: no shard runs `go test -race` on ./chain/devnet"]
+    excludes = matrix.get("exclude")
+    if excludes is not None:
+        devnet_names = {shard.name for shard in devnet_shards} | devnet_labels
+        for entry in excludes if isinstance(excludes, list) else [excludes]:
+            if str(_mapping(entry).get("shard")) in devnet_names or not isinstance(entry, dict):
+                errors.append(f"{RACE_JOB} matrix excludes {entry}")
+    errors.extend(_partition_errors(devnet_shards, devnet_test_names()))
     return errors
 
 
@@ -418,7 +525,7 @@ def test_real_go_step_sets_the_skip_and_says_where_the_tests_run() -> None:
     ]
     call = [i for i, line in enumerate(lines) if "scripts/run_tests.py --only go" in line]
     assert len(echo) == 1 and len(call) == 1 and echo[0] < call[0]
-    assert "devnet-evidence" in lines[echo[0]]
+    assert "devnet-evidence" in lines[echo[0]] and "devnet-upgrade" in lines[echo[0]]
 
 
 def test_devnet_skip_gates_use_the_guarded_variable() -> None:
@@ -429,58 +536,117 @@ def test_devnet_skip_gates_use_the_guarded_variable() -> None:
     assert set(gates) == {SKIP_ENV}, gates
 
 
+MATRIX = "shard: [app, devnet, devnet-evidence, devnet-upgrade, rest]"
+DEVNET_SKIP = (
+    "-skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange' "
+    "./chain/devnet"
+)
+EVIDENCE_RUN = "-run TestDevnetAudit ./chain/devnet"
+UPGRADE_RUN = "-run 'TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange' ./chain/devnet"
+UPGRADE_BRANCH = (
+    "            devnet-upgrade)\n"
+    "              # The upgrade tests build svnd and the rehearsal binaries\n"
+    "              # (-tags svn_rehearsal, -tags svn_rehearsal_bad) inside their\n"
+    "              # timeout and link the state-check library (chain/internal);\n"
+    "              # building them first fills the build cache, so that compile\n"
+    "              # time stays outside the 15m limit.\n"
+    "              go build -C chain -o /dev/null ./cmd/svnd\n"
+    "              go build -C chain -tags svn_rehearsal -o /dev/null ./cmd/svnd\n"
+    "              go build -C chain -tags svn_rehearsal_bad -o /dev/null ./cmd/svnd\n"
+    "              go build -C chain ./internal/...\n"
+    "              go test -race -count=1 -timeout 15m " + UPGRADE_RUN + "\n"
+    "              ;;\n"
+)
+
 MUTATIONS = [
     pytest.param(
-        "shard: [app, devnet, devnet-evidence, rest]",
-        "shard: [app, devnet, rest]",
-        "no devnet-evidence shard",
+        MATRIX,
+        "shard: [app, devnet, devnet-upgrade, rest]",
+        "case branch devnet-evidence runs ./chain/devnet "
+        "but the matrix has no devnet-evidence shard",
         id="matrix-drops-devnet-evidence",
     ),
     pytest.param(
-        "shard: [app, devnet, devnet-evidence, rest]",
-        "shard: [app, devnet-evidence, rest]",
-        "no devnet shard",
+        MATRIX,
+        "shard: [app, devnet-evidence, devnet-upgrade, rest]",
+        "case branch devnet runs ./chain/devnet but the matrix has no devnet shard",
         id="matrix-drops-devnet",
     ),
     pytest.param(
-        "-skip TestDevnetAudit ./chain/devnet",
-        "-skip TestDevnetAuditLifecycle ./chain/devnet",
-        "differ",
+        MATRIX,
+        "shard: [app, devnet, devnet-evidence, rest]",
+        "case branch devnet-upgrade runs ./chain/devnet but the matrix has no devnet-upgrade shard",
+        id="matrix-drops-devnet-upgrade",
+    ),
+    pytest.param(
+        UPGRADE_BRANCH,
+        "",
+        "which no -run shard runs",
+        id="devnet-upgrade-branch-removed",
+    ),
+    pytest.param(
+        DEVNET_SKIP,
+        DEVNET_SKIP.replace("TestDevnetAudit|", "TestDevnetAuditLifecycle|"),
+        "does not skip ['TestDevnetAudit']",
         id="skip-and-run-regex-differ",
     ),
     pytest.param(
-        "-skip TestDevnetAudit ./chain/devnet",
-        "-run TestDevnetAudit ./chain/devnet",
-        "no -skip",
+        DEVNET_SKIP,
+        DEVNET_SKIP.replace("|TestDevnetGovernedChange", ""),
+        "does not skip ['TestDevnetGovernedChange']",
+        id="skip-misses-an-upgrade-name",
+    ),
+    pytest.param(
+        UPGRADE_RUN,
+        UPGRADE_RUN.replace("'TestDevnetUpgrade|", "'TestDevnetAudit|TestDevnetUpgrade|"),
+        "regex overlap: TestDevnetAudit is selected by shards devnet-evidence and devnet-upgrade",
+        id="run-regexes-overlap",
+    ),
+    pytest.param(
+        UPGRADE_RUN,
+        UPGRADE_RUN.replace("'TestDevnetUpgrade|", "'^TestDevnetUpgrade$|"),
+        "is not a plain alternation of test-name prefixes",
+        id="upgrade-filter-anchored",
+    ),
+    pytest.param(
+        DEVNET_SKIP,
+        DEVNET_SKIP.replace("-skip", "-run"),
+        "0 devnet shards select with -skip",
         id="devnet-shard-uses-run",
     ),
     pytest.param(
-        "-run TestDevnetAudit ./chain/devnet",
+        EVIDENCE_RUN,
         "-run TestDevnetAudit -skip TestDevnetAuditLifecycle ./chain/devnet",
-        "-skip present",
+        "needs exactly one of -run and -skip, has -run, -skip",
         id="evidence-shard-adds-skip",
     ),
     pytest.param(
         "go test -race -count=1 -timeout 15m -run TestDevnetAudit",
         "go test -count=1 -timeout 15m -run TestDevnetAudit",
-        "no -race",
+        "shard devnet-evidence: go test of ./chain/devnet: no -race",
         id="evidence-shard-drops-race",
     ),
     pytest.param(
-        "-skip TestDevnetAudit ./chain/devnet",
-        "-skip TestDevnetAudit ./chain/app",
-        "shard devnet: no `go test",
+        "go test -race -count=1 -timeout 15m " + UPGRADE_RUN,
+        "go test -count=1 -timeout 15m " + UPGRADE_RUN,
+        "shard devnet-upgrade: go test of ./chain/devnet: no -race",
+        id="upgrade-shard-drops-race",
+    ),
+    pytest.param(
+        DEVNET_SKIP,
+        DEVNET_SKIP.replace("./chain/devnet", "./chain/app"),
+        "0 devnet shards select with -skip",
         id="devnet-shard-wrong-package",
     ),
     pytest.param(
-        "              go test -race -count=1 -timeout 12m -skip TestDevnetAudit",
-        "              # go test -race -count=1 -timeout 12m -skip TestDevnetAudit",
-        "shard devnet: no `go test",
+        "              go test -race -count=1 -timeout 12m -skip",
+        "              # go test -race -count=1 -timeout 12m -skip",
+        "0 devnet shards select with -skip",
         id="devnet-shard-commented-out",
     ),
     pytest.param(
-        "go test -race -count=1 -timeout 12m -skip TestDevnetAudit",
-        "go test -race -short -count=1 -timeout 12m -skip TestDevnetAudit",
+        "go test -race -count=1 -timeout 12m -skip",
+        "go test -race -short -count=1 -timeout 12m -skip",
         "flags -short",
         id="devnet-shard-short",
     ),
@@ -497,8 +663,8 @@ MUTATIONS = [
         id="race-step-env-sets-skip",
     ),
     pytest.param(
-        "        shard: [app, devnet, devnet-evidence, rest]\n",
-        "        shard: [app, devnet, devnet-evidence, rest]\n    env:\n      SVN_SKIP_DEVNET: 1\n",
+        "        " + MATRIX + "\n",
+        "        " + MATRIX + "\n    env:\n      SVN_SKIP_DEVNET: 1\n",
         "go-race job or workflow names SVN_SKIP_DEVNET",
         id="race-job-env-sets-skip",
     ),
@@ -524,8 +690,9 @@ MUTATIONS = [
     pytest.param(
         "            devnet-evidence)\n",
         "            devnet-audit)\n",
-        # The shell then runs the "*)" branch, which only fails the job.
-        "shard devnet-evidence: no `go test",
+        # The shell then runs the "*)" branch for devnet-evidence, which only
+        # fails the job.
+        "case branch devnet-audit runs ./chain/devnet but the matrix has no devnet-audit shard",
         id="evidence-branch-renamed",
     ),
     pytest.param(
@@ -534,46 +701,52 @@ MUTATIONS = [
         "0 steps with SHARD from matrix.shard",
         id="race-step-ignores-matrix",
     ),
-    # Edits that keep both go test lines but hide a failure or run no test.
+    # Edits that keep every go test line but hide a failure or run no test.
     pytest.param(
-        "-skip TestDevnetAudit ./chain/devnet",
-        "-skip TestDevnetAudit ./chain/devnet || true",
+        DEVNET_SKIP,
+        DEVNET_SKIP + " || true",
         "shard devnet: go test of ./chain/devnet: shell operator or -args after go test: || true",
         id="devnet-shard-or-true",
     ),
     pytest.param(
-        "-skip TestDevnetAudit ./chain/devnet",
-        "-skip TestDevnetAudit ./chain/devnet||true",
+        DEVNET_SKIP,
+        DEVNET_SKIP + "||true",
         "shell operator or -args after go test: || true",
         id="devnet-shard-or-true-unspaced",
     ),
     pytest.param(
-        "-run TestDevnetAudit ./chain/devnet",
-        "-run TestDevnetAudit ./chain/devnet || true",
+        EVIDENCE_RUN,
+        EVIDENCE_RUN + " || true",
         "shard devnet-evidence: go test of ./chain/devnet: shell operator or -args",
         id="evidence-shard-or-true",
     ),
     pytest.param(
-        "-run TestDevnetAudit ./chain/devnet",
-        "-run TestDevnetAudit ./chain/devnet 2>&1 | tee devnet-evidence.log",
+        UPGRADE_RUN,
+        UPGRADE_RUN + " || true",
+        "shard devnet-upgrade: go test of ./chain/devnet: shell operator or -args",
+        id="upgrade-shard-or-true",
+    ),
+    pytest.param(
+        EVIDENCE_RUN,
+        EVIDENCE_RUN + " 2>&1 | tee devnet-evidence.log",
         "shell operator or -args after go test: >& 1 | tee devnet-evidence.log",
         id="evidence-shard-piped-to-tee",
     ),
     pytest.param(
-        "-run TestDevnetAudit ./chain/devnet",
-        "-run TestDevnetAudit ./chain/devnet -args -test.run=^$",
+        EVIDENCE_RUN,
+        EVIDENCE_RUN + " -args -test.run=^$",
         "shell operator or -args after go test: -args -test.run=^$",
         id="evidence-shard-args-run-nothing",
     ),
     pytest.param(
-        "-skip TestDevnetAudit ./chain/devnet",
-        "-skip TestDevnetAudit ./chain/devnet ./chain/app",
+        DEVNET_SKIP,
+        DEVNET_SKIP + " ./chain/app",
         "package arguments",
         id="devnet-shard-extra-package",
     ),
     pytest.param(
-        "go test -race -count=1 -timeout 12m -skip TestDevnetAudit",
-        "go test -race -count=0 -timeout 12m -skip TestDevnetAudit",
+        "go test -race -count=1 -timeout 12m -skip",
+        "go test -race -count=0 -timeout 12m -skip",
         "-count 0 below 1",
         id="devnet-shard-count-zero",
     ),
@@ -596,8 +769,8 @@ MUTATIONS = [
         id="race-step-continue-on-error",
     ),
     pytest.param(
-        "        shard: [app, devnet, devnet-evidence, rest]\n",
-        "        shard: [app, devnet, devnet-evidence, rest]\n    env:\n      GOFLAGS: -run=^$\n",
+        "        " + MATRIX + "\n",
+        "        " + MATRIX + "\n    env:\n      GOFLAGS: -run=^$\n",
         "go-race job or workflow names GOFLAGS",
         id="race-job-env-goflags",
     ),
@@ -652,16 +825,49 @@ def test_guard_fires_on_mutated_workflow(old: str, new: str, needle: str) -> Non
     assert any(needle in error for error in errors), errors
 
 
-def test_guard_fires_on_slash_in_both_filters() -> None:
+def test_guard_fires_on_slash_in_filters() -> None:
     text = _real()
     for old, new in (
-        ("-skip TestDevnetAudit ./chain/devnet", "-skip TestDevnetAudit/x ./chain/devnet"),
-        ("-run TestDevnetAudit ./chain/devnet", "-run TestDevnetAudit/x ./chain/devnet"),
+        (DEVNET_SKIP, DEVNET_SKIP.replace("TestDevnetAudit|", "TestDevnetAudit/x|")),
+        (EVIDENCE_RUN, "-run TestDevnetAudit/x ./chain/devnet"),
     ):
         assert text.count(old) == 1, old
         text = text.replace(old, new)
     errors = devnet_coverage_errors(text)
     assert any("slash" in error for error in errors), errors
+
+
+def test_partition_reads_the_devnet_test_names() -> None:
+    """The name-level checks see every top-level devnet test, and a test that
+    two -run shards both select is an overlap even when no alternative repeats.
+    """
+    names = devnet_test_names()
+    assert (
+        "TestDevnetAuditLifecycle" in names and "TestFourValidatorsCommitRestartAndQuorum" in names
+    )
+    shards = [
+        DevnetShard(name="devnet", flag="skip", regex="TestDevnetAudit|Lifecycle"),
+        DevnetShard(name="devnet-evidence", flag="run", regex="TestDevnetAudit"),
+        DevnetShard(name="devnet-other", flag="run", regex="Lifecycle"),
+    ]
+    errors = _partition_errors(shards, names)
+    assert any(
+        "regex overlap: TestDevnetAuditLifecycle is selected by shards "
+        "['devnet-evidence', 'devnet-other']" in error
+        for error in errors
+    ), errors
+    empty = [
+        DevnetShard(name="devnet", flag="skip", regex="TestDevnetAudit|TestNoSuchDevnetTest"),
+        DevnetShard(name="devnet-evidence", flag="run", regex="TestDevnetAudit"),
+        DevnetShard(name="devnet-none", flag="run", regex="TestNoSuchDevnetTest"),
+    ]
+    errors = _partition_errors(empty, names)
+    assert errors == ["shard devnet-none selects no top-level test of chain/devnet"], errors
+    good = [
+        DevnetShard(name="devnet", flag="skip", regex="TestDevnetAudit"),
+        DevnetShard(name="devnet-evidence", flag="run", regex="TestDevnetAudit"),
+    ]
+    assert _partition_errors(good, names) == []
 
 
 def _without_go_skip(text: str) -> str:
@@ -685,17 +891,16 @@ def test_skip_written_in_the_go_run_script_still_needs_the_race_shards() -> None
     )
     assert go_job_skips_devnet(text)
     assert devnet_coverage_errors(text) == []
-    shards = "shard: [app, devnet, devnet-evidence, rest]"
-    errors = devnet_coverage_errors(text.replace(shards, "shard: [app, devnet, rest]"))
-    assert any("no devnet-evidence shard" in error for error in errors), errors
+    errors = devnet_coverage_errors(
+        text.replace(MATRIX, "shard: [app, devnet, devnet-upgrade, rest]")
+    )
+    assert any("the matrix has no devnet-evidence shard" in error for error in errors), errors
 
 
 def test_without_the_skip_the_go_job_covers_devnet() -> None:
     text = _without_go_skip(_real())
     assert devnet_coverage_errors(text) == []
-    without_shards = text.replace(
-        "shard: [app, devnet, devnet-evidence, rest]", "shard: [app, rest]"
-    )
+    without_shards = text.replace(MATRIX, "shard: [app, rest]")
     assert not go_job_skips_devnet(without_shards)
     assert devnet_coverage_errors(without_shards) == []
 
@@ -754,7 +959,11 @@ def test_guard_fires_when_an_earlier_branch_shadows_devnet() -> None:
         old, "            dev*)\n              echo shadowed\n              ;;\n" + old
     )
     errors = devnet_coverage_errors(mutated)
-    assert any("shard devnet: no `go test" in error for error in errors), errors
+    assert any(
+        "shard devnet: its case branch runs ./chain/devnet, "
+        "but the shell runs an earlier case branch" in error
+        for error in errors
+    ), errors
 
 
 def test_guard_fires_on_an_unparsed_case_label() -> None:

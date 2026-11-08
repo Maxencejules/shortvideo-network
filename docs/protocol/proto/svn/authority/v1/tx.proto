@@ -21,6 +21,11 @@ option go_package = "github.com/Maxencejules/shortvideo-network/protocol/svn/aut
 // over SVN-JCS-1 of the proto3 JSON object defined in docs/protocol.md.
 // A digest that does not match the payload is rejected. There is no
 // google.protobuf.Any wrapper.
+//
+// Schema version 2 (goal-10 additive revision, docs/protocol.md) adds
+// GovernedLimitChange.activation_height and the SoftwareUpgradeChange,
+// CancelUpgradeChange, and CouncilSeatChange alternatives. Every added
+// field is optional: a v0 payload keeps its canonical form and digest.
 
 // ActivationPoint is a committed height or a committed chain time.
 // ExecuteChange requires it to be strictly after the execution context.
@@ -45,6 +50,10 @@ message ValidatorPowerChange {
 message GovernedLimitChange {
   string limit_key = 1;
   uint64 value = 2;
+  // Schema version 2. 0 (absent) applies the value inside ExecuteChange.
+  // A positive height schedules it: a later committed block at that height
+  // applies it.
+  uint64 activation_height = 3;
 }
 
 message AdmitProviderChange {
@@ -61,6 +70,28 @@ message ForceWithdrawChange {
   svn.types.v1.Digest reason_digest = 3;
 }
 
+// Schema version 2. Stores an upgrade plan that names only a block height.
+// release_digest is informational: the chain stores it and does not compare
+// it with the running binary.
+message SoftwareUpgradeChange {
+  string name = 1;
+  uint64 height = 2;
+  svn.types.v1.Digest release_digest = 3;
+}
+
+// Schema version 2. Deletes the pending upgrade plan with this name.
+message CancelUpgradeChange {
+  string name = 1;
+}
+
+// Schema version 2. Replaces the public key of an existing council seat.
+// The seat id stays; the old key is retired. The council keeps its size.
+message CouncilSeatChange {
+  string seat_id = 1;
+  // bound: ed25519_public_bytes=32
+  bytes new_public_key = 2;
+}
+
 message ProposalPayload {
   oneof change {
     ValidatorPowerChange validator_power = 1;
@@ -68,6 +99,10 @@ message ProposalPayload {
     AdmitProviderChange admit_provider = 3;
     DisableProviderChange disable_provider = 4;
     ForceWithdrawChange force_withdraw = 5;
+    // Schema version 2.
+    SoftwareUpgradeChange software_upgrade = 6;
+    CancelUpgradeChange cancel_upgrade = 7;
+    CouncilSeatChange council_seat = 8;
   }
 }
 

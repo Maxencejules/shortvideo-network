@@ -1,0 +1,27 @@
+COMMAND bash -c cd\ chain\ \&\&\ go\ test\ -count=40\ -v\ -run\ \'\^TestUpgradeWindowCheckTxAndQueries\$\'\ ./app/\ 2\>\&1\ \|\ grep\ -a\ -E\ --\ \'\^---\ \(PASS\|FAIL\)\|probe\ signer\|\^\(ok\|FAIL\)\'\ \|\ sort\ \|\ uniq\ -c
+DATE 2026-11-08T03:16:37Z
+HEAD fc8c121f4cd9cbe132820c2f1cae8a0524c5f298
+TREE 24dad88e7803f1246cd3d16d7ed5db293df705be
+DIRTY no
+      4     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 1
+      5     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 10
+      2     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 11
+      4     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 12
+      5     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 2
+      1     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 3
+      4     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 4
+      1     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 5
+      3     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 6
+      2     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 7
+      3     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 8
+      3     upgrade_rehearsal_test.go:1780: probe signer seat-2, account number 9
+      1     upgrade_rehearsal_test.go:1780: probe signer seat-3, account number 2
+      2     upgrade_rehearsal_test.go:1780: probe signer seat-3, account number 7
+      3 --- PASS: TestUpgradeWindowCheckTxAndQueries (0.14s)
+      7 --- PASS: TestUpgradeWindowCheckTxAndQueries (0.15s)
+     14 --- PASS: TestUpgradeWindowCheckTxAndQueries (0.16s)
+      7 --- PASS: TestUpgradeWindowCheckTxAndQueries (0.17s)
+      6 --- PASS: TestUpgradeWindowCheckTxAndQueries (0.18s)
+      3 --- PASS: TestUpgradeWindowCheckTxAndQueries (0.19s)
+      1 ok  	github.com/Maxencejules/shortvideo-network/chain/app	6.609s
+EXIT:0

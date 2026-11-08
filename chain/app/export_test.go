@@ -19,6 +19,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
@@ -118,14 +119,14 @@ func (app *App) WriteLayoutVersionForTest(name string, version uint64) {
 	app.CommitMultiStore().Commit()
 }
 
-// CorruptGovernedLimitForTest overwrites the governed limit key (key 0x13 ||
-// key of the authority store) with 3 bytes, which are not an 8-byte value,
-// and commits a new version outside ABCI. It fails if no value is set, so a
-// wrong key cannot pass silently. Authority EndBlock does not read 0x13, so
+// CorruptGovernedLimitForTest overwrites the governed value of key (key
+// 0x02 || key of the x/policy store) with 3 bytes, which are not an 8-byte
+// value, and commits a new version outside ABCI. It fails if no value is
+// set, so a wrong key cannot pass silently. No EndBlock reads 0x02, so
 // blocks still commit.
 func (app *App) CorruptGovernedLimitForTest(key string) error {
-	store := app.CommitMultiStore().GetKVStore(app.keys[authority.ModuleName])
-	raw := append([]byte{0x13}, key...)
+	store := app.CommitMultiStore().GetKVStore(app.keys[ModulePolicy])
+	raw := policy.GovernedKey(key)
 	if store.Get(raw) == nil {
 		return fmt.Errorf("no governed limit %q at %x", key, raw)
 	}
@@ -134,15 +135,15 @@ func (app *App) CorruptGovernedLimitForTest(key string) error {
 	return nil
 }
 
-// WriteGovernedLimitForTest overwrites the governed limit key (key 0x13 ||
-// key of the authority store) with raw in the working state: it is not
+// WriteGovernedLimitForTest overwrites the governed value of key (key 0x02
+// || key of the x/policy store) with raw in the working state: it is not
 // committed and is not a consensus message. The next FinalizeBlock reads
 // it. It fails if no value is set, so a wrong key cannot pass silently.
 // Unlike CorruptGovernedLimitForTest it commits no store version outside
 // ABCI, so the app can still run FinalizeBlock at its next height.
 func (app *App) WriteGovernedLimitForTest(key string, raw []byte) error {
-	store := app.CommitMultiStore().GetKVStore(app.keys[authority.ModuleName])
-	full := append([]byte{0x13}, key...)
+	store := app.CommitMultiStore().GetKVStore(app.keys[ModulePolicy])
+	full := policy.GovernedKey(key)
 	if store.Get(full) == nil {
 		return fmt.Errorf("no governed limit %q at %x", key, full)
 	}
@@ -169,10 +170,11 @@ func (app *App) StoreKeyForTest(name string) *storetypes.KVStoreKey {
 // state; the keepers the app runs are the ones New wired.
 func (app *App) leaseReadersForTest() (leases.Keeper, providers.Keeper, content.Keeper) {
 	read := authority.NewKeeper(app.keys[authority.ModuleName])
-	prov := providers.NewKeeper(app.keys[ModuleProviders], providers.Deps{Roles: read, Limits: read})
-	cont := content.NewKeeper(app.keys[ModuleContent], content.Deps{Roles: read, Params: read, Limits: read})
+	limits := policy.NewKeeper(app.keys[ModulePolicy], policy.Deps{Versions: read, Decisions: read})
+	prov := providers.NewKeeper(app.keys[ModuleProviders], providers.Deps{Roles: read, Limits: limits})
+	cont := content.NewKeeper(app.keys[ModuleContent], content.Deps{Roles: read, Params: read, Limits: limits})
 	lease := leases.NewKeeper(app.keys[ModuleLeases], leases.Deps{
-		Roles: read, Limits: read, Params: read, Policy: read, Providers: prov, Content: cont,
+		Roles: read, Limits: limits, Params: read, Policy: read, Providers: prov, Content: cont,
 	})
 	return lease, prov, cont
 }
@@ -228,8 +230,9 @@ func (app *App) WriteProviderReservedForTest(providerID string, reserved uint64)
 // only to read committed state.
 func (app *App) evidenceReadersForTest() (evidence.Keeper, leases.Keeper) {
 	read := authority.NewKeeper(app.keys[authority.ModuleName])
+	limits := policy.NewKeeper(app.keys[ModulePolicy], policy.Deps{Versions: read, Decisions: read})
 	lease, _, cont := app.leaseReadersForTest()
-	return evidence.NewKeeper(app.keys[ModuleEvidence], evidence.Deps{Roles: read, Limits: read, Leases: lease, Content: cont}), lease
+	return evidence.NewKeeper(app.keys[ModuleEvidence], evidence.Deps{Roles: read, Limits: limits, Leases: lease, Content: cont}), lease
 }
 
 // CheckEvidenceInvariantsForTest runs evidencetest.CheckInvariants (I1,

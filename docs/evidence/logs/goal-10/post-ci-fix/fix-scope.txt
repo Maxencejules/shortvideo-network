@@ -1,0 +1,54 @@
+COMMAND bash -c git\ log\ --oneline\ 18fa31076f28b64f429efd5443461cbcfd1f73c0..HEAD\;\ echo\;\ echo\ \"non-docs\ files\ changed\ since\ the\ tested\ commit\ 18fa310:\"\;\ git\ diff\ --name-only\ 18fa31076f28b64f429efd5443461cbcfd1f73c0..HEAD\ \|\ grep\ -v\ \"\^docs/\"\;\ echo\ \"\(end\)\"\;\ git\ diff\ 18fa31076f28b64f429efd5443461cbcfd1f73c0..HEAD\ --\ chain
+DATE 2026-11-08T03:16:27Z
+HEAD fc8c121f4cd9cbe132820c2f1cae8a0524c5f298
+TREE 24dad88e7803f1246cd3d16d7ed5db293df705be
+DIRTY no
+fc8c121 goal 10: pick a nonzero account number for the upgrade-window probes
+996877a goal 10: record head CI, the owner rulings of 2026-11-08 and the goal 09 merge
+e63ffd7 Merge main 1969b2c (goal 09 squash, #12) into goal-10 with -s ours
+1969b2c goal 09: beta attestations and audit evidence (#12)
+6a8c3bc goal 10: evidence on the tested commit
+
+non-docs files changed since the tested commit 18fa310:
+chain/app/upgrade_rehearsal_test.go
+(end)
+diff --git a/chain/app/upgrade_rehearsal_test.go b/chain/app/upgrade_rehearsal_test.go
+index c690768..da07b76 100644
+--- a/chain/app/upgrade_rehearsal_test.go
++++ b/chain/app/upgrade_rehearsal_test.go
+@@ -1761,15 +1761,32 @@ func TestUpgradeWindowCheckTxAndQueries(t *testing.T) {
+ 		t.Logf("%s: CheckTx code %s/%d %s", label, res.GetCodespace(), res.GetCode(), res.GetLog())
+ 	}
+ 	const sigFailed = 4
++	// The probes need a signer whose account number is not 0: before the
++	// first commit after a load the check state verifies signatures with
++	// account number 0, so a signer numbered 0 would pass. Account numbers
++	// follow address order and the test keys are new on every run, so the
++	// probes use the first approving seat whose number is not 0; at most
++	// one account is numbered 0.
++	var approver *actor
++	for _, seat := range e.seats[1:] {
++		if e.numbers[seat.hexAddr()] != 0 {
++			approver = seat
++			break
++		}
++	}
++	if approver == nil {
++		t.Fatal("every approving seat has account number 0")
++	}
++	t.Logf("probe signer %s, account number %d", approver.name, e.numbers[approver.hexAddr()])
+ 	gateRow(t, d, id, binaryV1, 1)
+-	control := r.approveRaw(t, e.seats[1], "window-ap-0", "window-0")
++	control := r.approveRaw(t, approver, "window-ap-0", "window-0")
+ 	checkTx("v1 after a restart, before a commit", control, sigFailed)
+ 	r.c.block(t)
+ 	checkTx("v1 after a commit", control, 0)
+ 
+ 	r.blocksTo(t, r.h-1)
+ 	gateRow(t, d, id, binaryV2, 3)
+-	inWindow := r.approveRaw(t, e.seats[1], "window-ap-1", "window-1")
++	inWindow := r.approveRaw(t, approver, "window-ap-1", "window-1")
+ 	checkTx("v2 in the upgrade window", inWindow, sigFailed)
+ 	state := queryPolicy(t, d.run.app)
+ 	if state.GetAppVersion() != 1 || state.GetUpgradePlan().GetName() != rehearsal.UpgradeName || abciAppVersion(t, d.run.app) != 1 {
+EXIT:0

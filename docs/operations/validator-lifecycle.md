@@ -6,7 +6,7 @@ Development procedure for the permissioned set. This is not a production runbook
 
 A new validator is a council proposal whose payload is `ValidatorPowerChange` with positive power, a distinct consensus public key, a node id, a reason digest, and an activation height or chain time strictly after execution. Four devnet seats and three approvals queue it. The authority submitter executes it. The set changes in EndBlock at the activation point and the new key signs blocks two heights later.
 
-Provider admission is a different record. `RegisterProvider` is an `x/providers` committed handler and creates `APPLIED`. `AdmitProviderChange` through the council moves it to `ADMITTED` when the devnet DEC-002 test role is present. That does not change voting power. Service admission is the genesis submitter role `ADMITTED_SERVICE`. `RotateProviderKey` is an `x/providers` committed handler and changes the provider signing key only. Council seat rotation and service account rotation are engine operations, not transactions. None of those rotate a consensus key.
+Provider admission is a different record. `RegisterProvider` is an `x/providers` committed handler and creates `APPLIED`. `AdmitProviderChange` through the council moves it to `ADMITTED` when the devnet DEC-002 test role is present. That does not change voting power. Service admission is the genesis submitter role `ADMITTED_SERVICE`. `RotateProviderKey` is an `x/providers` committed handler and changes the provider signing key only. Since goal 10 a council seat key is replaced by an executed council `CouncilSeatChange` payload ([council-changes.md](council-changes.md#council-seat-key-replacement)); service account rotation is an engine operation, not a transaction. None of those rotate a consensus key.
 
 Council seats send their messages from their own accounts. Genesis gives each seat address an auth account and no submitter row. The ante admits a seat account from the seat list in the authority config and lets it sign only propose and approve (owner ruling DR-06-06). Genesis validation refuses a seat address in the submitter list with any role (DR-07-11 option 2).
 
@@ -28,7 +28,7 @@ On the four-validator devnet a direct removal is `ERROR_CODE_FORBIDDEN`: three v
 
 The replacement needs a free scheduling slot. At most 128 validator changes can be scheduled, and no message cancels one. If 128 are already scheduled, the execute is `ERROR_CODE_BOUNDS` and the replacement waits until some of them apply (PROPOSED cap, DR-06-04).
 
-Losing one third or more of the voting power for good stops the chain: what remains is not more than two thirds. There is no on-chain path back: `QuorumLossBehavior` is `UNSET` (DEC-008), and governance cannot execute while no block commits. Recovery then needs a new genesis or a social recovery, which is out of scope for this beta.
+Losing one third or more of the voting power for good stops the chain: what remains is not more than two thirds. There is no on-chain path back: `QuorumLossBehavior` is `UNSET` (DEC-008), and governance cannot execute while no block commits. Recovery from permanent quorum loss is out of scope for this beta (decision request DR-10-11): a new network would be a new chain id that keeps and publishes this chain's history, and it needs its own owner decision ([failed-upgrade.md](failed-upgrade.md#permanent-loss-of-quorum)).
 
 ## Loss of quorum
 
@@ -47,9 +47,13 @@ The test reads the powers from the validator set over CometBFT RPC. It observes 
 
 ## Old devnet homes
 
-There is no migration: no live chain exists. This binary refuses every committed Goal 05 or Goal 06 devnet home at start, including a plain four-validator devnet: Goal 07 replaced the registry slots, and `app.New` finds the old scaffold layout and returns an error that says to initialize a new home (`checkRegistryLayouts`). Goal 07 also added two fields to proposal records. Re-initialize every such home: delete it and run `svnd devnet init` again.
+There is no migration from an earlier goal: no live chain exists. Since goal 10 the load gate refuses, at start, every committed devnet home that a binary from goals 05 to 09 wrote, including a plain four-validator devnet: `svnd start` exits 1 with `load gate at height L refused this binary (row 6): no stored app version: the state was written by a binary from before goal 10 (goals 05 to 09), which this binary cannot read or migrate; initialize a new home` (`TestAppRefusesScaffoldLayout`). Goals 07 and 10 also added fields to proposal records, so such a record does not decode. Re-initialize every such home: delete it and run `svnd devnet init` again. That applies to disposable devnet homes from earlier goals only. It is not a recovery procedure for a running chain ([failed-upgrade.md](failed-upgrade.md)).
 
-The authority store layout also changed in the Goal 06 fix round. The round-2 code wrote a side document when an authority message succeeded or was kept, and when a validator change applied. A home that passes the layout check and still holds that side document halts in EndBlock with an error that says to re-initialize it, and export refuses it.
+The authority store layout also changed in the Goal 06 fix round. The round-2 code wrote a side document when an authority message succeeded or was kept, and when a validator change applied. A home that passed the layout check and still held that side document halts in EndBlock with an error that says to re-initialize it, and export refuses it. A goal-10 binary refuses such a home earlier, at the load gate.
+
+## How operators choose upgrades
+
+The council schedules an upgrade plan by an executed council payload ([council-changes.md](council-changes.md#scheduling-an-upgrade)); it cannot install a binary on any node. Each operator reviews the release and decides whether to install it before the plan height ([operator-installation.md](operator-installation.md#how-an-operator-chooses)). A node without the binary stops at the plan height, and the chain makes no block there while more than one third of the voting power has not installed it. The swap and the failure cases are in [planned-halt-and-restart.md](planned-halt-and-restart.md) and [failed-upgrade.md](failed-upgrade.md).
 
 ## What an operator must not expect
 

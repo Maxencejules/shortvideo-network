@@ -1,0 +1,382 @@
+COMMAND .venv/bin/python docs/evidence/goal-09/mutants.py --rev 18fa31076f28b64f429efd5443461cbcfd1f73c0 --logdir /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/mutlogs-goal09
+DATE 2026-11-08T00:38:15Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+revision 18fa31076f28b64f429efd5443461cbcfd1f73c0 commit 18fa31076f28b64f429efd5443461cbcfd1f73c0 tree dce9af14d32082c677f9ded2bf5ed09708f09792
+copy /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/goal09-mutants-3n2p7td7/tree (git archive)
+mutants 169 of 169 (evidence=55, signature=7, query=5, app=10, difftest=12, auditor-net=23, auditor-files=15, auditor-cli=30, labels=12)
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+node v22.23.4
+SVN_SPEC_PYTHON=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-10/.venv/bin/python
+GOCACHE=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/goal09-mutants-3n2p7td7/gocache (fresh, in the copy)
+command evidence: go test -count=1 -v -timeout 15m -run ^(TestSubmitAuditBatchCheckOrder|TestItemFaultsOnLastItem|TestLadderCoversEveryCode|TestTrialSnapshotDetectsEarlyWrite|TestBatchCheckMajorOrderD6|TestBatchAtomicD6|TestDuplicateInBatchD6|TestBatchSizeAndGovernedLimit|TestAlteredObservationD1|TestSpecIntegrityCaseIsUnauthorizedD1|TestAuditorKeyBindingD2|TestBroadcasterRelayForbidden|TestForeignAuditorCannotTakeEvidenceIDsD17|TestEpochRuleD3|TestSchemaVersionD5|TestDuplicateIDs|TestBusinessIDTakenFirst|TestExpiryRangeEdges|TestIdempotentReplay|TestSameObservationNewIDIsAccepted|TestEvidenceKindHasNoProofValues|TestEvidenceItemHasNoRejectFlag|TestProviderReceiptNotOnChainD8|TestEvidenceLifetimeBoundD9|TestLeaseContentBindingD10|TestLeaseNotHeldD11|TestLeaseDeadlinePassedD12|TestEvidenceExpiryWithinLeaseD18|TestContentWithdrawnD13|TestAuditorEpochCapD15|TestReportedStateD4|TestNoEvidenceRevivesAnything|TestRecordedEvidenceAfterEndWithdrawExpiry|TestRecordSizeBound|TestAuditLeavesOtherStoresUntouched|TestStoreInvariantViolationsFailClosed|TestRecordFieldsAndDerivedState|TestRecordStateNeedsTheDigestAlgorithm|TestEvidenceEvents|TestGenesisValidateImportExport|TestGenesisBatchConsistency|TestEvidenceGenesisRoundTrip|TestModuleGenesis|TestModule|TestServicesOnRealRouters|TestServiceDescriptorsMatchTheProtocol|TestUnaryHandlerInterceptor|TestRunMigrationsAtCurrentVersionIsANoOp|TestNoMigrationFromScaffoldLayout|TestMigrationTable|TestNewKeeperRejectsMissingDependencies|TestDeterministicSources|TestKeeperImports|TestNoMerkleCode|TestNoForbiddenNames|TestReadsWithoutBlockTimeFailClosed|TestEvidenceQuery|TestEvidenceQueryResponseSizeBound|TestSignPayloadNeverFails|TestAttestationPayloadRejectsInvalidUTF8|TestSignPayloadSizeBound|TestAttestationPreimageIsNotASignDoc|TestAuditorAddressMatchesSDK|TestOwnsIDFailsClosed|TestKindName|TestEpochAt|TestEnvelopeMatchesSchema|FuzzSubmitAuditBatchDecode|FuzzAuditStateSequence|FuzzEvidenceGenesisJSON|FuzzEvidencePageKey|TestCheckInvariantsDetectsEachViolation|TestPrefixCollisionKeys|TestStoreSnapshot)$ ./chain/x/evidence/ ./chain/x/evidence/evidencetest/
+command signature: go test -count=1 -v -timeout 15m -run ^(TestAlteredObservationD1|TestAuditorKeyBindingD2|TestSpecIntegrityCaseIsUnauthorizedD1)$ ./chain/x/evidence/
+command query: go test -count=1 -v -timeout 15m -run ^(TestEvidenceQuery|TestReportedStateD4|TestReadsWithoutBlockTimeFailClosed|TestEvidenceQueryResponseSizeBound|TestEvidenceQueryTimeThroughABCI|TestEvidenceQueryGasAndBounds|TestAuditFlowReplayAndQueries)$ ./chain/x/evidence/ ./chain/app/
+command app: go test -count=1 -v -timeout 15m -run ^(TestRenewCheckOrder|TestEvidenceCannotExtendLease|TestExportRefusesEvidenceState|TestGenesisRefusesAuditorPrefixCollision|TestLaunchGenesisRejectsEvidence|TestEvidenceGenesisRoundTripFromCommittedState|TestNoEvidenceRenews|TestEvidenceCannotExtendOrReviveLease|TestSeatEvidenceRefusedForTheSeatRule|TestSecpAuditorAccountCannotBind|TestRejectedAuditMessagesLeaveTheFullState|TestAuditRetryScenarios|TestDishonestAdmittedAuditorInApp|TestAuditFlowReplayAndQueries|TestAppRefusesScaffoldLayout|TestEvidenceMessagesDecode|TestEvidenceEventSchemas|TestNoPrivateDataInEvidenceStateOrEvents|TestAuditWithoutDevnetParams)$ ./chain/x/leases/ ./chain/app/
+command difftest: go test -count=1 -v -timeout 20m -run ^(TestDeviationRulesAreLoadBearing|TestEvidenceUsesNoExpiryBudget|TestNothingRevives)$ ./chain/x/evidence/difftest/
+command auditor-net: go test -count=1 -v -timeout 15m -run ^(TestParseEndpointRules|TestURLLengthBoundary|TestParseEndpointValues|TestAllowlistEntryRules|TestVet|TestRefusalTextHasNoAddress|TestBoundsMatchProtocolFile|TestSpecialPurposeTable|TestUnmappingCases|TestGoBuiltinsAreNotEnough|TestClassifyRejectsInvalidAndZoned|TestTableMatchesRegistrySnapshot|TestURLPolicySeeds|FuzzURLPolicy|TestFetchWholePackageOverLoopbackEntry|TestLoopbackURLNeedsItsExactEntry|TestEntryNameResolvingElsewhereRefused|TestMixedResolutionRefusedAsAWhole|TestNoSecondLookup|TestGlobalDestinationThroughSeam|TestRedirectNotFollowed|TestHTTPStatusOutcomes|TestCompressedResponseRefused|TestOversizedBody|TestShortBodyVersusReset|TestSlowBodyTimesOutInsideTheBudget|TestTLSFailures|TestRanges|TestOversizedHeadersAreAProtocolError|TestConnectFailed|TestDNSFailures|TestURLRulesRefuseBeforeResolving|TestRequestValidation|TestSinkErrorIsReturned|TestPackagePath|TestTransportSettings|TestControlHookRefusesOtherAddresses|TestNewValidatesOptions|TestSeamNotReachableThroughOptions|TestLoadCAFile|TestFetchIgnoresProxyEnvironment|TestExampleConfig|TestDefaults|TestAuditorDefaults|TestRejects|TestConfigHasNoBypass|TestLoadBoundsTheFile|TestConfigSeeds|FuzzConfigParse)$ ./agents/auditor/policy/ ./agents/auditor/fetch/ ./agents/auditor/config/
+command auditor-files: go test -count=1 -v -timeout 15m -run ^(TestParseManifestValidFixture|TestParseManifestRejectsGoal02InvalidFixtures|TestParseManifestStrict|TestManifestDigestIsCanonical|TestReadManifestFile|TestNewLayout|TestSplitterZeroLengthSegments|TestSelectIsDeterministicPerSeed|TestNewSeed|TestInputProblemsFetchNothing|TestWholePackageMatches|TestWholePackageCorruptedSegment|TestWholePackageLengthMismatch|TestSampledSegments|TestFreshSeedPerAudit|TestAuditRequestValidation|TestProducerBytesRead|TestManifestSeeds|FuzzManifestParse|TestContentAddressedReports|TestNamedObjects|TestConcurrentPutsCreateOnce|TestLinkAfterAnotherWriterNeverReplaces|TestNoPartialFileAfterCrash|TestModes|TestOpenRefusesUnsafeRoots|TestSymlinkedObjectRefused|TestIndexAppendOnly|TestScanIndexRefusesInvalidLines|TestScanIndexWithoutIndex|TestNoDeleteOperation|TestEvidenceIDDerivation|TestBatchAndBusinessIDs|TestNewItemDigests|TestExpiry|TestRoundOpen|TestCheckLease|TestCheckContent|TestBuildOneBatchPerProvider|TestSignVerifiesWithTheChainCheck|TestEnvelopesAreTheSignedEnvelopes|TestPersistAndLoad|TestRebuild|TestRunFormat|TestSummaryFormat|TestProducerMatchesChainSignVectors|TestGoldenEnvelopeFixtures|TestNewItemFailNeedsABoundEndpoint|TestCheckFailSource|TestEncodeIsCanonicalAndRoundTrips|TestGoldenReports|TestWorstCaseFitsTheBound|TestFieldNamesAvoidForbiddenPatterns|TestReportCarriesNoNameURLOrKey|TestEncodeRejects|TestParseRejects|TestSHA256|TestEndpointSource|TestReportSeeds|FuzzReportParse)$ ./agents/auditor/verify/ ./agents/auditor/store/ ./agents/auditor/batch/ ./agents/auditor/report/
+command auditor-cli: go test -count=1 -v -timeout 15m -run ^(TestRunNeverOpensKeyPath|TestRunClassifiesLoopbackOutcomes|TestRunTLSAndTimeoutAreIncomplete|TestRunBudgetEndsRetriesIncomplete|TestContentWithdrawnFetchesNothing|TestManifestCheckedBeforeResolution|TestEmptySampleStillVetsEndpoint|TestCapabilityManifestEndpoint|TestReportLimitations|TestRunSignSubmitReviewUnit|TestSignRefusals|TestCLIUsageAndKeygen|TestSignAndStatusKeepToTheirResources|TestCommandsAgainstTheFakeNode|TestOperatorEndpointFailIsNotSigned|TestNoInsecureTLSOrProxyInSource|TestFetchtestOnlyInTests|TestTestSeamOnlySetInTests|TestEveryFetchKindIsMapped|TestEveryPolicyRuleIsMapped|TestEveryVerifyStateIsMapped|TestEveryReasonHasAResult|TestFailReasonsAreTheRuling|TestOutcomeTable|TestRangeOutcomeTable|TestObservation|TestFailedSegmentsAreBounded|TestReasons|TestEndpointSourceRule|TestAcknowledgementIsNotCommit|TestCommittedResultIsReadBack|TestDifferentRecordIsIDTaken|TestRetryQueriesBeforeResign|TestReplayLeadsToANewBusinessID|TestStaleEpochIsWarnedAndFails|TestSubmittedBatchInAPassedEpochIsNotRebroadcast|TestCheckTxRejectionIsNotAccepted|TestRebroadcastWhileWaitingStaysSubmitted|TestUnrecordedSubmissionIsQueried|TestStoredSubmissionMustCarryItsBatch|TestUnrecordedRetryKeepsItsBusinessID|TestSquattedBusinessIDsDoNotBlockTheBatch|TestLostBroadcastAnswerIsSubmitted|TestBatchFailureIsolation|TestOperatorFailIsNeitherBroadcastNorResigned|TestBuildTx|TestReads|TestSVNCode|TestHTTPClient|TestChaintestOnlyInTests|TestConsistentPassAndFail|TestNotOnChainOnlyFromANode|TestPayloadUnavailable|TestChecksumMismatch|TestReportInvalid|TestSignatureInvalid|TestEnvelopeMismatch|TestRecordMismatch|TestSelfConsistentFalseReportIsConsistent|TestIndexFallback|TestSignedOperatorFailIsRecordMismatch)$ ./agents/auditor/ ./agents/auditor/classify/ ./agents/auditor/chainclient/ ./agents/auditor/review/
+command labels: go test -count=1 -v -timeout 15m -run ^(TestCatalogFileIsCanonical|TestPinnedSentences|TestSentenceShape|TestModesAreExplicit|TestStatesMatchChainNames|TestRequiredLimitations|TestAcceptanceIsAPromise|TestStateTextsLimitTheClaim|TestRenewalSentenceIsCatalogWide|TestClaimLimitMatchesEnvelope|TestLimitationsFitReportBound|TestDenylistRulesAreWellFormed|TestNoDeniedClaims|TestDenylistScannerDetects|TestEmbeddedReturnsIndependentValues|TestMissingFromChecker|TestDocsContainLimitations|TestEmbeddedCatalogParses|TestParseRejects|TestParseTextBound)$ ./agents/auditor/labels/
+command labels: node --experimental-strip-types --test --test-reporter tap apps/web/test/evidence-labels.test.ts
+CONTROL evidence PASS exit=[0] secs=92.0 named_tests_passed=74/74
+CONTROL signature PASS exit=[0] secs=3.7 named_tests_passed=3/3
+CONTROL query PASS exit=[0] secs=18.1 named_tests_passed=7/7
+CONTROL app PASS exit=[0] secs=9.9 named_tests_passed=19/19
+CONTROL difftest PASS exit=[0] secs=37.8 named_tests_passed=3/3
+CONTROL auditor-net PASS exit=[0] secs=4.0 named_tests_passed=49/49
+CONTROL auditor-files PASS exit=[0] secs=3.9 named_tests_passed=60/60
+CONTROL auditor-cli PASS exit=[0] secs=13.2 named_tests_passed=61/61
+CONTROL labels PASS exit=[0, 0] secs=3.4 named_tests_passed=20/20 node_tests_ok=13
+KILLED p1-review-m01-step2-presence-first-item-only group=evidence exit=[1] secs=7.2 file=chain/x/evidence/msg_server.go failing=TestBatchCheckMajorOrderD6
+    reason: step 2 presence must cover every item, not the first only (MALFORMED)
+KILLED p1-review-m02-step9-id-pattern-first-item-only group=evidence exit=[1] secs=7.1 file=chain/x/evidence/msg_server.go failing=TestItemFaultsOnLastItem TestBatchCheckMajorOrderD6
+    reason: step 9 id pattern must cover every item (BOUNDS)
+KILLED p1-review-m03-step16-stored-evidence-id-first-item-only group=evidence exit=[1] secs=6.9 file=chain/x/evidence/msg_server.go failing=TestDuplicateIDs
+    reason: step 16 must refuse a stored evidence id at any item position (DUPLICATE_ID)
+KILLED p1-review-m04-step17-expired-first-item-only group=evidence exit=[1] secs=6.0 file=chain/x/evidence/msg_server.go failing=TestItemFaultsOnLastItem TestBatchCheckMajorOrderD6
+    reason: step 17 expiry <= committed time must cover every item (EXPIRED)
+KILLED p1-review-m05-step14-upper-bound-off-by-one group=evidence exit=[1] secs=6.4 file=chain/x/evidence/msg_server.go failing=TestExpiryRangeEdges
+    reason: step 14 accepts expiry 253402300799 (BOUNDS only above it)
+KILLED p1-review-m06-step14-lower-bound-off-by-one group=evidence exit=[1] secs=7.1 file=chain/x/evidence/msg_server.go failing=TestExpiryRangeEdges
+    reason: step 14 accepts expiry 1 (BOUNDS only below it)
+KILLED p1-review-m07-genesis-expiry-window-upper-tightened group=evidence exit=[1] secs=6.7 file=chain/x/evidence/genesis.go failing=TestGenesisValidateImportExport
+    reason: ValidateGenesis must accept a record at the last second of its epoch's expiry window
+KILLED p1-review-m08-genesis-expiry-window-lower-tightened group=evidence exit=[1] secs=7.0 file=chain/x/evidence/genesis.go failing=TestGenesisValidateImportExport
+    reason: ValidateGenesis must accept a record whose expiry is the second after its epoch start
+KILLED p1-review-m09-invariant-I6-drop-content-version group=evidence exit=[1] secs=5.9 file=chain/x/evidence/evidencetest/evidencetest.go failing=TestCheckInvariantsDetectsEachViolation
+    reason: CheckInvariants I6 must compare the content version with the lease's
+KILLED p1-review-m10-invariant-I2-drop-32-record-cap group=evidence exit=[1] secs=5.6 file=chain/x/evidence/evidencetest/evidencetest.go failing=TestCheckInvariantsDetectsEachViolation
+    reason: CheckInvariants I2 must refuse a batch of more than 32 records
+KILLED p1-review-m11-invariant-I7-drop-expiry-upper group=evidence exit=[1] secs=6.0 file=chain/x/evidence/evidencetest/evidencetest.go failing=TestCheckInvariantsDetectsEachViolation
+    reason: CheckInvariants I7 must refuse an expiry above 253402300799
+KILLED p1-review-m12-window-count-not-accumulated-per-item group=evidence exit=[1] secs=6.2 file=chain/x/evidence/msg_server.go failing=TestRecordFieldsAndDerivedState TestDuplicateInBatchD6 TestBatchSizeAndGovernedLimit TestForeignAuditorCannotTakeEvidenceIDsD17 TestBusinessIDTakenFirst TestAuditorEpochCapD15 FuzzSubmitAuditBatchDecode FuzzAuditStateSequence
+    reason: the auditor window must count items, not batches (D-15)
+KILLED p1-fix-n01-genesis-batch-signer-key-rule-dropped group=evidence exit=[1] secs=6.5 file=chain/x/evidence/genesis.go failing=TestGenesisValidateImportExport TestGenesisBatchConsistency
+    reason: ValidateGenesis must refuse a batch whose records carry two signer keys
+KILLED p1-fix-n02-invariant-I2-signer-key-dropped group=evidence exit=[1] secs=5.9 file=chain/x/evidence/evidencetest/evidencetest.go failing=TestCheckInvariantsDetectsEachViolation
+    reason: CheckInvariants I2 must refuse a batch whose records carry two signer keys
+KILLED p1-fix-n03-envelope-utf8-check-dropped group=evidence exit=[1] secs=6.6 file=chain/x/evidence/signdoc.go failing=TestAttestationPayloadRejectsInvalidUTF8
+    reason: AuditEnvelope must refuse an id or key_id that is not UTF-8 (no SVN-JCS-1 form)
+KILLED p1-fix-n04-batch-id-utf8-check-dropped group=evidence exit=[1] secs=6.8 file=chain/x/evidence/signdoc.go failing=TestAttestationPayloadRejectsInvalidUTF8
+    reason: AuditCanonical must refuse a batch_id that is not UTF-8
+KILLED p1-fix-n05-zero-block-time-fail-open group=evidence exit=[1] secs=6.4 file=chain/x/evidence/query.go failing=TestReadsWithoutBlockTimeFailClosed
+    reason: a read without a block time must fail closed (ErrNoBlockTime), never report the stored state
+KILLED p1-fix-n06-step16-stored-id-last-item-skipped group=evidence exit=[1] secs=6.5 file=chain/x/evidence/msg_server.go failing=TestServicesOnRealRouters TestDuplicateIDs
+    reason: step 16 must refuse a stored evidence id in the last item
+KILLED p1-fix-n07-step2-presence-last-item-skipped group=evidence exit=[1] secs=6.5 file=chain/x/evidence/msg_server.go failing=TestBatchCheckMajorOrderD6
+    reason: step 2 presence must cover the last item
+KILLED p1-fix-n08-step10-kind-first-item-only group=evidence exit=[1] secs=6.7 file=chain/x/evidence/msg_server.go failing=TestItemFaultsOnLastItem TestBatchCheckMajorOrderD6
+    reason: step 10 kind must cover every item (MALFORMED)
+KILLED p1-fix-n09-step12-attestation-first-item-only group=evidence exit=[1] secs=6.6 file=chain/x/evidence/msg_server.go failing=TestItemFaultsOnLastItem TestBatchCheckMajorOrderD6
+    reason: step 12 attestation must cover every item (MALFORMED)
+KILLED p1-fix-n10-step18-lease-first-item-only group=evidence exit=[1] secs=6.7 file=chain/x/evidence/msg_server.go failing=TestItemFaultsOnLastItem TestBatchCheckMajorOrderD6
+    reason: step 18 lease NOT_FOUND must cover every item
+KILLED p1-fix-n11-invariant-I8-cap-clause-dropped group=evidence exit=[1] secs=5.8 file=chain/x/evidence/evidencetest/evidencetest.go failing=TestCheckInvariantsDetectsEachViolation
+    reason: CheckInvariants I8 must refuse a window count above MaxEvidencePerAuditorPerEpoch
+KILLED p1-fix-n12-business-row-id-check-dropped group=evidence exit=[1] secs=5.8 file=chain/x/evidence/evidencetest/evidencetest.go failing=TestCheckInvariantsDetectsEachViolation
+    reason: CheckInvariants must refuse a business-ledger row whose id is outside the id pattern
+KILLED p1-fix-n13-export-zero-time-fail-open group=evidence exit=[1] secs=6.7 file=chain/x/evidence/genesis.go failing=TestReadsWithoutBlockTimeFailClosed
+    reason: ExportGenesis without a block time must fail closed, never export a state read at time 1
+KILLED p1-fix-n14-ladder-t4-first-item-only group=evidence exit=[1] secs=6.6 file=chain/x/evidence/msg_server.go failing=TestItemFaultsOnLastItem TestBatchAtomicD6
+    reason: T4 (D-10) lease/content binding must cover every item
+KILLED plan-check-order-role-dropped group=evidence exit=[1] secs=6.7 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBroadcasterRelayForbidden TestSchemaVersionD5
+    reason: step 3: a signer with no role is UNAUTHORIZED and another role FORBIDDEN
+KILLED plan-check-order-schema-dropped group=evidence exit=[1] secs=6.9 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestSchemaVersionD5
+    reason: step 4: schema_version 0 is MALFORMED and any value but 1 OUT_OF_RANGE (D-5)
+KILLED plan-check-order-business-id-pattern-dropped group=evidence exit=[1] secs=7.0 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder
+    reason: step 15: a business_id outside the id pattern is BOUNDS
+KILLED plan-sig-verify-skipped group=signature exit=[1] secs=5.0 file=chain/x/evidence/msg_server.go failing=TestAlteredObservationD1 TestSpecIntegrityCaseIsUnauthorizedD1 TestAuditorKeyBindingD2
+    reason: steps 6-8: a batch altered after signing is UNAUTHORIZED (D-1)
+KILLED plan-sig-key-binding-dropped group=signature exit=[1] secs=4.6 file=chain/x/evidence/signdoc.go failing=TestAuditorKeyBindingD2
+    reason: step 7: the signature key must derive the outer signer's address (D-2, Q1)
+KILLED plan-sig-envelope-omits-observation group=signature exit=[1] secs=4.7 file=chain/x/evidence/signdoc.go failing=TestAlteredObservationD1 TestSpecIntegrityCaseIsUnauthorizedD1
+    reason: the signed envelope must carry the observation digest
+KILLED plan-sig-envelope-omits-epoch group=signature exit=[1] secs=4.8 file=chain/x/evidence/signdoc.go failing=TestAlteredObservationD1
+    reason: the signed envelope must carry the epoch
+KILLED plan-sig-batch-omits-signer group=signature exit=[1] secs=4.8 file=chain/x/evidence/signdoc.go failing=TestAlteredObservationD1
+    reason: the signed batch object must carry the outer signer
+KILLED plan-sig-batch-omits-batch-id group=signature exit=[1] secs=4.8 file=chain/x/evidence/signdoc.go failing=TestAlteredObservationD1
+    reason: the signed batch object must carry the batch_id
+KILLED plan-sig-batch-omits-item-order group=signature exit=[1] secs=4.8 file=chain/x/evidence/signdoc.go failing=TestAlteredObservationD1
+    reason: the signed batch object must keep the message's item order
+KILLED plan-batch-count-check-dropped group=evidence exit=[1] secs=6.7 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBatchSizeAndGovernedLimit
+    reason: step 11: an empty batch or one above max_evidence_batch is BOUNDS
+KILLED plan-batch-cap-ge group=evidence exit=[1] secs=7.0 file=chain/x/evidence/msg_server.go failing=TestBatchAtomicD6 TestBatchSizeAndGovernedLimit TestAuditorEpochCapD15
+    reason: step 11: a batch of exactly max_evidence_batch items is accepted
+KILLED plan-batch-governed-limit-ignored group=evidence exit=[1] secs=6.8 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBatchSizeAndGovernedLimit
+    reason: step 11 uses the governed max_evidence_batch, not the protocol ceiling only
+KILLED plan-ids-in-batch-duplicate-dropped group=evidence exit=[1] secs=6.9 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestItemFaultsOnLastItem TestDuplicateInBatchD6
+    reason: step 16: an evidence id repeated in one batch is DUPLICATE_ID (D-6)
+KILLED plan-ids-stored-id-dropped group=evidence exit=[1] secs=7.1 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestServicesOnRealRouters TestDuplicateIDs
+    reason: step 16: a stored evidence id is DUPLICATE_ID
+KILLED plan-ids-batch-marker-not-written group=evidence exit=[1] secs=6.7 file=chain/x/evidence/msg_server.go failing=TestGenesisValidateImportExport TestEvidenceGenesisRoundTrip TestRecordFieldsAndDerivedState TestRecordStateNeedsTheDigestAlgorithm TestDuplicateInBatchD6 TestBatchSizeAndGovernedLimit TestForeignAuditorCannotTakeEvidenceIDsD17 TestDuplicateIDs TestBusinessIDTakenFirst TestEvidenceExpiryWithinLeaseD18 TestAuditorEpochCapD15 FuzzSubmitAuditBatchDecode FuzzAuditStateSequence
+    reason: an accepted batch must mark its batch_id used, so a second batch with it is DUPLICATE_ID
+KILLED plan-ids-d17-batch-prefix-dropped group=evidence exit=[1] secs=6.6 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder
+    reason: T1 (D-17): a batch_id without the signer's prefix is FORBIDDEN
+KILLED plan-ids-d17-item-prefix-dropped group=evidence exit=[1] secs=7.0 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestItemFaultsOnLastItem TestBatchAtomicD6 TestForeignAuditorCannotTakeEvidenceIDsD17
+    reason: T1 (D-17): an evidence id without the signer's prefix is FORBIDDEN
+KILLED w2f-ownsid-empty-prefix-matches group=evidence exit=[1] secs=7.1 file=chain/x/evidence/signdoc.go failing=TestOwnsIDFailsClosed
+    reason: security review finding 4: an address that is not 20 bytes has no prefix, and OwnsID fails closed
+KILLED plan-epoch-previous-round group=evidence exit=[1] secs=6.8 file=chain/x/evidence/msg_server.go failing=TestGenesisValidateImportExport TestEvidenceGenesisRoundTrip TestSubmitAuditBatchCheckOrder TestItemFaultsOnLastItem TestServicesOnRealRouters TestUnaryHandlerInterceptor TestRunMigrationsAtCurrentVersionIsANoOp TestNoForbiddenNames TestReadsWithoutBlockTimeFailClosed TestEvidenceQuery TestRecordFieldsAndDerivedState TestRecordStateNeedsTheDigestAlgorithm TestEvidenceEvents TestBatchCheckMajorOrderD6 TestBatchAtomicD6 TestDuplicateInBatchD6 TestBatchSizeAndGovernedLimit TestAlteredObservationD1 TestAuditorKeyBindingD2 TestBroadcasterRelayForbidden TestForeignAuditorCannotTakeEvidenceIDsD17 TestEpochRuleD3 TestSchemaVersionD5 TestDuplicateIDs TestBusinessIDTakenFirst TestExpiryRangeEdges TestIdempotentReplay TestSameObservationNewIDIsAccepted TestProviderReceiptNotOnChainD8 TestEvidenceLifetimeBoundD9 TestLeaseContentBindingD10 TestLeaseNotHeldD11 TestLeaseDeadlinePassedD12 TestEvidenceExpiryWithinLeaseD18 TestContentWithdrawnD13 TestAuditorEpochCapD15 TestReportedStateD4 TestNoEvidenceRevivesAnything TestRecordedEvidenceAfterEndWithdrawExpiry TestAuditLeavesOtherStoresUntouched TestStoreInvariantViolationsFailClosed FuzzEvidencePageKey
+    reason: step 13: the epoch must be EpochAt(committed time) (D-3)
+KILLED plan-derivation-inverted group=evidence exit=[1] secs=6.8 file=chain/x/evidence/msg_server.go failing=TestGenesisValidateImportExport TestEvidenceGenesisRoundTrip TestReadsWithoutBlockTimeFailClosed TestEvidenceQuery TestRecordFieldsAndDerivedState TestRecordStateNeedsTheDigestAlgorithm TestEvidenceEvents TestDuplicateInBatchD6 TestBatchSizeAndGovernedLimit TestForeignAuditorCannotTakeEvidenceIDsD17 TestDuplicateIDs TestBusinessIDTakenFirst TestEvidenceExpiryWithinLeaseD18 TestAuditorEpochCapD15 TestReportedStateD4 TestRecordedEvidenceAfterEndWithdrawExpiry FuzzSubmitAuditBatchDecode FuzzAuditStateSequence
+    reason: DEC-010: the manifest digest records RECORDED, any other digest REJECTED
+KILLED plan-derivation-ignores-algorithm group=evidence exit=[1] secs=6.6 file=chain/x/evidence/msg_server.go failing=TestRecordStateNeedsTheDigestAlgorithm
+    reason: DEC-010 compares the digest algorithm as well as the value
+KILLED plan-lease-not-found-dropped group=evidence exit=[1] secs=6.9 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestItemFaultsOnLastItem TestBatchCheckMajorOrderD6 TestExpiryRangeEdges
+    reason: step 18: an item naming no lease is NOT_FOUND
+KILLED plan-lease-write-before-last-check group=evidence exit=[1] secs=6.7 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBatchAtomicD6 TestAuditorEpochCapD15 TestStoreInvariantViolationsFailClosed
+    reason: no write before the last check (T9): a batch refused at T9 leaves the store untouched
+KILLED plan-ledger-commit-skipped group=evidence exit=[1] secs=6.3 file=chain/x/evidence/msg_server.go failing=TestEvidenceGenesisRoundTrip TestNoForbiddenNames TestRecordFieldsAndDerivedState TestAuditorKeyBindingD2 TestEpochRuleD3 TestIdempotentReplay TestNoEvidenceRevivesAnything TestAuditLeavesOtherStoresUntouched
+    reason: an accepted batch commits its business id, so a replay is idempotent and another payload REPLAY
+KILLED plan-query-lease-index-not-written group=query exit=[1] secs=8.8 file=chain/x/evidence/store.go failing=TestReadsWithoutBlockTimeFailClosed TestEvidenceQuery TestEvidenceQueryResponseSizeBound TestEvidenceQueryTimeThroughABCI TestAuditFlowReplayAndQueries TestEvidenceQueryGasAndBounds
+    reason: every record has its lease index row, so the lease_id query lists it
+KILLED plan-query-page-budget-off-by-one group=query exit=[1] secs=9.6 file=chain/x/evidence/query.go failing=TestEvidenceQuery
+    reason: a lease_id page holds at most limit records
+KILLED plan-query-reported-state-is-stored group=query exit=[1] secs=8.8 file=chain/x/evidence/keeper.go failing=TestReadsWithoutBlockTimeFailClosed TestEvidenceQuery TestReportedStateD4 TestEvidenceQueryTimeThroughABCI
+    reason: a RECORDED record past its expiry reads EXPIRED (D-4)
+KILLED plan-query-reported-state-expires-rejected group=query exit=[1] secs=8.8 file=chain/x/evidence/keeper.go failing=TestReportedStateD4 TestEvidenceQueryTimeThroughABCI
+    reason: a REJECTED record never expires
+KILLED plan-query-expiry-boundary-strict group=query exit=[1] secs=9.1 file=chain/x/evidence/keeper.go failing=TestEvidenceQuery TestReportedStateD4 TestEvidenceQueryTimeThroughABCI
+    reason: a RECORDED record reads EXPIRED at its expiry second (expiry <= now)
+KILLED plan-tail-d8-dropped group=evidence exit=[1] secs=6.9 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestItemFaultsOnLastItem TestBatchAtomicD6 TestProviderReceiptNotOnChainD8
+    reason: T2 (D-8): a PROVIDER_RECEIPT item is FORBIDDEN
+KILLED plan-tail-d9-dropped group=evidence exit=[1] secs=6.6 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestItemFaultsOnLastItem TestBatchAtomicD6 TestEvidenceLifetimeBoundD9
+    reason: T3 (D-9): an expiry more than MaxEvidenceLifetimeSeconds ahead is BOUNDS
+KILLED plan-tail-d10-dropped group=evidence exit=[1] secs=6.6 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestItemFaultsOnLastItem TestBatchAtomicD6 TestLeaseContentBindingD10
+    reason: T4 (D-10): an item whose content differs from its lease is CONFLICT
+KILLED plan-tail-d11-dropped group=evidence exit=[1] secs=6.9 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBatchAtomicD6 TestLeaseNotHeldD11 TestNoEvidenceRevivesAnything TestRecordedEvidenceAfterEndWithdrawExpiry
+    reason: T5 (D-11): an item whose lease is not held is CONFLICT
+KILLED plan-tail-d12-dropped group=evidence exit=[1] secs=6.4 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBatchAtomicD6 TestLeaseDeadlinePassedD12 TestNoEvidenceRevivesAnything
+    reason: T6 (D-12): an item whose held lease is past its deadline is EXPIRED
+KILLED plan-tail-d18-dropped group=evidence exit=[1] secs=6.4 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBatchAtomicD6 TestEvidenceExpiryWithinLeaseD18
+    reason: T7 (D-18): an item expiring after its lease's deadline is CONFLICT
+KILLED plan-tail-d13-dropped group=evidence exit=[1] secs=6.2 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBatchAtomicD6 TestContentWithdrawnD13 TestNoEvidenceRevivesAnything TestRecordedEvidenceAfterEndWithdrawExpiry
+    reason: T8 (D-13): an item of withdrawn content is WITHDRAWN
+KILLED plan-tail-d15-dropped group=evidence exit=[1] secs=6.3 file=chain/x/evidence/msg_server.go failing=TestSubmitAuditBatchCheckOrder TestBatchAtomicD6 TestAuditorEpochCapD15 TestStoreInvariantViolationsFailClosed
+    reason: T9 (D-15): more than MaxEvidencePerAuditorPerEpoch items of one auditor in one epoch is BOUNDS
+KILLED plan-tail-window-reset-wrong-epoch group=evidence exit=[1] secs=6.7 file=chain/x/evidence/msg_server.go failing=TestGenesisValidateImportExport TestEvidenceGenesisRoundTrip TestSubmitAuditBatchCheckOrder TestBatchAtomicD6 TestBatchSizeAndGovernedLimit TestDuplicateIDs TestAuditorEpochCapD15 TestStoreInvariantViolationsFailClosed FuzzAuditStateSequence
+    reason: the auditor window resets only when the stored epoch is not the current one
+KILLED plan-genesis-cross-module-check-dropped group=evidence exit=[1] secs=6.9 file=chain/x/evidence/genesis.go failing=TestGenesisValidateImportExport
+    reason: InitGenesis must check every record against its lease (I5, I6, I13, epoch)
+KILLED plan-genesis-export-writes-stored-state group=evidence exit=[1] secs=6.8 file=chain/x/evidence/genesis.go failing=TestEvidenceGenesisRoundTrip
+    reason: ExportGenesis must export the reported state (a RECORDED record past expiry as EXPIRED)
+KILLED plan-renewal-evidence-falls-through group=app exit=[1] secs=11.5 file=chain/x/leases/msg_server.go failing=TestRenewCheckOrder TestEvidenceCannotExtendLease TestNoEvidenceRenews TestEvidenceCannotExtendOrReviveLease TestDishonestAdmittedAuditorInApp TestAuditFlowReplayAndQueries
+    reason: a renewal that names live evidence is FORBIDDEN; evidence never renews or extends a lease
+KILLED plan-renewal-evidence-expiry-strict group=app exit=[1] secs=11.7 file=chain/x/leases/msg_server.go failing=TestEvidenceCannotExtendLease TestEvidenceCannotExtendOrReviveLease
+    reason: a renewal naming evidence at its expiry second is EXPIRED
+KILLED plan-renewal-evidence-not-found group=app exit=[1] secs=11.1 file=chain/x/evidence/keeper.go failing=TestNoEvidenceRenews TestEvidenceCannotExtendOrReviveLease TestDishonestAdmittedAuditorInApp TestAuditFlowReplayAndQueries
+    reason: RenewalEvidence must report a stored record as found (the renewal is FORBIDDEN or EXPIRED, not NOT_FOUND)
+KILLED int-export-evidence-refusal-off group=app exit=[1] secs=11.3 file=chain/app/app.go failing=TestExportRefusesEvidenceState
+    reason: App.Export must refuse evidence state before the module manager export (DR-09-18)
+KILLED int-genesis-auditor-prefix-rule-off group=app exit=[1] secs=11.5 file=chain/app/state.go failing=TestGenesisRefusesAuditorPrefixCollision
+    reason: genesis must refuse two AUDITOR submitters that share an evidence id prefix (DR-09-30)
+KILLED int-leases-evidence-reader-nil group=app exit=[1] secs=10.7 file=chain/app/app.go failing=TestNoEvidenceRenews TestEvidenceCannotExtendOrReviveLease TestDishonestAdmittedAuditorInApp TestAuditFlowReplayAndQueries
+    reason: the leases keeper the app runs must read evidence (a renewal naming evidence is FORBIDDEN or EXPIRED, not NOT_FOUND)
+KILLED int-ante-seat-may-sign-audits group=app exit=[1] secs=11.1 file=chain/app/ante.go failing=TestSeatEvidenceRefusedForTheSeatRule
+    reason: DR-06-06: a council seat key must not sign MsgSubmitAuditBatch (ante FORBIDDEN)
+KILLED int-evidence-role-accepts-broadcaster group=app exit=[1] secs=11.1 file=chain/x/evidence/msg_server.go failing=TestSecpAuditorAccountCannotBind TestRejectedAuditMessagesLeaveTheFullState
+    reason: a BROADCASTER relaying an auditor batch is FORBIDDEN at step 3 (owner ruling Q1: no relay)
+KILLED int-layout-check-omits-evidence group=app exit=[1] secs=11.6 file=chain/app/app.go failing=TestAppRefusesScaffoldLayout
+    reason: the app must refuse an evidence store whose layout is not this binary's
+KILLED int-evidence-outside-business-namespace group=app exit=[1] secs=12.5 file=chain/app/app.go failing=TestAuditRetryScenarios
+    reason: evidence business ids share the one protocol namespace with the other modules
+KILLED p4-oracle-d17-off group=difftest exit=[1] secs=33.1 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing
+    reason: the adapter applies evidence D-17 (T1) after every spec check
+KILLED p4-oracle-d8-off group=difftest exit=[1] secs=32.8 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing
+    reason: the adapter applies evidence D-8 (T2): a PROVIDER_RECEIPT item is FORBIDDEN
+KILLED p4-oracle-d9-off group=difftest exit=[1] secs=33.1 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing
+    reason: the adapter applies evidence D-9 (T3): an expiry beyond the evidence lifetime is BOUNDS
+KILLED p4-oracle-d10-off group=difftest exit=[1] secs=34.1 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing
+    reason: the adapter applies evidence D-10 (T4): content other than the lease's is CONFLICT
+KILLED p4-oracle-d11-off group=difftest exit=[1] secs=33.3 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing TestNothingRevives
+    reason: the adapter applies evidence D-11 (T5): a lease that is not held is CONFLICT
+KILLED p4-oracle-d12-off group=difftest exit=[1] secs=33.1 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing TestNothingRevives
+    reason: the adapter applies evidence D-12 (T6): a held lease past its deadline is EXPIRED
+KILLED p4-oracle-d18-off group=difftest exit=[1] secs=32.8 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing
+    reason: the adapter applies evidence D-18 (T7): an expiry after the lease deadline is CONFLICT
+KILLED p4-oracle-d13-withdrawn-ignored group=difftest exit=[1] secs=33.0 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing TestNothingRevives
+    reason: the adapter applies evidence D-13 (T8) to withdrawn content
+KILLED p4-oracle-d15-window-not-counted group=difftest exit=[1] secs=23.4 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing
+    reason: the adapter counts each accepted item in the auditor's window (evidence D-15)
+KILLED p4-oracle-d3-epoch-not-advanced group=difftest exit=[1] secs=31.9 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing
+    reason: at a Block the adapter sets the spec epoch from header time (evidence D-3)
+KILLED p4-oracle-d4-evidence-not-swapped group=difftest exit=[1] secs=31.5 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing TestEvidenceUsesNoExpiryBudget TestNothingRevives
+    reason: at a Block the adapter hides evidence from ExpireDue (evidence D-4: no evidence sweep)
+KILLED p4-oracle-d6-first-item-only group=difftest exit=[1] secs=33.5 file=tests/difftest/spec_oracle.py failing=TestDeviationRulesAreLoadBearing
+    reason: a batch of N != 1 items maps to one spec step that carries item_count (evidence D-6)
+KILLED w0-p2a-proxy-from-env group=auditor-net exit=[1] secs=3.4 file=agents/auditor/fetch/fetch.go failing=TestNoSecondLookup TestGlobalDestinationThroughSeam TestTransportSettings TestFetchIgnoresProxyEnvironment
+    reason: the fetch transport must ignore proxy environment variables
+KILLED w0-p2a-follow-redirects group=auditor-net exit=[1] secs=3.2 file=agents/auditor/fetch/fetch.go failing=TestRedirectNotFollowed TestTransportSettings
+    reason: the fetch client must not follow redirects
+KILLED w0-p2a-no-encoding-check group=auditor-net exit=[1] secs=3.3 file=agents/auditor/fetch/fetch.go failing=TestCompressedResponseRefused
+    reason: a compressed response is refused
+KILLED w0-p2a-no-extra-byte-check group=auditor-net exit=[1] secs=3.3 file=agents/auditor/fetch/fetch.go failing=TestOversizedBody
+    reason: a body longer than the expected size is TOO_LARGE (size cap)
+KILLED w0-p2a-skip-denied-addresses group=auditor-net exit=[1] secs=3.6 file=agents/auditor/policy/policy.go failing=TestVet TestRefusalTextHasNoAddress TestLoopbackURLNeedsItsExactEntry TestEntryNameResolvingElsewhereRefused TestMixedResolutionRefusedAsAWhole TestGlobalDestinationThroughSeam
+    reason: a denied address refuses the whole resolved set
+KILLED w0-p2a-no-unmapping group=auditor-net exit=[1] secs=3.5 file=agents/auditor/policy/classify.go failing=TestVet TestSpecialPurposeTable TestUnmappingCases TestGlobalDestinationThroughSeam
+    reason: an IPv4-mapped address is unmapped before the table lookup
+KILLED w0-p2a-no-embedded-check group=auditor-net exit=[1] secs=3.5 file=agents/auditor/policy/classify.go failing=TestSpecialPurposeTable TestUnmappingCases
+    reason: an embedded IPv4 address (NAT64, 6to4) is checked against the table
+KILLED w0-p2a-no-2000-3-rule group=auditor-net exit=[1] secs=3.3 file=agents/auditor/policy/classify.go failing=TestVet TestSpecialPurposeTable TestGlobalDestinationThroughSeam
+    reason: IPv6 outside 2000::/3 is not global
+KILLED w0-p2a-control-hook-permits-all group=auditor-net exit=[1] secs=3.5 file=agents/auditor/fetch/dial.go failing=TestControlHookRefusesOtherAddresses
+    reason: the dial control hook refuses an address other than the vetted one
+KILLED w0-p2a-entry-ignores-provider group=auditor-net exit=[1] secs=3.6 file=agents/auditor/policy/policy.go failing=TestVet TestLoopbackURLNeedsItsExactEntry
+    reason: an allowlist entry matches its provider_id exactly
+KILLED w0-p2a-link-local-entry-allowed group=auditor-net exit=[1] secs=3.5 file=agents/auditor/policy/policy.go failing=TestAllowlistEntryRules TestRejects
+    reason: an allowlist entry may not name a link-local address
+KILLED w0-p2a-second-lookup-per-dial group=auditor-net exit=[1] secs=3.7 file=agents/auditor/fetch/fetch.go failing=TestNoSecondLookup
+    reason: a fetch resolves the host once and dials only the vetted addresses (no second lookup)
+KILLED w0-store-publish-renames group=auditor-files exit=[1] secs=3.8 file=agents/auditor/store/store.go failing=TestLinkAfterAnotherWriterNeverReplaces
+    reason: a stored object is created once and never replaced (P2a 'store overwrites' = fix round M13)
+KILLED w0-p2a-manifest-mismatch-ignored group=auditor-files exit=[1] secs=3.7 file=agents/auditor/verify/audit.go failing=TestInputProblemsFetchNothing
+    reason: a manifest whose digest is not the lease's is an input problem; nothing is fetched
+KILLED w0-p2a-config-unknown-keys group=auditor-net exit=[1] secs=3.6 file=agents/auditor/config/config.go failing=TestRejects
+    reason: the config refuses unknown keys (no bypass field can be added silently)
+KILLED w0-review-m4-global-any-port group=auditor-net exit=[1] secs=3.8 file=agents/auditor/policy/policy.go failing=TestVet TestGlobalDestinationThroughSeam
+    reason: a global destination without an allowlist entry is permitted on port 443 only
+KILLED w0-review-m5-package-bytes-not-compared group=auditor-files exit=[1] secs=3.7 file=agents/auditor/verify/audit.go failing=TestInputProblemsFetchNothing
+    reason: a manifest whose package_bytes is not the lease's is an input problem
+KILLED w0-fix-m1-content-range-total-ignored group=auditor-net exit=[1] secs=3.6 file=agents/auditor/fetch/fetch.go failing=TestRanges
+    reason: a range response must carry the exact Content-Range, total included
+KILLED w0-fix-m2-first-content-encoding-line-only group=auditor-net exit=[1] secs=3.6 file=agents/auditor/fetch/fetch.go failing=TestCompressedResponseRefused
+    reason: every Content-Encoding header line is checked
+KILLED w0-fix-m3-unexpected-eof-is-length-mismatch group=auditor-net exit=[1] secs=3.7 file=agents/auditor/fetch/fetch.go failing=TestShortBodyVersusReset
+    reason: a connection closed inside a declared length is CONNECTION_RESET, not LENGTH_MISMATCH
+KILLED w0-fix-m3b-close-delimited-eof-is-length-mismatch group=auditor-net exit=[1] secs=3.9 file=agents/auditor/fetch/fetch.go failing=TestShortBodyVersusReset
+    reason: a close-delimited body that ends early is CONNECTION_RESET (authenticated framing only)
+KILLED w0-fix-m6-only-301-302-redirect group=auditor-net exit=[1] secs=3.9 file=agents/auditor/fetch/fetch.go failing=TestRedirectNotFollowed
+    reason: every 3xx is a redirect outcome
+KILLED w0-fix-m7-zero-length-segment-digest-unchecked group=auditor-files exit=[1] secs=3.6 file=agents/auditor/verify/layout.go failing=TestNewLayout TestInputProblemsFetchNothing
+    reason: a zero-length segment must carry the SHA-256 of empty input (DR-09-21)
+KILLED w0-fix-m8-append-after-torn-index-line group=auditor-files exit=[1] secs=4.0 file=agents/auditor/store/store.go failing=TestIndexAppendOnly
+    reason: the index refuses an append after a torn last line
+KILLED w0-fix-m9-index-lines-not-validated group=auditor-files exit=[1] secs=4.0 file=agents/auditor/store/store.go failing=TestScanIndexRefusesInvalidLines
+    reason: every scanned index line must be one JSON object
+KILLED w0-fix-m10-ipv6-entry-space-unrestricted group=auditor-net exit=[1] secs=3.6 file=agents/auditor/policy/policy.go failing=TestAllowlistEntryRules
+    reason: an IPv6 allowlist ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
+KILLED w0-fix-m11-only-all-digit-last-label-refused group=auditor-net exit=[1] secs=3.7 file=agents/auditor/policy/policy.go failing=TestParseEndpointRules TestAllowlistEntryRules
+    reason: a host whose last label starts with a digit is refused
+KILLED w0-fix-m12-production-code-sets-seed-source group=auditor-cli exit=[1] secs=12.8 file=agents/auditor/verify/audit.go failing=TestTestSeamOnlySetInTests
+    reason: only test files may set the sample seed source (source scan)
+KILLED w1b-classify-m1-no-range-416 group=auditor-cli exit=[1] secs=12.2 file=agents/auditor/classify/classify.go failing=TestRunClassifiesLoopbackOutcomes TestRangeOutcomeTable TestObservation
+    reason: a sampled request answered 416 or 501 is INCOMPLETE RANGE_UNSUPPORTED (DR-09-09)
+KILLED w1b-classify-m2-no-408 group=auditor-cli exit=[1] secs=58.2 file=agents/auditor/classify/classify.go failing=TestOutcomeTable TestRangeOutcomeTable TestObservation
+    reason: a 408 is TIMEOUT, not an HTTP status FAIL
+KILLED w1b-classify-m3-whole-package-ranged group=auditor-cli exit=[1] secs=11.5 file=agents/auditor/classify/classify.go failing=TestObservation
+    reason: a whole-package request answered 416 is not a range outcome
+KILLED w1b-session-m4-no-open-without-requests group=auditor-cli exit=[1] secs=12.0 file=agents/auditor/main.go failing=TestEmptySampleStillVetsEndpoint
+    reason: an audit that made no request still vets its endpoint
+KILLED w1b-session-m5-eager-open group=auditor-cli exit=[1] secs=11.4 file=agents/auditor/main.go failing=TestManifestCheckedBeforeResolution
+    reason: the manifest is checked before the endpoint is resolved (no lookup for an input problem)
+KILLED w1b-session-m6-refusal-ignored group=auditor-cli exit=[1] secs=11.7 file=agents/auditor/main.go failing=TestEmptySampleStillVetsEndpoint
+    reason: a policy refusal of the endpoint decides the audit
+KILLED w1b-sign-m7-sign-reads-header group=auditor-cli exit=[1] secs=11.5 file=agents/auditor/main.go failing=TestSignAndStatusKeepToTheirResources
+    reason: sign uses no network
+KILLED w1b-status-m8-status-loads-key group=auditor-cli exit=[1] secs=12.2 file=agents/auditor/main.go failing=TestSignAndStatusKeepToTheirResources
+    reason: status never opens the key
+KILLED w1b-submit-m9-rebroadcast-not-accepted group=auditor-cli exit=[1] secs=11.6 file=agents/auditor/chainclient/submit.go failing=TestRebroadcastWhileWaitingStaysSubmitted
+    reason: a refused rebroadcast while an earlier submission waits stays SUBMITTED
+KILLED w1b-submit-m10-bytes-after-broadcast group=auditor-cli exit=[1] secs=12.2 file=agents/auditor/chainclient/submit.go failing=TestUnrecordedSubmissionIsQueried
+    reason: the transaction bytes are stored before the broadcast
+KILLED w1b-submit-m11-unrecorded-submission-ignored group=auditor-cli exit=[1] secs=12.1 file=agents/auditor/chainclient/submit.go failing=TestUnrecordedSubmissionIsQueried TestStoredSubmissionMustCarryItsBatch TestUnrecordedRetryKeepsItsBusinessID TestOperatorFailIsNeitherBroadcastNorResigned
+    reason: a submission with bytes but no record is queried, not ignored
+KILLED w1b-submit-m12-unrecorded-any-message group=auditor-cli exit=[1] secs=12.5 file=agents/auditor/chainclient/submit.go failing=TestStoredSubmissionMustCarryItsBatch
+    reason: an unrecorded submission must carry this batch's message
+KILLED w1b-submit-m13-record-without-bytes-ok group=auditor-cli exit=[1] secs=12.2 file=agents/auditor/chainclient/submit.go failing=TestStoredSubmissionMustCarryItsBatch
+    reason: a submission record without transaction bytes is an error
+KILLED w2f-replay-keeps-business-id group=auditor-cli exit=[1] secs=11.9 file=agents/auditor/chainclient/submit.go failing=TestReplayLeadsToANewBusinessID TestSquattedBusinessIDsDoNotBlockTheBatch
+    reason: security review finding 1: after REPLAY the next attempt carries a new, drawn business id
+KILLED w2f-unrecorded-first-business-id-unchecked group=auditor-cli exit=[1] secs=12.3 file=agents/auditor/chainclient/submit.go failing=TestStoredSubmissionMustCarryItsBatch
+    reason: unrecorded submission 0 must carry the signed batch's own business id
+KILLED w2f-unrecorded-retry-id-any-prefix group=auditor-cli exit=[1] secs=12.2 file=agents/auditor/chainclient/submit.go failing=TestUnrecordedRetryKeepsItsBusinessID
+    reason: an unrecorded retry must carry a business id with its signer's prefix
+KILLED w1b-labels-verifies-stores group=labels exit=[1, 1] secs=3.6 file=agents/auditor/labels/evidence-labels.json,apps/web/src/evidence-labels.ts,agents/auditor/labels/labels_test.go,apps/web/test/evidence-labels.test.ts failing=TestNoDeniedClaims node:'no catalog string claims proof of storage, a unique replica, independence, legality, or future quality'
+    reason: no catalog string may claim the chain verifies storage
+KILLED w1b-labels-enum-storage-proof group=labels exit=[1, 1] secs=3.8 file=agents/auditor/labels/evidence-labels.json,apps/web/src/evidence-labels.ts,agents/auditor/labels/labels_test.go,apps/web/test/evidence-labels.test.ts failing=TestNoDeniedClaims node:'no catalog string claims proof of storage, a unique replica, independence, legality, or future quality'
+    reason: no catalog string may name a storage proof (enum spelling)
+KILLED w1b-labels-camel-storage-proof group=labels exit=[1, 1] secs=3.8 file=agents/auditor/labels/evidence-labels.json,apps/web/src/evidence-labels.ts,agents/auditor/labels/labels_test.go,apps/web/test/evidence-labels.test.ts failing=TestNoDeniedClaims node:'no catalog string claims proof of storage, a unique replica, independence, legality, or future quality'
+    reason: no catalog string may name a storage proof (camel case)
+KILLED w1b-labels-extends-revives group=labels exit=[1, 1] secs=3.4 file=agents/auditor/labels/evidence-labels.json,apps/web/src/evidence-labels.ts,agents/auditor/labels/labels_test.go,apps/web/test/evidence-labels.test.ts failing=TestRenewalSentenceIsCatalogWide TestNoDeniedClaims node:'the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs' node:'no catalog string claims proof of storage, a unique replica, independence, legality, or future quality'
+    reason: no catalog string may claim evidence extends or revives a lease
+KILLED w1b-labels-honest-accurate group=labels exit=[1, 1] secs=3.3 file=agents/auditor/labels/evidence-labels.json,apps/web/src/evidence-labels.ts,agents/auditor/labels/labels_test.go,apps/web/test/evidence-labels.test.ts failing=TestNoDeniedClaims node:'no catalog string claims proof of storage, a unique replica, independence, legality, or future quality'
+    reason: no catalog string may claim the auditor is honest or the attestation accurate
+KILLED w1b-labels-drop-audited-network group=labels exit=[1, 1] secs=3.6 file=agents/auditor/labels/testdata/label-rules.json failing=TestDenylistRulesAreWellFormed node:'the denylist rules are well formed and are exactly the list of this test'
+    reason: the shared denylist keeps 'audited network'
+KILLED w1b-labels-drop-unlawful group=labels exit=[1, 1] secs=3.3 file=agents/auditor/labels/testdata/label-rules.json failing=TestDenylistRulesAreWellFormed node:'the denylist rules are well formed and are exactly the list of this test'
+    reason: the shared denylist keeps 'unlawful'
+KILLED w1b-labels-ts-extra-export group=labels exit=[0, 1] secs=3.2 file=apps/web/src/evidence-labels.ts failing=node:'the module exports only the catalog, and its JSON text is the Go catalog file byte for byte'
+    reason: the TypeScript module exports only the catalog
+KILLED w1b-labels-parse-no-exact-keys group=labels exit=[1, 0] secs=3.5 file=agents/auditor/labels/labels.go failing=TestParseRejects
+    reason: Parse refuses unknown or missing keys
+KILLED w1b-labels-go-pinned-only group=labels exit=[1, 0] secs=3.4 file=agents/auditor/labels/labels_test.go failing=TestPinnedSentences
+    reason: the Go test's pinned list is checked against the catalog
+KILLED w1b-labels-node-pinned-only group=labels exit=[0, 1] secs=3.6 file=apps/web/test/evidence-labels.test.ts failing=node:'every catalog string is pinned sentence by sentence, in order'
+    reason: the Node test's pinned list is checked against the catalog
+KILLED plan-producer-cgnat-row-dropped group=auditor-net exit=[1] secs=3.8 file=agents/auditor/policy/table.go failing=TestSpecialPurposeTable TestUnmappingCases TestGoBuiltinsAreNotEnough TestTableMatchesRegistrySnapshot
+    reason: the pinned special-purpose table keeps 100.64.0.0/10 (CGNAT shared address space)
+KILLED plan-producer-allowlist-accepts-cidr group=auditor-net exit=[1] secs=3.6 file=agents/auditor/config/config.go failing=TestRejects TestConfigSeeds
+    reason: an allowlist ip is one address; a CIDR is refused
+KILLED plan-producer-sample-seed-constant group=auditor-files exit=[1] secs=3.8 file=agents/auditor/verify/layout.go failing=TestNewSeed TestFreshSeedPerAudit
+    reason: every audit draws a fresh sample seed
+KILLED plan-producer-pass-fail-digest-swapped group=auditor-files exit=[1] secs=3.9 file=agents/auditor/batch/batch.go failing=TestNewItemDigests TestNewItemFailNeedsABoundEndpoint TestGoldenEnvelopeFixtures
+    reason: PASS reports the manifest digest and FAIL the report's SHA-256
+KILLED plan-producer-epoch-guard-off group=auditor-files exit=[1] secs=3.6 file=agents/auditor/batch/batch.go failing=TestRoundOpen
+    reason: no signing within the epoch guard before a round boundary
+KILLED plan-producer-run-opens-key group=auditor-cli exit=[1] secs=6.3 file=agents/auditor/main.go failing=TestRunNeverOpensKeyPath TestRunClassifiesLoopbackOutcomes TestRunTLSAndTimeoutAreIncomplete TestRunBudgetEndsRetriesIncomplete TestContentWithdrawnFetchesNothing TestManifestCheckedBeforeResolution TestEmptySampleStillVetsEndpoint TestCapabilityManifestEndpoint TestReportLimitations TestRunSignSubmitReviewUnit TestSignRefusals TestSignAndStatusKeepToTheirResources TestCommandsAgainstTheFakeNode TestOperatorEndpointFailIsNotSigned
+    reason: run never opens the key path
+KILLED plan-producer-reviewer-skips-checksum group=auditor-cli exit=[1] secs=12.0 file=agents/auditor/review/review.go failing=TestChecksumMismatch TestRecordMismatch
+    reason: the reviewer reports CHECKSUM_MISMATCH for a report whose bytes do not hash to its name
+KILLED plan-producer-reviewer-skips-envelope group=auditor-cli exit=[1] secs=12.1 file=agents/auditor/review/review.go failing=TestEnvelopeMismatch
+    reason: the reviewer reports ENVELOPE_MISMATCH for an envelope other than the signed one
+KILLED plan-producer-status-recorded-on-ack group=auditor-cli exit=[1] secs=11.8 file=agents/auditor/chainclient/submit.go failing=TestCommandsAgainstTheFakeNode TestAcknowledgementIsNotCommit TestRetryQueriesBeforeResign TestSubmittedBatchInAPassedEpochIsNotRebroadcast TestRebroadcastWhileWaitingStaysSubmitted TestStoredSubmissionMustCarryItsBatch TestUnrecordedRetryKeepsItsBusinessID
+    reason: an acknowledgement is not a commit: a waiting submission is SUBMITTED
+KILLED plan-producer-id-taken-comparison-dropped group=auditor-cli exit=[1] secs=12.4 file=agents/auditor/chainclient/submit.go failing=TestDifferentRecordIsIDTaken
+    reason: a record that differs from the batch's item is ID_TAKEN
+KILLED plan-labels-sentence-removed group=labels exit=[1, 1] secs=3.9 file=agents/auditor/labels/evidence-labels.json,apps/web/src/evidence-labels.ts failing=TestPinnedSentences TestDenylistRulesAreWellFormed node:'every catalog string is pinned sentence by sentence, in order' node:'the denylist rules are well formed and are exactly the list of this test'
+    reason: the auditor attestation mode text keeps 'It is not proof of storage.' in both catalogs
+KILLED n2-classify-ignores-endpoint-source group=auditor-cli exit=[1] secs=12.4 file=agents/auditor/classify/classify.go failing=TestRunClassifiesLoopbackOutcomes TestOperatorEndpointFailIsNotSigned TestObservation TestEndpointSourceRule
+    reason: an operator-configured endpoint's would-be FAIL is INCOMPLETE ENDPOINT_UNBOUND (N2)
+KILLED n2-classify-unbound-drops-provider-reasons group=auditor-cli exit=[1] secs=12.3 file=agents/auditor/classify/classify.go failing=TestRunClassifiesLoopbackOutcomes TestOperatorEndpointFailIsNotSigned TestObservation TestEndpointSourceRule
+    reason: ENDPOINT_UNBOUND keeps the provider-answered reasons beside it (N2)
+KILLED n2-newitem-accepts-operator-fail group=auditor-files exit=[1] secs=4.1 file=agents/auditor/batch/batch.go failing=TestNewItemFailNeedsABoundEndpoint
+    reason: batch.NewItem refuses a FAIL report whose endpoint_source is not CAPABILITY_MANIFEST (N2)
+KILLED n2-review-ignores-endpoint-source group=auditor-cli exit=[1] secs=12.1 file=agents/auditor/review/review.go failing=TestSignedOperatorFailIsRecordMismatch
+    reason: the reviewer reports a signed FAIL item of an operator-configured endpoint as RECORD_MISMATCH (N2)
+KILLED n2-report-any-endpoint-source group=auditor-files exit=[1] secs=3.7 file=agents/auditor/report/report.go failing=TestEncodeRejects TestParseRejects
+    reason: endpoint_source takes exactly CAPABILITY_MANIFEST or OPERATOR_CONFIG
+KILLED n2-report-parse-accepts-missing-endpoint-source group=auditor-files exit=[1] secs=4.1 file=agents/auditor/report/report.go failing=TestReportCarriesNoNameURLOrKey TestEncodeRejects TestParseRejects TestEndpointSource
+    reason: endpoint_source is a required report key: Parse refuses a report without it
+KILLED n2-producer-source-always-manifest group=auditor-cli exit=[1] secs=12.5 file=agents/auditor/main.go failing=TestRunClassifiesLoopbackOutcomes TestOperatorEndpointFailIsNotSigned
+    reason: the producer classifies and records an audit with its real endpoint source
+KILLED n2-producer-report-source-from-config group=auditor-cli exit=[1] secs=11.7 file=agents/auditor/main.go failing=TestRunClassifiesLoopbackOutcomes TestOperatorEndpointFailIsNotSigned
+    reason: the report records the source the audit was classified with
+KILLED n2-producer-capability-invalid-records-operator group=auditor-cli exit=[1] secs=12.4 file=agents/auditor/main.go failing=TestCapabilityManifestEndpoint
+    reason: an audit whose capability manifest fails the check still records CAPABILITY_MANIFEST
+KILLED n2-rebuild-resigns-operator-fail group=auditor-cli exit=[1] secs=12.4 file=agents/auditor/chainclient/submit.go failing=TestOperatorFailIsNeitherBroadcastNorResigned
+    reason: the CONFLICT rebuild drops a stored FAIL item whose report is not CAPABILITY_MANIFEST
+KILLED n2-submit-broadcasts-operator-fail group=auditor-cli exit=[1] secs=12.3 file=agents/auditor/chainclient/submit.go failing=TestOperatorFailIsNeitherBroadcastNorResigned
+    reason: submit refuses a stored batch with a FAIL item whose report is not CAPABILITY_MANIFEST
+KILLED n2-check-fail-source-trusts-summary-result group=auditor-files exit=[1] secs=3.6 file=agents/auditor/batch/files.go failing=TestCheckFailSource
+    reason: an item whose observation is its report digest is checked as FAIL whatever its summary says
+KILLED n2-check-fail-source-ignores-source group=auditor-files exit=[1] secs=3.7 file=agents/auditor/batch/files.go failing=TestCheckFailSource
+    reason: a stored FAIL item needs a CAPABILITY_MANIFEST report
+KILLED n2-check-fail-source-ignores-result group=auditor-files exit=[1] secs=4.2 file=agents/auditor/batch/files.go failing=TestCheckFailSource
+    reason: a stored FAIL item needs a FAIL report
+GROUP_SECS evidence 455.2
+GROUP_SECS signature 37.2
+GROUP_SECS query 63.2
+GROUP_SECS app 124.2
+GROUP_SECS difftest 423.5
+GROUP_SECS auditor-net 86.1
+GROUP_SECS auditor-files 61.4
+GROUP_SECS auditor-cli 416.4
+GROUP_SECS labels 45.9
+TOTAL_SECS 1716.5
+RESULT mutants=169 killed=169
+EXIT:0

@@ -1,0 +1,24 @@
+COMMAND bash -c uname\ -srm\;\ grep\ PRETTY_NAME\ /etc/os-release\;\ go\ version\;\ go\ env\ GOOS\ GOARCH\ GOFLAGS\ GOWORK\;\ .venv/bin/python\ --version\;\ .venv/bin/ruff\ --version\;\ .venv/bin/mypy\ --version\;\ node\ --version\;\ npm\ --version\;\ .toolchains/bin/protoc\ --version\;\ golangci-lint\ version\;\ echo\ \"cpus\ \$\(nproc\)\"\;\ free\ -m\ \|\ head\ -2\;\ df\ -h\ /\ \|\ tail\ -1
+DATE 2026-11-07T22:19:48Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+Linux 6.18.44-fc-v310 x86_64
+PRETTY_NAME="Ubuntu 24.04.5 LTS"
+go version go1.26.10 linux/amd64
+linux
+amd64
+
+/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-10/go.work
+Python 3.12.3
+ruff 0.17.3
+mypy 2.4.1 (compiled: yes)
+v22.23.4
+10.9.9
+libprotoc 36.2
+golangci-lint has version 2.5.0 built with go1.25.1 from ff63786c on 2025-09-21T19:04:05Z
+cpus 4
+               total        used        free      shared  buff/cache   available
+Mem:           16086        1001        9637          15        5771       15084
+/dev/vda        252G   32G  6.8G  83% /
+EXIT:0

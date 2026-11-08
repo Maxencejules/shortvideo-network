@@ -1,0 +1,35 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzGovernanceTransitions\$\'\ -fuzztime=60s\ -count=1\ ./chain/x/authority/difftest/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \'new\ or\ changed\ files\ outside\ docs/evidence\ after\ the\ run:\'\;\ git\ status\ --porcelain\ --untracked-files=all\ \|\ grep\ -v\ \'\ docs/evidence/\'\;\ echo\ \'\(end\ of\ list\)\'\;\ exit\ \$s
+DATE 2026-11-07T23:55:36Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+loadavg before: 6.98 4.58 4.63 1/188 18768
+fuzz: elapsed: 0s, gathering baseline coverage: 0/429 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 24/429 completed
+fuzz: elapsed: 6s, gathering baseline coverage: 47/429 completed
+fuzz: elapsed: 9s, gathering baseline coverage: 71/429 completed
+fuzz: elapsed: 12s, gathering baseline coverage: 96/429 completed
+fuzz: elapsed: 15s, gathering baseline coverage: 125/429 completed
+fuzz: elapsed: 18s, gathering baseline coverage: 150/429 completed
+fuzz: elapsed: 21s, gathering baseline coverage: 180/429 completed
+fuzz: elapsed: 24s, gathering baseline coverage: 209/429 completed
+fuzz: elapsed: 27s, gathering baseline coverage: 236/429 completed
+fuzz: elapsed: 30s, gathering baseline coverage: 265/429 completed
+fuzz: elapsed: 33s, gathering baseline coverage: 285/429 completed
+fuzz: elapsed: 36s, gathering baseline coverage: 317/429 completed
+fuzz: elapsed: 39s, gathering baseline coverage: 341/429 completed
+fuzz: elapsed: 42s, gathering baseline coverage: 367/429 completed
+fuzz: elapsed: 45s, gathering baseline coverage: 389/429 completed
+fuzz: elapsed: 48s, gathering baseline coverage: 417/429 completed
+fuzz: elapsed: 49s, gathering baseline coverage: 429/429 completed, now fuzzing with 4 workers
+fuzz: elapsed: 51s, execs: 443 (9/sec), new interesting: 8 (total: 437)
+fuzz: elapsed: 54s, execs: 473 (10/sec), new interesting: 21 (total: 450)
+fuzz: elapsed: 57s, execs: 506 (11/sec), new interesting: 32 (total: 461)
+fuzz: elapsed: 1m0s, execs: 529 (8/sec), new interesting: 45 (total: 474)
+fuzz: elapsed: 1m0s, execs: 529 (0/sec), new interesting: 45 (total: 474)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority/difftest	60.450s
+loadavg after: 7.69 5.26 4.86 1/184 18908
+new or changed files outside docs/evidence after the run:
+(end of list)
+EXIT:0

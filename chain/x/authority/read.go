@@ -9,11 +9,13 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-// The read surface below is what x/providers, x/content, and x/leases
-// consume through their own small interfaces. Each method reads committed
-// authority state through ctx and writes nothing. Each reads at most one key
-// of the per-object layout (store.go), so a registry or lease message's gas
-// does not depend on authority history.
+// The read surface below is what x/providers, x/content, x/leases,
+// x/evidence and x/policy consume through their own small interfaces. Each
+// method reads committed authority state through ctx and writes nothing.
+// Each reads at most one key of the per-object layout (store.go), so a
+// registry or lease message's gas does not depend on authority history.
+// Governed limit values are x/policy state (policy Keeper.GovernedLimit);
+// this module no longer stores or serves them.
 
 // Role returns the genesis submitter role of addr from its admission row
 // (0x02). An address that is not 20 bytes, has no row, or whose row is not
@@ -81,14 +83,16 @@ func (k Keeper) devnetRow(ctx sdk.Context, decisionID string) *typesv1.DevnetTes
 // PolicyVersion returns the committed policy version (0x04): 1 while the key
 // is absent, which is before the first executed proposal, then the stored
 // value, which grows by one with each executed proposal (op_execute,
-// spec_machine.py:1522). It is the value the engine reads (State.policy).
-// x/leases stamps it on each accepted lease.
+// spec_machine.py:1522) and with each BumpPolicyVersionForUpgrade call. It
+// is the value the engine reads (State.policy). x/leases stamps it on each
+// accepted lease.
 //
-// It fails closed, like GovernedLimit: a stored value that is not 8 bytes,
-// or is below 2, panics instead of reporting a version, exactly where the
-// engine reports ERROR_CODE_INTEGRITY. Only ExecuteChange writes 0x04, so
-// this is integrity damage. The SDK turns a handler panic into a failed
-// transaction on every node alike.
+// It fails closed: a stored value that is not 8 bytes, or is below 2,
+// panics instead of reporting a version, exactly where the engine reports
+// ERROR_CODE_INTEGRITY. Only ExecuteChange and BumpPolicyVersionForUpgrade
+// write 0x04, so this is integrity damage. The SDK turns a handler panic
+// into a failed transaction on every node alike. It implements x/policy's
+// VersionSource.
 func (k Keeper) PolicyVersion(ctx sdk.Context) uint64 {
 	raw := ctx.KVStore(k.storeKey).Get([]byte{policyKey})
 	if raw == nil {
@@ -101,31 +105,22 @@ func (k Keeper) PolicyVersion(ctx sdk.Context) uint64 {
 	return version
 }
 
-// GovernedLimit returns the value an executed GovernedLimitChange set for
-// key (0x13). authority writes only values in 1..ceiling. found is false
-// when no value was set. The caller applies msgkit.Effective, which uses the
-// protocol ceiling when found is false.
+// BlockedDecisions returns the blocked decision rows of the config key
+// (0x01), in the order the config stores them, decoded for this call (a
+// caller may keep or change them). It implements x/policy's DecisionSource:
+// Query/Policy and the policy export read the rows here, and x/policy
+// stores no copy.
 //
-// It fails closed, like BusinessDigest: a stored value that is not 8 bytes,
-// or is outside 1..ceiling of a known key, panics instead of reporting no
-// limit, so a transaction never runs against the protocol ceiling when a
-// lower governed value may be set. Only ExecuteChange writes 0x13, so this
-// is integrity damage. A transaction handler panic becomes a failed
-// transaction on every node alike. Query handlers also call it: ABCI Query
-// recovers a panic into an error result, and the node gRPC server
-// (RegisterGRPCServerWithSkipCheckHeader) wraps every query in a recovery
-// interceptor, so a query fails and the node keeps running.
-func (k Keeper) GovernedLimit(ctx sdk.Context, key string) (uint64, bool) {
-	raw := ctx.KVStore(k.storeKey).Get(governedKey(key))
-	if raw == nil {
-		return 0, false
+// It fails closed: a missing or undecodable config key panics instead of
+// reporting no blocked decision. InitGenesis writes the config key and no
+// message deletes it, so this is integrity damage; ABCI Query and the node
+// gRPC server recover a query panic into an error.
+func (k Keeper) BlockedDecisions(ctx sdk.Context) []*typesv1.BlockedDecisionParameter {
+	cfg, err := readConfig(ctx.KVStore(k.storeKey))
+	if err != nil {
+		panic(fmt.Sprintf("authority: blocked decisions: %v", err))
 	}
-	value, good := decodeU64(raw)
-	ceiling, known := governedCeiling(key)
-	if !good || !known || value < 1 || value > ceiling {
-		panic(fmt.Sprintf("authority: governed limit %q is not an 8-byte value in 1..ceiling (%d bytes stored)", key, len(raw)))
-	}
-	return value, true
+	return cfg.GetBlockedDecisions()
 }
 
 // BusinessDigest returns the business digest authority committed for id

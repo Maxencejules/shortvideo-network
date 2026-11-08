@@ -1,0 +1,257 @@
+COMMAND go test -count=1 -v ./chain/x/authority/difftest/
+DATE 2026-11-07T22:26:19Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+=== RUN   TestCouncilDifferential
+    diff_test.go:30: TestCouncilDifferential reached:
+        steps 1920, applied validator changes 5
+        codes: [ApproveChange ERROR_CODE_CONFLICT]=123 [ApproveChange ERROR_CODE_EXPIRED]=113 [ApproveChange ERROR_CODE_NOT_FOUND]=69 [ApproveChange ERROR_CODE_REPLAY]=27 [ApproveChange ERROR_CODE_UNAUTHORIZED]=34 [ApproveChange ok]=278 [Block ok]=300 [ExecuteChange ERROR_CODE_CONFLICT]=71 [ExecuteChange ERROR_CODE_DUPLICATE_ID]=12 [ExecuteChange ERROR_CODE_EXPIRED]=160 [ExecuteChange ERROR_CODE_FORBIDDEN]=27 [ExecuteChange ERROR_CODE_NOT_FOUND]=60 [ExecuteChange ERROR_CODE_OUT_OF_RANGE]=10 [ExecuteChange ERROR_CODE_REPLAY]=4 [ExecuteChange ERROR_CODE_STALE_VERSION]=3 [ExecuteChange ERROR_CODE_UNAUTHORIZED]=15 [ExecuteChange ok]=24 [ProposeChange ERROR_CODE_BOUNDS]=71 [ProposeChange ERROR_CODE_DUPLICATE_ID]=10 [ProposeChange ERROR_CODE_EXPIRED]=17 [ProposeChange ERROR_CODE_FORBIDDEN]=8 [ProposeChange ERROR_CODE_INTEGRITY]=16 [ProposeChange ERROR_CODE_MALFORMED]=20 [ProposeChange ERROR_CODE_OUT_OF_RANGE]=12 [ProposeChange ERROR_CODE_REPLAY]=7 [ProposeChange ERROR_CODE_STALE_VERSION]=27 [ProposeChange ERROR_CODE_UNAUTHORIZED]=30 [ProposeChange ok]=251 [RegisterContent ERROR_CODE_BOUNDS]=9 [RegisterContent ok]=52 [RegisterProvider ERROR_CODE_DUPLICATE_ID]=3 [RegisterProvider ok]=57
+        rules: [G-1]=12 [G-10]=4 [G-11]=3 [G-7]=277 [G-9]=5 [authority D-1]=39 [authority D-2]=24 [authority D-7]=12
+        tags: [ApproveChange replay of ]=31 [ApproveChange replay of replay of ]=3 [ExecuteChange replay of ]=24 [ExecuteChange replay of replay of ]=1 [ProposeChange D-1 key]=17 [ProposeChange D-1 key+wrong digest]=2 [ProposeChange D-1 value]=8 [ProposeChange D-1 value+dec- parameter key]=1 [ProposeChange D-1 value+wrong digest]=1 [ProposeChange D-7 seat key]=18 [ProposeChange D-7 seat key+G-1 algorithm]=1 [ProposeChange D-7 seat key+wrong parameter key]=1 [ProposeChange G-1 algorithm]=7 [ProposeChange G-10]=3 [ProposeChange G-11]=1 [ProposeChange G-11+G-1 algorithm]=1 [ProposeChange G-9]=2 [ProposeChange G-9+G-1 algorithm]=1 [ProposeChange base 0]=5 [ProposeChange base 0+D-7 seat key]=3 [ProposeChange dec- parameter key]=7 [ProposeChange duplicate id]=18 [ProposeChange duplicate id+D-1 value]=3 [ProposeChange duplicate id+D-7 seat key]=3 [ProposeChange duplicate id+G-10]=1 [ProposeChange duplicate id+expiry above unix max]=2 [ProposeChange duplicate id+reused business id]=1 [ProposeChange duplicate id+stale base]=1 [ProposeChange duplicate id+stale base+G-9]=1 [ProposeChange duplicate id+taken key]=1 [ProposeChange expired]=14 [ProposeChange expired+D-1 key]=1 [ProposeChange expired+D-1 value]=1 [ProposeChange expired+D-7 seat key]=1 [ProposeChange expired+G-1 algorithm]=1 [ProposeChange expired+G-10]=1 [ProposeChange expiry 0]=7 [ProposeChange expiry 0+D-1 key]=1 [ProposeChange expiry 0+D-7 seat key]=1 [ProposeChange expiry above unix max]=7 [ProposeChange expiry above unix max+D-1 key]=1 [ProposeChange expiry above unix max+D-1 value]=1 [ProposeChange expiry above unix max+G-1 algorithm]=1 [ProposeChange fresh]=222 [ProposeChange future base]=4 [ProposeChange future base+D-1 value]=1 [ProposeChange future base+D-7 seat key]=1 [ProposeChange future base+dec- parameter key]=1 [ProposeChange future base+expired+D-1 key]=1 [ProposeChange future base+expired+G-10]=1 [ProposeChange future base+expiry 0+wrong digest]=1 [ProposeChange future base+taken key]=1 [ProposeChange replay of D-1 value]=1 [ProposeChange replay of D-7 seat key]=1 [ProposeChange replay of G-1 algorithm]=1 [ProposeChange replay of dec- parameter key]=1 [ProposeChange replay of duplicate id]=1 [ProposeChange replay of duplicate id+expiry above unix max]=1 [ProposeChange replay of expiry 0]=1 [ProposeChange replay of expiry 0+D-1 key]=1 [ProposeChange replay of fresh]=10 [ProposeChange replay of reused business id]=1 [ProposeChange replay of reused business id+expiry 0]=1 [ProposeChange replay of stale base]=1 [ProposeChange reused business id]=13 [ProposeChange reused business id+D-1 key]=1 [ProposeChange reused business id+G-9]=1 [ProposeChange reused business id+expired]=1 [ProposeChange reused business id+expiry 0]=1 [ProposeChange reused business id+expiry above unix max]=2 [ProposeChange reused business id+stale base+expiry 0]=1 [ProposeChange reused business id+taken key]=1 [ProposeChange reused business id+wrong digest]=1 [ProposeChange reused business id+wrong parameter key]=1 [ProposeChange stale base]=13 [ProposeChange stale base+D-1 key]=2 [ProposeChange stale base+D-1 value]=1 [ProposeChange stale base+D-7 seat key]=2 [ProposeChange stale base+G-1 algorithm]=1 [ProposeChange stale base+G-10]=1 [ProposeChange stale base+expired]=1 [ProposeChange stale base+expired+G-11]=1 [ProposeChange taken key]=4 [ProposeChange wrong digest]=12 [ProposeChange wrong parameter key]=6
+        transitions: [EXECUTED -> EXPIRED]=10 [OPEN -> EXPIRED]=131 [OPEN -> QUEUED]=63 [QUEUED -> EXECUTED]=24 [QUEUED -> EXPIRED]=24 [QUEUED -> REJECTED]=4 [REJECTED -> EXPIRED]=2 [execute from EXECUTED: ERROR_CODE_CONFLICT]=7 [execute from EXECUTED: ERROR_CODE_EXPIRED]=10 [execute from EXECUTED: ERROR_CODE_FORBIDDEN]=2 [execute from EXECUTED: ERROR_CODE_REPLAY]=1 [execute from EXECUTED: ERROR_CODE_UNAUTHORIZED]=2 [execute from EXPIRED: ERROR_CODE_EXPIRED]=106 [execute from EXPIRED: ERROR_CODE_FORBIDDEN]=2 [execute from EXPIRED: ERROR_CODE_REPLAY]=1 [execute from EXPIRED: ERROR_CODE_UNAUTHORIZED]=4 [execute from OPEN: ERROR_CODE_CONFLICT]=46 [execute from OPEN: ERROR_CODE_EXPIRED]=18 [execute from OPEN: ERROR_CODE_FORBIDDEN]=5 [execute from OPEN: ERROR_CODE_REPLAY]=1 [execute from OPEN: ERROR_CODE_UNAUTHORIZED]=2 [execute from QUEUED: ERROR_CODE_CONFLICT]=18 [execute from QUEUED: ERROR_CODE_DUPLICATE_ID]=12 [execute from QUEUED: ERROR_CODE_EXPIRED]=24 [execute from QUEUED: ERROR_CODE_FORBIDDEN]=12 [execute from QUEUED: ERROR_CODE_NOT_FOUND]=11 [execute from QUEUED: ERROR_CODE_OUT_OF_RANGE]=10 [execute from QUEUED: ERROR_CODE_REPLAY]=1 [execute from QUEUED: ERROR_CODE_STALE_VERSION]=3 [execute from QUEUED: ERROR_CODE_UNAUTHORIZED]=4 [execute from QUEUED: ok]=24 [execute from REJECTED: ERROR_CODE_EXPIRED]=2 [execute from REJECTED: ERROR_CODE_FORBIDDEN]=1 [new OPEN]=240
+        rule combinations: [G-1 on D-7 seat key+G-1 algorithm]=1 [G-1 on G-1 algorithm]=7 [G-1 on expired+G-1 algorithm]=1 [G-1 on expiry above unix max+G-1 algorithm]=1 [G-1 on replay of G-1 algorithm]=1 [G-1 on stale base+G-1 algorithm]=1 [G-10 on G-10]=1 [G-10 on duplicate id+G-10]=1 [G-10 on future base+expired+G-10]=1 [G-10 on stale base+G-10]=1 [G-11 on G-11]=1 [G-11 on G-11+G-1 algorithm]=1 [G-11 on stale base+expired+G-11]=1 [G-9 on G-9]=2 [G-9 on G-9+G-1 algorithm]=1 [G-9 on duplicate id+stale base+G-9]=1 [G-9 on reused business id+G-9]=1 [authority D-1 on D-1 key]=16 [authority D-1 on D-1 value]=8 [authority D-1 on duplicate id+D-1 value]=3 [authority D-1 on expired+D-1 value]=1 [authority D-1 on expiry 0+D-1 key]=1 [authority D-1 on expiry above unix max+D-1 key]=1 [authority D-1 on expiry above unix max+D-1 value]=1 [authority D-1 on future base+D-1 value]=1 [authority D-1 on future base+expired+D-1 key]=1 [authority D-1 on replay of D-1 value]=1 [authority D-1 on replay of expiry 0+D-1 key]=1 [authority D-1 on reused business id+D-1 key]=1 [authority D-1 on stale base+D-1 key]=2 [authority D-1 on stale base+D-1 value]=1
+--- PASS: TestCouncilDifferential (6.78s)
+=== RUN   TestDifferentialReachability
+    diff_test.go:56: reached:
+        steps 2400, applied validator changes 2
+        codes: [ApproveChange ERROR_CODE_CONFLICT]=203 [ApproveChange ERROR_CODE_EXPIRED]=126 [ApproveChange ERROR_CODE_NOT_FOUND]=66 [ApproveChange ERROR_CODE_REPLAY]=51 [ApproveChange ERROR_CODE_UNAUTHORIZED]=35 [ApproveChange ok]=339 [Block ok]=357 [ExecuteChange ERROR_CODE_CONFLICT]=57 [ExecuteChange ERROR_CODE_DUPLICATE_ID]=1 [ExecuteChange ERROR_CODE_EXPIRED]=226 [ExecuteChange ERROR_CODE_FORBIDDEN]=35 [ExecuteChange ERROR_CODE_NOT_FOUND]=70 [ExecuteChange ERROR_CODE_OUT_OF_RANGE]=52 [ExecuteChange ERROR_CODE_REPLAY]=8 [ExecuteChange ERROR_CODE_STALE_VERSION]=1 [ExecuteChange ERROR_CODE_UNAUTHORIZED]=20 [ExecuteChange ok]=25 [ProposeChange ERROR_CODE_BOUNDS]=95 [ProposeChange ERROR_CODE_DUPLICATE_ID]=11 [ProposeChange ERROR_CODE_EXPIRED]=20 [ProposeChange ERROR_CODE_FORBIDDEN]=3 [ProposeChange ERROR_CODE_INTEGRITY]=21 [ProposeChange ERROR_CODE_MALFORMED]=28 [ProposeChange ERROR_CODE_OUT_OF_RANGE]=17 [ProposeChange ERROR_CODE_REPLAY]=4 [ProposeChange ERROR_CODE_STALE_VERSION]=35 [ProposeChange ERROR_CODE_UNAUTHORIZED]=48 [ProposeChange ok]=289 [RegisterContent ERROR_CODE_DUPLICATE_ID]=12 [RegisterContent ok]=73 [RegisterProvider ERROR_CODE_DUPLICATE_ID]=4 [RegisterProvider ok]=68
+        rules: [G-1]=16 [G-10]=2 [G-11]=1 [G-7]=356 [G-9]=2 [authority D-1]=59 [authority D-2]=25 [authority D-7]=1
+        tags: [ApproveChange replay of ]=25 [ExecuteChange replay of ]=41 [ExecuteChange replay of replay of ]=1 [ExecuteChange replay of replay of replay of ]=1 [ProposeChange D-1 key]=21 [ProposeChange D-1 key+wrong digest]=2 [ProposeChange D-1 key+wrong parameter key]=1 [ProposeChange D-1 value]=15 [ProposeChange D-1 value+G-1 algorithm]=1 [ProposeChange D-1 value+dec- parameter key]=1 [ProposeChange D-7 seat key]=21 [ProposeChange D-7 seat key+wrong digest]=4 [ProposeChange G-1 algorithm]=11 [ProposeChange G-10]=3 [ProposeChange G-11]=1 [ProposeChange G-9]=2 [ProposeChange base 0]=6 [ProposeChange base 0+expired]=1 [ProposeChange dec- parameter key]=2 [ProposeChange duplicate id]=14 [ProposeChange duplicate id+D-1 key]=3 [ProposeChange duplicate id+D-1 value]=1 [ProposeChange duplicate id+D-7 seat key]=3 [ProposeChange duplicate id+G-1 algorithm]=1 [ProposeChange duplicate id+base 0]=1 [ProposeChange duplicate id+base 0+D-1 key]=1 [ProposeChange duplicate id+expired+D-1 value]=1 [ProposeChange duplicate id+expiry 0]=2 [ProposeChange duplicate id+future base]=1 [ProposeChange duplicate id+future base+D-1 key]=1 [ProposeChange duplicate id+reused business id]=3 [ProposeChange duplicate id+reused business id+expiry above unix max]=1 [ProposeChange duplicate id+reused business id+future base]=1 [ProposeChange duplicate id+stale base]=2 [ProposeChange duplicate id+stale base+D-1 value]=1 [ProposeChange duplicate id+stale base+expired]=1 [ProposeChange duplicate id+taken key]=1 [ProposeChange expired]=15 [ProposeChange expired+D-1 key]=1 [ProposeChange expired+D-1 key+G-1 algorithm]=1 [ProposeChange expired+D-7 seat key]=1 [ProposeChange expired+G-1 algorithm]=1 [ProposeChange expired+taken key+wrong parameter key]=1 [ProposeChange expired+wrong digest]=1 [ProposeChange expiry 0]=8 [ProposeChange expiry above unix max]=8 [ProposeChange expiry above unix max+D-1 value]=2 [ProposeChange expiry above unix max+D-7 seat key]=1 [ProposeChange expiry above unix max+wrong digest]=1 [ProposeChange fresh]=271 [ProposeChange future base]=12 [ProposeChange future base+D-1 key]=4 [ProposeChange future base+expiry 0]=1 [ProposeChange malformed reason]=1 [ProposeChange replay of D-1 key]=1 [ProposeChange replay of D-1 value]=1 [ProposeChange replay of D-7 seat key]=2 [ProposeChange replay of G-10]=1 [ProposeChange replay of expired]=2 [ProposeChange replay of expiry 0]=1 [ProposeChange replay of expiry above unix max]=2 [ProposeChange replay of expiry above unix max+D-1 value]=1 [ProposeChange replay of fresh]=11 [ProposeChange replay of replay of D-7 seat key]=1 [ProposeChange replay of replay of expiry above unix max+D-1 value]=1 [ProposeChange replay of replay of fresh]=1 [ProposeChange replay of reused business id]=3 [ProposeChange replay of reused business id+D-1 key]=1 [ProposeChange replay of stale base]=2 [ProposeChange replay of stale base+expiry 0]=1 [ProposeChange replay of wrong digest]=2 [ProposeChange reused business id]=10 [ProposeChange reused business id+D-1 key]=3 [ProposeChange reused business id+D-1 key+wrong parameter key]=1 [ProposeChange reused business id+D-7 seat key]=2 [ProposeChange reused business id+expired]=1 [ProposeChange reused business id+expired+D-1 value]=1 [ProposeChange reused business id+expiry 0]=1 [ProposeChange reused business id+expiry above unix max]=2 [ProposeChange reused business id+expiry above unix max+D-1 key]=1 [ProposeChange reused business id+stale base]=2 [ProposeChange reused business id+stale base+expired+taken key]=1 [ProposeChange reused business id+wrong digest]=1 [ProposeChange stale base]=20 [ProposeChange stale base+D-1 key]=4 [ProposeChange stale base+G-1 algorithm]=1 [ProposeChange stale base+G-9]=1 [ProposeChange stale base+expiry 0]=1 [ProposeChange stale base+expiry above unix max]=1 [ProposeChange stale base+wrong parameter key]=1 [ProposeChange taken key]=1 [ProposeChange wrong digest]=11 [ProposeChange wrong parameter key]=9
+        transitions: [EXECUTED -> EXPIRED]=8 [OPEN -> EXPIRED]=150 [OPEN -> QUEUED]=85 [QUEUED -> EXECUTED]=25 [QUEUED -> EXPIRED]=43 [QUEUED -> REJECTED]=4 [execute from EXECUTED: ERROR_CODE_CONFLICT]=8 [execute from EXECUTED: ERROR_CODE_EXPIRED]=8 [execute from EXECUTED: ERROR_CODE_FORBIDDEN]=2 [execute from EXECUTED: ERROR_CODE_UNAUTHORIZED]=1 [execute from EXPIRED: ERROR_CODE_EXPIRED]=151 [execute from EXPIRED: ERROR_CODE_FORBIDDEN]=13 [execute from EXPIRED: ERROR_CODE_REPLAY]=3 [execute from EXPIRED: ERROR_CODE_UNAUTHORIZED]=7 [execute from OPEN: ERROR_CODE_CONFLICT]=47 [execute from OPEN: ERROR_CODE_EXPIRED]=24 [execute from OPEN: ERROR_CODE_FORBIDDEN]=7 [execute from OPEN: ERROR_CODE_UNAUTHORIZED]=3 [execute from QUEUED: ERROR_CODE_CONFLICT]=1 [execute from QUEUED: ERROR_CODE_DUPLICATE_ID]=1 [execute from QUEUED: ERROR_CODE_EXPIRED]=43 [execute from QUEUED: ERROR_CODE_FORBIDDEN]=12 [execute from QUEUED: ERROR_CODE_NOT_FOUND]=18 [execute from QUEUED: ERROR_CODE_OUT_OF_RANGE]=52 [execute from QUEUED: ERROR_CODE_REPLAY]=2 [execute from QUEUED: ERROR_CODE_STALE_VERSION]=1 [execute from QUEUED: ERROR_CODE_UNAUTHORIZED]=7 [execute from QUEUED: ok]=25 [execute from REJECTED: ERROR_CODE_CONFLICT]=1 [execute from REJECTED: ERROR_CODE_FORBIDDEN]=1 [execute from REJECTED: ERROR_CODE_REPLAY]=1 [new OPEN]=278
+        rule combinations: [G-1 on D-1 value+G-1 algorithm]=1 [G-1 on G-1 algorithm]=11 [G-1 on duplicate id+G-1 algorithm]=1 [G-1 on expired+D-1 key+G-1 algorithm]=1 [G-1 on expired+G-1 algorithm]=1 [G-1 on stale base+G-1 algorithm]=1 [G-10 on G-10]=2 [G-11 on G-11]=1 [G-9 on G-9]=2 [authority D-1 on D-1 key]=17 [authority D-1 on D-1 value]=15 [authority D-1 on duplicate id+D-1 key]=3 [authority D-1 on duplicate id+D-1 value]=1 [authority D-1 on duplicate id+base 0+D-1 key]=1 [authority D-1 on duplicate id+future base+D-1 key]=1 [authority D-1 on duplicate id+stale base+D-1 value]=1 [authority D-1 on expired+D-1 key]=1 [authority D-1 on expiry above unix max+D-1 value]=2 [authority D-1 on future base+D-1 key]=4 [authority D-1 on replay of D-1 key]=1 [authority D-1 on replay of D-1 value]=1 [authority D-1 on replay of expiry above unix max+D-1 value]=1 [authority D-1 on replay of replay of expiry above unix max+D-1 value]=1 [authority D-1 on replay of reused business id+D-1 key]=1 [authority D-1 on reused business id+D-1 key]=3 [authority D-1 on reused business id+expired+D-1 value]=1 [authority D-1 on reused business id+expiry above unix max+D-1 key]=1 [authority D-1 on stale base+D-1 key]=3
+--- PASS: TestDifferentialReachability (9.35s)
+=== RUN   TestStaleBranchDifferential
+--- PASS: TestStaleBranchDifferential (0.06s)
+=== RUN   TestNonAuthorityExecuteDifferential
+--- PASS: TestNonAuthorityExecuteDifferential (0.04s)
+=== RUN   TestCouncilRulesAreLoadBearing
+=== RUN   TestCouncilRulesAreLoadBearing/G-1
+    diff_test.go:202: G-1: chain ERROR_CODE_MALFORMED at step 0; without the rule spec_machine.py says ok
+=== RUN   TestCouncilRulesAreLoadBearing/G-10
+    diff_test.go:202: G-10: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/admit_empty_provider_id_(proto3_default)
+    diff_test.go:202: G-11/admit empty provider id (proto3 default): chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/disable_empty_provider_id_(proto3_default)
+    diff_test.go:202: G-11/disable empty provider id (proto3 default): chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/empty_consensus_key
+    diff_test.go:202: G-11/empty consensus key: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/governed_empty_limit_key_(proto3_default)
+    diff_test.go:202: G-11/governed empty limit key (proto3 default): chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/governed_value_0_(proto3_default)
+    diff_test.go:202: G-11/governed value 0 (proto3 default): chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/negative_validator_power
+    diff_test.go:202: G-11/negative validator power: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/validator_consensus_key_of_31_bytes_without_a_reason_digest
+    diff_test.go:202: G-11/validator consensus key of 31 bytes without a reason digest: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/validator_empty_node_id_(proto3_default)
+    diff_test.go:202: G-11/validator empty node id (proto3 default): chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/validator_reason_digest_of_31_bytes
+    diff_test.go:202: G-11/validator reason digest of 31 bytes: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/withdraw_content_id_outside_the_pattern_with_a_31-byte_reason_digest
+    diff_test.go:202: G-11/withdraw content id outside the pattern with a 31-byte reason digest: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/withdraw_content_id_outside_the_pattern_with_version_0_(proto3_default)
+    diff_test.go:202: G-11/withdraw content id outside the pattern with version 0 (proto3 default): chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/withdraw_content_id_outside_the_pattern_without_a_reason_digest
+    diff_test.go:202: G-11/withdraw content id outside the pattern without a reason digest: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/withdraw_content_id_outside_the_pattern,_reason_without_algorithm
+    diff_test.go:202: G-11/withdraw content id outside the pattern, reason without algorithm: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-11/withdraw_reason_digest_of_31_bytes
+    diff_test.go:202: G-11/withdraw reason digest of 31 bytes: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/G-3
+    diff_test.go:202: G-3: chain ERROR_CODE_BOUNDS at step 32; without the rule spec_machine.py says ok
+=== RUN   TestCouncilRulesAreLoadBearing/G-4
+    diff_test.go:202: G-4: chain ERROR_CODE_BOUNDS at step 644; without the rule spec_machine.py says ok
+=== RUN   TestCouncilRulesAreLoadBearing/G-5
+    diff_test.go:202: G-5: chain ERROR_CODE_OVERFLOW at step 4; without the rule spec_machine.py says ok
+=== RUN   TestCouncilRulesAreLoadBearing/G-6
+    diff_test.go:202: G-6: chain ERROR_CODE_DECISION_BLOCKED at step 0; without the rule spec_machine.py says ok
+=== RUN   TestCouncilRulesAreLoadBearing/G-9
+    diff_test.go:202: G-9: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ERROR_CODE_MALFORMED
+=== RUN   TestCouncilRulesAreLoadBearing/authority_D-1
+    diff_test.go:202: authority D-1: chain ERROR_CODE_BOUNDS at step 0; without the rule spec_machine.py says ok
+=== RUN   TestCouncilRulesAreLoadBearing/authority_D-2
+    diff_test.go:202: authority D-2: chain ok at step 5; without the rule spec_machine.py says ok
+=== RUN   TestCouncilRulesAreLoadBearing/authority_D-7
+    diff_test.go:202: authority D-7: chain ERROR_CODE_DUPLICATE_ID at step 5; without the rule spec_machine.py says ok
+--- PASS: TestCouncilRulesAreLoadBearing (7.55s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-1 (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-10 (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/admit_empty_provider_id_(proto3_default) (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/disable_empty_provider_id_(proto3_default) (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/empty_consensus_key (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/governed_empty_limit_key_(proto3_default) (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/governed_value_0_(proto3_default) (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/negative_validator_power (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/validator_consensus_key_of_31_bytes_without_a_reason_digest (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/validator_empty_node_id_(proto3_default) (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/validator_reason_digest_of_31_bytes (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/withdraw_content_id_outside_the_pattern_with_a_31-byte_reason_digest (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/withdraw_content_id_outside_the_pattern_with_version_0_(proto3_default) (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/withdraw_content_id_outside_the_pattern_without_a_reason_digest (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/withdraw_content_id_outside_the_pattern,_reason_without_algorithm (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-11/withdraw_reason_digest_of_31_bytes (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-3 (0.11s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-4 (7.25s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-5 (0.02s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-6 (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/G-9 (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/authority_D-1 (0.01s)
+    --- PASS: TestCouncilRulesAreLoadBearing/authority_D-2 (0.02s)
+    --- PASS: TestCouncilRulesAreLoadBearing/authority_D-7 (0.02s)
+=== RUN   TestUnnamedParseDivergences
+=== RUN   TestUnnamedParseDivergences/validator_consensus_key_of_31_bytes_with_a_reason_digest_and_no_node_id
+    diff_test.go:273: validator consensus key of 31 bytes with a reason digest and no node id (validator consensus key not 32 bytes, reason digest present, node id omitted): chain ERROR_CODE_BOUNDS, spec_machine.py ERROR_CODE_MALFORMED
+=== RUN   TestUnnamedParseDivergences/validator_consensus_key_of_31_bytes_with_a_reason_digest_and_no_activation
+    diff_test.go:273: validator consensus key of 31 bytes with a reason digest and no activation (validator consensus key not 32 bytes, reason digest and node id present, activation omitted): chain ERROR_CODE_BOUNDS, spec_machine.py ERROR_CODE_MALFORMED
+=== RUN   TestUnnamedParseDivergences/withdraw_content_id_outside_the_pattern_with_reason_digest_algorithm_7
+    diff_test.go:273: withdraw content id outside the pattern with reason digest algorithm 7 (withdraw content id outside the pattern, reason digest algorithm outside the enum): chain ERROR_CODE_BOUNDS, spec_machine.py ERROR_CODE_MALFORMED
+=== RUN   TestUnnamedParseDivergences/v0_shape_space
+    diff_test.go:279: 859 shapes
+        rules: [G-10]=86 [G-11]=454 [G-9]=3
+        open classes: [validator consensus key not 32 bytes, reason digest and node id present, activation omitted]=30 [validator consensus key not 32 bytes, reason digest present, node id omitted]=75 [withdraw content id outside the pattern, reason digest algorithm outside the enum]=2
+--- PASS: TestUnnamedParseDivergences (0.89s)
+    --- PASS: TestUnnamedParseDivergences/validator_consensus_key_of_31_bytes_with_a_reason_digest_and_no_node_id (0.00s)
+    --- PASS: TestUnnamedParseDivergences/validator_consensus_key_of_31_bytes_with_a_reason_digest_and_no_activation (0.00s)
+    --- PASS: TestUnnamedParseDivergences/withdraw_content_id_outside_the_pattern_with_reason_digest_algorithm_7 (0.00s)
+    --- PASS: TestUnnamedParseDivergences/v0_shape_space (0.88s)
+=== RUN   TestShapeRuleNearMisses
+=== RUN   TestShapeRuleNearMisses/validator_reason_without_algorithm
+=== RUN   TestShapeRuleNearMisses/validator_31-byte_reason_without_algorithm
+=== RUN   TestShapeRuleNearMisses/withdraw_reason_without_algorithm
+=== RUN   TestShapeRuleNearMisses/withdraw_31-byte_reason_without_algorithm
+=== RUN   TestShapeRuleNearMisses/withdraw_version_0_(proto3_default)
+=== RUN   TestShapeRuleNearMisses/withdraw_reason_digest_omitted
+=== RUN   TestShapeRuleNearMisses/withdraw_content_id_omitted_(proto3_default)
+=== RUN   TestShapeRuleNearMisses/negative_power_with_activation_height_0
+=== RUN   TestShapeRuleNearMisses/validator_reason_digest_omitted
+=== RUN   TestShapeRuleNearMisses/governed_limit_key_outside_the_pattern
+=== RUN   TestShapeRuleNearMisses/withdraw_content_id_outside_the_pattern,_well-formed_otherwise
+=== RUN   TestShapeRuleNearMisses/validator_consensus_key_of_31_bytes,_every_field_present
+--- PASS: TestShapeRuleNearMisses (0.04s)
+    --- PASS: TestShapeRuleNearMisses/validator_reason_without_algorithm (0.01s)
+    --- PASS: TestShapeRuleNearMisses/validator_31-byte_reason_without_algorithm (0.00s)
+    --- PASS: TestShapeRuleNearMisses/withdraw_reason_without_algorithm (0.00s)
+    --- PASS: TestShapeRuleNearMisses/withdraw_31-byte_reason_without_algorithm (0.00s)
+    --- PASS: TestShapeRuleNearMisses/withdraw_version_0_(proto3_default) (0.00s)
+    --- PASS: TestShapeRuleNearMisses/withdraw_reason_digest_omitted (0.00s)
+    --- PASS: TestShapeRuleNearMisses/withdraw_content_id_omitted_(proto3_default) (0.00s)
+    --- PASS: TestShapeRuleNearMisses/negative_power_with_activation_height_0 (0.00s)
+    --- PASS: TestShapeRuleNearMisses/validator_reason_digest_omitted (0.00s)
+    --- PASS: TestShapeRuleNearMisses/governed_limit_key_outside_the_pattern (0.00s)
+    --- PASS: TestShapeRuleNearMisses/withdraw_content_id_outside_the_pattern,_well-formed_otherwise (0.00s)
+    --- PASS: TestShapeRuleNearMisses/validator_consensus_key_of_31_bytes,_every_field_present (0.00s)
+=== RUN   TestExpiryAndDelayBoundariesDifferential
+--- PASS: TestExpiryAndDelayBoundariesDifferential (0.03s)
+=== RUN   TestGovernanceTransitionsReachability
+    fuzz_test.go:61: reached:
+        steps 2880, applied validator changes 7
+        codes: [ApproveChange ERROR_CODE_CONFLICT]=236 [ApproveChange ERROR_CODE_EXPIRED]=164 [ApproveChange ERROR_CODE_NOT_FOUND]=96 [ApproveChange ERROR_CODE_REPLAY]=47 [ApproveChange ERROR_CODE_UNAUTHORIZED]=47 [ApproveChange ok]=397 [Block ok]=392 [ExecuteChange ERROR_CODE_CONFLICT]=91 [ExecuteChange ERROR_CODE_DUPLICATE_ID]=7 [ExecuteChange ERROR_CODE_EXPIRED]=248 [ExecuteChange ERROR_CODE_FORBIDDEN]=33 [ExecuteChange ERROR_CODE_NOT_FOUND]=79 [ExecuteChange ERROR_CODE_OUT_OF_RANGE]=30 [ExecuteChange ERROR_CODE_REPLAY]=10 [ExecuteChange ERROR_CODE_STALE_VERSION]=2 [ExecuteChange ERROR_CODE_UNAUTHORIZED]=25 [ExecuteChange ok]=47 [ProposeChange ERROR_CODE_BOUNDS]=122 [ProposeChange ERROR_CODE_DUPLICATE_ID]=23 [ProposeChange ERROR_CODE_EXPIRED]=19 [ProposeChange ERROR_CODE_FORBIDDEN]=12 [ProposeChange ERROR_CODE_INTEGRITY]=21 [ProposeChange ERROR_CODE_MALFORMED]=33 [ProposeChange ERROR_CODE_OUT_OF_RANGE]=15 [ProposeChange ERROR_CODE_REPLAY]=8 [ProposeChange ERROR_CODE_STALE_VERSION]=50 [ProposeChange ERROR_CODE_UNAUTHORIZED]=61 [ProposeChange ok]=357 [RegisterContent ERROR_CODE_BOUNDS]=13 [RegisterContent ERROR_CODE_DUPLICATE_ID]=7 [RegisterContent ok]=93 [RegisterProvider ERROR_CODE_DUPLICATE_ID]=7 [RegisterProvider ok]=88
+        rules:
+        tags: [ApproveChange replay of ]=43 [ApproveChange replay of replay of ]=2 [ApproveChange replay of replay of replay of ]=1 [ExecuteChange replay of ]=40 [ExecuteChange replay of replay of ]=3 [ExecuteChange replay of replay of replay of ]=1 [ProposeChange D-1 key]=26 [ProposeChange D-1 key+wrong digest]=2 [ProposeChange D-1 key+wrong parameter key]=1 [ProposeChange D-1 value]=28 [ProposeChange D-7 seat key]=18 [ProposeChange D-7 seat key+dec- parameter key]=1 [ProposeChange D-7 seat key+wrong digest]=1 [ProposeChange D-7 seat key+wrong parameter key]=2 [ProposeChange G-1 algorithm]=12 [ProposeChange G-10]=6 [ProposeChange G-10+dec- parameter key]=1 [ProposeChange G-11]=3 [ProposeChange G-9]=4 [ProposeChange base 0]=3 [ProposeChange dec- parameter key]=10 [ProposeChange duplicate id]=34 [ProposeChange duplicate id+D-1 key]=6 [ProposeChange duplicate id+D-1 key+wrong parameter key]=1 [ProposeChange duplicate id+D-1 value]=3 [ProposeChange duplicate id+D-7 seat key]=2 [ProposeChange duplicate id+G-1 algorithm]=1 [ProposeChange duplicate id+G-11]=2 [ProposeChange duplicate id+base 0]=1 [ProposeChange duplicate id+base 0+wrong parameter key]=1 [ProposeChange duplicate id+dec- parameter key]=1 [ProposeChange duplicate id+expired]=1 [ProposeChange duplicate id+expired+D-1 key]=1 [ProposeChange duplicate id+future base]=1 [ProposeChange duplicate id+reused business id]=2 [ProposeChange duplicate id+stale base]=1 [ProposeChange duplicate id+stale base+D-1 key]=1 [ProposeChange duplicate id+taken key]=2 [ProposeChange duplicate id+wrong digest]=2 [ProposeChange duplicate id+wrong parameter key]=1 [ProposeChange expired]=18 [ProposeChange expired+D-1 key]=3 [ProposeChange expired+D-1 value]=3 [ProposeChange expired+D-7 seat key]=1 [ProposeChange expired+G-9+wrong digest]=1 [ProposeChange expired+wrong digest]=1 [ProposeChange expiry 0]=8 [ProposeChange expiry 0+D-1 value]=1 [ProposeChange expiry 0+D-7 seat key]=1 [ProposeChange expiry 0+G-10]=1 [ProposeChange expiry 0+taken key]=1 [ProposeChange expiry above unix max]=15 [ProposeChange expiry above unix max+D-1 value]=1 [ProposeChange expiry above unix max+D-7 seat key]=1 [ProposeChange expiry above unix max+taken key]=1 [ProposeChange expiry above unix max+wrong digest]=1 [ProposeChange fresh]=330 [ProposeChange future base]=16 [ProposeChange future base+D-1 key]=2 [ProposeChange future base+D-1 key+wrong parameter key]=1 [ProposeChange future base+D-1 value]=1 [ProposeChange future base+expiry 0]=1 [ProposeChange future base+expiry above unix max]=1 [ProposeChange future base+taken key]=1 [ProposeChange malformed reason]=1 [ProposeChange replay of D-1 key]=2 [ProposeChange replay of D-1 value]=1 [ProposeChange replay of D-7 seat key]=1 [ProposeChange replay of duplicate id]=1 [ProposeChange replay of duplicate id+D-1 key]=1 [ProposeChange replay of expired]=1 [ProposeChange replay of expiry above unix max+taken key]=1 [ProposeChange replay of fresh]=15 [ProposeChange replay of future base]=1 [ProposeChange replay of malformed reason]=1 [ProposeChange replay of reused business id]=2 [ProposeChange replay of reused business id+D-1 key]=1 [ProposeChange replay of stale base]=4 [ProposeChange replay of wrong digest]=2 [ProposeChange reused business id]=18 [ProposeChange reused business id+D-1 key]=3 [ProposeChange reused business id+D-1 value]=2 [ProposeChange reused business id+base 0]=1 [ProposeChange reused business id+expired+wrong parameter key]=1 [ProposeChange reused business id+expiry 0]=1 [ProposeChange reused business id+expiry 0+G-10]=1 [ProposeChange reused business id+expiry above unix max]=1 [ProposeChange reused business id+stale base]=1 [ProposeChange reused business id+stale base+wrong digest]=1 [ProposeChange stale base]=25 [ProposeChange stale base+D-1 key]=3 [ProposeChange stale base+D-1 value]=1 [ProposeChange stale base+D-7 seat key]=3 [ProposeChange stale base+G-1 algorithm]=2 [ProposeChange stale base+expired]=1 [ProposeChange stale base+expiry 0]=2 [ProposeChange stale base+malformed reason]=1 [ProposeChange stale base+wrong parameter key]=1 [ProposeChange taken key]=5 [ProposeChange taken key+dec- parameter key]=1 [ProposeChange wrong digest]=11 [ProposeChange wrong parameter key]=7
+        transitions: [EXECUTED -> EXPIRED]=13 [OPEN -> EXPIRED]=194 [OPEN -> QUEUED]=95 [QUEUED -> EXECUTED]=42 [QUEUED -> EXPIRED]=31 [QUEUED -> REJECTED]=5 [execute from EXECUTED: ERROR_CODE_CONFLICT]=10 [execute from EXECUTED: ERROR_CODE_EXPIRED]=13 [execute from EXECUTED: ERROR_CODE_FORBIDDEN]=1 [execute from EXECUTED: ERROR_CODE_REPLAY]=1 [execute from EXECUTED: ERROR_CODE_UNAUTHORIZED]=3 [execute from EXECUTED: ok]=4 [execute from EXPIRED: ERROR_CODE_EXPIRED]=174 [execute from EXPIRED: ERROR_CODE_FORBIDDEN]=14 [execute from EXPIRED: ERROR_CODE_REPLAY]=4 [execute from EXPIRED: ERROR_CODE_UNAUTHORIZED]=6 [execute from EXPIRED: ok]=1 [execute from OPEN: ERROR_CODE_CONFLICT]=58 [execute from OPEN: ERROR_CODE_EXPIRED]=30 [execute from OPEN: ERROR_CODE_FORBIDDEN]=8 [execute from OPEN: ERROR_CODE_UNAUTHORIZED]=5 [execute from QUEUED: ERROR_CODE_CONFLICT]=12 [execute from QUEUED: ERROR_CODE_DUPLICATE_ID]=7 [execute from QUEUED: ERROR_CODE_EXPIRED]=31 [execute from QUEUED: ERROR_CODE_FORBIDDEN]=7 [execute from QUEUED: ERROR_CODE_NOT_FOUND]=10 [execute from QUEUED: ERROR_CODE_OUT_OF_RANGE]=30 [execute from QUEUED: ERROR_CODE_REPLAY]=2 [execute from QUEUED: ERROR_CODE_STALE_VERSION]=2 [execute from QUEUED: ERROR_CODE_UNAUTHORIZED]=5 [execute from QUEUED: ok]=42 [execute from REJECTED: ERROR_CODE_CONFLICT]=11 [execute from REJECTED: ERROR_CODE_FORBIDDEN]=1 [execute from REJECTED: ERROR_CODE_REPLAY]=1 [new OPEN]=342
+        rule combinations:
+--- PASS: TestGovernanceTransitionsReachability (4.85s)
+=== RUN   TestOracleSelfTest
+    meta_test.go:37: spec_oracle self-test: PASS (506 steps)
+--- PASS: TestOracleSelfTest (0.18s)
+=== RUN   TestComparatorDetectsMismatch
+    meta_test.go:110: 17 spec mutants and 1 Go mutant detected
+--- PASS: TestComparatorDetectsMismatch (0.02s)
+=== RUN   TestTrialSnapshotDetectsEarlyWrite
+--- PASS: TestTrialSnapshotDetectsEarlyWrite (0.01s)
+=== RUN   TestStoreLayout
+--- PASS: TestStoreLayout (0.01s)
+=== RUN   TestCouncilInvariantsSelfTest
+=== RUN   TestCouncilInvariantsSelfTest/I1
+=== RUN   TestCouncilInvariantsSelfTest/I2
+=== RUN   TestCouncilInvariantsSelfTest/I7
+=== RUN   TestCouncilInvariantsSelfTest/I7#01
+=== RUN   TestCouncilInvariantsSelfTest/I8
+=== RUN   TestCouncilInvariantsSelfTest/I8#01
+=== RUN   TestCouncilInvariantsSelfTest/I9
+=== RUN   TestCouncilInvariantsSelfTest/I10
+=== RUN   TestCouncilInvariantsSelfTest/I10#01
+=== RUN   TestCouncilInvariantsSelfTest/I11
+=== RUN   TestCouncilInvariantsSelfTest/I3
+=== RUN   TestCouncilInvariantsSelfTest/I3#01
+=== RUN   TestCouncilInvariantsSelfTest/I3#02
+=== RUN   TestCouncilInvariantsSelfTest/I4
+=== RUN   TestCouncilInvariantsSelfTest/I5
+=== RUN   TestCouncilInvariantsSelfTest/I5#01
+=== RUN   TestCouncilInvariantsSelfTest/I6
+=== RUN   TestCouncilInvariantsSelfTest/I6#01
+--- PASS: TestCouncilInvariantsSelfTest (0.09s)
+    --- PASS: TestCouncilInvariantsSelfTest/I1 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I2 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I7 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I7#01 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I8 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I8#01 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I9 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I10 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I10#01 (0.01s)
+    --- PASS: TestCouncilInvariantsSelfTest/I11 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I3 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I3#01 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I3#02 (0.01s)
+    --- PASS: TestCouncilInvariantsSelfTest/I4 (0.01s)
+    --- PASS: TestCouncilInvariantsSelfTest/I5 (0.01s)
+    --- PASS: TestCouncilInvariantsSelfTest/I5#01 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I6 (0.00s)
+    --- PASS: TestCouncilInvariantsSelfTest/I6#01 (0.01s)
+=== RUN   TestPolicyWriteCheckSelfTest
+--- PASS: TestPolicyWriteCheckSelfTest (0.01s)
+=== RUN   TestSchemaTwoPayloadsD5
+=== RUN   TestSchemaTwoPayloadsD5/chain_accepts/scheduled_governed_limit
+=== RUN   TestSchemaTwoPayloadsD5/chain_accepts/software_upgrade
+=== RUN   TestSchemaTwoPayloadsD5/chain_accepts/cancel_upgrade
+=== RUN   TestSchemaTwoPayloadsD5/chain_accepts/council_seat
+=== RUN   TestSchemaTwoPayloadsD5/chain_refuses/scheduled_governed_limit_at_the_current_height
+=== RUN   TestSchemaTwoPayloadsD5/chain_refuses/scheduled_governed_limit_of_value_0
+=== RUN   TestSchemaTwoPayloadsD5/chain_refuses/software_upgrade_one_block_below_the_minimum_lead_(PROPOSED)
+=== RUN   TestSchemaTwoPayloadsD5/chain_refuses/cancel_of_a_name_outside_the_id_pattern
+=== RUN   TestSchemaTwoPayloadsD5/chain_refuses/council_seat_key_of_31_bytes
+=== RUN   TestSchemaTwoPayloadsD5/chain_only
+--- PASS: TestSchemaTwoPayloadsD5 (0.05s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_accepts/scheduled_governed_limit (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_accepts/software_upgrade (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_accepts/cancel_upgrade (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_accepts/council_seat (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_refuses/scheduled_governed_limit_at_the_current_height (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_refuses/scheduled_governed_limit_of_value_0 (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_refuses/software_upgrade_one_block_below_the_minimum_lead_(PROPOSED) (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_refuses/cancel_of_a_name_outside_the_id_pattern (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_refuses/council_seat_key_of_31_bytes (0.00s)
+    --- PASS: TestSchemaTwoPayloadsD5/chain_only (0.02s)
+=== RUN   FuzzCouncilDifferential
+=== RUN   FuzzCouncilDifferential/seed#0
+=== RUN   FuzzCouncilDifferential/seed#1
+=== RUN   FuzzCouncilDifferential/seed#2
+=== RUN   FuzzCouncilDifferential/seed#3
+=== RUN   FuzzCouncilDifferential/seed#4
+=== RUN   FuzzCouncilDifferential/seed#5
+--- PASS: FuzzCouncilDifferential (0.99s)
+    --- PASS: FuzzCouncilDifferential/seed#0 (0.19s)
+    --- PASS: FuzzCouncilDifferential/seed#1 (0.19s)
+    --- PASS: FuzzCouncilDifferential/seed#2 (0.18s)
+    --- PASS: FuzzCouncilDifferential/seed#3 (0.17s)
+    --- PASS: FuzzCouncilDifferential/seed#4 (0.18s)
+    --- PASS: FuzzCouncilDifferential/seed#5 (0.07s)
+=== RUN   FuzzGovernanceTransitions
+=== RUN   FuzzGovernanceTransitions/seed#0
+=== RUN   FuzzGovernanceTransitions/seed#1
+=== RUN   FuzzGovernanceTransitions/seed#2
+=== RUN   FuzzGovernanceTransitions/seed#3
+=== RUN   FuzzGovernanceTransitions/seed#4
+=== RUN   FuzzGovernanceTransitions/seed#5
+--- PASS: FuzzGovernanceTransitions (1.37s)
+    --- PASS: FuzzGovernanceTransitions/seed#0 (0.18s)
+    --- PASS: FuzzGovernanceTransitions/seed#1 (0.18s)
+    --- PASS: FuzzGovernanceTransitions/seed#2 (0.17s)
+    --- PASS: FuzzGovernanceTransitions/seed#3 (0.19s)
+    --- PASS: FuzzGovernanceTransitions/seed#4 (0.23s)
+    --- PASS: FuzzGovernanceTransitions/seed#5 (0.43s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority/difftest	32.336s
+EXIT:0

@@ -191,11 +191,15 @@ func (x *ValidatorPowerChange) GetActivation() *ActivationPoint {
 }
 
 type GovernedLimitChange struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LimitKey      string                 `protobuf:"bytes,1,opt,name=limit_key,json=limitKey,proto3" json:"limit_key,omitempty"`
-	Value         uint64                 `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	LimitKey string                 `protobuf:"bytes,1,opt,name=limit_key,json=limitKey,proto3" json:"limit_key,omitempty"`
+	Value    uint64                 `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
+	// Schema version 2. 0 (absent) applies the value inside ExecuteChange.
+	// A positive height schedules it: a later committed block at that height
+	// applies it.
+	ActivationHeight uint64 `protobuf:"varint,3,opt,name=activation_height,json=activationHeight,proto3" json:"activation_height,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *GovernedLimitChange) Reset() {
@@ -238,6 +242,13 @@ func (x *GovernedLimitChange) GetLimitKey() string {
 func (x *GovernedLimitChange) GetValue() uint64 {
 	if x != nil {
 		return x.Value
+	}
+	return 0
+}
+
+func (x *GovernedLimitChange) GetActivationHeight() uint64 {
+	if x != nil {
+		return x.ActivationHeight
 	}
 	return 0
 }
@@ -390,6 +401,169 @@ func (x *ForceWithdrawChange) GetReasonDigest() *v1.Digest {
 	return nil
 }
 
+// Schema version 2. Stores an upgrade plan that names only a block height.
+// release_digest is informational: the chain stores it and does not compare
+// it with the running binary.
+type SoftwareUpgradeChange struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Height        uint64                 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	ReleaseDigest *v1.Digest             `protobuf:"bytes,3,opt,name=release_digest,json=releaseDigest,proto3" json:"release_digest,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SoftwareUpgradeChange) Reset() {
+	*x = SoftwareUpgradeChange{}
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SoftwareUpgradeChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SoftwareUpgradeChange) ProtoMessage() {}
+
+func (x *SoftwareUpgradeChange) ProtoReflect() protoreflect.Message {
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SoftwareUpgradeChange.ProtoReflect.Descriptor instead.
+func (*SoftwareUpgradeChange) Descriptor() ([]byte, []int) {
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SoftwareUpgradeChange) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *SoftwareUpgradeChange) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *SoftwareUpgradeChange) GetReleaseDigest() *v1.Digest {
+	if x != nil {
+		return x.ReleaseDigest
+	}
+	return nil
+}
+
+// Schema version 2. Deletes the pending upgrade plan with this name.
+type CancelUpgradeChange struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelUpgradeChange) Reset() {
+	*x = CancelUpgradeChange{}
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelUpgradeChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelUpgradeChange) ProtoMessage() {}
+
+func (x *CancelUpgradeChange) ProtoReflect() protoreflect.Message {
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelUpgradeChange.ProtoReflect.Descriptor instead.
+func (*CancelUpgradeChange) Descriptor() ([]byte, []int) {
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CancelUpgradeChange) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+// Schema version 2. Replaces the public key of an existing council seat.
+// The seat id stays; the old key is retired. The council keeps its size.
+type CouncilSeatChange struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	SeatId string                 `protobuf:"bytes,1,opt,name=seat_id,json=seatId,proto3" json:"seat_id,omitempty"`
+	// bound: ed25519_public_bytes=32
+	NewPublicKey  []byte `protobuf:"bytes,2,opt,name=new_public_key,json=newPublicKey,proto3" json:"new_public_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CouncilSeatChange) Reset() {
+	*x = CouncilSeatChange{}
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CouncilSeatChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CouncilSeatChange) ProtoMessage() {}
+
+func (x *CouncilSeatChange) ProtoReflect() protoreflect.Message {
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CouncilSeatChange.ProtoReflect.Descriptor instead.
+func (*CouncilSeatChange) Descriptor() ([]byte, []int) {
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CouncilSeatChange) GetSeatId() string {
+	if x != nil {
+		return x.SeatId
+	}
+	return ""
+}
+
+func (x *CouncilSeatChange) GetNewPublicKey() []byte {
+	if x != nil {
+		return x.NewPublicKey
+	}
+	return nil
+}
+
 type ProposalPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Change:
@@ -399,6 +573,9 @@ type ProposalPayload struct {
 	//	*ProposalPayload_AdmitProvider
 	//	*ProposalPayload_DisableProvider
 	//	*ProposalPayload_ForceWithdraw
+	//	*ProposalPayload_SoftwareUpgrade
+	//	*ProposalPayload_CancelUpgrade
+	//	*ProposalPayload_CouncilSeat
 	Change        isProposalPayload_Change `protobuf_oneof:"change"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -406,7 +583,7 @@ type ProposalPayload struct {
 
 func (x *ProposalPayload) Reset() {
 	*x = ProposalPayload{}
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[6]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -418,7 +595,7 @@ func (x *ProposalPayload) String() string {
 func (*ProposalPayload) ProtoMessage() {}
 
 func (x *ProposalPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[6]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -431,7 +608,7 @@ func (x *ProposalPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProposalPayload.ProtoReflect.Descriptor instead.
 func (*ProposalPayload) Descriptor() ([]byte, []int) {
-	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{6}
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ProposalPayload) GetChange() isProposalPayload_Change {
@@ -486,6 +663,33 @@ func (x *ProposalPayload) GetForceWithdraw() *ForceWithdrawChange {
 	return nil
 }
 
+func (x *ProposalPayload) GetSoftwareUpgrade() *SoftwareUpgradeChange {
+	if x != nil {
+		if x, ok := x.Change.(*ProposalPayload_SoftwareUpgrade); ok {
+			return x.SoftwareUpgrade
+		}
+	}
+	return nil
+}
+
+func (x *ProposalPayload) GetCancelUpgrade() *CancelUpgradeChange {
+	if x != nil {
+		if x, ok := x.Change.(*ProposalPayload_CancelUpgrade); ok {
+			return x.CancelUpgrade
+		}
+	}
+	return nil
+}
+
+func (x *ProposalPayload) GetCouncilSeat() *CouncilSeatChange {
+	if x != nil {
+		if x, ok := x.Change.(*ProposalPayload_CouncilSeat); ok {
+			return x.CouncilSeat
+		}
+	}
+	return nil
+}
+
 type isProposalPayload_Change interface {
 	isProposalPayload_Change()
 }
@@ -510,6 +714,19 @@ type ProposalPayload_ForceWithdraw struct {
 	ForceWithdraw *ForceWithdrawChange `protobuf:"bytes,5,opt,name=force_withdraw,json=forceWithdraw,proto3,oneof"`
 }
 
+type ProposalPayload_SoftwareUpgrade struct {
+	// Schema version 2.
+	SoftwareUpgrade *SoftwareUpgradeChange `protobuf:"bytes,6,opt,name=software_upgrade,json=softwareUpgrade,proto3,oneof"`
+}
+
+type ProposalPayload_CancelUpgrade struct {
+	CancelUpgrade *CancelUpgradeChange `protobuf:"bytes,7,opt,name=cancel_upgrade,json=cancelUpgrade,proto3,oneof"`
+}
+
+type ProposalPayload_CouncilSeat struct {
+	CouncilSeat *CouncilSeatChange `protobuf:"bytes,8,opt,name=council_seat,json=councilSeat,proto3,oneof"`
+}
+
 func (*ProposalPayload_ValidatorPower) isProposalPayload_Change() {}
 
 func (*ProposalPayload_GovernedLimit) isProposalPayload_Change() {}
@@ -519,6 +736,12 @@ func (*ProposalPayload_AdmitProvider) isProposalPayload_Change() {}
 func (*ProposalPayload_DisableProvider) isProposalPayload_Change() {}
 
 func (*ProposalPayload_ForceWithdraw) isProposalPayload_Change() {}
+
+func (*ProposalPayload_SoftwareUpgrade) isProposalPayload_Change() {}
+
+func (*ProposalPayload_CancelUpgrade) isProposalPayload_Change() {}
+
+func (*ProposalPayload_CouncilSeat) isProposalPayload_Change() {}
 
 type MsgProposeChange struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
@@ -536,7 +759,7 @@ type MsgProposeChange struct {
 
 func (x *MsgProposeChange) Reset() {
 	*x = MsgProposeChange{}
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[7]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -548,7 +771,7 @@ func (x *MsgProposeChange) String() string {
 func (*MsgProposeChange) ProtoMessage() {}
 
 func (x *MsgProposeChange) ProtoReflect() protoreflect.Message {
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[7]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -561,7 +784,7 @@ func (x *MsgProposeChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgProposeChange.ProtoReflect.Descriptor instead.
 func (*MsgProposeChange) Descriptor() ([]byte, []int) {
-	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{7}
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *MsgProposeChange) GetSigner() []byte {
@@ -631,7 +854,7 @@ type MsgApproveChange struct {
 
 func (x *MsgApproveChange) Reset() {
 	*x = MsgApproveChange{}
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[8]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -643,7 +866,7 @@ func (x *MsgApproveChange) String() string {
 func (*MsgApproveChange) ProtoMessage() {}
 
 func (x *MsgApproveChange) ProtoReflect() protoreflect.Message {
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[8]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -656,7 +879,7 @@ func (x *MsgApproveChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgApproveChange.ProtoReflect.Descriptor instead.
 func (*MsgApproveChange) Descriptor() ([]byte, []int) {
-	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{8}
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *MsgApproveChange) GetSigner() []byte {
@@ -691,7 +914,7 @@ type MsgExecuteChange struct {
 
 func (x *MsgExecuteChange) Reset() {
 	*x = MsgExecuteChange{}
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[9]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -703,7 +926,7 @@ func (x *MsgExecuteChange) String() string {
 func (*MsgExecuteChange) ProtoMessage() {}
 
 func (x *MsgExecuteChange) ProtoReflect() protoreflect.Message {
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[9]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -716,7 +939,7 @@ func (x *MsgExecuteChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgExecuteChange.ProtoReflect.Descriptor instead.
 func (*MsgExecuteChange) Descriptor() ([]byte, []int) {
-	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{9}
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *MsgExecuteChange) GetSigner() []byte {
@@ -748,7 +971,7 @@ type MsgProposeChangeResponse struct {
 
 func (x *MsgProposeChangeResponse) Reset() {
 	*x = MsgProposeChangeResponse{}
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[10]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -760,7 +983,7 @@ func (x *MsgProposeChangeResponse) String() string {
 func (*MsgProposeChangeResponse) ProtoMessage() {}
 
 func (x *MsgProposeChangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[10]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -773,7 +996,7 @@ func (x *MsgProposeChangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgProposeChangeResponse.ProtoReflect.Descriptor instead.
 func (*MsgProposeChangeResponse) Descriptor() ([]byte, []int) {
-	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{10}
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{13}
 }
 
 type MsgApproveChangeResponse struct {
@@ -784,7 +1007,7 @@ type MsgApproveChangeResponse struct {
 
 func (x *MsgApproveChangeResponse) Reset() {
 	*x = MsgApproveChangeResponse{}
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[11]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -796,7 +1019,7 @@ func (x *MsgApproveChangeResponse) String() string {
 func (*MsgApproveChangeResponse) ProtoMessage() {}
 
 func (x *MsgApproveChangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[11]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -809,7 +1032,7 @@ func (x *MsgApproveChangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgApproveChangeResponse.ProtoReflect.Descriptor instead.
 func (*MsgApproveChangeResponse) Descriptor() ([]byte, []int) {
-	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{11}
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{14}
 }
 
 type MsgExecuteChangeResponse struct {
@@ -820,7 +1043,7 @@ type MsgExecuteChangeResponse struct {
 
 func (x *MsgExecuteChangeResponse) Reset() {
 	*x = MsgExecuteChangeResponse{}
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[12]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -832,7 +1055,7 @@ func (x *MsgExecuteChangeResponse) String() string {
 func (*MsgExecuteChangeResponse) ProtoMessage() {}
 
 func (x *MsgExecuteChangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_svn_authority_v1_tx_proto_msgTypes[12]
+	mi := &file_svn_authority_v1_tx_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -845,7 +1068,7 @@ func (x *MsgExecuteChangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgExecuteChangeResponse.ProtoReflect.Descriptor instead.
 func (*MsgExecuteChangeResponse) Descriptor() ([]byte, []int) {
-	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{12}
+	return file_svn_authority_v1_tx_proto_rawDescGZIP(), []int{15}
 }
 
 var File_svn_authority_v1_tx_proto protoreflect.FileDescriptor
@@ -864,10 +1087,11 @@ const file_svn_authority_v1_tx_proto_rawDesc = "" +
 	"\rreason_digest\x18\x04 \x01(\v2\x14.svn.types.v1.DigestR\freasonDigest\x12A\n" +
 	"\n" +
 	"activation\x18\x05 \x01(\v2!.svn.authority.v1.ActivationPointR\n" +
-	"activation\"H\n" +
+	"activation\"u\n" +
 	"\x13GovernedLimitChange\x12\x1b\n" +
 	"\tlimit_key\x18\x01 \x01(\tR\blimitKey\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x04R\x05value\"6\n" +
+	"\x05value\x18\x02 \x01(\x04R\x05value\x12+\n" +
+	"\x11activation_height\x18\x03 \x01(\x04R\x10activationHeight\"6\n" +
 	"\x13AdmitProviderChange\x12\x1f\n" +
 	"\vprovider_id\x18\x01 \x01(\tR\n" +
 	"providerId\"8\n" +
@@ -878,13 +1102,25 @@ const file_svn_authority_v1_tx_proto_rawDesc = "" +
 	"\n" +
 	"content_id\x18\x01 \x01(\tR\tcontentId\x12'\n" +
 	"\x0fcontent_version\x18\x02 \x01(\x04R\x0econtentVersion\x129\n" +
-	"\rreason_digest\x18\x03 \x01(\v2\x14.svn.types.v1.DigestR\freasonDigest\"\xb4\x03\n" +
+	"\rreason_digest\x18\x03 \x01(\v2\x14.svn.types.v1.DigestR\freasonDigest\"\x80\x01\n" +
+	"\x15SoftwareUpgradeChange\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
+	"\x06height\x18\x02 \x01(\x04R\x06height\x12;\n" +
+	"\x0erelease_digest\x18\x03 \x01(\v2\x14.svn.types.v1.DigestR\rreleaseDigest\")\n" +
+	"\x13CancelUpgradeChange\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"R\n" +
+	"\x11CouncilSeatChange\x12\x17\n" +
+	"\aseat_id\x18\x01 \x01(\tR\x06seatId\x12$\n" +
+	"\x0enew_public_key\x18\x02 \x01(\fR\fnewPublicKey\"\xa4\x05\n" +
 	"\x0fProposalPayload\x12Q\n" +
 	"\x0fvalidator_power\x18\x01 \x01(\v2&.svn.authority.v1.ValidatorPowerChangeH\x00R\x0evalidatorPower\x12N\n" +
 	"\x0egoverned_limit\x18\x02 \x01(\v2%.svn.authority.v1.GovernedLimitChangeH\x00R\rgovernedLimit\x12N\n" +
 	"\x0eadmit_provider\x18\x03 \x01(\v2%.svn.authority.v1.AdmitProviderChangeH\x00R\radmitProvider\x12T\n" +
 	"\x10disable_provider\x18\x04 \x01(\v2'.svn.authority.v1.DisableProviderChangeH\x00R\x0fdisableProvider\x12N\n" +
-	"\x0eforce_withdraw\x18\x05 \x01(\v2%.svn.authority.v1.ForceWithdrawChangeH\x00R\rforceWithdrawB\b\n" +
+	"\x0eforce_withdraw\x18\x05 \x01(\v2%.svn.authority.v1.ForceWithdrawChangeH\x00R\rforceWithdraw\x12T\n" +
+	"\x10software_upgrade\x18\x06 \x01(\v2'.svn.authority.v1.SoftwareUpgradeChangeH\x00R\x0fsoftwareUpgrade\x12N\n" +
+	"\x0ecancel_upgrade\x18\a \x01(\v2%.svn.authority.v1.CancelUpgradeChangeH\x00R\rcancelUpgrade\x12H\n" +
+	"\fcouncil_seat\x18\b \x01(\v2#.svn.authority.v1.CouncilSeatChangeH\x00R\vcouncilSeatB\b\n" +
 	"\x06change\"\xeb\x02\n" +
 	"\x10MsgProposeChange\x12\x16\n" +
 	"\x06signer\x18\x01 \x01(\fR\x06signer\x12\x1f\n" +
@@ -929,7 +1165,7 @@ func file_svn_authority_v1_tx_proto_rawDescGZIP() []byte {
 	return file_svn_authority_v1_tx_proto_rawDescData
 }
 
-var file_svn_authority_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_svn_authority_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_svn_authority_v1_tx_proto_goTypes = []any{
 	(*ActivationPoint)(nil),          // 0: svn.authority.v1.ActivationPoint
 	(*ValidatorPowerChange)(nil),     // 1: svn.authority.v1.ValidatorPowerChange
@@ -937,37 +1173,44 @@ var file_svn_authority_v1_tx_proto_goTypes = []any{
 	(*AdmitProviderChange)(nil),      // 3: svn.authority.v1.AdmitProviderChange
 	(*DisableProviderChange)(nil),    // 4: svn.authority.v1.DisableProviderChange
 	(*ForceWithdrawChange)(nil),      // 5: svn.authority.v1.ForceWithdrawChange
-	(*ProposalPayload)(nil),          // 6: svn.authority.v1.ProposalPayload
-	(*MsgProposeChange)(nil),         // 7: svn.authority.v1.MsgProposeChange
-	(*MsgApproveChange)(nil),         // 8: svn.authority.v1.MsgApproveChange
-	(*MsgExecuteChange)(nil),         // 9: svn.authority.v1.MsgExecuteChange
-	(*MsgProposeChangeResponse)(nil), // 10: svn.authority.v1.MsgProposeChangeResponse
-	(*MsgApproveChangeResponse)(nil), // 11: svn.authority.v1.MsgApproveChangeResponse
-	(*MsgExecuteChangeResponse)(nil), // 12: svn.authority.v1.MsgExecuteChangeResponse
-	(*v1.Digest)(nil),                // 13: svn.types.v1.Digest
+	(*SoftwareUpgradeChange)(nil),    // 6: svn.authority.v1.SoftwareUpgradeChange
+	(*CancelUpgradeChange)(nil),      // 7: svn.authority.v1.CancelUpgradeChange
+	(*CouncilSeatChange)(nil),        // 8: svn.authority.v1.CouncilSeatChange
+	(*ProposalPayload)(nil),          // 9: svn.authority.v1.ProposalPayload
+	(*MsgProposeChange)(nil),         // 10: svn.authority.v1.MsgProposeChange
+	(*MsgApproveChange)(nil),         // 11: svn.authority.v1.MsgApproveChange
+	(*MsgExecuteChange)(nil),         // 12: svn.authority.v1.MsgExecuteChange
+	(*MsgProposeChangeResponse)(nil), // 13: svn.authority.v1.MsgProposeChangeResponse
+	(*MsgApproveChangeResponse)(nil), // 14: svn.authority.v1.MsgApproveChangeResponse
+	(*MsgExecuteChangeResponse)(nil), // 15: svn.authority.v1.MsgExecuteChangeResponse
+	(*v1.Digest)(nil),                // 16: svn.types.v1.Digest
 }
 var file_svn_authority_v1_tx_proto_depIdxs = []int32{
-	13, // 0: svn.authority.v1.ValidatorPowerChange.reason_digest:type_name -> svn.types.v1.Digest
+	16, // 0: svn.authority.v1.ValidatorPowerChange.reason_digest:type_name -> svn.types.v1.Digest
 	0,  // 1: svn.authority.v1.ValidatorPowerChange.activation:type_name -> svn.authority.v1.ActivationPoint
-	13, // 2: svn.authority.v1.ForceWithdrawChange.reason_digest:type_name -> svn.types.v1.Digest
-	1,  // 3: svn.authority.v1.ProposalPayload.validator_power:type_name -> svn.authority.v1.ValidatorPowerChange
-	2,  // 4: svn.authority.v1.ProposalPayload.governed_limit:type_name -> svn.authority.v1.GovernedLimitChange
-	3,  // 5: svn.authority.v1.ProposalPayload.admit_provider:type_name -> svn.authority.v1.AdmitProviderChange
-	4,  // 6: svn.authority.v1.ProposalPayload.disable_provider:type_name -> svn.authority.v1.DisableProviderChange
-	5,  // 7: svn.authority.v1.ProposalPayload.force_withdraw:type_name -> svn.authority.v1.ForceWithdrawChange
-	6,  // 8: svn.authority.v1.MsgProposeChange.payload:type_name -> svn.authority.v1.ProposalPayload
-	13, // 9: svn.authority.v1.MsgProposeChange.payload_digest:type_name -> svn.types.v1.Digest
-	7,  // 10: svn.authority.v1.Msg.ProposeChange:input_type -> svn.authority.v1.MsgProposeChange
-	8,  // 11: svn.authority.v1.Msg.ApproveChange:input_type -> svn.authority.v1.MsgApproveChange
-	9,  // 12: svn.authority.v1.Msg.ExecuteChange:input_type -> svn.authority.v1.MsgExecuteChange
-	10, // 13: svn.authority.v1.Msg.ProposeChange:output_type -> svn.authority.v1.MsgProposeChangeResponse
-	11, // 14: svn.authority.v1.Msg.ApproveChange:output_type -> svn.authority.v1.MsgApproveChangeResponse
-	12, // 15: svn.authority.v1.Msg.ExecuteChange:output_type -> svn.authority.v1.MsgExecuteChangeResponse
-	13, // [13:16] is the sub-list for method output_type
-	10, // [10:13] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	16, // 2: svn.authority.v1.ForceWithdrawChange.reason_digest:type_name -> svn.types.v1.Digest
+	16, // 3: svn.authority.v1.SoftwareUpgradeChange.release_digest:type_name -> svn.types.v1.Digest
+	1,  // 4: svn.authority.v1.ProposalPayload.validator_power:type_name -> svn.authority.v1.ValidatorPowerChange
+	2,  // 5: svn.authority.v1.ProposalPayload.governed_limit:type_name -> svn.authority.v1.GovernedLimitChange
+	3,  // 6: svn.authority.v1.ProposalPayload.admit_provider:type_name -> svn.authority.v1.AdmitProviderChange
+	4,  // 7: svn.authority.v1.ProposalPayload.disable_provider:type_name -> svn.authority.v1.DisableProviderChange
+	5,  // 8: svn.authority.v1.ProposalPayload.force_withdraw:type_name -> svn.authority.v1.ForceWithdrawChange
+	6,  // 9: svn.authority.v1.ProposalPayload.software_upgrade:type_name -> svn.authority.v1.SoftwareUpgradeChange
+	7,  // 10: svn.authority.v1.ProposalPayload.cancel_upgrade:type_name -> svn.authority.v1.CancelUpgradeChange
+	8,  // 11: svn.authority.v1.ProposalPayload.council_seat:type_name -> svn.authority.v1.CouncilSeatChange
+	9,  // 12: svn.authority.v1.MsgProposeChange.payload:type_name -> svn.authority.v1.ProposalPayload
+	16, // 13: svn.authority.v1.MsgProposeChange.payload_digest:type_name -> svn.types.v1.Digest
+	10, // 14: svn.authority.v1.Msg.ProposeChange:input_type -> svn.authority.v1.MsgProposeChange
+	11, // 15: svn.authority.v1.Msg.ApproveChange:input_type -> svn.authority.v1.MsgApproveChange
+	12, // 16: svn.authority.v1.Msg.ExecuteChange:input_type -> svn.authority.v1.MsgExecuteChange
+	13, // 17: svn.authority.v1.Msg.ProposeChange:output_type -> svn.authority.v1.MsgProposeChangeResponse
+	14, // 18: svn.authority.v1.Msg.ApproveChange:output_type -> svn.authority.v1.MsgApproveChangeResponse
+	15, // 19: svn.authority.v1.Msg.ExecuteChange:output_type -> svn.authority.v1.MsgExecuteChangeResponse
+	17, // [17:20] is the sub-list for method output_type
+	14, // [14:17] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_svn_authority_v1_tx_proto_init() }
@@ -979,12 +1222,15 @@ func file_svn_authority_v1_tx_proto_init() {
 		(*ActivationPoint_UnixSeconds)(nil),
 		(*ActivationPoint_Height)(nil),
 	}
-	file_svn_authority_v1_tx_proto_msgTypes[6].OneofWrappers = []any{
+	file_svn_authority_v1_tx_proto_msgTypes[9].OneofWrappers = []any{
 		(*ProposalPayload_ValidatorPower)(nil),
 		(*ProposalPayload_GovernedLimit)(nil),
 		(*ProposalPayload_AdmitProvider)(nil),
 		(*ProposalPayload_DisableProvider)(nil),
 		(*ProposalPayload_ForceWithdraw)(nil),
+		(*ProposalPayload_SoftwareUpgrade)(nil),
+		(*ProposalPayload_CancelUpgrade)(nil),
+		(*ProposalPayload_CouncilSeat)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -992,7 +1238,7 @@ func file_svn_authority_v1_tx_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_svn_authority_v1_tx_proto_rawDesc), len(file_svn_authority_v1_tx_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

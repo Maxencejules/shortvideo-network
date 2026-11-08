@@ -198,6 +198,9 @@ func Validate(doc Document, comet CometIdentity) error {
 	if err != nil {
 		return err
 	}
+	if err := validateSeatKeys(doc.DevnetTestSeats, pubs); err != nil {
+		return err
+	}
 	if err := validateSubmitters(doc.Submitters); err != nil {
 		return err
 	}
@@ -312,6 +315,15 @@ func validateDevnet(doc Document) error {
 	return nil
 }
 
+// MaxSeatIDLength is the longest council seat id a document accepts
+// (x/authority deviation D-10, stricter than the spec): "seat-" followed by
+// the id is the parameter key of a council seat payload and must still
+// match IDPattern (at most 64 characters). It is not a bounds.json key.
+// x/authority's genesis check uses the same number
+// (authority.MaxSeatIDLength; chain/app TestGenesisSeatRulesD7D10 compares
+// them).
+const MaxSeatIDLength = 59
+
 func validateSeats(rows []DevnetTestSeat, threshold uint64) error {
 	if threshold == 3 && len(rows) != 4 {
 		return fmt.Errorf("approved council shape is 4 seats and 3 approvals")
@@ -328,6 +340,9 @@ func validateSeats(rows []DevnetTestSeat, threshold uint64) error {
 		if !idPattern.MatchString(row.SeatID) {
 			return fmt.Errorf("seat id %q", row.SeatID)
 		}
+		if len(row.SeatID) > MaxSeatIDLength {
+			return fmt.Errorf("seat id %q is longer than %d characters", row.SeatID, MaxSeatIDLength)
+		}
 		if _, ok := seenID[row.SeatID]; ok {
 			return fmt.Errorf("duplicate seat %s", row.SeatID)
 		}
@@ -341,6 +356,22 @@ func validateSeats(rows []DevnetTestSeat, threshold uint64) error {
 			return fmt.Errorf("duplicate seat key")
 		}
 		seenKey[key] = struct{}{}
+	}
+	return nil
+}
+
+// validateSeatKeys refuses a council seat key that is also a genesis
+// validator's consensus key (x/authority deviation D-7, DR-10-13): a council
+// key signs council messages only and is never a consensus key. pubs are the
+// validators' lower-case hex keys from validateValidators. x/authority's
+// genesis check also compares the seat keys with the pending validator
+// changes, which the document does not carry.
+func validateSeatKeys(seats []DevnetTestSeat, pubs []string) error {
+	for _, seat := range seats {
+		key := strings.ToLower(seat.PublicKeyHex)
+		if slices.Contains(pubs, key) {
+			return fmt.Errorf("seat %s key is a validator consensus key", seat.SeatID)
+		}
 	}
 	return nil
 }

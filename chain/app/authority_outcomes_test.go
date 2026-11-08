@@ -244,7 +244,8 @@ func TestAnteRejectsNonAdmittedAccount(t *testing.T) {
 // TestAuthorityMessagesCarryNoMediaFields (REQ-ARCH-005): the three
 // authority messages and every message they nest have no media, owner, or
 // personal field, and no open bytes field. The only bytes fields are the
-// 20-byte signer, the 32-byte consensus key, and digest values.
+// 20-byte signer, the 32-byte consensus key, the 32-byte new council seat
+// key (x/authority checks its length at propose), and digest values.
 func TestAuthorityMessagesCarryNoMediaFields(t *testing.T) {
 	service := authorityv1.File_svn_authority_v1_tx_proto.Services().ByName("Msg")
 	if service == nil || service.Methods().Len() != 3 {
@@ -256,6 +257,7 @@ func TestAuthorityMessagesCarryNoMediaFields(t *testing.T) {
 		"svn.authority.v1.MsgApproveChange.signer":               true,
 		"svn.authority.v1.MsgExecuteChange.signer":               true,
 		"svn.authority.v1.ValidatorPowerChange.consensus_pubkey": true,
+		"svn.authority.v1.CouncilSeatChange.new_public_key":      true,
 		"svn.types.v1.Digest.value":                              true,
 	}
 	visited := map[protoreflect.FullName]bool{}
@@ -288,7 +290,8 @@ func TestAuthorityMessagesCarryNoMediaFields(t *testing.T) {
 	for _, name := range []protoreflect.FullName{
 		"svn.authority.v1.ValidatorPowerChange", "svn.authority.v1.GovernedLimitChange",
 		"svn.authority.v1.AdmitProviderChange", "svn.authority.v1.DisableProviderChange",
-		"svn.authority.v1.ForceWithdrawChange", "svn.types.v1.Digest",
+		"svn.authority.v1.ForceWithdrawChange", "svn.authority.v1.SoftwareUpgradeChange",
+		"svn.authority.v1.CancelUpgradeChange", "svn.authority.v1.CouncilSeatChange", "svn.types.v1.Digest",
 	} {
 		if !visited[name] {
 			t.Errorf("the walk did not reach %s", name)

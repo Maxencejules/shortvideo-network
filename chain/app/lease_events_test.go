@@ -244,9 +244,9 @@ func TestLeaseEventSchemas(t *testing.T) {
 
 // TestNoPrivateDataInLeaseStateOrEvents runs the lease flow and scans every
 // store, every committed transaction, the genesis export of every module
-// except authority (App.Export refuses after council messages, DR-06-01;
-// authority's state is scanned through the dump of every store), and every
-// event for the
+// except authority and policy (App.Export refuses after council messages,
+// DR-06-01, and the policy export refuses governance state, DR-10-04; their
+// state is scanned through the dump of every store), and every event for the
 // synthetic canaries (an endpoint URL, an email, a username, a watch
 // event, a complaint narrative, media bytes) and URL schemes, and the
 // leases export keys and every event key for the forbidden-name patterns.
@@ -283,11 +283,11 @@ func TestNoPrivateDataInLeaseStateOrEvents(t *testing.T) {
 	}
 	var names []string
 	for _, name := range chainApp.ModuleNames() {
-		if name != authority.ModuleName {
+		if name != authority.ModuleName && name != app.ModulePolicy {
 			names = append(names, name)
 		}
 	}
-	if len(names) != 7 {
+	if len(names) != 6 {
 		t.Fatalf("modules %v", names)
 	}
 	exported, err := chainApp.ExportModulesForTest(names...)

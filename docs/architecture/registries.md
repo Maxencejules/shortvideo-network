@@ -6,7 +6,7 @@ Reviewer note for Goal 07. This is not an audit. Public launch is disabled. Ther
 
 `app.New` builds the keepers in this order:
 
-1. An `x/authority` keeper. Its read surface (`Role`, `DevnetRole`, `GovernedLimit`) is what the registries consume.
+1. An `x/authority` keeper. Its read surface (`Role`, `DevnetRole`) is what the registries consume; since goal 10 they read the governed limits (`GovernedLimit`) from the `x/policy` keeper.
 2. `x/providers` and `x/content` keepers with that read surface and one shared `msgkit.Peers` set.
 3. The authority keeper used by the app: `WithRegistry(providers, content).WithPeers(peers)`. Council payloads reach the registries only through it.
 4. `peers` lists `authority`, `content`, and `providers` (and `leases` since Goal 08, `evidence` since Goal 09). A business id is one namespace across those modules.

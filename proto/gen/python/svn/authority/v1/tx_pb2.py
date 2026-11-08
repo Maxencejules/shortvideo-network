@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from svn.types.v1 import types_pb2 as svn_dot_types_dot_v1_dot_types__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19svn/authority/v1/tx.proto\x12\x10svn.authority.v1\x1a\x18svn/types/v1/types.proto\"D\n\x0f\x41\x63tivationPoint\x12\x16\n\x0cunix_seconds\x18\x01 \x01(\x03H\x00\x12\x10\n\x06height\x18\x02 \x01(\x04H\x00\x42\x07\n\x05point\"\xb4\x01\n\x14ValidatorPowerChange\x12\x18\n\x10\x63onsensus_pubkey\x18\x01 \x01(\x0c\x12\r\n\x05power\x18\x02 \x01(\x03\x12\x0f\n\x07node_id\x18\x03 \x01(\t\x12+\n\rreason_digest\x18\x04 \x01(\x0b\x32\x14.svn.types.v1.Digest\x12\x35\n\nactivation\x18\x05 \x01(\x0b\x32!.svn.authority.v1.ActivationPoint\"7\n\x13GovernedLimitChange\x12\x11\n\tlimit_key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x04\"*\n\x13\x41\x64mitProviderChange\x12\x13\n\x0bprovider_id\x18\x01 \x01(\t\",\n\x15\x44isableProviderChange\x12\x13\n\x0bprovider_id\x18\x01 \x01(\t\"o\n\x13\x46orceWithdrawChange\x12\x12\n\ncontent_id\x18\x01 \x01(\t\x12\x17\n\x0f\x63ontent_version\x18\x02 \x01(\x04\x12+\n\rreason_digest\x18\x03 \x01(\x0b\x32\x14.svn.types.v1.Digest\"\xe6\x02\n\x0fProposalPayload\x12\x41\n\x0fvalidator_power\x18\x01 \x01(\x0b\x32&.svn.authority.v1.ValidatorPowerChangeH\x00\x12?\n\x0egoverned_limit\x18\x02 \x01(\x0b\x32%.svn.authority.v1.GovernedLimitChangeH\x00\x12?\n\x0e\x61\x64mit_provider\x18\x03 \x01(\x0b\x32%.svn.authority.v1.AdmitProviderChangeH\x00\x12\x43\n\x10\x64isable_provider\x18\x04 \x01(\x0b\x32\'.svn.authority.v1.DisableProviderChangeH\x00\x12?\n\x0e\x66orce_withdraw\x18\x05 \x01(\x0b\x32%.svn.authority.v1.ForceWithdrawChangeH\x00\x42\x08\n\x06\x63hange\"\xff\x01\n\x10MsgProposeChange\x12\x0e\n\x06signer\x18\x01 \x01(\x0c\x12\x13\n\x0b\x62usiness_id\x18\x02 \x01(\t\x12\x13\n\x0bproposal_id\x18\x03 \x01(\t\x12\x15\n\rparameter_key\x18\x04 \x01(\t\x12\x1b\n\x13\x62\x61se_policy_version\x18\x05 \x01(\x04\x12\x32\n\x07payload\x18\x06 \x01(\x0b\x32!.svn.authority.v1.ProposalPayload\x12,\n\x0epayload_digest\x18\x07 \x01(\x0b\x32\x14.svn.types.v1.Digest\x12\x1b\n\x13\x65xpiry_unix_seconds\x18\x08 \x01(\x03\"L\n\x10MsgApproveChange\x12\x0e\n\x06signer\x18\x01 \x01(\x0c\x12\x13\n\x0b\x62usiness_id\x18\x02 \x01(\t\x12\x13\n\x0bproposal_id\x18\x03 \x01(\t\"L\n\x10MsgExecuteChange\x12\x0e\n\x06signer\x18\x01 \x01(\x0c\x12\x13\n\x0b\x62usiness_id\x18\x02 \x01(\t\x12\x13\n\x0bproposal_id\x18\x03 \x01(\t\"\x1a\n\x18MsgProposeChangeResponse\"\x1a\n\x18MsgApproveChangeResponse\"\x1a\n\x18MsgExecuteChangeResponse2\xa8\x02\n\x03Msg\x12_\n\rProposeChange\x12\".svn.authority.v1.MsgProposeChange\x1a*.svn.authority.v1.MsgProposeChangeResponse\x12_\n\rApproveChange\x12\".svn.authority.v1.MsgApproveChange\x1a*.svn.authority.v1.MsgApproveChangeResponse\x12_\n\rExecuteChange\x12\".svn.authority.v1.MsgExecuteChange\x1a*.svn.authority.v1.MsgExecuteChangeResponseBRZPgithub.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1;authorityv1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19svn/authority/v1/tx.proto\x12\x10svn.authority.v1\x1a\x18svn/types/v1/types.proto\"D\n\x0f\x41\x63tivationPoint\x12\x16\n\x0cunix_seconds\x18\x01 \x01(\x03H\x00\x12\x10\n\x06height\x18\x02 \x01(\x04H\x00\x42\x07\n\x05point\"\xb4\x01\n\x14ValidatorPowerChange\x12\x18\n\x10\x63onsensus_pubkey\x18\x01 \x01(\x0c\x12\r\n\x05power\x18\x02 \x01(\x03\x12\x0f\n\x07node_id\x18\x03 \x01(\t\x12+\n\rreason_digest\x18\x04 \x01(\x0b\x32\x14.svn.types.v1.Digest\x12\x35\n\nactivation\x18\x05 \x01(\x0b\x32!.svn.authority.v1.ActivationPoint\"R\n\x13GovernedLimitChange\x12\x11\n\tlimit_key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x04\x12\x19\n\x11\x61\x63tivation_height\x18\x03 \x01(\x04\"*\n\x13\x41\x64mitProviderChange\x12\x13\n\x0bprovider_id\x18\x01 \x01(\t\",\n\x15\x44isableProviderChange\x12\x13\n\x0bprovider_id\x18\x01 \x01(\t\"o\n\x13\x46orceWithdrawChange\x12\x12\n\ncontent_id\x18\x01 \x01(\t\x12\x17\n\x0f\x63ontent_version\x18\x02 \x01(\x04\x12+\n\rreason_digest\x18\x03 \x01(\x0b\x32\x14.svn.types.v1.Digest\"c\n\x15SoftwareUpgradeChange\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06height\x18\x02 \x01(\x04\x12,\n\x0erelease_digest\x18\x03 \x01(\x0b\x32\x14.svn.types.v1.Digest\"#\n\x13\x43\x61ncelUpgradeChange\x12\x0c\n\x04name\x18\x01 \x01(\t\"<\n\x11\x43ouncilSeatChange\x12\x0f\n\x07seat_id\x18\x01 \x01(\t\x12\x16\n\x0enew_public_key\x18\x02 \x01(\x0c\"\xa9\x04\n\x0fProposalPayload\x12\x41\n\x0fvalidator_power\x18\x01 \x01(\x0b\x32&.svn.authority.v1.ValidatorPowerChangeH\x00\x12?\n\x0egoverned_limit\x18\x02 \x01(\x0b\x32%.svn.authority.v1.GovernedLimitChangeH\x00\x12?\n\x0e\x61\x64mit_provider\x18\x03 \x01(\x0b\x32%.svn.authority.v1.AdmitProviderChangeH\x00\x12\x43\n\x10\x64isable_provider\x18\x04 \x01(\x0b\x32\'.svn.authority.v1.DisableProviderChangeH\x00\x12?\n\x0e\x66orce_withdraw\x18\x05 \x01(\x0b\x32%.svn.authority.v1.ForceWithdrawChangeH\x00\x12\x43\n\x10software_upgrade\x18\x06 \x01(\x0b\x32\'.svn.authority.v1.SoftwareUpgradeChangeH\x00\x12?\n\x0e\x63\x61ncel_upgrade\x18\x07 \x01(\x0b\x32%.svn.authority.v1.CancelUpgradeChangeH\x00\x12;\n\x0c\x63ouncil_seat\x18\x08 \x01(\x0b\x32#.svn.authority.v1.CouncilSeatChangeH\x00\x42\x08\n\x06\x63hange\"\xff\x01\n\x10MsgProposeChange\x12\x0e\n\x06signer\x18\x01 \x01(\x0c\x12\x13\n\x0b\x62usiness_id\x18\x02 \x01(\t\x12\x13\n\x0bproposal_id\x18\x03 \x01(\t\x12\x15\n\rparameter_key\x18\x04 \x01(\t\x12\x1b\n\x13\x62\x61se_policy_version\x18\x05 \x01(\x04\x12\x32\n\x07payload\x18\x06 \x01(\x0b\x32!.svn.authority.v1.ProposalPayload\x12,\n\x0epayload_digest\x18\x07 \x01(\x0b\x32\x14.svn.types.v1.Digest\x12\x1b\n\x13\x65xpiry_unix_seconds\x18\x08 \x01(\x03\"L\n\x10MsgApproveChange\x12\x0e\n\x06signer\x18\x01 \x01(\x0c\x12\x13\n\x0b\x62usiness_id\x18\x02 \x01(\t\x12\x13\n\x0bproposal_id\x18\x03 \x01(\t\"L\n\x10MsgExecuteChange\x12\x0e\n\x06signer\x18\x01 \x01(\x0c\x12\x13\n\x0b\x62usiness_id\x18\x02 \x01(\t\x12\x13\n\x0bproposal_id\x18\x03 \x01(\t\"\x1a\n\x18MsgProposeChangeResponse\"\x1a\n\x18MsgApproveChangeResponse\"\x1a\n\x18MsgExecuteChangeResponse2\xa8\x02\n\x03Msg\x12_\n\rProposeChange\x12\".svn.authority.v1.MsgProposeChange\x1a*.svn.authority.v1.MsgProposeChangeResponse\x12_\n\rApproveChange\x12\".svn.authority.v1.MsgApproveChange\x1a*.svn.authority.v1.MsgApproveChangeResponse\x12_\n\rExecuteChange\x12\".svn.authority.v1.MsgExecuteChange\x1a*.svn.authority.v1.MsgExecuteChangeResponseBRZPgithub.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1;authorityv1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -38,27 +38,33 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_VALIDATORPOWERCHANGE']._serialized_start=144
   _globals['_VALIDATORPOWERCHANGE']._serialized_end=324
   _globals['_GOVERNEDLIMITCHANGE']._serialized_start=326
-  _globals['_GOVERNEDLIMITCHANGE']._serialized_end=381
-  _globals['_ADMITPROVIDERCHANGE']._serialized_start=383
-  _globals['_ADMITPROVIDERCHANGE']._serialized_end=425
-  _globals['_DISABLEPROVIDERCHANGE']._serialized_start=427
-  _globals['_DISABLEPROVIDERCHANGE']._serialized_end=471
-  _globals['_FORCEWITHDRAWCHANGE']._serialized_start=473
-  _globals['_FORCEWITHDRAWCHANGE']._serialized_end=584
-  _globals['_PROPOSALPAYLOAD']._serialized_start=587
-  _globals['_PROPOSALPAYLOAD']._serialized_end=945
-  _globals['_MSGPROPOSECHANGE']._serialized_start=948
-  _globals['_MSGPROPOSECHANGE']._serialized_end=1203
-  _globals['_MSGAPPROVECHANGE']._serialized_start=1205
-  _globals['_MSGAPPROVECHANGE']._serialized_end=1281
-  _globals['_MSGEXECUTECHANGE']._serialized_start=1283
-  _globals['_MSGEXECUTECHANGE']._serialized_end=1359
-  _globals['_MSGPROPOSECHANGERESPONSE']._serialized_start=1361
-  _globals['_MSGPROPOSECHANGERESPONSE']._serialized_end=1387
-  _globals['_MSGAPPROVECHANGERESPONSE']._serialized_start=1389
-  _globals['_MSGAPPROVECHANGERESPONSE']._serialized_end=1415
-  _globals['_MSGEXECUTECHANGERESPONSE']._serialized_start=1417
-  _globals['_MSGEXECUTECHANGERESPONSE']._serialized_end=1443
-  _globals['_MSG']._serialized_start=1446
-  _globals['_MSG']._serialized_end=1742
+  _globals['_GOVERNEDLIMITCHANGE']._serialized_end=408
+  _globals['_ADMITPROVIDERCHANGE']._serialized_start=410
+  _globals['_ADMITPROVIDERCHANGE']._serialized_end=452
+  _globals['_DISABLEPROVIDERCHANGE']._serialized_start=454
+  _globals['_DISABLEPROVIDERCHANGE']._serialized_end=498
+  _globals['_FORCEWITHDRAWCHANGE']._serialized_start=500
+  _globals['_FORCEWITHDRAWCHANGE']._serialized_end=611
+  _globals['_SOFTWAREUPGRADECHANGE']._serialized_start=613
+  _globals['_SOFTWAREUPGRADECHANGE']._serialized_end=712
+  _globals['_CANCELUPGRADECHANGE']._serialized_start=714
+  _globals['_CANCELUPGRADECHANGE']._serialized_end=749
+  _globals['_COUNCILSEATCHANGE']._serialized_start=751
+  _globals['_COUNCILSEATCHANGE']._serialized_end=811
+  _globals['_PROPOSALPAYLOAD']._serialized_start=814
+  _globals['_PROPOSALPAYLOAD']._serialized_end=1367
+  _globals['_MSGPROPOSECHANGE']._serialized_start=1370
+  _globals['_MSGPROPOSECHANGE']._serialized_end=1625
+  _globals['_MSGAPPROVECHANGE']._serialized_start=1627
+  _globals['_MSGAPPROVECHANGE']._serialized_end=1703
+  _globals['_MSGEXECUTECHANGE']._serialized_start=1705
+  _globals['_MSGEXECUTECHANGE']._serialized_end=1781
+  _globals['_MSGPROPOSECHANGERESPONSE']._serialized_start=1783
+  _globals['_MSGPROPOSECHANGERESPONSE']._serialized_end=1809
+  _globals['_MSGAPPROVECHANGERESPONSE']._serialized_start=1811
+  _globals['_MSGAPPROVECHANGERESPONSE']._serialized_end=1837
+  _globals['_MSGEXECUTECHANGERESPONSE']._serialized_start=1839
+  _globals['_MSGEXECUTECHANGERESPONSE']._serialized_end=1865
+  _globals['_MSG']._serialized_start=1868
+  _globals['_MSG']._serialized_end=2164
 # @@protoc_insertion_point(module_scope)

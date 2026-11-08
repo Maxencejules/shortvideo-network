@@ -14,6 +14,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
@@ -87,7 +88,9 @@ func pendingEntry(id, node string, pub []byte, power int64, height uint64, unix 
 // TestFreshStateExportRoundTrip: a chain with no authority side state
 // exports, imports, and exports again byte for byte, with the same app hash
 // after the first block. A genesis pending entry is carried by the proto
-// and round-trips too.
+// and round-trips too. The exported policy document decodes to the policy
+// genesis the chain started from (x/policy stores no copy of the decision
+// rows; the export reads them from x/authority).
 func TestFreshStateExportRoundTrip(t *testing.T) {
 	doc, _, _ := councilDocument()
 	cases := []struct {
@@ -111,6 +114,17 @@ func TestFreshStateExportRoundTrip(t *testing.T) {
 			var state authorityv1.GenesisState
 			if err := protojson.Unmarshal(exported[authority.ModuleName], &state); err != nil {
 				t.Fatal(err)
+			}
+			exportedPolicy, err := policy.ParseGenesis(exported[app.ModulePolicy])
+			if err != nil {
+				t.Fatal(err)
+			}
+			startPolicy, err := policy.ParseGenesis(modules[app.ModulePolicy])
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !proto.Equal(exportedPolicy, startPolicy) {
+				t.Fatalf("exported policy genesis %v differs from the starting one %v", exportedPolicy, startPolicy)
 			}
 			got := state.GetAuthority().GetPendingValidatorPower()
 			if len(got) != len(tc.pending) {

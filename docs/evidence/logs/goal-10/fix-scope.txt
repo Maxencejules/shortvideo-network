@@ -1,0 +1,144 @@
+COMMAND bash -c $'code=10b68063e487f783a62ffd6eea31937751746baa\necho "commits after the goal 10 code commit ${code}:"\ngit log --oneline "${code}..HEAD"\necho\necho "files changed since ${code} (expected: the spec oracle typing fix and two test fixes, no production code):"\ngit diff --stat "${code}..HEAD"\nwant="chain/devnet/upgrade_test.go\nchain/x/authority/fuzz_payload_test.go\nchain/x/authority/testdata/fuzz/FuzzProposalPayloadProto/cb3833dca132f415\ntests/difftest/spec_oracle.py"\ngot="$(git diff --name-only "${code}..HEAD" | sort)"\nif [ "$got" = "$want" ]; then echo "SCOPE OK"; s=0; else echo "SCOPE DIFFERENT:"; echo "$got"; s=1; fi\necho\ngit diff "${code}..HEAD"\nexit $s'
+DATE 2026-11-07T22:19:51Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+commits after the goal 10 code commit 10b68063e487f783a62ffd6eea31937751746baa:
+18fa310 goal 10: fix two test defects found by the evidence run
+2cd8f4b goal 10: type the spec oracle payload helpers for strict mypy
+
+files changed since 10b68063e487f783a62ffd6eea31937751746baa (expected: the spec oracle typing fix and two test fixes, no production code):
+ chain/devnet/upgrade_test.go                       | 23 +++++++++++++++-------
+ chain/x/authority/fuzz_payload_test.go             | 14 +++++++++++--
+ .../fuzz/FuzzProposalPayloadProto/cb3833dca132f415 |  2 ++
+ tests/difftest/spec_oracle.py                      | 10 ++++++----
+ 4 files changed, 36 insertions(+), 13 deletions(-)
+SCOPE OK
+
+diff --git a/chain/devnet/upgrade_test.go b/chain/devnet/upgrade_test.go
+index 24399d7..1703ef2 100644
+--- a/chain/devnet/upgrade_test.go
++++ b/chain/devnet/upgrade_test.go
+@@ -1868,11 +1868,20 @@ func TestDevnetUpgradeRehearsal(t *testing.T) {
+ 	n.start(0, b2)
+ 	waitRPC(t, d.clients[0], 60*time.Second)
+ 	last, _, _ := abciInfo(t, d.clients[0])
+-	if d.numbers[d.service.addr] == 0 {
+-		t.Fatal("the service account has account number 0")
+-	}
+-	probe := signDevnet(t, d.enc, d.chainID, d.service.key, d.numbers[d.service.addr], d.seq[d.service.addr],
+-		d.registerContent(d.service, "bid-dr-10-41", "c-dr-10-41", 1, sizeOne))
++	// The probe needs a signer whose account number is not 0: before the
++	// first commit the check state verifies signatures with account number
++	// 0, so a signer numbered 0 would pass. Account numbers follow address
++	// order and devnet keys are new on every run, so either service account
++	// may be numbered 0; at most one of them is.
++	who := d.service
++	if d.numbers[who.addr] == 0 {
++		who = d.service2
++	}
++	if d.numbers[who.addr] == 0 {
++		t.Fatal("both service accounts have account number 0")
++	}
++	probe := signDevnet(t, d.enc, d.chainID, who.key, d.numbers[who.addr], d.seq[who.addr],
++		d.registerContent(who, "bid-dr-10-41", "c-dr-10-41", 1, sizeOne))
+ 	space, code := checkTxCode(t, d.clients[0], probe)
+ 	if space != sdkerrors.RootCodespace || code != sdkerrors.ErrUnauthorized.ABCICode() {
+ 		t.Fatalf("CheckTx before the first commit after the load: %s/%d, want %s/%d", space, code, sdkerrors.RootCodespace, sdkerrors.ErrUnauthorized.ABCICode())
+@@ -1880,7 +1889,7 @@ func TestDevnetUpgradeRehearsal(t *testing.T) {
+ 	if again, _, _ := abciInfo(t, d.clients[0]); again != last {
+ 		t.Fatalf("node 0 alone committed height %d", again)
+ 	}
+-	fmt.Printf("phase=dr-10-41-before-commit node=0 application_height=%d check_tx=%s/%d (refused; account number %d)\n", last, space, code, d.numbers[d.service.addr])
++	fmt.Printf("phase=dr-10-41-before-commit node=0 application_height=%d check_tx=%s/%d (refused; account number %d)\n", last, space, code, d.numbers[who.addr])
+ 	for i := 1; i < len(n.stops); i++ {
+ 		n.start(i, b2)
+ 	}
+@@ -1899,7 +1908,7 @@ func TestDevnetUpgradeRehearsal(t *testing.T) {
+ 	if err != nil || probeRes.check.Code != 0 || probeRes.deliver.Code != 0 {
+ 		t.Fatalf("the probe transaction after the commit: %v %+v", err, probeRes)
+ 	}
+-	d.seq[d.service.addr]++
++	d.seq[who.addr]++
+ 	fmt.Printf("phase=dr-10-41-committed height=%d code=0 txhash=%X\n", probeRes.height, probeRes.hash)
+ 	n.checkHistory("restart")
+ 	if row := n.printHeights("h-plus-5", h+5)[h+5]; row.versionApp != rehearsal.ToAppVersion {
+diff --git a/chain/x/authority/fuzz_payload_test.go b/chain/x/authority/fuzz_payload_test.go
+index dfb8430..0e8b374 100644
+--- a/chain/x/authority/fuzz_payload_test.go
++++ b/chain/x/authority/fuzz_payload_test.go
+@@ -94,13 +94,19 @@ func payloadKind(payload *authorityv1.ProposalPayload) string {
+ 		return kindDisableProvider
+ 	case *authorityv1.ProposalPayload_ForceWithdraw:
+ 		return kindForceWithdraw
++	case *authorityv1.ProposalPayload_SoftwareUpgrade:
++		return kindSoftwareUpgrade
++	case *authorityv1.ProposalPayload_CancelUpgrade:
++		return kindCancelUpgrade
++	case *authorityv1.ProposalPayload_CouncilSeat:
++		return kindCouncilSeat
+ 	default:
+ 		return ""
+ 	}
+ }
+ 
+-// payloadProtoSeeds are valid payloads: one of each kind, plus a removal and
+-// a unix-time activation.
++// payloadProtoSeeds are valid payloads: one of each kind, plus a removal, a
++// unix-time activation and a scheduled governed change.
+ func payloadProtoSeeds() []*authorityv1.ProposalPayload {
+ 	reason := &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: pub(7)}
+ 	return []*authorityv1.ProposalPayload{
+@@ -113,5 +119,9 @@ func payloadProtoSeeds() []*authorityv1.ProposalPayload {
+ 		{Change: &authorityv1.ProposalPayload_ForceWithdraw{ForceWithdraw: &authorityv1.ForceWithdrawChange{
+ 			ContentId: "content-1", ContentVersion: 1, ReasonDigest: reason,
+ 		}}},
++		scheduledMsg("max_page_limit", 7, 400).GetPayload(),
++		upgradeMsg("rehearsal-1", 400, pub(8)).GetPayload(),
++		cancelMsg("rehearsal-1").GetPayload(),
++		seatMsg("seat-1", pub(11)).GetPayload(),
+ 	}
+ }
+diff --git a/chain/x/authority/testdata/fuzz/FuzzProposalPayloadProto/cb3833dca132f415 b/chain/x/authority/testdata/fuzz/FuzzProposalPayloadProto/cb3833dca132f415
+new file mode 100644
+index 0000000..e4be0cc
+--- /dev/null
++++ b/chain/x/authority/testdata/fuzz/FuzzProposalPayloadProto/cb3833dca132f415
+@@ -0,0 +1,2 @@
++go test fuzz v1
++[]byte("23\n\t00000000000\x1a$\b\x01\x12 00000000000000000000000000000000")
+diff --git a/tests/difftest/spec_oracle.py b/tests/difftest/spec_oracle.py
+index 8db4773..55e0150 100644
+--- a/tests/difftest/spec_oracle.py
++++ b/tests/difftest/spec_oracle.py
+@@ -2450,15 +2450,17 @@ def same(step: JSON, code: str, deviation: str | None = None) -> CouncilCase:
+ 
+ 
+ def governed(key: str, value: int) -> JSON:
+-    return sm.governed_limit_payload(key, value)
++    payload: JSON = sm.governed_limit_payload(key, value)
++    return payload
+ 
+ 
+ def add_validator(node_id: str, height: int, pubkey: str | None = None, power: int = 10) -> JSON:
+-    return sm.validator_power_payload(node_id, power, {"height": str(height)}, pubkey)
++    payload: JSON = sm.validator_power_payload(node_id, power, {"height": str(height)}, pubkey)
++    return payload
+ 
+ 
+ def raw_validator(node_id: str, activation: JSON, reason: JSON | None = None) -> JSON:
+-    payload = sm.validator_power_payload(node_id, 10, activation)
++    payload: JSON = sm.validator_power_payload(node_id, 10, activation)
+     if reason is not None:
+         payload["validatorPower"]["reasonDigest"] = reason
+     return payload
+@@ -2633,7 +2635,7 @@ def shape_step(proposal_id: str, payload: JSON, parameter_key: str) -> JSON:
+ 
+ def short_key_validator() -> JSON:
+     """A validator payload whose consensus key is 31 bytes, every other field well formed."""
+-    payload = sm.validator_power_payload("v7", 10, {"height": "9"})
++    payload: JSON = sm.validator_power_payload("v7", 10, {"height": "9"})
+     payload["validatorPower"]["consensusPubkey"] = sm.standard_b64(
+         bytes.fromhex(sm.pubkey_for("v7"))[:31]
+     )
+EXIT:0

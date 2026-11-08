@@ -15,22 +15,32 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
 
-// Authority store layout. One prefix byte, then the fields that name the
-// object. A message reads and writes a fixed set of keys: the config key
-// (0x01), the keys its own fields name, and the policy version (0x04) for a
-// propose or an execute. A propose reads and writes its seat's open count
+// Authority store layout (layout version 2, ConsensusVersion). One prefix
+// byte, then the fields that name the object. A message reads and writes a
+// fixed set of keys: the config key (0x01), the keys its own fields name,
+// and the policy version (0x04) for a propose or an execute. A propose reads and writes its seat's open count
 // (0x14) at the current version; a keep from OPEN or QUEUED, or a successful
 // execute, reads and writes the proposer's open count at the record's base
 // version. A validator-payload execute also scans the pending prefix (0x03),
-// at most MaxPendingChanges entries; an execute of a registry payload reads no
-// authority key beyond the common set (its hook reads and writes a fixed key
-// set in x/providers or x/content). So gas is bounded and does not grow with
-// past proposals; a validator execute depends on the pending count.
+// at most MaxPendingChanges entries, and reads the 0x15 key of its consensus
+// key (D-7); a council seat execute reads the 0x15 key and the 0x02 row of
+// the new key and the pending prefix (D-7), and writes 0x01 and the 0x15 key
+// of the old key; an execute of a registry, governed limit or upgrade
+// payload reads no authority key beyond the common set (its hook reads and
+// writes a fixed key set in x/providers, x/content or x/policy). So gas is
+// bounded and does not grow with past proposals; a validator or seat execute
+// depends on the pending count.
 //
-// No live chain exists, so there is no migration from the round-2 layout
-// (one side document at 0x20). A store that still holds 0x20 is an old devnet
-// home: EndBlock halts on it and export refuses it.
+// No live chain exists, so there is no migration from an earlier layout.
+// Layout version 1 had no layout key and kept governed values at 0x13;
+// proposal records of that layout do not decode under this one (decodedWire
+// gained the schema version 2 fields), so a home written by an earlier
+// binary is re-initialized (DR-10-04). A store that still holds the round-2
+// side document (0x20) halts in EndBlock, and export refuses it and 0x13.
 const (
+	// layoutKey (msgkit.LayoutVersionKey) holds the store layout version,
+	// ConsensusVersion, as 8 bytes big-endian. InitStore writes it first.
+	layoutKey byte = 0x00
 	// configKey holds the deterministic proto GenesisState: validators,
 	// submitters, devnet test seats, quorum loss UNSET, blocked decisions and
 	// devnet test parameters. Proposals, pending entries and the approved
@@ -50,7 +60,10 @@ const (
 	businessPrefix byte = 0x11
 	// executedPrefix || parameter_key -> 32-byte payload digest.
 	executedPrefix byte = 0x12
-	// governedPrefix || limit_key -> 8-byte big-endian value.
+	// governedPrefix is retired: layout version 1 kept governed values here
+	// (limit_key -> 8-byte value). Governed values are x/policy state since
+	// layout version 2; no code writes this prefix and ExportState refuses
+	// it, so a store from layout version 1 is never read as current state.
 	governedPrefix byte = 0x13
 	// openPrefix || base_policy_version(8, big-endian) || seat_id -> 8-byte
 	// big-endian count of that seat's OPEN or QUEUED proposals opened on that
@@ -58,7 +71,8 @@ const (
 	// only the current version's key, so a proposal on an older base, which
 	// can never execute, stops counting when an execute bumps the version.
 	openPrefix byte = 0x14
-	// retiredCouncilPrefix || old_pub(32) -> seat id. Engine-only rotation.
+	// retiredCouncilPrefix || old_pub(32) -> seat id. Written by a seat
+	// replacement (council seat payload or engine-only RotateCouncilSeat).
 	retiredCouncilPrefix byte = 0x15
 	// retiredServicePrefix || old_addr(20) -> 0x01. Engine-only rotation.
 	retiredServicePrefix byte = 0x16
@@ -105,10 +119,11 @@ func AdmissionKey(addr []byte) []byte {
 // AdmittedSeat. A missing, undecodable or old-layout config admits no seat.
 //
 // No address is both: genesis validation refuses a seat address in the
-// submitter list, RotateCouncilSeat refuses a new key whose address is a
-// submitter, and RotateServiceSubmitter refuses a seat address. The rotated
-// seat key's address is AdmittedSeat as soon as the config holds it, and
-// the retired key's address is NotAdmitted.
+// submitter list, a seat replacement (replaceSeat: the council seat payload
+// and RotateCouncilSeat) refuses a new key whose address is a submitter, and
+// RotateServiceSubmitter refuses a seat address. The new seat key's address
+// is AdmittedSeat as soon as the config holds it, and the retired key's
+// address is NotAdmitted.
 func AdmissionOf(kv KV, addr []byte) Admission {
 	if len(addr) != 20 {
 		return NotAdmitted
@@ -171,7 +186,6 @@ func prefixed(prefix byte, id string) []byte {
 func proposalKey(id string) []byte    { return prefixed(proposalPrefix, id) }
 func businessKey(id string) []byte    { return prefixed(businessPrefix, id) }
 func executedKey(param string) []byte { return prefixed(executedPrefix, param) }
-func governedKey(limit string) []byte { return prefixed(governedPrefix, limit) }
 
 // openKey is the open count of one seat for proposals on one base version.
 func openKey(seatID string, version uint64) []byte {
@@ -242,6 +256,13 @@ func (r *proposalRecord) open() bool {
 // decodedWire is the payload decoded at propose time. Execute uses it and
 // does not parse the canonical JSON again. A force_withdraw record keeps its
 // content id, version and the 32-byte reason digest value (in reason).
+//
+// Schema version 2 added the last six fields: the activation height of a
+// governed limit (0: applied at execute), the name, height and 32-byte
+// release digest of a software upgrade (a cancel uses the name only), and
+// the seat id and 32-byte new key of a council seat change. A record has no
+// omitempty field, so every record written by layout version 1 lacks them
+// and fails decodeStrict (ERROR_CODE_INTEGRITY).
 type decodedWire struct {
 	Kind           string `json:"kind"`
 	NodeID         string `json:"node_id"`
@@ -256,6 +277,12 @@ type decodedWire struct {
 	ProviderID     string `json:"provider_id"`
 	ContentID      string `json:"content_id"`
 	ContentVersion uint64 `json:"content_version"`
+	Activation     uint64 `json:"activation"`
+	UpgradeName    string `json:"upgrade_name"`
+	UpgradeHeight  uint64 `json:"upgrade_height"`
+	UpgradeDigest  []byte `json:"upgrade_digest"`
+	SeatID         string `json:"seat_id"`
+	SeatKey        []byte `json:"seat_key"`
 }
 
 func (d decodedWire) power() PowerChange {
@@ -280,6 +307,12 @@ func normalizeRecord(rec *proposalRecord) {
 	}
 	if rec.Decoded.Reason == nil {
 		rec.Decoded.Reason = []byte{}
+	}
+	if rec.Decoded.UpgradeDigest == nil {
+		rec.Decoded.UpgradeDigest = []byte{}
+	}
+	if rec.Decoded.SeatKey == nil {
+		rec.Decoded.SeatKey = []byte{}
 	}
 }
 
@@ -395,10 +428,11 @@ func configFrom(state *authorityv1.GenesisState) *authorityv1.GenesisState {
 	return cfg
 }
 
-// InitStore writes a genesis state into an empty authority store: the config
-// key, one admission row per submitter, and one key per pending entry. It
-// validates the state first (without a chain start point; the app InitChainer
-// checks the start point before this runs).
+// InitStore writes a genesis state into an empty authority store: the layout
+// version (ConsensusVersion) first, then the config key, one admission row
+// per submitter, and one key per pending entry. It validates the state first
+// (without a chain start point; the app InitChainer checks the start point
+// before this runs).
 func InitStore(kv KV, state *authorityv1.GenesisState) error {
 	if err := ValidateGenesisState(state, nil); err != nil {
 		return err
@@ -410,7 +444,7 @@ func InitStore(kv KV, state *authorityv1.GenesisState) error {
 		return fmt.Errorf("authority store is not empty")
 	}
 	type write struct{ key, value []byte }
-	var writes []write
+	writes := []write{{[]byte{layoutKey}, encodeU64(ConsensusVersion)}}
 	raw, err := marshalState(configFrom(state))
 	if err != nil {
 		return err
@@ -447,7 +481,7 @@ func prefixName(prefix byte) string {
 	case executedPrefix:
 		return "executed parameter digests"
 	case governedPrefix:
-		return "governed limits"
+		return "governed limits of layout version 1 (retired; governed values are x/policy state)"
 	case openPrefix:
 		return "open-proposal counts"
 	case retiredCouncilPrefix:
@@ -464,12 +498,15 @@ func prefixName(prefix byte) string {
 }
 
 // ExportState returns the genesis form of the store: the config key plus the
-// pending entries in key order. It refuses, with ErrExportRefused naming the
-// first such prefix, when the store holds anything else: the policy version,
-// proposal records and payloads, business ids, the executed set, governed
-// limits, open counts, retired keys, a key under the reserved provider-row
-// prefix (0x17) or the round-2 side document. The genesis proto cannot carry them, and dropping them would
-// lose replay protection and council state on import.
+// pending entries in key order. The layout key is part of the layout, not
+// state: it must hold ConsensusVersion and is not exported (InitStore writes
+// it again). It refuses, with ErrExportRefused naming the first such prefix,
+// when the store holds anything else: the policy version, proposal records
+// and payloads, business ids, the executed set, a key under the retired
+// governed-value prefix (0x13), open counts, retired keys, a key under the
+// reserved provider-row prefix (0x17) or the round-2 side document. The
+// genesis proto cannot carry them, and dropping them would lose replay
+// protection and council state on import.
 func ExportState(kv KV) (*authorityv1.GenesisState, error) {
 	var cfg *authorityv1.GenesisState
 	var pending []*authorityv1.PendingValidatorPower
@@ -479,6 +516,10 @@ func ExportState(kv KV) (*authorityv1.GenesisState, error) {
 	for ; iter.Valid(); iter.Next() {
 		key := iter.Key()
 		switch {
+		case len(key) == 1 && key[0] == layoutKey:
+			if version, good := decodeU64(iter.Value()); !good || version != ConsensusVersion {
+				return nil, fmt.Errorf("authority export: layout version %x, want %d", iter.Value(), ConsensusVersion)
+			}
 		case len(key) == 1 && key[0] == configKey:
 			var err error
 			if cfg, err = decodeConfig(iter.Value()); err != nil {
