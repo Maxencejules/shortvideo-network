@@ -29,9 +29,20 @@ const (
 	RunFormat = "svn-audit-run-proposed-v0"
 	// SummaryFormat is batches/<batch_id>.json, written by `sign`.
 	SummaryFormat = "svn-audit-batch-proposed-v0"
-	// MaxRunAudits bounds the audits of one run (config MaxAudits).
-	MaxRunAudits = 256
-	maxChainID   = 64
+	// MaxRunAudits bounds the audits of one run (config MaxAudits). A
+	// pending run is one SVN-JCS-1 text, and jcs.Canonicalize refuses a
+	// text longer than MaxRunBytes. TestWorstCaseRunFitsTheEncodingLimit
+	// builds the largest run the format admits for this many audits (every
+	// id 64 bytes, the largest content version, deadline, header height and
+	// times, both digests, and every reason of the classify catalogue) and
+	// requires it to encode; the capacity it measures is larger, so a reason
+	// added later does not make a permitted run unencodable at once. The
+	// earlier bound, 256, admitted runs that could not be encoded: run then
+	// stored the reports and failed before storing the pending run.
+	MaxRunAudits = 48
+	// MaxRunBytes is the longest text jcs.Canonicalize returns.
+	MaxRunBytes = 65536
+	maxChainID  = 64
 )
 
 // ErrFormat wraps every parse failure of a stored file.

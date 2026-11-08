@@ -56,8 +56,10 @@ import (
 
 // Bounds.
 const (
-	MaxFileBytes      = 1 << 20
-	MaxAudits         = 256
+	MaxFileBytes = 1 << 20
+	// MaxAudits is batch.MaxRunAudits: a run of more audits might not fit
+	// its pending-run file (TestMaxAuditsIsTheRunLimit).
+	MaxAudits         = 48
 	MaxEndpoints      = 8
 	MaxPathBytes      = 4096
 	MaxSampleCount    = verify.MaxRenditions * verify.MaxSegments

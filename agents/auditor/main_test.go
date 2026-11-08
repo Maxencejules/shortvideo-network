@@ -1175,3 +1175,102 @@ func TestOperatorEndpointFailIsNotSigned(t *testing.T) {
 		t.Fatalf("l2 has an envelope: %v", err)
 	}
 }
+
+// storeFiles counts the files under one store directory (0 when it does
+// not exist).
+func storeFiles(t *testing.T, root, dir string) int {
+	t.Helper()
+	entries, err := os.ReadDir(filepath.Join(root, dir))
+	if errors.Is(err, os.ErrNotExist) {
+		return 0
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(entries)
+}
+
+// longID is an id of exactly n bytes: prefix, then i zero-padded.
+func longID(prefix string, i, n int) string {
+	return fmt.Sprintf("%s%0*d", prefix, n-len(prefix), i)
+}
+
+// TestRunRefusesTooManyAuditsBeforeAnyRequest is the regression test of
+// the PR 12 review finding: an audits list longer than one pending run can
+// hold used to be audited in full, its reports stored, and the run then
+// failed in jcs ("bounds") without storing the pending run, so nothing
+// could be signed. run now refuses it before reading the chain or sending
+// any request: no endpoint is contacted and no report or pending run is
+// written. Audits past policy.MaxEntries get no allowlist entry (they
+// would be INCOMPLETE ENDPOINT_NOT_PERMITTED), so the configuration stays
+// one the producer accepts whatever the audit bound is.
+func TestRunRefusesTooManyAuditsBeforeAnyRequest(t *testing.T) {
+	h := newHarness(t)
+	for i := 0; i <= batch.MaxRunAudits; i++ {
+		h.add(auditSpec{lease: fmt.Sprintf("l%03d", i), provider: fmt.Sprintf("p%03d", i), content: fmt.Sprintf("c%03d", i), noEntry: i >= policy.MaxEntries})
+	}
+	out, err := h.producer().run(context.Background())
+	want := fmt.Sprintf("a run holds 1 to %d audits and the configuration has %d", batch.MaxRunAudits, batch.MaxRunAudits+1)
+	if err == nil || !strings.Contains(err.Error(), want) || out.RunID != "" {
+		t.Fatalf("run: %+v %v, want the audit count refusal", out, err)
+	}
+	var requests int64
+	for _, srv := range h.servers {
+		requests += srv.Requests()
+	}
+	if requests != 0 {
+		t.Fatalf("%d requests reached the endpoints", requests)
+	}
+	for _, dir := range []string{"reports", "pending"} {
+		if n := storeFiles(t, h.cfg.StoreRoot, dir); n != 0 {
+			t.Fatalf("store/%s holds %d files", dir, n)
+		}
+	}
+}
+
+// TestRunAtTheAuditLimitStoresASignableRun: MaxRunAudits audits with
+// 64-byte lease and provider ids (and 62-byte content ids, the longest
+// whose manifest id fits the id pattern) all PASS; run stores the pending
+// run, its text is within batch.MaxRunBytes, and sign builds and signs a
+// batch for every audit from it.
+func TestRunAtTheAuditLimitStoresASignableRun(t *testing.T) {
+	h := newHarness(t)
+	for i := 0; i < batch.MaxRunAudits; i++ {
+		h.add(auditSpec{lease: longID("l", i, msgkit.IDMaxBytes), provider: longID("p", i, msgkit.IDMaxBytes), content: longID("c", i, msgkit.IDMaxBytes-2)})
+	}
+	out := h.run()
+	if len(out.Audits) != batch.MaxRunAudits {
+		t.Fatalf("%d audits in the run", len(out.Audits))
+	}
+	for _, a := range out.Audits {
+		if a.Result != report.ResultPass {
+			t.Fatalf("lease %s: %s %v", a.LeaseID, a.Result, a.Reasons)
+		}
+	}
+	st, err := store.Open(h.cfg.StoreRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := st.Get(store.Pending, out.RunID, ".json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(raw) > batch.MaxRunBytes {
+		t.Fatalf("pending run of %d bytes", len(raw))
+	}
+	if _, err := batch.ParseRun(raw, out.RunID); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%d audits: pending run %s of %d bytes", len(out.Audits), out.RunID, len(raw))
+	signed, err := sign(h.cfg, st, h.key, out.RunID, headerTime+30)
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := 0
+	for _, s := range signed {
+		items += len(s.EvidenceIDs)
+	}
+	if items != batch.MaxRunAudits {
+		t.Fatalf("%d signed items in %d batches", items, len(signed))
+	}
+}

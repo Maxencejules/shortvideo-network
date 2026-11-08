@@ -252,6 +252,12 @@ type runOutput struct {
 }
 
 func (p *producer) run(ctx context.Context) (runOutput, error) {
+	// The pending run is one SVN-JCS-1 text of bounded length. An audits
+	// list it might not hold is refused before the chain is read or anything
+	// is fetched, so no audit runs without a run to record it.
+	if n := len(p.cfg.Audits); n < 1 || n > batch.MaxRunAudits {
+		return runOutput{}, fmt.Errorf("a run holds 1 to %d audits and the configuration has %d; split the audits across configurations", batch.MaxRunAudits, n)
+	}
 	ctx, cancel := context.WithTimeout(ctx, p.cfg.RunBudget)
 	defer cancel()
 	header, err := p.chain.Header(ctx)
