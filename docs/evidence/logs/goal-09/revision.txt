@@ -1,0 +1,20 @@
+COMMAND bash -c git\ rev-parse\ HEAD\ \"HEAD\^\{tree\}\"\;\ echo\ \"status\ \(empty\ means\ clean\):\"\;\ git\ status\ --porcelain\ --untracked-files=all\;\ echo\ \"\(end\ of\ status\)\"\;\ git\ log\ --oneline\ -8
+DATE 2026-11-06T21:53:35Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+d610f374789cf811caae5ecde193cacc6dd29bb4
+status (empty means clean):
+?? docs/evidence/logs/goal-09/revision.txt
+?? docs/evidence/logs/goal-09/runtime.txt
+(end of status)
+c079d5a goal 09: N1 CI go job skips devnet (race shards guarded); N2 FAIL only from bound endpoints
+f494c3d goal 09: review fixes, auditor fuzz targets, finished mutation runner
+11e8f1a goal 09 WIP: integration and difftest finished, mutation runner in progress
+286d4b7 goal 09 WIP: more interrupted integration and difftest work (untested)
+8e4ca0c goal 09 WIP: interrupted integration and difftest (untested)
+cde7205 goal 09 checkpoint: audit producer CLI, evidence labels, strict UTF-8 in SVN-JCS-1
+ae850a5 goal 09 checkpoint: x/evidence module and audit producer foundation
+7a266e7 goal 08: record head CI on PR 11
+EXIT:0

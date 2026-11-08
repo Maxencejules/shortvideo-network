@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -25,7 +26,9 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/devnet"
+	"github.com/Maxencejules/shortvideo-network/chain/genesis"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 )
@@ -195,6 +198,19 @@ func loadSecp(t *testing.T, home, name string) loaded {
 	raw := readHexFile(t, home+"/accounts/"+name+".hex")
 	key := &sdksecp.PrivKey{Key: raw}
 	return loaded{name: name, key: key, addr: hex.EncodeToString(key.PubKey().Address())}
+}
+
+// loadAccount loads a topology account's key by its key type.
+func loadAccount(t *testing.T, home string, account devnet.Account) loaded {
+	t.Helper()
+	switch account.KeyType {
+	case devnet.KeySecp256k1:
+		return loadSecp(t, home, account.Name)
+	case devnet.KeyEd25519:
+		return loadEd(t, home, account.Name)
+	}
+	t.Fatalf("%s: key type %q", account.Name, account.KeyType)
+	return loaded{}
 }
 
 func loadEd(t *testing.T, home, name string) loaded {
@@ -585,12 +601,14 @@ func TestDevnetKeysAreDistinct(t *testing.T) {
 	}
 	signers := make([]loaded, 0, len(layout.Topology.Accounts)+len(layout.Topology.Seats))
 	for _, account := range layout.Topology.Accounts {
-		signers = append(signers, loadSecp(t, home, account.Name))
+		signers = append(signers, loadAccount(t, home, account))
 	}
 	for _, seat := range layout.Topology.Seats {
 		signers = append(signers, loadEd(t, home, seat.SeatID))
 	}
-	if len(layout.Topology.Accounts) != 6 || len(signers) != 10 {
+	// Goal 09 added auditor-1 and auditor-2 (ed25519 AUDITOR accounts): 8
+	// accounts and 12 account and seat keys (6 and 10 before).
+	if len(layout.Topology.Accounts) != 8 || len(signers) != 12 {
 		t.Fatalf("%d accounts, %d account and seat keys", len(layout.Topology.Accounts), len(signers))
 	}
 	for _, signer := range signers {
@@ -598,16 +616,46 @@ func TestDevnetKeysAreDistinct(t *testing.T) {
 		note(public, signer.key.PubKey().Bytes(), signer.name)
 		note(public, signer.key.PubKey().Address(), signer.name+" address")
 	}
-	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+10 {
+	if len(layout.Topology.Validators) != devnet.Validators || len(private) != 2*devnet.Validators+12 {
 		t.Fatalf("%d validators, %d distinct private keys", len(layout.Topology.Validators), len(private))
+	}
+	// The auditor accounts: ed25519 account keys, AUDITOR rows, key files
+	// readable by the owner only, and distinct evidence id prefixes.
+	prefixes := map[string]string{}
+	for _, name := range []string{"auditor-1", "auditor-2"} {
+		var account devnet.Account
+		for _, a := range layout.Topology.Accounts {
+			if a.Name == name {
+				account = a
+			}
+		}
+		if account.Role != genesis.RoleAuditor || account.KeyType != devnet.KeyEd25519 {
+			t.Fatalf("%s: %+v", name, account)
+		}
+		info, err := os.Stat(filepath.Join(home, "accounts", name+".hex"))
+		if err != nil || info.Mode().Perm() != 0o600 {
+			t.Fatalf("%s key file: %v %v", name, info, err)
+		}
+		signer := loadEd(t, home, name)
+		prefix := evidence.IDPrefix(signer.key.PubKey().Address())
+		if prev, dup := prefixes[prefix]; dup || prefix == "" {
+			t.Fatalf("%s and %s share the evidence id prefix %q", prev, name, prefix)
+		}
+		prefixes[prefix] = name
+	}
+	for _, account := range layout.Topology.Accounts {
+		if account.Role != genesis.RoleAuditor && account.KeyType != devnet.KeySecp256k1 {
+			t.Fatalf("%s: key type %q", account.Name, account.KeyType)
+		}
 	}
 }
 
 // TestDevnetSeatsHaveNoSubmitterRow (DR-06-06) starts no process. The devnet
-// genesis lists the six application accounts as submitters and no council
-// seat address; the authority module genesis has no submitter at a seat
-// address; and the auth genesis has one account per submitter and one per
-// seat, ten in all, so the seat keys can sign council messages.
+// genesis lists the eight application accounts (six before Goal 09 added
+// the two auditors) as submitters and no council seat address; the
+// authority module genesis has no submitter at a seat address; and the auth
+// genesis has one account per submitter and one per seat, twelve in all
+// (ten before), so the seat keys can sign council messages.
 func TestDevnetSeatsHaveNoSubmitterRow(t *testing.T) {
 	home := t.TempDir()
 	layout, err := devnet.Init(devnet.Options{Home: home})
@@ -630,17 +678,17 @@ func TestDevnetSeatsHaveNoSubmitterRow(t *testing.T) {
 	for _, row := range doc.Submitters {
 		submitters[strings.ToLower(row.AddressHex)] = row.Role
 	}
-	if len(submitters) != len(layout.Topology.Accounts) || len(submitters) != 6 {
+	if len(submitters) != len(layout.Topology.Accounts) || len(submitters) != 8 {
 		t.Fatalf("%d submitters for %d accounts", len(submitters), len(layout.Topology.Accounts))
 	}
 	for _, account := range layout.Topology.Accounts {
-		addr := loadSecp(t, home, account.Name).addr
+		addr := loadAccount(t, home, account).addr
 		if submitters[addr] != account.Role {
 			t.Fatalf("%s: submitter role %q, want %q", account.Name, submitters[addr], account.Role)
 		}
 	}
 	numbers := genesisAccountNumbers(t, mustEncoding(t), layout.Genesis)
-	if len(numbers) != 10 || len(layout.Topology.Seats) != 4 || len(doc.DevnetTestSeats) != 4 {
+	if len(numbers) != 12 || len(layout.Topology.Seats) != 4 || len(doc.DevnetTestSeats) != 4 {
 		t.Fatalf("%d auth accounts, %d topology seats, %d genesis seats", len(numbers), len(layout.Topology.Seats), len(doc.DevnetTestSeats))
 	}
 	for _, seat := range layout.Topology.Seats {

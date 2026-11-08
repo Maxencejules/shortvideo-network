@@ -1,0 +1,38 @@
+COMMAND bash docs/evidence/goal-07/containers/prove-containers-proxy-ca.sh
+DATE 2026-11-06T23:59:35Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+COMMAND bash docs/evidence/goal-07/containers/prove-containers-proxy-ca.sh (copy of scripts/devnet/prove-containers.sh; build step changed)
+DATE 2026-11-06T23:59:35+00:00
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY yes
+DOCKER_HOST=<unset>
+NOTE empty blocks only. No application transaction is submitted, so the hash is the genesis application state.
+NOTE bridge networking is BLOCKED. This run uses host networking.
+docker context default endpoint unix:///var/run/docker.sock
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.proxy-ca
+#1 transferring dockerfile: 1.00kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949
+#2 ERROR: unexpected status from HEAD request to https://registry-1.docker.io/v2/library/golang/manifests/sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949: 429 Too Many Requests
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim@sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e
+#3 CANCELED
+------
+ > [internal] load metadata for docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949:
+------
+Dockerfile.proxy-ca:4
+--------------------
+   2 |     # Digests are the linux/amd64 manifests inspected on 2026-10-31.
+   3 |     # Go 1.26.10 matches docs/dependencies.md.
+   4 | >>> FROM golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949 AS build
+   5 |     WORKDIR /src
+   6 |     COPY chain ./chain
+--------------------
+ERROR: failed to build: failed to solve: golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949: failed to resolve source metadata for docker.io/library/golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949: unexpected status from HEAD request to https://registry-1.docker.io/v2/library/golang/manifests/sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949: 429 Too Many Requests
+EXIT:1
+EXIT:1

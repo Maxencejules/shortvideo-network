@@ -7,8 +7,10 @@
 // powers, admitted application accounts, and resource bounds. It is not the
 // provider, content, lease, evidence, or policy machine. A launch document
 // keeps the provider and content catalogue, leases, offers, and evidence
-// empty; x/providers and x/content fill their registries from committed
-// transactions.
+// empty; x/providers, x/content, x/leases, and x/evidence fill their stores
+// from committed transactions. The rule that two AUDITOR submitters must not
+// share an evidence id prefix is an app genesis rule (chain/app), not a
+// document rule.
 //
 // Private keys are rejected. This package does not generate them.
 //

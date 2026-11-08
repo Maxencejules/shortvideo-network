@@ -1,0 +1,12 @@
+COMMAND bash -c golangci-lint\ version\;\ cd\ chain\ \&\&\ golangci-lint\ run\ ./...\;\ a=\$\?\;\ cd\ ../agents/auditor\ \&\&\ golangci-lint\ run\ ./...\;\ b=\$\?\;\ echo\ \"chain=\$a\ agents_auditor=\$b\"\;\ test\ \"\$a\$b\"\ =\ 00
+DATE 2026-11-06T23:20:53Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+golangci-lint has version 2.5.0 built with go1.25.1 from ff63786c on 2025-09-21T19:04:05Z
+Error: can't load config: the Go language version (go1.25) used to build golangci-lint is lower than the targeted Go version (1.26.10)
+The command is terminated due to an error: can't load config: the Go language version (go1.25) used to build golangci-lint is lower than the targeted Go version (1.26.10)
+Error: can't load config: the Go language version (go1.25) used to build golangci-lint is lower than the targeted Go version (1.26.10)
+The command is terminated due to an error: can't load config: the Go language version (go1.25) used to build golangci-lint is lower than the targeted Go version (1.26.10)
+chain=3 agents_auditor=3
+EXIT:1

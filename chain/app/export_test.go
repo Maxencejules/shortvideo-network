@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"google.golang.org/protobuf/proto"
@@ -14,9 +15,13 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
 	"github.com/Maxencejules/shortvideo-network/chain/x/content"
+	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
+	"github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases"
 	"github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest"
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers"
+	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
+	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 )
 
@@ -48,6 +53,13 @@ type versionedContent struct {
 
 func (v versionedContent) ConsensusVersion() uint64 { return v.version }
 
+type versionedEvidence struct {
+	evidence.AppModule
+	version uint64
+}
+
+func (v versionedEvidence) ConsensusVersion() uint64 { return v.version }
+
 type versionedLeases struct {
 	leases.AppModule
 	version uint64
@@ -56,7 +68,8 @@ type versionedLeases struct {
 func (v versionedLeases) ConsensusVersion() uint64 { return v.version }
 
 // RunRegistryMigrationForTest registers step as the migration from the
-// current ConsensusVersion v to v+1 of the registry or leases module name on the
+// current ConsensusVersion v to v+1 of the registry, leases, or evidence
+// module name on the
 // configurator New built (the one every module registered its services and
 // migrations on), wraps the app's own module of that name so it reports
 // v+1, and runs the manager's RunMigrations from v. A duplicate
@@ -75,6 +88,9 @@ func (app *App) RunRegistryMigrationForTest(ctx sdk.Context, name string, step m
 	case leases.AppModule:
 		from = m.ConsensusVersion()
 		wrapped = versionedLeases{AppModule: m, version: from + 1}
+	case evidence.AppModule:
+		from = m.ConsensusVersion()
+		wrapped = versionedEvidence{AppModule: m, version: from + 1}
 	default:
 		return nil, fmt.Errorf("%s is not a registry module (%T)", name, m)
 	}
@@ -204,4 +220,120 @@ func (app *App) WriteProviderReservedForTest(providerID string, reserved uint64)
 	}
 	store.Set(key, out)
 	return nil
+}
+
+// evidenceReadersForTest builds a read-only x/evidence keeper over the app's
+// evidence store, with the lease and content readers of
+// leaseReadersForTest, and returns it with the lease reader. Tests use them
+// only to read committed state.
+func (app *App) evidenceReadersForTest() (evidence.Keeper, leases.Keeper) {
+	read := authority.NewKeeper(app.keys[authority.ModuleName])
+	lease, _, cont := app.leaseReadersForTest()
+	return evidence.NewKeeper(app.keys[ModuleEvidence], evidence.Deps{Roles: read, Limits: read, Leases: lease, Content: cont}), lease
+}
+
+// CheckEvidenceInvariantsForTest runs evidencetest.CheckInvariants (I1,
+// I2, I4-I8, I12, I13, the layout key, the business rows) over the
+// committed state with the real lease reader.
+func (app *App) CheckEvidenceInvariantsForTest() error {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	keeper, lease := app.evidenceReadersForTest()
+	return evidencetest.CheckInvariants(ctx, keeper, lease)
+}
+
+// StoreRowsForTest is the logical size of one committed store: the number
+// of keys and the sum of key and value bytes (not IAVL or disk bytes).
+func (app *App) StoreRowsForTest(name string) (keys, size int) {
+	store := app.CommitMultiStore().GetKVStore(app.keys[name])
+	it := store.Iterator(nil, nil)
+	defer it.Close()
+	for ; it.Valid(); it.Next() {
+		keys++
+		size += len(it.Key()) + len(it.Value())
+	}
+	return keys, size
+}
+
+// StoredEvidenceForTest is one evidence record as stored (its stored
+// state, not the reported state), read from the committed state.
+func (app *App) StoredEvidenceForTest(evidenceID string) (*evidencev1.EvidenceRecord, bool) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	keeper, _ := app.evidenceReadersForTest()
+	return keeper.StoredRecord(ctx, evidenceID)
+}
+
+// LeaseForTest reads one lease in any state from the committed state.
+func (app *App) LeaseForTest(leaseID string) (*leasesv1.Lease, bool) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID()})
+	lease, _, _ := app.leaseReadersForTest()
+	return lease.Lease(ctx, leaseID)
+}
+
+// WriteEvidenceRowForTest writes one raw row into the committed evidence
+// store and commits a new version outside ABCI. Tests use it to put
+// evidence state on a chain without a lease (App.Export refusal).
+func (app *App) WriteEvidenceRowForTest(key, value []byte) {
+	app.CommitMultiStore().GetKVStore(app.keys[ModuleEvidence]).Set(key, value)
+	app.CommitMultiStore().Commit()
+}
+
+// EvidenceRoundTrip is what EvidenceGenesisRoundTripForTest returns.
+// Committed and Imported map each evidence-store key to its value.
+type EvidenceRoundTrip struct {
+	Exported, Reexported *evidencev1.GenesisState
+	Committed, Imported  map[string][]byte
+	Invariants           error
+}
+
+// EvidenceGenesisRoundTripForTest exports the x/evidence module genesis
+// from the committed state with a context whose block time is unixSeconds
+// (App.Export refuses evidence state: its context has no block time),
+// encodes it with MarshalGenesis and decodes it with ParseGenesis. Then, in
+// a cache branch of the committed state that is never written back, it
+// deletes every evidence-store key, imports the decoded state with
+// InitGenesis at the same block time (validation and the checks against
+// the committed leases), exports the branch again, and runs
+// evidencetest.CheckInvariants on it with the real lease reader. Nothing is
+// written to the committed state.
+func (app *App) EvidenceGenesisRoundTripForTest(unixSeconds int64) (*EvidenceRoundTrip, error) {
+	ctx := app.NewUncachedContext(false, cmtproto.Header{ChainID: app.ChainID(), Time: time.Unix(unixSeconds, 0).UTC()})
+	keeper, lease := app.evidenceReadersForTest()
+	exported, err := keeper.ExportGenesis(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("export: %w", err)
+	}
+	raw, err := evidence.MarshalGenesis(exported)
+	if err != nil {
+		return nil, err
+	}
+	parsed, err := evidence.ParseGenesis(raw)
+	if err != nil {
+		return nil, err
+	}
+	out := &EvidenceRoundTrip{Exported: exported, Committed: app.evidenceRows(ctx)}
+	branch := ctx.WithMultiStore(ctx.MultiStore().CacheMultiStore())
+	store := branch.KVStore(app.keys[ModuleEvidence])
+	for key := range out.Committed {
+		store.Delete([]byte(key))
+	}
+	if err := keeper.InitGenesis(branch, parsed); err != nil {
+		return nil, fmt.Errorf("import: %w", err)
+	}
+	if out.Reexported, err = keeper.ExportGenesis(branch); err != nil {
+		return nil, fmt.Errorf("export of the import: %w", err)
+	}
+	out.Imported = app.evidenceRows(branch)
+	out.Invariants = evidencetest.CheckInvariants(branch, keeper, lease)
+	return out, nil
+}
+
+// evidenceRows reads every evidence-store row through ctx.
+func (app *App) evidenceRows(ctx sdk.Context) map[string][]byte {
+	rows := map[string][]byte{}
+	it := ctx.KVStore(app.keys[ModuleEvidence]).Iterator(nil, nil)
+	defer it.Close()
+	for ; it.Valid(); it.Next() {
+		rows[string(it.Key())] = append([]byte(nil), it.Value()...)
+	}
+	return rows
 }

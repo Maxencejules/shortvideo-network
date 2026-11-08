@@ -36,6 +36,8 @@ priv_validator_key.json
 node_key.json
 priv_validator_state.json
 keyring-*/
+# Devnet account keys (svnd devnet init) and auditor keys written there
+**/accounts/*.hex
 
 # Mnemonic and seed files (.txt and .json only)
 *mnemonic*.txt

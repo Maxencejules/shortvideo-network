@@ -1,0 +1,13 @@
+COMMAND bash -c df\ -h\ /\;\ docker\ system\ df
+DATE 2026-11-06T23:59:33Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda        252G   29G   11G  74% /
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          2         0         264.5MB   151MB (57%)
+Containers      0         0         0B        0B
+Local Volumes   0         0         0B        0B
+Build Cache     4         0         264.6MB   0B
+EXIT:0

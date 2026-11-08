@@ -186,7 +186,7 @@ func TestNoPrivateDataInStateOrEvents(t *testing.T) {
 	stores := append(app.SnapshotStores(), "acc")
 	for _, name := range stores {
 		blob := chainApp.ModuleSnapshot(name)
-		if blob == nil && name != app.ModuleLeases && name != app.ModuleEvidence {
+		if blob == nil && name != app.ModuleLeases {
 			t.Fatalf("store %s has no snapshot", name)
 		}
 		if hit, found := msgkittest.FindCanary(blob, list...); found {

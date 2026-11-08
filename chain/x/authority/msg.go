@@ -24,12 +24,12 @@ import (
 // its gas is bounded but depends on how many changes are scheduled.
 //
 // A business gate whose id is absent from 0x11 also reads one key in each
-// peer ledger (x/content 0x03, x/leases 0x03, x/providers 0x02). An execute
-// of a registry payload also runs the hook, which reads and writes a fixed
-// key set of that one provider or content record; a force-withdraw also
-// voids the content's open lease offers through the x/leases withdrawal hook,
-// at most leases.MaxOpenOffersPerContent of them. Neither grows with past
-// proposals.
+// peer ledger (x/content 0x03, x/evidence 0x03, x/leases 0x03, x/providers
+// 0x02). An execute of a registry payload also runs the hook, which reads
+// and writes a fixed key set of that one provider or content record; a
+// force-withdraw also voids the content's open lease offers through the
+// x/leases withdrawal hook, at most leases.MaxOpenOffersPerContent of them.
+// Neither grows with past proposals.
 const authorityGas = 50_000
 
 // Propose, Approve, and Execute are the committed handlers.

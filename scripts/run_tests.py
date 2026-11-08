@@ -148,14 +148,21 @@ def run_node() -> int:
     return 0
 
 
-GO_MODULES = ("chain", "proto", "agents/provider")
+GO_MODULES = ("chain", "proto", "agents/provider", "agents/auditor")
+# An explicit per-binary limit instead of go test's 10-minute default: the
+# chain/devnet package takes about 9.5 minutes on one machine and up to
+# about 6.5 minutes more when TestDevnetAuditLifecycle waits for an audit
+# round boundary. A hang still ends with a goroutine dump. The CI go job sets
+# SVN_SKIP_DEVNET=1 and leaves those multi-process tests to the go-race
+# devnet and devnet-evidence shards.
+GO_TEST_TIMEOUT = "30m"
 
 
 def run_go() -> int:
     saw_ok = False
     for module in GO_MODULES:
         completed = subprocess.run(
-            ["go", "test", "./..."],
+            ["go", "test", "-timeout", GO_TEST_TIMEOUT, "./..."],
             cwd=ROOT / module,
             check=False,
             text=True,

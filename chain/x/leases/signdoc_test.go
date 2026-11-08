@@ -201,7 +201,9 @@ func TestSignBytesVectors(t *testing.T) {
 // TestSignPayloadNeverFails: integers are decimal strings, so a payload
 // exists for every integer value (negative times, 2^64-1 counters); the
 // value is then rejected by its own range check, not by the signature. Only
-// a nil offer or a payload above the SVN-JCS-1 size cap has no payload.
+// a nil offer, a string that is not valid UTF-8 (the SVN-JCS-1 encoder
+// refuses it; a transaction cannot carry one), or a payload above the
+// SVN-JCS-1 size cap has no payload.
 func TestSignPayloadNeverFails(t *testing.T) {
 	canonical, err := leases.RenewCanonicalForTest("l1", math.MaxUint64, -5, manifestOf("c1"), math.MaxUint64, "")
 	if err != nil {

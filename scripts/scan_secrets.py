@@ -171,6 +171,11 @@ FORBIDDEN_NAMES = {
     "seeds.json",
 }
 FORBIDDEN_SUFFIXES = {".pem", ".p12", ".pfx", ".keystore", ".key"}
+# A whole file of exactly 128 lowercase hex characters (and at most one
+# newline) is the 64-byte ed25519 key format of `auditor keygen` and of the
+# `svnd devnet init` accounts/*.hex files. A 64-character file is not
+# flagged: the repository tracks SHA-256 digest files of that shape.
+_HEX_KEY_FILE = re.compile(r"\A[0-9a-f]{128}\n?\Z")
 DOCUMENT_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp"}
 WORDLIST = Path(__file__).resolve().parent / "bip39_english.txt"
 
@@ -900,6 +905,10 @@ def findings_in_text(name: str, text: str, words: set[str] | None = None) -> lis
     base = Path(name).name
     if base in FORBIDDEN_NAMES or Path(name).suffix.lower() in FORBIDDEN_SUFFIXES:
         found.append(f"{name}: forbidden filename")
+    elif Path(name).suffix.lower() == ".hex" and Path(name).parent.name == "accounts":
+        found.append(f"{name}: forbidden filename (devnet account key)")
+    if _HEX_KEY_FILE.match(text):
+        found.append(f"{name}: 64-byte hex key file")
     for pattern in PATTERNS:
         if pattern.search(text):
             found.append(f"{name}: {pattern.pattern}")

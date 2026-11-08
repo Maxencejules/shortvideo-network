@@ -18,7 +18,8 @@ import (
 
 // TestSimulateEstimatesGas: App.Simulate (the handler behind
 // /cosmos.tx.v1beta1.Service/Simulate) runs every registry message, the
-// four lease messages, and the council messages to the end. Simulation runs on the SDK's infinite gas
+// four lease messages, SubmitAuditBatch (Goal 09, from an AUDITOR account
+// of newEvNet's genesis), and the council messages to the end. Simulation runs on the SDK's infinite gas
 // meter; before the fix, the handlers' meter-limit check rejected every
 // simulated message with ERROR_CODE_BOUNDS. For each step the same signed
 // bytes are simulated and then committed: simulation changes no committed
@@ -27,7 +28,8 @@ import (
 // simulation (the SDK gas=auto flow) and is BOUNDS in a block, and a
 // limit above the cap is rejected in both.
 func TestSimulateEstimatesGas(t *testing.T) {
-	n := newRegNet()
+	e := newEvNet()
+	n := e.regNet
 	c := n.start(t, 1)
 	chainApp := c.app()
 	step := func(label string, who *actor, msg sdk.Msg) {
@@ -71,6 +73,9 @@ func TestSimulateEstimatesGas(t *testing.T) {
 	offer := n.offerMsg(n.service, "of-sim", "o-sim", "cl", "p1", sizeC1, now+1800, now+600)
 	step("offer lease", n.service, offer)
 	step("accept lease", n.broadcaster, n.acceptMsg(t, n.broadcaster, "ac-sim", offer, "l-sim"))
+	auditor := prefix(e.auditor1)
+	step("submit audit batch", e.auditor1, e.audit(t, e.auditor1, "au-sim", auditor+"au-sim", c.epoch(),
+		auditItem(auditor+"au-sim-e", "l-sim", "cl", manifestOf("cl"), now+600)))
 	step("renew lease", n.broadcaster, n.renewMsg(t, n.broadcaster, "rn-sim", "l-sim", "p1", "cl", sizeC1, 2, now+1800+leaseTerm))
 	step("end lease", n.broadcaster, n.endMsg(t, n.broadcaster, "en-sim", "l-sim", "p1", 2))
 	step("drain p1", n.provider1, n.drain(t, n.provider1, "drain-p1", "p1", 2, typesv1.SignatureDomain_SIGNATURE_DOMAIN_PROVIDER_DRAIN))

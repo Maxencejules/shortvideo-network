@@ -1,0 +1,18 @@
+COMMAND bash -c git\ ls-remote\ origin\ refs/heads/main\ refs/heads/goal-08\ refs/heads/goal-09\;\ for\ c\ in\ 7a266e7e9a37a66c093f74d2fe33589089a22fb7\ 4db7e40\;\ do\ if\ git\ merge-base\ --is-ancestor\ \$c\ HEAD\;\ then\ echo\ \"\$c\ is\ an\ ancestor\ of\ HEAD\"\;\ else\ echo\ \"\$c\ is\ NOT\ an\ ancestor\ of\ HEAD\"\;\ exit\ 1\;\ fi\;\ done\;\ git\ log\ --oneline\ 7a266e7e9a37a66c093f74d2fe33589089a22fb7..HEAD
+DATE 2026-11-06T21:53:35Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+7a266e7e9a37a66c093f74d2fe33589089a22fb7	refs/heads/goal-08
+c079d5a2d83e1f5a218cac7fca56b70b14e1c511	refs/heads/goal-09
+2fc93e5b40050e54341cbdb4cc2275ed4bc4839a	refs/heads/main
+7a266e7e9a37a66c093f74d2fe33589089a22fb7 is an ancestor of HEAD
+4db7e40 is an ancestor of HEAD
+c079d5a goal 09: N1 CI go job skips devnet (race shards guarded); N2 FAIL only from bound endpoints
+f494c3d goal 09: review fixes, auditor fuzz targets, finished mutation runner
+11e8f1a goal 09 WIP: integration and difftest finished, mutation runner in progress
+286d4b7 goal 09 WIP: more interrupted integration and difftest work (untested)
+8e4ca0c goal 09 WIP: interrupted integration and difftest (untested)
+cde7205 goal 09 checkpoint: audit producer CLI, evidence labels, strict UTF-8 in SVN-JCS-1
+ae850a5 goal 09 checkpoint: x/evidence module and audit producer foundation
+EXIT:0

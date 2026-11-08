@@ -1,0 +1,9 @@
+COMMAND bash -c export\ PATH=\"\$PWD/.toolchains/bin:\$PATH\"\;\ bash\ scripts/gen_proto.sh\ \|\|\ exit\ 1\;\ u=\"\$\(git\ ls-files\ --others\ --exclude-standard\ --\ proto/svn\ proto/gen/python\)\"\;\ echo\ \"untracked\ after\ regen:\ \$\{u:-\<none\>\}\"\;\ test\ -z\ \"\$u\"\ \|\|\ exit\ 1\;\ git\ diff\ --exit-code\ --stat\ --\ proto\ \&\&\ echo\ \"proto\ unchanged\ after\ regen\"
+DATE 2026-11-06T21:53:36Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+generated 28 proto files
+untracked after regen: <none>
+proto unchanged after regen
+EXIT:0

@@ -1,0 +1,47 @@
+{
+  "chain_rpc": "http://127.0.0.1:26657",
+  "ca_file": ".local/auditor/test-ca.crt",
+  "store_root": ".local/auditor/store",
+  "auditor_address": "79b70b8d1f8f5606e9a823195b38538bbeb9f162",
+  "key_path": ".local/auditor/keys/auditor-1.hex",
+  "key_id": "key-auditor-1",
+  "evidence_lifetime_seconds": 86400,
+  "epoch_guard_seconds": 120,
+  "inclusion_timeout_seconds": 60,
+  "gas_limit": 2000000,
+  "max_batch_items": 32,
+  "http_status_retries": 3,
+  "chain_rpc_timeout_ms": 10000,
+  "limits": {
+    "connect_timeout_ms": 5000,
+    "tls_handshake_timeout_ms": 5000,
+    "response_header_timeout_ms": 10000,
+    "idle_read_timeout_ms": 10000,
+    "object_budget_ms": 300000,
+    "run_budget_ms": 3600000
+  },
+  "allowlist": [
+    {"provider_id": "p1", "host": "127.0.0.1", "ip": "127.0.0.1", "port": 8443}
+  ],
+  "audits": [
+    {
+      "lease_id": "lease-1",
+      "provider_id": "p1",
+      "content_id": "c1",
+      "endpoint_index": 0,
+      "manifest_path": ".local/auditor/manifests/c1.json",
+      "endpoints": [{"name": "loopback test endpoint", "url": "https://127.0.0.1:8443/"}],
+      "mode": "WHOLE_PACKAGE"
+    },
+    {
+      "lease_id": "lease-2",
+      "provider_id": "p1",
+      "content_id": "c2",
+      "endpoint_index": 0,
+      "manifest_path": ".local/auditor/manifests/c2.json",
+      "capability_manifest_path": ".local/auditor/capability/p1.json",
+      "mode": "SAMPLED_SEGMENTS",
+      "sample_count": 4
+    }
+  ]
+}

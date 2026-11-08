@@ -1,0 +1,16 @@
+{
+  "attestation": true,
+  "claim_limit": "ATTESTATION_NOT_STORAGE_PROOF",
+  "content_id": "fixture.content-1",
+  "content_version": 1,
+  "epoch": 1,
+  "evidence_id": "fixture.audit-1",
+  "expiry_unix_seconds": 1798761600,
+  "kind": "AUDITOR_ATTESTATION",
+  "lawful": true,
+  "lease_id": "fixture.lease-1",
+  "observation_sha256": "5d9a2667cb05dac5c4c9eb6fa7e67cd100323ee4f4a5be23e0abfbdedfc8683a",
+  "profile": "SVN-JCS-1",
+  "schema_version": 1,
+  "signer_key_id": "fixture.auditor-key-1"
+}

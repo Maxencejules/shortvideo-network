@@ -1,0 +1,9 @@
+COMMAND bash -c .venv/bin/ruff\ check\ tests/difftest/spec_oracle.py\;\ a=\$\?\;\ .venv/bin/ruff\ format\ --check\ tests/difftest/spec_oracle.py\;\ b=\$\?\;\ echo\ \"ruff_check=\$a\ ruff_format=\$b\"\;\ test\ \"\$a\$b\"\ =\ 00
+DATE 2026-11-06T21:53:40Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+All checks passed!
+1 file already formatted
+ruff_check=0 ruff_format=0
+EXIT:0

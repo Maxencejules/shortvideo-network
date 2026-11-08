@@ -1,0 +1,20 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzEvidencePageKey\$\'\ -fuzztime=15s\ -count=1\ ./chain/x/evidence/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \'new\ or\ changed\ files\ outside\ docs/evidence\ after\ the\ run:\'\;\ git\ status\ --porcelain\ --untracked-files=all\ \|\ grep\ -v\ \'\ docs/evidence/\'\;\ echo\ \'\(end\ of\ list\)\'\;\ exit\ \$s
+DATE 2026-11-06T23:18:46Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+loadavg before: 6.60 5.43 5.30 1/130 7268
+fuzz: elapsed: 0s, gathering baseline coverage: 0/52 completed
+fuzz: elapsed: 2s, gathering baseline coverage: 52/52 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 151 (50/sec), new interesting: 0 (total: 52)
+fuzz: elapsed: 6s, execs: 354 (68/sec), new interesting: 1 (total: 53)
+fuzz: elapsed: 9s, execs: 1981 (542/sec), new interesting: 6 (total: 58)
+fuzz: elapsed: 12s, execs: 2287 (102/sec), new interesting: 8 (total: 60)
+fuzz: elapsed: 15s, execs: 4007 (573/sec), new interesting: 10 (total: 62)
+fuzz: elapsed: 15s, execs: 4007 (0/sec), new interesting: 10 (total: 62)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	15.471s
+loadavg after: 5.68 5.29 5.26 1/127 7399
+new or changed files outside docs/evidence after the run:
+(end of list)
+EXIT:0

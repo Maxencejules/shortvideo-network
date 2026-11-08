@@ -1,0 +1,6 @@
+COMMAND git diff --exit-code --stat 7a266e7e9a37a66c093f74d2fe33589089a22fb7..HEAD -- docs/protocol proto
+DATE 2026-11-06T21:53:36Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+EXIT:0

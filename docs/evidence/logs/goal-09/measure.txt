@@ -1,0 +1,78 @@
+COMMAND bash -c go\ test\ -count=1\ -v\ ./chain/app/\ -run\ \'TestAuditBatchMeasurements\|TestSimulateEstimatesGas\'\ 2\>\&1\ \|\ grep\ -a\ -v\ -F\ \"\<nil\>\ DBG\ \"\;\ exit\ \"\$\{PIPESTATUS\[0\]\}\"
+DATE 2026-11-06T21:58:30Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+=== RUN   TestAuditBatchMeasurements
+    buffer.go:279: baseapp.go:231: <nil> WRN error validating merged proto registry annotations error="service svn.providers.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.leases.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.authority.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.evidence.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.content.v1.Msg does not have cosmos.msg.v1.service proto annotation"
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7348660, acc}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7348670, svn}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7348680, policy}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7348690, providers}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e73486a0, content}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e73486b0, leases}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e73486c0, evidence}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e73486d0, authority}" version=1
+    buffer.go:279: baseapp.go:231: <nil> WRN error validating merged proto registry annotations error="service svn.evidence.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.leases.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.content.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.providers.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.authority.v1.Msg does not have cosmos.msg.v1.service proto annotation"
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e6824d30, acc}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e6824d40, svn}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e6824d50, policy}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e6824d60, providers}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e6824d70, content}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e6824d80, leases}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e6824d90, evidence}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e6824da0, authority}" version=1
+    buffer.go:279: abci.go:55: <nil> INF InitChain chainID=shortvideo-dev-registry initialHeight=1 module=baseapp
+    buffer.go:279: module.go:491: <nil> INF initializing blockchain state from genesis.json module=baseapp
+    evidence_measure_test.go:245: fixture=F1 items=1 code=OK tx_bytes=459 gas_used=123518 simulated_gas=123518 result_bytes=691 event_bytes=491 evidence_store_keys=+5 evidence_store_bytes=+291 max_record_bytes=145 canonical_payload_bytes=498 label="per-fixture measurement on one machine; no throughput or network-capacity claim"
+    evidence_measure_test.go:246: fixture=F8 items=8 code=OK tx_bytes=1049 gas_used=203553 simulated_gas=203553 result_bytes=2784 event_bytes=2017 evidence_store_keys=+18 evidence_store_bytes=+1619 max_record_bytes=145 canonical_payload_bytes=3284 label="per-fixture measurement on one machine; no throughput or network-capacity claim"
+    evidence_measure_test.go:247: fixture=F32 items=32 code=OK tx_bytes=3099 gas_used=528136 simulated_gas=528136 result_bytes=10056 event_bytes=7345 evidence_store_keys=+66 evidence_store_bytes=+6429 max_record_bytes=147 canonical_payload_bytes=12869 label="per-fixture measurement on one machine; no throughput or network-capacity claim"
+    evidence_measure_test.go:249: fixture=F32max items=32 code=OK tx_bytes=4513 gas_used=706526 simulated_gas=706526 result_bytes=14120 event_bytes=11377 evidence_store_keys=+66 evidence_store_bytes=+11875 max_record_bytes=232 canonical_payload_bytes=14225 label="per-fixture measurement on one machine; no throughput or network-capacity claim"
+    evidence_measure_test.go:254: fixture=F32rej items=32 code=OK tx_bytes=3073 gas_used=528101 simulated_gas=528101 result_bytes=10088 event_bytes=7377 evidence_store_keys=+66 evidence_store_bytes=+6435 max_record_bytes=149 canonical_payload_bytes=12840 label="per-fixture measurement on one machine; no throughput or network-capacity claim"
+    evidence_measure_test.go:265: fixture=Rcount items=164 code=ERROR_CODE_BOUNDS tx_bytes=14225 gas_used=219176 simulated_gas=0 result_bytes=274 event_bytes=152 evidence_store_keys=+0 evidence_store_bytes=+0 max_record_bytes=0 canonical_payload_bytes=65440 label="per-fixture measurement on one machine; no throughput or network-capacity claim"
+    evidence_measure_test.go:278: fixture=Rpayload items=149 code=ERROR_CODE_BOUNDS tx_bytes=19166 gas_used=267529 simulated_gas=0 result_bytes=274 event_bytes=152 evidence_store_keys=+0 evidence_store_bytes=+0 max_record_bytes=0 canonical_payload_bytes=0 label="per-fixture measurement on one machine; no throughput or network-capacity claim"
+    evidence_measure_test.go:318: fixture=Q100 records=100 response_bytes=16165 query_gas=169886 query_gas_limit=20000000 label="per-fixture measurement on one machine; no throughput or network-capacity claim"
+    evidence_measure_test.go:320: fixture counts: Rcount=164 items (step 11), Rpayload=149 items (step 8); inner verifications per batch: 1 (a design constant of deviation D-1, not a measurement)
+--- PASS: TestAuditBatchMeasurements (1.24s)
+=== RUN   TestSimulateEstimatesGas
+    buffer.go:279: baseapp.go:231: <nil> WRN error validating merged proto registry annotations error="service svn.leases.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.providers.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.authority.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.content.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.evidence.v1.Msg does not have cosmos.msg.v1.service proto annotation"
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e68abea0, acc}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e68abeb0, svn}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e68abed0, policy}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e68abee0, providers}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e73e2010, content}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e73e2020, leases}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e73e2030, evidence}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e73e2040, authority}" version=1
+    buffer.go:279: baseapp.go:231: <nil> WRN error validating merged proto registry annotations error="service svn.leases.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.evidence.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.authority.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.providers.v1.Msg does not have cosmos.msg.v1.service proto annotation\nservice svn.content.v1.Msg does not have cosmos.msg.v1.service proto annotation"
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7bc44c0, policy}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7bc44d0, providers}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7bc44e0, content}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7bc44f0, leases}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7bc4500, evidence}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7bc4510, authority}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7bc44a0, acc}" version=1
+    buffer.go:279: store.go:69: <nil> INF Upgrading IAVL storage for faster queries + execution on live state. This may take a while commit=436F6D6D697449447B5B5D3A307D store_key="KVStoreKey{0x3389e7bc44b0, svn}" version=1
+    buffer.go:279: abci.go:55: <nil> INF InitChain chainID=shortvideo-dev-registry initialHeight=1 module=baseapp
+    buffer.go:279: module.go:491: <nil> INF initializing blockchain state from genesis.json module=baseapp
+    registry_simulate_test.go:57: register p1: simulated gas 108831, committed gas 108831
+    registry_simulate_test.go:58: propose admit p1: simulated gas 132980, committed gas 132980
+    registry_simulate_test.go:60: approve admit p1: simulated gas 117350, committed gas 117350
+    registry_simulate_test.go:60: approve admit p1: simulated gas 132634, committed gas 132634
+    registry_simulate_test.go:60: approve admit p1: simulated gas 134752, committed gas 134752
+    registry_simulate_test.go:64: execute admit p1: simulated gas 147871, committed gas 147871
+    registry_simulate_test.go:66: update p1: simulated gas 93980, committed gas 93980
+    registry_simulate_test.go:68: rotate p1: simulated gas 98840, committed gas 98840
+    registry_simulate_test.go:71: register c-lease: simulated gas 111587, committed gas 111587
+    registry_simulate_test.go:74: offer lease: simulated gas 127849, committed gas 127849
+    registry_simulate_test.go:75: accept lease: simulated gas 143114, committed gas 143114
+    registry_simulate_test.go:77: submit audit batch: simulated gas 124384, committed gas 124384
+    registry_simulate_test.go:79: renew lease: simulated gas 104860, committed gas 104860
+    registry_simulate_test.go:80: end lease: simulated gas 108356, committed gas 108356
+    registry_simulate_test.go:81: drain p1: simulated gas 94830, committed gas 94830
+    registry_simulate_test.go:82: register c1: simulated gas 98064, committed gas 98064
+    registry_simulate_test.go:83: withdraw c1: simulated gas 102329, committed gas 102329
+--- PASS: TestSimulateEstimatesGas (0.08s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	1.359s
+EXIT:0

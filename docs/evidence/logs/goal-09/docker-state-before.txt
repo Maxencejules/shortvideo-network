@@ -1,0 +1,14 @@
+COMMAND bash -c docker\ ps\ -a\ --format\ \"table\ \{\{.ID\}\}\\t\{\{.Image\}\}\\t\{\{.Names\}\}\\t\{\{.Status\}\}\\t\{\{.CreatedAt\}\}\"\;\ docker\ images\ --digests\;\ docker\ network\ ls
+DATE 2026-11-06T23:59:33Z
+HEAD c079d5a2d83e1f5a218cac7fca56b70b14e1c511
+TREE d610f374789cf811caae5ecde193cacc6dd29bb4
+DIRTY no
+CONTAINER ID   IMAGE     NAMES     STATUS    CREATED AT
+REPOSITORY   TAG       DIGEST                                                                    IMAGE ID       CREATED       SIZE
+svn-devnet   goal05    sha256:2fe0df9458e6c172b8be1a57e5a054ece953388a137e9ee6c69ef2605eb9f5c3   2fe0df9458e6   4 days ago    265MB
+debian       <none>    sha256:a3bba7dc7dbcc1f37c2856c51fc9a7fac96608f50cb87b1b4e4d8b8c85ae988e   a3bba7dc7dbc   11 days ago   114MB
+NETWORK ID     NAME      DRIVER    SCOPE
+9f69808c385a   bridge    bridge    local
+57202ac4b0b0   host      host      local
+9625a2ef5bd5   none      null      local
+EXIT:0
