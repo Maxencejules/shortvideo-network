@@ -1,0 +1,102 @@
+COMMAND bash -c $'d=$(mktemp -d "$TMPDIR/tagged.XXXXXX")\nrc=0\nfor tag in "" svn_rehearsal svn_rehearsal_bad svn_statecheck; do\n  name=${tag:-default}\n  echo "=== build ${name} (tags: ${tag:-<none>})"\n  if [ -z "$tag" ]; then go build -C chain -o "$d/svnd-$name" ./cmd/svnd || rc=1\n  else go build -C chain -tags "$tag" -o "$d/svnd-$name" ./cmd/svnd || rc=1; fi\n  sha256sum "$d/svnd-$name" | sed "s#$d/##"\n  "$d/svnd-$name" version || rc=1\n  "$d/svnd-$name" --help | grep -i -E \'statecheck|shortvideo-dev|upgrade\' || echo "(help mentions no statecheck, dev-chain restriction or upgrade)"\n  go version -m "$d/svnd-$name" | grep -E -- \'-tags|vcs\\.\' || true\ndone\necho "=== both rehearsal tags together (expected compile failure)"\nif go build -C chain -tags svn_rehearsal,svn_rehearsal_bad -o "$d/both" ./cmd/svnd 2>&1; then echo "UNEXPECTED: built"; rc=1; else echo "refused to compile, as designed"; fi\nrm -rf "$d"\nexit $rc'
+DATE 2026-11-07T22:19:58Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+=== build default (tags: <none>)
+3e25db0b52c04a395cbc2bdfcc1b631711641b676ea84f9a68ff55f83a3401bb  svnd-default
+svnd (devel)
+go go1.26.10
+vcs.revision unknown
+vcs.modified unknown
+github.com/cosmos/cosmos-sdk v0.55.0
+github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+github.com/cometbft/cometbft v0.40.0
+app_version 1
+module auth 7
+module authority 2
+module content 2
+module evidence 2
+module leases 2
+module policy 2
+module providers 2
+module svn 1
+upgrades none
+Compiled upgrade handlers: none.
+  version     Print the build revision, the Go and pinned module versions, the app and module versions, and the compiled upgrade handlers
+=== build svn_rehearsal (tags: svn_rehearsal)
+d8614c1b75df86eeecba481a193a364793d2efbe79c66817a49cbee327098f9b  svnd-svn_rehearsal
+svnd (devel)
+go go1.26.10
+vcs.revision unknown
+vcs.modified unknown
+github.com/cosmos/cosmos-sdk v0.55.0
+github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+github.com/cometbft/cometbft v0.40.0
+app_version 2
+module auth 7
+module authority 2
+module content 2
+module evidence 2
+module leases 2
+module policy 2
+module providers 2
+module svn 1
+upgrade rehearsal-1 from_app_version 1 to_app_version 2
+Compiled upgrade handlers: rehearsal-1 (app version 1 to 2).
+This build starts only on a chain whose id starts with shortvideo-dev-.
+  version     Print the build revision, the Go and pinned module versions, the app and module versions, and the compiled upgrade handlers
+	build	-tags=svn_rehearsal
+=== build svn_rehearsal_bad (tags: svn_rehearsal_bad)
+da7ede83d68fcb6a0828d9c6cce6ae493dce7f9a6ecb91b5aaf0c36114a150cc  svnd-svn_rehearsal_bad
+svnd (devel)
+go go1.26.10
+vcs.revision unknown
+vcs.modified unknown
+github.com/cosmos/cosmos-sdk v0.55.0
+github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+github.com/cometbft/cometbft v0.40.0
+app_version 2
+module auth 7
+module authority 2
+module content 2
+module evidence 2
+module leases 2
+module policy 2
+module providers 2
+module svn 1
+upgrade rehearsal-1 from_app_version 1 to_app_version 2
+Compiled upgrade handlers: rehearsal-1 (app version 1 to 2).
+This build starts only on a chain whose id starts with shortvideo-dev-.
+  version     Print the build revision, the Go and pinned module versions, the app and module versions, and the compiled upgrade handlers
+	build	-tags=svn_rehearsal_bad
+=== build svn_statecheck (tags: svn_statecheck)
+fccee9a9cd1c428403b68e28d98e7a7deb1d3115ac22609bfef86ec3b994b394  svnd-svn_statecheck
+svnd (devel)
+go go1.26.10
+vcs.revision unknown
+vcs.modified unknown
+github.com/cosmos/cosmos-sdk v0.55.0
+github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+github.com/cometbft/cometbft v0.40.0
+app_version 1
+module auth 7
+module authority 2
+module content 2
+module evidence 2
+module leases 2
+module policy 2
+module providers 2
+module svn 1
+upgrades none
+Compiled upgrade handlers: none.
+This build starts only on a chain whose id starts with shortvideo-dev-.
+  statecheck  Check the committed state of a stopped node home (test tool, not a release command)
+  version     Print the build revision, the Go and pinned module versions, the app and module versions, and the compiled upgrade handlers
+	build	-tags=svn_statecheck
+=== both rehearsal tags together (expected compile failure)
+# github.com/Maxencejules/shortvideo-network/chain/cmd/svnd
+cmd/svnd/rehearsal_tag.go:21:6: buildOptions redeclared in this block
+	cmd/svnd/rehearsal_bad_tag.go:21:6: other declaration of buildOptions
+refused to compile, as designed
+EXIT:0

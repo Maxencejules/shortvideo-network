@@ -1,0 +1,66 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh go test -race -count=1 -timeout 45m ./chain/... ./agents/auditor/... ./proto/... ./agents/provider/...
+DATE 2026-11-07T23:04:05Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/chain/address	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	506.124s
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	56.501s
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd/cli	2.006s
+?   	github.com/Maxencejules/shortvideo-network/chain/cometwrap	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	1155.708s
+ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	1.394s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal	1.316s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal/scenario	1.117s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck	25.090s
+?   	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck/testhome	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/chain/jcs	2.196s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	1.394s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	1.158s
+ok  	github.com/Maxencejules/shortvideo-network/chain/node	1.998s
+ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	1.014s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade	2.458s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/conformance	1.129s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/onchain	1.302s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	69.155s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority/difftest	522.292s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	3.246s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	29.044s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest	601.570s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest	1.398s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases	20.935s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest	341.737s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest	1.364s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy	1.504s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest	1.321s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	14.050s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	1.283s
+?   	github.com/Maxencejules/shortvideo-network/chain/x/scaffold	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor	12.965s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	1.688s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient	4.302s
+?   	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient/chaintest	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/classify	1.070s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	1.333s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch	3.577s
+?   	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch/fetchtest	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/keys	1.132s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/labels	1.792s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/policy	1.033s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/report	1.066s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/review	1.560s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/store	1.103s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/verify	1.309s
+ok  	github.com/Maxencejules/shortvideo-network/protocol/check	1.012s
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/app/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/content/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/events/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/offchain/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/policy/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider	1.011s
+EXIT:0

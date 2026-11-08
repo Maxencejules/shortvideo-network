@@ -1,0 +1,13 @@
+COMMAND bash -c $'names() { git grep -h -E \'^func (Test|Fuzz)\' "$1" -- chain agents | sed \'s/(.*//; s/^func //\' | sort -u; }\npairs() { git grep -E \'^func (Test|Fuzz)\' "$1" -- chain agents | sed \'s/(.*//; s/^[^:]*:\\([^:]*\\):func /\\1 /\' | sort -u; }\nh=$(names HEAD); b=$(names ff951fc334cd15fee37cd62c6d32422a3bf1b695)\necho "HEAD $(git rev-parse HEAD): $(echo "$h" | grep -c .) test/fuzz function names under chain/ and agents/"\necho "ff951fc334cd15fee37cd62c6d32422a3bf1b695 (goal-09 head, the base): $(echo "$b" | grep -c .) names"\ngone=$(comm -23 <(echo "$b") <(echo "$h")); echo "base names missing from HEAD: $(echo "$gone" | grep -c .)"; echo "$gone" | grep . || true\nnew=$(comm -13 <(echo "$b") <(echo "$h")); echo "HEAD names not in base: $(echo "$new" | grep -c .)"\nhp=$(pairs HEAD); bp=$(pairs ff951fc334cd15fee37cd62c6d32422a3bf1b695)\necho "(file, name) pairs: HEAD $(echo "$hp" | grep -c .), base $(echo "$bp" | grep -c .)"\ngp=$(comm -23 <(echo "$bp") <(echo "$hp")); echo "base pairs missing from HEAD: $(echo "$gp" | grep -c .)"; echo "$gp" | grep . || true\ntest -z "$gone"'
+DATE 2026-11-08T00:01:58Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0: 933 test/fuzz function names under chain/ and agents/
+ff951fc334cd15fee37cd62c6d32422a3bf1b695 (goal-09 head, the base): 718 names
+base names missing from HEAD: 0
+HEAD names not in base: 215
+(file, name) pairs: HEAD 1000, base 768
+base pairs missing from HEAD: 1
+chain/cmd/svnd/main_test.go TestValidateGenesisAppliesAuthorityRules
+EXIT:0

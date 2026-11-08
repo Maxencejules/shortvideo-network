@@ -1,0 +1,384 @@
+COMMAND /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/netns-run.sh .venv/bin/python -I scripts/devnet/walk-runbooks.py walk
+DATE 2026-11-07T22:45:15Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+NOTE single-machine four-process devnet: one operator, not independent operators
+NOTE the release binary is a rebuild of this checkout standing in for a reviewed release
+NOTE no upgrade plan is scheduled; the walk shows no halt and no divergence
+work /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m
++ go build -C /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-10/chain -trimpath -o /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/bin/svnd ./cmd/svnd
+built svnd sha256 772d451e4d74599ab7c54b45c6ec0220d42c1e331246a5858b0fd44c429379c7
++ go build -C /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-10/chain -trimpath -o /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/release/svnd ./cmd/svnd
+built svnd sha256 772d451e4d74599ab7c54b45c6ec0220d42c1e331246a5858b0fd44c429379c7
++ go build -C /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-10/chain -trimpath -tags svn_rehearsal -o /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/bin/svnd-rehearsal ./cmd/svnd
+built svnd-rehearsal sha256 d3e64516f3f2d23fe47ed1957d7510ee0d101c5427325275fdd5bf6c489ecca0
++ go build -C /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-10/chain -trimpath -tags svn_statecheck -o /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/bin/svnd-statecheck ./cmd/svnd
+built svnd-statecheck sha256 729dd383d9262778e28d3e695108cccadcff41761235022588519ed5f5af96a6
+{
+  "chain_id": "shortvideo-dev-9344013cc5e0d5ef",
+  "genesis_unix_seconds": 1794091540,
+  "genesis_sha256": "f505b5d683f759ed9cd0f298d94b826081ee36f647513329c072679797a359aa",
+  "peer_mode": "loopback",
+  "validators": [
+    {
+      "name": "v1",
+      "home": "/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/nodes/v1",
+      "moniker": "v1",
+      "peer_id": "4cdddf461838aa76f13be03626f2e0f729c5d169",
+      "p2p": "4cdddf461838aa76f13be03626f2e0f729c5d169@127.0.0.1:26656",
+      "rpc": "http://127.0.0.1:26657",
+      "grpc": "127.0.0.1:27101",
+      "power": 1,
+      "consensus_pubkey_hex": "80d7412fd6875ef74ce78e498c26ac9f742dcc0213a495688ee7083bfc1efa7a"
+    },
+    {
+      "name": "v2",
+      "home": "/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/nodes/v2",
+      "moniker": "v2",
+      "peer_id": "5be3a8f8f974d1d5128ce4c1bdb2c6f12f5d221d",
+      "p2p": "5be3a8f8f974d1d5128ce4c1bdb2c6f12f5d221d@127.0.0.1:26756",
+      "rpc": "http://127.0.0.1:26757",
+      "grpc": "127.0.0.1:27102",
+      "power": 1,
+      "consensus_pubkey_hex": "a5b8ee0f5793e1ab71e92f16eca6b43791cbd1c2b711451cb82c65e318f554c1"
+    },
+    {
+      "name": "v3",
+      "home": "/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/nodes/v3",
+      "moniker": "v3",
+      "peer_id": "033bb977036fa953d153a6bc6acb2679fda148c5",
+      "p2p": "033bb977036fa953d153a6bc6acb2679fda148c5@127.0.0.1:26856",
+      "rpc": "http://127.0.0.1:26857",
+      "grpc": "127.0.0.1:27103",
+      "power": 1,
+      "consensus_pubkey_hex": "4d027e72f22cf6059fc6e19c5ef88fa02d51a02864037871520c38ec791f1206"
+    },
+    {
+      "name": "v4",
+      "home": "/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/nodes/v4",
+      "moniker": "v4",
+      "peer_id": "de8ed640d4a3c5d9febe6140c078e7ced14d895f",
+      "p2p": "de8ed640d4a3c5d9febe6140c078e7ced14d895f@127.0.0.1:26956",
+      "rpc": "http://127.0.0.1:26957",
+      "grpc": "127.0.0.1:27104",
+      "power": 1,
+      "consensus_pubkey_hex": "bab44ee03210e8f48fff841921506aa06644b5b690af47485fbf07071223482a"
+    }
+  ],
+  "authority_address": "svn1w6jn6tqsnj48nx2yrunvz6t74ddpjah7qm4mkf",
+  "service_address": "svn1ccjajpq8x6y367fj2vxycd23c2xrwlv3pevtl6",
+  "seats": [
+    {
+      "seat_id": "seat-1",
+      "address": "svn1rn6zcycxzcsrnpj96epdwrc53h2e30jvmrc449",
+      "public_key_hex": "c4baa556950299199358a9b2b9997748587f79766e3f9da5231ea60fc5a3bd7e"
+    },
+    {
+      "seat_id": "seat-2",
+      "address": "svn1p4xht5vyp435nxjevnvweptw9c4r7us3ted0dj",
+      "public_key_hex": "bfde4214e4c3f9b769a391489b8fe3b29f8de408636cabcb86aee41abea01bd2"
+    },
+    {
+      "seat_id": "seat-3",
+      "address": "svn1fjjqmyd38da048v5wevtztv0vkn8l354m2skpw",
+      "public_key_hex": "94882880486d39662c25229b63f56fda97e769cc35526cf85341949341cddcad"
+    },
+    {
+      "seat_id": "seat-4",
+      "address": "svn12l5tvx5zxk5wkeg75lqh7x6qwnxfxaypyq4mqe",
+      "public_key_hex": "3953235f18d2e2ba64ee65429d435687c0d3186fcf5e4d3d39e0f864f2423297"
+    }
+  ],
+  "accounts": [
+    {
+      "name": "authority",
+      "role": "AUTHORITY",
+      "address": "svn1w6jn6tqsnj48nx2yrunvz6t74ddpjah7qm4mkf",
+      "key_type": "secp256k1"
+    },
+    {
+      "name": "service",
+      "role": "ADMITTED_SERVICE",
+      "address": "svn1ccjajpq8x6y367fj2vxycd23c2xrwlv3pevtl6",
+      "key_type": "secp256k1"
+    },
+    {
+      "name": "service-2",
+      "role": "ADMITTED_SERVICE",
+      "address": "svn10afkwwuet4d869zhhcm6485344kkywr73efs4k",
+      "key_type": "secp256k1"
+    },
+    {
+      "name": "provider-1",
+      "role": "ADMITTED_PROVIDER",
+      "address": "svn1qy9x7lg9dfunuat0slsk9nyh80py8ehfr3ysq6",
+      "key_type": "secp256k1"
+    },
+    {
+      "name": "provider-2",
+      "role": "ADMITTED_PROVIDER",
+      "address": "svn1yvgmg4cfts6903jr2cts45ppwvukyfqdt52qlu",
+      "key_type": "secp256k1"
+    },
+    {
+      "name": "broadcaster",
+      "role": "BROADCASTER",
+      "address": "svn1rand7axdt6mnjh8l9gh5jljm2je05kc57txasg",
+      "key_type": "secp256k1"
+    },
+    {
+      "name": "auditor-1",
+      "role": "AUDITOR",
+      "address": "svn1avxnac0knpr5dpfj94uf5tu8yrdmuk4ey3p222",
+      "key_type": "ed25519"
+    },
+    {
+      "name": "auditor-2",
+      "role": "AUDITOR",
+      "address": "svn1u46rycfla5gfqlmq8u0qd6vx329svw6xu54tg3",
+      "key_type": "ed25519"
+    }
+  ]
+}
+started four validators in /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet
+status: bash scripts/devnet/status.sh
+stop: bash scripts/devnet/down.sh
+devnet heights [5, 5, 5, 5]
+== block verify-binary (docs/operations/operator-installation.md:33)
+   | /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/release/svnd: OK
+   | svnd (devel)
+   | go go1.26.10
+   | vcs.revision unknown
+   | vcs.modified unknown
+   | github.com/cosmos/cosmos-sdk v0.55.0
+   | github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+   | github.com/cometbft/cometbft v0.40.0
+   | app_version 1
+   | module auth 7
+   | module authority 2
+   | module content 2
+   | module evidence 2
+   | module leases 2
+   | module policy 2
+   | module providers 2
+   | module svn 1
+   | upgrades none
+block verify-binary exit 0
+== block read-plan (docs/operations/operator-installation.md:55)
+   | height 7
+   | {
+   |   "state": {
+   |     "appVersion": "1",
+   |     "blockedDecisions": [
+   |       {
+   |         "decisionId": "DEC-001",
+   |         "schemaVersion": 1
+   |       },
+   |       {
+   |         "decisionId": "DEC-002",
+   |         "schemaVersion": 1
+   |       },
+   |       {
+   |         "decisionId": "DEC-003",
+   |         "schemaVersion": 1
+   |       },
+   |       {
+   |         "decisionId": "DEC-004",
+   |         "schemaVersion": 1
+   |       },
+   |       {
+   |         "decisionId": "DEC-005",
+   |         "schemaVersion": 1
+   |       },
+   |       {
+   |         "decisionId": "DEC-006",
+   |         "schemaVersion": 1
+   |       },
+   |       {
+   |         "decisionId": "DEC-007",
+   |         "schemaVersion": 1
+   |       },
+   |       {
+   |         "decisionId": "DEC-008",
+   |         "schemaVersion": 1
+   |       }
+   |     ],
+   |     "governedLimits": [
+   |       {
+   |         "limitKey": "max_evidence_batch",
+   |         "value": "32"
+   |       },
+   |       {
+   |         "limitKey": "max_expiry_steps",
+   |         "value": "128"
+   |       },
+   |       {
+   |         "limitKey": "max_open_offers",
+   |         "value": "1024"
+   |       },
+   |       {
+   |         "limitKey": "max_package_bytes",
+   |         "value": "268435456"
+   |       },
+   |       {
+   |         "limitKey": "max_page_limit",
+   |         "value": "100"
+   |       }
+   |     ],
+   |     "policyVersion": "1",
+   |     "safetyCaps": {
+   |       "safetyMaxEvidenceBatch": 32,
+   |       "safetyMaxExpiryStepsPerBlock": 128,
+   |       "safetyMaxGasPerTx": "20000000",
+   |       "safetyMaxOpenOffersPerProvider": 1024,
+   |       "safetyMaxPackageBytes": "268435456",
+   |       "safetyMaxPageLimit": 100,
+   |       "safetyMaxTxBytes": "65536"
+   |     }
+   |   }
+   | }
+block read-plan exit 0
+== block install-beside (docs/operations/operator-installation.md:67)
+   | svnd (devel)
+   | go go1.26.10
+   | vcs.revision unknown
+   | vcs.modified unknown
+   | github.com/cosmos/cosmos-sdk v0.55.0
+   | github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+   | github.com/cometbft/cometbft v0.40.0
+   | app_version 1
+   | module auth 7
+   | module authority 2
+   | module content 2
+   | module evidence 2
+   | module leases 2
+   | module policy 2
+   | module providers 2
+   | module svn 1
+   | upgrades none
+block install-beside exit 0
+== block record-before (docs/operations/planned-halt-and-restart.md:26)
+   | f505b5d683f759ed9cd0f298d94b826081ee36f647513329c072679797a359aa  /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/genesis.json
+   | 6575A373A2BF678D9FA7A0B798B026024ED68AC042A958CE3EA074164182295A
+   | chain_id shortvideo-dev-9344013cc5e0d5ef
+   | genesis_sha256 f505b5d683f759ed9cd0f298d94b826081ee36f647513329c072679797a359aa
+   | v1 rpc http://127.0.0.1:26657
+   | height 8
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v2 rpc http://127.0.0.1:26757
+   | height 9
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v3 rpc http://127.0.0.1:26857
+   | height 9
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v4 rpc http://127.0.0.1:26957
+   | height 9
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+block record-before exit 0
+== block look-for-halt (docs/operations/planned-halt-and-restart.md:37)
+   | height 9
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | no halt line in /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/nodes/v4/node.log
+block look-for-halt exit 0
+== block stop-node (docs/operations/planned-halt-and-restart.md:48)
+block stop-node exit 0
+== block copy-at-halt (docs/operations/planned-halt-and-restart.md:63)
+   | 1.9M	/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/copy-v4
+block copy-at-halt exit 0
+== block check-copy (docs/operations/planned-halt-and-restart.md:71)
+   | chain_id shortvideo-dev-9344013cc5e0d5ef
+   | height 9
+   | app_hash d122f752a459b6186c0d4f544bcf7c02bb17a5bf66a90dda3028b47dce713337
+   | binary app_version 1
+   | binary module auth 7
+   | binary module authority 2
+   | binary module content 2
+   | binary module evidence 2
+   | binary module leases 2
+   | binary module policy 2
+   | binary module providers 2
+   | binary module svn 1
+   | binary upgrades none
+   | gate row 1 start
+   | store acc sha256 3394f51fa60febcea6055503895e82cec18fd084ed2fa68efbc9f58881c77af3 account sequences
+   | store authority sha256 e476094878a39e1ac923ae07723802087f597076d56dac5c9be52b3c3edb7b7d
+   | store content sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576
+   | store evidence sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576
+   | store leases sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576
+   | store policy sha256 28b20bfcd846cf2ead0d7011bfa4439e5caa91c83317d7cae92b5efcd36e90f8
+   | store providers sha256 c611333fbb9e7b7ec0e5cb459f3db574caaec3274c6ec1a7733b7064ae5dc576
+   | store svn sha256 765a9634750c36871deff3117c6c85d45fbe6cf2aeca2110c9f9f2cbfadc9701
+   | i13 sha256 c88a4d55d6f2e96225f54eb7dfab1a68b541dd510eb5dca42c2b18bd126ede18
+   | check authority ok
+   | check evidence ok
+   | check lease-offers ok
+   | check leases ok
+   | check policy ok
+   | check versions ok
+   | result PASS
+block check-copy exit 0
+== block start-new (docs/operations/planned-halt-and-restart.md:78)
+block start-new exit 0
+== block wait-up (docs/operations/planned-halt-and-restart.md:85)
+   | node is up at height 9
+block wait-up exit 0
+== block wait-two-blocks (docs/operations/planned-halt-and-restart.md:105)
+   | node was at height 9 and reached height 14
+block wait-two-blocks exit 0
+== block compare-history (docs/operations/planned-halt-and-restart.md:123)
+   | /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/genesis.json: OK
+   | chain_id shortvideo-dev-9344013cc5e0d5ef
+   | genesis_sha256 f505b5d683f759ed9cd0f298d94b826081ee36f647513329c072679797a359aa
+   | v1 rpc http://127.0.0.1:26657
+   | height 17
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v2 rpc http://127.0.0.1:26757
+   | height 17
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v3 rpc http://127.0.0.1:26857
+   | height 17
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v4 rpc http://127.0.0.1:26957
+   | height 16
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+block compare-history exit 0
+== block diverged-evidence (docs/operations/failed-upgrade.md:52)
+   | no failure line in /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/nodes/v4/node.log
+   | height 17
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+block diverged-evidence exit 0
+== block restore-stop (docs/operations/failed-upgrade.md:59)
+block restore-stop exit 0
+== block restore-from-copy (docs/operations/failed-upgrade.md:74)
+   | 16
+block restore-from-copy exit 0
+== block restore-start (docs/operations/failed-upgrade.md:87)
+block restore-start exit 0
+== block restore-wait (docs/operations/failed-upgrade.md:92)
+   | peer was at height 19; the restored node reached height 26
+block restore-wait exit 0
+== block restore-compare (docs/operations/failed-upgrade.md:112)
+   | /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/genesis.json: OK
+   | chain_id shortvideo-dev-9344013cc5e0d5ef
+   | genesis_sha256 f505b5d683f759ed9cd0f298d94b826081ee36f647513329c072679797a359aa
+   | v1 rpc http://127.0.0.1:26657
+   | height 26
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v2 rpc http://127.0.0.1:26757
+   | height 26
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v3 rpc http://127.0.0.1:26857
+   | height 27
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+   | v4 rpc http://127.0.0.1:26957
+   | height 27
+   | app_hash D122F752A459B6186C0D4F544BCF7C02BB17A5BF66A90DDA3028B47DCE713337
+block restore-compare exit 0
+== check wrong-binary-refused (svnd-rehearsal start --home /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet/nodes/v4)
+   | load gate at height 27 refused this binary (row 6): stored app version 1 is one behind this binary (2) and no upgrade plan is stored
+check wrong-binary-refused exit 1 expected 1
+stopped validators in /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/svn-walk-qugsd41m/devnet. Genesis was kept.
+blocks 18 run 18 passed 18
+result PASS
+EXIT:0

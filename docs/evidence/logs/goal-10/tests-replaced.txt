@@ -1,0 +1,2215 @@
+COMMAND bash -c echo\ \'pre-existing\ test\ files\ changed\ since\ ff951fc334cd15fee37cd62c6d32422a3bf1b695:\'\;\ git\ diff\ --stat\ --diff-filter=M\ ff951fc334cd15fee37cd62c6d32422a3bf1b695..HEAD\ --\ \'\*_test.go\'\ \'tests/\*.py\'\ \'tests/\*\*/\*.py\'\;\ echo\;\ echo\ \'deleted\ files\ since\ ff951fc334cd15fee37cd62c6d32422a3bf1b695:\'\;\ git\ diff\ --stat\ --diff-filter=D\ ff951fc334cd15fee37cd62c6d32422a3bf1b695..HEAD\;\ echo\;\ git\ diff\ -U0\ --diff-filter=M\ ff951fc334cd15fee37cd62c6d32422a3bf1b695..HEAD\ --\ \'\*_test.go\'\ \'tests/unit/\*.py\'
+DATE 2026-11-08T00:01:58Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+pre-existing test files changed since ff951fc334cd15fee37cd62c6d32422a3bf1b695:
+ chain/app/app_test.go                     |    2 +-
+ chain/app/authority_export_test.go        |   16 +-
+ chain/app/authority_flow_test.go          |  211 +++-
+ chain/app/authority_outcomes_test.go      |    7 +-
+ chain/app/decode_test.go                  |    4 +-
+ chain/app/export_test.go                  |   31 +-
+ chain/app/lease_events_test.go            |   10 +-
+ chain/app/lease_expiry_test.go            |    8 +-
+ chain/app/power_test.go                   |  165 +++-
+ chain/app/registry_events_test.go         |   13 +-
+ chain/app/restart_test.go                 |  148 ++-
+ chain/app/scaffold_test.go                |   24 +-
+ chain/cmd/svnd/main_test.go               |  365 +++++--
+ chain/devnet/prove_test.go                |   20 +-
+ chain/genesis/document_test.go            |   27 +
+ chain/node/start_test.go                  |   31 +
+ chain/x/authority/fuzz_payload_test.go    |   14 +-
+ chain/x/authority/fuzz_reach_test.go      |   21 +-
+ chain/x/authority/fuzz_state_test.go      |   46 +-
+ chain/x/authority/gas_test.go             |   66 +-
+ chain/x/authority/gates_test.go           |    1 +
+ chain/x/authority/helpers_test.go         |   52 +-
+ chain/x/authority/keeper_registry_test.go |   78 +-
+ chain/x/authority/keeper_test.go          |   74 +-
+ chain/x/leases/difftest/harness_test.go   |    9 +-
+ chain/x/providers/module_test.go          |    5 +-
+ tests/difftest/spec_oracle.py             | 1492 ++++++++++++++++++++++++++++-
+ tests/unit/test_ci_devnet_coverage.py     |  415 ++++++--
+ 28 files changed, 2963 insertions(+), 392 deletions(-)
+
+deleted files since ff951fc334cd15fee37cd62c6d32422a3bf1b695:
+
+diff --git a/chain/app/app_test.go b/chain/app/app_test.go
+index d40e10f..9393a55 100644
+--- a/chain/app/app_test.go
++++ b/chain/app/app_test.go
+@@ -266 +266 @@ func consensusParams() cmtproto.ConsensusParams {
+-	params.Version.App = genesis.ProtocolVersion
++	params.Version.App = app.GenesisAppVersion
+diff --git a/chain/app/authority_export_test.go b/chain/app/authority_export_test.go
+index ffd58fd..77d44cf 100644
+--- a/chain/app/authority_export_test.go
++++ b/chain/app/authority_export_test.go
+@@ -16,0 +17 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
+@@ -90 +91,3 @@ func pendingEntry(id, node string, pub []byte, power int64, height uint64, unix
+-// and round-trips too.
++// and round-trips too. The exported policy document decodes to the policy
++// genesis the chain started from (x/policy stores no copy of the decision
++// rows; the export reads them from x/authority).
+@@ -114,0 +118,11 @@ func TestFreshStateExportRoundTrip(t *testing.T) {
++			exportedPolicy, err := policy.ParseGenesis(exported[app.ModulePolicy])
++			if err != nil {
++				t.Fatal(err)
++			}
++			startPolicy, err := policy.ParseGenesis(modules[app.ModulePolicy])
++			if err != nil {
++				t.Fatal(err)
++			}
++			if !proto.Equal(exportedPolicy, startPolicy) {
++				t.Fatalf("exported policy genesis %v differs from the starting one %v", exportedPolicy, startPolicy)
++			}
+diff --git a/chain/app/authority_flow_test.go b/chain/app/authority_flow_test.go
+index b9b6c2c..3f263af 100644
+--- a/chain/app/authority_flow_test.go
++++ b/chain/app/authority_flow_test.go
+@@ -22,0 +23 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+@@ -413,0 +415,18 @@ func (c *council) reject(t *testing.T, row rejectRow) {
++//
++// The goal-10 rows (the last 26) cover the schema-version-2 payloads: the
++// propose-time height windows (both lead numbers are PROPOSED, owner
++// question Q3, "3 of 4 + min notice (Recommended)"), the upgrade, cancel,
++// and seat field shapes and parameter key bindings, and the execute-time
++// refusals of a cancel (no plan, a plan of another name), an upgrade name
++// reused with another release digest while its plan is pending and after
++// it was cancelled, a stale height window, and every council seat rule
++// (absent seat, another seat's key, the seat's own key, a validator
++// consensus key, a pending validator key, a submitter's key, a retired
++// key), plus the retired seat key's next approval refused in the ante. A
++// council seat row also requires the signer-blind auth store unchanged and
++// no account for the refused key. The genesis gains one ADMITTED_SERVICE
++// submitter whose address is an ed25519 key's account, so the submitter
++// rule is reachable; it never signs. An upgrade name that already applied
++// (ERROR_CODE_DUPLICATE_ID) needs an applied upgrade, which only the
++// rehearsal binary performs (P5a, plan 12.4); x/authority
++// TestSoftwareUpgradeAtExecute covers it at keeper level.
+@@ -415 +434,5 @@ func TestRejectedMessagesLeaveTheFullAuthorityState(t *testing.T) {
+-	c := newCouncil(t, func(doc *genesis.Document) { doc.DevnetTestParameters[0].DelaySeconds = 100 })
++	edSubmitter := sdked.GenPrivKey()
++	c := newCouncil(t, func(doc *genesis.Document) {
++		doc.DevnetTestParameters[0].DelaySeconds = 100
++		doc.Submitters = append(doc.Submitters, genesis.Submitter{AddressHex: hexAddr(edSubmitter), Role: genesis.RoleAdmittedService})
++	})
+@@ -575,2 +598,5 @@ func TestRejectedMessagesLeaveTheFullAuthorityState(t *testing.T) {
+-	if rows != 37 {
+-		t.Fatalf("%d reject rows, want 37", rows)
++	// Goal 10: schema-version-2 payloads. Policy version 2; seat 4 is at
++	// its open quota on base 2, so seats 1 to 3 propose.
++	next := func() uint64 { return uint64(c.run.height) + 1 }
++	proposal := func(key cryptotypes.PrivKey, id, parameterKey string, base uint64, payload *authorityv1.ProposalPayload) *authorityv1.MsgProposeChange {
++		return councilProposal(t, key, id, parameterKey, base, payload)
+@@ -577,0 +604,179 @@ func TestRejectedMessagesLeaveTheFullAuthorityState(t *testing.T) {
++	limit := msgkit.LimitMaxOpenOffers
++	reject(rejectRow{name: "scheduled limit activation at the block height", key: s1,
++		msg:   proposal(s1, "rj-act-now", limit, 2, scheduledPayload(limit, 5, next())),
++		space: "svn", code: 9, proto: authority.CodeOutOfRange, advances: true})
++	reject(rejectRow{name: "scheduled limit activation one above the max lead", key: s1,
++		msg:   proposal(s1, "rj-act-far", limit, 2, scheduledPayload(limit, 5, next()+msgkit.MaxActivationLeadBlocks+1)),
++		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
++	reject(rejectRow{name: "plan height one below the min lead", key: s1,
++		msg:   proposal(s1, "rj-plan-near", "upgrade", 2, upgradePayload("rj-near", next()+msgkit.MinActivationLeadBlocks-1, "release near")),
++		space: "svn", code: 9, proto: authority.CodeOutOfRange, advances: true})
++	reject(rejectRow{name: "plan height one above the max lead", key: s1,
++		msg:   proposal(s1, "rj-plan-far", "upgrade", 2, upgradePayload("rj-far", next()+msgkit.MaxActivationLeadBlocks+1, "release far")),
++		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
++	far := next() + 10_000
++	reject(rejectRow{name: "upgrade name outside the id pattern", key: s1,
++		msg:   proposal(s1, "rj-up-name", "upgrade", 2, upgradePayload("Bad-Name", far, "release bad")),
++		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
++	reject(rejectRow{name: "upgrade release digest without SHA-256", key: s1,
++		msg: proposal(s1, "rj-up-algo", "upgrade", 2, upgradeWith("rj-algo", far, &typesv1.Digest{
++			Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_UNSPECIFIED, Value: bytes32(5)})),
++		space: "svn", code: 7, proto: authority.CodeMalformed, advances: true})
++	reject(rejectRow{name: "upgrade release digest of 31 bytes", key: s1,
++		msg:   proposal(s1, "rj-up-short", "upgrade", 2, upgradeWith("rj-short", far, digestOf(bytes32(5)[:31]))),
++		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
++	reject(rejectRow{name: "cancel name outside the id pattern", key: s1,
++		msg:   proposal(s1, "rj-cancel-name", "upgrade", 2, cancelPayload("Bad-Name")),
++		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
++	reject(rejectRow{name: "seat id outside the id pattern", key: s1,
++		msg:   proposal(s1, "rj-seat-id", "seat-seat-x", 2, seatPayload("Seat-X", sdked.GenPrivKey().PubKey().Bytes())),
++		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
++	reject(rejectRow{name: "seat key of 31 bytes", key: s1,
++		msg:   proposal(s1, "rj-seat-short", "seat-seat-1", 2, seatPayload("seat-1", bytes32(6)[:31])),
++		space: "svn", code: 19, proto: authority.CodeBounds, advances: true})
++	reject(rejectRow{name: "software upgrade bound to a seat parameter key", key: s1,
++		msg:   proposal(s1, "rj-up-bind", "seat-seat-1", 2, upgradePayload("rj-bind", far, "release bind")),
++		space: "svn", code: 7, proto: authority.CodeMalformed, advances: true})
++	reject(rejectRow{name: "council seat bound to the upgrade parameter key", key: s1,
++		msg:   proposal(s1, "rj-seat-bind", "upgrade", 2, seatPayload("seat-1", sdked.GenPrivKey().PubKey().Bytes())),
++		space: "svn", code: 7, proto: authority.CodeMalformed, advances: true})
++
++	// queue proposes from s1 and approves with three seat keys; every step
++	// commits and changes the authority store.
++	queue := func(id, parameterKey string, base uint64, payload *authorityv1.ProposalPayload, approvers ...cryptotypes.PrivKey) {
++		t.Helper()
++		step(s1, proposal(s1, id, parameterKey, base, payload))
++		for i, seat := range approvers {
++			step(seat, approveMsg(seat, fmt.Sprintf("%s-ap-%d", id, i), id))
++		}
++	}
++	// seatReject is reject for the execute of a council seat payload with
++	// newKey: the signer-blind auth store is unchanged too, and newKey has
++	// no account unless it had one before.
++	seatReject := func(row rejectRow, newKey []byte) {
++		t.Helper()
++		had := c.run.app.AccountExistsForTest(authority.SeatAddress(newKey))
++		before, err := c.run.app.SignerBlindAuthSnapshotForTest()
++		if err != nil {
++			t.Fatal(err)
++		}
++		reject(row)
++		after, err := c.run.app.SignerBlindAuthSnapshotForTest()
++		if err != nil {
++			t.Fatal(err)
++		}
++		if !bytes.Equal(before, after) {
++			t.Fatalf("%s changed the auth store beyond what the ante writes for a signer", row.name)
++		}
++		if !had && c.run.app.AccountExistsForTest(authority.SeatAddress(newKey)) {
++			t.Fatalf("%s created an account for the refused key", row.name)
++		}
++	}
++	validatorKey, err := hex.DecodeString(c.doc.Validators[0].ConsensusPubkeyHex)
++	if err != nil {
++		t.Fatal(err)
++	}
++	absentKey := sdked.GenPrivKey().PubKey().Bytes()
++	seatRows := []struct {
++		id, name, seat string
++		key            []byte
++		code           uint32
++		proto          string
++	}{
++		{"rj-seat-absent", "execute: seat change of an absent seat", "seat-9", absentKey, 16, authority.CodeNotFound},
++		{"rj-seat-other", "execute: seat change to another seat's key", "seat-1", s2.PubKey().Bytes(), 4, authority.CodeDuplicate},
++		{"rj-seat-own", "execute: seat change to the seat's own key", "seat-1", s1.PubKey().Bytes(), 14, authority.CodeConflict},
++		{"rj-seat-validator", "execute: seat change to a validator consensus key", "seat-1", validatorKey, 4, authority.CodeDuplicate},
++		{"rj-seat-pending", "execute: seat change to a pending validator key", "seat-1", bytes32(9), 4, authority.CodeDuplicate},
++		{"rj-seat-submitter", "execute: seat change to a submitter's key", "seat-1", edSubmitter.PubKey().Bytes(), 4, authority.CodeDuplicate},
++	}
++	queue("rj-cancel-none", "upgrade", 2, cancelPayload("rj-plan"), s1, s2, s3)
++	queue("rj-act-passed", limit, 2, scheduledPayload(limit, 5, next()+1), s1, s2, s3)
++	queue("rj-plan-late", "upgrade", 2, upgradePayload("rj-late", next()+msgkit.MinActivationLeadBlocks, "release late"), s1, s2, s3)
++	for _, row := range seatRows {
++		queue(row.id, "seat-"+row.seat, 2, seatPayload(row.seat, row.key), s1, s2, s3)
++	}
++	c.run.when = c.run.when.Add(200 * time.Second)
++	reject(rejectRow{name: "execute: cancel with no plan", key: auth, msg: executeMsg(auth, "ex-rj-cancel-none", "rj-cancel-none"),
++		space: "svn", code: 16, proto: authority.CodeNotFound, advances: true})
++	reject(rejectRow{name: "execute: activation height no longer above the block", key: auth, msg: executeMsg(auth, "ex-rj-act-passed", "rj-act-passed"),
++		space: "svn", code: 9, proto: authority.CodeOutOfRange, advances: true})
++	reject(rejectRow{name: "execute: plan height below the min lead at execute", key: auth, msg: executeMsg(auth, "ex-rj-plan-late", "rj-plan-late"),
++		space: "svn", code: 9, proto: authority.CodeOutOfRange, advances: true})
++	for _, row := range seatRows {
++		seatReject(rejectRow{name: row.name, key: auth, msg: executeMsg(auth, "ex-"+row.id, row.id),
++			space: "svn", code: row.code, proto: row.proto, advances: true}, row.key)
++	}
++
++	// An upgrade plan executes (policy version 3); its name with another
++	// release digest is refused while the plan is pending and after the
++	// council cancels it.
++	queue("rj-up-x", "upgrade", 2, upgradePayload("rj-plan", far, "release x"), s1, s2, s3)
++	c.run.when = c.run.when.Add(200 * time.Second)
++	step(auth, executeMsg(auth, "ex-rj-up-x", "rj-up-x"))
++	queue("rj-up-y", "upgrade", 3, upgradePayload("rj-plan", far, "release y"), s1, s2, s3)
++	queue("rj-cancel-other", "upgrade", 3, cancelPayload("rj-other"), s1, s2, s3)
++	c.run.when = c.run.when.Add(200 * time.Second)
++	reject(rejectRow{name: "execute: plan name of the pending plan with another digest", key: auth, msg: executeMsg(auth, "ex-rj-up-y", "rj-up-y"),
++		space: "svn", code: 14, proto: authority.CodeConflict, advances: true})
++	reject(rejectRow{name: "execute: cancel of a name that is not the plan", key: auth, msg: executeMsg(auth, "ex-rj-cancel-other", "rj-cancel-other"),
++		space: "svn", code: 16, proto: authority.CodeNotFound, advances: true})
++	queue("rj-cancel", "upgrade", 3, cancelPayload("rj-plan"), s1, s2, s3)
++	c.run.when = c.run.when.Add(200 * time.Second)
++	step(auth, executeMsg(auth, "ex-rj-cancel", "rj-cancel"))
++	queue("rj-up-z", "upgrade", 4, upgradePayload("rj-plan", far, "release y"), s1, s2, s3)
++	c.run.when = c.run.when.Add(200 * time.Second)
++	reject(rejectRow{name: "execute: plan name of a cancelled plan with another digest", key: auth, msg: executeMsg(auth, "ex-rj-up-z", "rj-up-z"),
++		space: "svn", code: 14, proto: authority.CodeConflict, advances: true})
++
++	// seat-3's key is replaced (policy version 5). Its retired key's next
++	// approval is refused in the ante, and putting the retired key on
++	// seat-2 is refused at execute.
++	replacement := sdked.GenPrivKey()
++	queue("rj-seat-ok", "seat-seat-3", 4, seatPayload("seat-3", replacement.PubKey().Bytes()), s1, s2, s3)
++	c.run.when = c.run.when.Add(200 * time.Second)
++	step(auth, executeMsg(auth, "ex-rj-seat-ok", "rj-seat-ok"))
++	number, exists := c.run.app.AccountNumberForTest(replacement.PubKey().Address())
++	if !exists {
++		t.Fatal("the executed council seat payload created no account for the new key")
++	}
++	c.numbers[hexAddr(replacement)] = number
++	reject(rejectRow{name: "approve from the retired seat-3 key", key: s3, msg: approveMsg(s3, "rj-ap-retired", "rj-up-z"),
++		space: "svn", code: 1, proto: "signer is not an admitted application account"})
++	queue("rj-seat-retired", "seat-seat-2", 5, seatPayload("seat-2", s3.PubKey().Bytes()), s1, s2, replacement)
++	c.run.when = c.run.when.Add(200 * time.Second)
++	seatReject(rejectRow{name: "execute: seat change to a retired seat key", key: auth, msg: executeMsg(auth, "ex-rj-seat-retired", "rj-seat-retired"),
++		space: "svn", code: 14, proto: authority.CodeConflict, advances: true}, s3.PubKey().Bytes())
++
++	if rows != 63 {
++		t.Fatalf("%d reject rows, want 63", rows)
++	}
++}
++
++// councilProposal is a ProposeChange from key for payload on base. A
++// payload the chain refuses at parse has no canonical digest; it carries
++// the SHA-256 of a fixed text instead (the parse check comes before the
++// digest check).
++func councilProposal(t *testing.T, key cryptotypes.PrivKey, id, parameterKey string, base uint64, payload *authorityv1.ProposalPayload) *authorityv1.MsgProposeChange {
++	t.Helper()
++	digest, out := authority.PayloadDigest(payload)
++	if !out.Success() {
++		digest = sha([]byte("unparsed payload " + id))
++	}
++	return &authorityv1.MsgProposeChange{
++		Signer:            key.PubKey().Address(),
++		BusinessId:        "b-" + id,
++		ProposalId:        id,
++		ParameterKey:      parameterKey,
++		BasePolicyVersion: base,
++		Payload:           payload,
++		PayloadDigest:     &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: digest},
++		ExpiryUnixSeconds: 1_800_000_000,
++	}
++}
++
++// upgradeWith is a software upgrade payload with a given release digest.
++func upgradeWith(name string, height uint64, release *typesv1.Digest) *authorityv1.ProposalPayload {
++	return &authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_SoftwareUpgrade{
++		SoftwareUpgrade: &authorityv1.SoftwareUpgradeChange{Name: name, Height: height, ReleaseDigest: release},
++	}}
+diff --git a/chain/app/authority_outcomes_test.go b/chain/app/authority_outcomes_test.go
+index f1a0332..0e9719a 100644
+--- a/chain/app/authority_outcomes_test.go
++++ b/chain/app/authority_outcomes_test.go
+@@ -247 +247,2 @@ func TestAnteRejectsNonAdmittedAccount(t *testing.T) {
+-// 20-byte signer, the 32-byte consensus key, and digest values.
++// 20-byte signer, the 32-byte consensus key, the 32-byte new council seat
++// key (x/authority checks its length at propose), and digest values.
+@@ -258,0 +260 @@ func TestAuthorityMessagesCarryNoMediaFields(t *testing.T) {
++		"svn.authority.v1.CouncilSeatChange.new_public_key":      true,
+@@ -291 +293,2 @@ func TestAuthorityMessagesCarryNoMediaFields(t *testing.T) {
+-		"svn.authority.v1.ForceWithdrawChange", "svn.types.v1.Digest",
++		"svn.authority.v1.ForceWithdrawChange", "svn.authority.v1.SoftwareUpgradeChange",
++		"svn.authority.v1.CancelUpgradeChange", "svn.authority.v1.CouncilSeatChange", "svn.types.v1.Digest",
+diff --git a/chain/app/decode_test.go b/chain/app/decode_test.go
+index c23a904..b1acd29 100644
+--- a/chain/app/decode_test.go
++++ b/chain/app/decode_test.go
+@@ -207,2 +207,2 @@ func TestEveryProtocolMessageDecodes(t *testing.T) {
+-	if sent != 19 {
+-		t.Fatalf("%d transactions, want 19", sent)
++	if sent != 21 {
++		t.Fatalf("%d transactions, want 21", sent)
+diff --git a/chain/app/export_test.go b/chain/app/export_test.go
+index fc12ce1..c26a338 100644
+--- a/chain/app/export_test.go
++++ b/chain/app/export_test.go
+@@ -21,0 +22 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
+@@ -121,4 +122,4 @@ func (app *App) WriteLayoutVersionForTest(name string, version uint64) {
+-// CorruptGovernedLimitForTest overwrites the governed limit key (key 0x13 ||
+-// key of the authority store) with 3 bytes, which are not an 8-byte value,
+-// and commits a new version outside ABCI. It fails if no value is set, so a
+-// wrong key cannot pass silently. Authority EndBlock does not read 0x13, so
++// CorruptGovernedLimitForTest overwrites the governed value of key (key
++// 0x02 || key of the x/policy store) with 3 bytes, which are not an 8-byte
++// value, and commits a new version outside ABCI. It fails if no value is
++// set, so a wrong key cannot pass silently. No EndBlock reads 0x02, so
+@@ -127,2 +128,2 @@ func (app *App) CorruptGovernedLimitForTest(key string) error {
+-	store := app.CommitMultiStore().GetKVStore(app.keys[authority.ModuleName])
+-	raw := append([]byte{0x13}, key...)
++	store := app.CommitMultiStore().GetKVStore(app.keys[ModulePolicy])
++	raw := policy.GovernedKey(key)
+@@ -137,2 +138,2 @@ func (app *App) CorruptGovernedLimitForTest(key string) error {
+-// WriteGovernedLimitForTest overwrites the governed limit key (key 0x13 ||
+-// key of the authority store) with raw in the working state: it is not
++// WriteGovernedLimitForTest overwrites the governed value of key (key 0x02
++// || key of the x/policy store) with raw in the working state: it is not
+@@ -144,2 +145,2 @@ func (app *App) WriteGovernedLimitForTest(key string, raw []byte) error {
+-	store := app.CommitMultiStore().GetKVStore(app.keys[authority.ModuleName])
+-	full := append([]byte{0x13}, key...)
++	store := app.CommitMultiStore().GetKVStore(app.keys[ModulePolicy])
++	full := policy.GovernedKey(key)
+@@ -172,2 +173,3 @@ func (app *App) leaseReadersForTest() (leases.Keeper, providers.Keeper, content.
+-	prov := providers.NewKeeper(app.keys[ModuleProviders], providers.Deps{Roles: read, Limits: read})
+-	cont := content.NewKeeper(app.keys[ModuleContent], content.Deps{Roles: read, Params: read, Limits: read})
++	limits := policy.NewKeeper(app.keys[ModulePolicy], policy.Deps{Versions: read, Decisions: read})
++	prov := providers.NewKeeper(app.keys[ModuleProviders], providers.Deps{Roles: read, Limits: limits})
++	cont := content.NewKeeper(app.keys[ModuleContent], content.Deps{Roles: read, Params: read, Limits: limits})
+@@ -175 +177 @@ func (app *App) leaseReadersForTest() (leases.Keeper, providers.Keeper, content.
+-		Roles: read, Limits: read, Params: read, Policy: read, Providers: prov, Content: cont,
++		Roles: read, Limits: limits, Params: read, Policy: read, Providers: prov, Content: cont,
+@@ -230,0 +233 @@ func (app *App) evidenceReadersForTest() (evidence.Keeper, leases.Keeper) {
++	limits := policy.NewKeeper(app.keys[ModulePolicy], policy.Deps{Versions: read, Decisions: read})
+@@ -232 +235 @@ func (app *App) evidenceReadersForTest() (evidence.Keeper, leases.Keeper) {
+-	return evidence.NewKeeper(app.keys[ModuleEvidence], evidence.Deps{Roles: read, Limits: read, Leases: lease, Content: cont}), lease
++	return evidence.NewKeeper(app.keys[ModuleEvidence], evidence.Deps{Roles: read, Limits: limits, Leases: lease, Content: cont}), lease
+diff --git a/chain/app/lease_events_test.go b/chain/app/lease_events_test.go
+index 68ff267..c61a2b3 100644
+--- a/chain/app/lease_events_test.go
++++ b/chain/app/lease_events_test.go
+@@ -247,3 +247,3 @@ func TestLeaseEventSchemas(t *testing.T) {
+-// except authority (App.Export refuses after council messages, DR-06-01;
+-// authority's state is scanned through the dump of every store), and every
+-// event for the
++// except authority and policy (App.Export refuses after council messages,
++// DR-06-01, and the policy export refuses governance state, DR-10-04; their
++// state is scanned through the dump of every store), and every event for the
+@@ -286 +286 @@ func TestNoPrivateDataInLeaseStateOrEvents(t *testing.T) {
+-		if name != authority.ModuleName {
++		if name != authority.ModuleName && name != app.ModulePolicy {
+@@ -290 +290 @@ func TestNoPrivateDataInLeaseStateOrEvents(t *testing.T) {
+-	if len(names) != 7 {
++	if len(names) != 6 {
+diff --git a/chain/app/lease_expiry_test.go b/chain/app/lease_expiry_test.go
+index 319199a..9acd22e 100644
+--- a/chain/app/lease_expiry_test.go
++++ b/chain/app/lease_expiry_test.go
+@@ -304,2 +304,2 @@ func finalizeRecovering(node *running, when time.Time, txs ...[]byte) (panicked
+-// max_expiry_steps (authority key 0x13 || "max_expiry_steps") in every
+-// block, through x/authority GovernedLimit, which panics on a stored value
++// max_expiry_steps (x/policy key 0x02 || "max_expiry_steps") in every
++// block, through x/policy GovernedLimit, which panics on a stored value
+@@ -309 +309 @@ func finalizeRecovering(node *running, when time.Time, txs ...[]byte) (panicked
+-// transaction, with a value x/authority never writes: 3 bytes, the 8-byte
++// transaction, with a value x/policy never writes: 3 bytes, the 8-byte
+@@ -349 +349 @@ func TestDamagedExpiryLimitHalts(t *testing.T) {
+-			want := fmt.Sprintf("authority: governed limit %q is not an 8-byte value in 1..ceiling (%d bytes stored)",
++			want := fmt.Sprintf("policy: governed limit %q is not an 8-byte value in 1..ceiling (%d bytes stored)",
+diff --git a/chain/app/power_test.go b/chain/app/power_test.go
+index eb1985f..300e177 100644
+--- a/chain/app/power_test.go
++++ b/chain/app/power_test.go
+@@ -3,0 +4,2 @@ import (
++	"crypto/sha256"
++	"encoding/hex"
+@@ -74,3 +76,28 @@ func TestChainSourcesDoNotImportEconomicModules(t *testing.T) {
+-// svndSymbols builds ./cmd/svnd once per test binary and returns the
+-// `go tool nm` listing. The binary is deleted after the listing is read.
+-var svndSymbols = sync.OnceValues(func() (string, error) {
++// svndBuildResult is one build of ./cmd/svnd: the SHA-256 of the binary,
++// its `version` output, and its `go tool nm` listing.
++type svndBuildResult struct {
++	digest, version, symbols string
++	err                      error
++}
++
++var (
++	svndBuildsMu sync.Mutex
++	svndBuilds   = map[string]svndBuildResult{}
++)
++
++// svndBuild builds ./cmd/svnd with build tag tag ("" for the default build,
++// svn_rehearsal for B2, svn_rehearsal_bad for B2-bad) once per test binary,
++// with the module cache only, and returns what svndBuildResult holds. The
++// binary is deleted after they are read.
++func svndBuild(tag string) svndBuildResult {
++	svndBuildsMu.Lock()
++	defer svndBuildsMu.Unlock()
++	if res, ok := svndBuilds[tag]; ok {
++		return res
++	}
++	res := buildAndRead(tag)
++	svndBuilds[tag] = res
++	return res
++}
++
++func buildAndRead(tag string) svndBuildResult {
+@@ -79 +106 @@ var svndSymbols = sync.OnceValues(func() (string, error) {
+-		return "", err
++		return svndBuildResult{err: err}
+@@ -83 +110,5 @@ var svndSymbols = sync.OnceValues(func() (string, error) {
+-	cmd := exec.Command("go", "build", "-o", bin, "./cmd/svnd")
++	args := []string{"build", "-o", bin}
++	if tag != "" {
++		args = append(args, "-tags", tag)
++	}
++	cmd := exec.Command("go", append(args, "./cmd/svnd")...)
+@@ -85 +116 @@ var svndSymbols = sync.OnceValues(func() (string, error) {
+-	cmd.Env = os.Environ()
++	cmd.Env = append(os.Environ(), "GOPROXY=off")
+@@ -87 +118,5 @@ var svndSymbols = sync.OnceValues(func() (string, error) {
+-		return "", fmt.Errorf("build: %v\n%s", err, output)
++		return svndBuildResult{err: fmt.Errorf("build with tag %q: %v\n%s", tag, err, output)}
++	}
++	raw, err := os.ReadFile(bin)
++	if err != nil {
++		return svndBuildResult{err: err}
+@@ -89,2 +124,2 @@ var svndSymbols = sync.OnceValues(func() (string, error) {
+-	nm := exec.Command("go", "tool", "nm", bin)
+-	output, err := nm.CombinedOutput()
++	digest := sha256.Sum256(raw)
++	version, err := exec.Command(bin, "version").CombinedOutput()
+@@ -92 +127 @@ var svndSymbols = sync.OnceValues(func() (string, error) {
+-		return "", fmt.Errorf("nm: %v\n%s", err, output)
++		return svndBuildResult{err: fmt.Errorf("version of the build with tag %q: %v\n%s", tag, err, version)}
+@@ -94,2 +129,6 @@ var svndSymbols = sync.OnceValues(func() (string, error) {
+-	return string(output), nil
+-})
++	nm, err := exec.Command("go", "tool", "nm", bin).CombinedOutput()
++	if err != nil {
++		return svndBuildResult{err: fmt.Errorf("nm: %v\n%s", err, nm)}
++	}
++	return svndBuildResult{digest: hex.EncodeToString(digest[:]), version: string(version), symbols: string(nm)}
++}
+@@ -97 +136,3 @@ var svndSymbols = sync.OnceValues(func() (string, error) {
+-func linkedSymbols(t *testing.T) string {
++// built returns the build of ./cmd/svnd with tag and fails the test on a
++// build error.
++func built(t *testing.T, tag string) svndBuildResult {
+@@ -99,3 +140,3 @@ func linkedSymbols(t *testing.T) string {
+-	text, err := svndSymbols()
+-	if err != nil {
+-		t.Fatal(err)
++	res := svndBuild(tag)
++	if res.err != nil {
++		t.Fatal(res.err)
+@@ -103 +144,6 @@ func linkedSymbols(t *testing.T) string {
+-	return text
++	return res
++}
++
++func linkedSymbols(t *testing.T) string {
++	t.Helper()
++	return built(t, "").symbols
+@@ -105,0 +152,17 @@ func linkedSymbols(t *testing.T) string {
++// economicModules are the module paths no svnd build may link.
++var economicModules = []string{
++	"github.com/cosmos/cosmos-sdk/x/staking",
++	"github.com/cosmos/cosmos-sdk/x/bank",
++	"github.com/cosmos/cosmos-sdk/x/mint",
++	"github.com/cosmos/cosmos-sdk/x/distribution",
++	"github.com/cosmos/cosmos-sdk/x/slashing",
++	"github.com/cosmos/cosmos-sdk/x/gov",
++	"github.com/cosmos/cosmos-sdk/x/authz",
++	"github.com/cosmos/ibc-go",
++	"github.com/cosmos/evm",
++}
++
++// TestLinkedBinaryOmitsEconomicModules: no economic module is linked into
++// svnd, nor into the rehearsal builds B2 (-tags svn_rehearsal) and B2-bad
++// (-tags svn_rehearsal_bad), nor into the state check build (-tags
++// svn_statecheck), which are built from the same main package.
+@@ -107,15 +170,6 @@ func TestLinkedBinaryOmitsEconomicModules(t *testing.T) {
+-	forbidden := []string{
+-		"github.com/cosmos/cosmos-sdk/x/staking",
+-		"github.com/cosmos/cosmos-sdk/x/bank",
+-		"github.com/cosmos/cosmos-sdk/x/mint",
+-		"github.com/cosmos/cosmos-sdk/x/distribution",
+-		"github.com/cosmos/cosmos-sdk/x/slashing",
+-		"github.com/cosmos/cosmos-sdk/x/gov",
+-		"github.com/cosmos/cosmos-sdk/x/authz",
+-		"github.com/cosmos/ibc-go",
+-		"github.com/cosmos/evm",
+-	}
+-	text := linkedSymbols(t)
+-	for _, path := range forbidden {
+-		if strings.Contains(text, path) {
+-			t.Errorf("linked binary contains %s", path)
++	for _, tag := range []string{"", "svn_rehearsal", "svn_rehearsal_bad", "svn_statecheck"} {
++		text := built(t, tag).symbols
++		for _, path := range economicModules {
++			if strings.Contains(text, path) {
++				t.Errorf("the build with tag %q links %s", tag, path)
++			}
+@@ -126,5 +180,12 @@ func TestLinkedBinaryOmitsEconomicModules(t *testing.T) {
+-// TestLinkedBinaryOmitsTestHooks fails if svnd links a test hook of this
+-// repository: a symbol whose name contains ForTest, or the round-2 hooks
+-// InstallMismatchedRemoval, ConsensusSnapshot, and AuthoritySnapshot. The
+-// hooks live in _test.go files. Symbols of other modules are not checked
+-// (pebble links StringForTests).
++// TestLinkedBinaryOmitsTestHooks fails if svnd (the default build, no build
++// tag) links a test hook of this repository: a symbol whose name contains
++// ForTest, or the round-2 hooks InstallMismatchedRemoval,
++// ConsensusSnapshot, and AuthoritySnapshot. The hooks live in _test.go
++// files. It also fails on any symbol of a test support package (leasestest,
++// evidencetest, policytest, msgkittest) or of chain/internal (only the
++// tagged builds of the same main package, such as the rehearsal builds
++// -tags svn_rehearsal and svn_rehearsal_bad, link chain/internal code; the
++// default build never does). Symbols of other modules are
++// not checked (pebble links StringForTests). Controls: the listing holds
++// x/authority's ApplyDue, x/policy's ApplyDue, and the upgrade runner's
++// PreBlock, so the scan read the packages it guards.
+@@ -135 +196,12 @@ func TestLinkedBinaryOmitsTestHooks(t *testing.T) {
+-	control := false
++	packages := []string{
++		repo + "chain/internal/",
++		repo + "chain/x/leases/leasestest",
++		repo + "chain/x/evidence/evidencetest",
++		repo + "chain/x/policy/policytest",
++		repo + "chain/msgkit/msgkittest",
++	}
++	controls := map[string]bool{
++		repo + "chain/x/authority.(*State).ApplyDue": false,
++		repo + "chain/x/policy.Keeper.ApplyDue":      false,
++		repo + "chain/upgrade.(*Runner).PreBlock":    false,
++	}
+@@ -145,2 +217,4 @@ func TestLinkedBinaryOmitsTestHooks(t *testing.T) {
+-		if strings.Contains(name, repo+"chain/x/authority.(*State).ApplyDue") {
+-			control = true
++		for control := range controls {
++			if strings.Contains(name, control) {
++				controls[control] = true
++			}
+@@ -152,0 +227,5 @@ func TestLinkedBinaryOmitsTestHooks(t *testing.T) {
++		for _, pkg := range packages {
++			if strings.Contains(name, pkg) {
++				t.Errorf("svnd links test support code %s", name)
++			}
++		}
+@@ -154,2 +233,4 @@ func TestLinkedBinaryOmitsTestHooks(t *testing.T) {
+-	if !control {
+-		t.Fatal("the symbol listing has no x/authority ApplyDue; the scan read nothing")
++	for control, found := range controls {
++		if !found {
++			t.Fatalf("the symbol listing has no %s; the scan read nothing of that package", control)
++		}
+diff --git a/chain/app/registry_events_test.go b/chain/app/registry_events_test.go
+index 57ed38d..4fedd5a 100644
+--- a/chain/app/registry_events_test.go
++++ b/chain/app/registry_events_test.go
+@@ -112,0 +113,2 @@ func TestRegistryEventSchemas(t *testing.T) {
++	// Each of the four executed council proposals of the flow emits
++	// PolicyChanged and ProposalExecuted (x/authority deviation D-2).
+@@ -117,0 +120,2 @@ func TestRegistryEventSchemas(t *testing.T) {
++		string(proto.MessageName(&eventsv1.PolicyChanged{})):        4,
++		string(proto.MessageName(&eventsv1.ProposalExecuted{})):     4,
+@@ -218,2 +222,3 @@ func TestNoPrivateDataInStateOrEvents(t *testing.T) {
+-	// The genesis export of every module except authority. App.Export
+-	// refuses after council messages (DR-06-01); authority's state is
++	// The genesis export of every module except authority and policy.
++	// App.Export refuses after council messages (DR-06-01), and the policy
++	// export refuses governance state (DR-10-04); their state is
+@@ -223 +228 @@ func TestNoPrivateDataInStateOrEvents(t *testing.T) {
+-		if name != authority.ModuleName {
++		if name != authority.ModuleName && name != app.ModulePolicy {
+@@ -227 +232 @@ func TestNoPrivateDataInStateOrEvents(t *testing.T) {
+-	if len(names) != 7 {
++	if len(names) != 6 {
+diff --git a/chain/app/restart_test.go b/chain/app/restart_test.go
+index 4467730..fd2ff24 100644
+--- a/chain/app/restart_test.go
++++ b/chain/app/restart_test.go
+@@ -13,0 +14 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+@@ -18,2 +19,4 @@ import (
+-// LoadLatestVersion. Every mounted store must load at the committed
+-// version, including registry stores that hold no record yet.
++// LoadLatestVersion and the load gate. Every mounted store must load at the
++// committed version, including registry stores that hold no record yet and
++// the x/policy store; the gate starts the binary with row 1, and ABCI Info
++// reports the committed app version.
+@@ -70,0 +74,6 @@ func TestRestartLoadsCommittedState(t *testing.T) {
++	if decision := second.GateDecisionForTest(); decision.Row != 1 || decision.Window {
++		t.Fatalf("load gate decision %+v, want row 1", decision)
++	}
++	if got := second.AppVersion(); got != app.GenesisAppVersion {
++		t.Fatalf("reopened ABCI Info app version %d", got)
++	}
+@@ -73,8 +82,12 @@ func TestRestartLoadsCommittedState(t *testing.T) {
+-// TestAppRefusesScaffoldLayout: a committed providers, content, leases, or
+-// evidence store in the goal-05/06 scaffold layout (no layout version key,
+-// the module genesis JSON at key [0x01], which sits inside the registry
+-// record prefix and, for evidence, the record prefix) or with another
+-// layout version stops app.New on restart, instead of being misread as
+-// records (an export or a Providers query of such a store failed to
+-// decode the JSON as a record). A store in this binary's layout reopens
+-// (TestRestartLoadsCommittedState).
++// TestAppRefusesScaffoldLayout: a committed store that keeps a layout key
++// (policy, providers, content, leases, evidence, authority) in the
++// goal-05/06 scaffold layout (no layout version key, the module genesis
++// JSON at key [0x01], which sits inside the registry record prefix and,
++// for evidence, the record prefix) or with another layout version stops
++// app.New on restart at the load gate (row 6: a layout key that differs
++// from the persisted version map entry), instead of being misread as
++// records (an export or a Providers query of such a store failed to decode
++// the JSON as a record). So does a home a goal-09 binary wrote: its policy
++// slot is the scaffold layout without an app version or a version map, and
++// its authority store has no layout key. A store in this binary's layout
++// reopens (TestRestartLoadsCommittedState).
+@@ -86,0 +100,2 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
++		goal09   bool
++		want     string
+@@ -88,10 +103,16 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
+-		{"providers scaffold", app.ModuleProviders, []byte(`{"providers":[]}`), 0},
+-		{"content scaffold", app.ModuleContent, []byte(`{"contents":[],"tombstones":[]}`), 0},
+-		{"providers layout 1", app.ModuleProviders, nil, 1},
+-		{"content layout 3", app.ModuleContent, nil, 3},
+-		{"leases scaffold", app.ModuleLeases, []byte(`{"offers":[],"leases":[]}`), 0},
+-		{"leases layout 1", app.ModuleLeases, nil, 1},
+-		{"leases layout 3", app.ModuleLeases, nil, 3},
+-		{"evidence scaffold", app.ModuleEvidence, []byte(`{"records":[],"current_epoch":"0"}`), 0},
+-		{"evidence layout 1", app.ModuleEvidence, nil, 1},
+-		{"evidence layout 3", app.ModuleEvidence, nil, 3},
++		{name: "providers scaffold", store: app.ModuleProviders, scaffold: []byte(`{"providers":[]}`)},
++		{name: "content scaffold", store: app.ModuleContent, scaffold: []byte(`{"contents":[],"tombstones":[]}`)},
++		{name: "providers layout 1", store: app.ModuleProviders, version: 1},
++		{name: "content layout 3", store: app.ModuleContent, version: 3},
++		{name: "leases scaffold", store: app.ModuleLeases, scaffold: []byte(`{"offers":[],"leases":[]}`)},
++		{name: "leases layout 1", store: app.ModuleLeases, version: 1},
++		{name: "leases layout 3", store: app.ModuleLeases, version: 3},
++		{name: "evidence scaffold", store: app.ModuleEvidence, scaffold: []byte(`{"records":[],"current_epoch":"0"}`)},
++		{name: "evidence layout 1", store: app.ModuleEvidence, version: 1},
++		{name: "evidence layout 3", store: app.ModuleEvidence, version: 3},
++		{name: "policy scaffold", store: app.ModulePolicy, scaffold: []byte(`{}`)},
++		{name: "policy layout 1", store: app.ModulePolicy, version: 1},
++		{name: "policy layout 3", store: app.ModulePolicy, version: 3},
++		{name: "authority layout 1", store: authority.ModuleName, version: 1},
++		{name: "authority layout 3", store: authority.ModuleName, version: 3},
++		{name: "goal-09 home", goal09: true, want: "the state was written by a binary from before goal 10 (goals 05 to 09), which this binary cannot read or migrate; initialize a new home"},
+@@ -131 +152,4 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
+-			if c.scaffold != nil {
++			switch {
++			case c.goal09:
++				first.WriteGoal09LayoutForTest(modules[app.ModulePolicy])
++			case c.scaffold != nil:
+@@ -133 +157 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
+-			} else {
++			default:
+@@ -145 +169,75 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
+-				t.Fatal("app.New loaded a registry store in another layout")
++				t.Fatal("app.New loaded a store in another layout")
++			}
++			want := c.want
++			if want == "" {
++				want = c.store + " store has "
++			}
++			if !strings.Contains(err.Error(), "load gate at height 2 refused this binary (row 6): ") || !strings.Contains(err.Error(), want) {
++				t.Fatalf("error does not name the gate row, the height, and %q: %v", want, err)
++			}
++		})
++	}
++}
++
++// TestLoadGateRefusesDamagedUpgradeRows: a committed upgrade row that does
++// not decode stops app.New at the load gate with row 6 instead of a panic
++// or a start: the stored app version (x/policy 0x04) of 3 bytes, a version
++// map row (0x05 || module) of 3 bytes, an upgrade plan (0x06) of 5 bytes
++// (the plan source reports an integrity error), and missing consensus
++// params (svn 0x03). The keeper read panics become the gate's row 6 error.
++func TestLoadGateRefusesDamagedUpgradeRows(t *testing.T) {
++	for _, c := range []struct {
++		name  string
++		store string
++		key   []byte
++		value []byte
++		want  string
++	}{
++		{"app version 3 bytes", app.ModulePolicy, []byte{0x04}, []byte{1, 2, 3}, "committed state does not decode"},
++		{"version map row 3 bytes", app.ModulePolicy, append([]byte{0x05}, "leases"...), []byte{1, 2, 3}, "committed state does not decode"},
++		{"plan 5 bytes", app.ModulePolicy, []byte{0x06}, []byte{1, 2, 3, 4, 5}, "read upgrade plan"},
++		{"consensus params missing", app.ModuleSVN, []byte{0x03}, nil, "read consensus params"},
++	} {
++		t.Run(c.name, func(t *testing.T) {
++			n := newRegNet()
++			dir := t.TempDir()
++			open := func() (*app.App, dbm.DB, error) {
++				db, err := dbm.NewDB("application", dbm.GoLevelDBBackend, dir)
++				if err != nil {
++					t.Fatal(err)
++				}
++				chainApp, err := app.New(app.Config{Logger: log.NewNopLogger(), DB: db, ChainID: n.doc.ChainID})
++				return chainApp, db, err
++			}
++			first, db, err := open()
++			if err != nil {
++				t.Fatal(err)
++			}
++			modules, err := app.AppStateFromDocument(first.EncodingConfig().Codec, n.doc)
++			if err != nil {
++				t.Fatal(err)
++			}
++			params := consensusParams()
++			if _, err := first.InitChain(&abci.RequestInitChain{
++				ChainId: n.doc.ChainID, Time: n.doc.Time(), AppStateBytes: mustJSON(t, modules),
++				InitialHeight: 1, Validators: validatorUpdates(t, n.doc), ConsensusParams: &params,
++			}); err != nil {
++				t.Fatal(err)
++			}
++			if _, err := first.FinalizeBlock(&abci.RequestFinalizeBlock{Height: 1, Time: n.doc.Time(), Hash: bytes32(1)}); err != nil {
++				t.Fatal(err)
++			}
++			if _, err := first.Commit(); err != nil {
++				t.Fatal(err)
++			}
++			first.WriteCommittedRowForTest(c.store, c.key, c.value)
++			if err := first.Close(); err != nil {
++				t.Fatal(err)
++			}
++			_ = db.Close()
++
++			second, db2, err := open()
++			defer db2.Close()
++			if err == nil {
++				_ = second.Close()
++				t.Fatal("app.New started on a damaged upgrade row")
+@@ -147,2 +245,2 @@ func TestAppRefusesScaffoldLayout(t *testing.T) {
+-			if !strings.Contains(err.Error(), c.store+" store at height 2") {
+-				t.Fatalf("error does not name the store and height: %v", err)
++			if !strings.Contains(err.Error(), "load gate at height 2 refused this binary (row 6): ") || !strings.Contains(err.Error(), c.want) {
++				t.Fatalf("error %v, want row 6 and %q", err, c.want)
+diff --git a/chain/app/scaffold_test.go b/chain/app/scaffold_test.go
+index 3f3865e..00cbc66 100644
+--- a/chain/app/scaffold_test.go
++++ b/chain/app/scaffold_test.go
+@@ -3 +3,2 @@ package app
+-import "testing"
++import (
++	"testing"
+@@ -4,0 +6,9 @@ import "testing"
++	dbm "github.com/cosmos/cosmos-db"
++
++	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
++	"github.com/Maxencejules/shortvideo-network/chain/x/scaffold"
++)
++
++// TestModuleSlotsStayScaffolding: the svn header slot is still a scaffold
++// module (DR-10-28), so Scaffold stays true; x/policy replaced the scaffold
++// in its slot in Goal 10.
+@@ -7 +17,11 @@ func TestModuleSlotsStayScaffolding(t *testing.T) {
+-		t.Fatal("module slots are marked complete before goals 09-10")
++		t.Fatal("the svn header slot is marked complete, but it is still a scaffold module (DR-10-28)")
++	}
++	built, err := New(Config{DB: dbm.NewMemDB(), ChainID: "shortvideo-dev-slots", SkipLoad: true})
++	if err != nil {
++		t.Fatal(err)
++	}
++	if _, ok := built.mm.Modules[ModuleSVN].(scaffold.Module); !ok {
++		t.Fatalf("svn slot runs %T, want the scaffold module", built.mm.Modules[ModuleSVN])
++	}
++	if _, ok := built.mm.Modules[ModulePolicy].(policy.AppModule); !ok {
++		t.Fatalf("policy slot runs %T, want x/policy", built.mm.Modules[ModulePolicy])
+diff --git a/chain/cmd/svnd/main_test.go b/chain/cmd/svnd/main_test.go
+index 7a911dd..c73c7db 100644
+--- a/chain/cmd/svnd/main_test.go
++++ b/chain/cmd/svnd/main_test.go
+@@ -4,2 +4 @@ import (
+-	"bytes"
+-	"encoding/json"
++	"fmt"
+@@ -6,0 +6 @@ import (
++	"os/exec"
+@@ -7,0 +8 @@ import (
++	"sort"
+@@ -8,0 +10 @@ import (
++	"sync"
+@@ -11,2 +13,5 @@ import (
+-	cmttypes "github.com/cometbft/cometbft/types"
+-	"google.golang.org/protobuf/encoding/protojson"
++	"github.com/Maxencejules/shortvideo-network/chain/app"
++)
++
++// buildDir holds the svnd builds of this test binary; TestMain removes it.
++var buildDir string
+@@ -14,4 +19,17 @@ import (
+-	"github.com/Maxencejules/shortvideo-network/chain/devnet"
+-	"github.com/Maxencejules/shortvideo-network/chain/x/authority"
+-	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
+-	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
++func TestMain(m *testing.M) {
++	dir, err := os.MkdirTemp("", "svnd-builds-")
++	if err != nil {
++		fmt.Fprintln(os.Stderr, err)
++		os.Exit(1)
++	}
++	buildDir = dir
++	code := m.Run()
++	_ = os.RemoveAll(dir)
++	os.Exit(code)
++}
++
++// builds are the svnd builds of this test binary by build tag ("" is the
++// default build), each built once.
++var (
++	buildMu sync.Mutex
++	builds  = map[string]string{}
+@@ -20,4 +38,4 @@ import (
+-// editAuthority returns raw (a CometBFT genesis) with its authority module
+-// genesis decoded, edited, and encoded again. Only the app_state.authority
+-// value changes.
+-func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState)) []byte {
++// svndBuild builds this main package with build tag tag ("" for none)
++// once per test binary, with the module cache only, and returns the
++// binary's path.
++func svndBuild(t *testing.T, tag string) string {
+@@ -25,3 +43,4 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-	var doc map[string]json.RawMessage
+-	if err := json.Unmarshal(raw, &doc); err != nil {
+-		t.Fatal(err)
++	buildMu.Lock()
++	defer buildMu.Unlock()
++	if bin, ok := builds[tag]; ok {
++		return bin
+@@ -29,3 +48,7 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-	var modules map[string]json.RawMessage
+-	if err := json.Unmarshal(doc["app_state"], &modules); err != nil {
+-		t.Fatal(err)
++	bin := filepath.Join(buildDir, "svnd")
++	args := []string{"build", "-o"}
++	if tag != "" {
++		bin += "-" + tag
++		args = append(args, bin, "-tags", tag, ".")
++	} else {
++		args = append(args, bin, ".")
+@@ -33,3 +56,4 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-	var state authorityv1.GenesisState
+-	if err := protojson.Unmarshal(modules[authority.ModuleName], &state); err != nil {
+-		t.Fatal(err)
++	build := exec.Command("go", args...)
++	build.Env = append(os.Environ(), "GOPROXY=off")
++	if out, err := build.CombinedOutput(); err != nil {
++		t.Fatalf("build with tag %q: %v\n%s", tag, err, out)
+@@ -37,2 +61,24 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-	edit(&state)
+-	encoded, err := protojson.Marshal(&state)
++	builds[tag] = bin
++	return bin
++}
++
++// run runs bin with args and returns its combined output and error.
++func run(bin string, args ...string) (string, error) {
++	out, err := exec.Command(bin, args...).CombinedOutput()
++	return string(out), err
++}
++
++// buildInfoLines reads `go version -m <binary>`: the Go version, the main
++// module version, the build settings, and each dependency's version (with
++// its replacement, if any), as the go tool reports them independently of
++// svnd's own code.
++type buildInfoLines struct {
++	goVersion string
++	mainMod   string
++	settings  map[string]string
++	deps      map[string]string
++}
++
++func readBuildInfoLines(t *testing.T, bin string) buildInfoLines {
++	t.Helper()
++	out, err := exec.Command("go", "version", "-m", bin).CombinedOutput()
+@@ -40 +86 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-		t.Fatal(err)
++		t.Fatalf("go version -m: %v\n%s", err, out)
+@@ -42,3 +88,56 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-	modules[authority.ModuleName] = encoded
+-	if doc["app_state"], err = json.Marshal(modules); err != nil {
+-		t.Fatal(err)
++	info := buildInfoLines{settings: map[string]string{}, deps: map[string]string{}}
++	lines := strings.Split(strings.TrimRight(string(out), "\n"), "\n")
++	_, goVersion, ok := strings.Cut(lines[0], ": ")
++	if !ok {
++		t.Fatalf("first line %q", lines[0])
++	}
++	info.goVersion = goVersion
++	lastDep := ""
++	for _, line := range lines[1:] {
++		fields := strings.Split(strings.TrimPrefix(line, "\t"), "\t")
++		switch fields[0] {
++		case "mod":
++			info.mainMod = fields[2]
++		case "dep":
++			lastDep = fields[1]
++			info.deps[lastDep] = fields[2]
++		case "=>":
++			info.deps[lastDep] += " => " + fields[1] + " " + fields[2]
++		case "build":
++			if key, value, found := strings.Cut(fields[1], "="); found {
++				info.settings[key] = value
++			}
++		}
++	}
++	return info
++}
++
++// TestSvndVersionMatchesBuildInfo builds svnd and checks `svnd version`
++// line for line against what `go version -m` reads from the same binary:
++// the main module version, the Go version, vcs.revision and vcs.modified
++// ("unknown" when the build has no VCS stamp), the three pinned framework
++// modules, then the app version and the module versions the application
++// declares for svnd (app.DeclaredBinary), and "upgrades none" (svnd
++// compiles no upgrade handler). The help text says the same about handlers.
++func TestSvndVersionMatchesBuildInfo(t *testing.T) {
++	bin := svndBuild(t, "")
++	info := readBuildInfoLines(t, bin)
++	known := func(v string) string {
++		if v == "" {
++			return "unknown"
++		}
++		return v
++	}
++	want := strings.Join([]string{
++		"svnd " + info.mainMod,
++		"go " + info.goVersion,
++		"vcs.revision " + known(info.settings["vcs.revision"]),
++		"vcs.modified " + known(info.settings["vcs.modified"]),
++		"github.com/cosmos/cosmos-sdk " + info.deps["github.com/cosmos/cosmos-sdk"],
++		"github.com/cosmos/cosmos-sdk/store/v2 " + info.deps["github.com/cosmos/cosmos-sdk/store/v2"],
++		"github.com/cometbft/cometbft " + info.deps["github.com/cometbft/cometbft"],
++		declaredLines(t),
++		"upgrades none",
++	}, "\n") + "\n"
++	if info.deps["github.com/cosmos/cosmos-sdk"] == "" || info.deps["github.com/cometbft/cometbft"] == "" || info.deps["github.com/cosmos/cosmos-sdk/store/v2"] == "" {
++		t.Fatalf("go version -m lists no framework pins: %+v", info.deps)
+@@ -46 +145 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-	out, err := json.Marshal(doc)
++	got, err := exec.Command(bin, "version").CombinedOutput()
+@@ -48 +147,8 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-		t.Fatal(err)
++		t.Fatalf("svnd version: %v\n%s", err, got)
++	}
++	if string(got) != want {
++		t.Fatalf("svnd version:\n%s\nwant:\n%s", got, want)
++	}
++	help, err := exec.Command(bin, "--help").CombinedOutput()
++	if err != nil || !strings.Contains(string(help), "Compiled upgrade handlers: none.") {
++		t.Fatalf("svnd --help: %v\n%s", err, help)
+@@ -50 +155,0 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-	return out
+@@ -53,10 +158,8 @@ func editAuthority(t *testing.T, raw []byte, edit func(*authorityv1.GenesisState
+-// TestValidateGenesisAppliesAuthorityRules: `svnd genesis validate` refuses
+-// every authority genesis that InitChain refuses, with the same rule. The
+-// genesis is a fresh `devnet init` document; each row edits only its
+-// authority module state. Fails on the round-3 review tree, where the
+-// command ran only DocumentFromModules and genesis.Validate, which ignore
+-// pending entries, proposals, the approved council, and quorum loss, and
+-// returned nil for every row below.
+-func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	home := t.TempDir()
+-	if _, err := devnet.Init(devnet.Options{Home: home}); err != nil {
++// declaredLines are the app_version line and the module lines of what the
++// application declares for a binary without upgrade handlers
++// (app.DeclaredBinary), which svnd version must print: app version 1 and
++// every module in name order.
++func declaredLines(t *testing.T) string {
++	t.Helper()
++	binary, err := app.DeclaredBinary(nil)
++	if err != nil {
+@@ -65 +168,27 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	raw, err := os.ReadFile(filepath.Join(home, "genesis.json"))
++	if binary.AppVersion != 1 || len(binary.Modules) != 8 {
++		t.Fatalf("declared binary: app version %d, %d modules", binary.AppVersion, len(binary.Modules))
++	}
++	names := make([]string, 0, len(binary.Modules))
++	for name := range binary.Modules {
++		names = append(names, name)
++	}
++	sort.Strings(names)
++	lines := []string{fmt.Sprintf("app_version %d", binary.AppVersion)}
++	for _, name := range names {
++		lines = append(lines, fmt.Sprintf("module %s %d", name, binary.Modules[name]))
++	}
++	return strings.Join(lines, "\n")
++}
++
++// TestDefaultBuildCompilesNoRehearsal: the default build (no build tag, the
++// release build) records no build tag, its `version` lists app version 1 and
++// "upgrades none" and no upgrade line, its help text states no compiled
++// handler and no chain id restriction and lists no statecheck command, and
++// `svnd statecheck` is an unknown command. TestLinkedBinaryOmitsTestHooks
++// (chain/app) shows it links no chain/internal or test-support symbol.
++func TestDefaultBuildCompilesNoRehearsal(t *testing.T) {
++	bin := svndBuild(t, "")
++	if tags, found := readBuildInfoLines(t, bin).settings["-tags"]; found {
++		t.Fatalf("the default build records build tags %q", tags)
++	}
++	version, err := run(bin, "version")
+@@ -67 +196 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-		t.Fatal(err)
++		t.Fatalf("version: %v\n%s", err, version)
+@@ -69,2 +198,2 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	if err := validateGenesisFile(raw); err != nil {
+-		t.Fatalf("fresh devnet genesis: %v", err)
++	if !strings.Contains(version, "\napp_version 1\n") || !strings.HasSuffix(version, "\nupgrades none\n") || strings.Contains(version, "\nupgrade ") {
++		t.Fatalf("default svnd version:\n%s", version)
+@@ -72,2 +201,3 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	if unchanged := editAuthority(t, raw, func(*authorityv1.GenesisState) {}); validateGenesisFile(unchanged) != nil {
+-		t.Fatal("re-encoding the authority genesis changed its validity")
++	help, err := run(bin, "--help")
++	if err != nil || !strings.Contains(help, "Compiled upgrade handlers: none.") || strings.Contains(help, "starts only") || strings.Contains(help, "statecheck") {
++		t.Fatalf("default svnd --help: %v\n%s", err, help)
+@@ -75,3 +205,2 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	reason := &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: bytes.Repeat([]byte{7}, 32)}
+-	atHeight := func(h uint64) *authorityv1.ActivationPoint {
+-		return &authorityv1.ActivationPoint{Point: &authorityv1.ActivationPoint_Height{Height: h}}
++	if !strings.Contains(help, "Available Commands:") || !strings.Contains(help, "  version ") {
++		t.Fatalf("default svnd --help lists no commands:\n%s", help)
+@@ -79,2 +208,2 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	first := func(state *authorityv1.GenesisState) *authorityv1.ValidatorPower {
+-		return state.GetAuthority().GetValidators()[0]
++	if out, err := run(bin, "statecheck"); err == nil || !strings.Contains(out, `unknown command "statecheck"`) {
++		t.Fatalf("default svnd statecheck: %v\n%s", err, out)
+@@ -82 +211,12 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	genDoc, err := cmttypes.GenesisDocFromJSON(raw)
++}
++
++// TestRehearsalBuildsDeclareTheRehearsalUpgrade: the build with tag
++// svn_rehearsal (B2) and the build with tag svn_rehearsal_bad (B2-bad) each
++// record their tag in the build information, and their `version` output is
++// the default build's line for line except two lines: app version 2, and the
++// upgrade line "upgrade rehearsal-1 from_app_version 1 to_app_version 2" in
++// place of "upgrades none" (B2-bad declares the same plan name as B2). Their
++// help text names the handler and states that the build starts only on a
++// shortvideo-dev- chain.
++func TestRehearsalBuildsDeclareTheRehearsalUpgrade(t *testing.T) {
++	plain, err := run(svndBuild(t, ""), "version")
+@@ -84 +224,6 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-		t.Fatal(err)
++		t.Fatalf("default version: %v\n%s", err, plain)
++	}
++	want := strings.Replace(strings.Replace(plain, "\napp_version 1\n", "\napp_version 2\n", 1),
++		"\nupgrades none\n", "\nupgrade rehearsal-1 from_app_version 1 to_app_version 2\n", 1)
++	if want == plain {
++		t.Fatalf("default version output has no line to replace:\n%s", plain)
+@@ -86,41 +231,62 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	genesisUnix := genDoc.GenesisTime.Unix()
+-	rows := []struct {
+-		name string
+-		code string
+-		edit func(*authorityv1.GenesisState)
+-	}{
+-		{"approved council", authority.CodeForbidden, func(state *authorityv1.GenesisState) {
+-			state.Authority.ApprovedCouncil = []*authorityv1.DevnetTestSeat{{SeatId: "seat-x", PublicKey: bytes.Repeat([]byte{1}, 32)}}
+-		}},
+-		{"quorum loss set", authority.CodeForbidden, func(state *authorityv1.GenesisState) {
+-			state.Authority.QuorumLoss = authorityv1.QuorumLossBehavior_QUORUM_LOSS_BEHAVIOR_UNSPECIFIED
+-		}},
+-		{"genesis proposal", authority.CodeMalformed, func(state *authorityv1.GenesisState) {
+-			state.Authority.Proposals = []*authorityv1.Proposal{{ProposalId: "p-1"}}
+-		}},
+-		{"pending removal that leaves three validators", authority.CodeForbidden, func(state *authorityv1.GenesisState) {
+-			v := first(state)
+-			state.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{{
+-				ProposalId: "rm-1", ConsensusPubkey: v.GetConsensusPubkey(), Power: 0, NodeId: v.GetNodeId(),
+-				ReasonDigest: reason, Activation: atHeight(5),
+-			}}
+-		}},
+-		{"pending removal bound to the wrong key", authority.CodeConflict, func(state *authorityv1.GenesisState) {
+-			v := first(state)
+-			state.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{{
+-				ProposalId: "rm-1", ConsensusPubkey: bytes.Repeat([]byte{1}, 32), Power: 0, NodeId: v.GetNodeId(),
+-				ReasonDigest: reason, Activation: atHeight(5),
+-			}}
+-		}},
+-		{"pending change at genesis time", authority.CodeOutOfRange, func(state *authorityv1.GenesisState) {
+-			state.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{{
+-				ProposalId: "add-1", ConsensusPubkey: bytes.Repeat([]byte{2}, 32), Power: 1, NodeId: "v9",
+-				ReasonDigest: reason,
+-				Activation:   &authorityv1.ActivationPoint{Point: &authorityv1.ActivationPoint_UnixSeconds{UnixSeconds: genesisUnix}},
+-			}}
+-		}},
+-	}
+-	for _, row := range rows {
+-		err := validateGenesisFile(editAuthority(t, raw, row.edit))
+-		if err == nil || !strings.Contains(err.Error(), row.code) {
+-			t.Errorf("%s: %v, want an error naming %s", row.name, err, row.code)
++	for _, tag := range []string{"svn_rehearsal", "svn_rehearsal_bad"} {
++		bin := svndBuild(t, tag)
++		if got := readBuildInfoLines(t, bin).settings["-tags"]; got != tag {
++			t.Fatalf("%s build records build tags %q", tag, got)
++		}
++		version, err := run(bin, "version")
++		if err != nil || version != want {
++			t.Fatalf("%s version: %v\n%s\nwant:\n%s", tag, err, version, want)
++		}
++		help, err := run(bin, "--help")
++		if err != nil || !strings.Contains(help, "Compiled upgrade handlers: rehearsal-1 (app version 1 to 2).") ||
++			!strings.Contains(help, "This build starts only on a chain whose id starts with shortvideo-dev-.") {
++			t.Fatalf("%s --help: %v\n%s", tag, err, help)
++		}
++	}
++}
++
++// TestRehearsalBuildsRefuseNonDevChains: B2, B2-bad, and the state check
++// build (tag svn_statecheck, which links the test-support checkers) refuse
++// `start` on a home whose genesis names a chain id that does not start with
++// shortvideo-dev- (exit status 1, before the node reads node.json or opens
++// a database), including an id that holds the prefix later, and pass that
++// check on a shortvideo-dev- home, where they fail on its missing node.json
++// as every start does; their help text states the restriction. The default
++// build has no such check: on the same production home it fails on
++// node.json. No process here binds a port.
++func TestRehearsalBuildsRefuseNonDevChains(t *testing.T) {
++	writeHome := func(chainID string) string {
++		home := t.TempDir()
++		if err := os.MkdirAll(filepath.Join(home, "config"), 0o700); err != nil {
++			t.Fatal(err)
++		}
++		if err := os.WriteFile(filepath.Join(home, "config", "genesis.json"), []byte(`{"chain_id":"`+chainID+`"}`), 0o600); err != nil {
++			t.Fatal(err)
++		}
++		return home
++	}
++	production, dev, inside := writeHome("svn-beta-1"), writeHome("shortvideo-dev-rehearsal"), writeHome("svn-shortvideo-dev-1")
++	refusal := `this build starts only on a chain whose id starts with "shortvideo-dev-"; the genesis of ` + production + ` names chain id "svn-beta-1"`
++	start := func(bin, home string) (string, int) {
++		out, err := run(bin, "start", "--home", home)
++		code := 0
++		if exit, ok := err.(*exec.ExitError); ok {
++			code = exit.ExitCode()
++		} else if err != nil {
++			t.Fatalf("start: %v", err)
++		}
++		return out, code
++	}
++	for _, tag := range []string{"svn_rehearsal", "svn_rehearsal_bad", "svn_statecheck"} {
++		bin := svndBuild(t, tag)
++		if out, code := start(bin, production); code != 1 || !strings.Contains(out, refusal) || strings.Contains(out, "node.json") {
++			t.Fatalf("%s on a production chain id: exit %d\n%s", tag, code, out)
++		}
++		if out, code := start(bin, inside); code != 1 || !strings.Contains(out, `names chain id "svn-shortvideo-dev-1"`) || strings.Contains(out, "node.json") {
++			t.Fatalf("%s on a chain id that holds the prefix later: exit %d\n%s", tag, code, out)
++		}
++		if help, err := run(bin, "--help"); err != nil || !strings.Contains(help, "This build starts only on a chain whose id starts with shortvideo-dev-.") {
++			t.Fatalf("%s --help: %v\n%s", tag, err, help)
++		}
++		if out, code := start(bin, dev); code != 1 || strings.Contains(out, "starts only") || !strings.Contains(out, "node.json") {
++			t.Fatalf("%s on a devnet chain id: exit %d\n%s", tag, code, out)
+@@ -129,9 +295,2 @@ func TestValidateGenesisAppliesAuthorityRules(t *testing.T) {
+-	// A well-formed pending add in the future is accepted.
+-	future := editAuthority(t, raw, func(state *authorityv1.GenesisState) {
+-		state.Authority.PendingValidatorPower = []*authorityv1.PendingValidatorPower{{
+-			ProposalId: "add-1", ConsensusPubkey: bytes.Repeat([]byte{2}, 32), Power: 1, NodeId: "v9",
+-			ReasonDigest: reason, Activation: atHeight(50),
+-		}}
+-	})
+-	if err := validateGenesisFile(future); err != nil {
+-		t.Fatalf("future pending add: %v", err)
++	if out, code := start(svndBuild(t, ""), production); code != 1 || strings.Contains(out, "starts only") || !strings.Contains(out, "node.json") {
++		t.Fatalf("default svnd on a production chain id: exit %d\n%s", code, out)
+diff --git a/chain/devnet/prove_test.go b/chain/devnet/prove_test.go
+index 3f61ae2..1eea92a 100644
+--- a/chain/devnet/prove_test.go
++++ b/chain/devnet/prove_test.go
+@@ -452,0 +453,2 @@ func consensusKeys(t *testing.T, layout devnet.Layout) map[string][]byte {
++// launch starts this test binary as one validator of home: TestMain runs
++// node.Start for SVN_HELPER=start.
+@@ -453,0 +456,16 @@ func launch(home string) (func() error, error) {
++	cmd := exec.Command(os.Args[0])
++	cmd.Env = append(os.Environ(), "SVN_HELPER=start", "SVN_HOME="+home)
++	return startLogged(cmd, home)
++}
++
++// launchBinary starts the binary bin as one validator of home with
++// `bin start --home <home>`: svnd, or another binary built on the svnd
++// command tree (chain/cmd/svnd/cli), such as an upgrade rehearsal binary.
++func launchBinary(bin, home string) (func() error, error) {
++	return startLogged(exec.Command(bin, "start", "--home", home), home)
++}
++
++// startLogged starts cmd with its output in <home>/node.log (a new file
++// for every start) and returns the stop function: SIGTERM, then a kill
++// after 20 s. Exit 0 and a signal exit (143 or -1) are a clean stop.
++func startLogged(cmd *exec.Cmd, home string) (func() error, error) {
+@@ -458,2 +475,0 @@ func launch(home string) (func() error, error) {
+-	cmd := exec.Command(os.Args[0])
+-	cmd.Env = append(os.Environ(), "SVN_HELPER=start", "SVN_HOME="+home)
+diff --git a/chain/genesis/document_test.go b/chain/genesis/document_test.go
+index 444d2f2..2d4ef09 100644
+--- a/chain/genesis/document_test.go
++++ b/chain/genesis/document_test.go
+@@ -382,0 +383,27 @@ func TestSeatAddressIsNotASubmitter(t *testing.T) {
++
++// TestSeatRulesD7D10: two council seat rules are stricter than the spec, as
++// in x/authority's genesis check. A seat id of MaxSeatIDLength (59)
++// characters is accepted and one of 60 is refused, though both match the
++// id pattern (D-10: "seat-<id>" must stay an id). A seat key equal to a
++// validator consensus key is refused in either hex case; the fixture's
++// distinct keys are accepted (D-7).
++func TestSeatRulesD7D10(t *testing.T) {
++	longest := validFixture()
++	longest.DevnetTestSeats[0].SeatID = strings.Repeat("s", MaxSeatIDLength)
++	requireAccepted(t, longest)
++	tooLong := validFixture()
++	tooLong.DevnetTestSeats[0].SeatID = strings.Repeat("s", MaxSeatIDLength+1)
++	if !idPattern.MatchString(tooLong.DevnetTestSeats[0].SeatID) {
++		t.Fatal("the 60-character seat id must match the id pattern, so only D-10 refuses it")
++	}
++	requireRejected(t, tooLong, fmt.Sprintf("seat id %q is longer than %d characters", tooLong.DevnetTestSeats[0].SeatID, MaxSeatIDLength))
++	for _, upper := range []bool{false, true} {
++		doc := validFixture()
++		key := doc.Validators[2].ConsensusPubkeyHex
++		if upper {
++			key = strings.ToUpper(key)
++		}
++		doc.DevnetTestSeats[1].PublicKeyHex = key
++		requireRejected(t, doc, "seat seat-2 key is a validator consensus key")
++	}
++}
+diff --git a/chain/node/start_test.go b/chain/node/start_test.go
+index 67a464c..1d920f7 100644
+--- a/chain/node/start_test.go
++++ b/chain/node/start_test.go
+@@ -3,0 +4,2 @@ import (
++	"errors"
++	"io/fs"
+@@ -5,0 +8 @@ import (
++	"strings"
+@@ -11,0 +15,3 @@ import (
++	sdk "github.com/cosmos/cosmos-sdk/types"
++	"github.com/cosmos/cosmos-sdk/types/module"
++
+@@ -12,0 +19 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/upgrade"
+@@ -51,0 +59,24 @@ func TestNodeFileQueryGasLimit(t *testing.T) {
++
++// TestStartWithReadsTheHomeWithUpgradeHandlers: StartWith no longer refuses
++// a binary that declares upgrade handlers; it reads the home first with or
++// without handlers (the home here has no node.json, which StartWith reports
++// as a file error). TestStartWithPassesUpgradeHandlers shows the handlers
++// reach the application.
++func TestStartWithReadsTheHomeWithUpgradeHandlers(t *testing.T) {
++	home := t.TempDir()
++	handler := func(ctx sdk.Context, from module.VersionMap, migrate upgrade.Migrate) (module.VersionMap, error) {
++		return migrate(ctx, from)
++	}
++	for name, start := range map[string]func() error{
++		"Start":     func() error { return Start(home) },
++		"StartWith": func() error { return StartWith(Config{Home: home}) },
++		"StartWith and handler": func() error {
++			return StartWith(Config{Home: home, Upgrades: []upgrade.Upgrade{{Name: "v2", FromAppVersion: 1, ToAppVersion: 2, Handler: handler}}})
++		},
++	} {
++		err := start()
++		if !errors.Is(err, fs.ErrNotExist) || !strings.Contains(err.Error(), "node.json") {
++			t.Fatalf("%s on a home without node.json: %v", name, err)
++		}
++	}
++}
+diff --git a/chain/x/authority/fuzz_payload_test.go b/chain/x/authority/fuzz_payload_test.go
+index dfb8430..0e8b374 100644
+--- a/chain/x/authority/fuzz_payload_test.go
++++ b/chain/x/authority/fuzz_payload_test.go
+@@ -96,0 +97,6 @@ func payloadKind(payload *authorityv1.ProposalPayload) string {
++	case *authorityv1.ProposalPayload_SoftwareUpgrade:
++		return kindSoftwareUpgrade
++	case *authorityv1.ProposalPayload_CancelUpgrade:
++		return kindCancelUpgrade
++	case *authorityv1.ProposalPayload_CouncilSeat:
++		return kindCouncilSeat
+@@ -102,2 +108,2 @@ func payloadKind(payload *authorityv1.ProposalPayload) string {
+-// payloadProtoSeeds are valid payloads: one of each kind, plus a removal and
+-// a unix-time activation.
++// payloadProtoSeeds are valid payloads: one of each kind, plus a removal, a
++// unix-time activation and a scheduled governed change.
+@@ -115,0 +122,4 @@ func payloadProtoSeeds() []*authorityv1.ProposalPayload {
++		scheduledMsg("max_page_limit", 7, 400).GetPayload(),
++		upgradeMsg("rehearsal-1", 400, pub(8)).GetPayload(),
++		cancelMsg("rehearsal-1").GetPayload(),
++		seatMsg("seat-1", pub(11)).GetPayload(),
+diff --git a/chain/x/authority/fuzz_reach_test.go b/chain/x/authority/fuzz_reach_test.go
+index 6305118..ac3e97c 100644
+--- a/chain/x/authority/fuzz_reach_test.go
++++ b/chain/x/authority/fuzz_reach_test.go
+@@ -295,3 +295,5 @@ func fuzzStateSeeds() []fuzzSeed {
+-			name:  "payloads that cannot execute stay QUEUED",
+-			trace: "ok ok ok ok BOUNDS ok ok ok ok NOT_FOUND ok ok ok ok NOT_FOUND ok ok ok ok BOUNDS",
+-			steps: steps(proposeLimit(0, 0, limitV(1, 1, true)), quorum(0), executeLast(0),
++			// D-1: a governed limit above its ceiling or with an unknown key
++			// is BOUNDS at propose and never becomes a proposal.
++			name:  "governed limits outside the caps are BOUNDS at propose; registry payloads that cannot execute stay QUEUED",
++			trace: "BOUNDS BOUNDS ok ok ok ok NOT_FOUND ok ok ok ok NOT_FOUND",
++			steps: steps(proposeLimit(0, 0, limitV(1, 1, true)), proposeLimit(3, 0, limitV(5, 1, false)),
+@@ -299,3 +301,2 @@ func fuzzStateSeeds() []fuzzSeed {
+-				proposeLimit(2, 0, limitV(7, 1, false)), quorum(2), executeLast(2),
+-				proposeLimit(3, 0, limitV(5, 1, false)), quorum(3), executeLast(3)),
+-			want: fuzzCounters{Queued: 4, Bounds: 2},
++				proposeLimit(2, 0, limitV(7, 1, false)), quorum(2), executeLast(2)),
++			want: fuzzCounters{Queued: 2, Bounds: 2},
+@@ -310,0 +312,8 @@ func fuzzStateSeeds() []fuzzSeed {
++		{
++			// D-7: v5 with the genesis key of seat-2 (pool 3) is accepted at
++			// propose and refused at execute.
++			name:  "a validator payload with a council seat key is DUPLICATE_ID at execute",
++			trace: "ok ok ok ok DUPLICATE_ID",
++			steps: steps(proposeValidator(0, 0, validatorV(4, 3, 1, false)), quorum(0), executeLast(0)),
++			want:  fuzzCounters{Queued: 1},
++		},
+diff --git a/chain/x/authority/fuzz_state_test.go b/chain/x/authority/fuzz_state_test.go
+index e52b0bb..da6b4fb 100644
+--- a/chain/x/authority/fuzz_state_test.go
++++ b/chain/x/authority/fuzz_state_test.go
+@@ -14,0 +15 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+@@ -54 +55,4 @@ func FuzzStateTransitions(f *testing.F) {
+-// (often another node's: duplicate key), 2 and 3 fresh keys (key change).
++// (often another node's: duplicate key), 2 one of two fresh keys picked by n
++// (key change), 3 the
++// genesis key of a council seat picked by n, current or retired by a
++// rotation (D-7: an execute of it is DUPLICATE_ID).
+@@ -63 +67,2 @@ const (
+-	// force-withdraw 7), value 1..16 (3-6), one above the ceiling (7).
++	// force-withdraw 7), value 1..16 (3-6), one above the ceiling (7). An
++	// unknown limit or a value above the ceiling is BOUNDS at propose (D-1).
+@@ -118 +123 @@ var fuzzTimeSteps = [8]int64{15, 30, 60, 120, 600, 1800, 3600, fuzzExpiryJump}
+-// at execute with BOUNDS.
++// at propose with BOUNDS (D-1).
+@@ -166,0 +172,4 @@ type fuzzHarness struct {
++	// policy is the committed fake x/policy; each step runs on a clone that
++	// becomes the committed one only on success, as Keeper.transition's
++	// nested cache does for the policy store.
++	policy *fakePolicy
+@@ -235,0 +245 @@ func runFuzzTrace(t testing.TB, raw []byte) (fuzzCounters, []string) {
++		policy:    newFakePolicy(),
+@@ -278,0 +289,2 @@ func (h *fuzzHarness) step(b, v byte) {
++	pol := h.policy.clone()
++	st.Policy = pol
+@@ -286,0 +299,3 @@ func (h *fuzzHarness) step(b, v byte) {
++	if (!r.out.Success() || r.out.Idempotent) && !pol.sameState(h.policy) {
++		t.Fatalf("op %d (%d) outcome %+v wrote to the policy store", index, op, r.out)
++	}
+@@ -305,0 +321 @@ func (h *fuzzHarness) step(b, v byte) {
++		h.policy = pol
+@@ -435 +451,3 @@ func (h *fuzzHarness) validatorBytes(vals []*authorityv1.ValidatorPower) []byte
+-//   - the ante admission rows (0x02) are exactly the config submitters.
++//   - the ante admission rows (0x02) are exactly the config submitters;
++//   - no consensus key of the set or of a pending entry is a current or a
++//     retired council seat key (D-7).
+@@ -477,0 +496,4 @@ func (h *fuzzHarness) checkInvariants(index int, valsBefore []byte, changed bool
++	council := map[string]bool{}
++	for _, seat := range st.auth().GetDevnetTestSeats() {
++		council[string(seat.GetPublicKey())] = true
++	}
+@@ -480,0 +503,2 @@ func (h *fuzzHarness) checkInvariants(index int, valsBefore []byte, changed bool
++		case retiredCouncilPrefix:
++			council[string(key[1:])] = true
+@@ -538,0 +563,8 @@ func (h *fuzzHarness) checkInvariants(index int, valsBefore []byte, changed bool
++		if council[string(entry.GetConsensusPubkey())] {
++			t.Fatalf("op %d: pending entry %s has a council seat key", index, entry.GetProposalId())
++		}
++	}
++	for _, row := range vals {
++		if council[string(row.GetConsensusPubkey())] {
++			t.Fatalf("op %d: validator %s holds a council seat key", index, row.GetNodeId())
++		}
+@@ -617,0 +650,2 @@ func fuzzKey(vals []*authorityv1.ValidatorPower, nodeBits, pool byte) []byte {
++	case 2:
++		return pub(58 + number%2)
+@@ -619 +653 @@ func fuzzKey(vals []*authorityv1.ValidatorPower, nodeBits, pool byte) []byte {
+-		return pub(56 + pool&3)
++		return pub(30 + number%4)
+@@ -703 +737 @@ func otherFuzzMsg(v byte) *authorityv1.MsgProposeChange {
+-			ceiling, _ := governedCeiling(key)
++			ceiling, _ := msgkit.Ceiling(key)
+diff --git a/chain/x/authority/gas_test.go b/chain/x/authority/gas_test.go
+index 1fce5d6..ce83572 100644
+--- a/chain/x/authority/gas_test.go
++++ b/chain/x/authority/gas_test.go
+@@ -3,0 +4 @@ import (
++	"bytes"
+@@ -12,0 +14 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+@@ -65 +67 @@ func TestCouncilGasDoesNotGrowWithHistory(t *testing.T) {
+-	// governed key (0x13||max_page_limit) exist on both sides.
++	// governed value of max_page_limit (x/policy 0x02) exist on both sides.
+@@ -162,4 +164,10 @@ func hexKeys(set map[string]bool) []string {
+-// a propose, an approve keep and an execute. An execute of an admit, disable
+-// or force-withdraw payload reads and writes the keys of a governed execute
+-// except 0x13: the registry hook writes x/providers or x/content, and no
+-// authority key under the reserved 0x17 prefix is read or written.
++// a propose, an approve keep and an execute. Goal 10 moved governed values
++// to x/policy: a governed execute writes no authority key beyond the common
++// set (it wrote 0x13 before), and neither does an execute of an admit,
++// disable, force-withdraw, software upgrade or cancel payload: the hook
++// writes x/providers, x/content or x/policy, and no authority key under the
++// reserved 0x17 or the retired 0x13 prefix is read or written. A successful
++// validator execute reads the pending prefix and the 0x15 key of its
++// consensus key (goal 10, D-7) and writes its pending entry. A successful
++// council seat execute reads the new key's 0x15 key and the pending prefix
++// (D-7) and writes the config and the old key's 0x15 key.
+@@ -177,0 +186,2 @@ func TestMessageKeySets(t *testing.T) {
++		hooks := hooksFor(t, kv)
++		st.Policy, st.Accounts = hooks.policy, hooks.accounts
+@@ -203 +213 @@ func TestMessageKeySets(t *testing.T) {
+-		keySet(governedKey("max_page_limit"), openKey(seat1, 1), proposalKey("p1"), executedKey("max_page_limit"), policy, businessKey("e1")),
++		keySet(openKey(seat1, 1), proposalKey("p1"), executedKey("max_page_limit"), policy, businessKey("e1")),
+@@ -258,0 +269,44 @@ func TestMessageKeySets(t *testing.T) {
++
++	// A successful validator execute also scans the pending prefix and,
++	// after the projection and the pending cap, reads the retired-seat key
++	// of its consensus key (D-7). It writes the pending entry.
++	add := powerMsg("v5", pub(5), 1, uint64(testHeight)+10)
++	queueAt(t, kv, seats, testHeight, unix, "p9", add)
++	entry := heightEntry("p9", "v5", pub(5), 1, uint64(testHeight)+10)
++	run("execute p9", "", keySet(businessKey("e9"), proposalKey("p9"), policy, []byte("scan:\x03"), retiredCouncilKey(pub(5)), openKey(seat1, 6)),
++		keySet(PendingKey(entry), openKey(seat1, 6), proposalKey("p9"), executedKey("validator-v5"), policy, businessKey("e9")),
++		func(st *State) Outcome { return st.ExecuteChange(execute(authority, "e9", "p9")) })
++
++	// Schema version 2 payloads. A software upgrade, a cancel and a
++	// scheduled governed limit touch no authority key beyond the common set;
++	// x/policy (the fake here) holds the plan and the pending change. A
++	// council seat execute also reads the new key's 0x15 key and the pending
++	// prefix and writes the config and the old key's 0x15 key.
++	for i, row := range []struct {
++		id  string
++		msg *authorityv1.MsgProposeChange
++	}{
++		{"p10", upgradeMsg("up-1", uint64(testHeight)+msgkit.MinActivationLeadBlocks, pub(9))},
++		{"p11", cancelMsg("up-1")},
++		{"p12", scheduledMsg(msgkit.LimitMaxOpenOffers, 9, uint64(testHeight)+1)},
++	} {
++		version := uint64(7 + i)
++		queueAt(t, kv, seats, testHeight, unix, row.id, row.msg)
++		param := recordOf(t, kv, row.id).ParameterKey
++		business := "e" + row.id[1:]
++		run("execute "+row.id, "", keySet(businessKey(business), proposalKey(row.id), policy, openKey(seat1, version)),
++			keySet(openKey(seat1, version), proposalKey(row.id), executedKey(param), policy, businessKey(business)),
++			func(st *State) Outcome { return st.ExecuteChange(execute(authority, business, row.id)) })
++	}
++	queueAt(t, kv, seats, testHeight, unix, "p13", seatMsg(seats[3].ID, pub(80)))
++	run("execute p13", "", keySet(businessKey("e13"), proposalKey("p13"), policy, retiredCouncilKey(pub(80)), []byte("scan:\x03"), openKey(seat1, 10)),
++		keySet(cfg, retiredCouncilKey(seats[3].Pub), openKey(seat1, 10), proposalKey("p13"), executedKey("seat-"+seats[3].ID), policy, businessKey("e13")),
++		func(st *State) Outcome { return st.ExecuteChange(execute(authority, "e13", "p13")) })
++	if calls := policyFor(t, kv).calls; !slices.Equal(calls[len(calls)-4:], []string{
++		"UpgradeApplied up-1", "ScheduleUpgrade up-1", "CancelUpgrade up-1", "SchedulePending " + msgkit.LimitMaxOpenOffers,
++	}) {
++		t.Fatalf("policy calls %v", calls)
++	}
++	if created := accountsFor(t, kv).created; len(created) != 1 || !bytes.Equal(created[0], SeatAddress(pub(80))) {
++		t.Fatalf("accounts created %x", created)
++	}
+diff --git a/chain/x/authority/gates_test.go b/chain/x/authority/gates_test.go
+index 0a14be7..1822b37 100644
+--- a/chain/x/authority/gates_test.go
++++ b/chain/x/authority/gates_test.go
+@@ -95,0 +96 @@ func TestCouncilGateIsDecisionBlocked(t *testing.T) {
++			st.Policy = policyFor(t, kv)
+diff --git a/chain/x/authority/helpers_test.go b/chain/x/authority/helpers_test.go
+index 7ea6d6d..34547d2 100644
+--- a/chain/x/authority/helpers_test.go
++++ b/chain/x/authority/helpers_test.go
+@@ -107 +107,3 @@ func readyStore(t testing.TB) (storetypes.KVStore, []testSeat, []byte) {
+-// loadAt is LoadState on the test chain id at one height and time.
++// loadAt is LoadState on the test chain id at one height and time, with the
++// policy and account hooks bound to the store's fakes (hooksFor), as
++// Keeper.transition binds x/policy and the auth store to every message.
+@@ -113,0 +116,3 @@ func loadAt(t testing.TB, kv KV, height, unix int64) *State {
++	hooks := hooksFor(t, kv)
++	st.Policy = hooks.policy
++	st.Accounts = hooks.accounts
+@@ -347,0 +353,45 @@ func timeEntry(id, node string, key []byte, power, unix int64) *authorityv1.Pend
++
++// scheduledMsg changes one governed limit at an activation height (schema
++// version 2; 0 is the v0 form).
++func scheduledMsg(key string, value, activation uint64) *authorityv1.MsgProposeChange {
++	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_GovernedLimit{
++		GovernedLimit: &authorityv1.GovernedLimitChange{LimitKey: key, Value: value, ActivationHeight: activation},
++	}}, key)
++}
++
++// upgradeMsg schedules the upgrade plan name at height with a SHA-256
++// release digest of value.
++func upgradeMsg(name string, height uint64, value []byte) *authorityv1.MsgProposeChange {
++	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_SoftwareUpgrade{
++		SoftwareUpgrade: &authorityv1.SoftwareUpgradeChange{
++			Name: name, Height: height,
++			ReleaseDigest: &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: value},
++		},
++	}}, upgradeParameterKey)
++}
++
++// cancelMsg cancels the pending upgrade plan name.
++func cancelMsg(name string) *authorityv1.MsgProposeChange {
++	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_CancelUpgrade{
++		CancelUpgrade: &authorityv1.CancelUpgradeChange{Name: name},
++	}}, upgradeParameterKey)
++}
++
++// seatMsg replaces the key of seat seatID with key.
++func seatMsg(seatID string, key []byte) *authorityv1.MsgProposeChange {
++	return payloadMsg(&authorityv1.ProposalPayload{Change: &authorityv1.ProposalPayload_CouncilSeat{
++		CouncilSeat: &authorityv1.CouncilSeatChange{SeatId: seatID, NewPublicKey: key},
++	}}, "seat-"+seatID)
++}
++
++// rawPayloadMsg wraps a payload the chain may refuse at parse with the
++// digest of canon, the canonical text the test states for it, and the
++// parameter key.
++func rawPayloadMsg(payload *authorityv1.ProposalPayload, parameter, canon string) *authorityv1.MsgProposeChange {
++	sum := sha256.Sum256([]byte(canon))
++	return &authorityv1.MsgProposeChange{
++		ParameterKey:  parameter,
++		Payload:       payload,
++		PayloadDigest: &typesv1.Digest{Algorithm: typesv1.DigestAlgorithm_DIGEST_ALGORITHM_SHA256, Value: sum[:]},
++	}
++}
+diff --git a/chain/x/authority/keeper_registry_test.go b/chain/x/authority/keeper_registry_test.go
+index a47b5a0..9faa285 100644
+--- a/chain/x/authority/keeper_registry_test.go
++++ b/chain/x/authority/keeper_registry_test.go
+@@ -8,0 +9 @@ import (
++	"google.golang.org/protobuf/proto"
+@@ -15,0 +17 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
+@@ -439,2 +441,3 @@ func TestKeeperMalformedPeerBusinessDigestIsIntegrity(t *testing.T) {
+-// Role and DevnetRole report nothing (callers then refuse), GovernedLimit
+-// and BusinessDigest panic rather than report a ceiling or a free id.
++// Role and DevnetRole report nothing (callers then refuse), BusinessDigest
++// and BlockedDecisions panic rather than report a free id or no blocked
++// decision. Governed values are read from x/policy.
+@@ -518,2 +521,6 @@ func TestKeeperReadSurface(t *testing.T) {
+-	t.Run("governed limit", func(t *testing.T) {
+-		if value, found := e.keeper.GovernedLimit(ctx, msgkit.LimitMaxPageLimit); found {
++	t.Run("governed limit is x/policy state", func(t *testing.T) {
++		// Goal 10 moved governed values to x/policy: an executed governed
++		// limit is read there (its damaged-value panic is x/policy's
++		// TestGovernedLimitReadSurface), and nothing is written under the
++		// retired authority prefix 0x13.
++		if value, found := e.governed(msgkit.LimitMaxPageLimit); found {
+@@ -526 +533 @@ func TestKeeperReadSurface(t *testing.T) {
+-		if value, found := e.keeper.GovernedLimit(e.blockCtx(), msgkit.LimitMaxPageLimit); !found || value != 50 {
++		if value, found := e.governed(msgkit.LimitMaxPageLimit); !found || value != 50 {
+@@ -529 +536 @@ func TestKeeperReadSurface(t *testing.T) {
+-		if _, found := e.keeper.GovernedLimit(e.blockCtx(), msgkit.LimitMaxPackageBytes); found {
++		if _, found := e.governed(msgkit.LimitMaxPackageBytes); found {
+@@ -532,3 +539,2 @@ func TestKeeperReadSurface(t *testing.T) {
+-		empty, keys := msgkittest.NewContext(t, ModuleName)
+-		if _, found := NewKeeper(keys[ModuleName]).GovernedLimit(empty, msgkit.LimitMaxPageLimit); found {
+-			t.Fatal("an empty store has a governed limit")
++		if n := countPrefix(store, governedPrefix); n != 0 {
++			t.Fatalf("%d keys under the retired prefix 0x13", n)
+@@ -536,12 +542,13 @@ func TestKeeperReadSurface(t *testing.T) {
+-		ceiling, _ := governedCeiling(msgkit.LimitMaxPageLimit)
+-		for name, value := range map[string][]byte{
+-			"7 bytes":         make([]byte, 7),
+-			"zero":            encodeU64(0),
+-			"above ceiling":   encodeU64(ceiling + 1),
+-			"9 bytes":         make([]byte, 9),
+-			"unknown key set": nil,
+-		} {
+-			key := governedKey(msgkit.LimitMaxPageLimit)
+-			if value == nil {
+-				key = governedKey("max_unknown_limit")
+-				value = encodeU64(1)
++	})
++
++	t.Run("blocked decisions", func(t *testing.T) {
++		gen, seats, authority := readyGenesis()
++		gen.BlockedDecisions = policy.DefaultGenesisState().GetPolicy().GetBlockedDecisions()
++		be := newKeeperEnv(t, gen, seats, authority)
++		rows := be.keeper.BlockedDecisions(be.blockCtx())
++		if len(rows) == 0 || len(rows) != len(gen.GetBlockedDecisions()) {
++			t.Fatalf("%d rows, genesis holds %d", len(rows), len(gen.GetBlockedDecisions()))
++		}
++		for i, row := range rows {
++			if !proto.Equal(row, gen.GetBlockedDecisions()[i]) {
++				t.Fatalf("row %d %v, genesis %v", i, row, gen.GetBlockedDecisions()[i])
+@@ -549,2 +556,18 @@ func TestKeeperReadSurface(t *testing.T) {
+-			prev := store.Get(key)
+-			store.Set(key, value)
++		}
++		rows[0].DecisionId = "DEC-999"
++		if again := be.keeper.BlockedDecisions(be.blockCtx()); again[0].GetDecisionId() == "DEC-999" {
++			t.Fatal("a change to the returned rows reached the next read")
++		}
++		if got := e.keeper.BlockedDecisions(ctx); len(got) != 0 {
++			t.Fatalf("a genesis without blocked decisions reports %d", len(got))
++		}
++		// Fails closed: no config, or an undecodable one, never reports
++		// that nothing is blocked.
++		empty, keys := msgkittest.NewContext(t, ModuleName)
++		for name, read := range map[string]func(){
++			"empty store": func() { NewKeeper(keys[ModuleName]).BlockedDecisions(empty) },
++			"undecodable": func() {
++				be.kv().Set([]byte{configKey}, []byte{0xff})
++				be.keeper.BlockedDecisions(be.blockCtx())
++			},
++		} {
+@@ -554 +577 @@ func TestKeeperReadSurface(t *testing.T) {
+-						t.Fatalf("%s: GovernedLimit reported a value or the ceiling on damaged state", name)
++						t.Fatalf("%s: BlockedDecisions reported rows", name)
+@@ -557 +580 @@ func TestKeeperReadSurface(t *testing.T) {
+-				e.keeper.GovernedLimit(e.blockCtx(), string(key[1:]))
++				read()
+@@ -559,5 +581,0 @@ func TestKeeperReadSurface(t *testing.T) {
+-			if prev == nil {
+-				store.Delete(key)
+-			} else {
+-				store.Set(key, prev)
+-			}
+diff --git a/chain/x/authority/keeper_test.go b/chain/x/authority/keeper_test.go
+index abc4446..ea39616 100644
+--- a/chain/x/authority/keeper_test.go
++++ b/chain/x/authority/keeper_test.go
+@@ -20,0 +21 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
+@@ -21,0 +23 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
+@@ -27,2 +29,6 @@ import (
+-// is a second IAVL store that the registry test hooks write to; it stays
+-// empty unless a test uses it (keeper_registry_test.go).
++// is a second IAVL store that the registry test hooks and the account hook
++// (storeAccounts) write to; it stays empty unless a test uses a hook.
++// policyKey is the real x/policy store with the default policy genesis;
++// keeper executes governed limit and upgrade payloads through the real
++// x/policy keeper (policyKeeper), whose version and decision sources are
++// this module's read surface, as in the app.
+@@ -30,8 +36,31 @@ type keeperEnv struct {
+-	cms         storetypes.CommitMultiStore
+-	key         *storetypes.KVStoreKey
+-	registryKey *storetypes.KVStoreKey
+-	keeper      Keeper
+-	seats       []testSeat
+-	authority   []byte
+-	height      int64
+-	unix        int64
++	cms          storetypes.CommitMultiStore
++	key          *storetypes.KVStoreKey
++	registryKey  *storetypes.KVStoreKey
++	policyKey    *storetypes.KVStoreKey
++	policyKeeper policy.Keeper
++	keeper       Keeper
++	seats        []testSeat
++	authority    []byte
++	height       int64
++	unix         int64
++}
++
++// storeAccounts is the keeper-level unit-test stand-in for the auth account
++// keeper: an account is a key "acct" || addr in the registry test store, so
++// a created account is visible in the store compare and is dropped with the
++// nested cache of a refused or failed execute. An address that already has
++// one is a success; an address that is not 20 bytes is BOUNDS.
++type storeAccounts struct {
++	key *storetypes.KVStoreKey
++}
++
++func accountKey(addr []byte) []byte {
++	return append([]byte("acct"), addr...)
++}
++
++func (a storeAccounts) EnsureAccount(ctx sdk.Context, addr []byte) msgkit.Code {
++	if len(addr) != 20 {
++		return msgkit.Bounds
++	}
++	ctx.KVStore(a.key).Set(accountKey(addr), []byte{1})
++	return msgkit.OK
+@@ -44,0 +74 @@ func newKeeperEnv(t testing.TB, gen *authorityv1.GenesisState, seats []testSeat,
++	policyKey := storetypes.NewKVStoreKey(policy.ModuleName)
+@@ -46,0 +77 @@ func newKeeperEnv(t testing.TB, gen *authorityv1.GenesisState, seats []testSeat,
++	cms.MountStoreWithDB(policyKey, storetypes.StoreTypeIAVL, nil)
+@@ -50 +81,7 @@ func newKeeperEnv(t testing.TB, gen *authorityv1.GenesisState, seats []testSeat,
+-	env := &keeperEnv{cms: cms, key: key, registryKey: registryKey, keeper: NewKeeper(key), seats: seats, authority: authority, height: testHeight, unix: testTime}
++	read := NewKeeper(key)
++	policyKeeper := policy.NewKeeper(policyKey, policy.Deps{Versions: read, Decisions: read})
++	env := &keeperEnv{
++		cms: cms, key: key, registryKey: registryKey, policyKey: policyKey, policyKeeper: policyKeeper,
++		keeper: read.WithPolicy(policyKeeper).WithAccounts(storeAccounts{key: registryKey}),
++		seats:  seats, authority: authority, height: testHeight, unix: testTime,
++	}
+@@ -53,0 +91,3 @@ func newKeeperEnv(t testing.TB, gen *authorityv1.GenesisState, seats []testSeat,
++	if err := policyKeeper.InitGenesis(env.blockCtx(), policy.DefaultGenesisState()); err != nil {
++		t.Fatal(err)
++	}
+@@ -82,0 +123,10 @@ func (e *keeperEnv) kv() storetypes.KVStore {
++// policyKV is the x/policy store without gas.
++func (e *keeperEnv) policyKV() storetypes.KVStore {
++	return e.cms.GetKVStore(e.policyKey)
++}
++
++// governed is the governed value x/policy holds for key.
++func (e *keeperEnv) governed(key string) (uint64, bool) {
++	return e.policyKeeper.GovernedLimit(e.blockCtx(), key)
++}
++
+@@ -321 +371 @@ func TestExportGenesisPanicsOnSideState(t *testing.T) {
+-// Pins README "No migration" and validator-lifecycle.md "Old devnet homes";
++// Pins README "Layout version 2 and no migration" and validator-lifecycle.md "Old devnet homes";
+diff --git a/chain/x/leases/difftest/harness_test.go b/chain/x/leases/difftest/harness_test.go
+index c628c4f..76899f6 100644
+--- a/chain/x/leases/difftest/harness_test.go
++++ b/chain/x/leases/difftest/harness_test.go
+@@ -27,0 +28 @@ import (
++	"github.com/Maxencejules/shortvideo-network/chain/x/policy"
+@@ -36,3 +37,3 @@ import (
+-// x/authority keeper too, although these tests use a fake of it), the
+-// lease keeper is the content withdrawal hook the app wires, and the fake
+-// authority satisfies every surface it stands in for.
++// x/authority and x/policy keepers too, although these tests use a fake of
++// them), the lease keeper is the content withdrawal hook the app wires, and
++// the fake authority satisfies every surface it stands in for.
+@@ -46 +47 @@ var (
+-	_ leases.Limits             = authority.Keeper{}
++	_ leases.Limits             = policy.Keeper{}
+diff --git a/chain/x/providers/module_test.go b/chain/x/providers/module_test.go
+index 9a1f812..6363a2c 100644
+--- a/chain/x/providers/module_test.go
++++ b/chain/x/providers/module_test.go
+@@ -216,2 +216,3 @@ func TestUnaryHandlerInterceptor(t *testing.T) {
+-// SDK returns before it looks for a step). Real migrations (and the auth
+-// 5 -> 7 follow-up) belong to goal 10.
++// SDK returns before it looks for a step). Goal 10 added the upgrade
++// runner (chain/upgrade) and no providers step; the auth 5 -> 7 follow-up
++// is not applicable, because every svnd chain starts auth at 7 (DR-10-24).
+diff --git a/tests/unit/test_ci_devnet_coverage.py b/tests/unit/test_ci_devnet_coverage.py
+index db8d221..360d048 100644
+--- a/tests/unit/test_ci_devnet_coverage.py
++++ b/tests/unit/test_ci_devnet_coverage.py
+@@ -5,8 +5,16 @@ devnet tests does not reach the 20-minute job cap. Those tests then run only in
+-the go-race "devnet" and "devnet-evidence" shards. This guard fails when the
+-skip is set and those two shards no longer run every chain/devnet test under
+--race, or could pass without running them or without failing when they fail:
+-an operator or -args after go test, -exec, -count below 1, GOFLAGS, an `if:`,
+-continue-on-error, a changed shell, `set +e`, or a trap. It reads the workflow
+-text with its own small parser, not a shell, so it guards against edits like
+-the mutations below; it does not prove that no shell construct can hide a
+-failure. The mutated documents below are fixtures, not workflow files.
++the go-race devnet shards: the shards whose case branch runs `go test` on
++./chain/devnet. Exactly one of them selects tests with -skip ("devnet"); every
++other one selects with -run ("devnet-evidence", "devnet-upgrade", or any later
++shard). Each filter is a plain alternation of test-name prefixes, the -skip
++alternatives are exactly the union of the -run alternatives, no alternative or
++top-level test name of chain/devnet is selected by two -run shards, and every
++-run shard selects at least one top-level test: together the shards run every
++chain/devnet test once. This guard fails when the skip is set and those shards
++no longer run every chain/devnet test under -race, or could pass without
++running them or without failing when they fail: a devnet branch missing from
++the matrix, an operator or -args after go test, -exec, -count below 1,
++GOFLAGS, an `if:`, continue-on-error, a changed shell, `set +e`, or a trap. It
++reads the workflow text with its own small parser, not a shell, so it guards
++against edits like the mutations below; it does not prove that no shell
++construct can hide a failure. The mutated documents below are fixtures, not
++workflow files.
+@@ -34,4 +42,5 @@ PACKAGE_ARGS = frozenset({"./chain/devnet", "./chain/devnet/"})
+-# Shard name -> the filter flag it must use. Both use the same regex, so a
+-# top-level test runs in "devnet-evidence" when the regex matches its name and
+-# in "devnet" otherwise: together they run the whole package once.
+-SHARD_FILTERS = {"devnet": "skip", "devnet-evidence": "run"}
++# A filter is an alternation of plain test-name prefixes: go test matches
++# each alternative unanchored, so a top-level test is selected by an
++# alternative when the alternative is a substring of its name.
++_ALTERNATIVE = re.compile(r"[A-Za-z0-9_]+")
++_TOP_LEVEL_TEST = re.compile(r"^func (Test\w+)\(t \*testing\.T\)", re.MULTILINE)
+@@ -265,4 +274,19 @@ def _count_problem(flags: dict[str, str]) -> str | None:
+-def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
+-    """The filter regex of the shard's race run of ./chain/devnet, and errors."""
+-    want = SHARD_FILTERS[shard]
+-    other = "run" if want == "skip" else "skip"
++def devnet_test_names() -> list[str]:
++    """The top-level test functions of chain/devnet, from its _test.go files."""
++    names: list[str] = []
++    for path in sorted(DEVNET_DIR.glob("*_test.go")):
++        names.extend(_TOP_LEVEL_TEST.findall(path.read_text(encoding="utf-8")))
++    return sorted(set(names))
++
++
++@dataclass(frozen=True)
++class DevnetShard:
++    """One go-race shard that runs `go test` on ./chain/devnet."""
++
++    name: str
++    flag: str
++    regex: str
++
++
++def _devnet_filter(shard: str, lines: list[str]) -> tuple[DevnetShard | None, list[str]]:
++    """The filter of a branch's race run of ./chain/devnet, None when it has none."""
+@@ -270 +294 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
+-    found: list[str] = []
++    found: list[tuple[str, str]] = []
+@@ -278,4 +302,8 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
+-        if other in command.flags:
+-            problems.append(f"-{other} present")
+-        if want not in command.flags or not command.flags[want]:
+-            problems.append(f"no -{want}")
++        selected = [flag for flag in ("run", "skip") if flag in command.flags]
++        if len(selected) != 1:
++            problems.append(
++                "needs exactly one of -run and -skip, has "
++                + (", ".join("-" + flag for flag in selected) or "neither")
++            )
++        elif not command.flags[selected[0]]:
++            problems.append(f"empty -{selected[0]}")
+@@ -295,0 +324,2 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
++            # A refused command still marks the branch as a devnet branch.
++            found.append(("", ""))
+@@ -297 +327 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
+-        found.append(command.flags[want])
++        found.append((selected[0], command.flags[selected[0]]))
+@@ -299,3 +328,0 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
+-        errors.append(
+-            f"{RACE_JOB} shard {shard}: no `go test -race -{want} <regex> ./chain/devnet` command"
+-        )
+@@ -303,2 +330,5 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
+-    if len(set(found)) != 1:
+-        errors.append(f"{RACE_JOB} shard {shard}: several -{want} filters {sorted(set(found))}")
++    if len(found) != 1:
++        errors.append(f"{RACE_JOB} shard {shard}: {len(found)} go test runs of ./chain/devnet")
++        return None, errors
++    flag, regex = found[0]
++    if not flag:
+@@ -306 +336,68 @@ def _shard_filter(shard: str, lines: list[str]) -> tuple[str | None, list[str]]:
+-    return found[0], errors
++    return DevnetShard(name=shard, flag=flag, regex=regex), errors
++
++
++def _alternatives(shard: DevnetShard) -> tuple[list[str], list[str]]:
++    """The alternatives of a shard's filter, and errors when one is not a plain prefix."""
++    if "/" in shard.regex:
++        return [], [
++            f"filter {shard.regex!r} of shard {shard.name} has a slash, so it also selects subtests"
++        ]
++    parts = shard.regex.split("|")
++    bad = [part for part in parts if not _ALTERNATIVE.fullmatch(part)]
++    if bad:
++        return [], [
++            f"filter {shard.regex!r} of shard {shard.name} is not a plain alternation "
++            f"of test-name prefixes ({bad})"
++        ]
++    return parts, []
++
++
++def _partition_errors(shards: list[DevnetShard], names: list[str]) -> list[str]:
++    """Errors unless the shards run every top-level devnet test exactly once."""
++    skips = [shard for shard in shards if shard.flag == "skip"]
++    runs = [shard for shard in shards if shard.flag == "run"]
++    if len(skips) != 1:
++        return [
++            f"{RACE_JOB}: {len(skips)} devnet shards select with -skip "
++            f"({[shard.name for shard in skips]}); "
++            "exactly one must run every test the -run shards leave"
++        ]
++    skip = skips[0]
++    errors: list[str] = []
++    skipped, skip_errors = _alternatives(skip)
++    errors.extend(skip_errors)
++    owner: dict[str, str] = {}
++    for shard in runs:
++        parts, part_errors = _alternatives(shard)
++        errors.extend(part_errors)
++        for part in parts:
++            if part in owner:
++                errors.append(
++                    f"regex overlap: {part} is selected by shards {owner[part]} and {shard.name}"
++                )
++            owner.setdefault(part, shard.name)
++    if errors:
++        return errors
++    missing = sorted(set(skipped) - set(owner))
++    if missing:
++        errors.append(
++            f"shard {skip.name} -skip {skip.regex!r} skips {missing}, which no -run shard runs"
++        )
++    unskipped = sorted(set(owner) - set(skipped))
++    if unskipped:
++        errors.append(
++            f"shard {skip.name} -skip {skip.regex!r} does not skip {unskipped}, "
++            "so those tests run twice; "
++            "the -skip alternatives must be the union of the -run alternatives"
++        )
++    selected = {shard.name: 0 for shard in runs}
++    for name in names:
++        by = sorted({owner[part] for part in owner if part in name})
++        if len(by) > 1:
++            errors.append(f"regex overlap: {name} is selected by shards {by}")
++        for shard_name in by:
++            selected[shard_name] += 1
++    for shard_name, count in selected.items():
++        if count == 0:
++            errors.append(f"shard {shard_name} selects no top-level test of chain/devnet")
++    return errors
+@@ -327,8 +423,0 @@ def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
+-    for shard in SHARD_FILTERS:
+-        if shard not in shard_list:
+-            errors.append(f"{RACE_JOB} matrix has no {shard} shard")
+-    excludes = matrix.get("exclude")
+-    if excludes is not None:
+-        for entry in excludes if isinstance(excludes, list) else [excludes]:
+-            if str(_mapping(entry).get("shard")) in SHARD_FILTERS or not isinstance(entry, dict):
+-                errors.append(f"{RACE_JOB} matrix excludes {entry}")
+@@ -355,2 +444,15 @@ def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
+-    filters: dict[str, str] = {}
+-    for shard in SHARD_FILTERS:
++    # Every branch that runs ./chain/devnet must be a matrix shard, or the
++    # tests it would run run nowhere.
++    devnet_labels: set[str] = set()
++    for labels, body in case.branches:
++        found, branch_errors = _devnet_filter("|".join(labels), list(body))
++        if found is not None or branch_errors:
++            devnet_labels.update(labels)
++    for label in sorted(devnet_labels):
++        if label not in shard_list:
++            errors.append(
++                f"{RACE_JOB} case branch {label} runs ./chain/devnet "
++                f"but the matrix has no {label} shard"
++            )
++    devnet_shards: list[DevnetShard] = []
++    for shard in shard_list:
+@@ -361 +463 @@ def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
+-        regex, shard_errors = _shard_filter(shard, lines)
++        found, shard_errors = _devnet_filter(shard, lines)
+@@ -363,5 +465,3 @@ def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
+-        if regex is not None:
+-            filters[shard] = regex
+-    if len(filters) == len(SHARD_FILTERS):
+-        skip, run_regex = filters["devnet"], filters["devnet-evidence"]
+-        if skip != run_regex:
++        if found is not None:
++            devnet_shards.append(found)
++        elif shard in devnet_labels and not shard_errors:
+@@ -369,2 +469,2 @@ def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
+-                f"devnet -skip {skip!r} and devnet-evidence -run {run_regex!r} differ, "
+-                "so together they need not cover chain/devnet"
++                f"{RACE_JOB} shard {shard}: its case branch runs ./chain/devnet, "
++                "but the shell runs an earlier case branch without that go test"
+@@ -372,2 +472,9 @@ def _race_errors(data: dict[str, object], jobs: dict[str, object]) -> list[str]:
+-        elif "/" in skip:
+-            errors.append(f"filter {skip!r} has a slash, so it also selects subtests")
++    if not devnet_shards:
++        return errors + [f"{RACE_JOB}: no shard runs `go test -race` on ./chain/devnet"]
++    excludes = matrix.get("exclude")
++    if excludes is not None:
++        devnet_names = {shard.name for shard in devnet_shards} | devnet_labels
++        for entry in excludes if isinstance(excludes, list) else [excludes]:
++            if str(_mapping(entry).get("shard")) in devnet_names or not isinstance(entry, dict):
++                errors.append(f"{RACE_JOB} matrix excludes {entry}")
++    errors.extend(_partition_errors(devnet_shards, devnet_test_names()))
+@@ -421 +528 @@ def test_real_go_step_sets_the_skip_and_says_where_the_tests_run() -> None:
+-    assert "devnet-evidence" in lines[echo[0]]
++    assert "devnet-evidence" in lines[echo[0]] and "devnet-upgrade" in lines[echo[0]]
+@@ -431,0 +539,22 @@ def test_devnet_skip_gates_use_the_guarded_variable() -> None:
++MATRIX = "shard: [app, devnet, devnet-evidence, devnet-upgrade, rest]"
++DEVNET_SKIP = (
++    "-skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange' "
++    "./chain/devnet"
++)
++EVIDENCE_RUN = "-run TestDevnetAudit ./chain/devnet"
++UPGRADE_RUN = "-run 'TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange' ./chain/devnet"
++UPGRADE_BRANCH = (
++    "            devnet-upgrade)\n"
++    "              # The upgrade tests build svnd and the rehearsal binaries\n"
++    "              # (-tags svn_rehearsal, -tags svn_rehearsal_bad) inside their\n"
++    "              # timeout and link the state-check library (chain/internal);\n"
++    "              # building them first fills the build cache, so that compile\n"
++    "              # time stays outside the 15m limit.\n"
++    "              go build -C chain -o /dev/null ./cmd/svnd\n"
++    "              go build -C chain -tags svn_rehearsal -o /dev/null ./cmd/svnd\n"
++    "              go build -C chain -tags svn_rehearsal_bad -o /dev/null ./cmd/svnd\n"
++    "              go build -C chain ./internal/...\n"
++    "              go test -race -count=1 -timeout 15m " + UPGRADE_RUN + "\n"
++    "              ;;\n"
++)
++
+@@ -434,3 +563,4 @@ MUTATIONS = [
+-        "shard: [app, devnet, devnet-evidence, rest]",
+-        "shard: [app, devnet, rest]",
+-        "no devnet-evidence shard",
++        MATRIX,
++        "shard: [app, devnet, devnet-upgrade, rest]",
++        "case branch devnet-evidence runs ./chain/devnet "
++        "but the matrix has no devnet-evidence shard",
+@@ -440,3 +570,3 @@ MUTATIONS = [
+-        "shard: [app, devnet, devnet-evidence, rest]",
+-        "shard: [app, devnet-evidence, rest]",
+-        "no devnet shard",
++        MATRIX,
++        "shard: [app, devnet-evidence, devnet-upgrade, rest]",
++        "case branch devnet runs ./chain/devnet but the matrix has no devnet shard",
+@@ -446,3 +576,15 @@ MUTATIONS = [
+-        "-skip TestDevnetAudit ./chain/devnet",
+-        "-skip TestDevnetAuditLifecycle ./chain/devnet",
+-        "differ",
++        MATRIX,
++        "shard: [app, devnet, devnet-evidence, rest]",
++        "case branch devnet-upgrade runs ./chain/devnet but the matrix has no devnet-upgrade shard",
++        id="matrix-drops-devnet-upgrade",
++    ),
++    pytest.param(
++        UPGRADE_BRANCH,
++        "",
++        "which no -run shard runs",
++        id="devnet-upgrade-branch-removed",
++    ),
++    pytest.param(
++        DEVNET_SKIP,
++        DEVNET_SKIP.replace("TestDevnetAudit|", "TestDevnetAuditLifecycle|"),
++        "does not skip ['TestDevnetAudit']",
+@@ -452,3 +594,21 @@ MUTATIONS = [
+-        "-skip TestDevnetAudit ./chain/devnet",
+-        "-run TestDevnetAudit ./chain/devnet",
+-        "no -skip",
++        DEVNET_SKIP,
++        DEVNET_SKIP.replace("|TestDevnetGovernedChange", ""),
++        "does not skip ['TestDevnetGovernedChange']",
++        id="skip-misses-an-upgrade-name",
++    ),
++    pytest.param(
++        UPGRADE_RUN,
++        UPGRADE_RUN.replace("'TestDevnetUpgrade|", "'TestDevnetAudit|TestDevnetUpgrade|"),
++        "regex overlap: TestDevnetAudit is selected by shards devnet-evidence and devnet-upgrade",
++        id="run-regexes-overlap",
++    ),
++    pytest.param(
++        UPGRADE_RUN,
++        UPGRADE_RUN.replace("'TestDevnetUpgrade|", "'^TestDevnetUpgrade$|"),
++        "is not a plain alternation of test-name prefixes",
++        id="upgrade-filter-anchored",
++    ),
++    pytest.param(
++        DEVNET_SKIP,
++        DEVNET_SKIP.replace("-skip", "-run"),
++        "0 devnet shards select with -skip",
+@@ -458 +618 @@ MUTATIONS = [
+-        "-run TestDevnetAudit ./chain/devnet",
++        EVIDENCE_RUN,
+@@ -460 +620 @@ MUTATIONS = [
+-        "-skip present",
++        "needs exactly one of -run and -skip, has -run, -skip",
+@@ -466 +626 @@ MUTATIONS = [
+-        "no -race",
++        "shard devnet-evidence: go test of ./chain/devnet: no -race",
+@@ -470,3 +630,9 @@ MUTATIONS = [
+-        "-skip TestDevnetAudit ./chain/devnet",
+-        "-skip TestDevnetAudit ./chain/app",
+-        "shard devnet: no `go test",
++        "go test -race -count=1 -timeout 15m " + UPGRADE_RUN,
++        "go test -count=1 -timeout 15m " + UPGRADE_RUN,
++        "shard devnet-upgrade: go test of ./chain/devnet: no -race",
++        id="upgrade-shard-drops-race",
++    ),
++    pytest.param(
++        DEVNET_SKIP,
++        DEVNET_SKIP.replace("./chain/devnet", "./chain/app"),
++        "0 devnet shards select with -skip",
+@@ -476,3 +642,3 @@ MUTATIONS = [
+-        "              go test -race -count=1 -timeout 12m -skip TestDevnetAudit",
+-        "              # go test -race -count=1 -timeout 12m -skip TestDevnetAudit",
+-        "shard devnet: no `go test",
++        "              go test -race -count=1 -timeout 12m -skip",
++        "              # go test -race -count=1 -timeout 12m -skip",
++        "0 devnet shards select with -skip",
+@@ -482,2 +648,2 @@ MUTATIONS = [
+-        "go test -race -count=1 -timeout 12m -skip TestDevnetAudit",
+-        "go test -race -short -count=1 -timeout 12m -skip TestDevnetAudit",
++        "go test -race -count=1 -timeout 12m -skip",
++        "go test -race -short -count=1 -timeout 12m -skip",
+@@ -500,2 +666,2 @@ MUTATIONS = [
+-        "        shard: [app, devnet, devnet-evidence, rest]\n",
+-        "        shard: [app, devnet, devnet-evidence, rest]\n    env:\n      SVN_SKIP_DEVNET: 1\n",
++        "        " + MATRIX + "\n",
++        "        " + MATRIX + "\n    env:\n      SVN_SKIP_DEVNET: 1\n",
+@@ -527,2 +693,3 @@ MUTATIONS = [
+-        # The shell then runs the "*)" branch, which only fails the job.
+-        "shard devnet-evidence: no `go test",
++        # The shell then runs the "*)" branch for devnet-evidence, which only
++        # fails the job.
++        "case branch devnet-audit runs ./chain/devnet but the matrix has no devnet-audit shard",
+@@ -537 +704 @@ MUTATIONS = [
+-    # Edits that keep both go test lines but hide a failure or run no test.
++    # Edits that keep every go test line but hide a failure or run no test.
+@@ -539,2 +706,2 @@ MUTATIONS = [
+-        "-skip TestDevnetAudit ./chain/devnet",
+-        "-skip TestDevnetAudit ./chain/devnet || true",
++        DEVNET_SKIP,
++        DEVNET_SKIP + " || true",
+@@ -545,2 +712,2 @@ MUTATIONS = [
+-        "-skip TestDevnetAudit ./chain/devnet",
+-        "-skip TestDevnetAudit ./chain/devnet||true",
++        DEVNET_SKIP,
++        DEVNET_SKIP + "||true",
+@@ -551,2 +718,2 @@ MUTATIONS = [
+-        "-run TestDevnetAudit ./chain/devnet",
+-        "-run TestDevnetAudit ./chain/devnet || true",
++        EVIDENCE_RUN,
++        EVIDENCE_RUN + " || true",
+@@ -557,2 +724,8 @@ MUTATIONS = [
+-        "-run TestDevnetAudit ./chain/devnet",
+-        "-run TestDevnetAudit ./chain/devnet 2>&1 | tee devnet-evidence.log",
++        UPGRADE_RUN,
++        UPGRADE_RUN + " || true",
++        "shard devnet-upgrade: go test of ./chain/devnet: shell operator or -args",
++        id="upgrade-shard-or-true",
++    ),
++    pytest.param(
++        EVIDENCE_RUN,
++        EVIDENCE_RUN + " 2>&1 | tee devnet-evidence.log",
+@@ -563,2 +736,2 @@ MUTATIONS = [
+-        "-run TestDevnetAudit ./chain/devnet",
+-        "-run TestDevnetAudit ./chain/devnet -args -test.run=^$",
++        EVIDENCE_RUN,
++        EVIDENCE_RUN + " -args -test.run=^$",
+@@ -569,2 +742,2 @@ MUTATIONS = [
+-        "-skip TestDevnetAudit ./chain/devnet",
+-        "-skip TestDevnetAudit ./chain/devnet ./chain/app",
++        DEVNET_SKIP,
++        DEVNET_SKIP + " ./chain/app",
+@@ -575,2 +748,2 @@ MUTATIONS = [
+-        "go test -race -count=1 -timeout 12m -skip TestDevnetAudit",
+-        "go test -race -count=0 -timeout 12m -skip TestDevnetAudit",
++        "go test -race -count=1 -timeout 12m -skip",
++        "go test -race -count=0 -timeout 12m -skip",
+@@ -599,2 +772,2 @@ MUTATIONS = [
+-        "        shard: [app, devnet, devnet-evidence, rest]\n",
+-        "        shard: [app, devnet, devnet-evidence, rest]\n    env:\n      GOFLAGS: -run=^$\n",
++        "        " + MATRIX + "\n",
++        "        " + MATRIX + "\n    env:\n      GOFLAGS: -run=^$\n",
+@@ -655 +828 @@ def test_guard_fires_on_mutated_workflow(old: str, new: str, needle: str) -> Non
+-def test_guard_fires_on_slash_in_both_filters() -> None:
++def test_guard_fires_on_slash_in_filters() -> None:
+@@ -658,2 +831,2 @@ def test_guard_fires_on_slash_in_both_filters() -> None:
+-        ("-skip TestDevnetAudit ./chain/devnet", "-skip TestDevnetAudit/x ./chain/devnet"),
+-        ("-run TestDevnetAudit ./chain/devnet", "-run TestDevnetAudit/x ./chain/devnet"),
++        (DEVNET_SKIP, DEVNET_SKIP.replace("TestDevnetAudit|", "TestDevnetAudit/x|")),
++        (EVIDENCE_RUN, "-run TestDevnetAudit/x ./chain/devnet"),
+@@ -666,0 +840,33 @@ def test_guard_fires_on_slash_in_both_filters() -> None:
++def test_partition_reads_the_devnet_test_names() -> None:
++    """The name-level checks see every top-level devnet test, and a test that
++    two -run shards both select is an overlap even when no alternative repeats.
++    """
++    names = devnet_test_names()
++    assert (
++        "TestDevnetAuditLifecycle" in names and "TestFourValidatorsCommitRestartAndQuorum" in names
++    )
++    shards = [
++        DevnetShard(name="devnet", flag="skip", regex="TestDevnetAudit|Lifecycle"),
++        DevnetShard(name="devnet-evidence", flag="run", regex="TestDevnetAudit"),
++        DevnetShard(name="devnet-other", flag="run", regex="Lifecycle"),
++    ]
++    errors = _partition_errors(shards, names)
++    assert any(
++        "regex overlap: TestDevnetAuditLifecycle is selected by shards "
++        "['devnet-evidence', 'devnet-other']" in error
++        for error in errors
++    ), errors
++    empty = [
++        DevnetShard(name="devnet", flag="skip", regex="TestDevnetAudit|TestNoSuchDevnetTest"),
++        DevnetShard(name="devnet-evidence", flag="run", regex="TestDevnetAudit"),
++        DevnetShard(name="devnet-none", flag="run", regex="TestNoSuchDevnetTest"),
++    ]
++    errors = _partition_errors(empty, names)
++    assert errors == ["shard devnet-none selects no top-level test of chain/devnet"], errors
++    good = [
++        DevnetShard(name="devnet", flag="skip", regex="TestDevnetAudit"),
++        DevnetShard(name="devnet-evidence", flag="run", regex="TestDevnetAudit"),
++    ]
++    assert _partition_errors(good, names) == []
++
++
+@@ -688,3 +894,4 @@ def test_skip_written_in_the_go_run_script_still_needs_the_race_shards() -> None
+-    shards = "shard: [app, devnet, devnet-evidence, rest]"
+-    errors = devnet_coverage_errors(text.replace(shards, "shard: [app, devnet, rest]"))
+-    assert any("no devnet-evidence shard" in error for error in errors), errors
++    errors = devnet_coverage_errors(
++        text.replace(MATRIX, "shard: [app, devnet, devnet-upgrade, rest]")
++    )
++    assert any("the matrix has no devnet-evidence shard" in error for error in errors), errors
+@@ -696,3 +903 @@ def test_without_the_skip_the_go_job_covers_devnet() -> None:
+-    without_shards = text.replace(
+-        "shard: [app, devnet, devnet-evidence, rest]", "shard: [app, rest]"
+-    )
++    without_shards = text.replace(MATRIX, "shard: [app, rest]")
+@@ -757 +962,5 @@ def test_guard_fires_when_an_earlier_branch_shadows_devnet() -> None:
+-    assert any("shard devnet: no `go test" in error for error in errors), errors
++    assert any(
++        "shard devnet: its case branch runs ./chain/devnet, "
++        "but the shell runs an earlier case branch" in error
++        for error in errors
++    ), errors
+EXIT:0

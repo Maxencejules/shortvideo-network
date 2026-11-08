@@ -1,0 +1,78 @@
+COMMAND .venv/bin/python docs/evidence/goal-08/mutants.py --rev 18fa31076f28b64f429efd5443461cbcfd1f73c0 --logdir /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/mutlogs-goal08
+DATE 2026-11-08T01:06:58Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+revision 18fa31076f28b64f429efd5443461cbcfd1f73c0 commit 18fa31076f28b64f429efd5443461cbcfd1f73c0 tree dce9af14d32082c677f9ded2bf5ed09708f09792
+copy /tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/goal-10/w3/tmp/goal08-mutants-u0yf8pra/tree (git archive)
+mutants 28 of 28 (seat=13, review=5, leases=10)
+search strings: every one occurs exactly once
+go go version go1.26.10 linux/amd64
+SVN_SPEC_PYTHON=/tmp/claude-0/-home-user-shortvideo-network/9321dcf5-8dfa-5ba7-bbf4-0dfbce01360f/scratchpad/wt-10/.venv/bin/python
+command seat: go test -count=1 -v -timeout 15m -run ^(TestAdmissionOf|TestValidateGenesisState|TestSeatRotationMovesSeatAdmission|TestEngineOnlyRotationRejects|TestSeatAddressIsNotASubmitter|TestSeatKeysSignOnlyCouncilMessages|TestSeatRotationMovesAnteAdmission|TestRegistryMessagesRejectOtherRoles|TestRejectedMessagesLeaveTheFullAuthorityState|TestAnteRejectsNonAdmittedAccount|TestCommittedAuthorityFlowAndReplay)$ ./chain/x/authority/ ./chain/genesis/ ./chain/app/
+command review: go test -count=1 -v -timeout 15m -run ^(TestGenesisValidateImportExport|TestOfferCheckOrder|TestOpenOffersPerContentCapD6|TestOpenOffersPerSchedulerCapD10|TestEndCheckOrder|TestEndSignedForEarlierTermD12|TestAcceptReplayByAnotherProviderD13|TestDeviationRulesAreLoadBearing|TestWithdrawalAtContentCapGas|TestWithdrawalAtCapGasInApp|TestRejectedLeaseMessagesLeaveTheFullState)$ ./chain/x/leases/ ./chain/x/leases/difftest/ ./chain/app/
+command leases: go test -count=1 -v -timeout 15m -run ^(TestReserveReleaseAccounting|TestAccountingFuzzSeedsReachEveryOutcome|TestAcceptCheckOrder|TestOfferCheckOrder|TestEndCheckOrder|TestAuthorityEndCheckOrder|TestDuplicateReplicaRejected|TestServiceKeyCannotSignAcceptance|TestEndReleasesOnce|TestExpiryOrderAndBudget|TestExpiryWorkIsBounded|TestCapacityBoundaryThroughAccept|TestDifferentialAgainstSpecMachine|TestExpiryWorkIndependentOfBacklog|TestCapacityBoundaryAgainstSpecMachine|TestServiceKeyCannotSignAcceptanceInApp|TestRejectedLeaseMessagesLeaveTheFullState|TestLeaseRetryScenarios|TestLargeExpiringCatalogue|TestRestartContinuesExpiry|TestCapacityBoundaryInApp|TestDamagedExpiryLimitHalts)$ ./chain/x/leases/ ./chain/x/leases/difftest/ ./chain/x/providers/ ./chain/app/
+CONTROL seat PASS exit=0 secs=100.3 named_tests_passed=11/11
+CONTROL review PASS exit=0 secs=11.5 named_tests_passed=11/11
+CONTROL leases PASS exit=0 secs=52.4 named_tests_passed=22/22
+KILLED ante-seat-admission-removed group=seat exit=1 secs=8.4 file=chain/x/authority/store.go failing=TestSeatRotationMovesSeatAdmission TestAdmissionOf TestCommittedAuthorityFlowAndReplay TestRejectedMessagesLeaveTheFullAuthorityState TestAnteRejectsNonAdmittedAccount TestRegistryMessagesRejectOtherRoles TestSeatAddressIsNotASubmitter TestSeatKeysSignOnlyCouncilMessages TestSeatRotationMovesAnteAdmission
+    reason: AdmissionOf must admit a council seat account from the seat list in the authority config
+KILLED ante-seat-gate-removed group=seat exit=1 secs=7.9 file=chain/app/ante.go failing=TestRejectedMessagesLeaveTheFullAuthorityState TestRegistryMessagesRejectOtherRoles TestSeatKeysSignOnlyCouncilMessages TestSeatRotationMovesAnteAdmission
+    reason: the ante must refuse a seat-signed transaction that carries a non-council message
+KILLED auth-genesis-allows-seat-row group=seat exit=1 secs=9.2 file=chain/x/authority/genesis.go failing=TestValidateGenesisState TestSeatAddressIsNotASubmitter
+    reason: authority ValidateGenesisState must refuse a seat address in the submitter list
+KILLED doc-genesis-allows-seat-row group=seat exit=1 secs=10.2 file=chain/genesis/document.go failing=TestSeatAddressIsNotASubmitter
+    reason: genesis.Validate must refuse a seat address in the submitter list
+KILLED doc-and-auth-allow-broadcaster-seat-row group=seat exit=1 secs=11.0 file=chain/x/authority/genesis.go,chain/genesis/document.go failing=TestValidateGenesisState TestSeatAddressIsNotASubmitter
+    reason: both genesis validators must refuse a seat address listed as BROADCASTER (DR-06-06 supersedes DR-07-11)
+KILLED seat-may-sign-lease-messages group=seat exit=1 secs=8.3 file=chain/app/ante.go failing=TestSeatKeysSignOnlyCouncilMessages TestSeatRotationMovesAnteAdmission
+    reason: a seat key must not sign any svn.leases.v1 message
+KILLED seat-gate-checks-first-message-only group=seat exit=1 secs=9.3 file=chain/app/ante.go failing=TestSeatKeysSignOnlyCouncilMessages
+    reason: the seat check must cover every message of the transaction, not the first only
+KILLED rotation-keeps-old-key-admitted group=seat exit=1 secs=10.0 file=chain/x/authority/engine.go failing=TestSeatRotationMovesSeatAdmission TestRejectedMessagesLeaveTheFullAuthorityState TestSeatRotationMovesAnteAdmission
+    reason: RotateCouncilSeat must write no admission row; the retired key must not stay admitted
+KILLED rotation-onto-submitter-allowed group=seat exit=1 secs=10.7 file=chain/x/authority/engine.go failing=TestSeatRotationMovesSeatAdmission TestRejectedMessagesLeaveTheFullAuthorityState
+    reason: a seat rotation onto an address that is a submitter must be DUPLICATE_ID
+KILLED service-rotation-onto-seat-allowed group=seat exit=1 secs=10.0 file=chain/x/authority/engine.go failing=TestEngineOnlyRotationRejects
+    reason: RotateServiceSubmitter onto a seat address must be DUPLICATE_ID
+KILLED auth-genesis-omits-seat-accounts group=seat exit=1 secs=8.0 file=chain/app/state.go failing=TestCommittedAuthorityFlowAndReplay TestRejectedMessagesLeaveTheFullAuthorityState TestAnteRejectsNonAdmittedAccount TestRegistryMessagesRejectOtherRoles TestSeatAddressIsNotASubmitter TestSeatKeysSignOnlyCouncilMessages TestSeatRotationMovesAnteAdmission
+    reason: genesis must create an auth account for every seat address
+KILLED carried-ante-extra-admission group=seat exit=1 secs=8.9 file=chain/app/app.go failing=TestRejectedMessagesLeaveTheFullAuthorityState TestRegistryMessagesRejectOtherRoles
+    reason: goal 06 ante-extra-admission (B1): an extra 0x02 admission row written in the ante must fail the full authority-store compare
+KILLED carried-doc-seat-match-case-sensitive group=seat exit=1 secs=11.3 file=chain/genesis/document.go failing=TestSeatAddressIsNotASubmitter
+    reason: goal 07 doc-seat-rule-case-sensitive: genesis.Validate must match a seat address case-insensitively
+KILLED m1-genesis-content-cap-off group=review exit=1 secs=13.1 file=chain/x/leases/genesis.go failing=TestGenesisValidateImportExport
+    reason: leases ValidateGenesis must refuse more than MaxOpenOffersPerContent open offers of one content
+KILLED m2-offer-d6-off group=review exit=1 secs=10.3 file=chain/x/leases/msg_server.go failing=TestOfferCheckOrder TestOpenOffersPerContentCapD6 TestOpenOffersPerSchedulerCapD10 TestDeviationRulesAreLoadBearing TestWithdrawalAtContentCapGas TestWithdrawalAtCapGasInApp
+    reason: OfferLease past MaxOpenOffersPerContent open offers of one content must be BOUNDS (D-6)
+KILLED m4-offer-d10-off group=review exit=1 secs=12.6 file=chain/x/leases/msg_server.go failing=TestOfferCheckOrder TestOpenOffersPerSchedulerCapD10 TestDeviationRulesAreLoadBearing TestWithdrawalAtCapGasInApp
+    reason: OfferLease past MaxOpenOffersPerContentPerScheduler open offers of one content by one scheduler must be BOUNDS (D-10)
+KILLED m5-end-payload-drops-term-version group=review exit=1 secs=13.5 file=chain/x/leases/msg_server.go failing=TestEndCheckOrder TestEndSignedForEarlierTermD12 TestDeviationRulesAreLoadBearing TestRejectedLeaseMessagesLeaveTheFullState
+    reason: an END signed for an earlier term version must be UNAUTHORIZED after a renewal (D-12)
+KILLED m6-accept-replay-owner-check-off group=review exit=1 secs=12.5 file=chain/x/leases/msg_server.go failing=TestAcceptReplayByAnotherProviderD13 TestDeviationRulesAreLoadBearing TestRejectedLeaseMessagesLeaveTheFullState
+    reason: an AcceptLease replay by an ADMITTED_PROVIDER account that is not the lease provider's must be FORBIDDEN (D-13)
+KILLED capacity-off-by-one group=leases exit=1 secs=54.1 file=chain/x/providers/handoff.go failing=TestCapacityBoundaryAgainstSpecMachine TestReserveReleaseAccounting TestAccountingFuzzSeedsReachEveryOutcome TestCapacityBoundaryInApp
+    reason: a reservation that ends one byte above the admitted capacity must be CAPACITY at offer and accept
+KILLED end-releases-twice group=leases exit=1 secs=24.0 file=chain/x/leases/msg_server.go failing=TestDuplicateReplicaRejected TestCapacityBoundaryThroughAccept TestEndReleasesOnce TestCapacityBoundaryAgainstSpecMachine TestDifferentialAgainstSpecMachine TestLargeExpiringCatalogue TestLeaseRetryScenarios TestRejectedLeaseMessagesLeaveTheFullState TestCapacityBoundaryInApp
+    reason: EndLease must release the lease's reservation exactly once
+KILLED end-held-guard-removed group=leases exit=1 secs=27.7 file=chain/x/leases/msg_server.go failing=TestEndCheckOrder TestAuthorityEndCheckOrder TestEndReleasesOnce TestDifferentialAgainstSpecMachine TestLeaseRetryScenarios TestRejectedLeaseMessagesLeaveTheFullState
+    reason: a second EndLease (repeated ending) must be UNDERFLOW and release nothing
+KILLED expiry-releases-twice group=leases exit=1 secs=18.4 file=chain/x/leases/expiry.go failing=TestExpiryOrderAndBudget TestExpiryWorkIsBounded TestDifferentialAgainstSpecMachine TestExpiryWorkIndependentOfBacklog TestLargeExpiringCatalogue TestRestartContinuesExpiry
+    reason: expiry must release an expiring lease's reservation exactly once
+KILLED accept-duplicate-copy-allowed group=leases exit=1 secs=25.5 file=chain/x/leases/msg_server.go failing=TestAcceptCheckOrder TestDuplicateReplicaRejected TestDifferentialAgainstSpecMachine TestRejectedLeaseMessagesLeaveTheFullState
+    reason: AcceptLease of a second offer for a held (provider, content, version) pair must be DUPLICATE_ID (REQ-INV-001)
+KILLED offer-duplicate-copy-allowed group=leases exit=1 secs=25.7 file=chain/x/leases/msg_server.go failing=TestDuplicateReplicaRejected TestOfferCheckOrder TestDifferentialAgainstSpecMachine TestRejectedLeaseMessagesLeaveTheFullState
+    reason: OfferLease for a (provider, content, version) pair that a lease holds must be DUPLICATE_ID (REQ-INV-001)
+KILLED service-key-signs-acceptance group=leases exit=1 secs=25.3 file=chain/x/leases/msg_server.go failing=TestServiceKeyCannotSignAcceptance TestDifferentialAgainstSpecMachine TestServiceKeyCannotSignAcceptanceInApp TestRejectedLeaseMessagesLeaveTheFullState
+    reason: an acceptance signed by any key it carries (a service key) must be UNAUTHORIZED; only the provider's current registered key counts (REQ-CHAIN-012)
+KILLED expiry-budget-ignored group=leases exit=1 secs=35.3 file=chain/x/leases/expiry.go failing=TestExpiryOrderAndBudget TestExpiryWorkIsBounded TestDifferentialAgainstSpecMachine TestExpiryWorkIndependentOfBacklog TestLargeExpiringCatalogue TestDamagedExpiryLimitHalts TestRestartContinuesExpiry
+    reason: BeginBlock expiry must process at most the effective max_expiry_steps items per block
+KILLED expiry-limit-damage-ignored group=leases exit=1 secs=52.0 file=chain/x/leases/expiry.go failing=TestDamagedExpiryLimitHalts
+    reason: BeginBlock expiry must fail closed on a governed max_expiry_steps that is not an 8-byte value in 1..ceiling (x/authority GovernedLimit panics), not fall back to the protocol ceiling
+KILLED expiry-merge-ignores-budget group=leases exit=1 secs=33.8 file=chain/x/leases/expiry.go failing=TestExpiryOrderAndBudget TestDifferentialAgainstSpecMachine TestExpiryWorkIndependentOfBacklog TestLargeExpiringCatalogue TestRestartContinuesExpiry
+    reason: the merge of due leases and due offers must stop at the budget, not at budget per index
+GROUP_SECS seat 223.5
+GROUP_SECS review 73.5
+GROUP_SECS leases 374.3
+RESULT mutants=28 killed=28
+EXIT:0

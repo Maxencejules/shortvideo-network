@@ -1,0 +1,35 @@
+COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzGovernedChangeSequence\$\'\ -fuzztime=60s\ -count=1\ ./chain/x/policy/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \'new\ or\ changed\ files\ outside\ docs/evidence\ after\ the\ run:\'\;\ git\ status\ --porcelain\ --untracked-files=all\ \|\ grep\ -v\ \'\ docs/evidence/\'\;\ echo\ \'\(end\ of\ list\)\'\;\ exit\ \$s
+DATE 2026-11-07T23:57:46Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+loadavg before: 6.38 5.33 4.91 1/185 19117
+fuzz: elapsed: 0s, gathering baseline coverage: 0/85 completed
+fuzz: elapsed: 3s, gathering baseline coverage: 51/85 completed
+fuzz: elapsed: 5s, gathering baseline coverage: 85/85 completed, now fuzzing with 4 workers
+fuzz: elapsed: 6s, execs: 1104 (351/sec), new interesting: 3 (total: 88)
+fuzz: elapsed: 9s, execs: 5138 (1344/sec), new interesting: 6 (total: 91)
+fuzz: elapsed: 12s, execs: 11438 (2100/sec), new interesting: 9 (total: 94)
+fuzz: elapsed: 15s, execs: 13427 (663/sec), new interesting: 11 (total: 96)
+fuzz: elapsed: 18s, execs: 19011 (1861/sec), new interesting: 14 (total: 99)
+fuzz: elapsed: 21s, execs: 21059 (683/sec), new interesting: 15 (total: 100)
+fuzz: elapsed: 24s, execs: 26647 (1862/sec), new interesting: 20 (total: 105)
+fuzz: elapsed: 27s, execs: 32275 (1876/sec), new interesting: 24 (total: 109)
+fuzz: elapsed: 30s, execs: 35638 (1121/sec), new interesting: 25 (total: 110)
+fuzz: elapsed: 33s, execs: 40890 (1751/sec), new interesting: 27 (total: 112)
+fuzz: elapsed: 36s, execs: 45073 (1394/sec), new interesting: 31 (total: 116)
+fuzz: elapsed: 39s, execs: 51498 (2142/sec), new interesting: 32 (total: 117)
+fuzz: elapsed: 42s, execs: 53671 (725/sec), new interesting: 33 (total: 118)
+fuzz: elapsed: 45s, execs: 56857 (1062/sec), new interesting: 35 (total: 120)
+fuzz: elapsed: 48s, execs: 62887 (2010/sec), new interesting: 39 (total: 124)
+fuzz: elapsed: 51s, execs: 66064 (1059/sec), new interesting: 40 (total: 125)
+fuzz: elapsed: 54s, execs: 67679 (538/sec), new interesting: 41 (total: 126)
+fuzz: elapsed: 57s, execs: 67679 (0/sec), new interesting: 41 (total: 126)
+fuzz: elapsed: 1m0s, execs: 72632 (1652/sec), new interesting: 43 (total: 128)
+fuzz: elapsed: 1m1s, execs: 72632 (0/sec), new interesting: 43 (total: 128)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy	61.078s
+loadavg after: 9.82 6.38 5.30 1/185 19259
+new or changed files outside docs/evidence after the run:
+(end of list)
+EXIT:0

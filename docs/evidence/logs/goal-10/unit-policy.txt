@@ -1,0 +1,906 @@
+COMMAND go test -count=1 -v ./chain/x/policy/... ./chain/upgrade/... ./chain/internal/... ./chain/msgkit/
+DATE 2026-11-07T22:23:12Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+=== RUN   TestApplyDueOrderAndBounds
+=== RUN   TestApplyDueOrderAndBounds/refusals_write_nothing
+=== RUN   TestApplyDueOrderAndBounds/no_pending_rows
+--- PASS: TestApplyDueOrderAndBounds (0.00s)
+    --- PASS: TestApplyDueOrderAndBounds/refusals_write_nothing (0.00s)
+    --- PASS: TestApplyDueOrderAndBounds/no_pending_rows (0.00s)
+=== RUN   TestGovernedChangeSequenceReachesEveryOutcome
+--- PASS: TestGovernedChangeSequenceReachesEveryOutcome (0.00s)
+=== RUN   TestGenesisValidateImportExport
+=== RUN   TestGenesisValidateImportExport/requires_an_empty_store
+=== RUN   TestGenesisValidateImportExport/fresh_round_trip
+=== RUN   TestGenesisValidateImportExport/export_refusal
+=== RUN   TestGenesisValidateImportExport/export_of_damaged_state
+=== RUN   TestGenesisValidateImportExport/version_map_is_not_exported
+--- PASS: TestGenesisValidateImportExport (0.01s)
+    --- PASS: TestGenesisValidateImportExport/requires_an_empty_store (0.00s)
+    --- PASS: TestGenesisValidateImportExport/fresh_round_trip (0.00s)
+    --- PASS: TestGenesisValidateImportExport/export_refusal (0.01s)
+    --- PASS: TestGenesisValidateImportExport/export_of_damaged_state (0.00s)
+    --- PASS: TestGenesisValidateImportExport/version_map_is_not_exported (0.00s)
+=== RUN   TestDefaultGenesisApprovesNothing
+--- PASS: TestDefaultGenesisApprovesNothing (0.00s)
+=== RUN   TestModule
+--- PASS: TestModule (0.00s)
+=== RUN   TestPolicyQuery
+=== RUN   TestPolicyQuery/damaged_governed
+=== RUN   TestPolicyQuery/damaged_pending
+=== RUN   TestPolicyQuery/damaged_plan
+=== RUN   TestPolicyQuery/damaged_app
+--- PASS: TestPolicyQuery (0.00s)
+    --- PASS: TestPolicyQuery/damaged_governed (0.00s)
+    --- PASS: TestPolicyQuery/damaged_pending (0.00s)
+    --- PASS: TestPolicyQuery/damaged_plan (0.00s)
+    --- PASS: TestPolicyQuery/damaged_app (0.00s)
+=== RUN   TestRunMigrationsAtCurrentVersionIsANoOp
+--- PASS: TestRunMigrationsAtCurrentVersionIsANoOp (0.00s)
+=== RUN   TestNoMigrationFromScaffoldLayout
+--- PASS: TestNoMigrationFromScaffoldLayout (0.00s)
+=== RUN   TestMigrationTable
+--- PASS: TestMigrationTable (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+=== RUN   TestKeeperImports
+--- PASS: TestKeeperImports (0.01s)
+=== RUN   TestNoForbiddenNames
+--- PASS: TestNoForbiddenNames (0.00s)
+=== RUN   TestStoreLayout
+--- PASS: TestStoreLayout (0.00s)
+=== RUN   TestStoreCodecs
+--- PASS: TestStoreCodecs (0.00s)
+=== RUN   TestVersionMapCodec
+=== RUN   TestVersionMapCodec/3-byte_value
+=== RUN   TestVersionMapCodec/version_0
+=== RUN   TestVersionMapCodec/name_pattern
+=== RUN   TestVersionMapCodec/too_many_rows
+=== RUN   TestVersionMapCodec/at_the_bound
+--- PASS: TestVersionMapCodec (0.00s)
+    --- PASS: TestVersionMapCodec/3-byte_value (0.00s)
+    --- PASS: TestVersionMapCodec/version_0 (0.00s)
+    --- PASS: TestVersionMapCodec/name_pattern (0.00s)
+    --- PASS: TestVersionMapCodec/too_many_rows (0.00s)
+    --- PASS: TestVersionMapCodec/at_the_bound (0.00s)
+=== RUN   TestDefaultSafetyCapsMatchGenesis
+--- PASS: TestDefaultSafetyCapsMatchGenesis (0.00s)
+=== RUN   TestGovernedLimitReadSurface
+=== RUN   TestGovernedLimitReadSurface/1_byte
+=== RUN   TestGovernedLimitReadSurface/3_bytes
+=== RUN   TestGovernedLimitReadSurface/value_0
+=== RUN   TestGovernedLimitReadSurface/ceiling_+_1
+=== RUN   TestGovernedLimitReadSurface/9_bytes
+=== RUN   TestGovernedLimitReadSurface/unknown_key_row
+--- PASS: TestGovernedLimitReadSurface (0.00s)
+    --- PASS: TestGovernedLimitReadSurface/1_byte (0.00s)
+    --- PASS: TestGovernedLimitReadSurface/3_bytes (0.00s)
+    --- PASS: TestGovernedLimitReadSurface/value_0 (0.00s)
+    --- PASS: TestGovernedLimitReadSurface/ceiling_+_1 (0.00s)
+    --- PASS: TestGovernedLimitReadSurface/9_bytes (0.00s)
+    --- PASS: TestGovernedLimitReadSurface/unknown_key_row (0.00s)
+=== RUN   TestSetLimitAndSchedulePending
+--- PASS: TestSetLimitAndSchedulePending (0.00s)
+=== RUN   TestSetLimitSupersedesPending
+--- PASS: TestSetLimitSupersedesPending (0.00s)
+=== RUN   TestDamagedPendingRowPanics
+=== RUN   TestDamagedPendingRowPanics/SetLimit
+=== RUN   TestDamagedPendingRowPanics/SchedulePending
+--- PASS: TestDamagedPendingRowPanics (0.00s)
+    --- PASS: TestDamagedPendingRowPanics/SetLimit (0.00s)
+    --- PASS: TestDamagedPendingRowPanics/SchedulePending (0.00s)
+=== RUN   TestPlanScheduleReplaceCancel
+--- PASS: TestPlanScheduleReplaceCancel (0.00s)
+=== RUN   TestRecordUpgrade
+=== RUN   TestRecordUpgrade/no_app_version
+=== RUN   TestRecordUpgrade/damaged_app_version
+=== RUN   TestRecordUpgrade/damaged_plan
+--- PASS: TestRecordUpgrade (0.00s)
+    --- PASS: TestRecordUpgrade/no_app_version (0.00s)
+    --- PASS: TestRecordUpgrade/damaged_app_version (0.00s)
+    --- PASS: TestRecordUpgrade/damaged_plan (0.00s)
+=== RUN   TestInitVersions
+=== RUN   TestInitVersions/refuses_a_store_with_plan
+=== RUN   TestInitVersions/refuses_a_store_with_applied
+=== RUN   TestInitVersions/refuses_a_store_with_plan_name
+--- PASS: TestInitVersions (0.01s)
+    --- PASS: TestInitVersions/refuses_a_store_with_plan (0.00s)
+    --- PASS: TestInitVersions/refuses_a_store_with_applied (0.00s)
+    --- PASS: TestInitVersions/refuses_a_store_with_plan_name (0.00s)
+=== RUN   TestWithStore
+--- PASS: TestWithStore (0.00s)
+=== RUN   TestNewKeeperRequiresDeps
+--- PASS: TestNewKeeperRequiresDeps (0.00s)
+=== RUN   FuzzGovernedChangeSequence
+=== RUN   FuzzGovernedChangeSequence/seed#0
+=== RUN   FuzzGovernedChangeSequence/seed#1
+=== RUN   FuzzGovernedChangeSequence/seed#2
+--- PASS: FuzzGovernedChangeSequence (0.00s)
+    --- PASS: FuzzGovernedChangeSequence/seed#0 (0.00s)
+    --- PASS: FuzzGovernedChangeSequence/seed#1 (0.00s)
+    --- PASS: FuzzGovernedChangeSequence/seed#2 (0.00s)
+=== RUN   FuzzPolicyGenesisJSON
+=== RUN   FuzzPolicyGenesisJSON/seed#0
+=== RUN   FuzzPolicyGenesisJSON/seed#1
+=== RUN   FuzzPolicyGenesisJSON/seed#2
+=== RUN   FuzzPolicyGenesisJSON/seed#3
+=== RUN   FuzzPolicyGenesisJSON/seed#4
+=== RUN   FuzzPolicyGenesisJSON/seed#5
+--- PASS: FuzzPolicyGenesisJSON (0.00s)
+    --- PASS: FuzzPolicyGenesisJSON/seed#0 (0.00s)
+    --- PASS: FuzzPolicyGenesisJSON/seed#1 (0.00s)
+    --- PASS: FuzzPolicyGenesisJSON/seed#2 (0.00s)
+    --- PASS: FuzzPolicyGenesisJSON/seed#3 (0.00s)
+    --- PASS: FuzzPolicyGenesisJSON/seed#4 (0.00s)
+    --- PASS: FuzzPolicyGenesisJSON/seed#5 (0.00s)
+=== RUN   FuzzVersionMapDecode
+=== RUN   FuzzVersionMapDecode/seed#0
+=== RUN   FuzzVersionMapDecode/seed#1
+=== RUN   FuzzVersionMapDecode/seed#2
+--- PASS: FuzzVersionMapDecode (0.00s)
+    --- PASS: FuzzVersionMapDecode/seed#0 (0.00s)
+    --- PASS: FuzzVersionMapDecode/seed#1 (0.00s)
+    --- PASS: FuzzVersionMapDecode/seed#2 (0.00s)
+=== RUN   FuzzStoreCodecs
+=== RUN   FuzzStoreCodecs/seed#0
+=== RUN   FuzzStoreCodecs/seed#1
+=== RUN   FuzzStoreCodecs/seed#2
+--- PASS: FuzzStoreCodecs (0.00s)
+    --- PASS: FuzzStoreCodecs/seed#0 (0.00s)
+    --- PASS: FuzzStoreCodecs/seed#1 (0.00s)
+    --- PASS: FuzzStoreCodecs/seed#2 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy	0.116s
+=== RUN   TestPolicyInvariantsSelfTest
+=== RUN   TestPolicyInvariantsSelfTest/no_layout_key
+=== RUN   TestPolicyInvariantsSelfTest/layout_3
+=== RUN   TestPolicyInvariantsSelfTest/layout_3_bytes
+=== RUN   TestPolicyInvariantsSelfTest/unknown_prefix
+=== RUN   TestPolicyInvariantsSelfTest/long_single_key
+=== RUN   TestPolicyInvariantsSelfTest/bare_governed_prefix
+=== RUN   TestPolicyInvariantsSelfTest/governed_unknown_key
+=== RUN   TestPolicyInvariantsSelfTest/governed_value_0
+=== RUN   TestPolicyInvariantsSelfTest/governed_above_ceiling
+=== RUN   TestPolicyInvariantsSelfTest/governed_3_bytes
+=== RUN   TestPolicyInvariantsSelfTest/pending_unknown_key
+=== RUN   TestPolicyInvariantsSelfTest/pending_undecodable
+=== RUN   TestPolicyInvariantsSelfTest/pending_above_ceiling
+=== RUN   TestPolicyInvariantsSelfTest/pending_activation_at_height
+=== RUN   TestPolicyInvariantsSelfTest/pending_version_above_current
+=== RUN   TestPolicyInvariantsSelfTest/plan_undecodable
+=== RUN   TestPolicyInvariantsSelfTest/plan_at_height
+=== RUN   TestPolicyInvariantsSelfTest/plan_names_an_applied_upgrade
+=== RUN   TestPolicyInvariantsSelfTest/plan_without_a_plan-name_row
+=== RUN   TestPolicyInvariantsSelfTest/plan_digest_differs_from_its_plan-name_row
+=== RUN   TestPolicyInvariantsSelfTest/plan-name_row_of_31_bytes
+=== RUN   TestPolicyInvariantsSelfTest/plan-name_row_with_a_bad_name
+=== RUN   TestPolicyInvariantsSelfTest/applied_upgrade_without_a_plan-name_row
+=== RUN   TestPolicyInvariantsSelfTest/bare_plan-name_prefix
+=== RUN   TestPolicyInvariantsSelfTest/app_version_not_1_+_applied
+=== RUN   TestPolicyInvariantsSelfTest/app_version_3_bytes
+=== RUN   TestPolicyInvariantsSelfTest/app_version_without_version_map
+=== RUN   TestPolicyInvariantsSelfTest/version_map_without_app_version
+=== RUN   TestPolicyInvariantsSelfTest/applied_height_above_height
+=== RUN   TestPolicyInvariantsSelfTest/applied_height_0
+=== RUN   TestPolicyInvariantsSelfTest/applied_bad_name
+=== RUN   TestPolicyInvariantsSelfTest/version_map_value_0
+=== RUN   TestPolicyInvariantsSelfTest/version_map_bad_name
+=== RUN   TestPolicyInvariantsSelfTest/version_map_policy_entry_not_the_layout
+=== RUN   TestPolicyInvariantsSelfTest/too_many_version_map_rows
+=== RUN   TestPolicyInvariantsSelfTest/no_caps
+=== RUN   TestPolicyInvariantsSelfTest/caps_changed
+--- PASS: TestPolicyInvariantsSelfTest (0.01s)
+    --- PASS: TestPolicyInvariantsSelfTest/no_layout_key (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/layout_3 (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/layout_3_bytes (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/unknown_prefix (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/long_single_key (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/bare_governed_prefix (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/governed_unknown_key (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/governed_value_0 (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/governed_above_ceiling (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/governed_3_bytes (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/pending_unknown_key (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/pending_undecodable (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/pending_above_ceiling (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/pending_activation_at_height (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/pending_version_above_current (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/plan_undecodable (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/plan_at_height (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/plan_names_an_applied_upgrade (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/plan_without_a_plan-name_row (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/plan_digest_differs_from_its_plan-name_row (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/plan-name_row_of_31_bytes (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/plan-name_row_with_a_bad_name (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/applied_upgrade_without_a_plan-name_row (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/bare_plan-name_prefix (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/app_version_not_1_+_applied (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/app_version_3_bytes (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/app_version_without_version_map (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/version_map_without_app_version (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/applied_height_above_height (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/applied_height_0 (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/applied_bad_name (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/version_map_value_0 (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/version_map_bad_name (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/version_map_policy_entry_not_the_layout (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/too_many_version_map_rows (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/no_caps (0.00s)
+    --- PASS: TestPolicyInvariantsSelfTest/caps_changed (0.00s)
+=== RUN   TestCheckInvariantsAtLayout
+--- PASS: TestCheckInvariantsAtLayout (0.00s)
+=== RUN   TestFreshStoreHolds
+--- PASS: TestFreshStoreHolds (0.00s)
+=== RUN   TestStoreSnapshot
+--- PASS: TestStoreSnapshot (0.00s)
+=== RUN   TestCheckDecisionsSelfTest
+=== RUN   TestCheckDecisionsSelfTest/immediate_decision_keeps_a_pending_row
+=== RUN   TestCheckDecisionsSelfTest/immediate_decision,_other_governed_value
+=== RUN   TestCheckDecisionsSelfTest/due_decision_not_applied
+=== RUN   TestCheckDecisionsSelfTest/due_decision_still_pending
+=== RUN   TestCheckDecisionsSelfTest/scheduled_decision_without_its_pending_row
+=== RUN   TestCheckDecisionsSelfTest/pending_row_older_than_the_latest_decision
+=== RUN   TestCheckDecisionsSelfTest/pending_row_of_another_proposal
+=== RUN   TestCheckDecisionsSelfTest/pending_row_with_another_activation
+=== RUN   TestCheckDecisionsSelfTest/pending_row_undecodable
+=== RUN   TestCheckDecisionsSelfTest/governed_row_without_a_decision
+=== RUN   TestCheckDecisionsSelfTest/pending_row_without_a_decision
+=== RUN   TestCheckDecisionsSelfTest/decision_for_an_unknown_key
+=== RUN   TestCheckDecisionsSelfTest/nil_store_key
+--- PASS: TestCheckDecisionsSelfTest (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/immediate_decision_keeps_a_pending_row (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/immediate_decision,_other_governed_value (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/due_decision_not_applied (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/due_decision_still_pending (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/scheduled_decision_without_its_pending_row (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/pending_row_older_than_the_latest_decision (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/pending_row_of_another_proposal (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/pending_row_with_another_activation (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/pending_row_undecodable (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/governed_row_without_a_decision (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/pending_row_without_a_decision (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/decision_for_an_unknown_key (0.00s)
+    --- PASS: TestCheckDecisionsSelfTest/nil_store_key (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest	0.064s
+=== RUN   TestBinaryAcceptsValidDeclarations
+--- PASS: TestBinaryAcceptsValidDeclarations (0.00s)
+=== RUN   TestBinaryRefusesBadUpgradeList
+--- PASS: TestBinaryRefusesBadUpgradeList (0.00s)
+=== RUN   TestCheckBlock
+--- PASS: TestCheckBlock (0.00s)
+=== RUN   TestGateFuzzDomainReachesEveryRow
+    gate_fuzz_test.go:274: rows reached over 20000 inputs (0 is L = 0): map[0:1645 1:207 2:63 3:22 4:22 5:9731 6:8310]
+--- PASS: TestGateFuzzDomainReachesEveryRow (0.14s)
+=== RUN   TestGateTable
+--- PASS: TestGateTable (0.00s)
+=== RUN   TestGateRefusesBeforeTheFirstBlock
+--- PASS: TestGateRefusesBeforeTheFirstBlock (0.00s)
+=== RUN   TestRunMigrationsGapsAreClosedByTheRunner
+--- PASS: TestRunMigrationsGapsAreClosedByTheRunner (0.00s)
+=== RUN   TestRunnerAppliesRealMigration
+--- PASS: TestRunnerAppliesRealMigration (0.00s)
+=== RUN   TestCouncilPlansRefusesMissingRows
+--- PASS: TestCouncilPlansRefusesMissingRows (0.00s)
+=== RUN   TestCouncilPlansReportsTheStoredPlan
+--- PASS: TestCouncilPlansReportsTheStoredPlan (0.00s)
+=== RUN   TestCouncilPlansRefusesDamagedRows
+--- PASS: TestCouncilPlansRefusesDamagedRows (0.00s)
+=== RUN   TestCouncilPlansOnlyReads
+--- PASS: TestCouncilPlansOnlyReads (0.00s)
+=== RUN   TestPlanWritersHaveNoNodeLocalCaller
+--- PASS: TestPlanWritersHaveNoNodeLocalCaller (0.03s)
+=== RUN   TestRunnerAppliesUpgrade
+--- PASS: TestRunnerAppliesUpgrade (0.00s)
+=== RUN   TestRunnerHandlerSeesPreUpgradeState
+--- PASS: TestRunnerHandlerSeesPreUpgradeState (0.00s)
+=== RUN   TestRunnerPreconditions
+--- PASS: TestRunnerPreconditions (0.00s)
+=== RUN   TestRunnerPostConditions
+--- PASS: TestRunnerPostConditions (0.00s)
+=== RUN   TestRunnerWritesOnSuccessOnly
+--- PASS: TestRunnerWritesOnSuccessOnly (0.01s)
+=== RUN   TestRunnerHandlerPanicIsAnError
+--- PASS: TestRunnerHandlerPanicIsAnError (0.00s)
+=== RUN   TestRunnerPreBlockRule
+--- PASS: TestRunnerPreBlockRule (0.00s)
+=== RUN   TestRunnerGateReadsState
+--- PASS: TestRunnerGateReadsState (0.00s)
+=== RUN   TestNewRunnerRefusesBadDeps
+--- PASS: TestNewRunnerRefusesBadDeps (0.00s)
+=== RUN   TestRunnerGivesHandlerTheEnv
+--- PASS: TestRunnerGivesHandlerTheEnv (0.00s)
+=== RUN   TestRunnerRefusesProtectedEnvWrites
+--- PASS: TestRunnerRefusesProtectedEnvWrites (0.01s)
+=== RUN   TestRunnerRecordRefusesAbsentPlan
+--- PASS: TestRunnerRecordRefusesAbsentPlan (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+=== RUN   TestPackageImports
+--- PASS: TestPackageImports (0.00s)
+=== RUN   TestNoSkipOrHaltHeight
+--- PASS: TestNoSkipOrHaltHeight (0.00s)
+=== RUN   FuzzGateStartsOnlyOnRows1And3
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#0
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#1
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#2
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#3
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#4
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#5
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#6
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#7
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#8
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#9
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#10
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#11
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#12
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#13
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#14
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#15
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#16
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#17
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#18
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#19
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#20
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#21
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#22
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#23
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#24
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#25
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#26
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#27
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#28
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#29
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#30
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#31
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#32
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#33
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#34
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#35
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#36
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#37
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#38
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#39
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#40
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#41
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#42
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#43
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#44
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#45
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#46
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#47
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#48
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#49
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#50
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#51
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#52
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#53
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#54
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#55
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#56
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#57
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#58
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#59
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#60
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#61
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#62
+=== RUN   FuzzGateStartsOnlyOnRows1And3/seed#63
+--- PASS: FuzzGateStartsOnlyOnRows1And3 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#0 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#1 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#2 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#3 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#4 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#5 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#6 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#7 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#8 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#9 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#10 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#11 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#12 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#13 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#14 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#15 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#16 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#17 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#18 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#19 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#20 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#21 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#22 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#23 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#24 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#25 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#26 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#27 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#28 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#29 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#30 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#31 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#32 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#33 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#34 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#35 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#36 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#37 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#38 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#39 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#40 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#41 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#42 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#43 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#44 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#45 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#46 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#47 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#48 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#49 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#50 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#51 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#52 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#53 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#54 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#55 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#56 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#57 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#58 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#59 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#60 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#61 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#62 (0.00s)
+    --- PASS: FuzzGateStartsOnlyOnRows1And3/seed#63 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade	0.234s
+=== RUN   TestVersionMapBoundsAgree
+--- PASS: TestVersionMapBoundsAgree (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/conformance	0.044s
+=== RUN   TestOnChainGateTable
+--- PASS: TestOnChainGateTable (0.01s)
+=== RUN   TestOnChainStoredState
+--- PASS: TestOnChainStoredState (0.00s)
+=== RUN   TestOnChainGateWithUndeclarableBinaries
+--- PASS: TestOnChainGateWithUndeclarableBinaries (0.00s)
+=== RUN   TestOnChainDamagedPlanRows
+--- PASS: TestOnChainDamagedPlanRows (0.00s)
+=== RUN   TestOnChainBlockRule
+--- PASS: TestOnChainBlockRule (0.01s)
+=== RUN   TestOnChainCheckBlockUndeclarableBinaries
+--- PASS: TestOnChainCheckBlockUndeclarableBinaries (0.00s)
+=== RUN   TestOnChainUpgradeApplies
+--- PASS: TestOnChainUpgradeApplies (0.00s)
+=== RUN   TestOnChainHaltAndSwitch
+--- PASS: TestOnChainHaltAndSwitch (0.00s)
+=== RUN   TestOnChainActivationIsHeightOnly
+--- PASS: TestOnChainActivationIsHeightOnly (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/onchain	0.086s
+=== RUN   TestUpgradesDeclareAppVersionTwo
+--- PASS: TestUpgradesDeclareAppVersionTwo (0.00s)
+=== RUN   TestLeasesStepRebuildsTheStore
+--- PASS: TestLeasesStepRebuildsTheStore (0.00s)
+=== RUN   TestEvidenceStepRebuildsTheStore
+--- PASS: TestEvidenceStepRebuildsTheStore (0.00s)
+=== RUN   TestStepsRefuseBeforeWriting
+=== RUN   TestStepsRefuseBeforeWriting/layout_3
+=== RUN   TestStepsRefuseBeforeWriting/no_layout
+=== RUN   TestStepsRefuseBeforeWriting/undecodable
+=== RUN   TestStepsRefuseBeforeWriting/unknown_field
+=== RUN   TestStepsRefuseBeforeWriting/other_id
+=== RUN   TestStepsRefuseBeforeWriting/not_deterministic
+--- PASS: TestStepsRefuseBeforeWriting (0.00s)
+    --- PASS: TestStepsRefuseBeforeWriting/layout_3 (0.00s)
+    --- PASS: TestStepsRefuseBeforeWriting/no_layout (0.00s)
+    --- PASS: TestStepsRefuseBeforeWriting/undecodable (0.00s)
+    --- PASS: TestStepsRefuseBeforeWriting/unknown_field (0.00s)
+    --- PASS: TestStepsRefuseBeforeWriting/other_id (0.00s)
+    --- PASS: TestStepsRefuseBeforeWriting/not_deterministic (0.00s)
+=== RUN   TestHandlerWalksEveryRecordReadOnly
+=== RUN   TestHandlerWalksEveryRecordReadOnly/provider_does_not_decode/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/provider_does_not_decode/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/provider_under_another_id/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/provider_under_another_id/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/provider_unknown_field/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/provider_unknown_field/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/retired_key_under_another_generation/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/retired_key_under_another_generation/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/retired_key_under_a_short_key/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/retired_key_under_a_short_key/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/content_under_another_version/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/content_under_another_version/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/tombstone_unknown_field/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/tombstone_unknown_field/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/lease_not_deterministic/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/lease_not_deterministic/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/evidence_under_another_id/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/evidence_under_another_id/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_is_not_JSON/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_is_not_JSON/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_has_trailing_data/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_has_trailing_data/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_under_another_id/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_under_another_id/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_state_unspecified/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_state_unspecified/BadHandler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_state_unknown/Handler
+=== RUN   TestHandlerWalksEveryRecordReadOnly/proposal_state_unknown/BadHandler
+--- PASS: TestHandlerWalksEveryRecordReadOnly (0.02s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/provider_does_not_decode/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/provider_does_not_decode/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/provider_under_another_id/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/provider_under_another_id/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/provider_unknown_field/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/provider_unknown_field/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/retired_key_under_another_generation/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/retired_key_under_another_generation/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/retired_key_under_a_short_key/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/retired_key_under_a_short_key/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/content_under_another_version/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/content_under_another_version/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/tombstone_unknown_field/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/tombstone_unknown_field/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/lease_not_deterministic/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/lease_not_deterministic/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/evidence_under_another_id/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/evidence_under_another_id/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_is_not_JSON/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_is_not_JSON/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_has_trailing_data/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_has_trailing_data/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_under_another_id/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_under_another_id/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_state_unspecified/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_state_unspecified/BadHandler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_state_unknown/Handler (0.00s)
+    --- PASS: TestHandlerWalksEveryRecordReadOnly/proposal_state_unknown/BadHandler (0.00s)
+=== RUN   TestHandlersRefuseOutsideTheirEnvironment
+--- PASS: TestHandlersRefuseOutsideTheirEnvironment (0.00s)
+=== RUN   TestBadHandlerWritesOneDocumentedRow
+--- PASS: TestBadHandlerWritesOneDocumentedRow (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal	0.086s
+=== RUN   TestStepsAreConsistent
+--- PASS: TestStepsAreConsistent (0.00s)
+=== RUN   TestWantCountsEveryClass
+--- PASS: TestWantCountsEveryClass (0.00s)
+=== RUN   TestCensusCheckNamesEveryProblem
+--- PASS: TestCensusCheckNamesEveryProblem (0.00s)
+=== RUN   TestScenarioImportsOnlyMsgkit
+--- PASS: TestScenarioImportsOnlyMsgkit (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal/scenario	0.051s
+=== RUN   TestOpenReadOnlyRefusesWrites
+--- PASS: TestOpenReadOnlyRefusesWrites (0.01s)
+=== RUN   TestReadChainIDRefusesBadGenesis
+=== RUN   TestReadChainIDRefusesBadGenesis/not_JSON
+=== RUN   TestReadChainIDRefusesBadGenesis/no_chain_id
+--- PASS: TestReadChainIDRefusesBadGenesis (0.00s)
+    --- PASS: TestReadChainIDRefusesBadGenesis/not_JSON (0.00s)
+    --- PASS: TestReadChainIDRefusesBadGenesis/no_chain_id (0.00s)
+=== RUN   TestReadChainIDReadsAsCometBFTDoes
+--- PASS: TestReadChainIDReadsAsCometBFTDoes (0.03s)
+=== RUN   TestStateCheckDigestsAndInvariants
+=== RUN   TestStateCheckDigestsAndInvariants/policy_row_under_an_unknown_prefix
+=== RUN   TestStateCheckDigestsAndInvariants/policy_row_beside_the_plan_key
+=== RUN   TestStateCheckDigestsAndInvariants/policy_applied_row_without_a_plan-name_row
+=== RUN   TestStateCheckDigestsAndInvariants/policy_governed_value_above_its_ceiling
+=== RUN   TestStateCheckDigestsAndInvariants/authority_row_beside_the_policy_version
+=== RUN   TestStateCheckDigestsAndInvariants/authority_retired_governed-value_prefix
+=== RUN   TestStateCheckDigestsAndInvariants/authority_open_count_removed
+=== RUN   TestStateCheckDigestsAndInvariants/authority_open_count_without_a_proposal
+=== RUN   TestStateCheckDigestsAndInvariants/authority_policy_version_that_does_not_decode
+=== RUN   TestStateCheckDigestsAndInvariants/authority_policy_version_below_the_executed_proposals
+=== RUN   TestStateCheckDigestsAndInvariants/authority_retired_seat_key_is_a_validator_key
+=== RUN   TestStateCheckDigestsAndInvariants/lease_row_under_an_unknown_prefix
+=== RUN   TestStateCheckDigestsAndInvariants/lease_offer_row_that_does_not_decode
+=== RUN   TestStateCheckDigestsAndInvariants/evidence_row_under_an_unknown_prefix
+=== RUN   TestStateCheckDigestsAndInvariants/consensus_Version.App_differs_from_the_stored_app_version
+=== RUN   TestStateCheckDigestsAndInvariants/lease_layout_key_3
+--- PASS: TestStateCheckDigestsAndInvariants (1.34s)
+    --- PASS: TestStateCheckDigestsAndInvariants/policy_row_under_an_unknown_prefix (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/policy_row_beside_the_plan_key (0.08s)
+    --- PASS: TestStateCheckDigestsAndInvariants/policy_applied_row_without_a_plan-name_row (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/policy_governed_value_above_its_ceiling (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/authority_row_beside_the_policy_version (0.06s)
+    --- PASS: TestStateCheckDigestsAndInvariants/authority_retired_governed-value_prefix (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/authority_open_count_removed (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/authority_open_count_without_a_proposal (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/authority_policy_version_that_does_not_decode (0.06s)
+    --- PASS: TestStateCheckDigestsAndInvariants/authority_policy_version_below_the_executed_proposals (0.06s)
+    --- PASS: TestStateCheckDigestsAndInvariants/authority_retired_seat_key_is_a_validator_key (0.06s)
+    --- PASS: TestStateCheckDigestsAndInvariants/lease_row_under_an_unknown_prefix (0.09s)
+    --- PASS: TestStateCheckDigestsAndInvariants/lease_offer_row_that_does_not_decode (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/evidence_row_under_an_unknown_prefix (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/consensus_Version.App_differs_from_the_stored_app_version (0.07s)
+    --- PASS: TestStateCheckDigestsAndInvariants/lease_layout_key_3 (0.07s)
+=== RUN   TestStateCheckRefusesOtherVersion
+--- PASS: TestStateCheckRefusesOtherVersion (0.42s)
+=== RUN   TestStateCheckRefusesRunningNode
+--- PASS: TestStateCheckRefusesRunningNode (0.05s)
+=== RUN   TestStateCheckWritesNothing
+--- PASS: TestStateCheckWritesNothing (0.08s)
+=== RUN   TestStateCheckRefusesBadInput
+=== RUN   TestStateCheckRefusesBadInput/missing_home
+=== RUN   TestStateCheckRefusesBadInput/no_application_database
+=== RUN   TestStateCheckRefusesBadInput/negative_height
+=== RUN   TestStateCheckRefusesBadInput/height_above_the_latest_commit
+=== RUN   TestStateCheckRefusesBadInput/binary_description_refused
+--- PASS: TestStateCheckRefusesBadInput (0.07s)
+    --- PASS: TestStateCheckRefusesBadInput/missing_home (0.00s)
+    --- PASS: TestStateCheckRefusesBadInput/no_application_database (0.00s)
+    --- PASS: TestStateCheckRefusesBadInput/negative_height (0.00s)
+    --- PASS: TestStateCheckRefusesBadInput/height_above_the_latest_commit (0.01s)
+    --- PASS: TestStateCheckRefusesBadInput/binary_description_refused (0.00s)
+=== RUN   TestStatecheckCommand
+--- PASS: TestStatecheckCommand (0.12s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck	2.153s
+?   	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck/testhome	[no test files]
+=== RUN   TestNoEventFieldIsNamedLikeAnSDKSuffix
+--- PASS: TestNoEventFieldIsNamedLikeAnSDKSuffix (0.00s)
+=== RUN   TestParseBlockEvent
+--- PASS: TestParseBlockEvent (0.00s)
+=== RUN   TestParseBlockEventOnFinalizeBlock
+--- PASS: TestParseBlockEventOnFinalizeBlock (0.01s)
+=== RUN   TestBoundsDrift
+--- PASS: TestBoundsDrift (0.00s)
+=== RUN   TestValidIDAgreesWithBoundsPattern
+--- PASS: TestValidIDAgreesWithBoundsPattern (0.00s)
+=== RUN   TestLedgerGateAndCommit
+--- PASS: TestLedgerGateAndCommit (0.00s)
+=== RUN   TestLedgerOwnRecordWinsOverPeers
+--- PASS: TestLedgerOwnRecordWinsOverPeers (0.00s)
+=== RUN   TestLedgerWithoutPeers
+--- PASS: TestLedgerWithoutPeers (0.00s)
+=== RUN   TestLedgerCommitRequiresAPassingGate
+--- PASS: TestLedgerCommitRequiresAPassingGate (0.00s)
+=== RUN   TestPeersLookupOrderIsDeterministic
+--- PASS: TestPeersLookupOrderIsDeterministic (0.00s)
+=== RUN   TestPeersAddRejectsWiringErrors
+--- PASS: TestPeersAddRejectsWiringErrors (0.00s)
+=== RUN   TestCanonicalRotatePayloadText
+--- PASS: TestCanonicalRotatePayloadText (0.00s)
+=== RUN   TestCanonicalRejectsNonCanonicalValues
+--- PASS: TestCanonicalRejectsNonCanonicalValues (0.00s)
+=== RUN   TestCanonicalRefusesInvalidUTF8
+--- PASS: TestCanonicalRefusesInvalidUTF8 (0.00s)
+=== RUN   TestEncoders
+--- PASS: TestEncoders (0.00s)
+=== RUN   TestBusinessDigestVector
+--- PASS: TestBusinessDigestVector (0.00s)
+=== RUN   TestCodesMatchProtoEnum
+--- PASS: TestCodesMatchProtoEnum (0.00s)
+=== RUN   TestCodeErrSuccessAndUnknown
+--- PASS: TestCodeErrSuccessAndUnknown (0.00s)
+=== RUN   TestEventAllowlistIsEventsProto
+--- PASS: TestEventAllowlistIsEventsProto (0.00s)
+=== RUN   TestEmitParseRoundTripEveryEventType
+--- PASS: TestEmitParseRoundTripEveryEventType (0.00s)
+=== RUN   TestEmitTypedEncoding
+--- PASS: TestEmitTypedEncoding (0.00s)
+=== RUN   TestEmitTypedRejectsOtherMessages
+--- PASS: TestEmitTypedRejectsOtherMessages (0.00s)
+=== RUN   TestParseTypedRejects
+--- PASS: TestParseTypedRejects (0.00s)
+=== RUN   TestParseCommitted
+--- PASS: TestParseCommitted (0.00s)
+=== RUN   TestEmitIdempotent
+--- PASS: TestEmitIdempotent (0.00s)
+=== RUN   TestCheckID
+--- PASS: TestCheckID (0.00s)
+=== RUN   TestCheckDigest
+--- PASS: TestCheckDigest (0.00s)
+=== RUN   TestSignBytesLayout
+--- PASS: TestSignBytesLayout (0.00s)
+=== RUN   TestInnerSignatureCheckOrder
+--- PASS: TestInnerSignatureCheckOrder (0.00s)
+=== RUN   TestVerifyInnerWithRealKeys
+--- PASS: TestVerifyInnerWithRealKeys (0.00s)
+=== RUN   TestCrossDomainReuse
+--- PASS: TestCrossDomainReuse (0.01s)
+=== RUN   TestVerifyWithKeyRejectsBadSizesWithoutPanic
+--- PASS: TestVerifyWithKeyRejectsBadSizesWithoutPanic (0.00s)
+=== RUN   TestActivationLeadConstants
+--- PASS: TestActivationLeadConstants (0.00s)
+=== RUN   TestActivationLeadConstantsLabelledProposed
+--- PASS: TestActivationLeadConstantsLabelledProposed (0.00s)
+=== RUN   TestEffectiveLimit
+--- PASS: TestEffectiveLimit (0.00s)
+=== RUN   TestEnforce
+--- PASS: TestEnforce (0.00s)
+=== RUN   TestStoreSnapshot
+--- PASS: TestStoreSnapshot (0.00s)
+=== RUN   TestDeterministicSources
+--- PASS: TestDeterministicSources (0.00s)
+=== RUN   TestCheckPage
+--- PASS: TestCheckPage (0.00s)
+=== RUN   TestPaginateBoundaries
+--- PASS: TestPaginateBoundaries (0.00s)
+=== RUN   TestPaginateStartKeyIsInclusive
+--- PASS: TestPaginateStartKeyIsInclusive (0.00s)
+=== RUN   TestPaginateErrors
+--- PASS: TestPaginateErrors (0.00s)
+=== RUN   TestQueryErrCarriesTheProtocolCode
+--- PASS: TestQueryErrCarriesTheProtocolCode (0.00s)
+=== RUN   TestQueryCodeRejects
+--- PASS: TestQueryCodeRejects (0.00s)
+=== RUN   TestWriteLayoutVersion
+--- PASS: TestWriteLayoutVersion (0.00s)
+=== RUN   TestReadLayoutVersion
+--- PASS: TestReadLayoutVersion (0.00s)
+=== RUN   FuzzBlockEventParse
+=== RUN   FuzzBlockEventParse/seed#0
+=== RUN   FuzzBlockEventParse/seed#1
+=== RUN   FuzzBlockEventParse/seed#2
+=== RUN   FuzzBlockEventParse/seed#3
+=== RUN   FuzzBlockEventParse/seed#4
+=== RUN   FuzzBlockEventParse/seed#5
+=== RUN   FuzzBlockEventParse/seed#6
+=== RUN   FuzzBlockEventParse/seed#7
+=== RUN   FuzzBlockEventParse/seed#8
+=== RUN   FuzzBlockEventParse/seed#9
+=== RUN   FuzzBlockEventParse/seed#10
+=== RUN   FuzzBlockEventParse/seed#11
+=== RUN   FuzzBlockEventParse/seed#12
+=== RUN   FuzzBlockEventParse/seed#13
+=== RUN   FuzzBlockEventParse/seed#14
+=== RUN   FuzzBlockEventParse/seed#15
+=== RUN   FuzzBlockEventParse/seed#16
+=== RUN   FuzzBlockEventParse/seed#17
+=== RUN   FuzzBlockEventParse/seed#18
+=== RUN   FuzzBlockEventParse/seed#19
+=== RUN   FuzzBlockEventParse/seed#20
+=== RUN   FuzzBlockEventParse/seed#21
+=== RUN   FuzzBlockEventParse/seed#22
+=== RUN   FuzzBlockEventParse/seed#23
+=== RUN   FuzzBlockEventParse/seed#24
+=== RUN   FuzzBlockEventParse/seed#25
+=== RUN   FuzzBlockEventParse/seed#26
+=== RUN   FuzzBlockEventParse/seed#27
+=== RUN   FuzzBlockEventParse/seed#28
+=== RUN   FuzzBlockEventParse/seed#29
+=== RUN   FuzzBlockEventParse/seed#30
+=== RUN   FuzzBlockEventParse/seed#31
+=== RUN   FuzzBlockEventParse/seed#32
+=== RUN   FuzzBlockEventParse/seed#33
+=== RUN   FuzzBlockEventParse/seed#34
+=== RUN   FuzzBlockEventParse/seed#35
+=== RUN   FuzzBlockEventParse/seed#36
+=== RUN   FuzzBlockEventParse/seed#37
+=== RUN   FuzzBlockEventParse/seed#38
+=== RUN   FuzzBlockEventParse/seed#39
+=== RUN   FuzzBlockEventParse/seed#40
+=== RUN   FuzzBlockEventParse/seed#41
+=== RUN   FuzzBlockEventParse/seed#42
+=== RUN   FuzzBlockEventParse/seed#43
+=== RUN   FuzzBlockEventParse/seed#44
+=== RUN   FuzzBlockEventParse/seed#45
+=== RUN   FuzzBlockEventParse/seed#46
+=== RUN   FuzzBlockEventParse/seed#47
+=== RUN   FuzzBlockEventParse/seed#48
+=== RUN   FuzzBlockEventParse/seed#49
+--- PASS: FuzzBlockEventParse (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#0 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#1 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#2 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#3 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#4 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#5 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#6 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#7 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#8 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#9 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#10 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#11 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#12 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#13 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#14 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#15 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#16 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#17 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#18 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#19 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#20 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#21 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#22 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#23 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#24 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#25 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#26 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#27 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#28 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#29 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#30 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#31 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#32 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#33 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#34 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#35 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#36 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#37 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#38 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#39 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#40 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#41 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#42 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#43 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#44 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#45 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#46 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#47 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#48 (0.00s)
+    --- PASS: FuzzBlockEventParse/seed#49 (0.00s)
+=== RUN   FuzzTypedEventParse
+=== RUN   FuzzTypedEventParse/seed#0
+=== RUN   FuzzTypedEventParse/seed#1
+=== RUN   FuzzTypedEventParse/seed#2
+=== RUN   FuzzTypedEventParse/seed#3
+=== RUN   FuzzTypedEventParse/seed#4
+=== RUN   FuzzTypedEventParse/seed#5
+=== RUN   FuzzTypedEventParse/seed#6
+=== RUN   FuzzTypedEventParse/seed#7
+=== RUN   FuzzTypedEventParse/seed#8
+=== RUN   FuzzTypedEventParse/seed#9
+=== RUN   FuzzTypedEventParse/seed#10
+=== RUN   FuzzTypedEventParse/seed#11
+=== RUN   FuzzTypedEventParse/seed#12
+=== RUN   FuzzTypedEventParse/seed#13
+=== RUN   FuzzTypedEventParse/seed#14
+=== RUN   FuzzTypedEventParse/seed#15
+=== RUN   FuzzTypedEventParse/seed#16
+=== RUN   FuzzTypedEventParse/seed#17
+=== RUN   FuzzTypedEventParse/seed#18
+=== RUN   FuzzTypedEventParse/seed#19
+=== RUN   FuzzTypedEventParse/seed#20
+=== RUN   FuzzTypedEventParse/seed#21
+=== RUN   FuzzTypedEventParse/seed#22
+=== RUN   FuzzTypedEventParse/seed#23
+=== RUN   FuzzTypedEventParse/seed#24
+--- PASS: FuzzTypedEventParse (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#0 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#1 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#2 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#3 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#4 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#5 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#6 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#7 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#8 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#9 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#10 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#11 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#12 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#13 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#14 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#15 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#16 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#17 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#18 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#19 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#20 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#21 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#22 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#23 (0.00s)
+    --- PASS: FuzzTypedEventParse/seed#24 (0.00s)
+=== RUN   FuzzInnerSignatureCheck
+=== RUN   FuzzInnerSignatureCheck/seed#0
+=== RUN   FuzzInnerSignatureCheck/seed#1
+=== RUN   FuzzInnerSignatureCheck/seed#2
+=== RUN   FuzzInnerSignatureCheck/seed#3
+=== RUN   FuzzInnerSignatureCheck/seed#4
+=== RUN   FuzzInnerSignatureCheck/seed#5
+--- PASS: FuzzInnerSignatureCheck (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#0 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#1 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#2 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#3 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#4 (0.00s)
+    --- PASS: FuzzInnerSignatureCheck/seed#5 (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	0.068s
+EXIT:0

@@ -1,0 +1,20 @@
+COMMAND bash -c git\ rev-parse\ HEAD\ \"HEAD\^\{tree\}\"\;\ echo\ \"status\ \(empty\ means\ clean\):\"\;\ git\ status\ --porcelain\ --untracked-files=all\;\ echo\ \"\(end\ of\ status\)\"\;\ git\ log\ --oneline\ -8
+DATE 2026-11-07T22:19:49Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+18fa31076f28b64f429efd5443461cbcfd1f73c0
+dce9af14d32082c677f9ded2bf5ed09708f09792
+status (empty means clean):
+?? docs/evidence/logs/goal-10/revision.txt
+?? docs/evidence/logs/goal-10/runtime.txt
+(end of status)
+18fa310 goal 10: fix two test defects found by the evidence run
+2cd8f4b goal 10: type the spec oracle payload helpers for strict mypy
+10b6806 goal 10: policy governance and chain upgrades
+640d789 goal 10: WIP Wave 1 (protocol revision, council kinds, policy activation, upgrade wiring)
+82652fd goal 10: WIP Wave 0 differential and review fixes
+4378f10 goal 10: WIP Wave 0 (x/policy core, authority v0 checks, upgrade core, spec draft)
+ff951fc goal 09: record head CI on PR 12
+7d5ed17 goal 09: evidence on c079d5a (status BLOCKED)
+EXIT:0

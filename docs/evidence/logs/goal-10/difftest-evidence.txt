@@ -1,0 +1,442 @@
+COMMAND go test -count=1 -v ./chain/x/evidence/difftest/
+DATE 2026-11-07T22:27:55Z
+HEAD 18fa31076f28b64f429efd5443461cbcfd1f73c0
+TREE dce9af14d32082c677f9ded2bf5ed09708f09792
+DIRTY no
+=== RUN   TestEvidenceDifferentialAgainstSpecMachine
+=== RUN   TestEvidenceDifferentialAgainstSpecMachine/default
+=== RUN   TestEvidenceDifferentialAgainstSpecMachine/tight
+=== NAME  TestEvidenceDifferentialAgainstSpecMachine
+    diff_test.go:82: 128 sequences, 12349 compared steps, 0 divergences
+--- PASS: TestEvidenceDifferentialAgainstSpecMachine (28.65s)
+    --- PASS: TestEvidenceDifferentialAgainstSpecMachine/default (14.50s)
+    --- PASS: TestEvidenceDifferentialAgainstSpecMachine/tight (14.15s)
+=== RUN   TestEvidenceDifferentialCoverage
+    diff_test.go:92: differential coverage (89 classes):
+          AcceptLease DUPLICATE_ID                                               23
+          AcceptLease EXPIRED(D-3)                                               66
+          AcceptLease EXPIRED(backlog)                                          149
+          AcceptLease NOT_FOUND                                                   9
+          AcceptLease REPLAY                                                      1
+          AcceptLease idempotent                                                 26
+          AcceptLease ok                                                        971
+          Block epoch crossed                                                   162
+          Block epoch crossed, evidence due                                     230
+          Block evidence due                                                    237
+          Block plain                                                           558
+          CouncilAdmit ok                                                       384
+          EndLease UNDERFLOW                                                    141
+          EndLease idempotent                                                    24
+          EndLease ok                                                           345
+          GovernedLimit ok                                                      216
+          OfferLease idempotent                                                  97
+          OfferLease ok                                                        1736
+          RegisterContent ok                                                    573
+          RegisterProvider ok                                                   384
+          RenewLease CONFLICT                                                    25
+          RenewLease EXPIRED(D-2)                                                44
+          RenewLease EXPIRED(evidence)                                          254
+          RenewLease FORBIDDEN(live RECORDED)                                    90
+          RenewLease FORBIDDEN(live REJECTED)                                    30
+          RenewLease NOT_FOUND(evidence)                                        159
+          RenewLease STALE_VERSION                                                3
+          RenewLease WITHDRAWN                                                  122
+          RenewLease idempotent                                                  23
+          RenewLease ok                                                         245
+          SubmitAuditBatch BOUNDS(D-9)                                           46
+          SubmitAuditBatch BOUNDS(business id)                                   28
+          SubmitAuditBatch BOUNDS(count 0)                                      122
+          SubmitAuditBatch BOUNDS(count 33)                                     121
+          SubmitAuditBatch BOUNDS(digest)                                       123
+          SubmitAuditBatch BOUNDS(expiry)                                        76
+          SubmitAuditBatch BOUNDS(governed cap)                                  49
+          SubmitAuditBatch BOUNDS(id)                                            90
+          SubmitAuditBatch CONFLICT(D-10)                                        91
+          SubmitAuditBatch CONFLICT(D-11 ended)                                 198
+          SubmitAuditBatch CONFLICT(D-11 expired)                               335
+          SubmitAuditBatch CONFLICT(D-18)                                        69
+          SubmitAuditBatch DUPLICATE_ID(batch)                                   42
+          SubmitAuditBatch DUPLICATE_ID(evidence)                                32
+          SubmitAuditBatch EXPIRED(D-12)                                        167
+          SubmitAuditBatch EXPIRED(item)                                        114
+          SubmitAuditBatch FORBIDDEN(D-17)                                       58
+          SubmitAuditBatch FORBIDDEN(D-8)                                        45
+          SubmitAuditBatch FORBIDDEN(role ADMITTED_PROVIDER)                     53
+          SubmitAuditBatch FORBIDDEN(role ADMITTED_SERVICE)                      55
+          SubmitAuditBatch FORBIDDEN(role AUTHORITY)                             54
+          SubmitAuditBatch FORBIDDEN(role BROADCASTER)                           56
+          SubmitAuditBatch MALFORMED(attestation)                                42
+          SubmitAuditBatch MALFORMED(kind 0)                                     19
+          SubmitAuditBatch MALFORMED(kind 3)                                     14
+          SubmitAuditBatch MALFORMED(kind 4)                                     15
+          SubmitAuditBatch MALFORMED(kind 5)                                     16
+          SubmitAuditBatch NOT_FOUND(lease)                                      44
+          SubmitAuditBatch REPLAY                                               123
+          SubmitAuditBatch STALE_VERSION(higher)                                 61
+          SubmitAuditBatch STALE_VERSION(lower)                                 128
+          SubmitAuditBatch UNAUTHORIZED(foreign auditor key)                     39
+          SubmitAuditBatch UNAUTHORIZED(non-canonical payload)                   30
+          SubmitAuditBatch UNAUTHORIZED(provider key)                            33
+          SubmitAuditBatch UNAUTHORIZED(reordered items)                          3
+          SubmitAuditBatch UNAUTHORIZED(retry)                                   24
+          SubmitAuditBatch UNAUTHORIZED(role)                                   111
+          SubmitAuditBatch UNAUTHORIZED(signed other attestation)                40
+          SubmitAuditBatch UNAUTHORIZED(signed other batch_id)                   23
+          SubmitAuditBatch UNAUTHORIZED(signed other claim_limit)                29
+          SubmitAuditBatch UNAUTHORIZED(signed other content_id)                 37
+          SubmitAuditBatch UNAUTHORIZED(signed other content_version)            24
+          SubmitAuditBatch UNAUTHORIZED(signed other epoch)                      23
+          SubmitAuditBatch UNAUTHORIZED(signed other evidence_id)                30
+          SubmitAuditBatch UNAUTHORIZED(signed other expiry_unix_seconds)        20
+          SubmitAuditBatch UNAUTHORIZED(signed other kind)                       26
+          SubmitAuditBatch UNAUTHORIZED(signed other lease_id)                   31
+          SubmitAuditBatch UNAUTHORIZED(signed other observation_sha256)         22
+          SubmitAuditBatch UNAUTHORIZED(signed other profile)                    27
+          SubmitAuditBatch UNAUTHORIZED(signed other schema_version)             30
+          SubmitAuditBatch UNAUTHORIZED(signed other signer)                     23
+          SubmitAuditBatch UNAUTHORIZED(signed other signer_key_id)              27
+          SubmitAuditBatch WITHDRAWN(D-13)                                      232
+          SubmitAuditBatch WRONG_DOMAIN                                          47
+          SubmitAuditBatch idempotent                                            50
+          SubmitAuditBatch ok(RECORDED)                                        1103
+          SubmitAuditBatch ok(REJECTED)                                         133
+          WithdrawContent idempotent                                             15
+          WithdrawContent ok                                                    304
+--- PASS: TestEvidenceDifferentialCoverage (0.00s)
+=== RUN   TestEvidenceFuzzReachesStates
+=== RUN   TestEvidenceFuzzReachesStates/transitions
+    diff_test.go:187: transitions fuzz seed corpus (11 inputs) coverage (82 classes):
+          AcceptLease EXPIRED(D-3)                                               15
+          AcceptLease EXPIRED(backlog)                                            4
+          AcceptLease ok                                                         64
+          Block epoch crossed                                                     3
+          Block epoch crossed, evidence due                                      10
+          Block evidence due                                                     16
+          Block plain                                                            32
+          CouncilAdmit ok                                                        33
+          EndLease UNDERFLOW                                                      9
+          EndLease ok                                                            17
+          GovernedLimit ok                                                        7
+          OfferLease idempotent                                                   2
+          OfferLease ok                                                         101
+          RegisterContent ok                                                     50
+          RegisterProvider ok                                                    33
+          RenewLease EXPIRED(evidence)                                           10
+          RenewLease FORBIDDEN(live RECORDED)                                     9
+          RenewLease FORBIDDEN(live REJECTED)                                     3
+          RenewLease NOT_FOUND(evidence)                                          7
+          RenewLease WITHDRAWN                                                    3
+          RenewLease ok                                                          13
+          SubmitAuditBatch BOUNDS(D-15)                                          17
+          SubmitAuditBatch BOUNDS(D-9)                                            1
+          SubmitAuditBatch BOUNDS(business id)                                    3
+          SubmitAuditBatch BOUNDS(count 0)                                       16
+          SubmitAuditBatch BOUNDS(count 33)                                       7
+          SubmitAuditBatch BOUNDS(digest)                                        13
+          SubmitAuditBatch BOUNDS(expiry)                                         9
+          SubmitAuditBatch BOUNDS(governed cap)                                   6
+          SubmitAuditBatch BOUNDS(id)                                             3
+          SubmitAuditBatch CONFLICT(D-10)                                         3
+          SubmitAuditBatch CONFLICT(D-11 ended)                                  14
+          SubmitAuditBatch CONFLICT(D-11 expired)                                23
+          SubmitAuditBatch CONFLICT(D-18)                                         4
+          SubmitAuditBatch DUPLICATE_ID(batch)                                    1
+          SubmitAuditBatch DUPLICATE_ID(evidence)                                 5
+          SubmitAuditBatch DUPLICATE_ID(in batch)                                15
+          SubmitAuditBatch EXPIRED(D-12)                                          6
+          SubmitAuditBatch EXPIRED(item)                                          7
+          SubmitAuditBatch FORBIDDEN(D-17)                                        1
+          SubmitAuditBatch FORBIDDEN(D-8)                                         5
+          SubmitAuditBatch FORBIDDEN(role ADMITTED_PROVIDER)                      5
+          SubmitAuditBatch FORBIDDEN(role ADMITTED_SERVICE)                       3
+          SubmitAuditBatch FORBIDDEN(role AUTHORITY)                              6
+          SubmitAuditBatch FORBIDDEN(role BROADCASTER)                            1
+          SubmitAuditBatch MALFORMED(attestation)                                 5
+          SubmitAuditBatch MALFORMED(kind 0)                                      3
+          SubmitAuditBatch MALFORMED(kind 3)                                      1
+          SubmitAuditBatch MALFORMED(kind 4)                                      1
+          SubmitAuditBatch MALFORMED(kind 5)                                      2
+          SubmitAuditBatch NOT_FOUND(lease)                                       5
+          SubmitAuditBatch REPLAY                                                 5
+          SubmitAuditBatch STALE_VERSION(higher)                                  2
+          SubmitAuditBatch STALE_VERSION(lower)                                   3
+          SubmitAuditBatch UNAUTHORIZED(foreign auditor key)                      1
+          SubmitAuditBatch UNAUTHORIZED(non-canonical payload)                    1
+          SubmitAuditBatch UNAUTHORIZED(provider key)                             2
+          SubmitAuditBatch UNAUTHORIZED(reordered items)                          3
+          SubmitAuditBatch UNAUTHORIZED(role)                                     5
+          SubmitAuditBatch UNAUTHORIZED(signed other attestation)                 2
+          SubmitAuditBatch UNAUTHORIZED(signed other batch_id)                    3
+          SubmitAuditBatch UNAUTHORIZED(signed other claim_limit)                 1
+          SubmitAuditBatch UNAUTHORIZED(signed other content_id)                  1
+          SubmitAuditBatch UNAUTHORIZED(signed other content_version)             4
+          SubmitAuditBatch UNAUTHORIZED(signed other epoch)                       2
+          SubmitAuditBatch UNAUTHORIZED(signed other evidence_id)                 2
+          SubmitAuditBatch UNAUTHORIZED(signed other expiry_unix_seconds)         2
+          SubmitAuditBatch UNAUTHORIZED(signed other kind)                        2
+          SubmitAuditBatch UNAUTHORIZED(signed other lease_id)                    3
+          SubmitAuditBatch UNAUTHORIZED(signed other observation_sha256)          1
+          SubmitAuditBatch UNAUTHORIZED(signed other profile)                     2
+          SubmitAuditBatch UNAUTHORIZED(signed other schema_version)              2
+          SubmitAuditBatch UNAUTHORIZED(signed other signer)                      1
+          SubmitAuditBatch UNAUTHORIZED(signed other signer_key_id)               2
+          SubmitAuditBatch WITHDRAWN(D-13)                                        8
+          SubmitAuditBatch WRONG_DOMAIN                                           2
+          SubmitAuditBatch idempotent                                             5
+          SubmitAuditBatch ok(RECORDED)                                          32
+          SubmitAuditBatch ok(REJECTED)                                           3
+          SubmitAuditBatch ok(multi)                                             77
+          WithdrawContent idempotent                                              1
+          WithdrawContent ok                                                     12
+=== RUN   TestEvidenceFuzzReachesStates/differential
+    diff_test.go:187: differential fuzz seed corpus (12 inputs) coverage (84 classes):
+          AcceptLease EXPIRED(backlog)                                            1
+          AcceptLease ok                                                         87
+          Block epoch crossed                                                     4
+          Block epoch crossed, evidence due                                      20
+          Block evidence due                                                     17
+          Block plain                                                            47
+          CouncilAdmit ok                                                        36
+          EndLease UNDERFLOW                                                      7
+          EndLease idempotent                                                     1
+          EndLease ok                                                            25
+          GovernedLimit ok                                                        7
+          OfferLease idempotent                                                  11
+          OfferLease ok                                                         137
+          RegisterContent ok                                                     55
+          RegisterProvider ok                                                    36
+          RenewLease CONFLICT                                                     3
+          RenewLease EXPIRED(D-2)                                                 2
+          RenewLease EXPIRED(evidence)                                           24
+          RenewLease FORBIDDEN(live RECORDED)                                    14
+          RenewLease FORBIDDEN(live REJECTED)                                     3
+          RenewLease NOT_FOUND(evidence)                                         21
+          RenewLease STALE_VERSION                                                1
+          RenewLease WITHDRAWN                                                   16
+          RenewLease idempotent                                                   2
+          RenewLease ok                                                          20
+          SubmitAuditBatch BOUNDS(D-9)                                            4
+          SubmitAuditBatch BOUNDS(business id)                                    3
+          SubmitAuditBatch BOUNDS(count 0)                                       15
+          SubmitAuditBatch BOUNDS(count 33)                                       9
+          SubmitAuditBatch BOUNDS(digest)                                        10
+          SubmitAuditBatch BOUNDS(expiry)                                        12
+          SubmitAuditBatch BOUNDS(governed cap)                                   5
+          SubmitAuditBatch BOUNDS(id)                                            11
+          SubmitAuditBatch CONFLICT(D-10)                                         6
+          SubmitAuditBatch CONFLICT(D-11 ended)                                  21
+          SubmitAuditBatch CONFLICT(D-11 expired)                                23
+          SubmitAuditBatch CONFLICT(D-18)                                        10
+          SubmitAuditBatch DUPLICATE_ID(batch)                                    3
+          SubmitAuditBatch DUPLICATE_ID(evidence)                                 5
+          SubmitAuditBatch EXPIRED(D-12)                                          6
+          SubmitAuditBatch EXPIRED(item)                                          6
+          SubmitAuditBatch FORBIDDEN(D-17)                                        3
+          SubmitAuditBatch FORBIDDEN(D-8)                                         7
+          SubmitAuditBatch FORBIDDEN(role ADMITTED_PROVIDER)                      1
+          SubmitAuditBatch FORBIDDEN(role ADMITTED_SERVICE)                       5
+          SubmitAuditBatch FORBIDDEN(role AUTHORITY)                              5
+          SubmitAuditBatch FORBIDDEN(role BROADCASTER)                            4
+          SubmitAuditBatch MALFORMED(attestation)                                 4
+          SubmitAuditBatch MALFORMED(kind 0)                                      2
+          SubmitAuditBatch MALFORMED(kind 3)                                      3
+          SubmitAuditBatch MALFORMED(kind 4)                                      1
+          SubmitAuditBatch MALFORMED(kind 5)                                      2
+          SubmitAuditBatch NOT_FOUND(lease)                                       6
+          SubmitAuditBatch REPLAY                                                 8
+          SubmitAuditBatch STALE_VERSION(higher)                                  5
+          SubmitAuditBatch STALE_VERSION(lower)                                   9
+          SubmitAuditBatch UNAUTHORIZED(foreign auditor key)                      3
+          SubmitAuditBatch UNAUTHORIZED(non-canonical payload)                    1
+          SubmitAuditBatch UNAUTHORIZED(provider key)                             5
+          SubmitAuditBatch UNAUTHORIZED(reordered items)                          2
+          SubmitAuditBatch UNAUTHORIZED(retry)                                    2
+          SubmitAuditBatch UNAUTHORIZED(role)                                     6
+          SubmitAuditBatch UNAUTHORIZED(signed other attestation)                 2
+          SubmitAuditBatch UNAUTHORIZED(signed other batch_id)                    2
+          SubmitAuditBatch UNAUTHORIZED(signed other claim_limit)                 1
+          SubmitAuditBatch UNAUTHORIZED(signed other content_id)                  4
+          SubmitAuditBatch UNAUTHORIZED(signed other content_version)             2
+          SubmitAuditBatch UNAUTHORIZED(signed other epoch)                       2
+          SubmitAuditBatch UNAUTHORIZED(signed other evidence_id)                 1
+          SubmitAuditBatch UNAUTHORIZED(signed other expiry_unix_seconds)         1
+          SubmitAuditBatch UNAUTHORIZED(signed other kind)                        6
+          SubmitAuditBatch UNAUTHORIZED(signed other lease_id)                    3
+          SubmitAuditBatch UNAUTHORIZED(signed other observation_sha256)          1
+          SubmitAuditBatch UNAUTHORIZED(signed other profile)                     1
+          SubmitAuditBatch UNAUTHORIZED(signed other schema_version)              4
+          SubmitAuditBatch UNAUTHORIZED(signed other signer)                      2
+          SubmitAuditBatch UNAUTHORIZED(signed other signer_key_id)               4
+          SubmitAuditBatch WITHDRAWN(D-13)                                       38
+          SubmitAuditBatch WRONG_DOMAIN                                           5
+          SubmitAuditBatch idempotent                                            10
+          SubmitAuditBatch ok(RECORDED)                                         193
+          SubmitAuditBatch ok(REJECTED)                                          14
+          WithdrawContent idempotent                                              5
+          WithdrawContent ok                                                     28
+--- PASS: TestEvidenceFuzzReachesStates (8.84s)
+    --- PASS: TestEvidenceFuzzReachesStates/transitions (4.69s)
+    --- PASS: TestEvidenceFuzzReachesStates/differential (4.16s)
+=== RUN   TestSubmitAuditBatchMeasurements
+    measure_test.go:277: fixture=F1 items=1 code=OK msg_bytes=260 keeper_gas=79696 event_bytes=199 evidence_store_keys=+5 evidence_store_bytes=+293 max_record_bytes=146 canonical_payload_bytes=497 per_item: msg_bytes=260.0 keeper_gas=79696.0 evidence_store_bytes=293.0 label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:277: fixture=F8 items=8 code=OK msg_bytes=855 keeper_gas=167650 event_bytes=1592 evidence_store_keys=+18 evidence_store_bytes=+1635 max_record_bytes=146 canonical_payload_bytes=3276 per_item: msg_bytes=106.9 keeper_gas=20956.2 evidence_store_bytes=204.4 label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:277: fixture=F32 items=32 code=OK msg_bytes=2929 keeper_gas=472954 event_bytes=6464 evidence_store_keys=+66 evidence_store_bytes=+6493 max_record_bytes=148 canonical_payload_bytes=12837 per_item: msg_bytes=91.5 keeper_gas=14779.8 evidence_store_bytes=202.9 label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:277: fixture=F32max items=32 code=OK msg_bytes=4343 keeper_gas=637030 event_bytes=10496 evidence_store_keys=+66 evidence_store_bytes=+11939 max_record_bytes=233 canonical_payload_bytes=14193 per_item: msg_bytes=135.7 keeper_gas=19907.2 evidence_store_bytes=373.1 label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:277: fixture=F32rej items=32 code=OK msg_bytes=2903 keeper_gas=473170 event_bytes=6496 evidence_store_keys=+66 evidence_store_bytes=+6499 max_record_bytes=150 canonical_payload_bytes=12808 per_item: msg_bytes=90.7 keeper_gas=14786.6 evidence_store_bytes=203.1 label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:277: fixture=F32tail items=32 code=ERROR_CODE_WITHDRAWN msg_bytes=2969 keeper_gas=141991 event_bytes=0 evidence_store_keys=+0 evidence_store_bytes=+0 max_record_bytes=0 canonical_payload_bytes=12873 per_item: msg_bytes=92.8 keeper_gas=4437.2 evidence_store_bytes=0.0 rejected_at=T8,_item_32 label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:277: fixture=Rcount items=164 code=ERROR_CODE_BOUNDS msg_bytes=14187 keeper_gas=52123 event_bytes=0 evidence_store_keys=+0 evidence_store_bytes=+0 max_record_bytes=0 canonical_payload_bytes=65276 per_item: msg_bytes=86.5 keeper_gas=317.8 evidence_store_bytes=0.0 rejected_at=step_11_after_the_signature_over_164_items label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:277: fixture=Rpayload items=150 code=ERROR_CODE_BOUNDS msg_bytes=19237 keeper_gas=51066 event_bytes=0 evidence_store_keys=+0 evidence_store_bytes=+0 max_record_bytes=0 canonical_payload_bytes=0 per_item: msg_bytes=128.2 keeper_gas=340.4 evidence_store_bytes=0.0 rejected_at=step_8,_150_items_above_the_payload_cap label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:281: fixture=AcceptLease items=0 code=OK msg_bytes=157 keeper_gas=99107 event_bytes=126 evidence_store_keys=+0 evidence_store_bytes=+0 max_record_bytes=0 canonical_payload_bytes=0 per_item: msg_bytes=- keeper_gas=- evidence_store_bytes=- baseline=lease_message label="per-fixture keeper-level measurement on one machine; no throughput or network-capacity claim"
+    measure_test.go:307: fixture counts: Rcount=164 items (step 11), Rpayload=150 items (step 8); inner signature verifications per batch: 1 (a design constant of deviation D-1, not a measurement)
+--- PASS: TestSubmitAuditBatchMeasurements (1.21s)
+=== RUN   TestBenchFixturesReturnTheirCodes
+--- PASS: TestBenchFixturesReturnTheirCodes (1.12s)
+=== RUN   TestDeviationRulesAreLoadBearing
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-17
+    mutant_test.go:168: evidence D-17: chain ERROR_CODE_FORBIDDEN at step 12; with the rule off the spec says ok; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-8
+    mutant_test.go:168: evidence D-8: chain ERROR_CODE_FORBIDDEN at step 12; with the rule off the spec says ok; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-9
+    mutant_test.go:168: evidence D-9: chain ERROR_CODE_BOUNDS at step 12; with the rule off the spec says ok; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-10
+    mutant_test.go:168: evidence D-10: chain ERROR_CODE_CONFLICT at step 12; with the rule off the spec says ok; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-11
+    mutant_test.go:168: evidence D-11: chain ERROR_CODE_CONFLICT at step 13; with the rule off the spec says ok; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-12
+    mutant_test.go:168: evidence D-12: chain ERROR_CODE_EXPIRED at step 15; with the rule off the spec says ERROR_CODE_CONFLICT; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-18
+    mutant_test.go:168: evidence D-18: chain ERROR_CODE_CONFLICT at step 12; with the rule off the spec says ok; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-13
+    mutant_test.go:168: evidence D-13: chain ERROR_CODE_WITHDRAWN at step 13; with the rule off the spec says ok; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-15
+    mutant_test.go:168: evidence D-15: chain ERROR_CODE_BOUNDS at step 1036; with the rule off the spec says ok; spec_machine.py alone: ok
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-3
+    mutant_test.go:196: evidence D-3: chain ok at step 12 (epoch 490896); spec_machine.py alone (epoch 1): STALE_VERSION
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-4
+    mutant_test.go:211: evidence D-4: with the rule off the spec stores EXPIRED for b8fecbe849d08ecf.e1 and keeps a due lease held: fixture step 17 Block: go and spec_machine.py diverge
+        step: {"header_time":1767226500,"op":"Block"}
+        events: go [{LeaseEnded sl0}], spec []
+        projection.Providers:
+          go   [{"provider_id":"p0","account":"8181818181818181818181818181818181818181","state":"ADMITTED","signing_key_id":"p0-k1","signing_pubkey":"aa88ca43cd819809d13985f3387e5e59ea0ff3754882c2784ec8745263559b02","key_generation":"1","admitted_capacity_bytes":"1000000","reserved_bytes":"0","operator_group_id":"devnet-test-only","endpoint_manifest_digest":"e17ea8e871cbc351a29c62c8eefb65eb128b03fe633d182dec1bea66e0434698","previous_pubkeys":[]},{"provider_id":"p1","account":"8282828282828282828282828282828282828282","state":"ADMITTED","signing_key_id":"p1-k1","signing_pubkey":"58b8cb6858a581da860da9ab7a8e795ef7ce16a3f7e9a7dc25aae3007c89f90d","key_generation":"1","admitted_capacity_bytes":"1000000","reserved_bytes":"1000","operator_group_id":"devnet-test-only","endpoint_manifest_digest":"c5954d3fd4b12ee9ee54d0295b2c47119034571f7b91cab75f979a17bebb9759","previous_pubkeys":[]},{"provider_id":"p2","account":"8383838383838383838383838383838383838383","state":"ADMITTED","signing_key_id":"p2-k1","signing_pubkey":"6f686941d48ee0068550a87bccd37799f62360a2a1eff0fb13adec010d93ed7e","key_generation":"1","admitted_capacity_bytes":"1000000","reserved_bytes":"1000","operator_group_id":"devnet-test-only","endpoint_manifest_digest":"c047f50a913a308e325dd85a85342859df51eed40e22bd587f12a87a8d70b284","previous_pubkeys":[]}]
+          spec [{"provider_id":"p0","account":"8181818181818181818181818181818181818181","state":"ADMITTED","signing_key_id":"p0-k1","signing_pubkey":"aa88ca43cd819809d13985f3387e5e59ea0ff3754882c2784ec8745263559b02","key_generation":"1","admitted_capacity_bytes":"1000000","reserved_bytes":"1000","operator_group_id":"devnet-test-only","endpoint_manifest_digest":"e17ea8e871cbc351a29c62c8eefb65eb128b03fe633d182dec1bea66e0434698","previous_pubkeys":[]},{"provider_id":"p1","account":"8282828282828282828282828282828282828282","state":"ADMITTED","signing_key_id":"p1-k1","signing_pubkey":"58b8cb6858a581da860da9ab7a8e795ef7ce16a3f7e9a7dc25aae3007c89f90d","key_generation":"1","admitted_capacity_bytes":"1000000","reserved_bytes":"1000","operator_group_id":"devnet-test-only","endpoint_manifest_digest":"c5954d3fd4b12ee9ee54d0295b2c47119034571f7b91cab75f979a17bebb9759","previous_pubkeys":[]},{"provider_id":"p2","account":"8383838383838383838383838383838383838383","state":"ADMITTED","signing_key_id":"p2-k1","signing_pubkey":"6f686941d48ee0068550a87bccd37799f62360a2a1eff0fb13adec010d93ed7e","key_generation":"1","admitted_capacity_bytes":"1000000","reserved_bytes":"1000","operator_group_id":"devnet-test-only","endpoint_manifest_digest":"c047f50a913a308e325dd85a85342859df51eed40e22bd587f12a87a8d70b284","previous_pubkeys":[]}]
+        projection.Leases:
+          go   [{"lease_id":"sl0","offer_id":"so0","content_id":"c0","content_version":"1","provider_id":"p0","package_bytes":"1000","manifest_digest":"b3a8b970742f1699e2bf3454ab5b7773019cc56a6afe68e54f69f85f66a49055","terms_digest":"70aebf16dd95888cd3b679f400c179cbd5b4d0d18e42f9ca24adb36409c4b030","start_unix_seconds":"1767222900","deadline_unix_seconds":"1767226500","state":"EXPIRED","term_version":"1","policy_version":"1","reservation_held":false},{"lease_id":"sl1","offer_id":"so1","content_id":"c1","content_version":"1","provider_id":"p1","package_bytes":"1000","manifest_digest":"ea86e77105d21f0cbf1c1d2ead22114a02e0da39a33eebb2dbc0ac5393272497","terms_digest":"70aebf16dd95888cd3b679f400c179cbd5b4d0d18e42f9ca24adb36409c4b030","start_unix_seconds":"1767394800","deadline_unix_seconds":"1767398400","state":"ACTIVE","term_version":"1","policy_version":"1","reservation_held":true},{"lease_id":"sl2","offer_id":"so2","content_id":"c2","content_version":"1","provider_id":"p2","package_bytes":"1000","manifest_digest":"60165addbbe0dd29b832eb00079413304b520f4b7f9cddb1b6b059f013364665","terms_digest":"70aebf16dd95888cd3b679f400c179cbd5b4d0d18e42f9ca24adb36409c4b030","start_unix_seconds":"1767394800","deadline_unix_seconds":"1767398400","state":"ACTIVE","term_version":"1","policy_version":"1","reservation_held":true}]
+          spec [{"lease_id":"sl0","offer_id":"so0","content_id":"c0","content_version":"1","provider_id":"p0","package_bytes":"1000","manifest_digest":"b3a8b970742f1699e2bf3454ab5b7773019cc56a6afe68e54f69f85f66a49055","terms_digest":"70aebf16dd95888cd3b679f400c179cbd5b4d0d18e42f9ca24adb36409c4b030","start_unix_seconds":"1767222900","deadline_unix_seconds":"1767226500","state":"ACTIVE","term_version":"1","policy_version":"1","reservation_held":true},{"lease_id":"sl1","offer_id":"so1","content_id":"c1","content_version":"1","provider_id":"p1","package_bytes":"1000","manifest_digest":"ea86e77105d21f0cbf1c1d2ead22114a02e0da39a33eebb2dbc0ac5393272497","terms_digest":"70aebf16dd95888cd3b679f400c179cbd5b4d0d18e42f9ca24adb36409c4b030","start_unix_seconds":"1767394800","deadline_unix_seconds":"1767398400","state":"ACTIVE","term_version":"1","policy_version":"1","reservation_held":true},{"lease_id":"sl2","offer_id":"so2","content_id":"c2","content_version":"1","provider_id":"p2","package_bytes":"1000","manifest_digest":"60165addbbe0dd29b832eb00079413304b520f4b7f9cddb1b6b059f013364665","terms_digest":"70aebf16dd95888cd3b679f400c179cbd5b4d0d18e42f9ca24adb36409c4b030","start_unix_seconds":"1767394800","deadline_unix_seconds":"1767398400","state":"ACTIVE","term_version":"1","policy_version":"1","reservation_held":true}]
+        projection.Pairs:
+          go   [{"provider_id":"p1","content_id":"c1","content_version":"1","lease_id":"sl1"},{"provider_id":"p2","content_id":"c2","content_version":"1","lease_id":"sl2"}]
+          spec [{"provider_id":"p0","content_id":"c0","content_version":"1","lease_id":"sl0"},{"provider_id":"p1","content_id":"c1","content_version":"1","lease_id":"sl1"},{"provider_id":"p2","content_id":"c2","content_version":"1","lease_id":"sl2"}]
+        projection.Evidence:
+          go   [{"evidence_id":"b8fecbe849d08ecf.e1","batch_id":"b8fecbe849d08ecf.batch3","kind":"AUDITOR_ATTESTATION","state":"EXPIRED","stored_state":"RECORDED","lease_id":"sl2","content_id":"c2","expiry_unix_seconds":"1767226500","observation_digest":"60165addbbe0dd29b832eb00079413304b520f4b7f9cddb1b6b059f013364665","attestation":true}]
+          spec [{"evidence_id":"b8fecbe849d08ecf.e1","batch_id":"b8fecbe849d08ecf.batch3","kind":"AUDITOR_ATTESTATION","state":"EXPIRED","stored_state":"EXPIRED","lease_id":"sl2","content_id":"c2","expiry_unix_seconds":"1767226500","observation_digest":"60165addbbe0dd29b832eb00079413304b520f4b7f9cddb1b6b059f013364665","attestation":true}]
+=== RUN   TestDeviationRulesAreLoadBearing/evidence_D-6
+    mutant_test.go:240: evidence D-6: chain BOUNDS for 33 items; spec_machine.py given only the first item: ok
+--- PASS: TestDeviationRulesAreLoadBearing (32.97s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-17 (0.04s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-8 (0.04s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-9 (0.04s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-10 (0.04s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-11 (0.04s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-12 (0.05s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-18 (0.05s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-13 (0.04s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-15 (32.48s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-3 (0.05s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-4 (0.06s)
+    --- PASS: TestDeviationRulesAreLoadBearing/evidence_D-6 (0.04s)
+=== RUN   TestComparatorDetectsMismatch
+    mutant_test.go:314: 20 spec mutants and 1 Go mutant detected
+--- PASS: TestComparatorDetectsMismatch (0.04s)
+=== RUN   TestTrialSnapshotDetectsEarlyWrite
+--- PASS: TestTrialSnapshotDetectsEarlyWrite (0.01s)
+=== RUN   TestChainVerifyForcedOKDiverges
+    mutant_test.go:456: seed 0 diverged first at an altered signature: forced step 42 SubmitAuditBatch [foreign auditor key]: go and spec_machine.py diverge
+--- PASS: TestChainVerifyForcedOKDiverges (0.13s)
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences/D-2_business_id_replayed_by_another_auditor
+    mutant_test.go:527: D-2 business id replayed by another auditor: chain ERROR_CODE_REPLAY, spec_machine.py ok (idempotent true)
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences/D-1_content_version_2^53
+    mutant_test.go:527: D-1 content_version 2^53: chain ERROR_CODE_UNAUTHORIZED, spec_machine.py ERROR_CODE_MALFORMED (idempotent false)
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences/D-1_epoch_2^53
+    mutant_test.go:527: D-1 epoch 2^53: chain ERROR_CODE_UNAUTHORIZED, spec_machine.py ERROR_CODE_STALE_VERSION (idempotent false)
+=== RUN   TestGeneratorRestrictionsHideKnownDivergences/D-1_expiry_2^53
+    mutant_test.go:527: D-1 expiry 2^53: chain ERROR_CODE_UNAUTHORIZED, spec_machine.py ERROR_CODE_BOUNDS (idempotent false)
+--- PASS: TestGeneratorRestrictionsHideKnownDivergences (0.10s)
+    --- PASS: TestGeneratorRestrictionsHideKnownDivergences/D-2_business_id_replayed_by_another_auditor (0.02s)
+    --- PASS: TestGeneratorRestrictionsHideKnownDivergences/D-1_content_version_2^53 (0.03s)
+    --- PASS: TestGeneratorRestrictionsHideKnownDivergences/D-1_epoch_2^53 (0.02s)
+    --- PASS: TestGeneratorRestrictionsHideKnownDivergences/D-1_expiry_2^53 (0.02s)
+=== RUN   TestFrozenJCSAcceptsNonASCIIDigits
+    mutant_test.go:569: "{\"n\":١}": frozen jcs.py accepts it as {"n":1}; chain/jcs refuses it (malformed)
+    mutant_test.go:569: "{\"n\":１}": frozen jcs.py accepts it as {"n":1}; chain/jcs refuses it (malformed)
+--- PASS: TestFrozenJCSAcceptsNonASCIIDigits (0.03s)
+=== RUN   TestHarnessConstants
+--- PASS: TestHarnessConstants (0.00s)
+=== RUN   TestEvidenceUsesNoExpiryBudget
+    revive_test.go:61: block at step 17: chain releases sl0 and stores b8fecbe849d08ecf.e1 as RECORDED (reads EXPIRED); spec_machine.py alone sweeps the record and keeps sl0 held
+--- PASS: TestEvidenceUsesNoExpiryBudget (0.05s)
+=== RUN   TestNothingRevives
+    revive_test.go:142: step 44: renewal of sl0 naming b8fecbe849d08ecf.e1: ERROR_CODE_CONFLICT
+    revive_test.go:142: step 45: renewal of sl1 naming b8fecbe849d08ecf.e7: ERROR_CODE_EXPIRED
+    revive_test.go:142: step 46: renewal of sl2 naming b8fecbe849d08ecf.e13: ERROR_CODE_CONFLICT
+    revive_test.go:142: step 47: renewal of sl3 naming b8fecbe849d08ecf.e19: ERROR_CODE_WITHDRAWN
+    revive_test.go:142: step 48: renewal of sl1 naming b8fecbe849d08ecf.e8: ERROR_CODE_EXPIRED
+    revive_test.go:142: step 49: renewal of sl3 naming b8fecbe849d08ecf.e20: ERROR_CODE_WITHDRAWN
+    revive_test.go:142: step 50: renewal of sl4 naming b8fecbe849d08ecf.e57: ERROR_CODE_FORBIDDEN
+    revive_test.go:142: step 51: renewal of sl4 naming b8fecbe849d08ecf.e58: ERROR_CODE_FORBIDDEN
+    revive_test.go:142: step 52: renewal of sl4 naming b8fecbe849d08ecf.e1: ERROR_CODE_EXPIRED
+    revive_test.go:142: step 53: renewal of sl4 naming b8fecbe849d08ecf.e26: ERROR_CODE_EXPIRED
+    revive_test.go:177: 20 steps after the end, withdrawal, and expiry: audits rejected as D-11, D-12, D-13; 10 renewals naming evidence rejected; other stores unchanged
+--- PASS: TestNothingRevives (0.16s)
+=== RUN   FuzzEvidenceDifferential
+=== RUN   FuzzEvidenceDifferential/seed#0
+=== RUN   FuzzEvidenceDifferential/seed#1
+=== RUN   FuzzEvidenceDifferential/seed#2
+=== RUN   FuzzEvidenceDifferential/seed#3
+=== RUN   FuzzEvidenceDifferential/seed#4
+=== RUN   FuzzEvidenceDifferential/seed#5
+=== RUN   FuzzEvidenceDifferential/seed#6
+=== RUN   FuzzEvidenceDifferential/seed#7
+=== RUN   FuzzEvidenceDifferential/seed#8
+=== RUN   FuzzEvidenceDifferential/seed#9
+=== RUN   FuzzEvidenceDifferential/seed#10
+=== RUN   FuzzEvidenceDifferential/seed#11
+--- PASS: FuzzEvidenceDifferential (2.87s)
+    --- PASS: FuzzEvidenceDifferential/seed#0 (0.27s)
+    --- PASS: FuzzEvidenceDifferential/seed#1 (0.23s)
+    --- PASS: FuzzEvidenceDifferential/seed#2 (0.30s)
+    --- PASS: FuzzEvidenceDifferential/seed#3 (0.23s)
+    --- PASS: FuzzEvidenceDifferential/seed#4 (0.21s)
+    --- PASS: FuzzEvidenceDifferential/seed#5 (0.28s)
+    --- PASS: FuzzEvidenceDifferential/seed#6 (0.21s)
+    --- PASS: FuzzEvidenceDifferential/seed#7 (0.20s)
+    --- PASS: FuzzEvidenceDifferential/seed#8 (0.26s)
+    --- PASS: FuzzEvidenceDifferential/seed#9 (0.24s)
+    --- PASS: FuzzEvidenceDifferential/seed#10 (0.24s)
+    --- PASS: FuzzEvidenceDifferential/seed#11 (0.21s)
+=== RUN   FuzzEvidenceTransitions
+=== RUN   FuzzEvidenceTransitions/seed#0
+=== RUN   FuzzEvidenceTransitions/seed#1
+=== RUN   FuzzEvidenceTransitions/seed#2
+=== RUN   FuzzEvidenceTransitions/seed#3
+=== RUN   FuzzEvidenceTransitions/seed#4
+=== RUN   FuzzEvidenceTransitions/seed#5
+=== RUN   FuzzEvidenceTransitions/seed#6
+=== RUN   FuzzEvidenceTransitions/seed#7
+=== RUN   FuzzEvidenceTransitions/seed#8
+=== RUN   FuzzEvidenceTransitions/seed#9
+=== RUN   FuzzEvidenceTransitions/seed#10
+--- PASS: FuzzEvidenceTransitions (1.90s)
+    --- PASS: FuzzEvidenceTransitions/seed#0 (0.06s)
+    --- PASS: FuzzEvidenceTransitions/seed#1 (0.14s)
+    --- PASS: FuzzEvidenceTransitions/seed#2 (0.08s)
+    --- PASS: FuzzEvidenceTransitions/seed#3 (0.07s)
+    --- PASS: FuzzEvidenceTransitions/seed#4 (0.10s)
+    --- PASS: FuzzEvidenceTransitions/seed#5 (0.07s)
+    --- PASS: FuzzEvidenceTransitions/seed#6 (0.12s)
+    --- PASS: FuzzEvidenceTransitions/seed#7 (0.14s)
+    --- PASS: FuzzEvidenceTransitions/seed#8 (0.12s)
+    --- PASS: FuzzEvidenceTransitions/seed#9 (0.15s)
+    --- PASS: FuzzEvidenceTransitions/seed#10 (0.83s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest	78.137s
+EXIT:0
