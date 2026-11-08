@@ -183,6 +183,7 @@ PY_ALLOW = (
 )
 # Frozen protos stay under docs/protocol. Generated Go lives under proto/.
 # Scaffold Go lives under chain/ and agents/. Goal 05 adds chain/cmd/svnd.
+# Goal 11 adds the Go broadcaster module under services/broadcaster/.
 # The goal 02 vector runner stays.
 SOURCE_ALLOW = (
     "docs/protocol/",
@@ -191,6 +192,7 @@ SOURCE_ALLOW = (
     "chain/",
     "proto/",
     "agents/",
+    "services/broadcaster/",
 )
 WALK_SKIP = {
     ".git",

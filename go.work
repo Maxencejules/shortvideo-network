@@ -8,4 +8,5 @@ use (
 	./chain
 	./docs/evidence/goal-02/go
 	./proto
+	./services/broadcaster
 )
