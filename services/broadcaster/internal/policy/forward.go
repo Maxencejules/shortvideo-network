@@ -45,10 +45,14 @@ type ForwardInput struct {
 	// locates the held lease of a renew or end (see RelayInput).
 	ProviderID string
 	ContentID  string
-	// ObservedHeight is the latest committed height the caller saw; reads
-	// must be answered at it or later.
+	// ObservedHeight is the height of the latest header the caller saw
+	// (chain.Status.Height): the forward window is counted from it.
 	ObservedHeight int64
-	// ChainTime is the latest committed header time.
+	// MinHeight is the read floor (chain.Status.AppFloor of that header,
+	// 1 to ObservedHeight): every read must be answered at it or later.
+	MinHeight int64
+	// ChainTime is the time of the header at ObservedHeight (see
+	// RelayInput.ChainTime).
 	ChainTime time.Time
 	// Window is the forward window (MinForwardWindow to MaxForwardWindow):
 	// the timeout height must be above ObservedHeight and at most
@@ -111,6 +115,9 @@ func CheckForwardedTx(ctx context.Context, codec *chain.Codec, r ForwardReader, 
 	if in.ObservedHeight < 1 || uint64(in.ObservedHeight) > math.MaxInt64-in.Window {
 		return Forwarded{}, errors.New("policy: observed height out of range")
 	}
+	if in.MinHeight < 1 || in.MinHeight > in.ObservedHeight {
+		return Forwarded{}, errors.New("policy: read floor must be 1 to the observed height")
+	}
 	if !msgkit.ValidID(in.ProviderID) {
 		return Forwarded{}, refuse(CodeInvalid, "provider id outside the id pattern")
 	}
@@ -138,7 +145,7 @@ func CheckForwardedTx(ctx context.Context, codec *chain.Codec, r ForwardReader, 
 	if role := in.Roles.RoleOf(signer); role != typesv1.SubmitterRole_SUBMITTER_ROLE_ADMITTED_PROVIDER {
 		return Forwarded{}, refuse(CodeForwardSigner, "outer signer has role %s, not ADMITTED_PROVIDER", role)
 	}
-	rec, found, height, err := r.Provider(ctx, in.ProviderID, in.ObservedHeight)
+	rec, found, height, err := r.Provider(ctx, in.ProviderID, in.MinHeight)
 	if err != nil {
 		return Forwarded{}, fmt.Errorf("policy: read provider: %w", err)
 	}

@@ -181,6 +181,11 @@ reported by two sources is listed once):
   phase DU's defect needed, the "local clock decides death" row (expiry
   ends a live attempt), and the "no final leases" rule of plan 13.6 (a
   lease table added to the schema).
+- w3fix-*: the Wave 3 flake fix round. Its review found that the full-jitter
+  delay of plan 8.7 was checked only by the RETRY_WAIT-after-a-full-pass
+  assertions that the round replaced (TestEffectCheckBeforeRetry and
+  TestDeadlinePassedRetriesAtTheSameSequence now end the attempt with
+  settleLive); TestBackoffIsFullJitter checks it now.
 - dv-*: the devnet killers of plan 13.7 (see the devnet group).
 
 Plan 13.7 rows and the mutants that cover them (a killer the plan names that
@@ -231,8 +236,11 @@ did not fail on its mutant in this runner's dry runs is not named):
 
 Rows outside plan 13.7: the R3 simulation route (b10-r3-simulate-through-app-path,
 dv-r3-simulate-through-app-path), a concurrent duplicate create refused by
-its own PENDING owner row (b11-replay-after-authorize-dropped) and the
-schema's lack of lease state (b11-lease-table-added).
+its own PENDING owner row (b11-replay-after-authorize-dropped), the
+schema's lack of lease state (b11-lease-table-added), the full-jitter
+retry delay of plan 8.7 (w3fix-backoff-never-waits), the read floor of a
+/status height (f1-app-floor-is-status-height, f1-signer-startup-does-not-wait)
+and the indexing-margin lower bound (f3-indexing-margin-one-allowed).
 
 Candidate mutants of the package and review runners that are not listed,
 and why:
@@ -709,6 +717,11 @@ MUTANTS: list[Mutant] = [
         "\tif false && r.Height < minHeight {",
         K(CH, "TestAccountReadHeightBound"),
         "an account read answered below the needed height is stale"),
+    one("f1-app-floor-is-status-height", CHAIN, CH + "/rpc.go",
+        "func (s Status) AppFloor() int64 { return max(1, s.Height-1) }",
+        "func (s Status) AppFloor() int64 { return s.Height }",
+        K(CH, "TestAppFloor"),
+        "a query floor is the status height minus one, the block the application has certainly committed"),
     one("b10-r3-simulate-through-app-path", CHAIN, CH + "/rpc.go",
         "\tpathSimulate     = \"/cosmos.tx.v1beta1.Service/Simulate\"",
         "\tpathSimulate     = \"/app/simulate\"",
@@ -1737,6 +1750,21 @@ MUTANTS: list[Mutant] = [
         "\t\tout = append(out, atts[n-1].TimeoutHeight+outbox.Sdk4RetryGapBlocks-2)",
         K(WK, "TestSdk4RetryWaitsTwoBlocks"),
         "an sdk 4 retry waits two blocks (DR-10-41)"),
+    one("f1-signer-startup-does-not-wait", SIGNING, SI + "/signer.go",
+        "\tfor try := 1; try <= startupFloorTries; try++ {",
+        "\tfor try := 1; try <= 1; try++ {",
+        K(SI, "TestSignerStartupWaitsForTheFloor"),
+        "start-up retries a governance read below the floor until the bound, then fails naming it"),
+    one("f3-indexing-margin-one-allowed", OUTBOX, OB + "/limits.go",
+        "\tMinIndexingMargin        = 2",
+        "\tMinIndexingMargin        = 1",
+        K(OB, "TestLimitsValidate") + K(CF, "TestIndexingMarginOneRefused"),
+        "indexing_margin_blocks 1 is refused: at status S only blocks through S-2 are certainly indexed"),
+    one("w3fix-backoff-never-waits", WORKER, WK + "/settle.go",
+        "\treturn time.Duration(rand.Int64N(int64(ceiling) + 1))",
+        "\t_ = rand.Int64N(int64(ceiling) + 1)\n\treturn 0",
+        K(WK, "TestBackoffIsFullJitter"),
+        "the retry delay is drawn from [0, min(cap, base * 2^(n-1))], not always 0 (plan 8.7)"),
     one("w1b8-signed-tx-signer-unchecked", WORKER, WK + "/attempt.go",
         "\tcase !bytes.Equal(own.Signer.Address, s.key.Address) || own.Signer.Sequence != req.Sequence:",
         "\tcase !bytes.Equal(own.Signer.Address, own.Signer.Address):",
@@ -1774,8 +1802,8 @@ MUTANTS: list[Mutant] = [
         K(WK, "TestSQLPathRelayPermission"),
         "an SQL-path forward needs relay authority (review W5)"),
     one("w1fix-provider-precheck-refusal-ignored", WORKER, WK + "/validate.go",
-        "ContentID: loc.contentID, MinHeight: st.Height, ChainTime: st.Time, DeadlinePages: w.cfg.Numbers.DeadlinePages})\n\t\tif err != nil {",
-        "ContentID: loc.contentID, MinHeight: st.Height, ChainTime: st.Time, DeadlinePages: w.cfg.Numbers.DeadlinePages})\n\t\tif err != nil && policy.CodeOf(err) == \"\" {",
+        "ContentID: loc.contentID, MinHeight: st.AppFloor(), ChainTime: st.Time, DeadlinePages: w.cfg.Numbers.DeadlinePages})\n\t\tif err != nil {",
+        "ContentID: loc.contentID, MinHeight: st.AppFloor(), ChainTime: st.Time, DeadlinePages: w.cfg.Numbers.DeadlinePages})\n\t\tif err != nil && policy.CodeOf(err) == \"\" {",
         K(WK, "TestRelayRevalidatedBeforeSigning"),
         "a provider pre-check refusal before signing fails the intent (review W7)"),
     one("w1fix-publication-refusal-ignored", WORKER, WK + "/validate.go",

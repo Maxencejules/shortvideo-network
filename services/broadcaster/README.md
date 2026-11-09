@@ -5,9 +5,10 @@ Status: goal 11 work in progress. The design is PROPOSED in
 applies to the single-machine devnet only. This README summarizes that design as the code in this directory implements
 it. It does not say which parts are tested or verified; `docs/evidence/goal-11.md` will record that, with logs. The owner answered Q1 to Q4 on 2026-11-08 (design section
 17), each with option (a): Q1 "Both keys, separate signer (Recommended)", Q2 "Relay + verbatim forward (Recommended)", Q3
-"Operator-registered intent keys (Recommended)", Q4 "Minimal + clear unsent (Recommended)". The answers do not approve the
-design, any PROPOSED number or any pull request; approval of the design is asked at pull-request time on a pinned commit
-and sha256 (DR-11-01). The orchestrator's reversible choices after the Wave 0 review (rulings R1 to R6) are in design
+"Operator-registered intent keys (Recommended)", Q4 "Minimal + clear unsent (Recommended)". On 2026-11-08 at 21:39 America/Toronto the owner approved that design file only, at sha256
+`9779fdb1e7fe5a7577565c64a8066b6bff7e7bace1174b085df81e7b17ae905b` (DR-11-01). The file still reads PROPOSED and is not
+edited. The approval does not approve any PROPOSED number, and the Q1 to Q4 answers do not approve a pull request or a
+merge. The orchestrator's reversible choices after the Wave 0 review (rulings R1 to R6) are in design
 section 19.1; they are not owner decisions.
 
 A broadcast acknowledgement is not committed execution. The broadcaster reports COMMITTED only from a committed result it
@@ -151,7 +152,15 @@ ignores `*.sql`. Retention is unset (DEC-004). Design section 11 has the columns
 - The chain id and the node RPC URL are required and have no defaults. The node is trusted for reads.
 - The database connection is a Unix socket with SSL off, with the password read from a `password_file` owned by the
   process's uid with no group or other bit.
-- Every PROPOSED number has hard bounds in code and is listed in design section 16.
+- Every PROPOSED number has hard bounds in code and is listed in design section 16. `indexing_margin_blocks` is at least
+  2: at a reported height S, block S−1 may not be in the transaction index yet.
+- Chain reads that gate a signature or an authorization use a read floor of the `/status` height minus one (at least 1).
+  CometBFT can report a block the application is still executing, so a query answered one block below that height is
+  current, and a query answered further below is stale. The relay pre-check still compares offer expiry with the time of
+  that same `/status` header: block times increase, so the header time is a lower bound of any later block that could
+  include the relay. The signer start-up governance read uses the floor and, if the answer is still below it, retries for
+  at most four poll intervals, then exits with an error that names the floor and the bound. Design section 3.1 states the
+  guarantee.
 - The database connection is built field by field. Every subcommand refuses to start if any `PG*` variable or `PQGO_DEBUG`
   is set, because `lib/pq` reads them and `PQGO_DEBUG=1` prints the connection config to stderr.
 - Run PostgreSQL with all five settings the development cluster uses: `log_min_error_statement=panic`,

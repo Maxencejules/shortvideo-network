@@ -149,6 +149,27 @@ orchestrator's.
 - Reads. `/tx_search` takes queries up to 512 bytes and at most 100 results per page
   (`cometbft@v0.40.0/rpc/core/events.go:16-18`; `cometbft@v0.40.0/rpc/core/env.go:23-24`). Typed events copy string
   attributes as they are and index every attribute (`chain/msgkit/events.go:60-75`). No event carries a business id.
+- Read floor. `/status` reports the block store height, and CometBFT v0.40.0 saves block H before the application
+  executes and commits it (`cometbft@v0.40.0/consensus/state.go` `finalizeCommit`: `SaveBlock` then `ApplyVerifiedBlock`;
+  the same order in `blocksync/reactor.go`). While block H executes, an ABCI query answers at H−1. `chain.Status.AppFloor`
+  is that height minus one, and at least 1. Every ABCI query whose minimum height used to be the status height (signer
+  start-up `Query/Governance`, API authorization, the worker's checks before signing, the relay pre-check and the forward
+  provider read) now uses the floor. The query still runs at the latest height; the floor is the lowest answer accepted.
+  An answer below it is stale. What this guarantees: the answer is the state after block H−1 or a later committed block,
+  so it is never more than one block behind the header `/status` named, and once the application has committed that
+  header the answer is that header. A key rotation in a block that has committed is visible, because the query returns
+  the latest committed height, which is then at least the floor. A rotation in the block still executing is not committed
+  yet. At height 1 the floor is 1, which may not be committed; the query fails and the caller reads again.
+- Relay time and the floor. The relay pre-check compares an offer's expiry with `chain.Status.Time`, the time of the
+  status header, not the time of the floor block. Those two come from the same status read. CometBFT block times strictly
+  increase (`cometbft@v0.40.0/state/validation.go`), and a block that can include the relay is above the status header, so
+  that header's time is a lower bound of the inclusion block's time. Using it refuses an offer the chain would find
+  expired. The offer expiry is a stored field; the reads at the floor do not change it. The forward window still counts
+  from the status height, not from the floor: a timeout height equal to the status height is refused.
+- Signer start-up wait. The signer reads status and governance up to five times (PROPOSED), one poll interval apart, and
+  then exits with an error that names the floor, the status height and the bound. A one-block-behind answer meets the
+  floor and does not wait. An answer still below the floor is retried. Any other read error, and a cancelled context,
+  fail at once. The wait is at most four poll intervals (2 s at the PROPOSED poll interval).
 - `/check_tx` calls the app's CheckTx without adding to the mempool (`cometbft@v0.40.0/rpc/core/mempool.go:186-194`).
   Derived from source, it still advances the check-state sequence, so the broadcaster never uses it.
 - Simulation. `abci_query` with path `/app/simulate` runs `app.Simulate` (`cosmos-sdk@v0.55.0/baseapp/abci.go:207-209`),
@@ -227,7 +248,7 @@ svn-broadcaster serve   (uid U_serve)   API, validation, outbox writes, per-sign
    v                                                 v
 svn-broadcaster signer  (uid U_signer)   PostgreSQL (schema broadcaster), run as `postgres`
    key directory owned by U_signer; allowlist, intent-key check, deadline bound, outer signing only
-   +--> /status (its own deadline bound) and, at start, Query/Governance (its role check) of the configured node
+   +--> /status (its own deadline bound) and, at start, Query/Governance at the read floor (section 3.1)
 
 serve --> CometBFT RPC of ONE configured node (loopback): status, abci_query, broadcast_tx_sync, tx, tx_search, commit
 
@@ -335,7 +356,8 @@ chain id, a schema that is not the binary's); 4 another process holds a signer's
   chain's bounds (`chain/genesis/bounds.go:30-31`); `timeout_height` is not 0 and not above the signer's own fresh height
   plus K_max (PROPOSED, section 16). The signer reads `/status` of the configured node itself and refuses with
   `NO_FRESH_HEIGHT` while its last successful read is older than the poll interval times the freshness polls (both
-  PROPOSED).
+  PROPOSED). At start it reads `Query/Governance` at the read floor of that status (section 3.1) and waits, bounded, if
+  the answer is still below the floor.
 - For `MsgRegisterContent` and `MsgWithdrawContent` it also checks that the hosting intent's public key is in the
   operator's intent-key registry (section 7), and that the intent signature verifies over the payload rebuilt with
   `content.RegisterIntentSignBytes` or `content.WithdrawIntentSignBytes` (`chain/x/content/intent.go:83,98`), with its own
@@ -856,11 +878,14 @@ Attempt A = (signer S, sequence N, timeout T, hash H). A is DEAD when one of the
 - (d2) At least one send started; every started send has a recorded outcome; every outcome is a counted refusal of the
   table above; none is UNKNOWN, CACHE, ACK or sdk 32. A refused transaction is not added to the node's mempool, so it is
   not gossiped. With zero started sends, (d2) never holds.
-- (d3) The node's committed height is at least T + L (L PROPOSED, for asynchronous indexing; the devnet tests poll for the
-  same reason, `chain/devnet/lease_test.go:406-408`), `/tx(H)` is not found, and either the committed sequence of S, read at
-  a height of at least T + L, is at most N, or a search for `tx.acc_seq='<S>/N'` returns a hash other than H. If that hash
-  is one of our attempts, that attempt is resolved by its own `/tx`; if not, the signer halts. If the sequence is above N
-  and the search finds nothing, A stays UNCERTAIN and an alert is raised.
+- (d3) The node's committed height is at least T + L (L PROPOSED, at least 2, for asynchronous indexing; the devnet tests
+  poll for the same reason, `chain/devnet/lease_test.go:406-408`), `/tx(H)` is not found, and either the committed sequence
+  of S, read at a height of at least T + L, is at most N, or a search for `tx.acc_seq='<S>/N'` returns a hash other than H.
+  At status height S the indexer's unbuffered subscription has certainly written every block through S−2, and block S−1 may
+  not be indexed yet (`cometbft@v0.40.0/state/txindex/indexer_service.go`, `types/event_bus.go`, `consensus/state.go`
+  `updateToState`), so L = 1 could trust a search that has not seen the block. If the hash the search returns is one of our
+  attempts, that attempt is resolved by its own `/tx`; if not, the signer halts. If the sequence is above N and the search
+  finds nothing, A stays UNCERTAIN and an alert is raised.
 
 A is never declared dead from the local clock, from the intent's expiry, or while the chain height does not advance. If a
 committed transaction's hash equals an attempt already marked DEAD, that is a fatal integrity alert: the signer halts,
@@ -1058,7 +1083,7 @@ accept the labels, not the values. Each has hard lower and upper bounds in code.
 | --- | --- | --- |
 | K, `timeout_height` offset (blocks) | 40 | 5 to 1,000 |
 | K_max, the signer's deadline bound (blocks) | 1,000 | equal to K's upper bound |
-| L, indexing margin (blocks) | 2 | 1 to 20 |
+| L, indexing margin (blocks) | 2 | 2 to 20 |
 | T, stall window (s) | 10 | 3 to 600 |
 | Observer freshness (poll intervals) | 4 | 2 to 20 |
 | Attempts per business id | 8 | 1 to 16 |
@@ -1482,7 +1507,9 @@ The goal 11 plan changes no `.proto` file, `bounds.json`, `docs/protocol.md` or 
 ## 21. Residual risks
 
 - Reads trust one configured node. A lying node can make the broadcaster report COMMITTED. Goal 12 reconciles; no light
-  client is claimed.
+  client is claimed. A query floor of status height minus one accepts an answer one block behind that header while a
+  block executes (section 3.1). An answer two or more blocks behind is refused.
+- Indexing margin L of 1 is refused. At status height S, block S−1 may not be indexed yet (section 12.5).
 - No transaction revokes a compromised `ADMITTED_SERVICE` or `BROADCASTER` key; service rotation is engine-only
   (`chain/x/authority/README.md:22`). Least privilege is the main control.
 - Whoever holds the `ADMITTED_SERVICE` key bytes can mint devnet hosting intents with a key they make up. Creator permission

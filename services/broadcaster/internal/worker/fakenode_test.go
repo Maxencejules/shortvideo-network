@@ -75,8 +75,12 @@ type fakeNode struct {
 	codec *chain.Codec
 	enc   app.Encoding
 
-	mu         sync.Mutex
-	height     int64
+	mu     sync.Mutex
+	height int64
+	// queryLag is how many blocks below the /status height an ABCI query
+	// answers: 1 is CometBFT while the reported block executes
+	// (chain.Status.AppFloor).
+	queryLag   int64
 	when       time.Time
 	statusErr  error
 	catchingUp bool
@@ -199,7 +203,7 @@ func (n *fakeNode) ABCIQueryWithOptions(_ context.Context, path string, data cmt
 	if err != nil {
 		return nil, err
 	}
-	resp := abci.ResponseQuery{Height: n.height, Value: value}
+	resp := abci.ResponseQuery{Height: n.height - n.queryLag, Value: value}
 	if !found {
 		resp.Code, resp.Codespace, resp.Value = sdkerrors.ErrKeyNotFound.ABCICode(), sdkerrors.ErrKeyNotFound.Codespace(), nil
 	}

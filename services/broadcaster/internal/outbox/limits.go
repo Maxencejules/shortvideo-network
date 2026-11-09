@@ -13,7 +13,9 @@ import (
 type Limits struct {
 	// IndexingMargin is L, in blocks: the dead rule (d3) waits until the
 	// committed height is at least timeout_height + L before it trusts a
-	// "not found" from /tx and the acc_seq search.
+	// "not found" from /tx and the acc_seq search, and the effect check
+	// waits until its read height is L blocks above the height at which it
+	// first saw an object changed. L is at least MinIndexingMargin.
 	IndexingMargin uint64
 	// AttemptsPerBusinessID bounds the attempts persisted under one
 	// business id.
@@ -33,8 +35,22 @@ type Limits struct {
 // Hard bounds of the Limits fields (plan section 11). BusinessAttempts and
 // AttemptsPerIntent also stay within the outbox schema's column bounds
 // (business_attempt 1-8, attempt_count 0-32).
+//
+// MinIndexingMargin is 2 because of CometBFT v0.40.0's event ordering: a
+// node in consensus whose block store or application reports height S has
+// indexed every block up to S-2, and block S-1 may not be indexed yet. The
+// event bus and the indexer's subscriptions are unbuffered
+// (types/event_bus.go:13, libs/pubsub/pubsub.go:119 and :418-420,
+// state/txindex/indexer_service.go:47,55); the indexer reads block H+1's
+// events only after it wrote block H; and consensus publishes the new
+// round step (consensus/state.go:753,767, in updateToState after
+// ApplyVerifiedBlock) of height H+1 only after the indexer took block
+// H+1's events, and saves block H+2 after that. So a height of at least
+// H+2 means block H is indexed: L = 2 holds by this ordering, and L = 1
+// could trust a search that has not seen block H yet. Block sync publishes
+// no round step; a catching-up node is outside this argument.
 const (
-	MinIndexingMargin        = 1
+	MinIndexingMargin        = 2
 	MaxIndexingMargin        = 20
 	MinAttemptsPerBusinessID = 1
 	MaxAttemptsPerBusinessID = 16

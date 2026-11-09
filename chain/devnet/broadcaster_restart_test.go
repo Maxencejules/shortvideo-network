@@ -7,6 +7,7 @@ package devnet_test
 // process crashes, not host power loss.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
@@ -374,6 +375,16 @@ func phaseValidatorRestart(n *bnet, name string) {
 	n.stopValidator(0)
 	n.startValidator(0)
 	waitRPC(n.t, d.clients[0], 60*time.Second)
+	// waitRPC returns when /status answers. The node then still reports
+	// catching up, and the API answers 503 UNAVAILABLE
+	// (chain.ErrCatchingUp: "the node is catching up; its latest header is
+	// not current"). Measured on the floor fix: three such answers, about
+	// one second, then a header the API accepts, and the sdk 4 window is
+	// still open. Wait that out here. post does not retry a 503.
+	bcWait(n.t, "validator 0 is not catching up", 30*time.Second, func() bool {
+		st, err := d.clients[0].Status(context.Background())
+		return err == nil && st != nil && !st.SyncInfo.CatchingUp && st.SyncInfo.LatestBlockHeight > 0
+	})
 	v := n.create(callerApp, req)
 	bcWait(n.t, "a CheckTx sdk 4 refusal in transitions", 90*time.Second, func() bool { return n.sawSdk4(v.IntentID) }, n.serve)
 	// The chain did not commit meanwhile: at most the block in flight at

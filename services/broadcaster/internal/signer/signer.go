@@ -82,6 +82,13 @@ const (
 	// MaxConnections bounds the connections served at once; a connection
 	// beyond it is answered OVERLOADED and closed.
 	MaxConnections = 16
+	// startupFloorTries is how many times start reads governance before it
+	// refuses. PROPOSED. The tries are one poll interval apart, so the wait
+	// is at most (startupFloorTries-1) poll intervals: 400 ms to 40 s, and
+	// 2 s at the PROPOSED poll interval of 500 ms. A try that is not a stale
+	// read (another chain id, a refused response, a cancelled context) fails
+	// at once.
+	startupFloorTries = 5
 	// maxSocketPath is the Unix socket path limit (sun_path, 108 bytes
 	// with the terminating zero).
 	maxSocketPath = 107
@@ -281,11 +288,12 @@ func start(ctx context.Context, cfg Config, rpc chain.RPC, euid uint32) (*Server
 			return nil, err
 		}
 	}
-	st, err := client.Status(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("signer: read node status: %w", err)
-	}
-	view, err := policy.ReadGovernance(ctx, client, st.Height)
+	// The governance read must be answered at least at the status's read
+	// floor (chain.Status.AppFloor): the node may report a block its
+	// application is still executing, so an answer one block below the
+	// status height is current. An answer below the floor is retried, up
+	// to startupFloorTries, and then refused with the floor and the bound.
+	view, err := readStartupGovernance(ctx, client, cfg.PollInterval)
 	if err != nil {
 		return nil, err
 	}
@@ -298,6 +306,52 @@ func start(ctx context.Context, cfg Config, rpc chain.RPC, euid uint32) (*Server
 	s.log.Info("signer listening", "boundary", cfg.Boundary.String(), "signer_uid", int64(euid),
 		"serve_uid", int64(cfg.ServeUID), "keys", int64(len(s.keys)), "governance_height", view.Height)
 	return s, nil
+}
+
+// readStartupGovernance reads Query/Governance at the read floor of the
+// latest status (chain.Status.AppFloor). It re-reads status and retries a
+// stale answer until startupFloorTries have failed or ctx is done. The
+// error names the floor, the status height and how long it waited.
+func readStartupGovernance(ctx context.Context, client *chain.Client, poll time.Duration) (policy.GovernanceView, error) {
+	var last error
+	var floor, height int64
+	for try := 1; try <= startupFloorTries; try++ {
+		if try > 1 {
+			timer := time.NewTimer(poll)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return policy.GovernanceView{}, fmt.Errorf("signer: start-up governance read at least at height %d (status height %d minus one) stopped after %d of %d tries: %w",
+					floor, height, try-1, startupFloorTries, ctx.Err())
+			case <-timer.C:
+			}
+		}
+		st, err := client.Status(ctx)
+		if err != nil {
+			return policy.GovernanceView{}, fmt.Errorf("signer: read node status: %w", err)
+		}
+		floor, height = st.AppFloor(), st.Height
+		view, err := policy.ReadGovernance(ctx, client, floor)
+		if err == nil {
+			return view, nil
+		}
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return policy.GovernanceView{}, fmt.Errorf("signer: start-up governance read at least at height %d (status height %d minus one): %w",
+				floor, height, err)
+		}
+		// A stale answer is below the floor. An answer without a height is
+		// the same wait at height 1, where the floor is 1 and the
+		// application may not have committed it yet (chain.ErrResponse).
+		var stale *chain.StaleError
+		if !errors.As(err, &stale) && !errors.Is(err, chain.ErrResponse) {
+			return policy.GovernanceView{}, fmt.Errorf("signer: start-up governance read at least at height %d (status height %d minus one): %w",
+				floor, height, err)
+		}
+		last = err
+	}
+	waited := time.Duration(startupFloorTries-1) * poll
+	return policy.GovernanceView{}, fmt.Errorf("signer: start-up governance read at least at height %d (status height %d minus one) was not answered in %d tries (%s): %w",
+		floor, height, startupFloorTries, waited, last)
 }
 
 // checkSocketDir refuses a socket directory that is not a real directory

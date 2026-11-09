@@ -56,6 +56,14 @@ type fakeNode struct {
 	submitters []*typesv1.Submitter
 	seats      []*authorityv1.DevnetTestSeat
 	statuses   int
+	// queryLag is how many blocks below the /status height an ABCI query
+	// answers: 1 is CometBFT while the reported block executes
+	// (chain.Status.AppFloor).
+	queryLag int64
+	// lagSteps, when non-empty, is the query lag of successive ABCI
+	// queries; the last value is used for every later query.
+	lagSteps []int64
+	queries  int
 }
 
 func (n *fakeNode) setHeight(h int64) {
@@ -99,7 +107,16 @@ func (n *fakeNode) ABCIQueryWithOptions(_ context.Context, path string, _ cmtbyt
 	if err != nil {
 		return nil, err
 	}
-	return &coretypes.ResultABCIQuery{Response: abci.ResponseQuery{Value: value, Height: n.height}}, nil
+	lag := n.queryLag
+	if len(n.lagSteps) > 0 {
+		i := n.queries
+		if i >= len(n.lagSteps) {
+			i = len(n.lagSteps) - 1
+		}
+		lag = n.lagSteps[i]
+	}
+	n.queries++
+	return &coretypes.ResultABCIQuery{Response: abci.ResponseQuery{Value: value, Height: n.height - lag}}, nil
 }
 
 func (n *fakeNode) BroadcastTxSync(context.Context, cmttypes.Tx) (*coretypes.ResultBroadcastTx, error) {

@@ -214,7 +214,9 @@ func TestRelayRevalidatedBeforeSigning(t *testing.T) {
 
 // TestEffectCheckBeforeRetry (plan 8.6 step 3: before any new attempt,
 // not only the first): attempt 1 of a register dies by (d3) and the intent
-// waits in RETRY_WAIT. Before the retry the chain changes:
+// waits in RETRY_WAIT; the step that ends attempt 1 reconciles the live
+// attempt only (settleLive), so the retry cannot start before the chain
+// changes. Before the retry the chain changes:
 //   - another service account registers the same content id: the intent
 //     fails OBJECT_TAKEN from the effect check, with no second attempt;
 //   - a transaction signed by our service key that the broadcaster never
@@ -230,7 +232,7 @@ func TestEffectCheckBeforeRetry(t *testing.T) {
 		e.pass(s)
 		first := e.attempts(id)[0]
 		e.node.blocks(int(first.TimeoutHeight) + int(outboxLimits().IndexingMargin) - int(e.node.heightNow()))
-		e.pass(s)
+		e.settleLive(s)
 		e.wantState(id, "REQUESTED", "RETRY_WAIT", "D3_DEADLINE_PASSED")
 		e.node.onBroadcast = nil
 		return e, s, id

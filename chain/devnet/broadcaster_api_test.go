@@ -408,31 +408,25 @@ func (n *bnet) call(client *http.Client, method, url string, body []byte) (int, 
 	return resp.StatusCode, v, ""
 }
 
-// bcRetries bounds the retries of a create answered 503 UNAVAILABLE: the
-// API's documented answer when a chain or database read failed (for
-// example a node query answered one height below the latest header, which
-// CometBFT reports before the application committed it), to be retried.
+// bcRetries bounds the retries of a concurrent create answered 503
+// UNAVAILABLE (rawPost). Two creates of one caller can lose the enqueue
+// lock or a chain read to each other; the API's answer is 503, and the
+// race phases count those retries. post does not retry: a 503 there fails
+// the test. The one-block status lag is not a reason to retry (the read
+// floor is chain.Status.AppFloor).
 const bcRetries = 10
 
 // post creates an intent as caller and returns the HTTP status, the view
-// and the error code, retrying a 503 UNAVAILABLE answer.
+// and the error code. A 503 UNAVAILABLE is returned as-is. Phase RS waits
+// until the restarted node is not catching up before it posts, so this
+// path is not a mask for that 503.
 func (n *bnet) post(caller string, req bcIntentReq) (int, bcView, string) {
 	n.t.Helper()
 	body, err := json.Marshal(req)
 	if err != nil {
 		n.t.Fatal(err)
 	}
-	var status int
-	var v bcView
-	var code string
-	for try := 0; try < bcRetries; try++ {
-		status, v, code = n.call(n.clients[caller], http.MethodPost, n.apiURL()+"/v1/intents", body)
-		if status != http.StatusServiceUnavailable || code != "UNAVAILABLE" {
-			break
-		}
-		fmt.Printf("api-retry kind=%s key=%s answer=503 UNAVAILABLE try=%d\n", req.Kind, req.IdempotencyKey, try+1)
-		time.Sleep(300 * time.Millisecond)
-	}
+	status, v, code := n.call(n.clients[caller], http.MethodPost, n.apiURL()+"/v1/intents", body)
 	if status == http.StatusCreated || status == http.StatusOK {
 		obj := req.object
 		obj.Caller = caller

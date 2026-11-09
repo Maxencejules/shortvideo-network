@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -598,6 +599,83 @@ func TestSignerStartupRefusals(t *testing.T) {
 			t.Fatal("start without a node accepted")
 		}
 	})
+}
+
+// TestSignerStartupReadsAtTheApplicationFloor: CometBFT's /status reports
+// a block before the application has committed it, so while block H
+// executes an ABCI query answers at H-1 (chain.Status.AppFloor). The
+// start-up governance read must accept an answer one block below the
+// status height, and still refuse one two blocks below it, naming the
+// floor.
+func TestSignerStartupReadsAtTheApplicationFloor(t *testing.T) {
+	f := newFixture(t)
+	f.node.queryLag = 1
+	logs := &syncBuffer{}
+	f.cfg.Logger = newTestLogger(logs)
+	_, client := f.run(t)
+	if _, err := client.Keys(context.Background()); err != nil {
+		t.Fatalf("signer started on a one-block-behind governance answer but does not serve: %v", err)
+	}
+	if !strings.Contains(logs.String(), `"governance_height":99`) {
+		t.Fatalf("start-up log does not name the governance height 99 (status 100):\n%s", logs.String())
+	}
+
+	g := newFixture(t)
+	g.node.queryLag = 2
+	started := time.Now()
+	_, err := start(context.Background(), g.cfg, g.node, uint32(os.Geteuid()))
+	elapsed := time.Since(started)
+	var stale *chain.StaleError
+	bound := time.Duration(startupFloorTries-1) * g.cfg.PollInterval
+	if !errors.As(err, &stale) || stale.Want != 99 || stale.Got != 98 ||
+		!strings.Contains(err.Error(), "at least at height 99") ||
+		!strings.Contains(err.Error(), fmt.Sprintf("in %d tries", startupFloorTries)) ||
+		g.node.statusCalls() != startupFloorTries || elapsed+20*time.Millisecond < bound {
+		t.Fatalf("governance answered two blocks below status height 100: start = %v after %s (bound %s), status calls %d, want a StaleError for floor 99 after %d tries",
+			err, elapsed, bound, g.node.statusCalls(), startupFloorTries)
+	}
+}
+
+// TestSignerStartupWaitsForTheFloor: a governance read below the floor is
+// retried until a later read meets it. The first answer is two blocks
+// behind status height 100; the next is one behind, which the floor
+// accepts. A cancelled context stops the wait instead of running it out.
+func TestSignerStartupWaitsForTheFloor(t *testing.T) {
+	f := newFixture(t)
+	f.node.lagSteps = []int64{2, 1}
+	logs := &syncBuffer{}
+	f.cfg.Logger = newTestLogger(logs)
+	_, client := f.run(t)
+	if _, err := client.Keys(context.Background()); err != nil {
+		t.Fatalf("signer did not start after the governance read reached the floor: %v", err)
+	}
+	if calls := f.node.statusCalls(); calls < 2 {
+		t.Fatalf("status calls %d, want a retry after the stale read", calls)
+	}
+	if !strings.Contains(logs.String(), `"governance_height":99`) {
+		t.Fatalf("start-up log does not name the governance height 99:\n%s", logs.String())
+	}
+
+	g := newFixture(t)
+	g.node.queryLag = 2
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := start(ctx, g.cfg, g.node, uint32(os.Geteuid()))
+	if !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "at least at height 99") || g.node.statusCalls() != 1 {
+		t.Fatalf("cancelled start = %v, status calls %d, want one try then the context error", err, g.node.statusCalls())
+	}
+
+	// Height 100 with a lag of 100 answers at height 0, which the chain
+	// client reports as a response without a height, not a stale height.
+	// The next answer is one block behind and meets the floor.
+	h := newFixture(t)
+	h.node.lagSteps = []int64{h.node.height, 1}
+	if _, err := start(context.Background(), h.cfg, h.node, uint32(os.Geteuid())); err != nil {
+		t.Fatalf("signer did not start after an answer without a height caught up to the floor: %v", err)
+	}
+	if calls := h.node.statusCalls(); calls < 2 {
+		t.Fatalf("status calls %d, want a retry after the answer without a height", calls)
+	}
 }
 
 // TestClientRejectsAlteredTransaction runs the client against a signer

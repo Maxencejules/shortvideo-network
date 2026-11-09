@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api/request"
+	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/chain"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/store"
 )
@@ -51,7 +51,10 @@ type authorized struct {
 // checkRequest runs the checks of plan 6.3 for one request against the
 // latest committed state, as the API does at enqueue: the publication
 // permission (7.4), the object permissions (5.7), the provider signature
-// pre-check (7.3 P1) or the forward checks (7.3 P3). msg is the request's
+// pre-check (7.3 P1) or the forward checks (7.3 P3). Every read is
+// answered at the read floor of the latest header or later
+// (chain.Status.AppFloor: its height minus one, because the node may
+// report a block its application is still executing). msg is the request's
 // message with the kind's key as signer (nil for a forward, whose bytes
 // are raw). ownIntent is the intent being checked again before signing
 // (empty at its first validation): its own PENDING owner row does not make
@@ -78,7 +81,7 @@ func (w *Worker) checkRequest(ctx context.Context, caller policy.Caller, auth po
 		if err != nil {
 			return authorized{}, err
 		}
-		onchain, found, _, err := w.cfg.Chain.Content(ctx, ref.GetContentId(), ref.GetContentVersion(), st.Height)
+		onchain, found, _, err := w.cfg.Chain.Content(ctx, ref.GetContentId(), ref.GetContentVersion(), st.AppFloor())
 		if err != nil {
 			return authorized{}, err
 		}
@@ -100,7 +103,7 @@ func (w *Worker) checkRequest(ctx context.Context, caller policy.Caller, auth po
 		if err != nil {
 			return authorized{}, err
 		}
-		onchain, found, _, err := w.cfg.Chain.Content(ctx, offer.GetContentId(), offer.GetContentVersion(), st.Height)
+		onchain, found, _, err := w.cfg.Chain.Content(ctx, offer.GetContentId(), offer.GetContentVersion(), st.AppFloor())
 		if err != nil {
 			return authorized{}, err
 		}
@@ -121,7 +124,7 @@ func (w *Worker) checkRequest(ctx context.Context, caller policy.Caller, auth po
 			return authorized{}, err
 		}
 		found, err := policy.PrecheckRelay(ctx, w.cfg.Chain, policy.RelayInput{Msg: msg, ProviderID: loc.providerID,
-			ContentID: loc.contentID, MinHeight: st.Height, ChainTime: st.Time, DeadlinePages: w.cfg.Numbers.DeadlinePages})
+			ContentID: loc.contentID, MinHeight: st.AppFloor(), ChainTime: st.Time, DeadlinePages: w.cfg.Numbers.DeadlinePages})
 		if err != nil {
 			return authorized{}, err
 		}
@@ -134,7 +137,7 @@ func (w *Worker) checkRequest(ctx context.Context, caller policy.Caller, auth po
 		}
 		return authorized{signer: relayer, object: object}, nil
 	case policy.KindForwardProviderTx:
-		return w.checkForward(ctx, caller, auth, raw, loc, st.Height, st.Time)
+		return w.checkForward(ctx, caller, auth, raw, loc, st)
 	}
 	return authorized{}, &policy.Refusal{Code: policy.CodeUnknownKind, Detail: "kind is not one of the routed kinds"}
 }
@@ -167,9 +170,10 @@ func (w *Worker) leaseLocators(ctx context.Context, msg sdk.Msg, loc locators) (
 }
 
 // checkForward runs the forward checks of plan 7.3 P3 on a provider-signed
-// transaction, then the relay authority of the caller.
+// transaction, then the relay authority of the caller. st is the latest
+// header: its read floor bounds the reads, its height the forward window.
 func (w *Worker) checkForward(ctx context.Context, caller policy.Caller, auth policy.AuthContext, raw []byte, loc locators,
-	height int64, chainTime time.Time) (authorized, error) {
+	st chain.Status) (authorized, error) {
 	decoded, err := w.cfg.Chain.Decode(raw)
 	if err != nil {
 		return authorized{}, &policy.Refusal{Code: policy.CodeForwardShape, Detail: "not a transaction the application decodes strictly"}
@@ -179,12 +183,12 @@ func (w *Worker) checkForward(ctx context.Context, caller policy.Caller, auth po
 			return authorized{}, err
 		}
 	}
-	roles, err := policy.ReadGovernance(ctx, w.cfg.Chain, height)
+	roles, err := policy.ReadGovernance(ctx, w.cfg.Chain, st.AppFloor())
 	if err != nil {
 		return authorized{}, err
 	}
 	fwd, err := policy.CheckForwardedTx(ctx, w.cfg.Chain.Codec, w.cfg.Chain, policy.ForwardInput{
-		Raw: raw, ProviderID: loc.providerID, ContentID: loc.contentID, ObservedHeight: height, ChainTime: chainTime,
+		Raw: raw, ProviderID: loc.providerID, ContentID: loc.contentID, ObservedHeight: st.Height, MinHeight: st.AppFloor(), ChainTime: st.Time,
 		Window: w.cfg.Numbers.ForwardWindow, DeadlinePages: w.cfg.Numbers.DeadlinePages, Roles: roles,
 	})
 	if err != nil {
