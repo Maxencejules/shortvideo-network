@@ -78,17 +78,21 @@ func TestDevnetIndexer(t *testing.T) {
 		return err == nil
 	})
 	mid := runIndexerOut(t, bin, "canonical", "--config", cfgPath)
-	if strings.Contains(mid, "content c1") {
+	fmt.Printf("phase=before-kill content_c1_lines=%d\n%s", countLines(mid, "content c1 "), mid)
+	if countLines(mid, "content c1 ") != 0 {
 		t.Fatalf("content was visible before the checkpoint:\n%s", mid)
 	}
 	serve.kill()
 
 	serve = startIndexer(t, bin, []string{"serve", "--config", cfgPath}, "")
+	var resumed string
 	waitFor(t, "one content row", 90*time.Second, func() bool {
-		return strings.Count(runIndexerOut(t, bin, "canonical", "--config", cfgPath), "\ncontent c1 ") == 1
+		resumed = runIndexerOut(t, bin, "canonical", "--config", cfgPath)
+		return countLines(resumed, "content c1 ") == 1
 	})
-	if strings.Contains(runIndexerOut(t, bin, "canonical", "--config", cfgPath), "\nlease ") {
-		t.Fatal("a lease appeared without a lease event")
+	fmt.Printf("phase=after-resume content_c1_lines=%d lease_lines=%d\n%s", countLines(resumed, "content c1 "), countLines(resumed, "lease "), resumed)
+	if countLines(resumed, "content c1 ") != 1 || countLines(resumed, "lease ") != 0 {
+		t.Fatalf("resume projection:\n%s", resumed)
 	}
 
 	// Stop two validators. The chain cannot commit. The read becomes stale
@@ -141,27 +145,41 @@ func TestDevnetIndexer(t *testing.T) {
 	runIndexer(t, bin, "rebuild", "--config", cfgPath)
 	runIndexer(t, bin, "backfill", "--config", cfgPath)
 	after := projectionLines(runIndexerOut(t, bin, "canonical", "--config", cfgPath))
+	fmt.Printf("phase=rebuild-before<<\n%sphase=rebuild-before>>\n", before)
+	fmt.Printf("phase=rebuild-after<<\n%sphase=rebuild-after>>\n", after)
 	if after != before {
-		t.Fatalf("rebuild projection differs\nbefore:\n%s\nafter:\n%s", before, after)
+		t.Fatal("rebuild projection differs")
 	}
+	fmt.Println("phase=rebuild match=yes")
 
 	psql(t, db, `UPDATE indexer.content SET manifest_sha256 = repeat('c', 64) WHERE content_id = 'c1'`)
 	cmd := exec.Command(bin, "reconcile-once", "--config", cfgPath)
 	out, err := cmd.CombinedOutput()
-	if cmd.ProcessState == nil && err != nil {
+	if err != nil && cmd.ProcessState == nil {
 		t.Fatal(err)
 	}
-	if cmd.ProcessState.ExitCode() != 5 {
-		t.Fatalf("reconcile exit %d\n%s", cmd.ProcessState.ExitCode(), out)
-	}
-	if !bytes.Contains(out, []byte("divergent")) {
-		t.Fatalf("reconcile output %s", out)
+	code := cmd.ProcessState.ExitCode()
+	fmt.Printf("phase=reconcile exit=%d\n%s", code, out)
+	if code != 5 || !bytes.Contains(out, []byte("divergent")) {
+		t.Fatalf("reconcile exit %d\n%s", code, out)
 	}
 	altered := runIndexerOut(t, bin, "canonical", "--config", cfgPath)
-	if !strings.Contains(altered, strings.Repeat("c", 64)) {
+	kept := strings.Contains(altered, strings.Repeat("c", 64))
+	fmt.Printf("phase=reconcile altered_manifest_kept=%t\n%s", kept, altered)
+	if !kept {
 		t.Fatal("reconciliation rewrote the altered manifest")
 	}
 	fmt.Println("phase=done")
+}
+
+func countLines(text, prefix string) int {
+	n := 0
+	for _, line := range strings.Split(text, "\n") {
+		if strings.HasPrefix(line, prefix) {
+			n++
+		}
+	}
+	return n
 }
 
 func indexerHas(list []string, want string) bool {
