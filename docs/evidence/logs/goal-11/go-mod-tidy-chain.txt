@@ -1,0 +1,6 @@
+COMMAND env -C chain GOPROXY=off go mod tidy -diff
+DATE 2026-11-09T09:31:05Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+EXIT:0

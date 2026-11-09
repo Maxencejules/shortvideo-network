@@ -1,0 +1,7 @@
+COMMAND bash -c n=0\;\ m=0\;\ while\ IFS=\ read\ -r\ l\;\ do\ n=\$\(\(n+1\)\)\;\ grep\ -qxF\ --\ \"\$l\"\ chain/go.sum\ \|\|\ \{\ echo\ \"not\ in\ chain/go.sum:\ \$l\"\;\ m=\$\(\(m+1\)\)\;\ \}\;\ done\ \<\ services/broadcaster/go.sum\;\ echo\ \"services/broadcaster/go.sum\ lines:\ \$n\;\ missing\ from\ chain/go.sum:\ \$m\"\;\ test\ \"\$m\"\ =\ 0
+DATE 2026-11-09T09:31:06Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+services/broadcaster/go.sum lines: 1222; missing from chain/go.sum: 0
+EXIT:0

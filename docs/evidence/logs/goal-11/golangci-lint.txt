@@ -1,0 +1,9 @@
+COMMAND bash -c golangci-lint\ version\;\ cd\ chain\ \&\&\ golangci-lint\ run\ ./...\;\ a=\$\?\;\ echo\ \"chain=\$a\"\;\ test\ \"\$a\"\ =\ 0
+DATE 2026-11-09T11:21:55Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+bash: line 1: golangci-lint: command not found
+bash: line 1: golangci-lint: command not found
+chain=127
+EXIT:1

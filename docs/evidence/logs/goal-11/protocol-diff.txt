@@ -1,0 +1,8 @@
+COMMAND bash -c out=\$\(git\ diff\ --stat\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\ --\ docs/protocol\ proto\ docs/evidence/goal-02\)\;\ echo\ \"git\ diff\ --stat\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\ --\ docs/protocol\ proto\ docs/evidence/goal-02:\"\;\ echo\ \"\$\{out:-\<empty\>\}\"\;\ test\ -z\ \"\$out\"
+DATE 2026-11-09T09:30:50Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+git diff --stat 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD -- docs/protocol proto docs/evidence/goal-02:
+<empty>
+EXIT:0

@@ -1,0 +1,25 @@
+COMMAND /tmp/goal11-w3/ns.sh go test -race -count=1 -timeout 30m ./services/broadcaster/...
+DATE 2026-11-09T09:35:25Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/services/broadcaster	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/cmd/svn-broadcaster	18.128s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api	3.303s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api/request	1.171s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/chain	3.485s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config	16.416s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config/secretfile	1.013s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config/strictjson	1.012s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/faultpoint	20.971s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/keys	1.187s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/logx	1.015s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/outbox	4.502s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/outbox/outboxcheck	1.035s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/pgdev	6.196s
+?   	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/pgtest	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy	2.671s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/signer	2.307s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/store	33.666s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/worker	56.137s
+EXIT:0

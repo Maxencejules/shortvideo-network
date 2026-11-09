@@ -1,0 +1,18 @@
+COMMAND bash -c $'d=$(mktemp -d "/tmp/goal11-r3/w3/tmp/deps.XXXXXX")\ngit worktree add -q --detach "$d/base" 6d74aca5cfc461a9756587bdbec2f78e7111e574 || exit 90\necho "base worktree $d/base at $(git -C "$d/base" rev-parse HEAD)"\n(cd "$d/base/chain" && GOPROXY=off go list -m all) > "$d/list-base.txt" || exit 91\n(cd chain && GOPROXY=off go list -m all) > "$d/list-head.txt" || exit 92\necho "=== go -C chain list -m all, base vs HEAD (workspace mode; HEAD adds the services/broadcaster main module line):"\ndiff "$d/list-base.txt" "$d/list-head.txt"; echo "diff exit $?"\ndl=$(diff <(grep \' \' "$d/list-base.txt") <(grep \' \' "$d/list-head.txt")); echo "dependency lines (module and version) differ: ${dl:-no}"\n(cd "$d/base/chain" && GOWORK=off GOPROXY=off go list -m all) > "$d/off-base.txt" || exit 93\n(cd chain && GOWORK=off GOPROXY=off go list -m all) > "$d/off-head.txt" || exit 94\ncmp "$d/off-base.txt" "$d/off-head.txt" && echo "GOWORK=off chain listing: byte-identical ($(wc -l < "$d/off-head.txt") lines)"\ngo build -C "$d/base/chain" -o "$d/svnd-base" ./cmd/svnd || exit 95\ngo build -C chain -o "$d/svnd-head" ./cmd/svnd || exit 96\ngo version -m "$d/svnd-base" | tail -n +2 > "$d/m-base.txt"; go version -m "$d/svnd-head" | tail -n +2 > "$d/m-head.txt"\necho "=== go version -m svnd (line 1, the file name, dropped), base vs HEAD:"\ndiff "$d/m-base.txt" "$d/m-head.txt" | grep -v -E \'vcs\\.(revision|time|modified)\' ; echo "(lines above: differences other than vcs stamps, if any)"\ndiff <(grep -E \'^\\s*(dep|=>)\' "$d/m-base.txt") <(grep -E \'^\\s*(dep|=>)\' "$d/m-head.txt") && echo "svnd dependency lines: identical ($(grep -c -E \'^\\s*dep\' "$d/m-head.txt") deps)"\ns=$?\ngit worktree remove --force "$d/base"; rm -rf "$d"\nexit $s'
+DATE 2026-11-09T09:30:50Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+base worktree /tmp/goal11-r3/w3/tmp/deps.fdQCSy/base at 6d74aca5cfc461a9756587bdbec2f78e7111e574
+=== go -C chain list -m all, base vs HEAD (workspace mode; HEAD adds the services/broadcaster main module line):
+4a5
+> github.com/Maxencejules/shortvideo-network/services/broadcaster
+diff exit 1
+dependency lines (module and version) differ: no
+GOWORK=off chain listing: byte-identical (746 lines)
+=== go version -m svnd (line 1, the file name, dropped), base vs HEAD:
+246a247,250
+> 	build	vcs=git
+(lines above: differences other than vcs stamps, if any)
+svnd dependency lines: identical (234 deps)
+EXIT:0

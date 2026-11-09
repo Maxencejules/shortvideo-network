@@ -1,0 +1,36 @@
+COMMAND /tmp/goal11-w3/nsroot.sh go test -count=1 -v -tags svn_roottest -run TestServeUIDCannotReadKeyFiles\|TestSignerRefusesOtherUIDPeer\|TestLoadRefusesOtherOwner ./services/broadcaster/internal/signer/ ./services/broadcaster/internal/keys/
+DATE 2026-11-09T09:36:54Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+=== RUN   TestSignerRefusesOtherUIDPeer
+    roottest_test.go:459: boundary_uids=signer:2007725064,serve:2009974810 (other peer uid 2082455974)
+    roottest_test.go:481: peer uid 2009974810 served (signature 2339fde5ace7c0dd42b96baeb7b94559a547fa01ee8680766884488b14c56cd4); uid 2082455974 and uid 0 refused
+--- PASS: TestSignerRefusesOtherUIDPeer (0.24s)
+=== RUN   TestServeUIDCannotReadKeyFiles
+    roottest_test.go:490: boundary_uids=signer:2080418274,serve:2050145375 (other peer uid 2019967262)
+    roottest_test.go:495: serve uid 2050145375: read=EACCES list=EACCES stat=EACCES load=refused
+=== RUN   TestServeUIDCannotReadKeyFiles/signer_loads_its_own_keys
+=== RUN   TestServeUIDCannotReadKeyFiles/key_file_owned_by_the_serve_uid
+=== RUN   TestServeUIDCannotReadKeyFiles/registry_writable_by_the_signer_uid
+=== RUN   TestServeUIDCannotReadKeyFiles/registry_owned_by_the_serve_uid
+=== RUN   TestServeUIDCannotReadKeyFiles/registry_directory_owned_by_the_serve_uid
+=== RUN   TestServeUIDCannotReadKeyFiles/serve_uid_equal_to_the_signer_uid
+--- PASS: TestServeUIDCannotReadKeyFiles (0.36s)
+    --- PASS: TestServeUIDCannotReadKeyFiles/signer_loads_its_own_keys (0.07s)
+    --- PASS: TestServeUIDCannotReadKeyFiles/key_file_owned_by_the_serve_uid (0.03s)
+    --- PASS: TestServeUIDCannotReadKeyFiles/registry_writable_by_the_signer_uid (0.03s)
+    --- PASS: TestServeUIDCannotReadKeyFiles/registry_owned_by_the_serve_uid (0.03s)
+    --- PASS: TestServeUIDCannotReadKeyFiles/registry_directory_owned_by_the_serve_uid (0.03s)
+    --- PASS: TestServeUIDCannotReadKeyFiles/serve_uid_equal_to_the_signer_uid (0.03s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/signer	0.635s
+=== RUN   TestLoadRefusesOtherOwner
+=== RUN   TestLoadRefusesOtherOwner/file_owned_by_another_uid
+=== RUN   TestLoadRefusesOtherOwner/directory_owned_by_another_uid
+--- PASS: TestLoadRefusesOtherOwner (0.00s)
+    --- PASS: TestLoadRefusesOtherOwner/file_owned_by_another_uid (0.00s)
+    --- PASS: TestLoadRefusesOtherOwner/directory_owned_by_another_uid (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/keys	0.013s
+EXIT:0

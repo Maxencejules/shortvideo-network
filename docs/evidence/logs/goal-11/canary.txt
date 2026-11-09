@@ -1,0 +1,88 @@
+COMMAND bash -c grep\ -a\ -E\ \'\^\(canary\|phase=L\|logs_kept\|boundary_uids\)\'\ /tmp/goal11-r3/w3/logs/devnet-broadcaster.txt\;\ grep\ -a\ -c\ -E\ \'\^canary\'\ /tmp/goal11-r3/w3/logs/devnet-broadcaster.txt
+DATE 2026-11-09T09:42:30Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+boundary_uids=same:1000 (launcher is not root: one uid, key bytes separated in memory only)
+phase=L begin height=626
+phase=L canaries_processed=key-file(signer signed),broadcaster-key-file(signer signed relays),db-password(serve connected),db-owner-password(migrate connected),auth-context-id(stored),inner-signature(relayed in 8787c1e3c1e1eb1b44404398779c987deaae1b34675a953e4fb41adc8e94d9d8),request-body(terms digest of committed offer ocan)
+canary-scan-marker-d810
+phase=L canary_log=broadcaster/001-dev-ca.log bytes=154 sha256=c1276b7f9308ce5a240941d94ba5fd9503037196e0bb2b491e15c86b88c902b0 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/002-dev-db.log bytes=273 sha256=c2be8d355210bf79aff6c75cf882309ee5b0fe15cc3b7a1dbc25b7b3036598cf canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/003-migrate.log bytes=174 sha256=e85a91e65467f8817ca3daef6ae1b7ab7705a328e18f8deba7ecfad08c55322c canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/004-signer.log bytes=25084 sha256=c7044cecd7e1fa107b56adb4426d5f0ff7bb6293021e3dea68a729129c563768 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/005-serve.log bytes=18649 sha256=cff9401066216c9fcc12da9c623b3c6d5c730e9ed9f35f1a7db326bd7354ae64 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/006-serve.log bytes=5388 sha256=a298cf5819bb3b4ffba6bb8e82b5e4d48aa529fbb62d9917dac41c17a886d1d0 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/007-serve.log bytes=5319 sha256=8166a5fecb118a5baf2f5c09a9894ed5aa516127cb64451af0b516a79aab1dc8 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/008-serve.log bytes=5595 sha256=5383d7ef2ac4c750ac14e61f524af9ad6433c6975c2c81f63cba574b34e78e0f canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/009-serve.log bytes=5787 sha256=da589c1aa50ee3cbcc32fb0388ebe1be9f52c34be1cbfe80008267af8efe1844 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/010-serve.log bytes=5786 sha256=fa637dcf6c845e7922ca3d512246c280c6d926defbaf3ed0d1ed77963958196a canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/011-serve.log bytes=5579 sha256=da1892d39febd37d4d2d3f6f01e462ca4b525f01d1d0a088b6610c2ea56a8f2f canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/012-serve.log bytes=11163 sha256=0f5b20d2625c4bc0a31bb475120252b16298af2c5bf072997cbb3687b512e8b6 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/013-serve.log bytes=5894 sha256=9f9771616c23c294b2e0245b1f7ed8d81f350a750261c1563fe3a820c50c46df canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/014-serve.log bytes=17078 sha256=136787ba1f4466cfc04b49124a58f43c2cb60479d9562001d96865435c048cea canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/015-serve-2.log bytes=5894 sha256=e1ea5a05c0e4492426c9c08de4915dbaa24a8f9f78db1ab8eff06f8ab98541f0 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/016-serve.log bytes=16325 sha256=a228549ed7e3053bb067213080efdc2c73afaa1833037d9438b72070b162334e canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/017-signer-clear.log bytes=260 sha256=d652ce527896ec8dcb1c77e8cd2fa0eb3654be905780ab3521f9ba254ea48af1 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/018-serve.log bytes=14456 sha256=1637ca4d42ed3f3326ac2c7353c357a23e5c3017c42f80f15242102f8040de91 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/019-signer-ua-authority.log bytes=266 sha256=e018b5b63f4e74ab2052b922e867ee49c266a4f37506553aab602203d54c25fc canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/020-signer-ua-auditor-1.log bytes=263 sha256=03fbe6aeb8c5482e41d300b40dd650361d17acc1a58fae08d47da3c9279e11f0 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/021-signer-ua-provider-1.log bytes=273 sha256=2d4133c0402ffc6757fbb7dcff9000d6687d086e9080d5de8430354fe60cba8b canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/022-signer-ua-seat-1.log bytes=206 sha256=f4f6aa49e5773fe4d4ea5fea60d45394c994a105e69c623eb949753bb86391d6 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/023-serve-ua.log bytes=5847 sha256=cc089d46f99dce0fee0828843bb801ed57b4415de617a41c51db8047ff924aa0 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/024-serve.log bytes=12012 sha256=aeecfb2dfd63cbb29cde86b6dc0590ec9344bdb94e9a5a26b76ba012226b7999 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/025-serve.log bytes=28563 sha256=6acd7f1167573eaeb64c8a382581a76c8665b401fbefe0cf3ec9e0dfbab88458 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/026-signer.log bytes=25039 sha256=c98b592cf17b267cfec60047bbf53db0901a72a231325ab2dc2615fe4b3b2428 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/027-serve.log bytes=9812 sha256=d89c2cbf09fb3f7fdf8a6ee764081de297abc073584c0c5939a3d75bfa7ece3c canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/028-serve.log bytes=10334 sha256=752892a49e3dbfd8dec7a2e01fc924fbb7806bd22316be3d31d5e6f2fd109050 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/029-serve.log bytes=9063 sha256=3eb905f4228d1dc56ee92e9dab4447dd4cb46bb8ba33eac67b64edc2d6d433e3 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/030-serve.log bytes=7679 sha256=882021981c4640fc8e3ca1d0aee31f055ec8e0e71105c10f09563c2177d4a81b canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/031-serve.log bytes=6364 sha256=edbe0e75bfac882cba142553bf3eb53d30bb8c7690426058c52f74a24a28ff96 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/032-serve.log bytes=11924 sha256=2305747dfe0d6f33ed14c167f832ab0ed23bd3f578feb9f5a7b4416991fb54f5 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/033-serve.log bytes=7567 sha256=62385e27d148a295bded255c2ef5dfc573771885ce4c4d1d03ee6aedf21a9b25 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster/034-serve.log bytes=7849 sha256=384328088081a3513c0f948920f4e91effacc0ada2486855f5a2299e6e164018 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=go-test-output bytes=309763 sha256=e0257a6c1d2811e5aadac0b9db47caa569bd389392361f91f2304e83deb567b6 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=node/v1 bytes=7761499 sha256=cf766fda4c70aac060284e6ce922962beef7a9fb83be90f307b4786ff83acb2b canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id hits=0
+phase=L canary_log=node/v2 bytes=92751506 sha256=5f02f37d3a5784bb66f144f2b11efe53a985550aed6402028bcfdcd3784429f0 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id hits=0
+phase=L canary_log=node/v3 bytes=7986392 sha256=efa80194d8fab7fb757a5b6f111884a6244295a0781d74bb2facd425f035f2a4 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id hits=0
+phase=L canary_log=node/v4 bytes=8306521 sha256=7c64a278d9aff6baebe90a8936e852eea994d01928c8b49773bc9144763ec325 canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id hits=0
+phase=L canary_log=postgres bytes=1366 sha256=834d711920418ab46c2a02eab07c41d77d6a6f860561e475d6b8e36bfab9d08d canaries=key-file,broadcaster-key-file,db-password,db-owner-password,auth-context-id,inner-signature,request-body hits=0
+phase=L canary_log=broadcaster-stdout/001-dev-ca bytes=895 sha256=497bef011a71aca0e2371267c0dc62a7728ab0ea0ce053511b399aa41b042a86 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/002-dev-db bytes=945 sha256=ca56985bbe2b23e67cab437e6de05e55a08fe850b33eee3b1d3c25bad67bd6e0 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/003-migrate bytes=86 sha256=5b602d9789e4a56796d18f0dc5bb4372d9476d7254aac7c73c52d99ad905be60 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/004-signer bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/005-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/006-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/007-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/008-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/009-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/010-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/011-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/012-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/013-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/014-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/015-serve-2 bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/016-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/017-signer-clear bytes=166 sha256=dbbf8b25f2c5bef27db3882c3ae75fc1bb8e44daa9fa0054476daed0018bede6 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/018-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/019-signer-ua-authority bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/020-signer-ua-auditor-1 bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/021-signer-ua-provider-1 bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/022-signer-ua-seat-1 bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/023-serve-ua bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/024-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/025-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/026-signer bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/027-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/028-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/029-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/030-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/031-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/032-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/033-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canary_log=broadcaster-stdout/034-serve bytes=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 canaries=all hits=0
+phase=L canaries=7 logs=40 stdouts=34 hits=0 logs_kept=no (plan section 15)
+phase=L broadcaster_race_build=false process_logs=34 with_data_race=0
+phase=L seconds=2.4 heights=626..637 proxy=serve-1 abci_query:fwd=987,drop=0,held=0,reset=0,answer_drop=0 broadcast_tx_sync:fwd=220,drop=17,held=12,reset=0,answer_drop=1 commit:fwd=168,drop=0,held=0,reset=0,answer_drop=0 status:fwd=1852,drop=0,held=0,reset=0,answer_drop=0 tx:fwd=542,drop=2,held=2,reset=0,answer_drop=0 tx_search:fwd=226,drop=0,held=0,reset=0,answer_drop=0
+1
+EXIT:0

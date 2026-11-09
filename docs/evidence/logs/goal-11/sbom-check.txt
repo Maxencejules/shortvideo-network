@@ -1,0 +1,7 @@
+COMMAND .venv/bin/python scripts/write_sbom.py --check
+DATE 2026-11-09T09:31:41Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+sbom ok components 1320
+EXIT:0

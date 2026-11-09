@@ -1,0 +1,37 @@
+COMMAND bash -c $'echo "non-test, non-README files under chain/ changed since 6d74aca5cfc461a9756587bdbec2f78e7111e574:"\nfiles=$(git diff --name-only 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD -- chain \':!chain/**/*_test.go\' \':!chain/**/README.md\' \':!chain/README.md\')\necho "${files:-<none>}"\necho\necho "their diff:"\ngit diff 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD -- chain \':!chain/**/*_test.go\' \':!chain/**/README.md\' \':!chain/README.md\'\necho\necho "expected: only chain/go.mod, with github.com/lib/pq v1.12.3 moved from an indirect to a direct requirement"\nwant="chain/go.mod"\n[ "$files" = "$want" ] || { echo "SCOPE DIFFERENT"; exit 1; }\nadded=$(git diff -U0 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD -- chain/go.mod | grep -E \'^[+-][^+-]\' )\necho "changed lines:"; echo "$added"\nexp=$(printf \'%s\\n%s\' "+\tgithub.com/lib/pq v1.12.3" "-\tgithub.com/lib/pq v1.12.3 // indirect")\n[ "$added" = "$exp" ] && echo "SCOPE OK" || { echo "SCOPE DIFFERENT"; exit 1; }\ngit diff --exit-code --stat 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD -- chain/go.sum && echo "chain/go.sum unchanged"'
+DATE 2026-11-09T09:30:50Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+non-test, non-README files under chain/ changed since 6d74aca5cfc461a9756587bdbec2f78e7111e574:
+chain/go.mod
+
+their diff:
+diff --git a/chain/go.mod b/chain/go.mod
+index 130378f..9fafac8 100644
+--- a/chain/go.mod
++++ b/chain/go.mod
+@@ -16,6 +16,7 @@ require (
+ 	github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+ 	github.com/cosmos/gogoproto v1.7.2
+ 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
++	github.com/lib/pq v1.12.3
+ 	github.com/spf13/cobra v1.10.2
+ 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
+ 	google.golang.org/grpc v1.82.1
+@@ -126,7 +127,6 @@ require (
+ 	github.com/koron/go-ssdp v0.0.6 // indirect
+ 	github.com/kr/pretty v0.3.1 // indirect
+ 	github.com/kr/text v0.2.0 // indirect
+-	github.com/lib/pq v1.12.3 // indirect
+ 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
+ 	github.com/libp2p/go-flow-metrics v0.2.0 // indirect
+ 	github.com/libp2p/go-libp2p v0.48.0 // indirect
+
+expected: only chain/go.mod, with github.com/lib/pq v1.12.3 moved from an indirect to a direct requirement
+changed lines:
++	github.com/lib/pq v1.12.3
+-	github.com/lib/pq v1.12.3 // indirect
+SCOPE OK
+chain/go.sum unchanged
+EXIT:0

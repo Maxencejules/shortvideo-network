@@ -1,0 +1,10 @@
+COMMAND .venv/bin/python docs/evidence/goal-11/mutants.py --rev 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 --check
+DATE 2026-11-09T11:21:56Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+revision 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 commit 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 tree a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+copy /tmp/goal11-mutants-dy6h9nj3/tree (git archive)
+mutants 284 of 284 (outbox=46, chain-client=26, signing=57, api=26, config=14, binary=8, store=62, worker=35, smoke=6, devnet=4)
+search strings: every one occurs exactly once; every named killer is defined
+EXIT:0

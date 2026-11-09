@@ -69,6 +69,7 @@ build:
 	go build -C chain -o $(BIN) ./cmd/svnd
 	go build -C agents/provider .
 	go build -C agents/auditor ./...
+	go build -C services/broadcaster ./...
 	npm run typecheck
 	$(PY) -m compileall -q services workers/media packages/protocol scripts tests/unit
 

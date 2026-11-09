@@ -1,0 +1,7 @@
+COMMAND .venv/bin/ruff format --check services workers/media packages/protocol tests scripts
+DATE 2026-11-09T09:31:22Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+41 files already formatted
+EXIT:0

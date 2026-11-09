@@ -1,0 +1,4 @@
+RERUN fuzz-FuzzClassifyRPCError exit=0
+note: the first run exited 1 with "context deadline exceeded" at fuzztime 60s. There was no failing input and no file outside docs/evidence changed. The replacement log exited 0.
+RERUN worker-count30 exit=0
+note: section 3.2 ran the same tests without -v. This capture repeats them with -v: 60 PASS, 0 FAIL.

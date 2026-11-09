@@ -1,0 +1,16 @@
+COMMAND bash -c git\ rev-parse\ HEAD\ \"HEAD\^\{tree\}\"\;\ echo\ \"status\ \(empty\ means\ clean\):\"\;\ git\ status\ --porcelain\ --untracked-files=all\;\ echo\ \"\(end\ of\ status\)\"\;\ git\ log\ --oneline\ -6
+DATE 2026-11-09T09:30:49Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+DIRTY no
+8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+status (empty means clean):
+(end of status)
+8450fbd goal 11: drop the non-root CI path from the blockers
+7ab95e0 goal 11: cite the green head CI
+061496c goal 11: record the third protoc download failure
+554e119 goal 11: record the second protoc download failure
+265c1b0 goal 11: record the protoc download failure
+6d9e825 goal 11: cite the rewritten head CI
+EXIT:0
