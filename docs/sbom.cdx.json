@@ -4832,6 +4832,13 @@
       "version": "v3.1.1/go.mod"
     },
     {
+      "name": "github.com/pion/stun",
+      "purl": "pkg:golang/github.com/pion/stun@v0.6.1",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.6.1"
+    },
+    {
       "name": "github.com/pion/transport/v3",
       "purl": "pkg:golang/github.com/pion/transport/v3@v3.0.7",
       "scope": "required",
@@ -8659,6 +8666,13 @@
       "scope": "required",
       "type": "library",
       "version": "v3.5.2/go.mod"
+    },
+    {
+      "name": "gotest.tools",
+      "purl": "pkg:golang/gotest.tools@v2.2.0+incompatible",
+      "scope": "required",
+      "type": "library",
+      "version": "v2.2.0+incompatible"
     },
     {
       "name": "honnef.co/go/tools",

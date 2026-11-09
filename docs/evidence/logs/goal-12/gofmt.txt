@@ -1,0 +1,6 @@
+COMMAND bash -c gofmt\ -l\ services/indexer\ chain/devnet/indexer_test.go
+DATE 2026-11-09T21:04:24Z
+HEAD a8a0e593e1893aa5682927e7ce91262155e2e605
+TREE fd90e9e9760801032f867872e91ac1285d287f71
+DIRTY no
+EXIT:0

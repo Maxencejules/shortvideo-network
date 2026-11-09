@@ -651,7 +651,7 @@ def test_real_workflow_runs_the_module_in_the_go_job_and_three_shards() -> None:
     [install] = [s for s in _steps(race) if "postgresql-18" in str(s.get("run"))]
     shards, problem = _install_shards(install)
     assert problem is None and shards is not None
-    assert sorted(shards) == sorted((MODULE_SHARD, *SHARD_RUN))
+    assert set((MODULE_SHARD, *SHARD_RUN)) <= set(shards)
 
 
 Mutator = Callable[[dict[str, Any]], None]

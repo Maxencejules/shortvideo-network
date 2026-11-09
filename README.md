@@ -10,7 +10,7 @@ Protocol v0 is frozen for goals 03-18. Schema files under `docs/protocol/` are t
 | --- | --- |
 | `apps/web` | React and TypeScript pin. No product UI. |
 | `services/api` | FastAPI pin. `serve()` raises. |
-| `services/indexer` | Indexer slot. No chain queries. |
+| `services/indexer` | Committed-state indexer. PostgreSQL read model of committed blocks. |
 | `services/broadcaster` | Goal 11 Go transaction broadcaster and PostgreSQL outbox, devnet only. Its design and signing boundary are PROPOSED in `docs/architecture/broadcaster.md`. |
 | `chain` | SDK and CometBFT module pins. No chain binary. |
 | `proto` | Generated Go and Python stubs. Sources stay in `docs/protocol/proto`. |

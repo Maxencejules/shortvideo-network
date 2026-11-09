@@ -1,0 +1,16 @@
+log	exit
+devnet-indexer	0
+goal06-anchors	1
+goal07-anchors	1
+gofmt	0
+golangci-lint	127
+indexer-unit	0
+mutants	0
+python-guards	0
+race-indexer	0
+requirements	0
+revision	0
+ruff-format	0
+runtime	0
+sbom	0
+secrets	0

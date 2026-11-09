@@ -1,0 +1,19 @@
+COMMAND go test -race -count=1 -timeout 12m ./services/indexer/...
+DATE 2026-11-09T21:06:52Z
+HEAD a8a0e593e1893aa5682927e7ce91262155e2e605
+TREE fd90e9e9760801032f867872e91ac1285d287f71
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/services/indexer	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/cmd/svn-indexer	1.087s
+?   	github.com/Maxencejules/shortvideo-network/services/indexer/internal/api	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/chain	1.081s
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/config	1.011s
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/engine	3.062s
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/faultpoint	1.008s
+?   	github.com/Maxencejules/shortvideo-network/services/indexer/internal/pgdev	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/services/indexer/internal/pgtest	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/project	1.067s
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/reconcile	1.066s
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/status	1.069s
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/store	4.114s
+EXIT:0

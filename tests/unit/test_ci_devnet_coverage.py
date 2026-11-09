@@ -530,6 +530,7 @@ def test_real_go_step_sets_the_skip_and_says_where_the_tests_run() -> None:
         "devnet-upgrade",
         "devnet-broadcaster",
         "devnet-broadcaster-stall",
+        "devnet-indexer",
     ):
         assert shard in lines[echo[0]], shard
 
@@ -544,11 +545,11 @@ def test_devnet_skip_gates_use_the_guarded_variable() -> None:
 
 MATRIX = (
     "shard: [app, devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, "
-    "devnet-broadcaster-stall, broadcaster, rest]"
+    "devnet-broadcaster-stall, devnet-indexer, broadcaster, indexer, rest]"
 )
 DEVNET_SKIP = (
     "-skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange"
-    "|TestDevnetBroadcasterLifecycle|TestDevnetBroadcasterQuorumStall' "
+    "|TestDevnetBroadcasterLifecycle|TestDevnetBroadcasterQuorumStall|TestDevnetIndexer' "
     "./chain/devnet"
 )
 EVIDENCE_RUN = "-run TestDevnetAudit ./chain/devnet"

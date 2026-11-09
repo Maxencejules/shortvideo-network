@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 import svn_api
-import svn_indexer
 import svn_media
 
 
@@ -12,12 +11,6 @@ def test_api_refuses_to_serve() -> None:
     assert svn_api.SCAFFOLD is True
     with pytest.raises(RuntimeError, match="does not serve traffic"):
         svn_api.serve()
-
-
-def test_indexer_refuses_to_serve() -> None:
-    assert svn_indexer.SCAFFOLD is True
-    with pytest.raises(RuntimeError, match="does not read a chain"):
-        svn_indexer.serve()
 
 
 def test_media_worker_does_not_read_the_source() -> None:
