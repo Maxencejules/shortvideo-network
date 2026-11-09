@@ -2,7 +2,7 @@
 
 Status: BLOCKED
 
-DR-11-01 is approved for the pinned boundary document only. The goal stays BLOCKED: production custody is still DEC-001 and DR-07-01, every run is one machine, the goal 06 and goal 07 mutation anchors are still open, golangci-lint is not installed, and PostgreSQL 16 was not tested (the server in use is 18.6). The non-root PostgreSQL path in CI is not a blocker. Head CI is not a blocker.
+DR-11-01 is approved for the pinned boundary document only. The goal stays BLOCKED: production custody is still DEC-001 and DR-07-01, every run is one machine, the goal 06 and goal 07 mutation anchors are still open, golangci-lint is not installed, and PostgreSQL 16 was not tested (the server in use is 18.6). The non-root PostgreSQL path in CI is not a blocker. Head CI of `23356d7` failed one race job; see prerequisites.
 
 The checks cited in this file ran on commit `8450fbdecf9bcec6bbc2de15c8927bff397b7c28` of branch `goal-11`, tree
 `a94f4848ee4ff54f8209fbb5b9afd969b7926bf7`. That commit's message carries `Tested-tree: a94f4848ee4ff54f8209fbb5b9afd969b7926bf7`.
@@ -41,7 +41,7 @@ BLOCKED, except where a row says otherwise:
 
 1. **DR-11-01: no longer a blocker (2026-11-08).** Document only, at the sha256 above. Not a merge.
 2. **REQ-CHAIN-013 production custody.** Host custody of user keys is still blocked by DEC-001 and DR-07-01. The devnet fixture's refusal of a minted provider signature and of a missing publication permission is in the policy and devnet logs. The row is not production-verified.
-3. **Head CI: no longer a blocker.** Draft PR 16. Run [42629554513](https://github.com/Maxencejules/shortvideo-network/actions/runs/42629554513) on `6bb75333dcfce02591fe65cba16b7305047e8500` completed success, 13 of 13: `python`, `node`, `go`, `devnet`, `contract`, and `go-race` for `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `rest`, `broadcaster`, `devnet-broadcaster` and `devnet-broadcaster-stall`. That is the head this sentence records. Run [42624725287](https://github.com/Maxencejules/shortvideo-network/actions/runs/42624725287) on `f26c188`, which holds the recaptured logs, was also 13 of 13.
+3. **Head CI.** Run [42629554513](https://github.com/Maxencejules/shortvideo-network/actions/runs/42629554513) on `6bb7533` completed success, 13 of 13. Run [42624725287](https://github.com/Maxencejules/shortvideo-network/actions/runs/42624725287) on `f26c188`, which holds the recaptured logs, was also 13 of 13. Run [42632063657](https://github.com/Maxencejules/shortvideo-network/actions/runs/42632063657) on `23356d7` failed `go-race (devnet-broadcaster)`: `TestDevnetBroadcasterLifecycle` died at `broadcaster_restart_test.go:165` with `SIGSTOP 33079: no such process`. The other 12 jobs passed. No Go file changed in this round. The same job passed on the two runs above.
 4. **Independent operators.** Every devnet run is four processes on one machine. DEC-002 names no operator list.
 5. **Goal 06 and goal 07 mutation runners.** Anchor checks only: [goal06-anchors.txt](logs/goal-11/goal06-anchors.txt) exit 1, `RESULT search-string problems=13; no test was run`; [goal07-anchors.txt](logs/goal-11/goal07-anchors.txt) exit 1, `RESULT validation problems=3; no test was run`. Still BLOCKED.
 6. **golangci-lint.** Not installed here. [golangci-lint.txt](logs/goal-11/golangci-lint.txt) exit 1, `command not found`, `chain=127`. BLOCKED.
@@ -58,7 +58,7 @@ BLOCKED, except where a row says otherwise:
 | Restart PostgreSQL and the broadcaster, then reconcile | VERIFIED | Lifecycle phases PG and BR in [devnet-broadcaster.txt](logs/goal-11/devnet-broadcaster.txt). |
 | Read floor and indexing margin | VERIFIED | Mutants `f1-app-floor-is-status-height`, `f1-signer-startup-does-not-wait` and `f3-indexing-margin-one-allowed` are among the 284 killed ([mutants-goal11.txt](logs/goal-11/mutants-goal11.txt)). |
 | Signing boundary document approved | VERIFIED for the pinned file only | DR-11-01. Proposed numbers stay proposed. |
-| Head CI | VERIFIED | Run 42629554513 on `6bb7533`, 13 of 13, including `go-race (broadcaster)`, `go-race (devnet-broadcaster)` and `go-race (devnet-broadcaster-stall)`. Run 42624725287 on `f26c188` was also 13 of 13. |
+| Head CI | Not green on `23356d7` | Run 42632063657 failed `go-race (devnet-broadcaster)`: SIGSTOP of a PostgreSQL pid that was already gone. Runs 42629554513 and 42624725287 were 13 of 13, including that job. |
 
 ## Requirements rows
 
@@ -107,7 +107,7 @@ Stored genesis after a refused InitChain, `svnd genesis validate` gaps on `app_s
 
 ## Next safe action
 
-Draft PR 16 stays a draft. A merge is a separate approval. Head CI on `6bb7533` passed (run 42629554513, 13 of 13).
+Draft PR 16 stays a draft. A merge is a separate approval. Run 42632063657 on `23356d7` failed `go-race (devnet-broadcaster)` on a SIGSTOP of a process that was already gone.
 
 ## Proposed pull-request title and summary
 
