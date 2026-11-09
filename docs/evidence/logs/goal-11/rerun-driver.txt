@@ -1,0 +1,8 @@
+RERUN builds exit=0
+RERUN ruff-format exit=0
+RERUN mypy exit=0
+note: first builds failed because W3TMP was unset in the child shell (mktemp tried /builds). First ruff-format and mypy failed because .ruff_cache and .mypy_cache were root-owned. Ownership was given to uid 1000 and the three steps were recaptured. Exits above are the replacement logs.
+RERUN ci-shards exit=0 secs=3109
+note: the first ci-shards command exited 143 in 0 seconds. ns.sh runs pkill -f /svn-pg- and the inline script text contained that string, so pkill matched the runner. The rerun is bash /tmp/goal11-w3/ci-shards.sh. Eight shards exited 0 (app 224s, devnet 388s, devnet-evidence 1261s, devnet-upgrade 371s, devnet-broadcaster 205s, devnet-broadcaster-stall 79s, broadcaster 86s, rest 495s).
+RERUN worker-count30 exit=0
+note: section 3.2 had already run this command. This capture repeats it on the tested commit: 60 PASS, 0 FAIL.

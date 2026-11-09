@@ -1,0 +1,16 @@
+COMMAND bash -c git\ rev-parse\ HEAD\ \"HEAD\^\{tree\}\"\;\ echo\ \"status\ \(empty\ means\ clean\):\"\;\ git\ status\ --porcelain\ --untracked-files=all\;\ echo\ \"\(end\ of\ status\)\"\;\ git\ log\ --oneline\ -6
+DATE 2026-11-09T03:37:59Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+status (empty means clean):
+(end of status)
+9a00e16 goal 11: read floor, indexing margin, and devnet 503s (tested code)
+8e3eefd goal 11: transaction broadcaster and outbox (tested code)
+6369d41 goal 11 WIP: Wave 1 (signer, policy, API, worker, binary, CI wiring)
+d876a19 goal 11 WIP: Wave 0 (module pinning, outbox store, chain client, state machine, deadline tests, design draft)
+6d74aca svnd: genesis validate applies InitChain's consensus app version rule (#15)
+dbf0897 auditor: keep every permitted run within the pending-run encoding limit (#14)
+EXIT:0

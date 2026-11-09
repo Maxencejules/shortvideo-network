@@ -1,0 +1,36 @@
+COMMAND bash -c git\ diff\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\ --\ docs/evidence/goal-01\;\ echo\;\ echo\ \'expected:\ the\ SOURCE_ALLOW\ entry\ services/broadcaster/\ with\ its\ comment\ and\ the\ goal\ 11\ PY_ALLOW\ line\'
+DATE 2026-11-09T03:38:00Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+diff --git a/docs/evidence/goal-01/check_requirements.py b/docs/evidence/goal-01/check_requirements.py
+index 8b0d29f..461914f 100644
+--- a/docs/evidence/goal-01/check_requirements.py
++++ b/docs/evidence/goal-01/check_requirements.py
+@@ -174,6 +174,7 @@ PY_ALLOW = (
+     "docs/evidence/goal-09/mutants.py",
+     # The goal 10 mutation runner, likewise.
+     "docs/evidence/goal-10/mutants.py",
++    "docs/evidence/goal-11/mutants.py",  # the goal 11 mutation runner, likewise
+     "scripts/",
+     "tests/",
+     "services/",
+@@ -183,6 +184,7 @@ PY_ALLOW = (
+ )
+ # Frozen protos stay under docs/protocol. Generated Go lives under proto/.
+ # Scaffold Go lives under chain/ and agents/. Goal 05 adds chain/cmd/svnd.
++# Goal 11 adds the Go broadcaster module under services/broadcaster/.
+ # The goal 02 vector runner stays.
+ SOURCE_ALLOW = (
+     "docs/protocol/",
+@@ -191,6 +193,7 @@ SOURCE_ALLOW = (
+     "chain/",
+     "proto/",
+     "agents/",
++    "services/broadcaster/",
+ )
+ WALK_SKIP = {
+     ".git",
+
+expected: the SOURCE_ALLOW entry services/broadcaster/ with its comment and the goal 11 PY_ALLOW line
+EXIT:0

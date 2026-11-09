@@ -1,0 +1,16 @@
+COMMAND go test -count=1 -v -tags svn_faultpoint ./services/broadcaster/internal/faultpoint/
+DATE 2026-11-09T03:44:46Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+=== RUN   TestArmedPointFiresOnceAndBlocks
+--- PASS: TestArmedPointFiresOnceAndBlocks (1.50s)
+=== RUN   TestUnarmedPointReturns
+--- PASS: TestUnarmedPointReturns (0.00s)
+=== RUN   TestDefaultBuildHasNoFaultPoints
+    faultpoint_test.go:102: ./internal/worker: svn_faultpoint build links 4 fault point symbols, default build none
+    faultpoint_test.go:102: ./cmd/svn-broadcaster: svn_faultpoint build links 4 fault point symbols, default build none
+--- PASS: TestDefaultBuildHasNoFaultPoints (17.26s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/faultpoint	18.765s
+EXIT:0

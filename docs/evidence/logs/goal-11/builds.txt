@@ -1,0 +1,15 @@
+COMMAND bash -c d=\$\(mktemp\ -d\ \"\$W3TMP/builds.XXXXXX\"\)\;\ rc=0\;\ go\ build\ -C\ services/broadcaster\ -o\ \"\$d/svn-broadcaster\"\ ./cmd/svn-broadcaster\ \|\|\ rc=1\;\ go\ build\ -C\ services/broadcaster\ -tags\ svn_faultpoint\ -o\ \"\$d/svn-broadcaster-fp\"\ ./cmd/svn-broadcaster\ \|\|\ rc=1\;\ sha256sum\ \"\$d\"/\*\ \|\ sed\ \"s#\$d/##\"\;\ \"\$d/svn-broadcaster\"\ --help\ 2\>\&1\ \|\ head\ -30\;\ echo\ \"fault\ point\ symbols\ in\ the\ default\ build\ \(expected\ none\):\"\;\ go\ tool\ nm\ \"\$d/svn-broadcaster\"\ \|\ grep\ -i\ faultpoint\ \|\ grep\ -v\ -i\ \"go:\\\|runtime\"\ \|\ head\ -5\;\ echo\ \"\(end\)\"\;\ echo\ \"fault\ point\ symbols\ in\ the\ svn_faultpoint\ build:\"\;\ go\ tool\ nm\ \"\$d/svn-broadcaster-fp\"\ \|\ grep\ -c\ -i\ faultpoint\;\ rm\ -rf\ \"\$d\"\;\ exit\ \$rc
+DATE 2026-11-09T03:48:53Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+8cdd44595a4ea0fc86c4f21fa9bfd26bc3c4e58471b04842c38245cf3a83e8b8  svn-broadcaster
+476136f10a15acfdb32a11496f312b4fa5d4adeca65f32ce1af9acd3e7451660  svn-broadcaster-fp
+usage: svn-broadcaster <subcommand> [flags]
+subcommands: dev-ca, dev-db, migrate, reconcile-once, serve, signer, signer-clear, status
+run svn-broadcaster <subcommand> -h for the flags of one subcommand
+fault point symbols in the default build (expected none):
+(end)
+fault point symbols in the svn_faultpoint build:
+4
+EXIT:0

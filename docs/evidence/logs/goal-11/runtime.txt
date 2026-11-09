@@ -1,0 +1,31 @@
+COMMAND bash -c uname\ -srm\;\ grep\ PRETTY_NAME\ /etc/os-release\;\ id\ -u\;\ go\ version\;\ go\ env\ GOOS\ GOARCH\ GOFLAGS\ GOWORK\;\ /usr/lib/postgresql/18/bin/postgres\ --version\;\ /usr/lib/postgresql/16/bin/postgres\ --version\;\ .venv/bin/python\ --version\;\ .venv/bin/ruff\ --version\;\ .venv/bin/mypy\ --version\;\ node\ --version\;\ npm\ --version\;\ .toolchains/bin/protoc\ --version\;\ golangci-lint\ version\;\ echo\ \"cpus\ \$\(nproc\)\"\;\ free\ -m\ \|\ head\ -2\;\ df\ -h\ /\ \|\ tail\ -1\;\ echo\ \"worktree\ links\ \(ignored\ by\ git\):\"\;\ ls\ -ld\ .venv\ node_modules\ .toolchains
+DATE 2026-11-09T03:37:59Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+Linux 6.12.113+ x86_64
+PRETTY_NAME="Ubuntu 24.04.5 LTS"
+1000
+go version go1.26.10 linux/amd64
+linux
+amd64
+
+/agent/repos/shortvideo-network/go.work
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+bash: line 1: /usr/lib/postgresql/16/bin/postgres: No such file or directory
+Python 3.12.3
+ruff 0.17.3
+mypy 2.4.1 (compiled: yes)
+v22.23.4
+bash: line 1: npm: command not found
+libprotoc 36.2
+bash: line 1: golangci-lint: command not found
+cpus 4
+               total        used        free      shared  buff/cache   available
+Mem:           16003        4344        2245          16        9760       11658
+/dev/vdc        254G   32G  222G  13% /
+worktree links (ignored by git):
+drwxr-xr-x 11 ubuntu ubuntu 4096 Nov  8 23:29 node_modules
+drwxr-xr-x  4 ubuntu ubuntu 4096 Nov  8 23:29 .toolchains
+drwxr-xr-x  5 ubuntu ubuntu 4096 Nov  8 22:56 .venv
+EXIT:0

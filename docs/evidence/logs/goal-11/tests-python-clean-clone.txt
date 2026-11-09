@@ -1,0 +1,27 @@
+COMMAND bash -c $'echo "worktree layout of .venv, node_modules and .toolchains:"\nls -ld .venv node_modules .toolchains\nfor p in node_modules/react/index.js .venv/bin/python .toolchains/bin/protoc; do\n  out=$(git check-ignore -- "$p" 2>&1); rc=$?; echo "wt-11: git check-ignore -- $p -> exit $rc ${out}"\ndone\nd=$(mktemp -d /tmp/goal11-w3/pyclone.XXXXXX)\ngit clone -q --no-checkout "$PWD" "$d/repo" || exit 90\ngit -C "$d/repo" checkout -q --detach 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526 || exit 91\ncd "$d/repo" || exit 92\necho "scratch clone $d/repo: HEAD $(git rev-parse HEAD) tree $(git rev-parse \'HEAD^{tree}\')"\necho "clone status (empty means clean):"; git status --porcelain --untracked-files=all; echo "(end of status)"\nfor p in node_modules/react/index.js .venv/bin/python .toolchains/bin/protoc; do\n  git check-ignore -q -- "$p"; echo "clone: git check-ignore -q -- $p -> exit $?"\ndone\necho "full python suite in the clone (run_tests.py falls back to sys.executable, the same venv):"\n/agent/repos/shortvideo-network/.venv/bin/python scripts/run_tests.py --only python; s=$?\ncd / && rm -rf "$d"\nexit $s'
+DATE 2026-11-09T03:41:06Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+worktree layout of .venv, node_modules and .toolchains:
+drwxr-xr-x 11 ubuntu ubuntu 4096 Nov  8 23:29 node_modules
+drwxr-xr-x  4 ubuntu ubuntu 4096 Nov  8 23:29 .toolchains
+drwxr-xr-x  5 ubuntu ubuntu 4096 Nov  8 22:56 .venv
+wt-11: git check-ignore -- node_modules/react/index.js -> exit 0 node_modules/react/index.js
+wt-11: git check-ignore -- .venv/bin/python -> exit 0 .venv/bin/python
+wt-11: git check-ignore -- .toolchains/bin/protoc -> exit 0 .toolchains/bin/protoc
+scratch clone /tmp/goal11-w3/pyclone.OOJoRs/repo: HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526 tree 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+clone status (empty means clean):
+(end of status)
+clone: git check-ignore -q -- node_modules/react/index.js -> exit 0
+clone: git check-ignore -q -- .venv/bin/python -> exit 0
+clone: git check-ignore -q -- .toolchains/bin/protoc -> exit 0
+full python suite in the clone (run_tests.py falls back to sys.executable, the same venv):
+........................................................................ [ 17%]
+........................................................................ [ 35%]
+........................................................................ [ 53%]
+........................................................................ [ 71%]
+........................................................................ [ 88%]
+.............................................                            [100%]
+405 passed in 68.04s (0:01:08)
+EXIT:0

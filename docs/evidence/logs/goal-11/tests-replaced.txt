@@ -1,0 +1,86 @@
+COMMAND bash -c echo\ \'pre-existing\ test\ files\ changed\ since\ 6d74aca5cfc461a9756587bdbec2f78e7111e574:\'\;\ git\ diff\ --stat\ --diff-filter=M\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\ --\ \'\*_test.go\'\ \'tests/\*.py\'\ \'tests/\*\*/\*.py\'\ \'services/\*\*/test\*.py\'\;\ echo\;\ echo\ \'deleted\ files\ since\ 6d74aca5cfc461a9756587bdbec2f78e7111e574:\'\;\ git\ diff\ --stat\ --diff-filter=D\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\;\ echo\;\ git\ diff\ --diff-filter=D\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\;\ echo\;\ git\ diff\ -U0\ --diff-filter=M\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\ --\ \'\*_test.go\'\ \'tests/unit/\*.py\'
+DATE 2026-11-09T04:26:20Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+pre-existing test files changed since 6d74aca5cfc461a9756587bdbec2f78e7111e574:
+ tests/unit/test_ci_devnet_coverage.py | 16 +++++++++++++---
+ tests/unit/test_repo_policy.py        |  3 ++-
+ tests/unit/test_scaffold.py           |  7 -------
+ 3 files changed, 15 insertions(+), 11 deletions(-)
+
+deleted files since 6d74aca5cfc461a9756587bdbec2f78e7111e574:
+ services/broadcaster/svn_broadcaster/__init__.py | 5 -----
+ services/broadcaster/svn_broadcaster/scaffold.py | 7 -------
+ 2 files changed, 12 deletions(-)
+
+diff --git a/services/broadcaster/svn_broadcaster/__init__.py b/services/broadcaster/svn_broadcaster/__init__.py
+deleted file mode 100644
+index 8734e63..0000000
+--- a/services/broadcaster/svn_broadcaster/__init__.py
++++ /dev/null
+@@ -1,5 +0,0 @@
+-"""Broadcaster package. Scaffolding only."""
+-
+-from svn_broadcaster.scaffold import SCAFFOLD, serve
+-
+-__all__ = ["SCAFFOLD", "serve"]
+diff --git a/services/broadcaster/svn_broadcaster/scaffold.py b/services/broadcaster/svn_broadcaster/scaffold.py
+deleted file mode 100644
+index 758931a..0000000
+--- a/services/broadcaster/svn_broadcaster/scaffold.py
++++ /dev/null
+@@ -1,7 +0,0 @@
+-"""Transaction broadcaster slot. Goal 11 implements the outbox."""
+-
+-SCAFFOLD = True
+-
+-
+-def serve() -> None:
+-    raise RuntimeError("services/broadcaster is scaffolding and does not submit transactions")
+
+diff --git a/tests/unit/test_ci_devnet_coverage.py b/tests/unit/test_ci_devnet_coverage.py
+index 360d048..e50bd9f 100644
+--- a/tests/unit/test_ci_devnet_coverage.py
++++ b/tests/unit/test_ci_devnet_coverage.py
+@@ -528 +528,7 @@ def test_real_go_step_sets_the_skip_and_says_where_the_tests_run() -> None:
+-    assert "devnet-evidence" in lines[echo[0]] and "devnet-upgrade" in lines[echo[0]]
++    for shard in (
++        "devnet-evidence",
++        "devnet-upgrade",
++        "devnet-broadcaster",
++        "devnet-broadcaster-stall",
++    ):
++        assert shard in lines[echo[0]], shard
+@@ -539 +545,4 @@ def test_devnet_skip_gates_use_the_guarded_variable() -> None:
+-MATRIX = "shard: [app, devnet, devnet-evidence, devnet-upgrade, rest]"
++MATRIX = (
++    "shard: [app, devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, "
++    "devnet-broadcaster-stall, broadcaster, rest]"
++)
+@@ -541 +550,2 @@ DEVNET_SKIP = (
+-    "-skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange' "
++    "-skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange"
++    "|TestDevnetBroadcasterLifecycle|TestDevnetBroadcasterQuorumStall' "
+diff --git a/tests/unit/test_repo_policy.py b/tests/unit/test_repo_policy.py
+index 6cdb97f..f9f3c77 100644
+--- a/tests/unit/test_repo_policy.py
++++ b/tests/unit/test_repo_policy.py
+@@ -17 +17,2 @@ REQUIRED_PATHS = (
+-    "services/broadcaster/svn_broadcaster/scaffold.py",
++    "services/broadcaster/go.mod",
++    "services/broadcaster/cmd/svn-broadcaster/main.go",
+diff --git a/tests/unit/test_scaffold.py b/tests/unit/test_scaffold.py
+index 7e4a2ad..f49326f 100644
+--- a/tests/unit/test_scaffold.py
++++ b/tests/unit/test_scaffold.py
+@@ -7 +6,0 @@ import svn_api
+-import svn_broadcaster
+@@ -24,6 +22,0 @@ def test_indexer_refuses_to_serve() -> None:
+-def test_broadcaster_refuses_to_serve() -> None:
+-    assert svn_broadcaster.SCAFFOLD is True
+-    with pytest.raises(RuntimeError, match="does not submit"):
+-        svn_broadcaster.serve()
+-
+-
+EXIT:0

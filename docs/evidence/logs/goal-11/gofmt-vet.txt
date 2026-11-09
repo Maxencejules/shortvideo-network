@@ -1,0 +1,9 @@
+COMMAND bash -c bash\ scripts/gofmt_check.sh\;\ a=\$\?\;\ l=\"\$\(gofmt\ -l\ chain\ proto\ agents\ services/broadcaster\)\"\;\ echo\ \"gofmt\ -l:\ \$\{l:-\<empty\>\}\"\;\ test\ -z\ \"\$l\"\;\ b=\$\?\;\ go\ vet\ ./chain/...\ ./proto/...\ ./agents/provider/...\ ./agents/auditor/...\ ./services/broadcaster/...\;\ c=\$\?\;\ go\ vet\ -tags\ svn_faultpoint\ ./services/broadcaster/...\;\ d=\$\?\;\ go\ vet\ -tags\ svn_roottest\ ./services/broadcaster/internal/signer/...\ ./services/broadcaster/internal/keys/...\;\ e=\$\?\;\ go\ vet\ -tags\ race\ ./chain/devnet/\;\ f=\$\?\;\ echo\ \"gofmt_check=\$a\ gofmt_l=\$b\ vet=\$c\ vet_faultpoint=\$d\ vet_roottest=\$e\ vet_devnet_race=\$f\"\;\ test\ \"\$a\$b\$c\$d\$e\$f\"\ =\ 000000
+DATE 2026-11-09T03:38:14Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+gofmt ok files 605
+gofmt -l: <empty>
+gofmt_check=0 gofmt_l=0 vet=0 vet_faultpoint=0 vet_roottest=0 vet_devnet_race=0
+EXIT:0

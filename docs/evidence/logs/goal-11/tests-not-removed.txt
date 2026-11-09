@@ -1,0 +1,12 @@
+COMMAND bash -c $'names() { git grep -h -E \'^func (Test|Fuzz)\' "$1" -- chain agents services | sed \'s/(.*//; s/^func //\' | sort -u; }\nh=$(names HEAD); b=$(names 6d74aca5cfc461a9756587bdbec2f78e7111e574)\necho "HEAD $(git rev-parse HEAD): $(echo "$h" | grep -c .) Go test/fuzz function names under chain/, agents/, services/"\necho "6d74aca5cfc461a9756587bdbec2f78e7111e574 (base): $(echo "$b" | grep -c .) names"\ngone=$(comm -23 <(echo "$b") <(echo "$h")); echo "base names missing from HEAD: $(echo "$gone" | grep -c .)"; echo "$gone" | grep . || true\nnew=$(comm -13 <(echo "$b") <(echo "$h")); echo "HEAD names not in base: $(echo "$new" | grep -c .)"\npyn() { git grep -h -E \'^\\s*def test_\' "$1" -- tests services | sed \'s/(.*//; s/^\\s*def //\' | sort -u; }\nph=$(pyn HEAD); pb=$(pyn 6d74aca5cfc461a9756587bdbec2f78e7111e574)\npgone=$(comm -23 <(echo "$pb") <(echo "$ph")); echo "Python test names: HEAD $(echo "$ph" | grep -c .), base $(echo "$pb" | grep -c .), base names missing from HEAD: $(echo "$pgone" | grep -c .)"; echo "$pgone" | grep . || true\ntest -z "$gone"'
+DATE 2026-11-09T04:26:20Z
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
+TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DIRTY no
+HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526: 1238 Go test/fuzz function names under chain/, agents/, services/
+6d74aca5cfc461a9756587bdbec2f78e7111e574 (base): 941 names
+base names missing from HEAD: 0
+HEAD names not in base: 297
+Python test names: HEAD 178, base 164, base names missing from HEAD: 1
+test_broadcaster_refuses_to_serve
+EXIT:0
