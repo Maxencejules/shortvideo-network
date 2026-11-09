@@ -2,7 +2,7 @@
 
 Status: BLOCKED
 
-DR-11-01 is approved for the pinned boundary document only. The goal stays BLOCKED: production custody is still DEC-001 and DR-07-01, and every run is one machine. Head CI on `ad55070` passed and is not a blocker.
+DR-11-01 is approved for the pinned boundary document only. The goal stays BLOCKED: production custody is still DEC-001 and DR-07-01, and every run is one machine. Head CI on the retest commit `ad55070` passed and is not a blocker. A later citation commit failed while downloading protoc.
 
 The checks cited in this file ran on commit `9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526` of branch `goal-11`, tree
 `79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd`. That commit's message carries `Tested-tree: 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd`.
@@ -50,7 +50,7 @@ BLOCKED, except where a row says otherwise:
 
 1. **DR-11-01: no longer a blocker (2026-11-08).** On 2026-11-08 at 21:39 America/Toronto the owner wrote, verbatim: "I approve docs/architecture/broadcaster.md at sha256 9779fdb1e7fe5a7577565c64a8066b6bff7e7bace1174b085df81e7b17ae905b (DR-11-01)". That is the sha256 of the file at the tested commit (1563 lines). The same message approved opening a draft pull request: "yes, open a draft pr for goal-11 and send it to the reviewer". The approval is of that document only. It does not approve any PROPOSED number, and it is not a merge. The file's own text still reads "Status: PROPOSED" and "It is not approved." It is not edited, because an edit would change the pinned sha256. The number is kept so the references in this file stay valid.
 2. **REQ-CHAIN-013 production custody.** The devnet fixture refuses a minted provider signature and a missing publication permission. Host custody of user keys is still blocked by DEC-001 and DR-07-01. The row is not production-verified.
-3. **Head CI: no longer a blocker.** Draft PR 16. Run [42578184489](https://github.com/Maxencejules/shortvideo-network/actions/runs/42578184489) on `ad55070fbefa5def4322fdb269ad33c9f8ceb701` completed success, 13 of 13 jobs: `python`, `node`, `go`, `devnet`, `contract`, and `go-race` for `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `rest`, `broadcaster`, `devnet-broadcaster` and `devnet-broadcaster-stall`. The earlier run 42552331705 was the pre-rewrite head `1ab4021` and is not this head.
+3. **Head CI: no longer a blocker for the retest.** Draft PR 16. Run [42578184489](https://github.com/Maxencejules/shortvideo-network/actions/runs/42578184489) on `ad55070fbefa5def4322fdb269ad33c9f8ceb701` completed success, 13 of 13 jobs: `python`, `node`, `go`, `devnet`, `contract`, and `go-race` for `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `rest`, `broadcaster`, `devnet-broadcaster` and `devnet-broadcaster-stall`. The earlier run 42552331705 was the pre-rewrite head `1ab4021` and is not this head. Run [42579921165](https://github.com/Maxencejules/shortvideo-network/actions/runs/42579921165) on the citation commit `6d9e825` failed in `Install protoc`: `curl: (22) The requested URL returned error: 504`. The `go` tests did not start. The other 12 jobs passed. That is a download failure, not a test failure.
 4. **Independent operators.** Every devnet run is four processes on one machine. DEC-002 names no operator list.
 5. **Goal 06 and goal 07 mutation runners.** Anchor checks only: [goal06-anchors.txt](logs/goal-11/goal06-anchors.txt) exit 1, `RESULT search-string problems=13; no test was run`; [goal07-anchors.txt](logs/goal-11/goal07-anchors.txt) exit 1, `RESULT validation problems=3; no test was run`. Known, and still BLOCKED.
 6. **golangci-lint.** Not installed here. [golangci-lint.txt](logs/goal-11/golangci-lint.txt) exit 1, `command not found`, `chain=127`. The known go1.26 load failure is not separately reproduced because the binary is absent. BLOCKED.
@@ -67,7 +67,7 @@ BLOCKED, except where a row says otherwise:
 | Restart PostgreSQL and the broadcaster, then reconcile | VERIFIED | Lifecycle phases PG and BR in [devnet-broadcaster.txt](logs/goal-11/devnet-broadcaster.txt). |
 | Read floor and indexing margin | VERIFIED | The broadcaster unit log. Mutants `f1-app-floor-is-status-height`, `f1-signer-startup-does-not-wait`, `f3-indexing-margin-one-allowed` are in the 284 killed ([mutants-goal11.txt](logs/goal-11/mutants-goal11.txt)). |
 | Signing boundary document approved | VERIFIED for the pinned file only | DR-11-01, owner quote of 2026-11-08 21:39 America/Toronto, sha256 `9779fdb1e7fe5a7577565c64a8066b6bff7e7bace1174b085df81e7b17ae905b`. PROPOSED numbers stay PROPOSED. |
-| Head CI | VERIFIED | Run 42578184489 on `ad55070`, 13 of 13, including `go-race (broadcaster)`, `go-race (devnet-broadcaster)` and `go-race (devnet-broadcaster-stall)`. |
+| Head CI | VERIFIED on `ad55070` | Run 42578184489, 13 of 13, including `go-race (broadcaster)`, `go-race (devnet-broadcaster)` and `go-race (devnet-broadcaster-stall)`. Run 42579921165 on `6d9e825` failed while downloading protoc (HTTP 504). |
 
 ## Requirements rows
 
