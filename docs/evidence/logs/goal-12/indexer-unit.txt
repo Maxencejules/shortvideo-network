@@ -1,19 +1,78 @@
-COMMAND go test -count=1 -timeout 8m ./services/indexer/...
-DATE 2026-11-09T20:40:48Z
-HEAD 478f98cc6e99835e33500613a88f5a38c6d4a04b
-TREE 86cdf8bcc38d6327f136daf704e8542488822b7c
+COMMAND go test -v -count=1 -timeout 8m ./services/indexer/...
+DATE 2026-11-09T21:04:24Z
+HEAD a8a0e593e1893aa5682927e7ce91262155e2e605
+TREE fd90e9e9760801032f867872e91ac1285d287f71
 DIRTY no
 ?   	github.com/Maxencejules/shortvideo-network/services/indexer	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/cmd/svn-indexer	0.030s
+=== RUN   TestUsageAndEnvironment
+--- PASS: TestUsageAndEnvironment (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/cmd/svn-indexer	0.023s
 ?   	github.com/Maxencejules/shortvideo-network/services/indexer/internal/api	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/chain	0.026s
+=== RUN   TestAppFloor
+--- PASS: TestAppFloor (0.00s)
+=== RUN   TestVerifyRejectsMismatch
+--- PASS: TestVerifyRejectsMismatch (0.00s)
+=== RUN   TestBlockMissingIsNotEmpty
+--- PASS: TestBlockMissingIsNotEmpty (0.00s)
+=== RUN   TestStatusChainID
+--- PASS: TestStatusChainID (0.00s)
+=== RUN   TestForgedEventShapeStaysOnTheBlock
+--- PASS: TestForgedEventShapeStaysOnTheBlock (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/chain	0.017s
+=== RUN   TestLoadAndEnvironment
+--- PASS: TestLoadAndEnvironment (0.00s)
+PASS
 ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/config	0.003s
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/engine	1.775s
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/faultpoint	0.004s
+=== RUN   TestDoesNotIndexAboveTheFloor
+--- PASS: TestDoesNotIndexAboveTheFloor (0.68s)
+=== RUN   TestMissingHeightStopsThePass
+--- PASS: TestMissingHeightStopsThePass (0.54s)
+=== RUN   TestBadVersionDoesNotAdvance
+--- PASS: TestBadVersionDoesNotAdvance (0.52s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/engine	1.759s
+=== RUN   TestBuildTag
+--- PASS: TestBuildTag (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/faultpoint	0.001s
 ?   	github.com/Maxencejules/shortvideo-network/services/indexer/internal/pgdev	[no test files]
 ?   	github.com/Maxencejules/shortvideo-network/services/indexer/internal/pgtest	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/project	0.027s
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/reconcile	0.026s
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/status	0.020s
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/store	3.586s
+=== RUN   TestDecodeVersionAndFailure
+--- PASS: TestDecodeVersionAndFailure (0.00s)
+=== RUN   TestRenewRequiresACommittedEvent
+--- PASS: TestRenewRequiresACommittedEvent (0.00s)
+=== RUN   TestOfferClosed
+--- PASS: TestOfferClosed (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/project	0.022s
+=== RUN   TestAlteredProjectionIsDetected
+--- PASS: TestAlteredProjectionIsDetected (0.00s)
+=== RUN   TestQueryErrorIsNotEmptyHistory
+--- PASS: TestQueryErrorIsNotEmptyHistory (0.00s)
+=== RUN   TestLeaseDeadlineChange
+--- PASS: TestLeaseDeadlineChange (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/reconcile	0.022s
+=== RUN   TestStoppedChainIsStaleWithoutARenewal
+--- PASS: TestStoppedChainIsStaleWithoutARenewal (0.00s)
+=== RUN   TestFreshRead
+--- PASS: TestFreshRead (0.00s)
+=== RUN   TestDivergentIsStale
+--- PASS: TestDivergentIsStale (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/status	0.023s
+=== RUN   TestApplyIsAtomicAndIdempotent
+--- PASS: TestApplyIsAtomicAndIdempotent (1.23s)
+=== RUN   TestRenewUnknownLeaseDoesNotInventOne
+--- PASS: TestRenewUnknownLeaseDoesNotInventOne (0.50s)
+=== RUN   TestWithdrawKeepsTheRow
+--- PASS: TestWithdrawKeepsTheRow (0.50s)
+=== RUN   TestRebuildLeavesOtherSchemas
+--- PASS: TestRebuildLeavesOtherSchemas (0.54s)
+=== RUN   TestRecordRunDoesNotChangeALease
+--- PASS: TestRecordRunDoesNotChangeALease (0.52s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/store	3.316s
 EXIT:0

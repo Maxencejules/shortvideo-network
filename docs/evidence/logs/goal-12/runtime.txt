@@ -1,7 +1,7 @@
-COMMAND bash -c uname\ -srm\;\ grep\ PRETTY_NAME\ /etc/os-release\;\ id\ -u\;\ go\ version\;\ /usr/lib/postgresql/18/bin/postgres\ --version\;\ /usr/lib/postgresql/16/bin/postgres\ --version\;\ /tmp/svn-venv/bin/python\ --version\;\ /tmp/svn-venv/bin/ruff\ --version\;\ /tmp/svn-venv/bin/mypy\ --version\;\ echo\ cpus\ \$\(nproc\)\;\ free\ -m\ \|\ head\ -2
-DATE 2026-11-09T20:40:48Z
-HEAD 478f98cc6e99835e33500613a88f5a38c6d4a04b
-TREE 86cdf8bcc38d6327f136daf704e8542488822b7c
+COMMAND bash -c uname\ -srm\;\ grep\ PRETTY_NAME\ /etc/os-release\;\ id\ -u\;\ go\ version\;\ /usr/lib/postgresql/18/bin/postgres\ --version\;\ /usr/lib/postgresql/16/bin/postgres\ --version\;\ /tmp/svn-venv/bin/python\ --version\;\ /tmp/svn-venv/bin/ruff\ --version\;\ echo\ cpus\ \$\(nproc\)
+DATE 2026-11-09T21:04:24Z
+HEAD a8a0e593e1893aa5682927e7ce91262155e2e605
+TREE fd90e9e9760801032f867872e91ac1285d287f71
 DIRTY no
 Linux 6.12.113+ x86_64
 PRETTY_NAME="Ubuntu 24.04.5 LTS"
@@ -11,8 +11,5 @@ postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
 bash: line 1: /usr/lib/postgresql/16/bin/postgres: No such file or directory
 Python 3.12.3
 ruff 0.17.3
-mypy 2.4.1 (compiled: yes)
 cpus 4
-               total        used        free      shared  buff/cache   available
-Mem:           16003       11137         760          25        4459        4865
 EXIT:0

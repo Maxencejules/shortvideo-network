@@ -1,7 +1,7 @@
 COMMAND go test -count=1 -timeout 8m -v -run TestDevnetIndexer ./chain/devnet
-DATE 2026-11-09T20:40:55Z
-HEAD 478f98cc6e99835e33500613a88f5a38c6d4a04b
-TREE 86cdf8bcc38d6327f136daf704e8542488822b7c
+DATE 2026-11-09T21:04:30Z
+HEAD a8a0e593e1893aa5682927e7ce91262155e2e605
+TREE fd90e9e9760801032f867872e91ac1285d287f71
 DIRTY no
 === RUN   TestDevnetIndexer
 label=single machine, four validator processes, private network namespace (not independent operators, not production)
@@ -9,17 +9,38 @@ phase=inject-chain-id exit=3
 phase=inject-forged exit=3
 phase=inject-missing exit=4
 phase=inject-version exit=3
-phase=register-c1 height=8 code=0 txhash=FE8CF68D4C01C8E52049B063DBE11839237C5285E27BAF4D822906D0AE72101A
-{"listen":"127.0.0.1:42001"}
+phase=register-c1 height=11 code=0 txhash=E95587B2AF258A2D6C76E463F38406A8C856E68E38D4340E5DA8DA850EA36F7F
+{"listen":"127.0.0.1:37629"}
 phase=wait what=fault point ok
-{"listen":"127.0.0.1:36709"}
+phase=before-kill content_c1_lines=0
+checkpoint 10 a07bfec20d87b0a5f1a9abb1c518b719dfd1e725cb3385bb3b4f9cfd5b6f9dff
+{"listen":"127.0.0.1:39107"}
 phase=wait what=one content row ok
-phase=indexer-stall-1 threshold=12 app_hash=87DCF3CC63D30BEA0AF9D1B464FF6B344C695506EECA6A5B719508E8E5C2CCB5
-phase=indexer-stall-2 threshold=12 app_hash=87DCF3CC63D30BEA0AF9D1B464FF6B344C695506EECA6A5B719508E8E5C2CCB5
+phase=after-resume content_c1_lines=1 lease_lines=0
+checkpoint 12 171b275d4664c3cc7f66e4fa9cfe4232a0e326467869bc04efce0b593f43bce3
+content c1 1 776af09615756dcfb4ee13fe5c5dd1813985f0f969c184760a73076caa87f78d 4000000 false false
+source content c1/1 11 e95587b2af258a2d6c76e463f38406a8c856e68e38d4340e5da8da850ea36f7f 0 3 svn.events.v1.ContentRegistered
+phase=indexer-stall-1 threshold=13 app_hash=2DA0A92B160DFEA195A03FEC5E4395033693A91B04DDAE6E222C237371FDA1A6
+phase=indexer-stall-2 threshold=13 app_hash=2DA0A92B160DFEA195A03FEC5E4395033693A91B04DDAE6E222C237371FDA1A6
 phase=wait what=stale read ok
 phase=wait what=fresh read ok
+phase=rebuild-before<<
+content c1 1 776af09615756dcfb4ee13fe5c5dd1813985f0f969c184760a73076caa87f78d 4000000 false false
+source content c1/1 11 e95587b2af258a2d6c76e463f38406a8c856e68e38d4340e5da8da850ea36f7f 0 3 svn.events.v1.ContentRegistered
+phase=rebuild-before>>
+phase=rebuild-after<<
+content c1 1 776af09615756dcfb4ee13fe5c5dd1813985f0f969c184760a73076caa87f78d 4000000 false false
+source content c1/1 11 e95587b2af258a2d6c76e463f38406a8c856e68e38d4340e5da8da850ea36f7f 0 3 svn.events.v1.ContentRegistered
+phase=rebuild-after>>
+phase=rebuild match=yes
+phase=reconcile exit=5
+divergent
+phase=reconcile altered_manifest_kept=true
+checkpoint 17 fcf5c2adc045956f776a379a64fe17718eabb79f6343cd90308a4c951af0b3ac
+content c1 1 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc 4000000 false false
+source content c1/1 11 e95587b2af258a2d6c76e463f38406a8c856e68e38d4340e5da8da850ea36f7f 0 3 svn.events.v1.ContentRegistered
 phase=done
---- PASS: TestDevnetIndexer (12.42s)
+--- PASS: TestDevnetIndexer (11.88s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	12.452s
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	11.909s
 EXIT:0
