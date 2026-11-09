@@ -175,6 +175,7 @@ PY_ALLOW = (
     # The goal 10 mutation runner, likewise.
     "docs/evidence/goal-10/mutants.py",
     "docs/evidence/goal-11/mutants.py",  # the goal 11 mutation runner, likewise
+    "docs/evidence/goal-12/mutants.py",  # the goal 12 mutation runner, likewise
     "scripts/",
     "tests/",
     "services/",
@@ -194,6 +195,8 @@ SOURCE_ALLOW = (
     "proto/",
     "agents/",
     "services/broadcaster/",
+    # Goal 12 adds the Go indexer module.
+    "services/indexer/",
 )
 WALK_SKIP = {
     ".git",

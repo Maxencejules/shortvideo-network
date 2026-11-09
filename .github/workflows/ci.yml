@@ -164,7 +164,7 @@ jobs:
             exit 1
           fi
           git diff --exit-code -- proto/svn proto/gen/python
-          echo "SVN_SKIP_DEVNET=1: the multi-process chain/devnet tests run in the go-race devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, and devnet-broadcaster-stall shards"
+          echo "SVN_SKIP_DEVNET=1: the multi-process chain/devnet tests run in the go-race devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, devnet-broadcaster-stall, and devnet-indexer shards"
           python3 scripts/run_tests.py --only go
           go vet ./chain/...
           go vet ./proto/...
@@ -174,6 +174,9 @@ jobs:
           go vet -tags svn_faultpoint ./services/broadcaster/...
           go vet -tags svn_roottest ./services/broadcaster/internal/signer/ ./services/broadcaster/internal/keys/
           go test -count=1 -timeout 2m -tags svn_faultpoint ./services/broadcaster/internal/faultpoint/
+          go vet ./services/indexer/...
+          go vet -tags svn_faultpoint ./services/indexer/...
+          go test -count=1 -timeout 2m -tags svn_faultpoint ./services/indexer/internal/faultpoint/
 
   # The race detector run of ./chain/..., ./proto/..., ./agents/provider/...,
   # ./agents/auditor/... and ./services/broadcaster/..., split into eight
@@ -201,7 +204,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [app, devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, devnet-broadcaster-stall, broadcaster, rest]
+        shard: [app, devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, devnet-broadcaster-stall, devnet-indexer, broadcaster, indexer, rest]
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -216,7 +219,7 @@ jobs:
       # tests start PostgreSQL. tests/unit/test_ci_broadcaster.py reads this
       # condition and fails if a shard that runs those tests is missing.
       - name: Install PostgreSQL 18.6
-        if: contains(fromJSON('["broadcaster", "devnet-broadcaster", "devnet-broadcaster-stall"]'), matrix.shard)
+        if: contains(fromJSON('["broadcaster", "devnet-broadcaster", "devnet-broadcaster-stall", "indexer", "devnet-indexer"]'), matrix.shard)
         run: |
           set -euo pipefail
           pg_ver="18.6-1.pgdg24.04+2"
@@ -284,7 +287,7 @@ jobs:
               # TestDevnetRunsBuiltSvnd builds svnd inside its timeout;
               # building it first fills the build cache.
               go build -C chain -o /dev/null ./cmd/svnd
-              go test -race -count=1 -timeout 12m -skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange|TestDevnetBroadcasterLifecycle|TestDevnetBroadcasterQuorumStall' ./chain/devnet
+              go test -race -count=1 -timeout 12m -skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange|TestDevnetBroadcasterLifecycle|TestDevnetBroadcasterQuorumStall|TestDevnetIndexer' ./chain/devnet
               ;;
             devnet-evidence)
               # TestDevnetAuditLifecycle builds agents/auditor with these
@@ -321,8 +324,18 @@ jobs:
               go build -C services/broadcaster -race -tags svn_faultpoint -o /dev/null ./cmd/svn-broadcaster
               go test -race -count=1 -timeout 12m -run TestDevnetBroadcasterQuorumStall ./chain/devnet
               ;;
+            devnet-indexer)
+              # TestDevnetIndexer builds svnd and the indexer. Building them
+              # first keeps that compile time outside the test timeout.
+              go build -C chain -o /dev/null ./cmd/svnd
+              go build -C services/indexer -race -tags svn_faultpoint -o /dev/null ./cmd/svn-indexer
+              go test -race -count=1 -timeout 12m -run TestDevnetIndexer ./chain/devnet
+              ;;
             broadcaster)
               go test -race -count=1 -timeout 12m ./services/broadcaster/...
+              ;;
+            indexer)
+              go test -race -count=1 -timeout 12m ./services/indexer/...
               ;;
             rest)
               pkgs="$(go list ./chain/... | grep -v -x -e "${mod}/chain/app" -e "${mod}/chain/devnet")"

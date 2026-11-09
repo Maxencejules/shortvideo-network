@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 REQUIRED_PATHS = (
     "apps/web/src/scaffold.ts",
     "services/api/svn_api/scaffold.py",
-    "services/indexer/svn_indexer/scaffold.py",
+    "services/indexer/go.mod",
+    "services/indexer/cmd/svn-indexer/main.go",
     "services/broadcaster/go.mod",
     "services/broadcaster/cmd/svn-broadcaster/main.go",
     "chain/app/doc.go",

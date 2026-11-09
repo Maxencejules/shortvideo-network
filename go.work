@@ -9,4 +9,5 @@ use (
 	./docs/evidence/goal-02/go
 	./proto
 	./services/broadcaster
+	./services/indexer
 )
