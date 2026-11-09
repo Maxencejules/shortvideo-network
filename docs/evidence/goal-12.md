@@ -30,9 +30,11 @@ validator processes on one machine. No independent operator is claimed.
 
 The tested tree includes the ruff format of `GO_MODULES` in `scripts/run_tests.py` and the SBOM rows for two checksum lines the indexer source does not import (`github.com/pion/stun v0.6.1` and `gotest.tools v2.2.0+incompatible`).
 
-## Head CI before this tested commit
+## Head CI
 
-Run [42695778372](https://github.com/Maxencejules/shortvideo-network/actions/runs/42695778372) on `7d981b70a42d99ae7f1122273918897fa476307b` **failed**. The `python` job stopped at `ruff format --check`: it wanted `GO_MODULES` in `scripts/run_tests.py` as a parenthesized tuple. The other 15 checks on that run passed, including `go`, `devnet`, and every `go-race` shard (`indexer` and `devnet-indexer` among them). That run is not a green head. This file does not claim a green run for the tip until one has been observed on the tip.
+Run [42699522138](https://github.com/Maxencejules/shortvideo-network/actions/runs/42699522138) on `bb9327bb7e1ec2587d49e682a69ea1645e594056` completed **success** at 2026-11-09T21:21:28Z. All 15 jobs succeeded: `node`, `python`, `go`, `contract`, `devnet`, and the ten `go-race` shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, and `rest`. The CodeRabbit commit status on that sha was also success. `bb9327b` differs from the tested commit `a8a0e59` only under `docs/evidence/`.
+
+Run [42695778372](https://github.com/Maxencejules/shortvideo-network/actions/runs/42695778372) on `7d981b70a42d99ae7f1122273918897fa476307b` **failed**. The `python` job stopped at `ruff format --check`: it wanted `GO_MODULES` in `scripts/run_tests.py` as a parenthesized tuple. The other 15 jobs on that run passed. That run is not a green head.
 
 ## Prerequisites carried from goal 11
 
@@ -56,7 +58,7 @@ BLOCKED, except where a row says otherwise:
 | Stop and resume consensus; stale read; no false renewal or approval | VERIFIED | Same log. Two validators were stopped (`indexer-stall-1`, `indexer-stall-2`). `phase=wait what=stale read ok`, then `phase=wait what=fresh read ok`. `lease_lines=0`. There is no `publication_approved` column. |
 | Goal 12 mutants | VERIFIED | [mutants.txt](logs/goal-12/mutants.txt) exit 0, `RESULT mutants=16 killed=16`. This is a spot check of the new code, not a mutation score. |
 | Race, indexer module | VERIFIED | [race-indexer.txt](logs/goal-12/race-indexer.txt) exit 0. `TestDevnetIndexer` in the devnet log was not run under `-race`. CI's `go-race (devnet-indexer)` shard is that race run. |
-| Head CI | NOT a pass on this tip | Run 42695778372 failed, as above. A later run is cited here only after it is observed. |
+| Head CI | VERIFIED on `bb9327b` | Run [42699522138](https://github.com/Maxencejules/shortvideo-network/actions/runs/42699522138), 15 of 15 jobs, conclusion success, 2026-11-09T21:21:28Z. That sha differs from the tested commit only under `docs/evidence/`. Run 42695778372 on `7d981b7` failed `python`. |
 
 ## Requirements rows
 
@@ -90,7 +92,7 @@ Hosting services read `GET /v1/status`, `/v1/providers`, `/v1/content`, `/v1/lea
 
 ## Next safe action
 
-Draft [PR 17](https://github.com/Maxencejules/shortvideo-network/pull/17) stays a draft. Do not merge it. Do not start goal 13. A merge is a separate approval. Head CI on this tip is not claimed here.
+Draft [PR 17](https://github.com/Maxencejules/shortvideo-network/pull/17) stays a draft. Do not merge it. Do not start goal 13. A merge is a separate approval. The green run for the tested tree is 42699522138 on `bb9327b`.
 
 ## Proposed pull-request title and summary
 
