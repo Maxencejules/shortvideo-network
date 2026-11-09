@@ -1,85 +1,85 @@
 COMMAND .venv/bin/python scripts/run_tests.py --only node
-DATE 2026-11-09T03:39:57Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T09:31:43Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
 TAP version 13
 # Subtest: the module exports only the catalog, and its JSON text is the Go catalog file byte for byte
 ok 1 - the module exports only the catalog, and its JSON text is the Go catalog file byte for byte
   ---
-  duration_ms: 1.327832
+  duration_ms: 1.406652
   type: 'test'
   ...
 # Subtest: every catalog string is pinned sentence by sentence, in order
 ok 2 - every catalog string is pinned sentence by sentence, in order
   ---
-  duration_ms: 0.611006
+  duration_ms: 0.689227
   type: 'test'
   ...
 # Subtest: every string is bounded printable ASCII; labels are phrases, texts are sentences
 ok 3 - every string is bounded printable ASCII; labels are phrases, texts are sentences
   ---
-  duration_ms: 0.448
+  duration_ms: 0.50416
   type: 'test'
   ...
 # Subtest: the mode is explicit: auditor attestation or provider receipt (goal requirement 4)
 ok 4 - the mode is explicit: auditor attestation or provider receipt (goal requirement 4)
   ---
-  duration_ms: 0.177305
+  duration_ms: 0.178901
   type: 'test'
   ...
 # Subtest: the state keys are the three short reported state names
 ok 5 - the state keys are the three short reported state names
   ---
-  duration_ms: 0.087871
+  duration_ms: 0.093431
   type: 'test'
   ...
 # Subtest: the goal limitations, REQ-INV-007, and the decision gate appear verbatim
 ok 6 - the goal limitations, REQ-INV-007, and the decision gate appear verbatim
   ---
-  duration_ms: 0.095102
+  duration_ms: 0.108993
   type: 'test'
   ...
 # Subtest: the acceptance text calls the signature a promise, not possession (REQ-EVID-002)
 ok 7 - the acceptance text calls the signature a promise, not possession (REQ-EVID-002)
   ---
-  duration_ms: 0.069927
+  duration_ms: 0.093575
   type: 'test'
   ...
 # Subtest: state and event texts limit the claim: past observation, public digest, no blame, not a pass
 ok 8 - state and event texts limit the claim: past observation, public digest, no blame, not a pass
   ---
-  duration_ms: 0.852048
+  duration_ms: 0.909039
   type: 'test'
   ...
 # Subtest: the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs
 ok 9 - the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs
   ---
-  duration_ms: 0.485286
+  duration_ms: 0.568459
   type: 'test'
   ...
 # Subtest: claim_limit and the modes match the frozen envelope schema
 ok 10 - claim_limit and the modes match the frozen envelope schema
   ---
-  duration_ms: 0.382707
+  duration_ms: 0.452795
   type: 'test'
   ...
 # Subtest: the denylist rules are well formed and are exactly the list of this test
 ok 11 - the denylist rules are well formed and are exactly the list of this test
   ---
-  duration_ms: 1.863125
+  duration_ms: 1.978848
   type: 'test'
   ...
 # Subtest: no catalog string claims proof of storage, a unique replica, independence, legality, or future quality
 ok 12 - no catalog string claims proof of storage, a unique replica, independence, legality, or future quality
   ---
-  duration_ms: 0.883234
+  duration_ms: 0.792101
   type: 'test'
   ...
 # Subtest: the denylist scanner detects denied claims and passes the allowed negations
 ok 13 - the denylist scanner detects denied claims and passes the allowed negations
   ---
-  duration_ms: 4.075441
+  duration_ms: 5.259599
   type: 'test'
   ...
 1..13
@@ -90,12 +90,12 @@ ok 13 - the denylist scanner detects denied claims and passes the allowed negati
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 88.141585
+# duration_ms 110.016981
 TAP version 13
 # Subtest: react version is the pinned release
 ok 1 - react version is the pinned release
   ---
-  duration_ms: 0.45321
+  duration_ms: 0.593953
   type: 'test'
   ...
 1..1
@@ -106,5 +106,5 @@ ok 1 - react version is the pinned release
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 56.628181
+# duration_ms 67.292823
 EXIT:0

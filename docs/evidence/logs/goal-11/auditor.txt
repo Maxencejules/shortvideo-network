@@ -1,11 +1,11 @@
 COMMAND env -C agents/auditor go test -count=1 -v ./...
-DATE 2026-11-09T03:46:34Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T09:38:46Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
 === RUN   TestRunNeverOpensKeyPath
     main_test.go:260: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestRunNeverOpensKeyPath (0.06s)
+--- PASS: TestRunNeverOpensKeyPath (0.05s)
 === RUN   TestRunClassifiesLoopbackOutcomes
 === RUN   TestRunClassifiesLoopbackOutcomes/correct/CAPABILITY_MANIFEST
     main_test.go:320: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
@@ -87,40 +87,40 @@ DIRTY no
     main_test.go:320: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
 === RUN   TestRunClassifiesLoopbackOutcomes/no_allowlist_entry/OPERATOR_CONFIG
     main_test.go:320: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestRunClassifiesLoopbackOutcomes (0.22s)
+--- PASS: TestRunClassifiesLoopbackOutcomes (0.21s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/correct/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/correct/OPERATOR_CONFIG (0.01s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/corrupted_segment/CAPABILITY_MANIFEST (0.00s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/corrupted_segment/CAPABILITY_MANIFEST (0.01s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/corrupted_segment/OPERATOR_CONFIG (0.00s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/404_at_once/CAPABILITY_MANIFEST (0.00s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/404_at_once/OPERATOR_CONFIG (0.00s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/404_at_once/CAPABILITY_MANIFEST (0.01s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/404_at_once/OPERATOR_CONFIG (0.01s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/500_after_two_retries/CAPABILITY_MANIFEST (0.01s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/500_after_two_retries/OPERATOR_CONFIG (0.02s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/500_after_two_retries/OPERATOR_CONFIG (0.01s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/declared_short_length/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/declared_short_length/OPERATOR_CONFIG (0.00s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/chunked_body_ends_early/CAPABILITY_MANIFEST (0.01s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/chunked_body_ends_early/OPERATOR_CONFIG (0.01s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/chunked_body_ends_early/CAPABILITY_MANIFEST (0.02s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/chunked_body_ends_early/OPERATOR_CONFIG (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/declared_too_large/CAPABILITY_MANIFEST (0.01s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/declared_too_large/OPERATOR_CONFIG (0.01s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/chunked_too_large/CAPABILITY_MANIFEST (0.00s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/chunked_too_large/CAPABILITY_MANIFEST (0.01s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/chunked_too_large/OPERATOR_CONFIG (0.00s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/reset_mid_body/CAPABILITY_MANIFEST (0.01s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/reset_mid_body/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/reset_mid_body/OPERATOR_CONFIG (0.00s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/close-delimited_truncation/CAPABILITY_MANIFEST (0.01s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/close-delimited_truncation/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/close-delimited_truncation/OPERATOR_CONFIG (0.00s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/cut_inside_a_declared_length/CAPABILITY_MANIFEST (0.00s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/cut_inside_a_declared_length/CAPABILITY_MANIFEST (0.01s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/cut_inside_a_declared_length/OPERATOR_CONFIG (0.00s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/gzip/CAPABILITY_MANIFEST (0.01s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/gzip/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/gzip/OPERATOR_CONFIG (0.01s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/redirect_to_metadata/CAPABILITY_MANIFEST (0.01s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/redirect_to_metadata/OPERATOR_CONFIG (0.01s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/huge_header/CAPABILITY_MANIFEST (0.01s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/redirect_to_metadata/CAPABILITY_MANIFEST (0.00s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/redirect_to_metadata/OPERATOR_CONFIG (0.00s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/huge_header/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/huge_header/OPERATOR_CONFIG (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/sampled_correct/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/sampled_correct/OPERATOR_CONFIG (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/sampled_range_ignored/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/sampled_range_ignored/OPERATOR_CONFIG (0.00s)
-    --- PASS: TestRunClassifiesLoopbackOutcomes/sampled_wrong_content-range_total/CAPABILITY_MANIFEST (0.01s)
+    --- PASS: TestRunClassifiesLoopbackOutcomes/sampled_wrong_content-range_total/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/sampled_wrong_content-range_total/OPERATOR_CONFIG (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/lost_package,_whole/CAPABILITY_MANIFEST (0.00s)
     --- PASS: TestRunClassifiesLoopbackOutcomes/lost_package,_whole/OPERATOR_CONFIG (0.00s)
@@ -130,12 +130,12 @@ DIRTY no
     --- PASS: TestRunClassifiesLoopbackOutcomes/no_allowlist_entry/OPERATOR_CONFIG (0.00s)
 === RUN   TestRunTLSAndTimeoutAreIncomplete
     main_test.go:356: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
-2026/11/09 03:46:36 http: TLS handshake error from 127.0.0.1:52206: remote error: tls: bad certificate
+2026/11/09 09:38:49 http: TLS handshake error from 127.0.0.1:49330: remote error: tls: bad certificate
     main_test.go:364: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestRunTLSAndTimeoutAreIncomplete (0.31s)
 === RUN   TestRunBudgetEndsRetriesIncomplete
     main_test.go:376: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestRunBudgetEndsRetriesIncomplete (1.50s)
+--- PASS: TestRunBudgetEndsRetriesIncomplete (1.51s)
 === RUN   TestContentWithdrawnFetchesNothing
 === RUN   TestContentWithdrawnFetchesNothing/withdrawn
     main_test.go:420: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
@@ -156,7 +156,7 @@ DIRTY no
 === RUN   TestContentWithdrawnFetchesNothing/manifest_file_missing
     main_test.go:420: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestContentWithdrawnFetchesNothing (0.03s)
-    --- PASS: TestContentWithdrawnFetchesNothing/withdrawn (0.00s)
+    --- PASS: TestContentWithdrawnFetchesNothing/withdrawn (0.01s)
     --- PASS: TestContentWithdrawnFetchesNothing/tombstone (0.00s)
     --- PASS: TestContentWithdrawnFetchesNothing/content_not_registered (0.00s)
     --- PASS: TestContentWithdrawnFetchesNothing/deadline_within_guard_+_inclusion (0.00s)
@@ -173,12 +173,12 @@ DIRTY no
 === RUN   TestManifestCheckedBeforeResolution/manifest_not_a_manifest
     main_test.go:476: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestManifestCheckedBeforeResolution (0.01s)
-    --- PASS: TestManifestCheckedBeforeResolution/correct (0.01s)
+    --- PASS: TestManifestCheckedBeforeResolution/correct (0.00s)
     --- PASS: TestManifestCheckedBeforeResolution/manifest_of_another_package (0.00s)
     --- PASS: TestManifestCheckedBeforeResolution/manifest_not_a_manifest (0.00s)
 === RUN   TestEmptySampleStillVetsEndpoint
     main_test.go:519: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestEmptySampleStillVetsEndpoint (0.01s)
+--- PASS: TestEmptySampleStillVetsEndpoint (0.02s)
 === RUN   TestCapabilityManifestEndpoint
     main_test.go:598: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
     main_test.go:598: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
@@ -186,21 +186,21 @@ DIRTY no
     main_test.go:598: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
     main_test.go:598: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
     main_test.go:598: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestCapabilityManifestEndpoint (0.03s)
+--- PASS: TestCapabilityManifestEndpoint (0.01s)
 === RUN   TestProducerBytesRead
     main_test.go:637: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
     main_test.go:646: bytes read, 1 MiB package of 64 segments (one machine, loopback): WHOLE_PACKAGE 1048576, SAMPLED_SEGMENTS k=4 65536
 --- PASS: TestProducerBytesRead (0.04s)
 === RUN   TestReportLimitations
     main_test.go:674: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestReportLimitations (0.01s)
+--- PASS: TestReportLimitations (0.00s)
 === RUN   TestRunSignSubmitReviewUnit
     main_test.go:694: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestRunSignSubmitReviewUnit (0.03s)
 === RUN   TestSignRefusals
     main_test.go:804: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
     main_test.go:827: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestSignRefusals (0.01s)
+--- PASS: TestSignRefusals (0.02s)
 === RUN   TestCLIUsageAndKeygen
 --- PASS: TestCLIUsageAndKeygen (0.00s)
 === RUN   TestSignAndStatusKeepToTheirResources
@@ -208,17 +208,17 @@ DIRTY no
 --- PASS: TestSignAndStatusKeepToTheirResources (0.01s)
 === RUN   TestCommandsAgainstTheFakeNode
     main_test.go:1018: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestCommandsAgainstTheFakeNode (5.05s)
+--- PASS: TestCommandsAgainstTheFakeNode (5.04s)
 === RUN   TestOperatorEndpointFailIsNotSigned
     main_test.go:1101: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestOperatorEndpointFailIsNotSigned (0.02s)
 === RUN   TestRunRefusesTooManyAuditsBeforeAnyRequest
     main_test.go:1208: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestRunRefusesTooManyAuditsBeforeAnyRequest (0.03s)
+--- PASS: TestRunRefusesTooManyAuditsBeforeAnyRequest (0.02s)
 === RUN   TestRunAtTheAuditLimitStoresASignableRun
     main_test.go:1237: loopback test endpoint, synthetic package, not a provider agent; unit-test fake chain RPC; not a node, not end-to-end evidence
-    main_test.go:1264: 48 audits: pending run run-38cd6c9b40f7cf75d3ccf4aa38268403450d7a9e99daf6ae of 23822 bytes
---- PASS: TestRunAtTheAuditLimitStoresASignableRun (0.20s)
+    main_test.go:1264: 48 audits: pending run run-d6ad77b1930fd05cc61d403c0b334418b20a6a07d330a645 of 23822 bytes
+--- PASS: TestRunAtTheAuditLimitStoresASignableRun (0.18s)
 === RUN   TestNoInsecureTLSOrProxyInSource
 --- PASS: TestNoInsecureTLSOrProxyInSource (0.00s)
 === RUN   TestNoMerkleCode
@@ -228,7 +228,7 @@ DIRTY no
 === RUN   TestTestSeamOnlySetInTests
 --- PASS: TestTestSeamOnlySetInTests (0.03s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor	7.664s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor	7.600s
 === RUN   TestEvidenceIDDerivation
 --- PASS: TestEvidenceIDDerivation (0.00s)
 === RUN   TestBatchAndBusinessIDs
@@ -252,18 +252,18 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor	7.664s
 === RUN   TestEnvelopesAreTheSignedEnvelopes
 --- PASS: TestEnvelopesAreTheSignedEnvelopes (0.00s)
 === RUN   TestPersistAndLoad
---- PASS: TestPersistAndLoad (0.00s)
+--- PASS: TestPersistAndLoad (0.03s)
 === RUN   TestRebuild
 --- PASS: TestRebuild (0.00s)
 === RUN   TestCheckFailSource
---- PASS: TestCheckFailSource (0.00s)
+--- PASS: TestCheckFailSource (0.01s)
 === RUN   TestRunFormat
 --- PASS: TestRunFormat (0.00s)
 === RUN   TestSummaryFormat
 --- PASS: TestSummaryFormat (0.00s)
 === RUN   TestProducerMatchesChainSignVectors
     golden_test.go:151: producer matches chain vectors [one-item two-items thirty-two-items maximal-ids second-auditor]
---- PASS: TestProducerMatchesChainSignVectors (0.00s)
+--- PASS: TestProducerMatchesChainSignVectors (0.01s)
 === RUN   TestGoldenEnvelopeFixtures
     golden_test.go:301: golden batch 79b70b8d1f8f5606.be2b8a2c6774a9c45fddc643cf4d72c4071b9a129330dec epoch 490896: 2 envelopes
 --- PASS: TestGoldenEnvelopeFixtures (0.00s)
@@ -273,9 +273,9 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor	7.664s
 === RUN   TestMaxRunBytesIsTheJCSLimit
 --- PASS: TestMaxRunBytesIsTheJCSLimit (0.00s)
 === RUN   TestRunAuditCountBoundary
---- PASS: TestRunAuditCountBoundary (0.01s)
+--- PASS: TestRunAuditCountBoundary (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	0.096s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	0.136s
 === RUN   TestAcknowledgementIsNotCommit
     chainclient_test.go:218: unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestAcknowledgementIsNotCommit (0.21s)
@@ -289,11 +289,11 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	0.096s
     chainclient_test.go:311: unit-test fake chain RPC; not a node, not end-to-end evidence
     chainclient_test.go:311: unit-test fake chain RPC; not a node, not end-to-end evidence
     chainclient_test.go:311: unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestDifferentRecordIsIDTaken (0.03s)
+--- PASS: TestDifferentRecordIsIDTaken (0.02s)
 === RUN   TestRetryQueriesBeforeResign
     chainclient_test.go:333: unit-test fake chain RPC; not a node, not end-to-end evidence
     chainclient_test.go:355: unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestRetryQueriesBeforeResign (0.62s)
+--- PASS: TestRetryQueriesBeforeResign (0.63s)
 === RUN   TestReplayLeadsToANewBusinessID
     chainclient_test.go:388: unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestReplayLeadsToANewBusinessID (0.01s)
@@ -325,7 +325,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	0.096s
 --- PASS: TestUnrecordedRetryKeepsItsBusinessID (0.01s)
 === RUN   TestSquattedBusinessIDsDoNotBlockTheBatch
     chainclient_test.go:689: unit-test fake chain RPC; not a node, not end-to-end evidence
---- PASS: TestSquattedBusinessIDsDoNotBlockTheBatch (0.01s)
+--- PASS: TestSquattedBusinessIDsDoNotBlockTheBatch (0.00s)
 === RUN   TestLostBroadcastAnswerIsSubmitted
     chainclient_test.go:715: unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestLostBroadcastAnswerIsSubmitted (0.21s)
@@ -342,8 +342,8 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	0.096s
 === RUN   TestOperatorFailIsNeitherBroadcastNorResigned/rebuild_keeps_a_manifest_FAIL
     chainclient_test.go:891: unit-test fake chain RPC; not a node, not end-to-end evidence
 --- PASS: TestOperatorFailIsNeitherBroadcastNorResigned (0.03s)
-    --- PASS: TestOperatorFailIsNeitherBroadcastNorResigned/submit_refuses (0.00s)
-    --- PASS: TestOperatorFailIsNeitherBroadcastNorResigned/submit_of_a_manifest_FAIL (0.00s)
+    --- PASS: TestOperatorFailIsNeitherBroadcastNorResigned/submit_refuses (0.01s)
+    --- PASS: TestOperatorFailIsNeitherBroadcastNorResigned/submit_of_a_manifest_FAIL (0.01s)
     --- PASS: TestOperatorFailIsNeitherBroadcastNorResigned/rebuild_drops (0.01s)
     --- PASS: TestOperatorFailIsNeitherBroadcastNorResigned/rebuild_keeps_a_manifest_FAIL (0.01s)
 === RUN   TestBuildTx
@@ -355,11 +355,11 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	0.096s
 === RUN   TestSVNCode
 --- PASS: TestSVNCode (0.00s)
 === RUN   TestHTTPClient
---- PASS: TestHTTPClient (0.05s)
+--- PASS: TestHTTPClient (0.06s)
 === RUN   TestChaintestOnlyInTests
 --- PASS: TestChaintestOnlyInTests (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient	1.943s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient	1.954s
 ?   	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient/chaintest	[no test files]
 === RUN   TestEveryFetchKindIsMapped
     classify_test.go:91: 14 fetch kinds mapped: [CONNECTION_RESET CONNECT_FAILED DNS_FAILURE ENCODING_REFUSED HTTP_STATUS LENGTH_MISMATCH OK POLICY_REFUSED PROTOCOL_ERROR RANGE_UNSUPPORTED REDIRECT_REFUSED TIMEOUT TLS_FAILED TOO_LARGE]
@@ -385,7 +385,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient	1.943
 === RUN   TestEndpointSourceRule
 --- PASS: TestEndpointSourceRule (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/classify	0.009s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/classify	0.010s
 === RUN   TestExampleConfig
 --- PASS: TestExampleConfig (0.00s)
 === RUN   TestDefaults
@@ -393,81 +393,81 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/classify	0.009s
 === RUN   TestAuditorDefaults
 --- PASS: TestAuditorDefaults (0.00s)
 === RUN   TestRejects
-    config_test.go:268: limit above bound: config invalid: limits.tls_handshake_timeout_ms must be 100 to 60000
+    config_test.go:268: http_status_retries 0: config invalid: http_status_retries must be 1 to 5
+    config_test.go:268: lifetime string: config invalid: json: cannot unmarshal string into Go struct field fileConfig.evidence_lifetime_seconds of type int64
     config_test.go:268: object below a phase: config invalid: limits.object_budget_ms must be at least every phase timeout
-    config_test.go:268: no endpoint source: config invalid: audits[0].endpoints must hold 1 to 8 items
-    config_test.go:268: endpoint empty name: config invalid: audits[0].endpoints[0].name must be 1 to 64 characters
-    config_test.go:268: nine endpoints: config invalid: audits[0].endpoints must hold 1 to 8 items
-    config_test.go:268: lifetime below 60: config invalid: evidence_lifetime_seconds must be 60 to 86400
-    config_test.go:268: limit negative: config invalid: json: cannot unmarshal number -1 into Go struct field fileLimits.limits.idle_read_timeout_ms of type uint64
-    config_test.go:268: limit string: config invalid: json: cannot unmarshal string into Go struct field fileLimits.limits.idle_read_timeout_ms of type uint64
-    config_test.go:268: gas zero: config invalid: gas_limit must be 1 to 20000000
-    config_test.go:268: not an object: config invalid: config: unexpected [
-    config_test.go:268: run below object: config invalid: limits.run_budget_ms must be at least object_budget_ms
-    config_test.go:268: endpoint userinfo: config invalid: audits[0].endpoints[0].url: policy refused: USERINFO
-    config_test.go:268: unknown mode: config invalid: audits[0].mode must be WHOLE_PACKAGE or SAMPLED_SEGMENTS
-    config_test.go:268: allowlist extra field: config invalid: config.allowlist[0]: unknown key "any_port"
-    config_test.go:268: inclusion below 5: config invalid: inclusion_timeout_seconds must be 5 to 600
-    config_test.go:268: inclusion above 600: config invalid: inclusion_timeout_seconds must be 5 to 600
-    config_test.go:268: empty ca_file: config invalid: ca_file must be 1 to 4096 bytes without NUL
-    config_test.go:268: missing key_path: config invalid: key_path must be 1 to 4096 bytes without NUL
-    config_test.go:268: gas above 20000000: config invalid: gas_limit must be 1 to 20000000
-    config_test.go:268: duplicate key: config invalid: config: duplicate key "store_root"
-    config_test.go:268: limit fraction: config invalid: json: cannot unmarshal number 1.5 into Go struct field fileLimits.limits.idle_read_timeout_ms of type uint64
-    config_test.go:268: endpoint_index 8: config invalid: audits[1].endpoint_index must be 0 to 7
-    config_test.go:268: lifetime within window: config invalid: batch: lifetime must exceed the epoch guard plus the inclusion timeout
-    config_test.go:268: guard zero: config invalid: epoch_guard_seconds must be 30 to 1800
-    config_test.go:268: http_status_retries 6: config invalid: http_status_retries must be 1 to 5
-    config_test.go:268: endpoint path: config invalid: audits[0].endpoints[0].url: policy refused: PATH
-    config_test.go:268: max_batch_items 0: config invalid: max_batch_items must be 1 to 32
-    config_test.go:268: limit zero: config invalid: limits.idle_read_timeout_ms must be 100 to 120000
     config_test.go:268: no audits: config invalid: audits must hold 1 to 48 items
-    config_test.go:268: bad lease id: config invalid: audits[0].lease_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    config_test.go:268: allowlist cidr ip: config invalid: allowlist[0].ip is not an IP address
-    config_test.go:268: auditor_address bech32: config invalid: auditor_address must be 40 lower-case hex characters
-    config_test.go:268: missing key_id: config invalid: key_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    config_test.go:268: key_id off pattern: config invalid: key_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    config_test.go:268: guard above half epoch: config invalid: epoch_guard_seconds must be 30 to 1800
-    config_test.go:268: bad provider id: config invalid: audits[0].provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    config_test.go:268: whole with sample: config invalid: audits[0]: a whole-package audit takes no sample_count
+    config_test.go:268: no endpoint source: config invalid: audits[0].endpoints must hold 1 to 8 items
+    config_test.go:268: bad content id: config invalid: audits[0].content_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
     config_test.go:268: auditor_address upper: config invalid: auditor_address must be 40 lower-case hex characters
+    config_test.go:268: http_status_retries 6: config invalid: http_status_retries must be 1 to 5
     config_test.go:268: case variant key: config invalid: config: unknown key "Chain_RPC"
-    config_test.go:268: missing chain_rpc: config invalid: chain_rpc must be 1 to 2048 bytes
+    config_test.go:268: limit negative: config invalid: json: cannot unmarshal number -1 into Go struct field fileLimits.limits.idle_read_timeout_ms of type uint64
+    config_test.go:268: both endpoint sources: config invalid: audits[0]: set capability_manifest_path or endpoints, not both
+    config_test.go:268: allowlist port 0: config invalid: allowlist[0]: allowlist entry invalid: port must be 1 to 65535
+    config_test.go:268: key_id off pattern: config invalid: key_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    config_test.go:268: guard zero: config invalid: epoch_guard_seconds must be 30 to 1800
+    config_test.go:268: chain_rpc scheme: config invalid: chain_rpc must be an http or https base URL without userinfo, path, query, or fragment
     config_test.go:268: missing endpoint_index: config invalid: audits[0].endpoint_index must be 0 to 7
     config_test.go:268: missing manifest_path: config invalid: audits[0].manifest_path must be 1 to 4096 bytes without NUL
-    config_test.go:268: allowlist port 0: config invalid: allowlist[0]: allowlist entry invalid: port must be 1 to 65535
-    config_test.go:268: empty key_path: config invalid: key_path must be 1 to 4096 bytes without NUL
-    config_test.go:268: guard below 30: config invalid: epoch_guard_seconds must be 30 to 1800
-    config_test.go:268: max_batch_items 33: config invalid: max_batch_items must be 1 to 32
-    config_test.go:268: lifetime string: config invalid: json: cannot unmarshal string into Go struct field fileConfig.evidence_lifetime_seconds of type int64
-    config_test.go:268: duplicate lease: config invalid: audits[1].lease_id is a duplicate
-    config_test.go:268: empty: config invalid: config: EOF
-    config_test.go:268: null: config invalid: config.ca_file: null is not allowed
-    config_test.go:268: NUL in path: config invalid: store_root must be 1 to 4096 bytes without NUL
-    config_test.go:268: auditor_address short: config invalid: auditor_address must be 40 lower-case hex characters
-    config_test.go:268: http_status_retries 0: config invalid: http_status_retries must be 1 to 5
-    config_test.go:268: bad content id: config invalid: audits[0].content_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    config_test.go:268: endpoint past list: config invalid: audits[0].endpoint_index is past the endpoints list
-    config_test.go:268: both endpoint sources: config invalid: audits[0]: set capability_manifest_path or endpoints, not both
-    config_test.go:268: sample count too large: config invalid: audits[1].sample_count must be 1 to 32768
-    config_test.go:268: lifetime above 86400: config invalid: evidence_lifetime_seconds must be 60 to 86400
-    config_test.go:268: chain_rpc_timeout_ms 99: config invalid: limits.chain_rpc_timeout_ms must be 100 to 60000
-    config_test.go:268: chain_rpc userinfo: config invalid: chain_rpc must be an http or https base URL without userinfo, path, query, or fragment
-    config_test.go:268: limit below bound: config invalid: limits.connect_timeout_ms must be 100 to 60000
-    config_test.go:268: allowlist wildcard: config invalid: allowlist[0]: allowlist entry invalid: provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    config_test.go:268: allowlist link-local: config invalid: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
-    config_test.go:268: unknown key: config invalid: config: unknown key "debug"
-    config_test.go:268: missing store_root: config invalid: store_root must be 1 to 4096 bytes without NUL
-    config_test.go:268: allowlist cidr of the entry host: config invalid: allowlist[0].ip is not an IP address
     config_test.go:268: missing auditor_address: config invalid: auditor_address must be 40 lower-case hex characters
+    config_test.go:268: lifetime above 86400: config invalid: evidence_lifetime_seconds must be 60 to 86400
+    config_test.go:268: inclusion above 600: config invalid: inclusion_timeout_seconds must be 5 to 600
+    config_test.go:268: gas zero: config invalid: gas_limit must be 1 to 20000000
+    config_test.go:268: max_batch_items 33: config invalid: max_batch_items must be 1 to 32
+    config_test.go:268: not an object: config invalid: config: unexpected [
+    config_test.go:268: bad lease id: config invalid: audits[0].lease_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    config_test.go:268: chain_rpc_timeout_ms 99: config invalid: limits.chain_rpc_timeout_ms must be 100 to 60000
+    config_test.go:268: endpoint past list: config invalid: audits[0].endpoint_index is past the endpoints list
+    config_test.go:268: auditor_address bech32: config invalid: auditor_address must be 40 lower-case hex characters
+    config_test.go:268: empty key_path: config invalid: key_path must be 1 to 4096 bytes without NUL
     config_test.go:268: trailing data: config invalid: trailing data
-    config_test.go:268: unknown nested key: config invalid: config.audits[0]: unknown key "skip_fetch"
-    config_test.go:268: endpoint http: config invalid: audits[0].endpoints[0].url: policy refused: SCHEME
-    config_test.go:268: sampled without count: config invalid: audits[1].sample_count must be 1 to 32768
+    config_test.go:268: null: config invalid: config.ca_file: null is not allowed
+    config_test.go:268: missing chain_rpc: config invalid: chain_rpc must be 1 to 2048 bytes
+    config_test.go:268: unknown mode: config invalid: audits[0].mode must be WHOLE_PACKAGE or SAMPLED_SEGMENTS
+    config_test.go:268: sample count too large: config invalid: audits[1].sample_count must be 1 to 32768
+    config_test.go:268: whole with sample: config invalid: audits[0]: a whole-package audit takes no sample_count
+    config_test.go:268: missing key_path: config invalid: key_path must be 1 to 4096 bytes without NUL
+    config_test.go:268: limit below bound: config invalid: limits.connect_timeout_ms must be 100 to 60000
+    config_test.go:268: limit fraction: config invalid: json: cannot unmarshal number 1.5 into Go struct field fileLimits.limits.idle_read_timeout_ms of type uint64
+    config_test.go:268: allowlist link-local: config invalid: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
+    config_test.go:268: limit string: config invalid: json: cannot unmarshal string into Go struct field fileLimits.limits.idle_read_timeout_ms of type uint64
+    config_test.go:268: endpoint path: config invalid: audits[0].endpoints[0].url: policy refused: PATH
+    config_test.go:268: auditor_address short: config invalid: auditor_address must be 40 lower-case hex characters
+    config_test.go:268: inclusion below 5: config invalid: inclusion_timeout_seconds must be 5 to 600
+    config_test.go:268: missing store_root: config invalid: store_root must be 1 to 4096 bytes without NUL
+    config_test.go:268: NUL in path: config invalid: store_root must be 1 to 4096 bytes without NUL
+    config_test.go:268: nine endpoints: config invalid: audits[0].endpoints must hold 1 to 8 items
     config_test.go:268: sample count 0: config invalid: audits[1].sample_count must be 1 to 32768
-    config_test.go:268: allowlist port 70000: config invalid: json: cannot unmarshal number 70000 into Go struct field fileEntry.allowlist.port of type uint16
-    config_test.go:268: chain_rpc scheme: config invalid: chain_rpc must be an http or https base URL without userinfo, path, query, or fragment
+    config_test.go:268: allowlist wildcard: config invalid: allowlist[0]: allowlist entry invalid: provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    config_test.go:268: lifetime within window: config invalid: batch: lifetime must exceed the epoch guard plus the inclusion timeout
+    config_test.go:268: run below object: config invalid: limits.run_budget_ms must be at least object_budget_ms
+    config_test.go:268: endpoint userinfo: config invalid: audits[0].endpoints[0].url: policy refused: USERINFO
+    config_test.go:268: empty: config invalid: config: EOF
+    config_test.go:268: unknown key: config invalid: config: unknown key "debug"
     config_test.go:268: chain_rpc path: config invalid: chain_rpc must be an http or https base URL without userinfo, path, query, or fragment
+    config_test.go:268: endpoint http: config invalid: audits[0].endpoints[0].url: policy refused: SCHEME
+    config_test.go:268: allowlist port 70000: config invalid: json: cannot unmarshal number 70000 into Go struct field fileEntry.allowlist.port of type uint16
+    config_test.go:268: missing key_id: config invalid: key_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    config_test.go:268: guard below 30: config invalid: epoch_guard_seconds must be 30 to 1800
+    config_test.go:268: bad provider id: config invalid: audits[0].provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    config_test.go:268: duplicate lease: config invalid: audits[1].lease_id is a duplicate
+    config_test.go:268: lifetime below 60: config invalid: evidence_lifetime_seconds must be 60 to 86400
+    config_test.go:268: guard above half epoch: config invalid: epoch_guard_seconds must be 30 to 1800
+    config_test.go:268: unknown nested key: config invalid: config.audits[0]: unknown key "skip_fetch"
+    config_test.go:268: chain_rpc userinfo: config invalid: chain_rpc must be an http or https base URL without userinfo, path, query, or fragment
+    config_test.go:268: empty ca_file: config invalid: ca_file must be 1 to 4096 bytes without NUL
+    config_test.go:268: limit zero: config invalid: limits.idle_read_timeout_ms must be 100 to 120000
+    config_test.go:268: endpoint empty name: config invalid: audits[0].endpoints[0].name must be 1 to 64 characters
+    config_test.go:268: allowlist cidr ip: config invalid: allowlist[0].ip is not an IP address
+    config_test.go:268: allowlist extra field: config invalid: config.allowlist[0]: unknown key "any_port"
+    config_test.go:268: gas above 20000000: config invalid: gas_limit must be 1 to 20000000
+    config_test.go:268: duplicate key: config invalid: config: duplicate key "store_root"
+    config_test.go:268: limit above bound: config invalid: limits.tls_handshake_timeout_ms must be 100 to 60000
+    config_test.go:268: endpoint_index 8: config invalid: audits[1].endpoint_index must be 0 to 7
+    config_test.go:268: sampled without count: config invalid: audits[1].sample_count must be 1 to 32768
+    config_test.go:268: allowlist cidr of the entry host: config invalid: allowlist[0].ip is not an IP address
+    config_test.go:268: max_batch_items 0: config invalid: max_batch_items must be 1 to 32
 --- PASS: TestRejects (0.01s)
 === RUN   TestConfigHasNoBypass
 --- PASS: TestConfigHasNoBypass (0.00s)
@@ -510,12 +510,12 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/classify	0.009s
     --- PASS: FuzzConfigParse/seed#13 (0.00s)
     --- PASS: FuzzConfigParse/seed#14 (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.051s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.056s
 === RUN   TestFetchWholePackageOverLoopbackEntry
-    fetch_test.go:25: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:45593
+    fetch_test.go:25: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:33161
 --- PASS: TestFetchWholePackageOverLoopbackEntry (0.01s)
 === RUN   TestLoopbackURLNeedsItsExactEntry
-    fetch_test.go:45: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:45833
+    fetch_test.go:45: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:42425
 === RUN   TestLoopbackURLNeedsItsExactEntry/no_entry
 === RUN   TestLoopbackURLNeedsItsExactEntry/other_provider
 === RUN   TestLoopbackURLNeedsItsExactEntry/other_host
@@ -526,16 +526,16 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.051s
     --- PASS: TestLoopbackURLNeedsItsExactEntry/other_host (0.00s)
     --- PASS: TestLoopbackURLNeedsItsExactEntry/other_port (0.00s)
 === RUN   TestEntryNameResolvingElsewhereRefused
-    fetch_test.go:85: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:33947
+    fetch_test.go:85: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:44533
 --- PASS: TestEntryNameResolvingElsewhereRefused (0.00s)
 === RUN   TestMixedResolutionRefusedAsAWhole
-    fetch_test.go:106: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:41523
+    fetch_test.go:106: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:34689
 --- PASS: TestMixedResolutionRefusedAsAWhole (0.00s)
 === RUN   TestNoSecondLookup
-    fetch_test.go:134: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:41369
+    fetch_test.go:134: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:38199
 --- PASS: TestNoSecondLookup (0.00s)
 === RUN   TestGlobalDestinationThroughSeam
-    fetch_test.go:163: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:42289
+    fetch_test.go:163: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:35405
 === RUN   TestGlobalDestinationThroughSeam/global_on_443
 === RUN   TestGlobalDestinationThroughSeam/global_ipv6_on_443
 === RUN   TestGlobalDestinationThroughSeam/mapped_global_dialed_as_IPv4
@@ -543,7 +543,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.051s
 === RUN   TestGlobalDestinationThroughSeam/global_on_8443_with_entry
 === RUN   TestGlobalDestinationThroughSeam/NAT64_of_a_global_address
 === RUN   TestGlobalDestinationThroughSeam/6to4_of_a_global_address
---- PASS: TestGlobalDestinationThroughSeam (0.01s)
+--- PASS: TestGlobalDestinationThroughSeam (0.00s)
     --- PASS: TestGlobalDestinationThroughSeam/global_on_443 (0.00s)
     --- PASS: TestGlobalDestinationThroughSeam/global_ipv6_on_443 (0.00s)
     --- PASS: TestGlobalDestinationThroughSeam/mapped_global_dialed_as_IPv4 (0.00s)
@@ -554,62 +554,62 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.051s
 === RUN   TestRedirectNotFollowed
 --- PASS: TestRedirectNotFollowed (0.01s)
 === RUN   TestHTTPStatusOutcomes
-    fetch_test.go:249: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40185
-    fetch_test.go:249: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:45167
+    fetch_test.go:249: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:38499
+    fetch_test.go:249: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:45651
 --- PASS: TestHTTPStatusOutcomes (0.00s)
 === RUN   TestCompressedResponseRefused
-    fetch_test.go:262: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:36905
-    fetch_test.go:262: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:44419
---- PASS: TestCompressedResponseRefused (0.01s)
+    fetch_test.go:262: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:33837
+    fetch_test.go:262: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:45653
+--- PASS: TestCompressedResponseRefused (0.00s)
 === RUN   TestOversizedBody
 === RUN   TestOversizedBody/undeclared_length_stops_at_expected+1
-    fetch_test.go:273: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:42741
+    fetch_test.go:273: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:38269
 === RUN   TestOversizedBody/declared_length
-    fetch_test.go:281: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:33341
+    fetch_test.go:281: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:35509
 --- PASS: TestOversizedBody (0.00s)
     --- PASS: TestOversizedBody/undeclared_length_stops_at_expected+1 (0.00s)
     --- PASS: TestOversizedBody/declared_length (0.00s)
 === RUN   TestShortBodyVersusReset
-    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:42425
-    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:45277
-    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:34993
-    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:36015
-    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:44295
-    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:43175
+    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:34007
+    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:37741
+    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:45207
+    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40227
+    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:44231
+    fetch_test.go:312: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:35385
 --- PASS: TestShortBodyVersusReset (0.01s)
 === RUN   TestSlowBodyTimesOutInsideTheBudget
 === RUN   TestSlowBodyTimesOutInsideTheBudget/stalled_body:_idle_read_timeout
-    fetch_test.go:329: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:34145
+    fetch_test.go:329: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:43841
 === RUN   TestSlowBodyTimesOutInsideTheBudget/stalled_headers
-    fetch_test.go:344: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:32901
+    fetch_test.go:344: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40867
 === RUN   TestSlowBodyTimesOutInsideTheBudget/trickling_body:_per-object_budget
-    fetch_test.go:356: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:41373
+    fetch_test.go:356: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:38977
 --- PASS: TestSlowBodyTimesOutInsideTheBudget (1.01s)
     --- PASS: TestSlowBodyTimesOutInsideTheBudget/stalled_body:_idle_read_timeout (0.30s)
     --- PASS: TestSlowBodyTimesOutInsideTheBudget/stalled_headers (0.30s)
     --- PASS: TestSlowBodyTimesOutInsideTheBudget/trickling_body:_per-object_budget (0.40s)
 === RUN   TestTLSFailures
 === RUN   TestTLSFailures/untrusted_CA
-    fetch_test.go:377: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:44775
-2026/11/09 03:46:39 http: TLS handshake error from 127.0.0.1:43134: read tcp 127.0.0.1:44775->127.0.0.1:43134: use of closed network connection
+    fetch_test.go:377: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:43635
+2026/11/09 09:38:50 http: TLS handshake error from 127.0.0.1:44256: remote error: tls: bad certificate
 === RUN   TestTLSFailures/host_name_mismatch
-    fetch_test.go:386: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:32857
-2026/11/09 03:46:39 http: TLS handshake error from 127.0.0.1:51662: remote error: tls: bad certificate
+    fetch_test.go:386: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:33083
+2026/11/09 09:38:50 http: TLS handshake error from 127.0.0.1:36010: remote error: tls: bad certificate
 === RUN   TestTLSFailures/system_roots_do_not_trust_the_test_CA
-    fetch_test.go:394: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:46191
-2026/11/09 03:46:39 http: TLS handshake error from 127.0.0.1:37464: remote error: tls: bad certificate
+    fetch_test.go:394: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:46531
+2026/11/09 09:38:50 http: TLS handshake error from 127.0.0.1:41896: remote error: tls: bad certificate
 --- PASS: TestTLSFailures (0.01s)
     --- PASS: TestTLSFailures/untrusted_CA (0.00s)
     --- PASS: TestTLSFailures/host_name_mismatch (0.00s)
     --- PASS: TestTLSFailures/system_roots_do_not_trust_the_test_CA (0.01s)
 === RUN   TestRanges
-    fetch_test.go:405: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:34157
-    fetch_test.go:405: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:41511
-    fetch_test.go:405: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40831
-    fetch_test.go:405: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:44343
+    fetch_test.go:405: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:36273
+    fetch_test.go:405: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:39641
+    fetch_test.go:405: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:38957
+    fetch_test.go:405: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40609
 --- PASS: TestRanges (0.01s)
 === RUN   TestOversizedHeadersAreAProtocolError
-    fetch_test.go:433: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:33981
+    fetch_test.go:433: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:41461
 --- PASS: TestOversizedHeadersAreAProtocolError (0.00s)
 === RUN   TestConnectFailed
 --- PASS: TestConnectFailed (0.00s)
@@ -618,10 +618,10 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.051s
 === RUN   TestURLRulesRefuseBeforeResolving
 --- PASS: TestURLRulesRefuseBeforeResolving (0.00s)
 === RUN   TestRequestValidation
-    fetch_test.go:496: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:36065
+    fetch_test.go:496: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:36659
 --- PASS: TestRequestValidation (0.00s)
 === RUN   TestSinkErrorIsReturned
-    fetch_test.go:529: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:37321
+    fetch_test.go:529: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40233
 --- PASS: TestSinkErrorIsReturned (0.00s)
 === RUN   TestPackagePath
 --- PASS: TestPackagePath (0.00s)
@@ -638,7 +638,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.051s
 === RUN   TestFetchIgnoresProxyEnvironment
 --- PASS: TestFetchIgnoresProxyEnvironment (0.01s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch	1.098s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch	1.090s
 ?   	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch/fetchtest	[no test files]
 === RUN   TestGenerateLoadAndAddress
 --- PASS: TestGenerateLoadAndAddress (0.00s)
@@ -653,7 +653,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch	1.098s
 === RUN   TestNoKeyBytesInOutput
 --- PASS: TestNoKeyBytesInOutput (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/keys	0.029s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/keys	0.034s
 === RUN   TestEmbeddedCatalogParses
 --- PASS: TestEmbeddedCatalogParses (0.00s)
 === RUN   TestParseRejects
@@ -745,7 +745,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/keys	0.029s
 === RUN   TestNoDeniedClaims
 --- PASS: TestNoDeniedClaims (0.01s)
 === RUN   TestDenylistScannerDetects
---- PASS: TestDenylistScannerDetects (0.03s)
+--- PASS: TestDenylistScannerDetects (0.04s)
 === RUN   TestEmbeddedReturnsIndependentValues
 --- PASS: TestEmbeddedReturnsIndependentValues (0.00s)
 === RUN   TestMissingFromChecker
@@ -753,7 +753,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/keys	0.029s
 === RUN   TestDocsContainLimitations
 --- PASS: TestDocsContainLimitations (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/labels	0.067s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/labels	0.090s
 === RUN   TestURLPolicySeeds
 --- PASS: TestURLPolicySeeds (0.00s)
 === RUN   TestParseEndpointRules
@@ -763,31 +763,31 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/labels	0.067s
 === RUN   TestParseEndpointValues
 --- PASS: TestParseEndpointValues (0.00s)
 === RUN   TestAllowlistEntryRules
-    policy_test.go:152: ipv4-compatible link-local: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
-    policy_test.go:152: empty provider id: allowlist[0]: allowlist entry invalid: provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    policy_test.go:152: invalid ip: allowlist[0]: allowlist entry invalid: ip must be a plain IPv4 or IPv6 address
-    policy_test.go:152: link-local ipv4 (metadata): allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
-    policy_test.go:152: unspecified ipv6: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
-    policy_test.go:152: local-use nat64: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
-    policy_test.go:152: discard-only: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
-    policy_test.go:152: hex single-label host: allowlist[0]: allowlist entry invalid: host must be a lower-case DNS name or an IP literal
-    policy_test.go:152: invalid host: allowlist[0]: allowlist entry invalid: host must be a lower-case DNS name or an IP literal
-    policy_test.go:152: port zero: allowlist[0]: allowlist entry invalid: port must be 1 to 65535
-    policy_test.go:152: unspecified ipv4: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
-    policy_test.go:152: ipv4-mapped: allowlist[0]: allowlist entry invalid: ip must be a plain IPv4 or IPv6 address
-    policy_test.go:152: ipv4-compatible loopback: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
-    policy_test.go:152: ipv4-translated link-local: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
-    policy_test.go:152: site-local: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
+    policy_test.go:152: zoned: allowlist[0]: allowlist entry invalid: ip must be a plain IPv4 or IPv6 address
     policy_test.go:152: upper-case host: allowlist[0]: allowlist entry invalid: host must be a lower-case DNS name or an IP literal
     policy_test.go:152: literal host differs: allowlist[0]: allowlist entry invalid: an IP literal host must equal ip
+    policy_test.go:152: empty provider id: allowlist[0]: allowlist entry invalid: provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    policy_test.go:152: invalid ip: allowlist[0]: allowlist entry invalid: ip must be a plain IPv4 or IPv6 address
     policy_test.go:152: link-local ipv6: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
+    policy_test.go:152: unspecified ipv4: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
     policy_test.go:152: multicast ipv4: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
-    policy_test.go:152: multicast ipv6: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
-    policy_test.go:152: broadcast: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
-    policy_test.go:152: zoned: allowlist[0]: allowlist entry invalid: ip must be a plain IPv4 or IPv6 address
-    policy_test.go:152: bad provider id: allowlist[0]: allowlist entry invalid: provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
     policy_test.go:152: nat64 of link-local: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
+    policy_test.go:152: ipv4-translated link-local: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
+    policy_test.go:152: discard-only: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
+    policy_test.go:152: hex single-label host: allowlist[0]: allowlist entry invalid: host must be a lower-case DNS name or an IP literal
+    policy_test.go:152: link-local ipv4 (metadata): allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
+    policy_test.go:152: multicast ipv6: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
+    policy_test.go:152: ipv4-mapped: allowlist[0]: allowlist entry invalid: ip must be a plain IPv4 or IPv6 address
+    policy_test.go:152: local-use nat64: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
+    policy_test.go:152: port zero: allowlist[0]: allowlist entry invalid: port must be 1 to 65535
+    policy_test.go:152: bad provider id: allowlist[0]: allowlist entry invalid: provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    policy_test.go:152: broadcast: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
     policy_test.go:152: 6to4 of link-local: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
+    policy_test.go:152: ipv4-compatible link-local: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
+    policy_test.go:152: ipv4-compatible loopback: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
+    policy_test.go:152: site-local: allowlist[0]: allowlist entry invalid: an IPv6 ip must be ::1, unique-local, in 64:ff9b::/96, or in 2000::/3
+    policy_test.go:152: invalid host: allowlist[0]: allowlist entry invalid: host must be a lower-case DNS name or an IP literal
+    policy_test.go:152: unspecified ipv6: allowlist[0]: allowlist entry invalid: ip is link-local, unspecified, multicast, or broadcast
 --- PASS: TestAllowlistEntryRules (0.00s)
 === RUN   TestVet
 --- PASS: TestVet (0.00s)
@@ -887,61 +887,61 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/policy	0.003s
 === RUN   TestReportCarriesNoNameURLOrKey
 --- PASS: TestReportCarriesNoNameURLOrKey (0.00s)
 === RUN   TestEncodeRejects
-    report_test.go:286: pass with reason: audit report invalid: a PASS report has no reason and no failed segment
-    report_test.go:286: non-ASCII limitation: audit report invalid: a limitation must be 1 to 512 printable ASCII bytes
-    report_test.go:286: bad key id: audit report invalid: auditor_key_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    report_test.go:286: content version 2^53: audit report invalid: content_version must be 1 to 9007199254740991
-    report_test.go:286: endpoint index -1: audit report invalid: endpoint_index must be 0 to 7
-    report_test.go:286: bytes read above max: audit report invalid: bytes_read above 268435457
-    report_test.go:286: empty limitation: audit report invalid: a limitation must be 1 to 512 printable ASCII bytes
-    report_test.go:286: long limitation: audit report invalid: a limitation must be 1 to 512 printable ASCII bytes
-    report_test.go:286: bad address: audit report invalid: auditor_address must be 1 to 90 lower-case letters and digits
-    report_test.go:286: lower-case reason: audit report invalid: reasons must be unique and match ^[A-Z][A-Z0-9_]{0,63}$
-    report_test.go:286: content version 0: audit report invalid: content_version must be 1 to 9007199254740991
-    report_test.go:286: endpoint source unknown: audit report invalid: endpoint_source must be CAPABILITY_MANIFEST or OPERATOR_CONFIG
-    report_test.go:286: endpoint source lower: audit report invalid: endpoint_source must be CAPABILITY_MANIFEST or OPERATOR_CONFIG
-    report_test.go:286: whole with seed: audit report invalid: a whole-package report has no sample_seed
-    report_test.go:286: failed list short: audit report invalid: failed_segments must list the first 64 of failed_segment_count
-    report_test.go:286: started 0: audit report invalid: times must be in [1, 253402300799] and finished must not precede started
-    report_test.go:286: duplicate reasons: audit report invalid: reasons must be unique and match ^[A-Z][A-Z0-9_]{0,63}$
-    report_test.go:286: endpoint index 8: audit report invalid: endpoint_index must be 0 to 7
-    report_test.go:286: unknown mode: audit report invalid: mode must be WHOLE_PACKAGE or SAMPLED_SEGMENTS
-    report_test.go:286: empty segment id: audit report invalid: failed segment id must be 1 to 64 characters
-    report_test.go:286: 17 reasons: audit report invalid: reasons must be at most 16, sorted
     report_test.go:286: unsorted reasons: audit report invalid: reasons must be at most 16, sorted
-    report_test.go:286: fail without reason: audit report invalid: a FAIL report needs a reason
-    report_test.go:286: unknown result: audit report invalid: result must be PASS, FAIL, or INCOMPLETE
     report_test.go:286: 9 limitations: audit report invalid: at most 8 limitations
-    report_test.go:286: bad content id: audit report invalid: content_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    report_test.go:286: bad key id: audit report invalid: auditor_key_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    report_test.go:286: endpoint source unknown: audit report invalid: endpoint_source must be CAPABILITY_MANIFEST or OPERATOR_CONFIG
+    report_test.go:286: started 0: audit report invalid: times must be in [1, 253402300799] and finished must not precede started
+    report_test.go:286: failed list short: audit report invalid: failed_segments must list the first 64 of failed_segment_count
+    report_test.go:286: 17 reasons: audit report invalid: reasons must be at most 16, sorted
     report_test.go:286: endpoint source empty: audit report invalid: endpoint_source must be CAPABILITY_MANIFEST or OPERATOR_CONFIG
-    report_test.go:286: failed list long: audit report invalid: failed_segments must list the first 64 of failed_segment_count
+    report_test.go:286: unknown mode: audit report invalid: mode must be WHOLE_PACKAGE or SAMPLED_SEGMENTS
+    report_test.go:286: whole with seed: audit report invalid: a whole-package report has no sample_seed
+    report_test.go:286: empty segment id: audit report invalid: failed segment id must be 1 to 64 characters
+    report_test.go:286: pass with reason: audit report invalid: a PASS report has no reason and no failed segment
     report_test.go:286: pass with failed segment: audit report invalid: a PASS report has no reason and no failed segment
-    report_test.go:286: bad lease id: audit report invalid: lease_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    report_test.go:286: unknown result: audit report invalid: result must be PASS, FAIL, or INCOMPLETE
+    report_test.go:286: long limitation: audit report invalid: a limitation must be 1 to 512 printable ASCII bytes
+    report_test.go:286: content version 0: audit report invalid: content_version must be 1 to 9007199254740991
+    report_test.go:286: content version 2^53: audit report invalid: content_version must be 1 to 9007199254740991
+    report_test.go:286: endpoint source lower: audit report invalid: endpoint_source must be CAPABILITY_MANIFEST or OPERATOR_CONFIG
+    report_test.go:286: sampled without seed: audit report invalid: a sampled report needs sample_seed
+    report_test.go:286: empty limitation: audit report invalid: a limitation must be 1 to 512 printable ASCII bytes
+    report_test.go:286: bad content id: audit report invalid: content_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    report_test.go:286: bad segment reason: audit report invalid: failed segment reason must match ^[A-Z][A-Z0-9_]{0,63}$
+    report_test.go:286: bad address: audit report invalid: auditor_address must be 1 to 90 lower-case letters and digits
     report_test.go:286: checked above max: audit report invalid: checked_segments must be 0 to 32768
+    report_test.go:286: bytes read above max: audit report invalid: bytes_read above 268435457
     report_test.go:286: finished before started: audit report invalid: times must be in [1, 253402300799] and finished must not precede started
     report_test.go:286: finished above max: audit report invalid: times must be in [1, 253402300799] and finished must not precede started
+    report_test.go:286: duplicate reasons: audit report invalid: reasons must be unique and match ^[A-Z][A-Z0-9_]{0,63}$
+    report_test.go:286: fail without reason: audit report invalid: a FAIL report needs a reason
+    report_test.go:286: endpoint index -1: audit report invalid: endpoint_index must be 0 to 7
+    report_test.go:286: failed list long: audit report invalid: failed_segments must list the first 64 of failed_segment_count
+    report_test.go:286: lower-case reason: audit report invalid: reasons must be unique and match ^[A-Z][A-Z0-9_]{0,63}$
+    report_test.go:286: non-ASCII limitation: audit report invalid: a limitation must be 1 to 512 printable ASCII bytes
+    report_test.go:286: bad lease id: audit report invalid: lease_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
     report_test.go:286: bad provider id: audit report invalid: provider_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    report_test.go:286: sampled without seed: audit report invalid: a sampled report needs sample_seed
-    report_test.go:286: bad segment reason: audit report invalid: failed segment reason must match ^[A-Z][A-Z0-9_]{0,63}$
+    report_test.go:286: endpoint index 8: audit report invalid: endpoint_index must be 0 to 7
 --- PASS: TestEncodeRejects (0.00s)
 === RUN   TestParseRejects
-    report_test.go:325: claim limit changed: audit report invalid: format or claim_limit
-    report_test.go:325: bytes_read as number: audit report invalid: bytes_read must be a string
-    report_test.go:325: endpoint source missing: audit report invalid: unexpected keys
-    report_test.go:325: not canonical (space): audit report invalid: not canonical
-    report_test.go:325: not canonical (order): audit report invalid: not canonical
-    report_test.go:325: format changed: audit report invalid: format or claim_limit
-    report_test.go:325: failed segment missing: audit report invalid: segment_id must be a string
-    report_test.go:325: seed removed: audit report invalid: a sampled report needs sample_seed
-    report_test.go:325: endpoint source unknown: audit report invalid: endpoint_source must be CAPABILITY_MANIFEST or OPERATOR_CONFIG
-    report_test.go:325: endpoint source number: audit report invalid: endpoint_source must be a string
-    report_test.go:325: upper-case digest: audit report invalid: not canonical
-    report_test.go:325: oversized: audit report invalid: above 65536 bytes
     report_test.go:325: null: audit report invalid: not SVN-JCS-1: null
-    report_test.go:325: failed segment extra: audit report invalid: failed segment must be an object of segment_id and reason
-    report_test.go:325: endpoint source null: audit report invalid: not SVN-JCS-1: null
+    report_test.go:325: not canonical (order): audit report invalid: not canonical
     report_test.go:325: extra key: audit report invalid: unexpected keys
+    report_test.go:325: claim limit changed: audit report invalid: format or claim_limit
+    report_test.go:325: format changed: audit report invalid: format or claim_limit
+    report_test.go:325: failed segment extra: audit report invalid: failed segment must be an object of segment_id and reason
+    report_test.go:325: failed segment missing: audit report invalid: segment_id must be a string
+    report_test.go:325: endpoint source missing: audit report invalid: unexpected keys
+    report_test.go:325: oversized: audit report invalid: above 65536 bytes
+    report_test.go:325: bytes_read as number: audit report invalid: bytes_read must be a string
+    report_test.go:325: seed removed: audit report invalid: a sampled report needs sample_seed
+    report_test.go:325: endpoint source null: audit report invalid: not SVN-JCS-1: null
+    report_test.go:325: not canonical (space): audit report invalid: not canonical
+    report_test.go:325: endpoint source unknown: audit report invalid: endpoint_source must be CAPABILITY_MANIFEST or OPERATOR_CONFIG
     report_test.go:325: missing key: audit report invalid: unexpected keys
+    report_test.go:325: upper-case digest: audit report invalid: not canonical
+    report_test.go:325: endpoint source number: audit report invalid: endpoint_source must be a string
 --- PASS: TestParseRejects (0.00s)
 === RUN   TestSHA256
 --- PASS: TestSHA256 (0.00s)
@@ -990,7 +990,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/policy	0.003s
     --- PASS: FuzzReportParse/seed#18 (0.00s)
     --- PASS: FuzzReportParse/seed#19 (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/report	0.008s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/report	0.010s
 === RUN   TestConsistentPassAndFail
 --- PASS: TestConsistentPassAndFail (0.01s)
 === RUN   TestNotOnChainOnlyFromANode
@@ -1000,11 +1000,11 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/report	0.008s
 === RUN   TestChecksumMismatch
 --- PASS: TestChecksumMismatch (0.01s)
 === RUN   TestReportInvalid
---- PASS: TestReportInvalid (0.01s)
+--- PASS: TestReportInvalid (0.00s)
 === RUN   TestSignatureInvalid
 --- PASS: TestSignatureInvalid (0.01s)
 === RUN   TestEnvelopeMismatch
---- PASS: TestEnvelopeMismatch (0.02s)
+--- PASS: TestEnvelopeMismatch (0.03s)
 === RUN   TestRecordMismatch
 --- PASS: TestRecordMismatch (0.01s)
 === RUN   TestSignedOperatorFailIsRecordMismatch
@@ -1016,7 +1016,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/report	0.008s
 === RUN   TestIndexFallback
 --- PASS: TestIndexFallback (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/review	0.121s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/review	0.123s
 === RUN   TestContentAddressedReports
 --- PASS: TestContentAddressedReports (0.01s)
 === RUN   TestNamedObjects
@@ -1042,7 +1042,7 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/review	0.121s
 === RUN   TestNoDeleteOperation
 --- PASS: TestNoDeleteOperation (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/store	0.029s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/store	0.028s
 === RUN   TestManifestSeeds
 --- PASS: TestManifestSeeds (0.00s)
 === RUN   TestParseManifestValidFixture
@@ -1050,40 +1050,40 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/store	0.029s
 === RUN   TestParseManifestRejectsGoal02InvalidFixtures
 --- PASS: TestParseManifestRejectsGoal02InvalidFixtures (0.00s)
 === RUN   TestParseManifestStrict
-    verify_test.go:205: profile: media manifest invalid: profile must be "SVN-JCS-1"
-    verify_test.go:205: package_bytes leading 0: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
-    verify_test.go:205: nine renditions: media manifest invalid: renditions must hold 1 to 8 items
-    verify_test.go:205: trailing data: media manifest invalid: not SVN-JCS-1: trailing
-    verify_test.go:205: fraction: media manifest invalid: not SVN-JCS-1: fraction
-    verify_test.go:205: manifest_id pattern: media manifest invalid: manifest_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    verify_test.go:205: package_bytes negative: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
-    verify_test.go:205: no segments: media manifest invalid: renditions[0].segments must hold 1 to 4096 items
-    verify_test.go:205: null: media manifest invalid: not SVN-JCS-1: null
-    verify_test.go:205: schema_version 2: media manifest invalid: schema_version must be the number 1
-    verify_test.go:205: short digest: media manifest invalid: renditions[0].segments[0].sha256 must be 64 lower-case hex characters
-    verify_test.go:205: 33-char codec: media manifest invalid: renditions[0].codec must be 1 to 32 characters
-    verify_test.go:205: 65-char rendition id: media manifest invalid: renditions[0].rendition_id must be 1 to 64 characters
-    verify_test.go:205: unknown top field: media manifest invalid: manifest: unknown keys ["extra"]
-    verify_test.go:205: 4097 segments: media manifest invalid: input above 65536 bytes
-    verify_test.go:205: duplicate key: media manifest invalid: not SVN-JCS-1: duplicate_key
-    verify_test.go:205: content_version 2^53: media manifest invalid: not SVN-JCS-1: unsafe_integer
-    verify_test.go:205: package_bytes overflow: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
-    verify_test.go:205: package_bytes 21 chars: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
-    verify_test.go:205: empty segment id: media manifest invalid: renditions[0].segments[0].segment_id must be 1 to 64 characters
-    verify_test.go:205: top-level array: media manifest invalid: top level is not an object
     verify_test.go:205: missing field: media manifest invalid: manifest: missing "manifest_id"
     verify_test.go:205: schema_version string: media manifest invalid: schema_version must be the number 1
-    verify_test.go:205: content_id pattern: media manifest invalid: content_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
-    verify_test.go:205: 65-char segment id: media manifest invalid: renditions[0].segments[0].segment_id must be 1 to 64 characters
-    verify_test.go:205: duplicate segment id: media manifest invalid: renditions[1].segments[0].segment_id is a duplicate
-    verify_test.go:205: package_bytes number: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
-    verify_test.go:205: no renditions: media manifest invalid: renditions must hold 1 to 8 items
     verify_test.go:205: upper-case digest: media manifest invalid: renditions[0].segments[0].sha256 must be 64 lower-case hex characters
-    verify_test.go:205: byte_count leading 0: media manifest invalid: renditions[0].segments[0].byte_count must be a decimal string of at most 20 characters
-    verify_test.go:205: unknown rendition field: media manifest invalid: renditions[0]: unknown keys ["x"]
+    verify_test.go:205: 65-char rendition id: media manifest invalid: renditions[0].rendition_id must be 1 to 64 characters
+    verify_test.go:205: duplicate key: media manifest invalid: not SVN-JCS-1: duplicate_key
+    verify_test.go:205: fraction: media manifest invalid: not SVN-JCS-1: fraction
+    verify_test.go:205: content_id pattern: media manifest invalid: content_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    verify_test.go:205: manifest_id pattern: media manifest invalid: manifest_id must match ^[a-z0-9][a-z0-9._-]{0,63}$
+    verify_test.go:205: 33-char codec: media manifest invalid: renditions[0].codec must be 1 to 32 characters
+    verify_test.go:205: duplicate segment id: media manifest invalid: renditions[1].segments[0].segment_id is a duplicate
     verify_test.go:205: unknown segment field: media manifest invalid: renditions[0].segments[0]: unknown keys ["merkle_root"]
-    verify_test.go:205: case variant key: media manifest invalid: manifest: missing "schema_version"
+    verify_test.go:205: profile: media manifest invalid: profile must be "SVN-JCS-1"
+    verify_test.go:205: package_bytes number: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
+    verify_test.go:205: empty segment id: media manifest invalid: renditions[0].segments[0].segment_id must be 1 to 64 characters
+    verify_test.go:205: byte_count leading 0: media manifest invalid: renditions[0].segments[0].byte_count must be a decimal string of at most 20 characters
+    verify_test.go:205: unknown top field: media manifest invalid: manifest: unknown keys ["extra"]
+    verify_test.go:205: null: media manifest invalid: not SVN-JCS-1: null
     verify_test.go:205: content_version 0: media manifest invalid: content_version must be 1 to 9007199254740991
+    verify_test.go:205: package_bytes 21 chars: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
+    verify_test.go:205: no renditions: media manifest invalid: renditions must hold 1 to 8 items
+    verify_test.go:205: top-level array: media manifest invalid: top level is not an object
+    verify_test.go:205: unknown rendition field: media manifest invalid: renditions[0]: unknown keys ["x"]
+    verify_test.go:205: schema_version 2: media manifest invalid: schema_version must be the number 1
+    verify_test.go:205: content_version 2^53: media manifest invalid: not SVN-JCS-1: unsafe_integer
+    verify_test.go:205: nine renditions: media manifest invalid: renditions must hold 1 to 8 items
+    verify_test.go:205: 65-char segment id: media manifest invalid: renditions[0].segments[0].segment_id must be 1 to 64 characters
+    verify_test.go:205: short digest: media manifest invalid: renditions[0].segments[0].sha256 must be 64 lower-case hex characters
+    verify_test.go:205: trailing data: media manifest invalid: not SVN-JCS-1: trailing
+    verify_test.go:205: package_bytes leading 0: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
+    verify_test.go:205: package_bytes overflow: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
+    verify_test.go:205: case variant key: media manifest invalid: manifest: missing "schema_version"
+    verify_test.go:205: package_bytes negative: media manifest invalid: package_bytes must be a decimal string of at most 20 characters
+    verify_test.go:205: no segments: media manifest invalid: renditions[0].segments must hold 1 to 4096 items
+    verify_test.go:205: 4097 segments: media manifest invalid: input above 65536 bytes
 --- PASS: TestParseManifestStrict (0.00s)
 === RUN   TestManifestDigestIsCanonical
 --- PASS: TestManifestDigestIsCanonical (0.00s)
@@ -1098,36 +1098,36 @@ ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/store	0.029s
 === RUN   TestNewSeed
 --- PASS: TestNewSeed (0.00s)
 === RUN   TestInputProblemsFetchNothing
-    verify_test.go:398: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:42091
+    verify_test.go:398: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:42461
 --- PASS: TestInputProblemsFetchNothing (0.00s)
 === RUN   TestWholePackageMatches
-    verify_test.go:438: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:45645
+    verify_test.go:438: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:44221
 --- PASS: TestWholePackageMatches (0.00s)
 === RUN   TestWholePackageCorruptedSegment
-    verify_test.go:453: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:41663
+    verify_test.go:453: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:36733
 --- PASS: TestWholePackageCorruptedSegment (0.00s)
 === RUN   TestWholePackageLengthMismatch
-    verify_test.go:467: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:35883
+    verify_test.go:467: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:42451
 --- PASS: TestWholePackageLengthMismatch (0.00s)
 === RUN   TestSampledSegments
 === RUN   TestSampledSegments/match
-    verify_test.go:484: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:41539
+    verify_test.go:484: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:37729
 === RUN   TestSampledSegments/corrupted_segment
-    verify_test.go:507: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:35357
+    verify_test.go:507: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:35669
 === RUN   TestSampledSegments/range_ignored_stops_the_audit
-    verify_test.go:516: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40017
+    verify_test.go:516: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40285
 --- PASS: TestSampledSegments (0.01s)
     --- PASS: TestSampledSegments/match (0.00s)
     --- PASS: TestSampledSegments/corrupted_segment (0.00s)
     --- PASS: TestSampledSegments/range_ignored_stops_the_audit (0.00s)
 === RUN   TestFreshSeedPerAudit
-    verify_test.go:530: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:39025
+    verify_test.go:530: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:43529
 --- PASS: TestFreshSeedPerAudit (0.00s)
 === RUN   TestAuditRequestValidation
-    verify_test.go:542: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:37893
+    verify_test.go:542: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40091
 --- PASS: TestAuditRequestValidation (0.00s)
 === RUN   TestProducerBytesRead
-    verify_test.go:571: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:40563
+    verify_test.go:571: loopback test endpoint, synthetic package, not a provider agent at https://127.0.0.1:35831
     verify_test.go:580: per-fixture measurement on one machine; no throughput or network-capacity claim: package 1048576 bytes, 64 segments; WHOLE_PACKAGE bytes_read=1048576 requests=1; SAMPLED_SEGMENTS k=4 bytes_read=65536 requests=4
 --- PASS: TestProducerBytesRead (0.02s)
 === RUN   FuzzManifestParse

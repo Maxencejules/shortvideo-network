@@ -1,7 +1,7 @@
 COMMAND bash -c export\ PATH=\"\$PWD/.toolchains/bin:\$PATH\"\;\ .venv/bin/python\ docs/evidence/goal-02/check_protocol.py
-DATE 2026-11-09T03:39:56Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T09:31:42Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
 protoc exit:0
 transition_cases 97
@@ -36,8 +36,8 @@ e1b1e71b30fc6a4098e3152f25a6830cfa4a52aa7ec5f3ea16ec989f6adcf2fc  docs/evidence/
 6d2816506bad14e04b00348f0a395f39968832450bca1253492792e5ed788b4e  docs/evidence/goal-02/negative/video_payload.proto
 6e90f6be3964e43668fe60469b2d4ede9cb44e9f394270e1f5ff9b7e1bf73604  docs/evidence/goal-02/spec_machine.py
 8cbf1ddd451d6738dc34d06133151415295626ee70b8bdd9b69cfda056f8d8b9  docs/evidence/goal-02/ts/vectorcheck.ts
-fed84669e3bb546261d38c054ca81edb3969ba679580bff1ceaade41bf0d1fb2  docs/progress.md
-0e51cfb7a7a317c9a0774433a97877e41b3274e3032f9fb2a0c1beecd801abda  docs/progress.tsv
+bedb163a8d78f671ba1d606cf9f05583fba2dac2cacff1ac69d0067e0d3fbb7f  docs/progress.md
+e1d16363fabce98fb8d082adbc59a1f9f6443d972a72ce1c9f8af2cb8a1956a7  docs/progress.tsv
 d52993f4fd2368c2bf25a9e5131b7dd4b4b2622f9c62cc6e090a5d925e34e25f  docs/protocol/api/client-api.json
 94a2f35aaf83f234a3fb84e344cf562d6c3c391e0467ff77c7a5590f16324c9f  docs/protocol/api/provider-api.json
 5ecf4acab45678d6a99cf48b7202dddaea04c623368433be014e5733999ecf52  docs/protocol/bounds.json

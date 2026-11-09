@@ -1,10 +1,10 @@
-COMMAND /tmp/goal11-w3/nsroot.sh .venv/bin/python docs/evidence/goal-11/mutants.py --rev 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526 --gocache /tmp/gocache-root --logdir /tmp/goal11-w3/mutlogs-goal11
-DATE 2026-11-09T04:26:21Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+COMMAND /tmp/goal11-w3/nsroot.sh .venv/bin/python docs/evidence/goal-11/mutants.py --rev 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 --gocache /tmp/gocache-root --logdir /tmp/goal11-r3/w3/mutlogs-goal11
+DATE 2026-11-09T11:21:57Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
-revision 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526 commit 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526 tree 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
-copy /tmp/goal11-mutants-d_9hz92g/tree (git archive)
+revision 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 commit 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 tree a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+copy /tmp/goal11-mutants-5j26ofwc/tree (git archive)
 mutants 284 of 284 (outbox=46, chain-client=26, signing=57, api=26, config=14, binary=8, store=62, worker=35, smoke=6, devnet=4)
 search strings: every one occurs exactly once; every named killer is defined
 go go version go1.26.10 linux/amd64
@@ -24,17 +24,17 @@ control command devnet (starts PostgreSQL and four svnd validators): go test -co
 control command devnet (starts PostgreSQL and four svnd validators): SVN_BROADCASTER_PHASES=H go test -count=1 -p 2 -v -timeout 15m -run ^(TestDevnetBroadcasterLifecycle)$ ./chain/devnet/
 control command devnet (starts PostgreSQL and four svnd validators): SVN_BROADCASTER_PHASES=OC go test -count=1 -p 2 -v -timeout 15m -run ^(TestDevnetBroadcasterLifecycle)$ ./chain/devnet/
 control command devnet (starts PostgreSQL and four svnd validators): SVN_BROADCASTER_PHASES=WP2 go test -count=1 -p 2 -v -timeout 15m -run ^(TestDevnetBroadcasterLifecycle)$ ./chain/devnet/
-CONTROL outbox PASS exit=[0] secs=6.6 named_tests=28
+CONTROL outbox PASS exit=[0] secs=11.7 named_tests=28
 CONTROL chain-client PASS exit=[0] secs=2.8 named_tests=12
-CONTROL signing PASS exit=[0, 0] secs=6.3 named_tests=27
-CONTROL api PASS exit=[0] secs=2.4 named_tests=16
-CONTROL config PASS exit=[0] secs=2.7 named_tests=16
-CONTROL binary PASS exit=[0] secs=2.6 named_tests=6
-CONTROL store PASS exit=[0] secs=23.1 named_tests=32
-CONTROL worker PASS exit=[0] secs=16.5 named_tests=28
-CONTROL smoke PASS exit=[0] secs=10.5 named_tests=1
+CONTROL signing PASS exit=[0, 0] secs=6.2 named_tests=27
+CONTROL api PASS exit=[0] secs=2.3 named_tests=16
+CONTROL config PASS exit=[0] secs=2.6 named_tests=16
+CONTROL binary PASS exit=[0] secs=2.4 named_tests=6
+CONTROL store PASS exit=[0] secs=22.5 named_tests=32
+CONTROL worker PASS exit=[0] secs=15.9 named_tests=28
+CONTROL smoke PASS exit=[0] secs=9.5 named_tests=1
 CONTROL devnet PASS exit=[0, 0, 0, 0] secs=127.5 named_tests=4
-KILLED w0b3-ack-sets-committed group=outbox exit=[1] secs=0.4 file=services/broadcaster/internal/outbox/machine.go failing=services/broadcaster/internal/outbox:TestAckNeverCommits services/broadcaster/internal/outbox:TestNoCommittedWithoutCommittedResult services/broadcaster/internal/outbox:TestStateMachineProperty
+KILLED w0b3-ack-sets-committed group=outbox exit=[1] secs=0.5 file=services/broadcaster/internal/outbox/machine.go failing=services/broadcaster/internal/outbox:TestAckNeverCommits services/broadcaster/internal/outbox:TestNoCommittedWithoutCommittedResult services/broadcaster/internal/outbox:TestStateMachineProperty
     reason: a CheckTx acknowledgement is ACKNOWLEDGED, never COMMITTED (goal spec: a broadcast ack is not committed success)
 KILLED w0b3-t11-without-typed-event group=outbox exit=[1] secs=0.4 file=services/broadcaster/internal/outbox/judge.go failing=services/broadcaster/internal/outbox:TestCommitNeedsTypedEvent services/broadcaster/internal/outbox:TestNoCommittedWithoutCommittedResult
     reason: code 0 commits only with this attempt's acc_seq and exactly one of the typed event or the idempotent marker
@@ -124,159 +124,159 @@ KILLED w0b3-stale-observer-shown-as-stall group=outbox exit=[1] secs=0.4 file=se
     reason: a dead observer is OBSERVER_UNAVAILABLE, never PENDING_STALL
 KILLED b10-provider-must-resign-not-a-failure-reason group=outbox exit=[1] secs=2.7 file=services/broadcaster/internal/outbox/types.go failing=services/broadcaster/internal/outbox:TestNamesRoundTrip services/broadcaster/internal/api:TestStatusViews
     reason: PROVIDER_MUST_RESIGN is a failure reason a FAILED intent can carry (Wave 1 fix round)
-KILLED w0b2-sdk32-definitive group=chain-client exit=[1] secs=2.3 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestClassifyBroadcastAnswers
+KILLED w0b2-sdk32-definitive group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestClassifyBroadcastAnswers
     reason: a CheckTx sdk 32 answer is not a definitive refusal
-KILLED w0rt-unrecognised-rpc-data-node-refused group=chain-client exit=[1] secs=2.3 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestClassifyBroadcastAnswers services/broadcaster/internal/chain:FuzzClassifyRPCError
+KILLED w0rt-unrecognised-rpc-data-node-refused group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestClassifyBroadcastAnswers services/broadcaster/internal/chain:FuzzClassifyRPCError
     reason: an unrecognised JSON-RPC error text is UNKNOWN (it may have been delivered), not a node refusal
-KILLED w0rt-any-jsonrpc-error-code-trusted group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:FuzzClassifyRPCError
+KILLED w0rt-any-jsonrpc-error-code-trusted group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:FuzzClassifyRPCError
     reason: only CometBFT's internal-error code and message carry a refusal text
-KILLED w0b2-tx-in-cache-substring group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestClassifyBroadcastAnswers
+KILLED w0b2-tx-in-cache-substring group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestClassifyBroadcastAnswers
     reason: the tx-in-cache answer is recognised by its exact text
-KILLED w0b2-sequence-consumed-from-code group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestSequenceConsumedOnlyWithAccSeq
+KILLED w0b2-sequence-consumed-from-code group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestSequenceConsumedOnlyWithAccSeq
     reason: a committed failure consumed the sequence only when it carries tx.acc_seq, never inferred from the code
 KILLED w0rt-acc-seq-of-another-sequence group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestSequenceConsumedOnlyWithAccSeq
     reason: an acc_seq of another sequence is an integrity error
-KILLED w0rt-success-without-acc-seq group=chain-client exit=[1] secs=2.3 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestSequenceConsumedOnlyWithAccSeq
+KILLED w0rt-success-without-acc-seq group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestSequenceConsumedOnlyWithAccSeq
     reason: a successful result without tx.acc_seq is an integrity error
 KILLED w0rt-typed-event-of-another-object group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestSequenceConsumedOnlyWithAccSeq
     reason: the typed event must name the intent's object
 KILLED w0fix-classify-ignores-ref-hash group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestSequenceConsumedOnlyWithAccSeq
     reason: a committed result is classified only for the attempt whose hash it carries (Wave 0 fix 7)
-KILLED w0b2-result-hash-unchecked group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestClassifyBroadcastAnswers
+KILLED w0b2-result-hash-unchecked group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/classify.go failing=services/broadcaster/internal/chain:TestClassifyBroadcastAnswers
     reason: a broadcast answer that names another hash is UNKNOWN, never an acknowledgement of these bytes
-KILLED w0b2-tx-bytes-hash-unchecked group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestCommittedTxChecksHash
+KILLED w0b2-tx-bytes-hash-unchecked group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestCommittedTxChecksHash
     reason: committed bytes that do not hash to the asked hash are refused
-KILLED w0b2-incomplete-search-accepted group=chain-client exit=[1] secs=2.7 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestTxSearchQueries
+KILLED w0b2-incomplete-search-accepted group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestTxSearchQueries
     reason: a tx_search answer with more hits than returned is refused (no silent truncation)
-KILLED w0b2-stale-account-height-accepted group=chain-client exit=[1] secs=2.7 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestAccountReadHeightBound
+KILLED w0b2-stale-account-height-accepted group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestAccountReadHeightBound
     reason: an account read answered below the needed height is stale
-KILLED f1-app-floor-is-status-height group=chain-client exit=[1] secs=2.3 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestAppFloor
+KILLED f1-app-floor-is-status-height group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestAppFloor
     reason: a query floor is the status height minus one, the block the application has certainly committed
-KILLED b10-r3-simulate-through-app-path group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestSimulateUsesTxService
+KILLED b10-r3-simulate-through-app-path group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/rpc.go failing=services/broadcaster/internal/chain:TestSimulateUsesTxService
     reason: R3: gas is measured through the SDK transaction service's Simulate method, not /app/simulate
-KILLED w0b2-timeout-height-dropped group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/tx.go failing=services/broadcaster/internal/chain:TestBuildTxMatchesChainDecoder
+KILLED w0b2-timeout-height-dropped group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/tx.go failing=services/broadcaster/internal/chain:TestBuildTxMatchesChainDecoder
     reason: every signed transaction carries its timeout_height
-KILLED w0b2-new-attempt-reuses-timeout group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/tx.go failing=services/broadcaster/internal/chain:TestNewAttemptTimeoutAboveEarlier
+KILLED w0b2-new-attempt-reuses-timeout group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/tx.go failing=services/broadcaster/internal/chain:TestNewAttemptTimeoutAboveEarlier
     reason: a new attempt's timeout_height is above every earlier attempt's
-KILLED w0b2-effect-ignores-signer group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
+KILLED w0b2-effect-ignores-signer group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
     reason: an offer, register or withdraw committed by another account is OBJECT_TAKEN, not our effect
-KILLED w0b2-r4-our-key-foreign-hash-not-conflict group=chain-client exit=[1] secs=2.7 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
+KILLED w0b2-r4-our-key-foreign-hash-not-conflict group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
     reason: R4: a commit by our key with a hash this outbox does not hold is SIGNER_CONFLICT, for every kind
-KILLED b10-r4-relay-signer-bound group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
+KILLED b10-r4-relay-signer-bound group=chain-client exit=[1] secs=2.7 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
     reason: a relayed acceptance committed by the provider's own account is still the intended effect (signer not bound)
-KILLED w0b2-effect-skips-package-bytes group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
+KILLED w0b2-effect-skips-package-bytes group=chain-client exit=[1] secs=2.6 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
     reason: every business field other than signer and business_id changes the effect comparison
 KILLED b10-r5-effect-compares-business-id group=chain-client exit=[1] secs=2.4 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
     reason: R5: business_id is excluded from the effect comparison (a provider's own acceptance under its own id is the effect)
 KILLED w0rt-own-attempt-other-key-not-integrity group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
     reason: our own attempt signed by another key than the pinned signer is an integrity error
-KILLED w0rt-other-intent-attempt-own-transaction group=chain-client exit=[1] secs=2.3 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
+KILLED w0rt-other-intent-attempt-own-transaction group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectComparison
     reason: own_transaction is true only for this intent's own attempt
-KILLED w0rt-two-typed-events-for-one-object group=chain-client exit=[1] secs=2.3 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectStateChangedAndRefusals
+KILLED w0rt-two-typed-events-for-one-object group=chain-client exit=[1] secs=2.5 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectStateChangedAndRefusals
     reason: two typed events for one object in one transaction are an integrity error
-KILLED w0rt-other-message-type-not-state-changed group=chain-client exit=[1] secs=2.7 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectStateChangedAndRefusals
+KILLED w0rt-other-message-type-not-state-changed group=chain-client exit=[1] secs=2.8 file=services/broadcaster/internal/chain/effect.go failing=services/broadcaster/internal/chain:TestEffectStateChangedAndRefusals
     reason: an object changed by another message type is OBJECT_STATE_CHANGED
-KILLED w1b6-signer-allowlist-before-decode-removed group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesOtherTypeURLs
+KILLED w1b6-signer-allowlist-before-decode-removed group=signing exit=[1] secs=2.6 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesOtherTypeURLs
     reason: the signer refuses every type URL outside its key class's allowlist before decoding
-KILLED w1b6-allowed-always-true group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/kinds.go failing=services/broadcaster/internal/signer:TestSignerRefusesOtherTypeURLs
+KILLED w1b6-allowed-always-true group=signing exit=[1] secs=2.6 file=services/broadcaster/internal/policy/kinds.go failing=services/broadcaster/internal/signer:TestSignerRefusesOtherTypeURLs
     reason: the per-class allowlist (SERVICE: register, withdraw, offer; BROADCASTER: accept, renew, end) is enforced
-KILLED w1rt-end-lease-moved-to-service-class group=signing exit=[1] secs=2.6 file=services/broadcaster/internal/policy/kinds.go failing=services/broadcaster/internal/policy:TestKindSignerAllowlist services/broadcaster/internal/signer:TestSignerRefusesAuthorityEnd
+KILLED w1rt-end-lease-moved-to-service-class group=signing exit=[1] secs=2.8 file=services/broadcaster/internal/policy/kinds.go failing=services/broadcaster/internal/policy:TestKindSignerAllowlist services/broadcaster/internal/signer:TestSignerRefusesAuthorityEnd
     reason: a provider-signed EndLease is relayed by the BROADCASTER key only
 KILLED w1rs-check-signable-signer-unchecked group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/kinds.go failing=services/broadcaster/internal/policy:TestKindSignerAllowlist services/broadcaster/internal/policy:TestOfferAndOwnership services/broadcaster/internal/policy:TestPublicationPermission
     reason: a message is signable only by the key whose address is its signer field
-KILLED w1b6-authority-end-allowed group=signing exit=[1] secs=2.7 file=services/broadcaster/internal/policy/kinds.go failing=services/broadcaster/internal/signer:TestSignerRefusesAuthorityEnd
+KILLED w1b6-authority-end-allowed group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/kinds.go failing=services/broadcaster/internal/signer:TestSignerRefusesAuthorityEnd
     reason: an EndLease with authority_end is never signed (the broadcaster holds no AUTHORITY key)
-KILLED w1rs-signer-check-signable-not-run group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesAuthorityEnd services/broadcaster/internal/signer:TestSignerRefusesMalformedRequests
+KILLED w1rs-signer-check-signable-not-run group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesAuthorityEnd services/broadcaster/internal/signer:TestSignerRefusesMalformedRequests
     reason: the signer re-checks the decoded message against its key's allowlist
-KILLED w1fix-client-check-signable-dropped group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/signer/client.go failing=services/broadcaster/internal/signer:TestClientChecksBeforeAsking
+KILLED w1fix-client-check-signable-dropped group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/client.go failing=services/broadcaster/internal/signer:TestClientChecksBeforeAsking
     reason: the serve-side client checks the allowlist before it asks the signer (review S5/R1)
-KILLED w1b6-unknown-fields-accepted group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesMalformedRequests
+KILLED w1b6-unknown-fields-accepted group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesMalformedRequests
     reason: a message with unknown fields is refused
-KILLED w1rs-non-deterministic-encoding-accepted group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesMalformedRequests
+KILLED w1rs-non-deterministic-encoding-accepted group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesMalformedRequests
     reason: a message whose bytes are not its deterministic encoding is refused
-KILLED w1rs-signer-gas-bounds-dropped group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesMalformedRequests
+KILLED w1rs-signer-gas-bounds-dropped group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesMalformedRequests
     reason: the signer refuses gas outside the chain's per-transaction bounds
 KILLED w1b6-chain-id-unchecked-in-signer group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesForeignChainID
     reason: the signer refuses a request for another chain id
-KILLED w1b6-non-dev-chain-id-allowed group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupRefusals
+KILLED w1b6-non-dev-chain-id-allowed group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupRefusals
     reason: the development signer starts only for a devnet chain id
-KILLED w1b6-timeout-bound-dropped group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnboundedTimeout
+KILLED w1b6-timeout-bound-dropped group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnboundedTimeout
     reason: timeout_height is at most the signer's fresh height plus K_max
-KILLED w1b6-timeout-zero-allowed group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnboundedTimeout
+KILLED w1b6-timeout-zero-allowed group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnboundedTimeout
     reason: timeout_height 0 (no deadline) is refused
-KILLED w1b6-stale-height-accepted group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/signer/height.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnboundedTimeout services/broadcaster/internal/signer:TestHeightSourceFreshness
+KILLED w1b6-stale-height-accepted group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/height.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnboundedTimeout services/broadcaster/internal/signer:TestHeightSourceFreshness
     reason: the signer's timeout bound uses a fresh height only
-KILLED w1b6-intent-registry-check-dropped group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnregisteredIntentKey
+KILLED w1b6-intent-registry-check-dropped group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnregisteredIntentKey
     reason: the signer signs a register or withdraw only with an intent key in the operator's registry
-KILLED w1b6-registry-membership-dropped group=signing exit=[1] secs=2.6 file=services/broadcaster/internal/policy/intent.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnregisteredIntentKey
+KILLED w1b6-registry-membership-dropped group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/intent.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnregisteredIntentKey
     reason: an intent key not in the registry is refused
-KILLED w1rs-withdraw-intent-registry-dropped group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnregisteredIntentKey services/broadcaster/internal/signer:TestSignerVerifiesIntentSignature
+KILLED w1rs-withdraw-intent-registry-dropped group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerRefusesUnregisteredIntentKey services/broadcaster/internal/signer:TestSignerVerifiesIntentSignature
     reason: a withdraw's hosting intent is checked against the registry too
-KILLED w1b6-owner-may-write-registry group=signing exit=[1] secs=2.7 file=services/broadcaster/internal/policy/registry.go failing=services/broadcaster/internal/policy:TestIntentKeyRegistryRefusesWritableFile
+KILLED w1b6-owner-may-write-registry group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/registry.go failing=services/broadcaster/internal/policy:TestIntentKeyRegistryRefusesWritableFile
     reason: a registry the reading process could write is refused
-KILLED w1rs-registry-same-uid-write-bit-allowed group=signing exit=[1] secs=2.8 file=services/broadcaster/internal/policy/registry.go failing=services/broadcaster/internal/policy:TestIntentKeyRegistryRefusesWritableFile
+KILLED w1rs-registry-same-uid-write-bit-allowed group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/registry.go failing=services/broadcaster/internal/policy:TestIntentKeyRegistryRefusesWritableFile
     reason: with one uid, a registry file with any write bit is refused
-KILLED w1fix-registry-owned-by-serve-accepted group=signing exit=[1] secs=2.6 file=services/broadcaster/internal/policy/registry.go failing=services/broadcaster/internal/policy:TestRegistryForServe
+KILLED w1fix-registry-owned-by-serve-accepted group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/registry.go failing=services/broadcaster/internal/policy:TestRegistryForServe
     reason: under distinct uids the signer refuses a registry owned by the serve uid (Wave 1 fix F4)
 KILLED w1fix-registry-group-write-accepted group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/registry.go failing=services/broadcaster/internal/policy:TestRegistryForServe
     reason: under distinct uids the signer refuses a registry with a group or other write bit
 KILLED w1b6-verify-against-message-key group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
     reason: a relayed provider signature is verified against the provider's registered current key, never the message's key
-KILLED w1b6-offer-expiry-unchecked group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
+KILLED w1b6-offer-expiry-unchecked group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
     reason: an acceptance of an expired offer is refused before signing
-KILLED w1b6-page-budget-ignored group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
+KILLED w1b6-page-budget-ignored group=signing exit=[1] secs=2.6 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
     reason: the held-lease lookup reads a bounded number of pages
-KILLED w1rs-relay-provider-content-must-match-offer group=signing exit=[1] secs=2.7 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
+KILLED w1rs-relay-provider-content-must-match-offer group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
     reason: the named provider and content must match the offer
 KILLED w1rs-relay-provider-admitted-dropped group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
     reason: an acceptance needs an ADMITTED provider
-KILLED w1rs-relay-held-lease-id-unchecked group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
+KILLED w1rs-relay-held-lease-id-unchecked group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/relay.go failing=services/broadcaster/internal/policy:TestProviderPrecheck
     reason: a renew or end names the held lease's id
-KILLED w1fix-forward-provider-role-dropped group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
+KILLED w1fix-forward-provider-role-dropped group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
     reason: a forwarded transaction's signer has the ADMITTED_PROVIDER role (review P1)
-KILLED w1rs-forward-provider-account-unchecked group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
+KILLED w1rs-forward-provider-account-unchecked group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
     reason: a forwarded transaction is signed by the named provider's own account
-KILLED w1rs-forward-used-sequence-unchecked group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
+KILLED w1rs-forward-used-sequence-unchecked group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
     reason: a forwarded transaction at an already used sequence is refused
-KILLED w1fix-forward-outer-pubkey-address-unchecked group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
+KILLED w1fix-forward-outer-pubkey-address-unchecked group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
     reason: the outer public key's address is the signer (review P4)
-KILLED w1b6-forward-window-unchecked group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
+KILLED w1b6-forward-window-unchecked group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
     reason: a forwarded transaction's timeout_height is inside the window
-KILLED w1b6-forward-outer-signature-unchecked group=signing exit=[1] secs=2.6 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
+KILLED w1b6-forward-outer-signature-unchecked group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/forward.go failing=services/broadcaster/internal/policy:TestForwardedTxChecks
     reason: a forwarded transaction's outer signature verifies for this chain id
-KILLED w1b6-registered-key-check-skipped group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestPublicationPermission
+KILLED w1b6-registered-key-check-skipped group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestPublicationPermission
     reason: a hosting intent must be signed by the principal's registered intent key
-KILLED w1b6-withdraw-owner-principal-skipped group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestPublicationPermission
+KILLED w1b6-withdraw-owner-principal-skipped group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestPublicationPermission
     reason: only the owner principal may withdraw its content
-KILLED w1rs-register-on-chain-record-unchecked group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestPublicationPermission
+KILLED w1rs-register-on-chain-record-unchecked group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestPublicationPermission
     reason: a register of a content id that already has a record or tombstone is refused
 KILLED w1rs-withdraw-on-chain-host-unchecked group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestPublicationPermission
     reason: a withdraw needs our service as the content's on-chain host
-KILLED w1b6-pending-owner-allows-offer group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership
+KILLED w1b6-pending-owner-allows-offer group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership
     reason: an offer needs an EFFECTIVE owner row; PENDING is not enough
-KILLED w1rs-offer-on-chain-host-unchecked group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership
+KILLED w1rs-offer-on-chain-host-unchecked group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership
     reason: an offer needs our service as the content's on-chain host
-KILLED w1rs-owns-effective-caller-unchecked group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership services/broadcaster/internal/policy:TestPublicationPermission
+KILLED w1rs-owns-effective-caller-unchecked group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership services/broadcaster/internal/policy:TestPublicationPermission
     reason: ownership is per caller: another caller's EFFECTIVE content is not ours
-KILLED w1rs-relay-any-bound-caller group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestRelayAuthority
+KILLED w1rs-relay-any-bound-caller group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestRelayAuthority
     reason: a bound caller relays only its own provider's signatures
-KILLED w1rs-grant-not-required group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership services/broadcaster/internal/policy:TestPublicationPermission services/broadcaster/internal/policy:TestRelayAuthority
+KILLED w1rs-grant-not-required group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership services/broadcaster/internal/policy:TestPublicationPermission services/broadcaster/internal/policy:TestRelayAuthority
     reason: each kind needs its permission in the authorized request context
-KILLED w1rs-any-routed-kind-allowed group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership services/broadcaster/internal/policy:TestPublicationPermission services/broadcaster/internal/policy:TestRelayAuthority
+KILLED w1rs-any-routed-kind-allowed group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/policy/permissions.go failing=services/broadcaster/internal/policy:TestOfferAndOwnership services/broadcaster/internal/policy:TestPublicationPermission services/broadcaster/internal/policy:TestRelayAuthority
     reason: a caller may submit only the kinds configured for it
-KILLED w1b6-seat-key-accepted group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/governance.go failing=services/broadcaster/internal/policy:TestStartupRefusesRole
+KILLED w1b6-seat-key-accepted group=signing exit=[1] secs=2.4 file=services/broadcaster/internal/policy/governance.go failing=services/broadcaster/internal/policy:TestStartupRefusesRole
     reason: a council seat key is never loaded (DR-06-06)
-KILLED w1b6-any-role-accepted group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/policy/governance.go failing=services/broadcaster/internal/policy:TestStartupRefusesRole
+KILLED w1b6-any-role-accepted group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/policy/governance.go failing=services/broadcaster/internal/policy:TestStartupRefusesRole
     reason: each key's on-chain role must be its class's role (ADMITTED_SERVICE or BROADCASTER)
-KILLED w1b6-any-peer-uid group=signing exit=[1, 1] secs=4.8 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerPeerUID services/broadcaster/internal/signer:TestSignerRefusesOtherUIDPeer[svn_roottest]
+KILLED w1b6-any-peer-uid group=signing exit=[1, 1] secs=4.9 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerPeerUID services/broadcaster/internal/signer:TestSignerRefusesOtherUIDPeer[svn_roottest]
     reason: the signer serves only the configured serve uid (SO_PEERCRED)
-KILLED w1rs-serve-uid-equals-signer-uid group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupRefusals
+KILLED w1rs-serve-uid-equals-signer-uid group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupRefusals
     reason: under distinct uids the serve uid differs from the signer's
-KILLED w1b6-distinct-uids-as-root group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupRefusals
+KILLED w1b6-distinct-uids-as-root group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupRefusals
     reason: under distinct uids the signer does not run as root
 KILLED w1rs-socket-dir-group-write group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupRefusals
     reason: the signer socket directory has no group or other write bit
-KILLED w1b6-client-accepts-another-hash group=signing exit=[1] secs=2.1 file=services/broadcaster/internal/signer/client.go failing=services/broadcaster/internal/signer:TestClientRejectsAlteredTransaction
+KILLED w1b6-client-accepts-another-hash group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/signer/client.go failing=services/broadcaster/internal/signer:TestClientRejectsAlteredTransaction
     reason: the client refuses a signed answer whose hash is not the bytes' hash
 KILLED w1b6-key-file-mode-unchecked group=signing exit=[1] secs=1.0 file=services/broadcaster/internal/keys/keys.go failing=services/broadcaster/internal/keys:TestKeyFileRules
     reason: a key file readable by group or other is refused
@@ -284,205 +284,205 @@ KILLED w1b6-key-owner-unchecked group=signing exit=[1] secs=1.0 file=services/br
     reason: a key file owned by another uid is refused (only the root test chowns a file to another uid; without root the directory owner check refuses first)
 KILLED w1rs-key-directory-checks-dropped group=signing exit=[1, 1] secs=2.0 file=services/broadcaster/internal/keys/keys.go failing=services/broadcaster/internal/keys:TestKeyFileRules services/broadcaster/internal/keys:TestLoadRefusesOtherOwner[svn_roottest]
     reason: a key directory owned by another uid or writable by others is refused
-KILLED b10-signing-outside-the-signer group=signing exit=[1] secs=2.2 file=services/broadcaster/internal/worker/housekeeping.go failing=services/broadcaster/internal/policy:TestNoSigningOutsideSigner
+KILLED b10-signing-outside-the-signer group=signing exit=[1] secs=2.0 file=services/broadcaster/internal/worker/housekeeping.go failing=services/broadcaster/internal/policy:TestNoSigningOutsideSigner
     reason: no signing function is used outside internal/signer (plan 13.6)
-KILLED b10-preimage-literal-outside-chain group=signing exit=[1] secs=1.9 file=services/broadcaster/internal/worker/housekeeping.go failing=services/broadcaster/internal/policy:TestNoLocalPreimageCopy
+KILLED b10-preimage-literal-outside-chain group=signing exit=[1] secs=2.1 file=services/broadcaster/internal/worker/housekeeping.go failing=services/broadcaster/internal/policy:TestNoLocalPreimageCopy
     reason: the module holds no copy of the chain's signing preimage labels (plan 13.6)
-KILLED b11-replay-after-authorize-dropped group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestDuplicateCreateAfterMissedReplay
+KILLED b11-replay-after-authorize-dropped group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestDuplicateCreateAfterMissedReplay
     reason: phase DU's defect: a duplicate create whose replay lookup ran before the first create committed answers the existing intent, not the content id refusal its PENDING owner row causes
-KILLED w1b7a-two-uri-sans-accepted group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/principal.go failing=services/broadcaster/internal/api:TestClientCertRequired
+KILLED w1b7a-two-uri-sans-accepted group=api exit=[1] secs=2.4 file=services/broadcaster/internal/api/principal.go failing=services/broadcaster/internal/api:TestClientCertRequired
     reason: a client certificate carries exactly one URI SAN, the principal
-KILLED w1b7a-client-cert-optional group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/server.go failing=services/broadcaster/internal/api:TestClientCertRequired services/broadcaster/internal/api:TestLoopbackOnly
+KILLED w1b7a-client-cert-optional group=api exit=[1] secs=2.4 file=services/broadcaster/internal/api/server.go failing=services/broadcaster/internal/api:TestClientCertRequired services/broadcaster/internal/api:TestLoopbackOnly
     reason: the API requires a verified client certificate
-KILLED w1rs-client-cert-not-verified group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/server.go failing=services/broadcaster/internal/api:TestClientCertRequired services/broadcaster/internal/api:TestCreateRegisterContent services/broadcaster/internal/api:TestCrossCallerNotFound
+KILLED w1rs-client-cert-not-verified group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/server.go failing=services/broadcaster/internal/api:TestClientCertRequired services/broadcaster/internal/api:TestCreateRegisterContent services/broadcaster/internal/api:TestCrossCallerNotFound
     reason: the client certificate must chain to the development CA
-KILLED w1rs-tls12-allowed group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/server.go failing=services/broadcaster/internal/api:TestClientCertRequired services/broadcaster/internal/api:TestLoopbackOnly
+KILLED w1rs-tls12-allowed group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/server.go failing=services/broadcaster/internal/api:TestClientCertRequired services/broadcaster/internal/api:TestLoopbackOnly
     reason: the API speaks TLS 1.3 only
-KILLED w1b7a-serve-on-any-address group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/server.go failing=services/broadcaster/internal/api:TestLoopbackOnly
+KILLED w1b7a-serve-on-any-address group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/server.go failing=services/broadcaster/internal/api:TestLoopbackOnly
     reason: the API listens on a loopback address only
-KILLED w1rs-unknown-caller-let-through group=api exit=[1] secs=2.6 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestClientCertRequired services/broadcaster/internal/api:TestKindAndPermissionChecks
+KILLED w1rs-unknown-caller-let-through group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestClientCertRequired services/broadcaster/internal/api:TestKindAndPermissionChecks
     reason: a verified principal that is not a configured caller is refused
-KILLED w1b7a-grant-check-dropped group=api exit=[1] secs=2.6 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestKindAndPermissionChecks
+KILLED w1b7a-grant-check-dropped group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestKindAndPermissionChecks
     reason: the API checks the kind's permission before any chain read
-KILLED w1b7a-cancel-answers-another-caller group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestCrossCallerNotFound
+KILLED w1b7a-cancel-answers-another-caller group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestCrossCallerNotFound
     reason: a caller cancels only its own intents; another caller's intent is 404
 KILLED w1rs-relay-authority-unchecked group=api exit=[1] secs=2.4 file=services/broadcaster/internal/api/authorize.go failing=services/broadcaster/internal/api:TestRelayPrecheckAndAuthority
     reason: a relay needs a bound caller or the caller's own committed offer
 KILLED w1fix-forward-relay-authority-unchecked group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/authorize.go failing=services/broadcaster/internal/api:TestForwardProviderTx
     reason: a forward needs the same relay authority (review A4, fix F1)
-KILLED w1b7a-relay-expiry-not-applied group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestRelayPrecheckAndAuthority
+KILLED w1b7a-relay-expiry-not-applied group=api exit=[1] secs=2.4 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestRelayPrecheckAndAuthority
     reason: a relayed renew or end has a bounded local expiry
-KILLED w1b7a-forward-gas-not-signed-one group=api exit=[1] secs=2.7 file=services/broadcaster/internal/api/authorize.go failing=services/broadcaster/internal/api:TestForwardProviderTx
+KILLED w1b7a-forward-gas-not-signed-one group=api exit=[1] secs=2.4 file=services/broadcaster/internal/api/authorize.go failing=services/broadcaster/internal/api:TestForwardProviderTx
     reason: a forward stores the provider's signed bytes as they are
-KILLED w1b7a-forward-pinned-to-broadcaster group=api exit=[1] secs=2.6 file=services/broadcaster/internal/api/authorize.go failing=services/broadcaster/internal/api:TestForwardProviderTx
+KILLED w1b7a-forward-pinned-to-broadcaster group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/authorize.go failing=services/broadcaster/internal/api:TestForwardProviderTx
     reason: a forward's signer is the provider's own account, never our key
-KILLED w1b7a-relay-signed-by-service-key group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/authorize.go failing=services/broadcaster/internal/api:TestRelayPrecheckAndAuthority
+KILLED w1b7a-relay-signed-by-service-key group=api exit=[1] secs=2.2 file=services/broadcaster/internal/api/authorize.go failing=services/broadcaster/internal/api:TestRelayPrecheckAndAuthority
     reason: a relay is signed by the BROADCASTER key, never the service key
-KILLED w1rs-api-replay-ignores-sql-entry group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestIdempotencyConflict
+KILLED w1rs-api-replay-ignores-sql-entry group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestIdempotencyConflict
     reason: an HTTP create never answers from an SQL-path intent with the same key (its validated digest has the HTTP form)
-KILLED w1b7a-idempotency-precheck-off group=api exit=[1] secs=2.6 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestIdempotencyConflict
+KILLED w1b7a-idempotency-precheck-off group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestIdempotencyConflict
     reason: a repeated key answers from the stored intent; another body is 409
-KILLED w1b7a-context-not-canonical group=api exit=[1] secs=2.7 file=services/broadcaster/internal/api/request/envelope.go failing=services/broadcaster/internal/api/request:TestAuthContextRefusesPersonalData services/broadcaster/internal/api/request:TestRequestDigestCanonical services/broadcaster/internal/api:TestRequestDigestCanonical
+KILLED w1b7a-context-not-canonical group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/request/envelope.go failing=services/broadcaster/internal/api/request:TestAuthContextRefusesPersonalData services/broadcaster/internal/api/request:TestRequestDigestCanonical services/broadcaster/internal/api:TestRequestDigestCanonical
     reason: the authorized context is canonicalised (fields in order, permissions sorted) before it is stored and digested
 KILLED w1b7a-digest-omits-context group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/request/digest.go failing=services/broadcaster/internal/api/request:TestRequestDigestCanonical services/broadcaster/internal/api:TestIdempotencyConflict
     reason: the request digest covers the authorized context
-KILLED w1b7a-ip-id-accepted group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/request/envelope.go failing=services/broadcaster/internal/api/request:TestAuthContextRefusesPersonalData
+KILLED w1b7a-ip-id-accepted group=api exit=[1] secs=2.2 file=services/broadcaster/internal/api/request/envelope.go failing=services/broadcaster/internal/api/request:TestAuthContextRefusesPersonalData
     reason: an IP address is personal data and is refused as an id
-KILLED w1b7a-renew-term-version-1-accepted group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/request/kinds.go failing=services/broadcaster/internal/api/request:TestRequestRefusals
+KILLED w1b7a-renew-term-version-1-accepted group=api exit=[1] secs=2.1 file=services/broadcaster/internal/api/request/kinds.go failing=services/broadcaster/internal/api/request:TestRequestRefusals
     reason: a renew names a term version of at least 2
-KILLED w1b7a-evidence-check-skipped group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/view.go failing=services/broadcaster/internal/api:TestNeverCommittedWithoutEvidence
+KILLED w1b7a-evidence-check-skipped group=api exit=[1] secs=2.4 file=services/broadcaster/internal/api/view.go failing=services/broadcaster/internal/api:TestNeverCommittedWithoutEvidence
     reason: the API shows COMMITTED only with complete commitment evidence
 KILLED w1b7a-committed-without-code-0 group=api exit=[1] secs=2.5 file=services/broadcaster/internal/api/view.go failing=services/broadcaster/internal/api:TestNeverCommittedWithoutEvidence
     reason: COMMITTED evidence carries code 0
-KILLED w1fix-committed-short-tx-hash group=api exit=[1] secs=2.7 file=services/broadcaster/internal/api/view.go failing=services/broadcaster/internal/api:TestNeverCommittedWithoutEvidence
+KILLED w1fix-committed-short-tx-hash group=api exit=[1] secs=2.4 file=services/broadcaster/internal/api/view.go failing=services/broadcaster/internal/api:TestNeverCommittedWithoutEvidence
     reason: COMMITTED evidence carries a 32-byte transaction hash (review R8)
-KILLED w1b7a-status-filter-ignores-stall group=api exit=[1] secs=2.6 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestListPagingAndFilters
+KILLED w1b7a-status-filter-ignores-stall group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestListPagingAndFilters
     reason: list filters show PENDING_STALL while a stall episode is open
-KILLED w1b7a-stale-observer-shown-fresh group=api exit=[1] secs=2.6 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestStatusViews
+KILLED w1b7a-stale-observer-shown-fresh group=api exit=[1] secs=2.3 file=services/broadcaster/internal/api/handlers.go failing=services/broadcaster/internal/api:TestStatusViews
     reason: a stale observer is shown as OBSERVER_UNAVAILABLE
 KILLED w1b6-composite-values-logged group=config exit=[1] secs=0.2 file=services/broadcaster/internal/logx/logx.go failing=services/broadcaster/internal/logx:TestRedactorDropsRequestBody
     reason: composite log values (request bodies) are redacted
 KILLED w1b6-json-like-strings-logged group=config exit=[1] secs=0.2 file=services/broadcaster/internal/logx/logx.go failing=services/broadcaster/internal/logx:TestRedactorDropsRequestBody
     reason: JSON-like string values are redacted
-KILLED w1b7a-pqgo-debug-allowed group=config exit=[1] secs=2.3 file=services/broadcaster/internal/config/env.go failing=services/broadcaster/internal/config:TestStartRefusesPGEnv
+KILLED w1b7a-pqgo-debug-allowed group=config exit=[1] secs=2.0 file=services/broadcaster/internal/config/env.go failing=services/broadcaster/internal/config:TestStartRefusesPGEnv
     reason: PQGO_DEBUG (which logs every query) is refused at start
-KILLED w1b7a-env-value-echoed group=config exit=[1] secs=2.4 file=services/broadcaster/internal/config/env.go failing=services/broadcaster/internal/config:TestStartRefusesPGEnv
+KILLED w1b7a-env-value-echoed group=config exit=[1] secs=2.0 file=services/broadcaster/internal/config/env.go failing=services/broadcaster/internal/config:TestStartRefusesPGEnv
     reason: the refusal names the variable, never its value
-KILLED w1b7a-db-chain-mismatch-ignored group=config exit=[1] secs=2.3 file=services/broadcaster/internal/config/convert.go failing=services/broadcaster/internal/config:TestRefusesChainIDMismatch
+KILLED w1b7a-db-chain-mismatch-ignored group=config exit=[1] secs=2.1 file=services/broadcaster/internal/config/convert.go failing=services/broadcaster/internal/config:TestRefusesChainIDMismatch
     reason: serve refuses a database bound to another chain id
-KILLED w1b7a-callers-on-any-chain group=config exit=[1] secs=2.2 file=services/broadcaster/internal/config/config.go failing=services/broadcaster/internal/config:TestDevPrincipalsRefuseNonDevChain
+KILLED w1b7a-callers-on-any-chain group=config exit=[1] secs=2.1 file=services/broadcaster/internal/config/config.go failing=services/broadcaster/internal/config:TestDevPrincipalsRefuseNonDevChain
     reason: development principals are refused off a devnet chain id
-KILLED w1b7a-number-bound-off-by-one group=config exit=[1] secs=2.2 file=services/broadcaster/internal/config/numbers.go failing=services/broadcaster/internal/config:TestNumbersHaveHardBounds
+KILLED w1b7a-number-bound-off-by-one group=config exit=[1] secs=2.4 file=services/broadcaster/internal/config/numbers.go failing=services/broadcaster/internal/config:TestNumbersHaveHardBounds
     reason: every PROPOSED number has hard bounds
-KILLED w1b7a-caps-sum-unchecked group=config exit=[1] secs=2.4 file=services/broadcaster/internal/config/config.go failing=services/broadcaster/internal/config:TestCapsSumBounded
+KILLED w1b7a-caps-sum-unchecked group=config exit=[1] secs=2.2 file=services/broadcaster/internal/config/config.go failing=services/broadcaster/internal/config:TestCapsSumBounded
     reason: the sum of per-caller caps is bounded
-KILLED w1b7b-runtime-database-not-required group=config exit=[1] secs=2.3 file=services/broadcaster/internal/config/config.go failing=services/broadcaster/internal/config:TestDatabaseRoleRequirements
+KILLED w1b7b-runtime-database-not-required group=config exit=[1] secs=2.4 file=services/broadcaster/internal/config/config.go failing=services/broadcaster/internal/config:TestDatabaseRoleRequirements
     reason: serve connects as the runtime role only
-KILLED w1b7b-caller-may-use-runtime-role group=config exit=[1] secs=2.3 file=services/broadcaster/internal/config/config.go failing=services/broadcaster/internal/config:TestCallerSQLRole
+KILLED w1b7b-caller-may-use-runtime-role group=config exit=[1] secs=2.1 file=services/broadcaster/internal/config/config.go failing=services/broadcaster/internal/config:TestCallerSQLRole
     reason: a caller's SQL role is neither the owner nor the runtime role
-KILLED w1b7b-timeout-offset-from-signer-bound group=config exit=[1] secs=2.5 file=services/broadcaster/internal/config/convert.go failing=services/broadcaster/internal/config:TestWorkerNumbers
+KILLED w1b7b-timeout-offset-from-signer-bound group=config exit=[1] secs=2.3 file=services/broadcaster/internal/config/convert.go failing=services/broadcaster/internal/config:TestWorkerNumbers
     reason: the worker's timeout offset is its own number, below the signer's bound
 KILLED w1b7a-strict-decode-allows-unknown group=config exit=[1] secs=2.6 file=services/broadcaster/internal/config/strictjson/strictjson.go failing=services/broadcaster/internal/config/strictjson:TestDecode services/broadcaster/internal/config:TestUnknownFieldsRefused services/broadcaster/internal/api:TestStrictDecode
     reason: configuration and request JSON with unknown fields is refused
-KILLED w1b7a-duplicate-keys-allowed group=config exit=[1] secs=2.6 file=services/broadcaster/internal/config/strictjson/strictjson.go failing=services/broadcaster/internal/config/strictjson:TestCheck services/broadcaster/internal/api:TestStrictDecode
+KILLED w1b7a-duplicate-keys-allowed group=config exit=[1] secs=2.4 file=services/broadcaster/internal/config/strictjson/strictjson.go failing=services/broadcaster/internal/config/strictjson:TestCheck services/broadcaster/internal/api:TestStrictDecode
     reason: JSON with a duplicate key is refused
-KILLED w1b7a-secret-file-mode-unchecked group=config exit=[1] secs=2.7 file=services/broadcaster/internal/config/secretfile/secretfile.go failing=services/broadcaster/internal/config/secretfile:TestRead services/broadcaster/internal/config:TestConnConfigPasswordFile services/broadcaster/internal/api:TestNewRefusesBadDeps
+KILLED w1b7a-secret-file-mode-unchecked group=config exit=[1] secs=2.6 file=services/broadcaster/internal/config/secretfile/secretfile.go failing=services/broadcaster/internal/config/secretfile:TestRead services/broadcaster/internal/config:TestConnConfigPasswordFile services/broadcaster/internal/api:TestNewRefusesBadDeps
     reason: a password or key file readable by group or other is refused
-KILLED w1b7b-environment-not-checked-first group=binary exit=[1] secs=2.5 file=services/broadcaster/cmd/svn-broadcaster/run.go failing=services/broadcaster/cmd/svn-broadcaster:TestEnvironmentRefusedFirst
+KILLED w1b7b-environment-not-checked-first group=binary exit=[1] secs=2.3 file=services/broadcaster/cmd/svn-broadcaster/run.go failing=services/broadcaster/cmd/svn-broadcaster:TestEnvironmentRefusedFirst
     reason: every subcommand refuses PG* and PQGO_DEBUG before it reads anything
-KILLED w1b7b-signer-uid-unchecked group=binary exit=[1] secs=2.5 file=services/broadcaster/cmd/svn-broadcaster/signercmd.go failing=services/broadcaster/cmd/svn-broadcaster:TestSectionAndRoleRefusals
+KILLED w1b7b-signer-uid-unchecked group=binary exit=[1] secs=2.4 file=services/broadcaster/cmd/svn-broadcaster/signercmd.go failing=services/broadcaster/cmd/svn-broadcaster:TestSectionAndRoleRefusals
     reason: the signer subcommand checks its process uid
-KILLED w1b7b-serve-uid-unchecked group=binary exit=[1] secs=2.6 file=services/broadcaster/cmd/svn-broadcaster/serve.go failing=services/broadcaster/cmd/svn-broadcaster:TestSectionAndRoleRefusals
+KILLED w1b7b-serve-uid-unchecked group=binary exit=[1] secs=2.2 file=services/broadcaster/cmd/svn-broadcaster/serve.go failing=services/broadcaster/cmd/svn-broadcaster:TestSectionAndRoleRefusals
     reason: the serve subcommand checks its process uid
-KILLED w1b7b-serve-stop-error-hidden group=binary exit=[1] secs=2.5 file=services/broadcaster/cmd/svn-broadcaster/serve.go failing=services/broadcaster/cmd/svn-broadcaster:TestServeUntilDone
+KILLED w1b7b-serve-stop-error-hidden group=binary exit=[1] secs=2.3 file=services/broadcaster/cmd/svn-broadcaster/serve.go failing=services/broadcaster/cmd/svn-broadcaster:TestServeUntilDone
     reason: serve reports a component that stopped by itself
-KILLED w1b7b-signer-clear-hash-format group=binary exit=[1] secs=2.5 file=services/broadcaster/cmd/svn-broadcaster/signerclear.go failing=services/broadcaster/cmd/svn-broadcaster:TestSignerClearArguments
+KILLED w1b7b-signer-clear-hash-format group=binary exit=[1] secs=2.4 file=services/broadcaster/cmd/svn-broadcaster/signerclear.go failing=services/broadcaster/cmd/svn-broadcaster:TestSignerClearArguments
     reason: signer-clear takes a lowercase hex hash only
-KILLED w1b7b-dev-ca-two-uri-sans group=binary exit=[1] secs=2.5 file=services/broadcaster/cmd/svn-broadcaster/devca.go failing=services/broadcaster/cmd/svn-broadcaster:TestDevCAWritesCertificates
+KILLED w1b7b-dev-ca-two-uri-sans group=binary exit=[1] secs=2.4 file=services/broadcaster/cmd/svn-broadcaster/devca.go failing=services/broadcaster/cmd/svn-broadcaster:TestDevCAWritesCertificates
     reason: dev-ca issues each caller certificate with one URI SAN
-KILLED w1b7b-dev-db-any-chain-id group=binary exit=[1] secs=2.5 file=services/broadcaster/cmd/svn-broadcaster/devdb.go failing=services/broadcaster/cmd/svn-broadcaster:TestDevDBArguments
+KILLED w1b7b-dev-db-any-chain-id group=binary exit=[1] secs=2.4 file=services/broadcaster/cmd/svn-broadcaster/devdb.go failing=services/broadcaster/cmd/svn-broadcaster:TestDevDBArguments
     reason: dev-db creates a database only for a devnet chain id
-KILLED w1b7b-dev-db-writable-dir group=binary exit=[1] secs=2.5 file=services/broadcaster/cmd/svn-broadcaster/devdb.go failing=services/broadcaster/cmd/svn-broadcaster:TestDevDBArguments
+KILLED w1b7b-dev-db-writable-dir group=binary exit=[1] secs=2.6 file=services/broadcaster/cmd/svn-broadcaster/devdb.go failing=services/broadcaster/cmd/svn-broadcaster:TestDevDBArguments
     reason: dev-db refuses an output directory with a group or other write bit
-KILLED b11-lease-table-added group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestNoLeaseOrProjectionTable services/broadcaster/internal/store:TestSQLMetacharactersAreData
+KILLED b11-lease-table-added group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestNoLeaseOrProjectionTable services/broadcaster/internal/store:TestSQLMetacharactersAreData
     reason: Req. 4 no final leases: the outbox schema holds no lease, offer or provider state
-KILLED b10-persist-without-intent-state-cas group=store exit=[1] secs=1.8 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestCancelRacesPersist services/broadcaster/internal/store:TestPersistAttemptConditions
+KILLED b10-persist-without-intent-state-cas group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestCancelRacesPersist services/broadcaster/internal/store:TestPersistAttemptConditions
     reason: an attempt is persisted only while the intent row is still REQUESTED/QUEUED or RETRY_WAIT (compare-and-set)
 KILLED b10-persist-after-expiry group=store exit=[1] secs=6.9 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestExpiryRacesPersist
     reason: no attempt is persisted after the intent's expires_at (database clock)
-KILLED w0b1-send-after-expiry group=store exit=[1] secs=7.0 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestExpiryRacesPersist
+KILLED w0b1-send-after-expiry group=store exit=[1] secs=6.9 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestExpiryRacesPersist
     reason: BeginSend refuses a send after expires_at (also review-test R6 and Wave 0 review S3)
-KILLED w0b1-stall-not-checked group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestPersistAttemptConditions
+KILLED w0b1-stall-not-checked group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestPersistAttemptConditions
     reason: the store refuses a new attempt while a stall episode is open
-KILLED w0rt-equal-timeout-at-same-sequence group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestOneLiveAttemptPerSequence services/broadcaster/internal/store:TestPersistAttemptConditions
+KILLED w0rt-equal-timeout-at-same-sequence group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestOneLiveAttemptPerSequence services/broadcaster/internal/store:TestPersistAttemptConditions
     reason: a new attempt at the same sequence needs a timeout_height above every earlier one
-KILLED w0rt-per-signer-window-dropped group=store exit=[1] secs=1.9 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestPersistAttemptConditions
+KILLED w0rt-per-signer-window-dropped group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestPersistAttemptConditions
     reason: one live attempt per signer (SIGNER_BUSY)
-KILLED w0rt-one-live-attempt-index-not-unique group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestOneLiveAttemptPerSequence
+KILLED w0rt-one-live-attempt-index-not-unique group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestOneLiveAttemptPerSequence
     reason: the database allows at most one live attempt per (signer, sequence)
-KILLED w0b1-fence-check-skipped group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestAdvisoryLockFencesSecondWorker
+KILLED w0b1-fence-check-skipped group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestAdvisoryLockFencesSecondWorker
     reason: every signer transaction checks that the session still holds its advisory lock
-KILLED b10-advisory-lock-result-ignored group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestAdvisoryLockFencesSecondWorker
+KILLED b10-advisory-lock-result-ignored group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestAdvisoryLockFencesSecondWorker
     reason: a second worker does not get a signer session while another holds the lock
-KILLED w0b1-d2-check-removed group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestDeadRuleD2NeedsCountedRefusals
+KILLED w0b1-d2-check-removed group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestDeadRuleD2NeedsCountedRefusals
     reason: the database refuses a (d2) death unless every started send was recorded as a counted refusal
-KILLED w0fix-sdk32-counts group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSendCountingAndPhases
+KILLED w0fix-sdk32-counts group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSendCountingAndPhases
     reason: a recorded sdk 32 answer never counts as a refusal (the three (d2) copies agree)
-KILLED w0fix-refusal-flag-not-checked group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSendCountingAndPhases
+KILLED w0fix-refusal-flag-not-checked group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSendCountingAndPhases
     reason: RecordSendOutcome refuses a refusal flag that differs from the (d2) rule
-KILLED w0fix-rejection-code-0 group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSendCountingAndPhases
+KILLED w0fix-rejection-code-0 group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSendCountingAndPhases
     reason: a mempool rejection carries a non-zero code
-KILLED w0b1-evidence-check-silenced group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestCommitNeedsEvidence
+KILLED w0b1-evidence-check-silenced group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestCommitNeedsEvidence
     reason: the database refuses COMMITTED without a commitments row
 KILLED w0b1-canonical-hash-from-replay group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/settle.go failing=services/broadcaster/internal/store:TestCommitNeedsEvidence
     reason: the canonical hash of an idempotent replay is the first commitment's hash
-KILLED w0fix-open-intent-holds-committed-attempt group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
+KILLED w0fix-open-intent-holds-committed-attempt group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
     reason: an intent that is not COMMITTED may not hold a committed attempt
-KILLED w0fix-ownership-unchecked group=store exit=[1] secs=1.7 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
+KILLED w0fix-ownership-unchecked group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
     reason: own_transaction equals 'the canonical hash is this intent's COMMITTED_OK attempt'
-KILLED w0fix-replay-unchecked group=store exit=[1] secs=1.8 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
+KILLED w0fix-replay-unchecked group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
     reason: an idempotent replay is read from a COMMITTED_IDEMPOTENT attempt
-KILLED w0fix-committed-reason-check-off group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
+KILLED w0fix-committed-reason-check-off group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
     reason: a COMMITTED intent carries no failure reason
-KILLED w0fix-reason-kept-at-commit group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/settle.go failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
+KILLED w0fix-reason-kept-at-commit group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/settle.go failing=services/broadcaster/internal/store:TestEvidenceAgreesWithAttempts
     reason: CommitIntent clears the reason
-KILLED w0fix-no-hash-binding group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/settle.go failing=services/broadcaster/internal/store:TestResolveBindsHashAndObservedHeight
+KILLED w0fix-no-hash-binding group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/settle.go failing=services/broadcaster/internal/store:TestResolveBindsHashAndObservedHeight
     reason: a committed result resolves only the attempt whose hash it carries
-KILLED w0fix-no-observed-height group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/settle.go failing=services/broadcaster/internal/store:TestResolveBindsHashAndObservedHeight
+KILLED w0fix-no-observed-height group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/settle.go failing=services/broadcaster/internal/store:TestResolveBindsHashAndObservedHeight
     reason: resolving a commit raises the signer's observed height
-KILLED w0b1-live-attempt-check-silenced group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestLiveAttemptInvariant
+KILLED w0b1-live-attempt-check-silenced group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestLiveAttemptInvariant
     reason: the intent's live attempt pointer agrees with its attempts
-KILLED w0fix-halt-for-cleared-event group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSignerConflictClearedIsNotHaltedAgain
+KILLED w0fix-halt-for-cleared-event group=store exit=[1] secs=1.3 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSignerConflictClearedIsNotHaltedAgain
     reason: a conflict an operator already cleared does not halt the signer again
 KILLED w0fix-halt-accepts-signer-conflict group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/signer.go failing=services/broadcaster/internal/store:TestSignerConflictClearedIsNotHaltedAgain
     reason: a SIGNER_CONFLICT halt needs a recorded foreign use
-KILLED w0b1-terminal-intent-trigger-off group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestTerminalRowsImmutable
+KILLED w0b1-terminal-intent-trigger-off group=store exit=[1] secs=1.3 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestTerminalRowsImmutable
     reason: a COMMITTED or FAILED intent row never changes, except the Q4 clearing
 KILLED w1b1b-intents-guard-ignores-other-columns group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestTerminalTriggersAllowOnlyClearing
     reason: Q4: clearing a terminal intent changes only the cleared columns
-KILLED w1b1b-intents-guard-clears-before-attempt-bytes group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestTerminalTriggersAllowOnlyClearing
+KILLED w1b1b-intents-guard-clears-before-attempt-bytes group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestTerminalTriggersAllowOnlyClearing
     reason: Q4: an intent is cleared only once no attempt keeps its bytes
-KILLED w1b1b-attempts-guard-clears-non-failed group=store exit=[1] secs=1.8 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestTerminalTriggersAllowOnlyClearing
+KILLED w1b1b-attempts-guard-clears-non-failed group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestTerminalTriggersAllowOnlyClearing
     reason: Q4: only the unsent attempts of a FAILED intent lose their bytes
 KILLED w1b1b-no-sv011-commit-check group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestTerminalTriggersAllowOnlyClearing
     reason: Q4: an unsent FAILED intent left uncleared is refused at commit
-KILLED w1b1b-clear-unsent-never-clears group=store exit=[1] secs=1.7 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestClearUnsent services/broadcaster/internal/store:TestMigration0002
+KILLED w1b1b-clear-unsent-never-clears group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestClearUnsent services/broadcaster/internal/store:TestMigration0002
     reason: Q4: an unsent intent is cleared when it fails
 KILLED w1rt-request-json-kept-after-clearing group=store exit=[1] secs=1.7 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestClearUnsent services/broadcaster/internal/store:TestMigration0002
     reason: Q4: clearing removes the SQL-path request JSON too
 KILLED w1b1b-cleared-replay-compares-gone-context group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestClearUnsent
     reason: Q4: a replay of a cleared intent is compared with the kept digest
-KILLED w1b1b-owner-row-not-voided-on-failed group=store exit=[1] secs=1.8 file=services/broadcaster/internal/store/clear.go failing=services/broadcaster/internal/store:TestContentOwners services/broadcaster/internal/store:TestClearUnsent
+KILLED w1b1b-owner-row-not-voided-on-failed group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/clear.go failing=services/broadcaster/internal/store:TestContentOwners services/broadcaster/internal/store:TestClearUnsent
     reason: a FAILED register voids its PENDING owner row
-KILLED w1b1b-status-digest-from-request group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/read.go failing=services/broadcaster/internal/store:TestClearUnsent
+KILLED w1b1b-status-digest-from-request group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/read.go failing=services/broadcaster/internal/store:TestClearUnsent
     reason: the status view's context digest is the digest of the context
-KILLED w1b1b-content-owner-principal-unchecked group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestContentOwners
+KILLED w1b1b-content-owner-principal-unchecked group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestContentOwners
     reason: an owner row's principal is the registering context's principal
-KILLED w1b1b-content-owner-of-another-caller group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/owners.go failing=services/broadcaster/internal/store:TestContentOwners
+KILLED w1b1b-content-owner-of-another-caller group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/owners.go failing=services/broadcaster/internal/store:TestContentOwners
     reason: a caller sees only its own content owner rows (also review ST4)
 KILLED w1b1b-list-accepts-another-callers-token group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/read.go failing=services/broadcaster/internal/store:TestListIntentsPages
     reason: a list page token of another caller is refused
 KILLED w1b1b-scheduled-offer-ignores-committing-signer group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/owners.go failing=services/broadcaster/internal/store:TestCallerScheduledOffer
     reason: a caller's scheduled offer is one our key committed (also review ST2)
-KILLED w1rs-scheduled-offer-of-any-caller group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/owners.go failing=services/broadcaster/internal/store:TestCallerScheduledOffer
+KILLED w1rs-scheduled-offer-of-any-caller group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/owners.go failing=services/broadcaster/internal/store:TestCallerScheduledOffer
     reason: a caller's scheduled offer is one of its own intents
-KILLED w1b1b-confirm-ignores-observed-host group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/owners.go failing=services/broadcaster/internal/store:TestContentOwners
+KILLED w1b1b-confirm-ignores-observed-host group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/owners.go failing=services/broadcaster/internal/store:TestContentOwners
     reason: an owner row becomes EFFECTIVE only when the chain's submitting host is our signer (also review ST1)
-KILLED w1b1b-effective-without-commitment group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestContentOwners
+KILLED w1b1b-effective-without-commitment group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestContentOwners
     reason: EFFECTIVE needs the register's commitment
 KILLED w1b1b-content-owners-truncate-allowed group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestContentOwners
     reason: content owner rows cannot be truncated
 KILLED w1b7b-idempotency-read-of-any-caller group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/idempotency.go failing=services/broadcaster/internal/store:TestIntentByIdempotencyKey
     reason: an idempotency key is looked up within the caller only (also review ST5)
-KILLED w0rt-http-key-reuses-sql-intent group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/intent.go failing=services/broadcaster/internal/store:TestEnqueueHTTPRefusals
+KILLED w0rt-http-key-reuses-sql-intent group=store exit=[1] secs=1.3 file=services/broadcaster/internal/store/intent.go failing=services/broadcaster/internal/store:TestEnqueueHTTPRefusals
     reason: an HTTP create never answers from an SQL-path intent with the same key (its validated digest has the HTTP form)
 KILLED w0fix-r6-replay-ignores-kind group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestSQLReplayNeedsSameKindAndContext
     reason: R6: an SQL-path replay repeats the kind
-KILLED w0fix-r6-replay-ignores-context group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestSQLReplayNeedsSameKindAndContext
+KILLED w0fix-r6-replay-ignores-context group=store exit=[1] secs=1.3 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestSQLReplayNeedsSameKindAndContext
     reason: R6: an SQL-path replay repeats the authorized context
 KILLED w1b1b-sql-path-kind-list-unchecked group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestSQLMetacharactersAreData
     reason: the SQL path accepts only the fixed kind list
-KILLED w1b1b-kinds-table-writable group=store exit=[1] secs=1.3 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestKindsMatchDatabase
+KILLED w1b1b-kinds-table-writable group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestKindsMatchDatabase
     reason: the kinds table is fixed
 KILLED w1b1b-signer-class-not-checked group=store exit=[1] secs=1.5 file=services/broadcaster/internal/store/migrations/0002_answers.pgsql failing=services/broadcaster/internal/store:TestSignerClassBinding services/broadcaster/internal/store:TestMarkValidatedAnswers
     reason: each kind is signed by its key class's signer
@@ -502,33 +502,33 @@ KILLED w1b1b-forward-source-halted-or-synced group=store exit=[1] secs=1.4 file=
     reason: a forward source row has no sequence and no halt
 KILLED w0b1-cap-check-off-by-one group=store exit=[1] secs=5.6 file=services/broadcaster/internal/store/intent.go failing=services/broadcaster/internal/store:TestPerCallerCapNoGlobalLock services/broadcaster/internal/store:TestEnqueueRollbackLeavesNothing
     reason: a caller's open intents are capped
-KILLED w0fix-stall-bound-off group=store exit=[1] secs=11.4 file=services/broadcaster/internal/store/observer.go failing=services/broadcaster/internal/store:TestCapSumAndStallBound
+KILLED w0fix-stall-bound-off group=store exit=[1] secs=11.6 file=services/broadcaster/internal/store/observer.go failing=services/broadcaster/internal/store:TestCapSumAndStallBound
     reason: a stall episode marks a bounded number of open intents
 KILLED w0fix-cap-sum-off group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/migrations/0001_outbox.pgsql failing=services/broadcaster/internal/store:TestCapSumAndStallBound
     reason: register_caller bounds the sum of caps
-KILLED w0fix-insert-errors-unmapped group=store exit=[1] secs=1.4 file=services/broadcaster/internal/store/intent.go failing=services/broadcaster/internal/store:TestHTTPAuthContextDatabaseChecks
+KILLED w0fix-insert-errors-unmapped group=store exit=[1] secs=1.6 file=services/broadcaster/internal/store/intent.go failing=services/broadcaster/internal/store:TestHTTPAuthContextDatabaseChecks
     reason: an HTTP insert refused by a CHECK is ErrInvalid, not an internal error
-KILLED w1b8-broadcast-before-persist group=worker exit=[1] secs=3.5 file=services/broadcaster/internal/worker/attempt.go failing=services/broadcaster/internal/worker:TestFakeRPCSeesPersistedAttempt
+KILLED w1b8-broadcast-before-persist group=worker exit=[1] secs=3.6 file=services/broadcaster/internal/worker/attempt.go failing=services/broadcaster/internal/worker:TestFakeRPCSeesPersistedAttempt
     reason: the attempt row commits before any broadcast of its bytes
-KILLED w1b8-send-without-counted-start group=worker exit=[1] secs=3.2 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestSendNeedsCountedStart
+KILLED w1b8-send-without-counted-start group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestSendNeedsCountedStart
     reason: a send happens only after sends_started was incremented
 KILLED w1b8-unrecorded-send-not-unknown group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestCrashBetweenSendsStartedAndRecord
     reason: after a crash between sends_started and the record, the send is recorded UNKNOWN, so (d2) never applies
-KILLED w1rt-unrecorded-send-counted-refusal group=worker exit=[1] secs=3.0 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestCrashBetweenSendsStartedAndRecord
+KILLED w1rt-unrecorded-send-counted-refusal group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestCrashBetweenSendsStartedAndRecord
     reason: an unrecorded started send is never recorded as a counted node refusal
-KILLED w1b8-mempool-rejection-counted group=worker exit=[1] secs=2.9 file=services/broadcaster/internal/worker/views.go failing=services/broadcaster/internal/worker:TestRefusalRuleCopiesAgree
+KILLED w1b8-mempool-rejection-counted group=worker exit=[1] secs=3.1 file=services/broadcaster/internal/worker/views.go failing=services/broadcaster/internal/worker:TestRefusalRuleCopiesAgree
     reason: the worker's refusal flag follows the classifier's (d2) rule
-KILLED w1fix-no-effect-check-before-retry group=worker exit=[1] secs=5.5 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestEffectCheckBeforeRetry
+KILLED w1fix-no-effect-check-before-retry group=worker exit=[1] secs=5.4 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestEffectCheckBeforeRetry
     reason: a retry attempt waits for the effect check (review R5)
-KILLED w1rt-no-effect-check-before-first-attempt group=worker exit=[1] secs=3.5 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestEffectSkipsOtherVersions services/broadcaster/internal/worker:TestObjectStateChangedWaitsForIndex services/broadcaster/internal/worker:TestContentOwnerVoidOnFailedRegister
+KILLED w1rt-no-effect-check-before-first-attempt group=worker exit=[1] secs=3.7 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestEffectSkipsOtherVersions services/broadcaster/internal/worker:TestObjectStateChangedWaitsForIndex services/broadcaster/internal/worker:TestContentOwnerVoidOnFailedRegister
     reason: the first attempt waits for the effect check too (review-test R10)
 KILLED w1b8-own-intent-hash-not-recognised group=worker exit=[1] secs=3.1 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestRegisterCommitsWithEvidence
     reason: the effect check recognises this intent's own attempts
-KILLED w1b8-own-transaction-inverted group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/effect.go failing=services/broadcaster/internal/worker:TestProviderCommitsAcceptanceFirst
+KILLED w1b8-own-transaction-inverted group=worker exit=[1] secs=3.0 file=services/broadcaster/internal/worker/effect.go failing=services/broadcaster/internal/worker:TestProviderCommitsAcceptanceFirst
     reason: own_transaction is reported as the chain shows it
-KILLED w1b8-object-state-changed-before-index group=worker exit=[1] secs=3.2 file=services/broadcaster/internal/worker/effect.go failing=services/broadcaster/internal/worker:TestObjectStateChangedWaitsForIndex
+KILLED w1b8-object-state-changed-before-index group=worker exit=[1] secs=3.0 file=services/broadcaster/internal/worker/effect.go failing=services/broadcaster/internal/worker:TestObjectStateChangedWaitsForIndex
     reason: OBJECT_STATE_CHANGED waits the indexing margin
-KILLED w1b8-unrelated-effect-ends-search group=worker exit=[1] secs=3.2 file=services/broadcaster/internal/worker/effect.go failing=services/broadcaster/internal/worker:TestEffectSkipsOtherVersions
+KILLED w1b8-unrelated-effect-ends-search group=worker exit=[1] secs=3.1 file=services/broadcaster/internal/worker/effect.go failing=services/broadcaster/internal/worker:TestEffectSkipsOtherVersions
     reason: an unrelated typed event does not end the effect search
 KILLED w1b8-replay-hash-not-first-commitment group=worker exit=[1] secs=3.2 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestIdempotentReplayNeedsFirstCommitment
     reason: an idempotent replay records both its own and the first commitment's hash
@@ -536,82 +536,82 @@ KILLED w1b8-forward-retried group=worker exit=[1] secs=3.3 file=services/broadca
     reason: a forward that can no longer commit fails PROVIDER_MUST_RESIGN instead of a retry
 KILLED w1b8-attempt-above-next-sequence group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/attempt.go failing=services/broadcaster/internal/worker:TestSignerConflictHalts
     reason: an attempt above the signer's next sequence halts the signer
-KILLED w1b8-foreign-use-always-cleared group=worker exit=[1] secs=3.2 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestForeignUseOfLiveSequenceHalts
+KILLED w1b8-foreign-use-always-cleared group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestForeignUseOfLiveSequenceHalts
     reason: a foreign use nobody cleared halts the signer
-KILLED w1b8-foreign-use-wrong-sequence group=worker exit=[1] secs=3.1 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestForeignUseOfLiveSequenceHalts
+KILLED w1b8-foreign-use-wrong-sequence group=worker exit=[1] secs=3.2 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestForeignUseOfLiveSequenceHalts
     reason: the recorded foreign use names the live attempt's sequence
-KILLED w1b8-halt-dropped group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestUnauthorizedRefusalHaltsSigner services/broadcaster/internal/worker:TestCommittedBytesMismatchHaltsSigner
+KILLED w1b8-halt-dropped group=worker exit=[1] secs=3.4 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestUnauthorizedRefusalHaltsSigner services/broadcaster/internal/worker:TestCommittedBytesMismatchHaltsSigner
     reason: UNAUTHORIZED and integrity alerts halt the signer
 KILLED w1b8-sdk4-retry-gap group=worker exit=[1] secs=4.2 file=services/broadcaster/internal/worker/attempt.go failing=services/broadcaster/internal/worker:TestSdk4RetryWaitsTwoBlocks
     reason: an sdk 4 retry waits two blocks (DR-10-41)
-KILLED f1-signer-startup-does-not-wait group=signing exit=[1] secs=2.5 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupWaitsForTheFloor
+KILLED f1-signer-startup-does-not-wait group=signing exit=[1] secs=2.3 file=services/broadcaster/internal/signer/signer.go failing=services/broadcaster/internal/signer:TestSignerStartupWaitsForTheFloor
     reason: start-up retries a governance read below the floor until the bound, then fails naming it
-KILLED f3-indexing-margin-one-allowed group=outbox exit=[1] secs=2.9 file=services/broadcaster/internal/outbox/limits.go failing=services/broadcaster/internal/outbox:TestLimitsValidate services/broadcaster/internal/config:TestIndexingMarginOneRefused
+KILLED f3-indexing-margin-one-allowed group=outbox exit=[1] secs=2.5 file=services/broadcaster/internal/outbox/limits.go failing=services/broadcaster/internal/outbox:TestLimitsValidate services/broadcaster/internal/config:TestIndexingMarginOneRefused
     reason: indexing_margin_blocks 1 is refused: at status S only blocks through S-2 are certainly indexed
-KILLED w3fix-backoff-never-waits group=worker exit=[1] secs=3.1 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestBackoffIsFullJitter
+KILLED w3fix-backoff-never-waits group=worker exit=[1] secs=3.0 file=services/broadcaster/internal/worker/settle.go failing=services/broadcaster/internal/worker:TestBackoffIsFullJitter
     reason: the retry delay is drawn from [0, min(cap, base * 2^(n-1))], not always 0 (plan 8.7)
-KILLED w1b8-signed-tx-signer-unchecked group=worker exit=[1] secs=3.8 file=services/broadcaster/internal/worker/attempt.go failing=services/broadcaster/internal/worker:TestSignedTransactionMismatchIsRefused
+KILLED w1b8-signed-tx-signer-unchecked group=worker exit=[1] secs=9.0 file=services/broadcaster/internal/worker/attempt.go failing=services/broadcaster/internal/worker:TestSignedTransactionMismatchIsRefused
     reason: the signed transaction's signer and sequence are the requested ones
-KILLED w1rs-signed-message-unchecked group=worker exit=[1] secs=4.1 file=services/broadcaster/internal/worker/attempt.go failing=services/broadcaster/internal/worker:TestSignedTransactionMismatchIsRefused
+KILLED w1rs-signed-message-unchecked group=worker exit=[1] secs=9.7 file=services/broadcaster/internal/worker/attempt.go failing=services/broadcaster/internal/worker:TestSignedTransactionMismatchIsRefused
     reason: the signed transaction's message is the intended one
-KILLED w1b8-no-revalidation group=worker exit=[1] secs=3.6 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestOfferNeedsEffectiveOwner
+KILLED w1b8-no-revalidation group=worker exit=[1] secs=4.4 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestOfferNeedsEffectiveOwner
     reason: every attempt revalidates its intent's permissions before signing
-KILLED w1rs-revalidate-returns-early group=worker exit=[1] secs=3.5 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestOfferNeedsEffectiveOwner services/broadcaster/internal/worker:TestRelayRevalidatedBeforeSigning
+KILLED w1rs-revalidate-returns-early group=worker exit=[1] secs=4.0 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestOfferNeedsEffectiveOwner services/broadcaster/internal/worker:TestRelayRevalidatedBeforeSigning
     reason: revalidation runs for every attempt
-KILLED w1fix-relay-authority-not-checked group=worker exit=[1] secs=3.1 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathRelayPermission
+KILLED w1fix-relay-authority-not-checked group=worker exit=[1] secs=3.6 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathRelayPermission
     reason: an SQL-path relay needs a bound caller or the caller's own committed offer (review W4)
-KILLED w1fix-relay-authority-result-ignored group=worker exit=[1] secs=3.0 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathRelayPermission
+KILLED w1fix-relay-authority-result-ignored group=worker exit=[1] secs=3.4 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathRelayPermission
     reason: the relay authority's refusal is applied (review W6)
-KILLED w1fix-forward-relay-authority-not-checked group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathRelayPermission
+KILLED w1fix-forward-relay-authority-not-checked group=worker exit=[1] secs=3.4 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathRelayPermission
     reason: an SQL-path forward needs relay authority (review W5)
-KILLED w1fix-provider-precheck-refusal-ignored group=worker exit=[1] secs=3.2 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestRelayRevalidatedBeforeSigning
+KILLED w1fix-provider-precheck-refusal-ignored group=worker exit=[1] secs=3.7 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestRelayRevalidatedBeforeSigning
     reason: a provider pre-check refusal before signing fails the intent (review W7)
-KILLED w1fix-publication-refusal-ignored group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathPublicationPermission
+KILLED w1fix-publication-refusal-ignored group=worker exit=[1] secs=3.8 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathPublicationPermission
     reason: an SQL-path register or withdraw needs the publication permission (review W8)
-KILLED w1fix-owner-effective-from-stored-signer group=worker exit=[1] secs=3.5 file=services/broadcaster/internal/worker/housekeeping.go failing=services/broadcaster/internal/worker:TestOwnerHostMismatchStaysPending
+KILLED w1fix-owner-effective-from-stored-signer group=worker exit=[1] secs=3.8 file=services/broadcaster/internal/worker/housekeeping.go failing=services/broadcaster/internal/worker:TestOwnerHostMismatchStaysPending
     reason: an owner row becomes EFFECTIVE from the chain's submitting host, not the stored signer (review W3)
-KILLED w1b8-sql-path-unavailable-not-failed group=worker exit=[1] secs=3.5 file=services/broadcaster/internal/worker/housekeeping.go failing=services/broadcaster/internal/worker:TestSQLPathValidation
+KILLED w1b8-sql-path-unavailable-not-failed group=worker exit=[1] secs=3.7 file=services/broadcaster/internal/worker/housekeeping.go failing=services/broadcaster/internal/worker:TestSQLPathValidation
     reason: an SQL-path intent for content another caller owns, or for tracked bytes, fails
-KILLED w1b8-sql-path-lifetime-unbounded group=worker exit=[1] secs=3.3 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathValidation
+KILLED w1b8-sql-path-lifetime-unbounded group=worker exit=[1] secs=3.6 file=services/broadcaster/internal/worker/validate.go failing=services/broadcaster/internal/worker:TestSQLPathValidation
     reason: an SQL-path intent's lifetime is bounded
-KILLED w1b8-stall-not-blocking group=worker exit=[1] secs=3.1 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestStallBlocksNewAttempts
+KILLED w1b8-stall-not-blocking group=worker exit=[1] secs=3.6 file=services/broadcaster/internal/worker/session.go failing=services/broadcaster/internal/worker:TestStallBlocksNewAttempts
     reason: the worker starts no new attempt while a stall episode is open
-KILLED w1b8-observer-never-opens-stall group=worker exit=[1] secs=10.2 file=services/broadcaster/internal/worker/observer.go failing=services/broadcaster/internal/worker:TestObserverStallEpisodes
+KILLED w1b8-observer-never-opens-stall group=worker exit=[1] secs=11.0 file=services/broadcaster/internal/worker/observer.go failing=services/broadcaster/internal/worker:TestObserverStallEpisodes
     reason: an unreachable node for the stall window opens a stall episode
-KILLED w1b8-observer-height-shifted group=worker exit=[1] secs=3.4 file=services/broadcaster/internal/worker/observer.go failing=services/broadcaster/internal/worker:TestObserverStallEpisodes
+KILLED w1b8-observer-height-shifted group=worker exit=[1] secs=3.8 file=services/broadcaster/internal/worker/observer.go failing=services/broadcaster/internal/worker:TestObserverStallEpisodes
     reason: the observer records the height the node reported
-KILLED w1fix-lock-held-without-session-name group=worker exit=[1] secs=3.6 file=services/broadcaster/internal/worker/worker.go failing=services/broadcaster/internal/worker:TestReconcileOnceTakesLock
+KILLED w1fix-lock-held-without-session-name group=worker exit=[1] secs=3.4 file=services/broadcaster/internal/worker/worker.go failing=services/broadcaster/internal/worker:TestReconcileOnceTakesLock
     reason: reconcile-once names the session whose lock another process holds (fix F9)
-KILLED w1b7b-schema-behind-not-refused group=smoke exit=[1] secs=8.7 file=services/broadcaster/cmd/svn-broadcaster/serve.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
+KILLED w1b7b-schema-behind-not-refused group=smoke exit=[1] secs=9.0 file=services/broadcaster/cmd/svn-broadcaster/serve.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
     reason: serve refuses a database whose schema is behind
-KILLED w1b7b-lock-held-not-reported group=smoke exit=[1] secs=10.1 file=services/broadcaster/cmd/svn-broadcaster/serve.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
+KILLED w1b7b-lock-held-not-reported group=smoke exit=[1] secs=10.8 file=services/broadcaster/cmd/svn-broadcaster/serve.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
     reason: reconcile-once exits with its lock-held code when another process drives the signer
-KILLED w1b7b-signer-clear-not-found-code group=smoke exit=[1] secs=10.2 file=services/broadcaster/cmd/svn-broadcaster/signerclear.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
+KILLED w1b7b-signer-clear-not-found-code group=smoke exit=[1] secs=11.0 file=services/broadcaster/cmd/svn-broadcaster/signerclear.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
     reason: signer-clear of an unknown event exits with the not-found code
-KILLED w1b7b-migrate-registers-no-callers group=smoke exit=[1] secs=8.9 file=services/broadcaster/cmd/svn-broadcaster/migrate.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
+KILLED w1b7b-migrate-registers-no-callers group=smoke exit=[1] secs=9.1 file=services/broadcaster/cmd/svn-broadcaster/migrate.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
     reason: migrate registers the configured callers
-KILLED w1b7b-runtime-role-owned-by-root group=smoke exit=[1] secs=8.6 file=services/broadcaster/cmd/svn-broadcaster/devdb.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
+KILLED w1b7b-runtime-role-owned-by-root group=smoke exit=[1] secs=9.2 file=services/broadcaster/cmd/svn-broadcaster/devdb.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
     reason: the runtime role's password file is owned by the serve uid
-KILLED w1b7b-server-cert-owned-by-root group=smoke exit=[1] secs=9.4 file=services/broadcaster/cmd/svn-broadcaster/devca.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
+KILLED w1b7b-server-cert-owned-by-root group=smoke exit=[1] secs=9.9 file=services/broadcaster/cmd/svn-broadcaster/devca.go failing=services/broadcaster/cmd/svn-broadcaster:TestSmokeProcesses
     reason: the server key file is owned by the serve uid
-KILLED dv-effect-ignores-signer group=devnet exit=[1] secs=21.0 file=services/broadcaster/internal/chain/effect.go failing=chain/devnet:TestDevnetBroadcasterLifecycle[SVN_BROADCASTER_PHASES=OC]
+KILLED dv-effect-ignores-signer group=devnet exit=[1] secs=20.4 file=services/broadcaster/internal/chain/effect.go failing=chain/devnet:TestDevnetBroadcasterLifecycle[SVN_BROADCASTER_PHASES=OC]
     reason: devnet OC: a copy of our offer committed by service-2 is OBJECT_TAKEN, not our effect (edit of w0b2-effect-ignores-signer)
-KILLED dv-unrecorded-send-counted-refusal group=devnet exit=[1] secs=17.3 file=services/broadcaster/internal/worker/settle.go failing=chain/devnet:TestDevnetBroadcasterLifecycle[SVN_BROADCASTER_PHASES=WP2]
+KILLED dv-unrecorded-send-counted-refusal group=devnet exit=[1] secs=18.1 file=services/broadcaster/internal/worker/settle.go failing=chain/devnet:TestDevnetBroadcasterLifecycle[SVN_BROADCASTER_PHASES=WP2]
     reason: devnet WP2: after a death between sends_started and the send, the restart never marks the attempt dead by (d2) (edit of w1rt-unrecorded-send-counted-refusal)
-KILLED dv-stall-guards-removed group=devnet exit=[1] secs=55.6 file=services/broadcaster/internal/worker/session.go,services/broadcaster/internal/store/signer.go failing=chain/devnet:TestDevnetBroadcasterQuorumStall
+KILLED dv-stall-guards-removed group=devnet exit=[1] secs=56.2 file=services/broadcaster/internal/worker/session.go,services/broadcaster/internal/store/signer.go failing=chain/devnet:TestDevnetBroadcasterQuorumStall
     reason: devnet stall test: no new attempt while a stall episode is open; the worker's stall flag and the store's refusal are both removed (the edits of w1b8-stall-not-blocking and w0b1-stall-not-checked), since either one alone keeps the rule
-KILLED dv-r3-simulate-through-app-path group=devnet exit=[1] secs=111.2 file=services/broadcaster/internal/chain/rpc.go failing=chain/devnet:TestDevnetBroadcasterLifecycle[SVN_BROADCASTER_PHASES=H]
+KILLED dv-r3-simulate-through-app-path group=devnet exit=[1] secs=110.5 file=services/broadcaster/internal/chain/rpc.go failing=chain/devnet:TestDevnetBroadcasterLifecycle[SVN_BROADCASTER_PHASES=H]
     reason: devnet H: the WITHDRAW_CONTENT, the kind whose gas is simulated, commits only through the transaction service's Simulate route (edit of b10-r3-simulate-through-app-path)
-GROUP outbox secs=29.2 killed=46
-GROUP chain-client secs=66.8 killed=26
-GROUP signing secs=142.9 killed=57
-GROUP api secs=67.4 killed=26
-GROUP config secs=31.9 killed=14
-GROUP binary secs=22.7 killed=8
-GROUP store secs=142.1 killed=62
-GROUP worker secs=142.6 killed=35
-GROUP smoke secs=66.5 killed=6
-GROUP devnet secs=332.6 killed=4
-TOTAL_SECS 1045.3
+GROUP outbox secs=33.6 killed=46
+GROUP chain-client secs=68.5 killed=26
+GROUP signing secs=139.7 killed=57
+GROUP api secs=63.1 killed=26
+GROUP config secs=30.3 killed=14
+GROUP binary secs=21.5 killed=8
+GROUP store secs=138.2 killed=62
+GROUP worker secs=158.4 killed=35
+GROUP smoke secs=68.7 killed=6
+GROUP devnet secs=332.7 killed=4
+TOTAL_SECS 1055.1
 RESULT mutants=284 killed=284
 EXIT:0

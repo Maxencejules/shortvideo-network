@@ -1,7 +1,7 @@
 COMMAND bash -c echo\ \'pre-existing\ test\ files\ changed\ since\ 6d74aca5cfc461a9756587bdbec2f78e7111e574:\'\;\ git\ diff\ --stat\ --diff-filter=M\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\ --\ \'\*_test.go\'\ \'tests/\*.py\'\ \'tests/\*\*/\*.py\'\ \'services/\*\*/test\*.py\'\;\ echo\;\ echo\ \'deleted\ files\ since\ 6d74aca5cfc461a9756587bdbec2f78e7111e574:\'\;\ git\ diff\ --stat\ --diff-filter=D\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\;\ echo\;\ git\ diff\ --diff-filter=D\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\;\ echo\;\ git\ diff\ -U0\ --diff-filter=M\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD\ --\ \'\*_test.go\'\ \'tests/unit/\*.py\'
-DATE 2026-11-09T04:26:20Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T11:21:56Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
 pre-existing test files changed since 6d74aca5cfc461a9756587bdbec2f78e7111e574:
  tests/unit/test_ci_devnet_coverage.py | 16 +++++++++++++---

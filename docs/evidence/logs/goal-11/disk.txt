@@ -1,11 +1,11 @@
 COMMAND bash -c df\ -h\ /\;\ du\ -sh\ \"\$\(go\ env\ GOCACHE\)\"\;\ ls\ -d\ /tmp/svn-pg-\*\ 2\>/dev/null\ \|\|\ echo\ \"no\ /tmp/svn-pg-\*\ left\"\;\ pgrep\ -a\ postgres\ \|\|\ echo\ \"no\ postgres\ process\"
-DATE 2026-11-09T06:07:07Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T13:11:19Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
 Filesystem      Size  Used Avail Use% Mounted on
-/dev/vdc        254G   41G  214G  16% /
-12G	/tmp/gocache-ubuntu
+/dev/vdc        254G   48G  206G  19% /
+18G	/tmp/gocache-ubuntu
 no /tmp/svn-pg-* left
 no postgres process
 EXIT:0

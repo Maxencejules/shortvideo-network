@@ -1,137 +1,185 @@
 COMMAND /tmp/goal11-w3/ns.sh go test -race -count=30 -timeout 20m -v -run TestEffectCheckBeforeRetry\|TestDeadlinePassedRetriesAtTheSameSequence ./services/broadcaster/internal/worker/
-DATE 2026-11-09T07:13:34Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T13:19:47Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
 worker tests: server version: postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.67s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.40s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.27s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.26s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.68s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.34s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.34s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.32s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.58s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.27s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.31s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.32s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.49s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.27s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.22s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.64s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.34s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.30s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.26s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.50s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.23s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.27s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.64s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.30s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.34s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.29s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.52s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.27s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.27s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.56s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.23s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.34s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.28s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.56s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.27s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.29s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.29s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.48s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.22s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.29s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.53s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.30s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.23s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.34s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.58s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.33s)
+--- PASS: TestEffectCheckBeforeRetry (0.63s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.36s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.26s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
 --- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.24s)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.55s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.30s)
+--- PASS: TestEffectCheckBeforeRetry (0.52s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.29s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.29s)
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.23s)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.59s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.34s)
+--- PASS: TestEffectCheckBeforeRetry (0.54s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.31s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.23s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
 --- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.59s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.32s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.27s)
+--- PASS: TestEffectCheckBeforeRetry (0.55s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.31s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.24s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.52s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.27s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.26s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.23s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.54s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.24s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.30s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.30s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.57s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.30s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.28s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.48s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.23s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.26s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.45s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.22s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.23s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.31s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.57s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.26s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.32s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.34s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.58s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.31s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.26s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.28s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.55s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.29s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.25s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.23s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.53s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.28s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.30s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.54s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.30s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
 --- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.32s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.44s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.22s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.21s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.25s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.52s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.26s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.26s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.23s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.48s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.21s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.27s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.35s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.63s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.31s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.32s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.26s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.49s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.47s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.23s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.46s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.22s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.28s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.62s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.31s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.31s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.31s)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
@@ -139,111 +187,63 @@ worker tests: server version: postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.0
     --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.23s)
     --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.27s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.27s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.47s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.23s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.34s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.58s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.30s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.28s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
 --- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.26s)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.50s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.23s)
+--- PASS: TestEffectCheckBeforeRetry (0.58s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.31s)
     --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.27s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.25s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.51s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.29s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.23s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.28s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.58s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.29s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.29s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.29s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.58s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.26s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.32s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
 --- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.54s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.32s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.22s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.32s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.52s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.23s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.29s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.35s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.56s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.33s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.34s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.60s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.34s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.25s)
-=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.32s)
-=== RUN   TestEffectCheckBeforeRetry
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
-=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.54s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.27s)
+--- PASS: TestEffectCheckBeforeRetry (0.51s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
     --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.26s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.29s)
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.26s)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
---- PASS: TestEffectCheckBeforeRetry (0.47s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.25s)
-    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.21s)
+--- PASS: TestEffectCheckBeforeRetry (0.53s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.29s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.34s)
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.26s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.55s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.30s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.25s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
 === RUN   TestEffectCheckBeforeRetry
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
 === RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
 --- PASS: TestEffectCheckBeforeRetry (0.48s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.22s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.27s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.32s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.49s)
     --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.24s)
     --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.24s)
 === RUN   TestDeadlinePassedRetriesAtTheSameSequence
---- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.28s)
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.26s)
+=== RUN   TestEffectCheckBeforeRetry
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_another_service
+=== RUN   TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash
+--- PASS: TestEffectCheckBeforeRetry (0.54s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_another_service (0.28s)
+    --- PASS: TestEffectCheckBeforeRetry/content_registered_by_our_key_under_a_foreign_hash (0.26s)
+=== RUN   TestDeadlinePassedRetriesAtTheSameSequence
+--- PASS: TestDeadlinePassedRetriesAtTheSameSequence (0.33s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/worker	27.552s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/worker	26.451s
 EXIT:0

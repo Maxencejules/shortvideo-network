@@ -1,11 +1,18 @@
 COMMAND bash -c git\ ls-remote\ origin\ refs/heads/main\ refs/heads/goal-11\;\ if\ git\ merge-base\ --is-ancestor\ 6d74aca5cfc461a9756587bdbec2f78e7111e574\ HEAD\;\ then\ echo\ \"6d74aca5cfc461a9756587bdbec2f78e7111e574\ is\ an\ ancestor\ of\ HEAD\"\;\ else\ echo\ \"6d74aca5cfc461a9756587bdbec2f78e7111e574\ is\ NOT\ an\ ancestor\ of\ HEAD\"\;\ exit\ 1\;\ fi\;\ git\ log\ --oneline\ 6d74aca5cfc461a9756587bdbec2f78e7111e574..HEAD
-DATE 2026-11-09T03:37:59Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T09:30:49Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
-1ab402132143a08a4aba4098d842d03111c85226	refs/heads/goal-11
+7ab95e01ac368994743d66037c07d07b392321c0	refs/heads/goal-11
 6d74aca5cfc461a9756587bdbec2f78e7111e574	refs/heads/main
 6d74aca5cfc461a9756587bdbec2f78e7111e574 is an ancestor of HEAD
+8450fbd goal 11: drop the non-root CI path from the blockers
+7ab95e0 goal 11: cite the green head CI
+061496c goal 11: record the third protoc download failure
+554e119 goal 11: record the second protoc download failure
+265c1b0 goal 11: record the protoc download failure
+6d9e825 goal 11: cite the rewritten head CI
+ad55070 goal 11: record the retest on the rewritten history
 9a00e16 goal 11: read floor, indexing margin, and devnet 503s (tested code)
 8e3eefd goal 11: transaction broadcaster and outbox (tested code)
 6369d41 goal 11 WIP: Wave 1 (signer, policy, API, worker, binary, CI wiring)

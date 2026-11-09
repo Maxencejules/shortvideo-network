@@ -1,40 +1,40 @@
 COMMAND /tmp/goal11-w3/ns.sh env GOFLAGS=-count=1 .venv/bin/python scripts/run_tests.py --only go
-DATE 2026-11-09T03:55:44Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T09:47:45Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
 ?   	github.com/Maxencejules/shortvideo-network/chain/address	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/chain/app	50.873s
-ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	29.334s
-ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd/cli	0.462s
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	50.505s
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd	29.510s
+ok  	github.com/Maxencejules/shortvideo-network/chain/cmd/svnd/cli	0.424s
 ?   	github.com/Maxencejules/shortvideo-network/chain/cometwrap	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	1258.818s
-ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	0.057s
-ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal	0.096s
-ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal/scenario	0.032s
-ok  	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck	1.811s
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	1130.949s
+ok  	github.com/Maxencejules/shortvideo-network/chain/genesis	0.048s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal	0.066s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal/scenario	0.031s
+ok  	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck	1.829s
 ?   	github.com/Maxencejules/shortvideo-network/chain/internal/statecheck/testhome	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/chain/jcs	0.201s
-ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	0.064s
-ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	0.026s
-ok  	github.com/Maxencejules/shortvideo-network/chain/node	0.295s
-ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	0.003s
-ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade	0.271s
-ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/conformance	0.031s
-ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/onchain	0.045s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	4.400s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority/difftest	24.005s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	0.163s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	1.587s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest	51.186s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest	0.105s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases	1.142s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest	33.684s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest	0.045s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy	0.072s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest	0.046s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	0.562s
-ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	0.023s
+ok  	github.com/Maxencejules/shortvideo-network/chain/jcs	0.175s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit	0.066s
+ok  	github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest	0.027s
+ok  	github.com/Maxencejules/shortvideo-network/chain/node	0.238s
+ok  	github.com/Maxencejules/shortvideo-network/chain/svnerr	0.012s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade	0.216s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/conformance	0.045s
+ok  	github.com/Maxencejules/shortvideo-network/chain/upgrade/onchain	0.077s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority	4.101s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/authority/difftest	23.055s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	0.131s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	1.516s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest	51.352s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest	0.070s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases	1.039s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest	34.293s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest	0.042s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy	0.070s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest	0.048s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	0.591s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers/capability	0.024s
 ?   	github.com/Maxencejules/shortvideo-network/chain/x/scaffold	[no test files]
 ok  	github.com/Maxencejules/shortvideo-network/protocol/check	0.002s
 ?   	github.com/Maxencejules/shortvideo-network/protocol/svn/app/v1	[no test files]
@@ -48,38 +48,38 @@ ok  	github.com/Maxencejules/shortvideo-network/protocol/check	0.002s
 ?   	github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1	[no test files]
 ?   	github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1	[no test files]
 ok  	github.com/Maxencejules/shortvideo-network/agents/provider	0.001s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor	7.713s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	0.142s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient	1.953s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor	7.744s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/batch	0.192s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient	2.063s
 ?   	github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient/chaintest	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/classify	0.011s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.055s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch	1.090s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/classify	0.010s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/config	0.060s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch	1.110s
 ?   	github.com/Maxencejules/shortvideo-network/agents/auditor/fetch/fetchtest	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/keys	0.032s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/labels	0.097s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/policy	0.003s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/report	0.025s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/review	0.123s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/store	0.025s
-ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/verify	0.049s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/keys	0.042s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/labels	0.092s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/policy	0.005s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/report	0.010s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/review	0.152s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/store	0.026s
+ok  	github.com/Maxencejules/shortvideo-network/agents/auditor/verify	0.056s
 ?   	github.com/Maxencejules/shortvideo-network/services/broadcaster	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/cmd/svn-broadcaster	6.608s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api	0.982s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api/request	0.073s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/chain	0.481s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config	55.416s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config/secretfile	0.004s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config/strictjson	0.004s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/faultpoint	18.425s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/keys	0.044s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/logx	0.003s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/outbox	0.607s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/cmd/svn-broadcaster	6.967s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api	0.931s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api/request	0.070s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/chain	0.503s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config	6.111s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config/secretfile	0.003s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config/strictjson	0.002s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/faultpoint	18.521s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/keys	0.050s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/logx	0.007s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/outbox	0.717s
 ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/outbox/outboxcheck	0.007s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/pgdev	53.347s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/pgdev	32.778s
 ?   	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/pgtest	[no test files]
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy	0.225s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/signer	0.700s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/store	27.718s
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/worker	33.131s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy	0.217s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/signer	0.702s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/store	28.674s
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/worker	49.213s
 EXIT:0

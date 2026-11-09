@@ -1,35 +1,35 @@
 COMMAND bash -c echo\ \"loadavg\ before:\ \$\(cat\ /proc/loadavg\)\"\;\ go\ test\ -run=\'\^\$\'\ -fuzz=\'\^FuzzForwardedTx\$\'\ -fuzztime=60s\ -count=1\ ./services/broadcaster/internal/policy/\;\ s=\$\?\;\ echo\ \"loadavg\ after:\ \$\(cat\ /proc/loadavg\)\"\;\ echo\ \'new\ or\ changed\ files\ outside\ docs/evidence\ after\ the\ run:\'\;\ git\ status\ --porcelain\ --untracked-files=all\ \|\ grep\ -v\ \'\ docs/evidence/\'\;\ echo\ \'\(end\ of\ list\)\'\;\ exit\ \$s
-DATE 2026-11-09T04:24:08Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+DATE 2026-11-09T11:19:32Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
-loadavg before: 6.81 4.83 2.80 1/3027 641048
-fuzz: elapsed: 0s, gathering baseline coverage: 0/9 completed
-fuzz: elapsed: 0s, gathering baseline coverage: 9/9 completed, now fuzzing with 4 workers
-fuzz: elapsed: 3s, execs: 16 (5/sec), new interesting: 0 (total: 9)
-fuzz: elapsed: 6s, execs: 16 (0/sec), new interesting: 0 (total: 9)
-fuzz: elapsed: 9s, execs: 16 (0/sec), new interesting: 0 (total: 9)
-fuzz: elapsed: 12s, execs: 16 (0/sec), new interesting: 0 (total: 9)
-fuzz: elapsed: 15s, execs: 16 (0/sec), new interesting: 0 (total: 9)
-fuzz: elapsed: 18s, execs: 16 (0/sec), new interesting: 0 (total: 9)
-fuzz: elapsed: 21s, execs: 71794 (23923/sec), new interesting: 1 (total: 10)
-fuzz: elapsed: 24s, execs: 236407 (54865/sec), new interesting: 3 (total: 12)
-fuzz: elapsed: 27s, execs: 309722 (24435/sec), new interesting: 5 (total: 14)
-fuzz: elapsed: 30s, execs: 338456 (9582/sec), new interesting: 8 (total: 17)
-fuzz: elapsed: 33s, execs: 345540 (2361/sec), new interesting: 11 (total: 20)
-fuzz: elapsed: 36s, execs: 345540 (0/sec), new interesting: 11 (total: 20)
-fuzz: elapsed: 39s, execs: 376333 (10271/sec), new interesting: 12 (total: 21)
-fuzz: elapsed: 42s, execs: 376333 (0/sec), new interesting: 12 (total: 21)
-fuzz: elapsed: 45s, execs: 376333 (0/sec), new interesting: 12 (total: 21)
-fuzz: elapsed: 48s, execs: 376333 (0/sec), new interesting: 12 (total: 21)
-fuzz: elapsed: 51s, execs: 376333 (0/sec), new interesting: 12 (total: 21)
-fuzz: elapsed: 54s, execs: 545728 (56465/sec), new interesting: 14 (total: 23)
-fuzz: elapsed: 57s, execs: 545728 (0/sec), new interesting: 14 (total: 23)
-fuzz: elapsed: 1m0s, execs: 618298 (24185/sec), new interesting: 15 (total: 24)
-fuzz: elapsed: 1m1s, execs: 618298 (0/sec), new interesting: 15 (total: 24)
+loadavg before: 4.96 3.82 3.05 1/5211 893818
+fuzz: elapsed: 0s, gathering baseline coverage: 0/24 completed
+fuzz: elapsed: 1s, gathering baseline coverage: 24/24 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 8389 (2795/sec), new interesting: 4 (total: 28)
+fuzz: elapsed: 6s, execs: 36545 (9388/sec), new interesting: 10 (total: 34)
+fuzz: elapsed: 9s, execs: 37007 (154/sec), new interesting: 11 (total: 35)
+fuzz: elapsed: 12s, execs: 61260 (8088/sec), new interesting: 11 (total: 35)
+fuzz: elapsed: 15s, execs: 66084 (1608/sec), new interesting: 12 (total: 36)
+fuzz: elapsed: 18s, execs: 97665 (10521/sec), new interesting: 13 (total: 37)
+fuzz: elapsed: 21s, execs: 97665 (0/sec), new interesting: 13 (total: 37)
+fuzz: elapsed: 24s, execs: 125943 (9429/sec), new interesting: 16 (total: 40)
+fuzz: elapsed: 27s, execs: 130272 (1443/sec), new interesting: 26 (total: 50)
+fuzz: elapsed: 30s, execs: 131131 (286/sec), new interesting: 28 (total: 52)
+fuzz: elapsed: 33s, execs: 292040 (53640/sec), new interesting: 31 (total: 55)
+fuzz: elapsed: 36s, execs: 302339 (3434/sec), new interesting: 32 (total: 56)
+fuzz: elapsed: 39s, execs: 302339 (0/sec), new interesting: 32 (total: 56)
+fuzz: elapsed: 42s, execs: 365621 (21101/sec), new interesting: 33 (total: 57)
+fuzz: elapsed: 45s, execs: 429508 (21300/sec), new interesting: 34 (total: 58)
+fuzz: elapsed: 48s, execs: 434005 (1498/sec), new interesting: 35 (total: 59)
+fuzz: elapsed: 51s, execs: 434005 (0/sec), new interesting: 35 (total: 59)
+fuzz: elapsed: 54s, execs: 462996 (9669/sec), new interesting: 39 (total: 63)
+fuzz: elapsed: 57s, execs: 471749 (2917/sec), new interesting: 40 (total: 64)
+fuzz: elapsed: 1m0s, execs: 476287 (1512/sec), new interesting: 43 (total: 67)
+fuzz: elapsed: 1m1s, execs: 476287 (0/sec), new interesting: 43 (total: 67)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy	61.087s
-loadavg after: 5.64 4.85 2.95 1/3027 641204
+ok  	github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy	61.152s
+loadavg after: 4.55 3.95 3.16 1/5211 893952
 new or changed files outside docs/evidence after the run:
 (end of list)
 EXIT:0

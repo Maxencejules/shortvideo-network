@@ -1,10 +1,10 @@
-COMMAND /tmp/goal11-w3/ns.sh .venv/bin/python docs/evidence/goal-10/mutants.py --rev 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526 --gocache /tmp/gocache-ubuntu --logdir /tmp/goal11-w3/mutlogs-goal10
-DATE 2026-11-09T04:50:47Z
-HEAD 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526
-TREE 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
+COMMAND /tmp/goal11-w3/ns.sh .venv/bin/python docs/evidence/goal-10/mutants.py --rev 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 --gocache /tmp/gocache-ubuntu --logdir /tmp/goal11-r3/w3/mutlogs-goal10
+DATE 2026-11-09T11:48:29Z
+HEAD 8450fbdecf9bcec6bbc2de15c8927bff397b7c28
+TREE a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
 DIRTY no
-revision 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526 commit 9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526 tree 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd
-copy /tmp/goal10-mutants-zpknori_/tree (git archive)
+revision 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 commit 8450fbdecf9bcec6bbc2de15c8927bff397b7c28 tree a94f4848ee4ff54f8209fbb5b9afd969b7926bf7
+copy /tmp/goal10-mutants-okaw_qhu/tree (git archive)
 mutants 303 of 303 (council-acceptance=11, authority=49, policy=50, upgrade=77, payload=10, app=23, rehearsal=13, statecheck=27, difftest=29, docs=14)
 search strings: every one occurs exactly once; every named killer is defined
 go go version go1.26.10 linux/amd64
@@ -21,111 +21,111 @@ control command rehearsal: go test -count=1 -p 2 -v -timeout 15m -run ^(TestBadH
 control command statecheck: go test -count=1 -p 2 -v -timeout 15m -run ^(TestOpenReadOnlyRefusesWrites|TestReadChainIDReadsAsCometBFTDoes|TestStateCheckDigestsAndInvariants|TestStateCheckRefusesBadInput|TestStateCheckRefusesOtherVersion|TestStateCheckWritesNothing|TestStatecheckBuildsReportOnAHome|TestStatecheckCommand)$ ./chain/cmd/svnd/ ./chain/internal/statecheck/
 control command difftest: go test -count=1 -p 2 -v -timeout 15m -run ^(TestCouncilInvariantsSelfTest|TestCouncilRulesAreLoadBearing|TestDifferentialReachability|TestOracleSelfTest|TestPolicyWriteCheckSelfTest|TestSchemaTwoPayloadsD5|TestStaleBranchDifferential|TestStoreLayout|TestTrialSnapshotDetectsEarlyWrite|TestUnnamedParseDivergences)$ ./chain/x/authority/difftest/
 control command docs: /agent/repos/shortvideo-network/.venv/bin/python -m pytest -p no:cacheprovider -o addopts= -v --tb=short tests/unit/test_operations_docs.py::test_cited_go_tests_exist tests/unit/test_operations_docs.py::test_cited_repository_paths_exist tests/unit/test_operations_docs.py::test_cited_svnd_commands_exist tests/unit/test_operations_docs.py::test_cited_walker_subcommands_exist tests/unit/test_operations_docs.py::test_every_goal10_runbook_links_its_specification_section tests/unit/test_operations_docs.py::test_links_resolve tests/unit/test_operations_docs.py::test_no_forbidden_step_outside_the_never_list tests/unit/test_operations_docs.py::test_runbooks_exist_and_open_with_the_header tests/unit/test_operations_docs.py::test_walked_runbooks_tag_every_bash_block
-CONTROL council-acceptance PASS exit=[0] secs=23.6 named_tests=19
-CONTROL authority PASS exit=[0] secs=15.1 named_tests=35
-CONTROL policy PASS exit=[0] secs=5.6 named_tests=21
-CONTROL upgrade PASS exit=[0] secs=6.7 named_tests=42
-CONTROL payload PASS exit=[0] secs=12.2 named_tests=11
-CONTROL app PASS exit=[0] secs=26.8 named_tests=23
-CONTROL rehearsal PASS exit=[0] secs=14.3 named_tests=8
-CONTROL statecheck PASS exit=[0] secs=12.7 named_tests=8
-CONTROL difftest PASS exit=[0] secs=13.6 named_tests=10
+CONTROL council-acceptance PASS exit=[0] secs=19.1 named_tests=19
+CONTROL authority PASS exit=[0] secs=13.1 named_tests=35
+CONTROL policy PASS exit=[0] secs=4.9 named_tests=21
+CONTROL upgrade PASS exit=[0] secs=5.2 named_tests=42
+CONTROL payload PASS exit=[0] secs=11.6 named_tests=11
+CONTROL app PASS exit=[0] secs=26.0 named_tests=23
+CONTROL rehearsal PASS exit=[0] secs=13.1 named_tests=8
+CONTROL statecheck PASS exit=[0] secs=12.4 named_tests=8
+CONTROL difftest PASS exit=[0] secs=13.1 named_tests=10
 CONTROL docs PASS exit=[0] secs=0.6 named_tests=9
-KILLED council-threshold-minus-one group=council-acceptance exit=[1] secs=7.3 file=chain/x/authority/engine.go failing=chain/app:TestInsufficientApproval chain/app:TestDuplicateVotes chain/app:TestUnauthorizedPolicyWritesFailAtExecution chain/x/authority:TestKeeperInsufficientApproval chain/x/authority/difftest:TestCouncilDifferential
+KILLED council-threshold-minus-one group=council-acceptance exit=[1] secs=6.9 file=chain/x/authority/engine.go failing=chain/app:TestInsufficientApproval chain/app:TestDuplicateVotes chain/app:TestUnauthorizedPolicyWritesFailAtExecution chain/x/authority:TestKeeperInsufficientApproval chain/x/authority/difftest:TestCouncilDifferential
     reason: a change needs three distinct seat approvals (ApprovedThreshold); two must not queue it
-KILLED council-review-delay-plus-one group=council-acceptance exit=[1] secs=6.9 file=chain/x/authority/engine.go failing=chain/app:TestActivationTiming chain/x/authority:TestKeeperExpiryAndReviewDelayBoundaries chain/x/authority/difftest:TestExpiryAndDelayBoundariesDifferential
+KILLED council-review-delay-plus-one group=council-acceptance exit=[1] secs=7.0 file=chain/x/authority/engine.go failing=chain/app:TestActivationTiming chain/x/authority:TestKeeperExpiryAndReviewDelayBoundaries chain/x/authority/difftest:TestExpiryAndDelayBoundariesDifferential
     reason: execute is OUT_OF_RANGE until the block time reaches execute_after (DEC-008 review delay), and allowed at exactly execute_after
-KILLED council-approve-expiry-strict group=council-acceptance exit=[1] secs=3.7 file=chain/x/authority/engine.go failing=chain/x/authority:TestKeeperExpiryAndReviewDelayBoundaries chain/x/authority/difftest:TestExpiryAndDelayBoundariesDifferential
+KILLED council-approve-expiry-strict group=council-acceptance exit=[1] secs=3.5 file=chain/x/authority/engine.go failing=chain/x/authority:TestKeeperExpiryAndReviewDelayBoundaries chain/x/authority/difftest:TestExpiryAndDelayBoundariesDifferential
     reason: an approval at exactly the proposal expiry is EXPIRED (spec 1470-1472)
-KILLED council-execute-expiry-strict group=council-acceptance exit=[1] secs=3.9 file=chain/x/authority/engine.go failing=chain/x/authority:TestKeeperExpiryAndReviewDelayBoundaries chain/x/authority/difftest:TestExpiryAndDelayBoundariesDifferential
+KILLED council-execute-expiry-strict group=council-acceptance exit=[1] secs=3.5 file=chain/x/authority/engine.go failing=chain/x/authority:TestKeeperExpiryAndReviewDelayBoundaries chain/x/authority/difftest:TestExpiryAndDelayBoundariesDifferential
     reason: an execute at exactly the proposal expiry is EXPIRED (spec 1502-1504)
-KILLED council-duplicate-approval-guard-off group=council-acceptance exit=[1] secs=7.3 file=chain/x/authority/engine.go failing=chain/app:TestDuplicateVotes chain/x/authority:TestKeeperDuplicateVotes chain/x/authority/difftest:TestCouncilDifferential
+KILLED council-duplicate-approval-guard-off group=council-acceptance exit=[1] secs=6.7 file=chain/x/authority/engine.go failing=chain/app:TestDuplicateVotes chain/x/authority:TestKeeperDuplicateVotes chain/x/authority/difftest:TestCouncilDifferential
     reason: a second approval by the same seat is REPLAY and does not count toward the threshold
-KILLED council-execute-stale-off group=council-acceptance exit=[1] secs=7.2 file=chain/x/authority/engine.go failing=chain/app:TestConcurrentProposals chain/app:TestUpgradeRehearsalInProcess chain/x/authority:TestKeeperConcurrentProposalsOnOneKey chain/x/authority/difftest:TestStaleBranchDifferential
+KILLED council-execute-stale-off group=council-acceptance exit=[1] secs=6.7 file=chain/x/authority/engine.go failing=chain/app:TestConcurrentProposals chain/app:TestUpgradeRehearsalInProcess chain/x/authority:TestKeeperConcurrentProposalsOnOneKey chain/x/authority/difftest:TestStaleBranchDifferential
     reason: an execute whose base policy version is not the current one is STALE (or CONFLICT), including after an upgrade bump (DR-10-38)
-KILLED council-propose-stale-off group=council-acceptance exit=[1] secs=3.8 file=chain/x/authority/engine.go failing=chain/x/authority:TestBumpPolicyVersionForUpgrade chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority/difftest:TestCouncilDifferential
+KILLED council-propose-stale-off group=council-acceptance exit=[1] secs=3.6 file=chain/x/authority/engine.go failing=chain/x/authority:TestBumpPolicyVersionForUpgrade chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority/difftest:TestCouncilDifferential
     reason: a proposal on a base policy version that is not the current one is STALE (spec 1436)
 KILLED council-authority-role-bypass group=council-acceptance exit=[1] secs=7.1 file=chain/x/authority/engine.go failing=chain/app:TestUnauthorizedPolicyWritesFailAtExecution chain/x/authority:TestKeeperUnauthorizedWritesFailAtExecution chain/x/authority/difftest:TestNonAuthorityExecuteDifferential
     reason: only the AUTHORITY submitter may execute a queued change (spec 1490)
-KILLED council-propose-seat-bypass group=council-acceptance exit=[1] secs=7.2 file=chain/x/authority/engine.go failing=chain/app:TestUnauthorizedPolicyWritesFailAtExecution chain/x/authority:TestKeeperUnauthorizedWritesFailAtExecution chain/x/authority/difftest:TestCouncilDifferential
+KILLED council-propose-seat-bypass group=council-acceptance exit=[1] secs=6.9 file=chain/x/authority/engine.go failing=chain/app:TestUnauthorizedPolicyWritesFailAtExecution chain/x/authority:TestKeeperUnauthorizedWritesFailAtExecution chain/x/authority/difftest:TestCouncilDifferential
     reason: only a council seat may propose (spec 1411)
-KILLED council-approve-seat-bypass group=council-acceptance exit=[1] secs=7.5 file=chain/x/authority/engine.go failing=chain/app:TestUnauthorizedPolicyWritesFailAtExecution chain/x/authority:TestKeeperUnauthorizedWritesFailAtExecution chain/x/authority/difftest:TestCouncilDifferential
+KILLED council-approve-seat-bypass group=council-acceptance exit=[1] secs=7.3 file=chain/x/authority/engine.go failing=chain/app:TestUnauthorizedPolicyWritesFailAtExecution chain/x/authority:TestKeeperUnauthorizedWritesFailAtExecution chain/x/authority/difftest:TestCouncilDifferential
     reason: only a council seat may approve (spec 1460); a removed seat's key cannot approve
-KILLED ported-07-msg-success-skips-registry-write group=council-acceptance exit=[1] secs=5.5 file=chain/x/authority/msg.go failing=chain/x/authority:TestKeeperRegistryHookCommitsOnlyOnSuccess chain/app:TestGovernedLimitsReachTheRegistries
+KILLED ported-07-msg-success-skips-registry-write group=council-acceptance exit=[1] secs=5.1 file=chain/x/authority/msg.go failing=chain/x/authority:TestKeeperRegistryHookCommitsOnlyOnSuccess chain/app:TestGovernedLimitsReachTheRegistries
     reason: a successful execute must write the registry branch (goal 07 msg-success-skips-registry-write, ported)
-KILLED p2a-d1-propose-removed group=authority exit=[1] secs=5.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority:TestKeeperInvalidBounds chain/app:TestInvalidBounds
+KILLED p2a-d1-propose-removed group=authority exit=[1] secs=5.1 file=chain/x/authority/engine.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority:TestKeeperInvalidBounds chain/app:TestInvalidBounds
     reason: D-1: a governed limit outside the msgkit table or above its ceiling is BOUNDS at propose
-KILLED p2a-ceiling-inclusive-to-exclusive group=authority exit=[1] secs=5.3 file=chain/x/authority/policy.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority:TestKeeperInvalidBounds chain/app:TestEveryGovernedKeyAtFloorAndCeiling
+KILLED p2a-ceiling-inclusive-to-exclusive group=authority exit=[1] secs=5.1 file=chain/x/authority/policy.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority:TestKeeperInvalidBounds chain/app:TestEveryGovernedKeyAtFloorAndCeiling
     reason: a governed value equal to its ceiling is accepted
-KILLED ported-06-ceiling-gone group=authority exit=[1] secs=5.5 file=chain/x/authority/policy.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority:TestKeeperInvalidBounds chain/x/authority:TestExecuteRechecksCeiling chain/app:TestInvalidBounds
+KILLED ported-06-ceiling-gone group=authority exit=[1] secs=5.3 file=chain/x/authority/policy.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority:TestKeeperInvalidBounds chain/x/authority:TestExecuteRechecksCeiling chain/app:TestInvalidBounds
     reason: a limit value above its bounds ceiling must be rejected (goal 06 ceiling-gone, ported)
 KILLED ported-06-unknown-limit-ok group=authority exit=[1] secs=5.4 file=chain/x/authority/policy.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority:TestKeeperInvalidBounds chain/app:TestInvalidBounds
     reason: an unknown limit key must be rejected (goal 06 unknown-limit-ok, ported)
-KILLED rev-d1-after-expiry-check group=authority exit=[1] secs=5.8 file=chain/x/authority/engine.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority/difftest:TestCouncilDifferential chain/x/authority/difftest:TestDifferentialReachability
+KILLED rev-d1-after-expiry-check group=authority exit=[1] secs=5.7 file=chain/x/authority/engine.go failing=chain/x/authority:TestGovernedLimitTypedAtProposeD1 chain/x/authority/difftest:TestCouncilDifferential chain/x/authority/difftest:TestDifferentialReachability
     reason: D-1 runs right after validated_payload, before check_time, the business gate, duplicate id and expiry (W0 test-honesty review, ported)
 KILLED p2b-propose-lead-gone group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestKeeperLeadBoundaries chain/x/authority:TestScheduledGovernedLimitAtPropose chain/x/authority:TestSoftwareUpgradeAtPropose
     reason: propose checks the activation / plan-height window (D-4, D-5)
-KILLED p2b-exec-governed-lead-gone group=authority exit=[1] secs=3.4 file=chain/x/authority/engine.go failing=chain/x/authority:TestScheduledGovernedLimitAtExecute
+KILLED p2b-exec-governed-lead-gone group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestScheduledGovernedLimitAtExecute
     reason: execute re-checks a scheduled governed limit's activation window against its own block
 KILLED p2b-exec-upgrade-lead-gone group=authority exit=[1] secs=3.4 file=chain/x/authority/engine.go failing=chain/x/authority:TestSoftwareUpgradeAtExecute
     reason: execute re-checks the plan height window against its own block
-KILLED p2b-min-lead-1 group=authority exit=[1] secs=3.4 file=chain/x/authority/policy.go failing=chain/x/authority:TestKeeperLeadBoundaries chain/x/authority:TestSoftwareUpgradeAtExecute chain/x/authority:TestSoftwareUpgradeAtPropose
+KILLED p2b-min-lead-1 group=authority exit=[1] secs=3.1 file=chain/x/authority/policy.go failing=chain/x/authority:TestKeeperLeadBoundaries chain/x/authority:TestSoftwareUpgradeAtExecute chain/x/authority:TestSoftwareUpgradeAtPropose
     reason: a plan height needs at least MinActivationLeadBlocks (100, PROPOSED) of lead
-KILLED p2b-max-lead-plus-1 group=authority exit=[1] secs=3.3 file=chain/x/authority/policy.go failing=chain/x/authority:TestKeeperLeadBoundaries chain/x/authority:TestScheduledGovernedLimitAtExecute
+KILLED p2b-max-lead-plus-1 group=authority exit=[1] secs=3.2 file=chain/x/authority/policy.go failing=chain/x/authority:TestKeeperLeadBoundaries chain/x/authority:TestScheduledGovernedLimitAtExecute
     reason: a lead above MaxActivationLeadBlocks (1,000,000, PROPOSED) is BOUNDS
-KILLED p2b-max-lead-minus-1 group=authority exit=[1] secs=3.3 file=chain/x/authority/policy.go failing=chain/x/authority:TestKeeperLeadBoundaries chain/x/authority:TestScheduledGovernedLimitAtExecute
+KILLED p2b-max-lead-minus-1 group=authority exit=[1] secs=3.1 file=chain/x/authority/policy.go failing=chain/x/authority:TestKeeperLeadBoundaries chain/x/authority:TestScheduledGovernedLimitAtExecute
     reason: a lead of exactly MaxActivationLeadBlocks is accepted
-KILLED intb-lead-min-off-by-one group=authority exit=[1] secs=5.7 file=chain/x/authority/policy.go failing=chain/app:TestInvalidBounds chain/x/authority:TestKeeperLeadBoundaries
+KILLED intb-lead-min-off-by-one group=authority exit=[1] secs=5.2 file=chain/x/authority/policy.go failing=chain/app:TestInvalidBounds chain/x/authority:TestKeeperLeadBoundaries
     reason: a lead of MinActivationLeadBlocks-1 is OUT_OF_RANGE through committed transactions
-KILLED p2b-safe-max-gone group=authority exit=[1] secs=3.3 file=chain/x/authority/policy.go failing=chain/x/authority:TestHeightWindowSafeIntegerCap
+KILLED p2b-safe-max-gone group=authority exit=[1] secs=3.2 file=chain/x/authority/policy.go failing=chain/x/authority:TestHeightWindowSafeIntegerCap
     reason: a target height above 2^53-1 is BOUNDS
 KILLED p2b-applied-check-gone group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go panic=yes failing=chain/x/authority:TestSoftwareUpgradeAtExecute
     reason: a plan with an applied upgrade name is DUPLICATE_ID at execute
 KILLED p2b-pending-version-not-next group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestActivationHeightEffectiveD4 chain/x/authority:TestScheduledGovernedLimitAtExecute chain/x/authority:TestImmediateChangeSupersedesPending
     reason: a scheduled change stores the policy version the execute produces
-KILLED p2b-policy-on-message-branch group=authority exit=[1] secs=3.3 file=chain/x/authority/msg.go failing=chain/x/authority:TestHookWriteDroppedOnRejectedKeep
+KILLED p2b-policy-on-message-branch group=authority exit=[1] secs=3.2 file=chain/x/authority/msg.go failing=chain/x/authority:TestHookWriteDroppedOnRejectedKeep
     reason: the policy writer is bound to the registry branch, dropped on a rejected keep
-KILLED p2b-accounts-on-message-branch group=authority exit=[1] secs=3.2 file=chain/x/authority/msg.go failing=chain/x/authority:TestHookWriteDroppedOnRejectedKeep
+KILLED p2b-accounts-on-message-branch group=authority exit=[1] secs=3.1 file=chain/x/authority/msg.go failing=chain/x/authority:TestHookWriteDroppedOnRejectedKeep
     reason: the account creator is bound to the registry branch, dropped on a rejected keep
 KILLED p2b-governed-recheck-gone group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestExecuteRechecksCeiling chain/x/authority:TestSafetyCapsNotGovernable
     reason: execute re-checks the governed key and ceiling
 KILLED p2b-upgrade-digest-not-passed group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestCancelUpgradePayload chain/x/authority:TestExecuteEmitsPolicyEventsD2 chain/x/authority:TestNoPayloadApprovesDecision
     reason: the executed plan carries the payload's release digest
-KILLED p2a-d7-execute-removed group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
+KILLED p2a-d7-execute-removed group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
     reason: D-7: a validator change naming a council seat key is DUPLICATE_ID at execute
-KILLED p2a-d7-retired-ignored group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
+KILLED p2a-d7-retired-ignored group=authority exit=[1] secs=3.1 file=chain/x/authority/engine.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
     reason: D-7: a retired council key stays unusable as a validator key
-KILLED p2a-d7-rotation-removed group=authority exit=[1] secs=3.4 file=chain/x/authority/engine.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
+KILLED p2a-d7-rotation-removed group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
     reason: D-7: a seat key that is a validator consensus key is DUPLICATE_ID
-KILLED p2a-d7-rotation-pending-ignored group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
+KILLED p2a-d7-rotation-pending-ignored group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
     reason: D-7: a seat key named by a pending validator change is DUPLICATE_ID
 KILLED p2a-d7-genesis-removed group=authority exit=[1] secs=3.3 file=chain/x/authority/genesis.go failing=chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7
     reason: D-7: genesis refuses a seat key that is a validator key
-KILLED p2a-d10-cap-64 group=authority exit=[1] secs=3.2 file=chain/x/authority/genesis.go failing=chain/x/authority:TestSeatIDLengthAtGenesisD10
+KILLED p2a-d10-cap-64 group=authority exit=[1] secs=3.1 file=chain/x/authority/genesis.go failing=chain/x/authority:TestSeatIDLengthAtGenesisD10
     reason: D-10: a seat id is at most 59 characters at genesis
-KILLED p2a-d2-old-version group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestExecuteEmitsPolicyEventsD2
+KILLED p2a-d2-old-version group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestExecuteEmitsPolicyEventsD2
     reason: D-2: PolicyChanged carries the new policy version
-KILLED p2a-d2-no-proposal-executed group=authority exit=[1] secs=3.2 file=chain/x/authority/events.go failing=chain/x/authority:TestExecuteEmitsPolicyEventsD2
+KILLED p2a-d2-no-proposal-executed group=authority exit=[1] secs=3.1 file=chain/x/authority/events.go failing=chain/x/authority:TestExecuteEmitsPolicyEventsD2
     reason: D-2: a successful execute emits ProposalExecuted
-KILLED p2a-d2-emit-on-keep group=authority exit=[1] secs=3.2 file=chain/x/authority/msg.go failing=chain/x/authority:TestExecuteEmitsPolicyEventsD2
+KILLED p2a-d2-emit-on-keep group=authority exit=[1] secs=3.1 file=chain/x/authority/msg.go failing=chain/x/authority:TestExecuteEmitsPolicyEventsD2
     reason: D-2: a keep outcome emits no policy event
 KILLED p2b-ensure-account-gone group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtExecute chain/x/authority:TestCouncilSeatPayload
     reason: a seat payload creates the new key's account
-KILLED p2b-seat-config-not-installed group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtExecute
+KILLED p2b-seat-config-not-installed group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtExecute
     reason: a successful seat payload installs the staged config
-KILLED p2b-seat-config-not-reset group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestFailedSeatExecuteKeepsTheStateConfig
+KILLED p2b-seat-config-not-reset group=authority exit=[1] secs=3.5 file=chain/x/authority/engine.go failing=chain/x/authority:TestFailedSeatExecuteKeepsTheStateConfig
     reason: only this execute's seat payload may stage a config
-KILLED p2b-seat-order-old group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtExecute chain/x/authority:TestRotateCouncilSeatProtocolOrder
+KILLED p2b-seat-order-old group=authority exit=[1] secs=3.5 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtExecute chain/x/authority:TestRotateCouncilSeatProtocolOrder
     reason: an unknown seat is NOT_FOUND before the duplicate-key check
-KILLED intb-retired-key-accepted group=authority exit=[1] secs=5.2 file=chain/x/authority/engine.go failing=chain/app:TestRemovedCouncilSeat chain/app:TestRejectedMessagesLeaveTheFullAuthorityState
+KILLED intb-retired-key-accepted group=authority exit=[1] secs=5.3 file=chain/x/authority/engine.go failing=chain/app:TestRemovedCouncilSeat chain/app:TestRejectedMessagesLeaveTheFullAuthorityState
     reason: a retired council key cannot become a seat key again (CONFLICT)
 KILLED plan-seat-old-key-not-retired group=authority exit=[1] secs=5.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtExecute chain/x/authority:TestSeatKeyIsNotAValidatorKeyD7 chain/app:TestRemovedCouncilSeat
     reason: a seat replacement retires the old seat key (plan 16.9 seats: skip retiring the old key)
-KILLED plan-seat-account-before-checks group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtExecute
+KILLED plan-seat-account-before-checks group=authority exit=[1] secs=3.4 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtExecute
     reason: a seat payload creates the new key's account only after every seat check passed (plan 16.9 seats: EnsureAccount before the payload checks)
-KILLED plan-decisions-seat-payload-approves group=authority exit=[1] secs=3.5 file=chain/x/authority/engine.go failing=chain/x/authority:TestNoPayloadApprovesDecision
+KILLED plan-decisions-seat-payload-approves group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestNoPayloadApprovesDecision
     reason: no council payload approves a blocked decision row (plan 16.9 decisions)
-KILLED p2a-query-first-item-free group=authority exit=[1] secs=3.4 file=chain/x/authority/query.go failing=chain/x/authority:TestGovernanceQueryPaging
+KILLED p2a-query-first-item-free group=authority exit=[1] secs=3.2 file=chain/x/authority/query.go failing=chain/x/authority:TestGovernanceQueryPaging
     reason: Query/Governance pages are bounded by the page limit
 KILLED p2a-query-pending-index-unchecked group=authority exit=[1] secs=3.4 file=chain/x/authority/query.go failing=chain/x/authority:TestGovernanceQueryRejects
     reason: a pending-section cursor beyond the list is BOUNDS
@@ -133,479 +133,479 @@ KILLED p2a-query-limit-ignores-governed group=authority exit=[1] secs=3.3 file=c
     reason: the page limit reads the governed max_page_limit
 KILLED rev-query-seat-cursor-skips-item group=authority exit=[1] secs=3.2 file=chain/x/authority/query.go failing=chain/x/authority:TestGovernanceQueryPaging
     reason: the seat cursor is inclusive: paging returns every seat once (W0 review)
-KILLED p2b-page-limit-ceiling-fallback group=authority exit=[1] secs=3.3 file=chain/x/authority/query.go failing=chain/x/authority:TestGovernanceQueryReadsPolicy
+KILLED p2b-page-limit-ceiling-fallback group=authority exit=[1] secs=3.1 file=chain/x/authority/query.go failing=chain/x/authority:TestGovernanceQueryReadsPolicy
     reason: without a policy keeper the governance query fails instead of using the ceiling
-KILLED p2b-devnet-rows-any-chain group=authority exit=[1] secs=3.6 file=chain/x/authority/engine.go failing=chain/x/authority:TestGovernanceDevnetTestParameters
+KILLED p2b-devnet-rows-any-chain group=authority exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority:TestGovernanceDevnetTestParameters
     reason: devnet test parameters are reported only on a devnet chain id
-KILLED p2b-devnet-rows-no-label-filter group=authority exit=[1] secs=3.4 file=chain/x/authority/engine.go failing=chain/x/authority:TestGovernanceDevnetTestParameters
+KILLED p2b-devnet-rows-no-label-filter group=authority exit=[1] secs=3.1 file=chain/x/authority/engine.go failing=chain/x/authority:TestGovernanceDevnetTestParameters
     reason: only labelled, unapproved devnet rows are reported
-KILLED p2a-bump-plus-two group=authority exit=[1] secs=3.5 file=chain/x/authority/upgrade.go failing=chain/x/authority:TestBumpPolicyVersionForUpgrade
+KILLED p2a-bump-plus-two group=authority exit=[1] secs=3.1 file=chain/x/authority/upgrade.go failing=chain/x/authority:TestBumpPolicyVersionForUpgrade
     reason: an upgrade bumps the policy version by exactly one (DR-10-38)
-KILLED p2a-bump-no-overflow-check group=authority exit=[1] secs=3.8 file=chain/x/authority/upgrade.go failing=chain/x/authority:TestBumpPolicyVersionForUpgrade
+KILLED p2a-bump-no-overflow-check group=authority exit=[1] secs=3.3 file=chain/x/authority/upgrade.go failing=chain/x/authority:TestBumpPolicyVersionForUpgrade
     reason: the bump at 2^64-1 is OVERFLOW
-KILLED rev-bump-writes-on-damaged-version group=authority exit=[1] secs=3.7 file=chain/x/authority/upgrade.go failing=chain/x/authority:TestBumpPolicyVersionForUpgrade
+KILLED rev-bump-writes-on-damaged-version group=authority exit=[1] secs=3.4 file=chain/x/authority/upgrade.go failing=chain/x/authority:TestBumpPolicyVersionForUpgrade
     reason: the bump refuses a damaged policy version instead of writing (W0 review)
-KILLED p2a-writer-called-outside-apply group=authority exit=[1] secs=4.0 file=chain/x/authority/engine.go failing=chain/x/authority:TestPolicyWriterCallSites
+KILLED p2a-writer-called-outside-apply group=authority exit=[1] secs=3.3 file=chain/x/authority/engine.go failing=chain/x/authority:TestPolicyWriterCallSites
     reason: the policy writer is called only from applyPayload (P2a, re-anchored)
-KILLED p2b-no-layout-key group=authority exit=[1] secs=3.9 file=chain/x/authority/store.go failing=chain/x/authority:TestLayoutKeyAndConsensusVersion
+KILLED p2b-no-layout-key group=authority exit=[1] secs=3.4 file=chain/x/authority/store.go failing=chain/x/authority:TestLayoutKeyAndConsensusVersion
     reason: authority genesis writes layout key 2
-KILLED p2b-export-any-layout group=authority exit=[1] secs=4.1 file=chain/x/authority/store.go failing=chain/x/authority:TestLayoutKeyAndConsensusVersion
+KILLED p2b-export-any-layout group=authority exit=[1] secs=3.3 file=chain/x/authority/store.go failing=chain/x/authority:TestLayoutKeyAndConsensusVersion
     reason: export refuses a store whose layout is not ConsensusVersion
-KILLED ported-06-swap-engine-282 group=payload exit=[1] secs=3.2 file=chain/x/authority/engine.go failing=chain/x/authority/difftest:TestCouncilDifferential
+KILLED ported-06-swap-engine-282 group=payload exit=[1] secs=2.6 file=chain/x/authority/engine.go failing=chain/x/authority/difftest:TestCouncilDifferential
     reason: a parameter key that does not match the payload is MALFORMED (goal 06 swap-engine-282, ported)
-KILLED p2b-canon-drops-activation group=payload exit=[1] secs=3.8 file=chain/x/authority/payload.go failing=chain/x/authority:TestPayloadVectors chain/x/authority:TestScheduledGovernedLimitAtPropose
+KILLED p2b-canon-drops-activation group=payload exit=[1] secs=3.1 file=chain/x/authority/payload.go failing=chain/x/authority:TestPayloadVectors chain/x/authority:TestScheduledGovernedLimitAtPropose
     reason: the activation height is part of the canonical payload text
-KILLED plan-payload-v0-text-changed group=payload exit=[1] secs=4.4 file=chain/x/authority/payload.go failing=chain/x/authority:TestPayloadVectors
+KILLED plan-payload-v0-text-changed group=payload exit=[1] secs=3.1 file=chain/x/authority/payload.go failing=chain/x/authority:TestPayloadVectors
     reason: a v0 governed limit keeps its canonical text and digest (Q1 (a): existing payload digests unchanged)
-KILLED p2b-upgrade-param-key group=payload exit=[1] secs=4.6 file=chain/x/authority/payload.go failing=chain/x/authority:TestCancelUpgradeAtPropose chain/x/authority:TestCancelUpgradePayload
+KILLED p2b-upgrade-param-key group=payload exit=[1] secs=3.2 file=chain/x/authority/payload.go failing=chain/x/authority:TestCancelUpgradeAtPropose chain/x/authority:TestCancelUpgradePayload
     reason: upgrade and cancel payloads bind the fixed upgrade parameter key
-KILLED p2b-seat-param-key group=payload exit=[1] secs=4.1 file=chain/x/authority/payload.go failing=chain/x/authority:TestCouncilSeatAtPropose chain/x/authority:TestCouncilSeatPayload
+KILLED p2b-seat-param-key group=payload exit=[1] secs=3.1 file=chain/x/authority/payload.go failing=chain/x/authority:TestCouncilSeatAtPropose chain/x/authority:TestCouncilSeatPayload
     reason: a seat payload binds the parameter key seat-<id>
-KILLED p2b-seat-key-not-decoded group=payload exit=[1] secs=4.0 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtPropose chain/x/authority:TestCouncilSeatPayload
+KILLED p2b-seat-key-not-decoded group=payload exit=[1] secs=3.1 file=chain/x/authority/engine.go failing=chain/x/authority:TestCouncilSeatAtPropose chain/x/authority:TestCouncilSeatPayload
     reason: the decoded seat payload carries the new public key
-KILLED p2b-upgrade-digest-len-unchecked group=payload exit=[1] secs=4.0 file=chain/x/authority/payload.go failing=chain/x/authority:TestSoftwareUpgradeAtPropose
+KILLED p2b-upgrade-digest-len-unchecked group=payload exit=[1] secs=3.0 file=chain/x/authority/payload.go failing=chain/x/authority:TestSoftwareUpgradeAtPropose
     reason: a release digest must name SHA-256 and be 32 bytes
-KILLED p4c-chain-withdraw-reason-first group=payload exit=[1] secs=10.1 file=chain/x/authority/payload.go failing=chain/x/authority/difftest:TestCouncilRulesAreLoadBearing chain/x/authority/difftest:TestUnnamedParseDivergences
+KILLED p4c-chain-withdraw-reason-first group=payload exit=[1] secs=7.6 file=chain/x/authority/payload.go failing=chain/x/authority/difftest:TestCouncilRulesAreLoadBearing chain/x/authority/difftest:TestUnnamedParseDivergences
     reason: force-withdraw checks the content id before the reason digest (the G-11 shape space sees a reordering)
-KILLED p4c-chain-power-before-activation group=payload exit=[1] secs=4.0 file=chain/x/authority/payload.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences chain/x/authority/difftest:TestShapeRuleNearMisses
+KILLED p4c-chain-power-before-activation group=payload exit=[1] secs=3.1 file=chain/x/authority/payload.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences chain/x/authority/difftest:TestShapeRuleNearMisses
     reason: validator power is checked after the activation (the shape space and near misses see a reordering)
-KILLED p4c-chain-governed-value-malformed group=payload exit=[1] secs=9.7 file=chain/x/authority/payload.go failing=chain/x/authority/difftest:TestCouncilRulesAreLoadBearing chain/x/authority/difftest:TestUnnamedParseDivergences
+KILLED p4c-chain-governed-value-malformed group=payload exit=[1] secs=8.0 file=chain/x/authority/payload.go failing=chain/x/authority/difftest:TestCouncilRulesAreLoadBearing chain/x/authority/difftest:TestUnnamedParseDivergences
     reason: a governed value of 0 is BOUNDS (G-11), not MALFORMED
-KILLED p1b-apply-strict group=policy exit=[1] secs=5.7 file=chain/x/policy/apply.go failing=chain/x/policy:TestApplyDueOrderAndBounds chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome chain/app:TestActivationTiming chain/app:TestLeaseAtActivationMinusOne
+KILLED p1b-apply-strict group=policy exit=[1] secs=5.2 file=chain/x/policy/apply.go failing=chain/x/policy:TestApplyDueOrderAndBounds chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome chain/app:TestActivationTiming chain/app:TestLeaseAtActivationMinusOne
     reason: ApplyDue applies a pending change at its activation height a, not at a+1 (D-4)
-KILLED plan-apply-one-block-early group=policy exit=[1] secs=5.4 file=chain/x/policy/apply.go failing=chain/x/policy:TestApplyDueOrderAndBounds chain/app:TestActivationTiming chain/app:TestLeaseAtActivationMinusOne
+KILLED plan-apply-one-block-early group=policy exit=[1] secs=4.9 file=chain/x/policy/apply.go failing=chain/x/policy:TestApplyDueOrderAndBounds chain/app:TestActivationTiming chain/app:TestLeaseAtActivationMinusOne
     reason: a pending change is not in force at a-1 (D-4)
-KILLED p1b-apply-keep-row group=policy exit=[1] secs=2.8 file=chain/x/policy/apply.go failing=chain/x/policy:TestApplyDueOrderAndBounds chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome
+KILLED p1b-apply-keep-row group=policy exit=[1] secs=2.5 file=chain/x/policy/apply.go failing=chain/x/policy:TestApplyDueOrderAndBounds chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome
     reason: an applied pending change loses its pending row
-KILLED p1b-apply-no-event group=policy exit=[1] secs=2.8 file=chain/x/policy/apply.go failing=chain/x/policy:TestApplyDueOrderAndBounds chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome
+KILLED p1b-apply-no-event group=policy exit=[1] secs=2.5 file=chain/x/policy/apply.go failing=chain/x/policy:TestApplyDueOrderAndBounds chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome
     reason: ApplyDue emits policy_activated for every change it applies
-KILLED intb-leases-before-policy group=policy exit=[1] secs=4.9 file=chain/app/app.go failing=chain/app:TestActivationGovernsSameBlockExpiryD8
+KILLED intb-leases-before-policy group=policy exit=[1] secs=4.3 file=chain/app/app.go failing=chain/app:TestActivationGovernsSameBlockExpiryD8
     reason: x/policy's BeginBlock runs before x/leases, so a change in force at a governs a's expiry sweep (D-8)
-KILLED p1-setlimit-keeps-pending group=policy exit=[1] secs=5.2 file=chain/x/policy/writer.go failing=chain/x/policy:TestSetLimitSupersedesPending chain/app:TestImmediateChangeSupersedesPending chain/app:TestPolicyQueryThroughABCI
+KILLED p1-setlimit-keeps-pending group=policy exit=[1] secs=4.8 file=chain/x/policy/writer.go failing=chain/x/policy:TestSetLimitSupersedesPending chain/app:TestImmediateChangeSupersedesPending chain/app:TestPolicyQueryThroughABCI
     reason: an immediate change deletes the pending change of the same key
-KILLED p1-activation-at-current-height group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestSetLimitAndSchedulePending
+KILLED p1-activation-at-current-height group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestSetLimitAndSchedulePending
     reason: an activation height at or below the current block is OUT_OF_RANGE
-KILLED p1-pending-version-order group=policy exit=[1] secs=2.8 file=chain/x/policy/writer.go failing=chain/x/policy:TestSetLimitAndSchedulePending
+KILLED p1-pending-version-order group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestSetLimitAndSchedulePending
     reason: a replacement pending change needs a newer policy version
-KILLED p1b-plan-no-min-lead group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome chain/x/policy:TestPlanScheduleReplaceCancel
+KILLED p1b-plan-no-min-lead group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome chain/x/policy:TestPlanScheduleReplaceCancel
     reason: a plan height below MinActivationLeadBlocks (100, PROPOSED) of lead is OUT_OF_RANGE
-KILLED plan-plan-past-height group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestPlanScheduleReplaceCancel
+KILLED plan-plan-past-height group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestPlanScheduleReplaceCancel
     reason: a plan height below the current block is OUT_OF_RANGE, not BOUNDS (plan 16.9: accept a past height; P7 added the row "height below the block" to TestPlanScheduleReplaceCancel)
-KILLED p1b-upper-lead-off-by-one group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestSetLimitAndSchedulePending chain/x/policy:TestPlanScheduleReplaceCancel
+KILLED p1b-upper-lead-off-by-one group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestSetLimitAndSchedulePending chain/x/policy:TestPlanScheduleReplaceCancel
     reason: a lead of exactly MaxActivationLeadBlocks (1,000,000, PROPOSED) is accepted
-KILLED p1b-plan-name-no-conflict group=policy exit=[1] secs=5.9 file=chain/x/policy/writer.go failing=chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome chain/x/policy:TestPlanScheduleReplaceCancel chain/app:TestRejectedMessagesLeaveTheFullAuthorityState
+KILLED p1b-plan-name-no-conflict group=policy exit=[1] secs=5.3 file=chain/x/policy/writer.go failing=chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome chain/x/policy:TestPlanScheduleReplaceCancel chain/app:TestRejectedMessagesLeaveTheFullAuthorityState
     reason: a plan name used before with another digest is CONFLICT (Q3 (a) text; ORCH-10)
-KILLED p1b-plan-name-not-written group=policy exit=[1] secs=2.7 file=chain/x/policy/writer.go failing=chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome chain/x/policy:TestPlanScheduleReplaceCancel
+KILLED p1b-plan-name-not-written group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestGovernedChangeSequenceReachesEveryOutcome chain/x/policy:TestPlanScheduleReplaceCancel
     reason: the first plan of a name writes its plan-name row (0x08)
-KILLED p1-applied-name-schedulable group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestPlanScheduleReplaceCancel
+KILLED p1-applied-name-schedulable group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestPlanScheduleReplaceCancel
     reason: a plan with an applied name is DUPLICATE_ID
-KILLED plan-cancel-ignores-name group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestPlanScheduleReplaceCancel
+KILLED plan-cancel-ignores-name group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestPlanScheduleReplaceCancel
     reason: cancel_upgrade of another name is NOT_FOUND and keeps the stored plan
-KILLED p1b-record-absent-plan-ok group=policy exit=[1] secs=2.5 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
+KILLED p1b-record-absent-plan-ok group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
     reason: RecordUpgrade refuses an absent plan row (Q2 (a): an upgrade applies only from an executed council plan)
-KILLED p1-record-skips-plan-match group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
+KILLED p1-record-skips-plan-match group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
     reason: RecordUpgrade refuses a stored plan of another name or height (P1 M9, re-anchored)
-KILLED p1-record-keeps-plan group=policy exit=[1] secs=2.7 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
+KILLED p1-record-keeps-plan group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
     reason: RecordUpgrade deletes the plan it applied (P1 M10, re-anchored)
-KILLED rev-record-accepts-app-version-jump group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
+KILLED rev-record-accepts-app-version-jump group=policy exit=[1] secs=2.4 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
     reason: the app version moves by exactly one at an upgrade (W0 review)
-KILLED rev-record-keeps-dropped-module-rows group=policy exit=[1] secs=2.6 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
+KILLED rev-record-keeps-dropped-module-rows group=policy exit=[1] secs=2.5 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
     reason: a module dropped from the version map loses its row (W0 review)
-KILLED rev-record-any-height group=policy exit=[1] secs=2.5 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
+KILLED rev-record-any-height group=policy exit=[1] secs=2.9 file=chain/x/policy/writer.go failing=chain/x/policy:TestRecordUpgrade
     reason: RecordUpgrade records only at the block height (W0 review)
-KILLED p1b-initversions-plan-names-ok group=policy exit=[1] secs=2.7 file=chain/x/policy/writer.go failing=chain/x/policy:TestInitVersions
+KILLED p1b-initversions-plan-names-ok group=policy exit=[1] secs=2.5 file=chain/x/policy/writer.go failing=chain/x/policy:TestInitVersions
     reason: InitVersions refuses a store that already holds a plan-name row
-KILLED p1b-genesis-app-version-ok group=policy exit=[1] secs=2.7 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
+KILLED p1b-genesis-app-version-ok group=policy exit=[1] secs=2.5 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
     reason: policy genesis carries no app_version (ORCH-9)
-KILLED p1b-genesis-plan-ok group=policy exit=[1] secs=2.7 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
+KILLED p1b-genesis-plan-ok group=policy exit=[1] secs=2.4 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
     reason: policy genesis carries no upgrade plan
-KILLED p1b-genesis-pending-ok group=policy exit=[1] secs=2.6 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
+KILLED p1b-genesis-pending-ok group=policy exit=[1] secs=2.4 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
     reason: policy genesis carries no pending change
-KILLED p1b-genesis-governed-ok group=policy exit=[1] secs=2.7 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
+KILLED p1b-genesis-governed-ok group=policy exit=[1] secs=2.4 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
     reason: policy genesis carries no governed value
-KILLED p1-genesis-accepts-approved group=policy exit=[1] secs=2.8 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport chain/x/policy:FuzzPolicyGenesisJSON
+KILLED p1-genesis-accepts-approved group=policy exit=[1] secs=2.5 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport chain/x/policy:FuzzPolicyGenesisJSON
     reason: policy genesis refuses an approved decision row
-KILLED p1-initgenesis-nonempty-store group=policy exit=[1] secs=2.8 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport chain/x/policy:TestModule chain/x/policy:TestNoMigrationFromScaffoldLayout
+KILLED p1-initgenesis-nonempty-store group=policy exit=[1] secs=2.5 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport chain/x/policy:TestModule chain/x/policy:TestNoMigrationFromScaffoldLayout
     reason: InitGenesis refuses a non-empty store
-KILLED p1b-export-plan-names-ok group=policy exit=[1] secs=2.8 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
+KILLED p1b-export-plan-names-ok group=policy exit=[1] secs=2.4 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
     reason: export refuses a store with a plan-name row
-KILLED rev-export-ignores-applied-rows group=policy exit=[1] secs=3.0 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
+KILLED rev-export-ignores-applied-rows group=policy exit=[1] secs=2.4 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
     reason: export refuses a store with an applied-upgrade row (W0 review)
-KILLED rev-export-ignores-policy-version group=policy exit=[1] secs=2.9 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
+KILLED rev-export-ignores-policy-version group=policy exit=[1] secs=2.3 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
     reason: export refuses a policy version other than 1 (W0 review)
-KILLED p1-export-ignores-app-version group=policy exit=[1] secs=2.9 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
+KILLED p1-export-ignores-app-version group=policy exit=[1] secs=2.4 file=chain/x/policy/genesis.go failing=chain/x/policy:TestGenesisValidateImportExport
     reason: export refuses an app version other than 1
-KILLED p1b-module-beginblock-noop group=policy exit=[1] secs=2.9 file=chain/x/policy/module.go failing=chain/x/policy:TestModule
+KILLED p1b-module-beginblock-noop group=policy exit=[1] secs=2.4 file=chain/x/policy/module.go failing=chain/x/policy:TestModule
     reason: the module's BeginBlock runs ApplyDue
-KILLED p1b-pending-walk-6 group=policy exit=[1] secs=2.8 file=chain/x/policy/store.go failing=chain/x/policy:TestApplyDueOrderAndBounds
+KILLED p1b-pending-walk-6 group=policy exit=[1] secs=2.4 file=chain/x/policy/store.go failing=chain/x/policy:TestApplyDueOrderAndBounds
     reason: the pending walk is bounded by the number of governed keys
-KILLED p1-governed-read-above-ceiling group=policy exit=[1] secs=3.1 file=chain/x/policy/store.go failing=chain/x/policy:TestGovernedLimitReadSurface
+KILLED p1-governed-read-above-ceiling group=policy exit=[1] secs=2.4 file=chain/x/policy/store.go failing=chain/x/policy:TestGovernedLimitReadSurface
     reason: a stored governed value above its ceiling fails closed on read
-KILLED p1b-query-raw-governed group=policy exit=[1] secs=2.8 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
+KILLED p1b-query-raw-governed group=policy exit=[1] secs=2.4 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
     reason: Query/Policy reports the effective value of every governed key
-KILLED p1b-query-no-pending group=policy exit=[1] secs=2.8 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
+KILLED p1b-query-no-pending group=policy exit=[1] secs=2.3 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
     reason: Query/Policy reports pending changes
-KILLED p1b-query-no-plan group=policy exit=[1] secs=2.8 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
+KILLED p1b-query-no-plan group=policy exit=[1] secs=2.3 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
     reason: Query/Policy reports the stored plan
-KILLED p1b-query-no-app-version group=policy exit=[1] secs=2.9 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
+KILLED p1b-query-no-app-version group=policy exit=[1] secs=2.3 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
     reason: Query/Policy reports the app version
-KILLED p1-query-version-constant group=policy exit=[1] secs=3.2 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
+KILLED p1-query-version-constant group=policy exit=[1] secs=2.3 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
     reason: Query/Policy reports the stored policy version (P1 M15, re-anchored)
-KILLED rev-query-aliases-decisions group=policy exit=[1] secs=2.7 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
+KILLED rev-query-aliases-decisions group=policy exit=[1] secs=2.4 file=chain/x/policy/query.go failing=chain/x/policy:TestPolicyQuery
     reason: Query/Policy returns copies of the decision rows (W0 review)
-KILLED p1b-ptest-decisions-value-only group=policy exit=[1] secs=2.4 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestCheckDecisionsSelfTest
+KILLED p1b-ptest-decisions-value-only group=policy exit=[1] secs=2.0 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestCheckDecisionsSelfTest
     reason: CheckDecisions compares the whole pending row with the latest decision
-KILLED p1b-ptest-plan-name-check-off group=policy exit=[1] secs=2.4 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
+KILLED p1b-ptest-plan-name-check-off group=policy exit=[1] secs=2.0 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
     reason: I4: a plan needs a plan-name row with its digest
-KILLED p1b-ptest-applied-name-off group=policy exit=[1] secs=2.5 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
+KILLED p1b-ptest-applied-name-off group=policy exit=[1] secs=2.0 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
     reason: I4: an applied upgrade needs a plan-name row
-KILLED p1b-ptest-decisions-due-keeps-pending group=policy exit=[1] secs=2.3 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestCheckDecisionsSelfTest
+KILLED p1b-ptest-decisions-due-keeps-pending group=policy exit=[1] secs=1.9 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestCheckDecisionsSelfTest
     reason: I3: an immediate decision leaves no pending row
-KILLED p1b-ptest-decisions-undecided-ok group=policy exit=[1] secs=2.4 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestCheckDecisionsSelfTest
+KILLED p1b-ptest-decisions-undecided-ok group=policy exit=[1] secs=2.0 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestCheckDecisionsSelfTest
     reason: I3: a governed or pending row needs a decision
-KILLED p1-ptest-pending-activation group=policy exit=[1] secs=2.4 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
+KILLED p1-ptest-pending-activation group=policy exit=[1] secs=2.0 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
     reason: the checker refuses a pending change at or below the height
-KILLED p1-ptest-i5-count group=policy exit=[1] secs=2.5 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
+KILLED p1-ptest-i5-count group=policy exit=[1] secs=2.0 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
     reason: I5: the app version is the applied count + 1
-KILLED rev-ptest-i5-applied-height-unbounded group=policy exit=[1] secs=2.2 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
+KILLED rev-ptest-i5-applied-height-unbounded group=policy exit=[1] secs=2.0 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
     reason: I5: an applied height above the current height is a violation (W0 review)
-KILLED rev-ptest-i6-policy-entry-unchecked group=policy exit=[1] secs=2.7 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
+KILLED rev-ptest-i6-policy-entry-unchecked group=policy exit=[1] secs=2.1 file=chain/x/policy/policytest/policytest.go failing=chain/x/policy/policytest:TestPolicyInvariantsSelfTest
     reason: I6: the version map's policy entry equals the layout (W0 review)
-KILLED p3a-gate-no-row2 group=upgrade exit=[1] secs=2.6 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow chain/upgrade:TestRunnerGateReadsState
+KILLED p3a-gate-no-row2 group=upgrade exit=[1] secs=2.4 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow chain/upgrade:TestRunnerGateReadsState
     reason: gate row 2: a due plan without its handler refuses to start
-KILLED p3b-gate-accept-due-without-handler group=upgrade exit=[1] secs=2.5 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade/onchain:TestOnChainGateTable chain/upgrade/onchain:TestOnChainHaltAndSwitch
+KILLED p3b-gate-accept-due-without-handler group=upgrade exit=[1] secs=2.2 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade/onchain:TestOnChainGateTable chain/upgrade/onchain:TestOnChainHaltAndSwitch
     reason: gate row 2 on the on-chain plan rows
-KILLED p3a-gate-row4-starts group=upgrade exit=[1] secs=2.9 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow chain/upgrade:TestRunnerGateReadsState
+KILLED p3a-gate-row4-starts group=upgrade exit=[1] secs=2.3 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow chain/upgrade:TestRunnerGateReadsState
     reason: gate row 4: a binary started too early refuses
-KILLED p3b-gate-accept-too-early group=upgrade exit=[1] secs=5.8 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade/onchain:TestOnChainGateTable chain/app:TestLoadGateTable
+KILLED p3b-gate-accept-too-early group=upgrade exit=[1] secs=5.1 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade/onchain:TestOnChainGateTable chain/app:TestLoadGateTable
     reason: gate row 4 through app.New's load gate (plan 16.9: accept too early)
-KILLED p3a-gate-no-row5-app group=upgrade exit=[1] secs=2.6 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable
+KILLED p3a-gate-no-row5-app group=upgrade exit=[1] secs=2.4 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable
     reason: gate row 5: state newer than the binary (Ps > P) refuses
-KILLED p3b-gate-accept-newer group=upgrade exit=[1] secs=2.5 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade/onchain:TestOnChainGateTable
+KILLED p3b-gate-accept-newer group=upgrade exit=[1] secs=2.2 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade/onchain:TestOnChainGateTable
     reason: gate row 5 through app.New's load gate
-KILLED p3a-gate-no-row5-module group=upgrade exit=[1] secs=2.6 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable
+KILLED p3a-gate-no-row5-module group=upgrade exit=[1] secs=2.4 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable
     reason: gate row 5: a stored module version above the binary's refuses
-KILLED plan-gate-row1-module-mismatch-ignored group=upgrade exit=[1] secs=2.6 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable
+KILLED plan-gate-row1-module-mismatch-ignored group=upgrade exit=[1] secs=2.3 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable
     reason: gate row 6: an equal app version with another module map refuses (plan 16.9: ignore a module missing from the stored map)
 KILLED p3a-gate-no-version-app-consistency group=upgrade exit=[1] secs=2.4 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow
     reason: gate row 6: the stored Version.App must equal the stored app version
-KILLED p3a-gate-no-layout-consistency group=upgrade exit=[1] secs=2.4 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow
+KILLED p3a-gate-no-layout-consistency group=upgrade exit=[1] secs=2.2 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow
     reason: gate row 6: a layout key that differs from the version map refuses
-KILLED p3a-gate-handler-to-unchecked group=upgrade exit=[1] secs=2.5 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow
+KILLED p3a-gate-handler-to-unchecked group=upgrade exit=[1] secs=2.3 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow
     reason: gate row 3 needs a handler whose To is this binary's app version
-KILLED p3a-gate-plan-below-unchecked group=upgrade exit=[1] secs=2.4 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow chain/upgrade:FuzzGateStartsOnlyOnRows1And3
+KILLED p3a-gate-plan-below-unchecked group=upgrade exit=[1] secs=2.3 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateTable chain/upgrade:TestGateFuzzDomainReachesEveryRow chain/upgrade:FuzzGateStartsOnlyOnRows1And3
     reason: gate row 6: a plan at or below the last committed height refuses
 KILLED p3a-gate-l0-decides group=upgrade exit=[1] secs=2.4 file=chain/upgrade/gate.go failing=chain/upgrade:TestGateRefusesBeforeTheFirstBlock chain/upgrade:FuzzGateStartsOnlyOnRows1And3
     reason: the gate decides only after a committed block
-KILLED rev-checkblock-duplicate-handler-accepted group=upgrade exit=[1] secs=2.4 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock
+KILLED rev-checkblock-duplicate-handler-accepted group=upgrade exit=[1] secs=9.5 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock
     reason: the block rule refuses a binary with two handlers of the plan's name (W0 review)
-KILLED p3b-block-no-appversion-rule group=upgrade exit=[1] secs=5.6 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade:TestRunnerPreBlockRule chain/upgrade/onchain:TestOnChainBlockRule chain/app:TestPreBlockRefusesAppVersionMismatch
+KILLED p3b-block-no-appversion-rule group=upgrade exit=[1] secs=10.0 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade:TestRunnerPreBlockRule chain/upgrade/onchain:TestOnChainBlockRule chain/app:TestPreBlockRefusesAppVersionMismatch
     reason: the per-block app-version rule refuses a block when the stored app version differs from the binary's
-KILLED p3b-block-needed-continues group=upgrade exit=[1] secs=2.4 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade/onchain:TestOnChainHaltAndSwitch
+KILLED p3b-block-needed-continues group=upgrade exit=[1] secs=3.8 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade/onchain:TestOnChainHaltAndSwitch
     reason: a binary without the planned handler stops at the plan height (UPGRADE NEEDED)
-KILLED p3b-block-plan-height-plus1 group=upgrade exit=[1] secs=5.6 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade/onchain:TestOnChainBlockRule chain/app:TestUpgradeRehearsalInProcess
+KILLED p3b-block-plan-height-plus1 group=upgrade exit=[1] secs=6.0 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade/onchain:TestOnChainBlockRule chain/app:TestUpgradeRehearsalInProcess
     reason: the upgrade runs at exactly the plan height, not one block later
-KILLED plan-block-plan-height-minus1 group=upgrade exit=[1] secs=5.7 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade/onchain:TestOnChainBlockRule chain/app:TestUpgradeRehearsalInProcess
+KILLED plan-block-plan-height-minus1 group=upgrade exit=[1] secs=6.0 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade/onchain:TestOnChainBlockRule chain/app:TestUpgradeRehearsalInProcess
     reason: the upgrade runs at exactly the plan height, not one block early
-KILLED p3a-block-no-handler-version-check group=upgrade exit=[1] secs=2.9 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock
+KILLED p3a-block-no-handler-version-check group=upgrade exit=[1] secs=2.7 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock
     reason: the block rule needs a handler whose From/To match the stored and binary app versions
-KILLED p3a-block-plan-below-ignored group=upgrade exit=[1] secs=2.7 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade:TestRunnerPreBlockRule
+KILLED p3a-block-plan-below-ignored group=upgrade exit=[1] secs=2.5 file=chain/upgrade/block.go failing=chain/upgrade:TestCheckBlock chain/upgrade:TestRunnerPreBlockRule
     reason: a plan below the current height fails the block
-KILLED p3a-validate-no-from-check group=upgrade exit=[1] secs=2.7 file=chain/upgrade/upgrade.go failing=chain/upgrade:TestBinaryRefusesBadUpgradeList
+KILLED p3a-validate-no-from-check group=upgrade exit=[1] secs=2.5 file=chain/upgrade/upgrade.go failing=chain/upgrade:TestBinaryRefusesBadUpgradeList
     reason: a handler must go from P-1 to P
-KILLED p3a-validate-no-dup-check group=upgrade exit=[1] secs=2.5 file=chain/upgrade/upgrade.go failing=chain/upgrade:TestBinaryRefusesBadUpgradeList
+KILLED p3a-validate-no-dup-check group=upgrade exit=[1] secs=3.0 file=chain/upgrade/upgrade.go failing=chain/upgrade:TestBinaryRefusesBadUpgradeList
     reason: a binary declares each upgrade name once
 KILLED p3a-apply-on-block-context group=upgrade exit=[1] secs=2.6 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerWritesOnSuccessOnly chain/upgrade:TestRunnerPostConditions chain/upgrade:TestRunnerAppliesRealMigration
     reason: the runner works on a cache branch and writes only on success (plan 16.9: finalize context instead of cache)
-KILLED p3a-skip-handler-app-version-check group=upgrade exit=[1] secs=2.5 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions
+KILLED p3a-skip-handler-app-version-check group=upgrade exit=[1] secs=3.2 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions
     reason: a handler may not change the app version itself
-KILLED p3a-skip-unchanged-compare group=upgrade exit=[1] secs=5.2 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions chain/app:TestMigrationCannotChangeAuthorityRows
+KILLED p3a-skip-unchanged-compare group=upgrade exit=[1] secs=7.6 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions chain/app:TestMigrationCannotChangeAuthorityRows
     reason: I13: the runner compares every Unchanged snapshot before and after the handler
-KILLED p3a-skip-policy-bump group=upgrade exit=[1] secs=2.5 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerAppliesUpgrade chain/upgrade:TestRunnerAppliesRealMigration
+KILLED p3a-skip-policy-bump group=upgrade exit=[1] secs=2.7 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerAppliesUpgrade chain/upgrade:TestRunnerAppliesRealMigration
     reason: an applied upgrade bumps the policy version (DR-10-38)
-KILLED p3a-skip-params-postcheck group=upgrade exit=[1] secs=5.6 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions chain/app:TestMigrationCannotChangeBlockParams
+KILLED p3a-skip-params-postcheck group=upgrade exit=[1] secs=5.7 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions chain/app:TestMigrationCannotChangeBlockParams
     reason: a handler may not change the consensus params
-KILLED p3a2-plan-postcheck-only-presence group=upgrade exit=[1] secs=2.8 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions
+KILLED p3a2-plan-postcheck-only-presence group=upgrade exit=[1] secs=2.7 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions
     reason: a handler may not change the stored plan
-KILLED p3a-skip-stale-plan-readback group=upgrade exit=[1] secs=2.8 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerWritesOnSuccessOnly
+KILLED p3a-skip-stale-plan-readback group=upgrade exit=[1] secs=3.0 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerWritesOnSuccessOnly
     reason: the runner refuses when the plan is still stored after the record
-KILLED p3a-preblock-reports-unchanged group=upgrade exit=[1] secs=2.6 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerAppliesUpgrade chain/upgrade:TestRunnerAppliesRealMigration
+KILLED p3a-preblock-reports-unchanged group=upgrade exit=[1] secs=2.5 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerAppliesUpgrade chain/upgrade:TestRunnerAppliesRealMigration
     reason: PreBlock reports an applied upgrade
-KILLED p3a-skip-binary-module-missing group=upgrade exit=[1] secs=2.5 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPreconditions chain/upgrade:TestRunMigrationsGapsAreClosedByTheRunner
+KILLED p3a-skip-binary-module-missing group=upgrade exit=[1] secs=2.3 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPreconditions chain/upgrade:TestRunMigrationsGapsAreClosedByTheRunner
     reason: a binary module absent from the stored version map is refused before the handler
-KILLED p3a2-skip-stored-module-unknown group=upgrade exit=[1] secs=2.5 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPreconditions chain/upgrade:TestRunMigrationsGapsAreClosedByTheRunner
+KILLED p3a2-skip-stored-module-unknown group=upgrade exit=[1] secs=2.4 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPreconditions chain/upgrade:TestRunMigrationsGapsAreClosedByTheRunner
     reason: a stored module unknown to the binary is refused before the handler
-KILLED p3a-skip-returned-map-check group=upgrade exit=[1] secs=2.4 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions
+KILLED p3a-skip-returned-map-check group=upgrade exit=[1] secs=2.7 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPostConditions
     reason: the migrated version map must equal the binary's
-KILLED p3a-skip-layout-precheck group=upgrade exit=[1] secs=2.4 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPreconditions
+KILLED p3a-skip-layout-precheck group=upgrade exit=[1] secs=2.6 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPreconditions
     reason: layout keys must match the stored version map before the handler
 KILLED p3a-skip-version-app-precheck group=upgrade exit=[1] secs=2.4 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerPreconditions
     reason: the stored Version.App must equal the stored app version before the handler
-KILLED p3a-record-other-app-version group=upgrade exit=[1] secs=2.8 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerAppliesUpgrade chain/upgrade:TestRunnerPostConditions
+KILLED p3a-record-other-app-version group=upgrade exit=[1] secs=2.4 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerAppliesUpgrade chain/upgrade:TestRunnerPostConditions
     reason: the runner sets Version.App to the handler's To
-KILLED intc-env-not-passed group=upgrade exit=[1] secs=2.9 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerGivesHandlerTheEnv chain/upgrade:TestRunnerRefusesProtectedEnvWrites
+KILLED intc-env-not-passed group=upgrade exit=[1] secs=2.3 file=chain/upgrade/runner.go failing=chain/upgrade:TestRunnerGivesHandlerTheEnv chain/upgrade:TestRunnerRefusesProtectedEnvWrites
     reason: ORCH-7: the runner gives the handler its store environment on the runner's cache branch
-KILLED intc-env-dep-optional group=upgrade exit=[1] secs=2.7 file=chain/upgrade/runner.go failing=chain/upgrade:TestNewRunnerRefusesBadDeps
+KILLED intc-env-dep-optional group=upgrade exit=[1] secs=2.4 file=chain/upgrade/runner.go failing=chain/upgrade:TestNewRunnerRefusesBadDeps
     reason: ORCH-7: a runner without a handler environment is refused
-KILLED intc-fake-accepts-absent-plan group=upgrade exit=[1] secs=2.5 file=chain/upgrade/runner_test.go failing=chain/upgrade:TestRunnerRecordRefusesAbsentPlan
+KILLED intc-fake-accepts-absent-plan group=upgrade exit=[1] secs=2.3 file=chain/upgrade/runner_test.go failing=chain/upgrade:TestRunnerRecordRefusesAbsentPlan
     reason: the runner tests' fake keeper refuses an absent plan like x/policy (test-double mutant)
-KILLED p3b-plans-no-recover group=upgrade exit=[1] secs=2.7 file=chain/upgrade/plans.go panic=yes failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows chain/upgrade/onchain:TestOnChainDamagedPlanRows
+KILLED p3b-plans-no-recover group=upgrade exit=[1] secs=2.5 file=chain/upgrade/plans.go panic=yes failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows chain/upgrade/onchain:TestOnChainDamagedPlanRows
     reason: CouncilPlans turns a keeper panic on a damaged row into an error
-KILLED p3b-plans-no-applied-check group=upgrade exit=[1] secs=2.7 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows chain/upgrade/onchain:TestOnChainBlockRule
+KILLED p3b-plans-no-applied-check group=upgrade exit=[1] secs=2.5 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows chain/upgrade/onchain:TestOnChainBlockRule
     reason: CouncilPlans refuses a stored plan whose name is already applied
-KILLED p3b-plans-no-applied-lookup group=upgrade exit=[1] secs=2.8 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows chain/upgrade:TestCouncilPlansReportsTheStoredPlan
+KILLED p3b-plans-no-applied-lookup group=upgrade exit=[1] secs=2.3 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows chain/upgrade:TestCouncilPlansReportsTheStoredPlan
     reason: CouncilPlans looks up the applied rows
-KILLED p3b-plans-no-name-check group=upgrade exit=[1] secs=2.8 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows
+KILLED p3b-plans-no-name-check group=upgrade exit=[1] secs=2.4 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows
     reason: CouncilPlans refuses a plan name outside the id pattern
-KILLED p3b-plans-no-height-check group=upgrade exit=[1] secs=3.0 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows
+KILLED p3b-plans-no-height-check group=upgrade exit=[1] secs=2.4 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows
     reason: CouncilPlans refuses a plan height 0
-KILLED p3b-plans-no-digest-check group=upgrade exit=[1] secs=2.8 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows
+KILLED p3b-plans-no-digest-check group=upgrade exit=[1] secs=2.3 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesDamagedRows
     reason: CouncilPlans refuses a digest that is not 32 bytes
-KILLED p3b-plans-no-digest-copy group=upgrade exit=[1] secs=2.9 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansReportsTheStoredPlan
+KILLED p3b-plans-no-digest-copy group=upgrade exit=[1] secs=2.4 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansReportsTheStoredPlan
     reason: CouncilPlans returns a copy of the stored digest
-KILLED p3b-plans-new-accepts-nil group=upgrade exit=[1] secs=2.8 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesMissingRows
+KILLED p3b-plans-new-accepts-nil group=upgrade exit=[1] secs=2.3 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesMissingRows
     reason: NewCouncilPlans refuses a nil row reader
-KILLED p3b-plans-plan-no-nil-guard group=upgrade exit=[1] secs=2.7 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesMissingRows
+KILLED p3b-plans-plan-no-nil-guard group=upgrade exit=[1] secs=2.4 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansRefusesMissingRows
     reason: Plan on a nil source fails
-KILLED p3b-plans-ignore-found group=upgrade exit=[1] secs=2.8 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansReportsTheStoredPlan chain/upgrade/onchain:TestOnChainActivationIsHeightOnly
+KILLED p3b-plans-ignore-found group=upgrade exit=[1] secs=2.4 file=chain/upgrade/plans.go failing=chain/upgrade:TestCouncilPlansReportsTheStoredPlan chain/upgrade/onchain:TestOnChainActivationIsHeightOnly
     reason: no stored plan means no plan
-KILLED p5a-i13-snapshot-nil group=upgrade exit=[1] secs=5.3 file=chain/app/upgrades.go failing=chain/app:TestMigrationCannotChangeAuthorityRows chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED p5a-i13-snapshot-nil group=upgrade exit=[1] secs=4.5 file=chain/app/upgrades.go failing=chain/app:TestMigrationCannotChangeAuthorityRows chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13 snapshots read the class's store
-KILLED inta-i13-drops-other-rows group=upgrade exit=[1] secs=5.1 file=chain/app/upgrades.go failing=chain/app:TestUpgradePostConditionClasses chain/app:TestMigrationCannotAddRowsBesideThePolicyVersion
+KILLED inta-i13-drops-other-rows group=upgrade exit=[1] secs=4.7 file=chain/app/upgrades.go failing=chain/app:TestUpgradePostConditionClasses chain/app:TestMigrationCannotAddRowsBesideThePolicyVersion
     reason: I13 includes the class of every other authority row
-KILLED plan-i13-first-byte-0x04-skip group=upgrade exit=[1] secs=5.5 file=chain/app/upgrades.go failing=chain/app:TestMigrationCannotAddRowsBesideThePolicyVersion
+KILLED plan-i13-first-byte-0x04-skip group=upgrade exit=[1] secs=4.6 file=chain/app/upgrades.go failing=chain/app:TestMigrationCannotAddRowsBesideThePolicyVersion
     reason: I13 leaves out only the exact key {0x04}, not every key that starts with 0x04 (Wave 1 gate fix)
-KILLED p5a-params-check-skip group=upgrade exit=[1] secs=3.2 file=chain/upgrade/runner.go failing=chain/app:TestMigrationCannotChangeBlockParams
+KILLED p5a-params-check-skip group=upgrade exit=[1] secs=2.5 file=chain/upgrade/runner.go failing=chain/app:TestMigrationCannotChangeBlockParams
     reason: a migration that changes block params is refused through app.New
-KILLED plan-preblock-log-and-continue group=upgrade exit=[1] secs=6.5 file=chain/app/app.go failing=chain/app:TestPreBlockRefusesAppVersionMismatch chain/app:TestPreBlockReturnsAnErrorOnADamagedAppVersion chain/app:TestUpgradeHandlerErrorHalts
+KILLED plan-preblock-log-and-continue group=upgrade exit=[1] secs=4.7 file=chain/app/app.go failing=chain/app:TestPreBlockRefusesAppVersionMismatch chain/app:TestPreBlockReturnsAnErrorOnADamagedAppVersion chain/app:TestUpgradeHandlerErrorHalts
     reason: PreBlock returns the upgrade step's error and fails the block (plan 16.9 PreBlock row)
-KILLED inta-preblock-skips-upgrade-step group=upgrade exit=[1] secs=6.2 file=chain/app/app.go failing=chain/app:TestPreBlockReturnsAnErrorOnADamagedAppVersion chain/app:TestPreBlockRefusesAppVersionMismatch
+KILLED inta-preblock-skips-upgrade-step group=upgrade exit=[1] secs=4.5 file=chain/app/app.go failing=chain/app:TestPreBlockReturnsAnErrorOnADamagedAppVersion chain/app:TestPreBlockRefusesAppVersionMismatch
     reason: PreBlock runs the upgrade step first
-KILLED p5a-initchain-any-appversion group=upgrade exit=[1] secs=6.1 file=chain/app/app.go failing=chain/app:TestNewerBinaryRefusesInitChain
+KILLED p5a-initchain-any-appversion group=upgrade exit=[1] secs=4.4 file=chain/app/app.go failing=chain/app:TestNewerBinaryRefusesInitChain
     reason: InitChain refuses a binary whose app version is not the genesis app version
-KILLED inta-gate-off group=upgrade exit=[1] secs=5.6 file=chain/app/app.go failing=chain/app:TestAppRefusesScaffoldLayout chain/app:TestLoadGateRefusesDamagedUpgradeRows
+KILLED inta-gate-off group=upgrade exit=[1] secs=5.0 file=chain/app/app.go failing=chain/app:TestAppRefusesScaffoldLayout chain/app:TestLoadGateRefusesDamagedUpgradeRows
     reason: app.New runs the load gate after LoadLatestVersion
-KILLED inta-gate-panic-not-recovered group=upgrade exit=[1] secs=5.0 file=chain/app/app.go panic=yes failing=chain/app:TestLoadGateRefusesDamagedUpgradeRows
+KILLED inta-gate-panic-not-recovered group=upgrade exit=[1] secs=4.5 file=chain/app/app.go panic=yes failing=chain/app:TestLoadGateRefusesDamagedUpgradeRows
     reason: a keeper panic in the load gate is a row 6 refusal
-KILLED inta-prepare-check-stater-off group=upgrade exit=[1] secs=6.3 file=chain/app/app.go failing=chain/app:TestUpgradeRehearsalInProcess
+KILLED inta-prepare-check-stater-off group=upgrade exit=[1] secs=4.6 file=chain/app/app.go failing=chain/app:TestUpgradeRehearsalInProcess
     reason: PrepareCheckState sets the protocol version to the stored app version after an upgrade
-KILLED plan-i13-class-skipped-layout-version group=upgrade exit=[1] secs=5.9 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-layout-version group=upgrade exit=[1] secs=4.4 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority layout version" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-config group=upgrade exit=[1] secs=6.1 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeAuthorityRows chain/app:TestMigrationCannotApproveDecision
+KILLED plan-i13-class-skipped-config group=upgrade exit=[1] secs=4.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeAuthorityRows chain/app:TestMigrationCannotApproveDecision
     reason: I13: an upgrade may not change the class "authority config" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-admission-rows group=upgrade exit=[1] secs=6.4 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-admission-rows group=upgrade exit=[1] secs=4.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority admission rows" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-pending-validator-changes group=upgrade exit=[1] secs=6.0 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-pending-validator-changes group=upgrade exit=[1] secs=4.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority pending validator changes" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-proposals group=upgrade exit=[1] secs=6.0 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-proposals group=upgrade exit=[1] secs=4.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority proposals" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-business-ids group=upgrade exit=[1] secs=6.0 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-business-ids group=upgrade exit=[1] secs=4.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority business ids" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-executed-digests group=upgrade exit=[1] secs=6.2 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-executed-digests group=upgrade exit=[1] secs=4.7 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority executed digests" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-open-counts group=upgrade exit=[1] secs=6.0 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-open-counts group=upgrade exit=[1] secs=4.8 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority open counts" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-retired-seat-keys group=upgrade exit=[1] secs=5.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-retired-seat-keys group=upgrade exit=[1] secs=4.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority retired seat keys" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-retired-service-addresses group=upgrade exit=[1] secs=5.8 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-retired-service-addresses group=upgrade exit=[1] secs=4.5 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "authority retired service addresses" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-other-rows group=upgrade exit=[1] secs=5.7 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotAddRowsBesideThePolicyVersion
+KILLED plan-i13-class-skipped-other-rows group=upgrade exit=[1] secs=4.8 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotAddRowsBesideThePolicyVersion
     reason: I13: an upgrade may not change the class "authority other rows" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-policy-safety-caps group=upgrade exit=[1] secs=5.5 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeSafetyCaps
+KILLED plan-i13-class-skipped-policy-safety-caps group=upgrade exit=[1] secs=4.8 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeSafetyCaps
     reason: I13: an upgrade may not change the class "policy safety caps" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-policy-governed-values group=upgrade exit=[1] secs=5.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-policy-governed-values group=upgrade exit=[1] secs=5.1 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "policy governed values" (plan 16.9: one mutant per I13 class)
-KILLED plan-i13-class-skipped-policy-pending-changes group=upgrade exit=[1] secs=5.5 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
+KILLED plan-i13-class-skipped-policy-pending-changes group=upgrade exit=[1] secs=4.7 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows
     reason: I13: an upgrade may not change the class "policy pending changes" (plan 16.9: one mutant per I13 class)
-KILLED fix-i13-class-skipped-policy-applied-upgrades group=upgrade exit=[1] secs=13.5 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeAuthorityRows
+KILLED fix-i13-class-skipped-policy-applied-upgrades group=upgrade exit=[1] secs=4.9 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeAuthorityRows
     reason: I13: an upgrade may not change the class "policy applied upgrades" (Wave 2 security review: x/policy 0x07)
-KILLED fix-i13-class-skipped-policy-plan-names group=upgrade exit=[1] secs=10.2 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeAuthorityRows chain/app:TestUpgradeCannotChangePlanNameOrRunnerKeyRows
+KILLED fix-i13-class-skipped-policy-plan-names group=upgrade exit=[1] secs=5.1 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeAuthorityRows chain/app:TestUpgradeCannotChangePlanNameOrRunnerKeyRows
     reason: I13: an upgrade may not change the class "policy plan names" (Wave 2 security review: x/policy 0x08 holds the Q3 plan-name rule)
-KILLED fix-i13-class-skipped-policy-other-rows group=upgrade exit=[1] secs=9.5 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeAuthorityRows chain/app:TestUpgradeCannotChangePlanNameOrRunnerKeyRows
+KILLED fix-i13-class-skipped-policy-other-rows group=upgrade exit=[1] secs=5.3 file=chain/app/upgrades.go failing=chain/app:TestUpgradeHandlerEnvCannotChangeProtectedRows chain/app:TestMigrationCannotChangeAuthorityRows chain/app:TestUpgradeCannotChangePlanNameOrRunnerKeyRows
     reason: I13: an upgrade may not change the class "policy other rows" (Wave 2 security review: unknown x/policy keys and longer keys beside the runner's exact keys)
-KILLED fix-i13-plan-names-class-dropped group=upgrade exit=[1] secs=6.6 file=chain/app/upgrades.go failing=chain/app:TestUpgradePostConditionClasses chain/app:TestUpgradeCannotChangePlanNameOrRunnerKeyRows
+KILLED fix-i13-plan-names-class-dropped group=upgrade exit=[1] secs=4.8 file=chain/app/upgrades.go failing=chain/app:TestUpgradePostConditionClasses chain/app:TestUpgradeCannotChangePlanNameOrRunnerKeyRows
     reason: the x/policy plan-name rows have a class of their own
-KILLED ported-06-svnd-skips-authority-rules group=app exit=[1] secs=3.5 file=chain/cmd/svnd/cli/genesis.go failing=chain/cmd/svnd/cli:TestValidateGenesisAppliesAuthorityRules
+KILLED ported-06-svnd-skips-authority-rules group=app exit=[1] secs=2.5 file=chain/cmd/svnd/cli/genesis.go failing=chain/cmd/svnd/cli:TestValidateGenesisAppliesAuthorityRules
     reason: svnd genesis validation applies the authority genesis rules (goal 06 svnd-skips-authority-rules, ported)
-KILLED inta-initchain-no-versions group=app exit=[1] secs=6.0 file=chain/app/app.go failing=chain/app:TestGenesisPolicyRules chain/app:TestRestartLoadsCommittedState
+KILLED inta-initchain-no-versions group=app exit=[1] secs=4.5 file=chain/app/app.go failing=chain/app:TestGenesisPolicyRules chain/app:TestRestartLoadsCommittedState
     reason: InitChain writes the version map and app version
-KILLED inta-export-skips-policy-check group=app exit=[1] secs=5.5 file=chain/app/app.go panic=yes failing=chain/app:TestExportRefusesGovernanceState(panic)
+KILLED inta-export-skips-policy-check group=app exit=[1] secs=4.4 file=chain/app/app.go panic=yes failing=chain/app:TestExportRefusesGovernanceState(panic)
     reason: Export refuses governance state the policy genesis cannot carry (plan 16.9 export row)
-KILLED inta-genesis-skips-policy-rows group=app exit=[1] secs=5.2 file=chain/app/state.go panic=yes failing=chain/app:TestGenesisPolicyRules
+KILLED inta-genesis-skips-policy-rows group=app exit=[1] secs=4.4 file=chain/app/state.go panic=yes failing=chain/app:TestGenesisPolicyRules
     reason: genesis validation applies the policy genesis rules
-KILLED inta-seat-account-not-created group=app exit=[1] secs=4.8 file=chain/app/upgrades.go failing=chain/app:TestCouncilSeatCreatesTheNewKeyAccount chain/app:TestRemovedCouncilSeat
+KILLED inta-seat-account-not-created group=app exit=[1] secs=4.3 file=chain/app/upgrades.go failing=chain/app:TestCouncilSeatCreatesTheNewKeyAccount chain/app:TestRemovedCouncilSeat
     reason: the app's account creator creates the new seat key's account
-KILLED inta-initchain-version-app-unchecked group=app exit=[1] secs=4.8 file=chain/app/app.go failing=chain/app:TestGenesisPolicyRules
+KILLED inta-initchain-version-app-unchecked group=app exit=[1] secs=4.4 file=chain/app/app.go failing=chain/app:TestGenesisPolicyRules
     reason: InitChain refuses a genesis Version.App other than the genesis app version
-KILLED inta-initchain-layout-unchecked group=app exit=[1] secs=4.6 file=chain/app/app.go failing=chain/app:TestInitChainRefusesALayoutTheVersionMapDoesNotName
+KILLED inta-initchain-layout-unchecked group=app exit=[1] secs=4.3 file=chain/app/app.go failing=chain/app:TestInitChainRefusesALayoutTheVersionMapDoesNotName
     reason: InitChain cross-checks each layout key against the binary's version map
-KILLED inta-layout-table-omits-policy group=app exit=[1] secs=5.5 file=chain/app/app.go failing=chain/app:TestAppRefusesScaffoldLayout
+KILLED inta-layout-table-omits-policy group=app exit=[1] secs=4.5 file=chain/app/app.go failing=chain/app:TestAppRefusesScaffoldLayout
     reason: the layout table names x/policy
-KILLED inta-genesis-d10-off group=app exit=[1] secs=6.0 file=chain/genesis/document.go failing=chain/genesis:TestSeatRulesD7D10 chain/app:TestGenesisSeatRulesD7D10
+KILLED inta-genesis-d10-off group=app exit=[1] secs=5.4 file=chain/genesis/document.go failing=chain/genesis:TestSeatRulesD7D10 chain/app:TestGenesisSeatRulesD7D10
     reason: D-10 in chain/genesis: a seat id is at most 59 characters
-KILLED inta-genesis-d7-off group=app exit=[1] secs=6.0 file=chain/genesis/document.go failing=chain/genesis:TestSeatRulesD7D10 chain/app:TestGenesisSeatRulesD7D10
+KILLED inta-genesis-d7-off group=app exit=[1] secs=5.4 file=chain/genesis/document.go failing=chain/genesis:TestSeatRulesD7D10 chain/app:TestGenesisSeatRulesD7D10
     reason: D-7 in chain/genesis: a seat key is not a validator key
-KILLED inta-devnet-delay-ignored group=app exit=[1] secs=4.1 file=chain/devnet/init.go failing=chain/devnet:TestInitCouncilDelayAndAppVersion
+KILLED inta-devnet-delay-ignored group=app exit=[1] secs=3.6 file=chain/devnet/init.go failing=chain/devnet:TestInitCouncilDelayAndAppVersion
     reason: devnet init writes the requested DEC-008 delay (init only; no validator starts)
-KILLED inta-version-no-modules group=app exit=[1] secs=2.5 file=chain/cmd/svnd/cli/version.go failing=chain/cmd/svnd/cli:TestVersionCommandFields
+KILLED inta-version-no-modules group=app exit=[1] secs=2.3 file=chain/cmd/svnd/cli/version.go failing=chain/cmd/svnd/cli:TestVersionCommandFields
     reason: svnd version prints every module version
-KILLED inta-node-drops-upgrades group=app exit=[1] secs=63.4 file=chain/node/start.go failing=chain/node:TestStartWithPassesUpgradeHandlers
+KILLED inta-node-drops-upgrades group=app exit=[1] secs=63.0 file=chain/node/start.go failing=chain/node:TestStartWithPassesUpgradeHandlers
     reason: node.StartWith passes the binary's upgrade handlers to the app (on this mutant the named test's StartWith starts a node, one validator of four; the test fails after 60 s, and the node runs until the go test process exits)
 KILLED p3a-cli-start-drops-handlers group=app exit=[1] secs=62.7 file=chain/cmd/svnd/cli/root.go failing=chain/cmd/svnd/cli:TestStartHandsTheHandlersToTheNodeOnAHome
     reason: svnd start passes the build's upgrade handlers to the node (P7 added the killer; on this mutant it starts a node, one validator of four; the test fails after 60 s, and the node runs until the go test process exits)
-KILLED rev-cli-root-aliases-handler-list group=app exit=[1] secs=2.3 file=chain/cmd/svnd/cli/root.go failing=chain/cmd/svnd/cli:TestStartPassesUpgradesToTheNode
+KILLED rev-cli-root-aliases-handler-list group=app exit=[1] secs=2.7 file=chain/cmd/svnd/cli/root.go failing=chain/cmd/svnd/cli:TestStartPassesUpgradesToTheNode
     reason: cli.Root keeps its own copy of the handler list (W0 review T-F4)
-KILLED intc-start-no-chain-check group=app exit=[1] secs=2.6 file=chain/cmd/svnd/cli/root.go failing=chain/cmd/svnd/cli:TestStartRefusesOtherChainIDs
+KILLED intc-start-no-chain-check group=app exit=[1] secs=2.5 file=chain/cmd/svnd/cli/root.go failing=chain/cmd/svnd/cli:TestStartRefusesOtherChainIDs
     reason: ORCH-6: a tagged build refuses to start on a chain id without the devnet prefix
-KILLED intc-b2-no-chain-prefix group=app exit=[1] secs=15.0 file=chain/cmd/svnd/rehearsal_tag.go failing=chain/cmd/svnd:TestRehearsalBuildsRefuseNonDevChains chain/cmd/svnd:TestRehearsalBuildsDeclareTheRehearsalUpgrade
+KILLED intc-b2-no-chain-prefix group=app exit=[1] secs=12.3 file=chain/cmd/svnd/rehearsal_tag.go failing=chain/cmd/svnd:TestRehearsalBuildsRefuseNonDevChains chain/cmd/svnd:TestRehearsalBuildsDeclareTheRehearsalUpgrade
     reason: ORCH-6: the svn_rehearsal build sets the devnet chain-id prefix
-KILLED plan-default-build-links-rehearsal group=app exit=[1] secs=8.0 file=chain/cmd/svnd/default_build.go failing=chain/cmd/svnd:TestDefaultBuildCompilesNoRehearsal chain/app:TestLinkedBinaryOmitsTestHooks
+KILLED plan-default-build-links-rehearsal group=app exit=[1] secs=8.2 file=chain/cmd/svnd/default_build.go failing=chain/cmd/svnd:TestDefaultBuildCompilesNoRehearsal chain/app:TestLinkedBinaryOmitsTestHooks
     reason: ORCH-6: the default (release) build declares no upgrade handler and links no chain/internal code
-KILLED fix-node-chainid-file-only group=app exit=[1] secs=3.5 file=chain/node/chainid.go failing=chain/node:TestGenesisChainIDReadsWhatCometBFTRuns chain/node:TestStartWithRefusesAStoredGenesisOfAnotherChain chain/cmd/svnd/cli:TestStartRefusesOtherChainIDs
+KILLED fix-node-chainid-file-only group=app exit=[1] secs=3.8 file=chain/node/chainid.go failing=chain/node:TestGenesisChainIDReadsWhatCometBFTRuns chain/node:TestStartWithRefusesAStoredGenesisOfAnotherChain chain/cmd/svnd/cli:TestStartRefusesOtherChainIDs
     reason: the chain id svnd start uses is checked against the genesis document CometBFT stored (Wave 2 security review)
-KILLED fix-node-stored-genesis-any-chain group=app exit=[1] secs=6.1 file=chain/node/chainid.go failing=chain/node:TestGenesisChainIDReadsWhatCometBFTRuns chain/node:TestStartWithRefusesAStoredGenesisOfAnotherChain chain/cmd/svnd/cli:TestStartRefusesOtherChainIDs chain/internal/statecheck:TestReadChainIDReadsAsCometBFTDoes
+KILLED fix-node-stored-genesis-any-chain group=app exit=[1] secs=5.7 file=chain/node/chainid.go failing=chain/node:TestGenesisChainIDReadsWhatCometBFTRuns chain/node:TestStartWithRefusesAStoredGenesisOfAnotherChain chain/cmd/svnd/cli:TestStartRefusesOtherChainIDs chain/internal/statecheck:TestReadChainIDReadsAsCometBFTDoes
     reason: a stored genesis document of another chain id is refused
-KILLED fix-node-start-reads-the-file-only group=app exit=[1] secs=2.9 file=chain/node/start.go failing=chain/node:TestStartWithRefusesAStoredGenesisOfAnotherChain
+KILLED fix-node-start-reads-the-file-only group=app exit=[1] secs=2.8 file=chain/node/start.go failing=chain/node:TestStartWithRefusesAStoredGenesisOfAnotherChain
     reason: StartWith reads the chain id CometBFT runs, not only the genesis file
 KILLED fix-cli-chainid-contains group=app exit=[1] secs=2.4 file=chain/cmd/svnd/cli/root.go failing=chain/cmd/svnd/cli:TestStartRefusesOtherChainIDs
     reason: the start chain id check is a prefix check (Wave 2 tests review L1)
-KILLED fix-statecheck-build-no-chainid-prefix group=app exit=[1] secs=17.3 file=chain/cmd/svnd/statecheck_tag.go failing=chain/cmd/svnd:TestRehearsalBuildsRefuseNonDevChains
+KILLED fix-statecheck-build-no-chainid-prefix group=app exit=[1] secs=16.4 file=chain/cmd/svnd/statecheck_tag.go failing=chain/cmd/svnd:TestRehearsalBuildsRefuseNonDevChains
     reason: the svn_statecheck build starts a validator only on a devnet chain id (Wave 2 security review)
-KILLED p5a-step-leaves-layout group=rehearsal exit=[1] secs=4.9 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess chain/internal/rehearsal:TestLeasesStepRebuildsTheStore
+KILLED p5a-step-leaves-layout group=rehearsal exit=[1] secs=4.4 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess chain/internal/rehearsal:TestLeasesStepRebuildsTheStore
     reason: the rehearsal migration step writes the new layout version
-KILLED p5a-step-drops-last-row group=rehearsal exit=[1] secs=4.7 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess chain/internal/rehearsal:TestLeasesStepRebuildsTheStore
+KILLED p5a-step-drops-last-row group=rehearsal exit=[1] secs=4.3 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess chain/internal/rehearsal:TestLeasesStepRebuildsTheStore
     reason: the rehearsal migration step rewrites every row (plan 16.9: drops the last lease record)
 KILLED p5a-reencode-skip-equal group=rehearsal exit=[1] secs=2.1 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestStepsRefuseBeforeWriting
     reason: a record that does not re-encode to its stored bytes is refused before any write
-KILLED intc-handler-any-chain group=rehearsal exit=[1] secs=2.1 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestHandlersRefuseOutsideTheirEnvironment
+KILLED intc-handler-any-chain group=rehearsal exit=[1] secs=2.2 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestHandlersRefuseOutsideTheirEnvironment
     reason: the rehearsal handler refuses a chain id without the devnet prefix
-KILLED intc-walk-skips-proposals group=rehearsal exit=[1] secs=2.2 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestHandlerWalksEveryRecordReadOnly
+KILLED intc-walk-skips-proposals group=rehearsal exit=[1] secs=2.1 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestHandlerWalksEveryRecordReadOnly
     reason: the plan 12.2 walk checks proposal records
-KILLED intc-walk-skips-reencode group=rehearsal exit=[1] secs=2.3 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestHandlerWalksEveryRecordReadOnly
+KILLED intc-walk-skips-reencode group=rehearsal exit=[1] secs=2.0 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestHandlerWalksEveryRecordReadOnly
     reason: the plan 12.2 walk checks that each record re-encodes to its stored bytes
-KILLED intc-walk-refuses-real-proposals group=rehearsal exit=[1] secs=4.4 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess
+KILLED intc-walk-refuses-real-proposals group=rehearsal exit=[1] secs=4.2 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess
     reason: the walk runs on real state: a walk that refuses real proposal records fails the in-process rehearsal
-KILLED intc-walk-refuses-real-providers group=rehearsal exit=[1] secs=4.4 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess
+KILLED intc-walk-refuses-real-providers group=rehearsal exit=[1] secs=4.1 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess
     reason: the walk runs on real state: a walk that refuses real provider records fails the in-process rehearsal
-KILLED intc-bad-handler-no-write group=rehearsal exit=[1] secs=4.5 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestBadHandlerWritesOneDocumentedRow chain/app:TestWrongMigrationDiverges
+KILLED intc-bad-handler-no-write group=rehearsal exit=[1] secs=4.1 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestBadHandlerWritesOneDocumentedRow chain/app:TestWrongMigrationDiverges
     reason: B2-bad writes its one documented row (leases 0xFF -> 0x01)
-KILLED intc-b2-built-with-bad group=rehearsal exit=[1] secs=12.7 file=chain/cmd/svnd/rehearsal_tag.go failing=chain/app:TestRehearsalBinaryVersionAndLinks
+KILLED intc-b2-built-with-bad group=rehearsal exit=[1] secs=12.1 file=chain/cmd/svnd/rehearsal_tag.go failing=chain/app:TestRehearsalBinaryVersionAndLinks
     reason: the svn_rehearsal build links the honest handler, not BadHandler
-KILLED intc-app-env-missing-store group=rehearsal exit=[1] secs=5.1 file=chain/app/upgrades.go failing=chain/app:TestWrongMigrationDiverges chain/app:TestUpgradeRehearsalInProcess
+KILLED intc-app-env-missing-store group=rehearsal exit=[1] secs=5.2 file=chain/app/upgrades.go failing=chain/app:TestWrongMigrationDiverges chain/app:TestUpgradeRehearsalInProcess
     reason: the app's handler environment reaches every mounted store
 KILLED plan-rehearsal-migrate-twice group=rehearsal exit=[1] secs=4.6 file=chain/internal/rehearsal/rehearsal.go failing=chain/app:TestUpgradeRehearsalInProcess
     reason: the rehearsal handler runs the module migrations once (plan 16.9: RunMigrations runs twice)
-KILLED fix-rehearsal-chainid-contains group=rehearsal exit=[1] secs=2.5 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestHandlersRefuseOutsideTheirEnvironment
+KILLED fix-rehearsal-chainid-contains group=rehearsal exit=[1] secs=2.2 file=chain/internal/rehearsal/rehearsal.go failing=chain/internal/rehearsal:TestHandlersRefuseOutsideTheirEnvironment
     reason: the rehearsal handlers' chain id check is a prefix check (Wave 2 tests review L1)
 KILLED p3c-skip-one-store-digest group=statecheck exit=[1] secs=3.0 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: every store has a digest line (plan 16.9: skip one store's digest)
-KILLED p3c-skip-policy-checker group=statecheck exit=[1] secs=3.8 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-skip-policy-checker group=statecheck exit=[1] secs=3.9 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the policy invariant checker runs (plan 16.9: skip the policy invariant checker)
-KILLED p3c-skip-evidence-checker group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-skip-evidence-checker group=statecheck exit=[1] secs=3.9 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the evidence invariant checker runs
-KILLED p3c-skip-lease-offer-checker group=statecheck exit=[1] secs=3.9 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-skip-lease-offer-checker group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the lease offer-integrity checker runs
-KILLED p3c-row5-passes group=statecheck exit=[1] secs=3.2 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckRefusesOtherVersion
+KILLED p3c-row5-passes group=statecheck exit=[1] secs=3.5 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckRefusesOtherVersion
     reason: a gate row 5 refusal fails the report
-KILLED p3c-row6-passes group=statecheck exit=[1] secs=3.0 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckWritesNothing chain/internal/statecheck:TestStatecheckCommand
+KILLED p3c-row6-passes group=statecheck exit=[1] secs=3.1 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckWritesNothing chain/internal/statecheck:TestStatecheckCommand
     reason: a gate row 6 refusal fails the report
 KILLED p3c-readwrite-open group=statecheck exit=[1] secs=3.0 file=chain/internal/statecheck/open.go failing=chain/internal/statecheck:TestOpenReadOnlyRefusesWrites chain/internal/statecheck:TestStateCheckWritesNothing
     reason: the home's database is opened read-only
-KILLED p3c-i13-first-byte-exempt group=statecheck exit=[1] secs=3.9 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-i13-first-byte-exempt group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the I13 digest leaves out only the exact key {0x04}
-KILLED p3c-i13-includes-policy-version group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-i13-includes-policy-version group=statecheck exit=[1] secs=3.7 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the I13 digest leaves out the policy version key
-KILLED p3c-exact-key-rule-dropped group=statecheck exit=[1] secs=3.5 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-exact-key-rule-dropped group=statecheck exit=[1] secs=4.1 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the authority checker refuses a row beside {0x04} (I13 exact-key rule)
-KILLED p3c-retired-prefix-allowed group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-retired-prefix-allowed group=statecheck exit=[1] secs=3.8 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the retired governed-value prefix 0x13 is refused
 KILLED p3c-i10-dropped group=statecheck exit=[1] secs=3.7 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: I10: every open count has its proposals
-KILLED p3c-i1-dropped group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-i1-dropped group=statecheck exit=[1] secs=3.8 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: I1: the policy version is at least 1 + the executed proposals
-KILLED p3c-i8-retired-validators-dropped group=statecheck exit=[1] secs=3.5 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-i8-retired-validators-dropped group=statecheck exit=[1] secs=3.7 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: I8: a retired seat key is not a validator key
 KILLED p3c-consensus-version-not-read group=statecheck exit=[1] secs=3.5 file=chain/internal/statecheck/gate.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the gate input reads the stored Version.App
-KILLED p3c-layout-store-dropped group=statecheck exit=[1] secs=3.5 file=chain/internal/statecheck/gate.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-layout-store-dropped group=statecheck exit=[1] secs=3.7 file=chain/internal/statecheck/gate.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the gate input reads every layout key
-KILLED p3c-plan-not-read group=statecheck exit=[1] secs=2.8 file=chain/internal/statecheck/gate.go failing=chain/internal/statecheck:TestStateCheckRefusesOtherVersion
+KILLED p3c-plan-not-read group=statecheck exit=[1] secs=2.9 file=chain/internal/statecheck/gate.go failing=chain/internal/statecheck:TestStateCheckRefusesOtherVersion
     reason: the gate input reads the stored plan
-KILLED p3c-versions-i5-dropped group=statecheck exit=[1] secs=3.4 file=chain/internal/statecheck/gate.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-versions-i5-dropped group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/gate.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: I5: Version.App equals the stored app version
-KILLED p3c-report-hides-failing-check group=statecheck exit=[1] secs=3.4 file=chain/internal/statecheck/report.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-report-hides-failing-check group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/report.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the report prints a failing check as FAIL
-KILLED p3c-panic-not-recovered-as-failure group=statecheck exit=[1] secs=3.5 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED p3c-panic-not-recovered-as-failure group=statecheck exit=[1] secs=3.9 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: a checker panic is that check failing
-KILLED p3c-height-ignored group=statecheck exit=[1] secs=3.1 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants chain/internal/statecheck:TestStateCheckRefusesBadInput chain/internal/statecheck:TestStateCheckRefusesOtherVersion
+KILLED p3c-height-ignored group=statecheck exit=[1] secs=3.4 file=chain/internal/statecheck/statecheck.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants chain/internal/statecheck:TestStateCheckRefusesBadInput chain/internal/statecheck:TestStateCheckRefusesOtherVersion
     reason: the report is for the requested height
-KILLED plan-statecheck-tag-registers-nothing group=statecheck exit=[1] secs=6.8 file=chain/cmd/svnd/statecheck_tag.go failing=chain/cmd/svnd:TestStatecheckBuildsReportOnAHome
+KILLED plan-statecheck-tag-registers-nothing group=statecheck exit=[1] secs=7.0 file=chain/cmd/svnd/statecheck_tag.go failing=chain/cmd/svnd:TestStatecheckBuildsReportOnAHome
     reason: ORCH-6: the svn_statecheck build has the statecheck subcommand
-KILLED plan-statecheck-main-skips-registration group=statecheck exit=[1] secs=7.5 file=chain/cmd/svnd/main.go failing=chain/cmd/svnd:TestStatecheckBuildsReportOnAHome
+KILLED plan-statecheck-main-skips-registration group=statecheck exit=[1] secs=7.2 file=chain/cmd/svnd/main.go failing=chain/cmd/svnd:TestStatecheckBuildsReportOnAHome
     reason: ORCH-6: main registers the tag's statecheck commands
-KILLED fix-statecheck-i13-skips-policy-rows group=statecheck exit=[1] secs=3.5 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
+KILLED fix-statecheck-i13-skips-policy-rows group=statecheck exit=[1] secs=3.6 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants
     reason: the I13 digest covers every x/policy row the runner's classes protect, not only 0x01 to 0x03
 KILLED fix-statecheck-i13-keeps-applied-rows group=statecheck exit=[1] secs=3.7 file=chain/internal/statecheck/authority.go failing=chain/internal/statecheck:TestStateCheckDigestsAndInvariants chain/internal/statecheck:TestStateCheckRefusesOtherVersion
     reason: the I13 digest leaves out the applied rows, which an upgrade's record step extends
-KILLED fix-statecheck-lock-not-required group=statecheck exit=[1] secs=3.0 file=chain/internal/statecheck/open.go failing=chain/internal/statecheck:TestReadChainIDReadsAsCometBFTDoes
+KILLED fix-statecheck-lock-not-required group=statecheck exit=[1] secs=2.7 file=chain/internal/statecheck/open.go failing=chain/internal/statecheck:TestReadChainIDReadsAsCometBFTDoes
     reason: a database copy without its LOCK file is refused, so the read-only open creates no file (Wave 2 security review)
-KILLED fix-statecheck-stored-genesis-unread group=statecheck exit=[1] secs=2.8 file=chain/internal/statecheck/open.go failing=chain/internal/statecheck:TestReadChainIDReadsAsCometBFTDoes
+KILLED fix-statecheck-stored-genesis-unread group=statecheck exit=[1] secs=2.9 file=chain/internal/statecheck/open.go failing=chain/internal/statecheck:TestReadChainIDReadsAsCometBFTDoes
     reason: the state check compares the genesis document CometBFT stored
-KILLED p4b-applydue-gone group=difftest exit=[1] secs=2.5 file=chain/x/authority/difftest/harness_test.go failing=chain/x/authority/difftest:TestSchemaTwoPayloadsD5
+KILLED p4b-applydue-gone group=difftest exit=[1] secs=2.4 file=chain/x/authority/difftest/harness_test.go failing=chain/x/authority/difftest:TestSchemaTwoPayloadsD5
     reason: the harness applies due pending changes each block (I3-I6 reachable)
 KILLED p4b-decisions-not-recorded group=difftest exit=[1] secs=2.3 file=chain/x/authority/difftest/harness_test.go failing=chain/x/authority/difftest:TestStoreLayout
     reason: the harness records each governed decision for CheckDecisions
-KILLED p4b-i12-off group=difftest exit=[1] secs=2.3 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestPolicyWriteCheckSelfTest chain/x/authority/difftest:TestTrialSnapshotDetectsEarlyWrite
+KILLED p4b-i12-off group=difftest exit=[1] secs=2.2 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestPolicyWriteCheckSelfTest chain/x/authority/difftest:TestTrialSnapshotDetectsEarlyWrite
     reason: the I12 policy-write check runs
-KILLED p4b-i12-any-row-on-execute group=difftest exit=[1] secs=2.2 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestPolicyWriteCheckSelfTest
+KILLED p4b-i12-any-row-on-execute group=difftest exit=[1] secs=2.3 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestPolicyWriteCheckSelfTest
     reason: I12: an execute may change only the rows its payload names
-KILLED p4b-i12-block-ignores-activation group=difftest exit=[1] secs=2.2 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestPolicyWriteCheckSelfTest
+KILLED p4b-i12-block-ignores-activation group=difftest exit=[1] secs=2.3 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestPolicyWriteCheckSelfTest
     reason: I12: a block applies only due pending changes
-KILLED p4b-i6-layout-loop-gone group=difftest exit=[1] secs=2.4 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestCouncilInvariantsSelfTest
+KILLED p4b-i6-layout-loop-gone group=difftest exit=[1] secs=2.2 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestCouncilInvariantsSelfTest
     reason: the I6 layout loop covers every store
-KILLED p4b-i5-app-version-gone group=difftest exit=[1] secs=2.3 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestCouncilInvariantsSelfTest
+KILLED p4b-i5-app-version-gone group=difftest exit=[1] secs=2.4 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestCouncilInvariantsSelfTest
     reason: the I5 app-version check runs
 KILLED p4b-policytest-gone group=difftest exit=[1] secs=2.3 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestCouncilInvariantsSelfTest
     reason: the harness runs policytest.CheckInvariantsAt
-KILLED p4b-checkdecisions-gone group=difftest exit=[1] secs=2.2 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestCouncilInvariantsSelfTest
+KILLED p4b-checkdecisions-gone group=difftest exit=[1] secs=2.3 file=chain/x/authority/difftest/invariants_test.go failing=chain/x/authority/difftest:TestCouncilInvariantsSelfTest
     reason: the harness runs policytest.CheckDecisions
-KILLED p4b-g11-side-rng-off group=difftest exit=[1] secs=7.8 file=chain/x/authority/difftest/gen_test.go failing=chain/x/authority/difftest:TestDifferentialReachability
+KILLED p4b-g11-side-rng-off group=difftest exit=[1] secs=8.0 file=chain/x/authority/difftest/gen_test.go failing=chain/x/authority/difftest:TestDifferentialReachability
     reason: the generator's side stream sends G-11 payloads
-KILLED p4b-oracle-shape-never group=difftest exit=[1] secs=7.0 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
+KILLED p4b-oracle-shape-never group=difftest exit=[1] secs=7.4 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
     reason: the oracle's G-11 shape condition matches its payloads
-KILLED p4b-oracle-c1-any-algorithm group=difftest exit=[1] secs=2.1 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
+KILLED p4b-oracle-c1-any-algorithm group=difftest exit=[1] secs=2.4 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
     reason: G-11 condition 1 needs the SHA-256 algorithm
-KILLED p4b-oracle-c2-activation-unchecked group=difftest exit=[1] secs=2.0 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
+KILLED p4b-oracle-c2-activation-unchecked group=difftest exit=[1] secs=2.2 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
     reason: G-11 condition 2 parses the activation
-KILLED p4b-oracle-c6-extra-keys group=difftest exit=[1] secs=2.0 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
+KILLED p4b-oracle-c6-extra-keys group=difftest exit=[1] secs=2.1 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
     reason: G-11 condition 6 refuses extra governed body keys
 KILLED p4b-oracle-shape-any-spec-code group=difftest exit=[1] secs=2.1 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
     reason: G-11 applies only where the spec answers MALFORMED
-KILLED p4c-open-withdraw-class-dropped group=difftest exit=[1] secs=3.0 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
+KILLED p4c-open-withdraw-class-dropped group=difftest exit=[1] secs=2.8 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
     reason: the shape space pins the open withdraw-algorithm class
-KILLED p4c-open-no-node-class-dropped group=difftest exit=[1] secs=2.7 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
+KILLED p4c-open-no-node-class-dropped group=difftest exit=[1] secs=2.8 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
     reason: the shape space pins the open short-key-without-node class
-KILLED p4c-open-class-too-wide group=difftest exit=[1] secs=2.6 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
+KILLED p4c-open-class-too-wide group=difftest exit=[1] secs=2.9 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
     reason: an open class is pinned only where it diverges
-KILLED p4c-space-drops-activation-omitted group=difftest exit=[1] secs=2.6 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
+KILLED p4c-space-drops-activation-omitted group=difftest exit=[1] secs=2.7 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
     reason: the shape space covers an omitted activation
-KILLED p4c-space-drops-algorithm-7 group=difftest exit=[1] secs=2.6 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
+KILLED p4c-space-drops-algorithm-7 group=difftest exit=[1] secs=2.9 file=chain/x/authority/difftest/shapes_test.go failing=chain/x/authority/difftest:TestUnnamedParseDivergences
     reason: the shape space covers a reason algorithm outside the enum
-KILLED p4c-oracle-n1-any-field-omitted group=difftest exit=[1] secs=2.1 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
+KILLED p4c-oracle-n1-any-field-omitted group=difftest exit=[1] secs=2.3 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest
     reason: G-11 condition 9 is the reason-digest-omitted case only
-KILLED p4c-oracle-n2-dropped group=difftest exit=[1] secs=7.0 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
+KILLED p4c-oracle-n2-dropped group=difftest exit=[1] secs=7.3 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
     reason: G-11 condition 10: empty node id with a 32-byte key
-KILLED p4c-oracle-n4-reason-unchecked group=difftest exit=[1] secs=2.5 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestUnnamedParseDivergences
+KILLED p4c-oracle-n4-reason-unchecked group=difftest exit=[1] secs=2.7 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestUnnamedParseDivergences
     reason: G-11 condition 12 needs a reason digest the spec parses
-KILLED p4c-oracle-n3-dropped group=difftest exit=[1] secs=7.0 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
+KILLED p4c-oracle-n3-dropped group=difftest exit=[1] secs=7.2 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
     reason: G-11 condition 11: withdraw content id outside the pattern, no reason digest
-KILLED p4c-oracle-n5-dropped group=difftest exit=[1] secs=7.0 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
+KILLED p4c-oracle-n5-dropped group=difftest exit=[1] secs=7.2 file=tests/difftest/spec_oracle.py failing=chain/x/authority/difftest:TestOracleSelfTest chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
     reason: G-11 condition 13: SHA-256 reason digest not 32 bytes
-KILLED p4-stale-conflict-off group=difftest exit=[1] secs=2.7 file=chain/x/authority/engine.go failing=chain/x/authority/difftest:TestStaleBranchDifferential
+KILLED p4-stale-conflict-off group=difftest exit=[1] secs=2.6 file=chain/x/authority/engine.go failing=chain/x/authority/difftest:TestStaleBranchDifferential
     reason: an execute on an older base whose key executed another digest is CONFLICT, not STALE
 KILLED p4-g-5-off group=difftest exit=[1] secs=7.4 file=chain/x/authority/engine.go failing=chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
     reason: G-5: an approval whose execute_after would pass the unix bound is OVERFLOW
-KILLED p4-g-3-quota-plus-one group=difftest exit=[1] secs=7.4 file=chain/x/authority/engine.go failing=chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
+KILLED p4-g-3-quota-plus-one group=difftest exit=[1] secs=7.6 file=chain/x/authority/engine.go failing=chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
     reason: G-3: the per-seat open quota
 KILLED p4-g-4-cap-plus-one group=difftest exit=[1] secs=5.1 file=chain/x/authority/engine.go failing=chain/x/authority/difftest:TestCouncilRulesAreLoadBearing
     reason: G-4: the pending validator change cap
@@ -613,19 +613,19 @@ KILLED p6b-unsafe-reset-instruction group=docs exit=[1] secs=0.5 file=docs/opera
     reason: the operations doc test refuses: unsafe-reset instruction
 KILLED p6b-missing-test-name group=docs exit=[1] secs=0.3 file=docs/operations/failed-upgrade.md failing=tests/unit/test_operations_docs.py::test_cited_go_tests_exist
     reason: the operations doc test refuses: missing test name
-KILLED p6b-untagged-bash-block group=docs exit=[1] secs=0.2 file=docs/operations/planned-halt-and-restart.md failing=tests/unit/test_operations_docs.py::test_walked_runbooks_tag_every_bash_block
+KILLED p6b-untagged-bash-block group=docs exit=[1] secs=0.3 file=docs/operations/planned-halt-and-restart.md failing=tests/unit/test_operations_docs.py::test_walked_runbooks_tag_every_bash_block
     reason: the operations doc test refuses: untagged bash block
 KILLED p6b-svnd-command-that-does-not-exist group=docs exit=[1] secs=0.2 file=docs/operations/operator-installation.md failing=tests/unit/test_operations_docs.py::test_cited_svnd_commands_exist
     reason: the operations doc test refuses: svnd command that does not exist
 KILLED p6b-svnd-flag-that-does-not-exist group=docs exit=[1] secs=0.2 file=docs/operations/planned-halt-and-restart.md failing=tests/unit/test_operations_docs.py::test_cited_svnd_commands_exist
     reason: the operations doc test refuses: svnd flag that does not exist
-KILLED p6b-broken-spec-anchor group=docs exit=[1] secs=0.2 file=docs/operations/council-changes.md failing=tests/unit/test_operations_docs.py::test_every_goal10_runbook_links_its_specification_section tests/unit/test_operations_docs.py::test_links_resolve
+KILLED p6b-broken-spec-anchor group=docs exit=[1] secs=0.3 file=docs/operations/council-changes.md failing=tests/unit/test_operations_docs.py::test_every_goal10_runbook_links_its_specification_section tests/unit/test_operations_docs.py::test_links_resolve
     reason: the operations doc test refuses: broken spec anchor
 KILLED p6b-header-removed group=docs exit=[1] secs=0.2 file=docs/operations/source-and-digest-review.md failing=tests/unit/test_operations_docs.py::test_runbooks_exist_and_open_with_the_header
     reason: the operations doc test refuses: header removed
 KILLED p6b-never-list-item-not-a-never group=docs exit=[1] secs=0.3 file=docs/operations/failed-upgrade.md failing=tests/unit/test_operations_docs.py::test_no_forbidden_step_outside_the_never_list
     reason: the operations doc test refuses: never-list item not a never
-KILLED p6b-rm-rf-data group=docs exit=[1] secs=0.2 file=docs/operations/failed-upgrade.md failing=tests/unit/test_operations_docs.py::test_no_forbidden_step_outside_the_never_list
+KILLED p6b-rm-rf-data group=docs exit=[1] secs=0.3 file=docs/operations/failed-upgrade.md failing=tests/unit/test_operations_docs.py::test_no_forbidden_step_outside_the_never_list
     reason: the operations doc test refuses: rm -rf data
 KILLED p6b-new-genesis-in-a-block group=docs exit=[1] secs=0.2 file=docs/operations/failed-upgrade.md failing=tests/unit/test_operations_docs.py::test_no_forbidden_step_outside_the_never_list
     reason: the operations doc test refuses: new genesis in a block
@@ -637,16 +637,16 @@ KILLED p6b-spec-cites-a-missing-test group=docs exit=[1] secs=0.2 file=docs/arch
     reason: the operations doc test refuses: spec cites a missing test
 KILLED plan-docs-unsafe-reset-in-failed-upgrade group=docs exit=[1] secs=0.2 file=docs/operations/failed-upgrade.md failing=tests/unit/test_operations_docs.py::test_no_forbidden_step_outside_the_never_list
     reason: an unsafe-reset-all instruction outside the never list of failed-upgrade.md is refused (plan 16.9 docs row)
-GROUP council-acceptance secs=90.9 killed=11
-GROUP authority secs=197.0 killed=49
-GROUP policy secs=153.4 killed=50
-GROUP upgrade secs=329.7 killed=77
-GROUP payload secs=64.0 killed=10
-GROUP app secs=271.4 killed=23
-GROUP rehearsal secs=70.8 killed=13
-GROUP statecheck secs=112.3 killed=27
-GROUP difftest secs=118.8 killed=29
-GROUP docs secs=4.2 killed=14
-TOTAL_SECS 1414.1
+GROUP council-acceptance secs=83.4 killed=11
+GROUP authority secs=188.1 killed=49
+GROUP policy secs=134.5 killed=50
+GROUP upgrade secs=289.0 killed=77
+GROUP payload secs=51.3 killed=10
+GROUP app secs=258.7 killed=23
+GROUP rehearsal secs=66.6 killed=13
+GROUP statecheck secs=114.3 killed=27
+GROUP difftest secs=121.5 killed=29
+GROUP docs secs=4.4 killed=14
+TOTAL_SECS 1313.3
 RESULT mutants=303 killed=303
 EXIT:0
