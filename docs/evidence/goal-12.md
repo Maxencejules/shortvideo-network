@@ -6,7 +6,9 @@ The indexer is implemented and the single-machine checks below ran. The goal sta
 
 The checks cited in this file ran on commit `478f98cc6e99835e33500613a88f5a38c6d4a04b` of branch `goal-12`, tree
 `86cdf8bcc38d6327f136daf704e8542488822b7c`. That commit's message carries `Tested-tree: 86cdf8bcc38d6327f136daf704e8542488822b7c`.
-The evidence logs were captured after that commit. This commit changes only `docs/evidence/`.
+The evidence logs were captured after that commit. Commit `7d981b70a42d99ae7f1122273918897fa476307b` changes only `docs/evidence/`.
+
+Head CI run [42695778372](https://github.com/Maxencejules/shortvideo-network/actions/runs/42695778372) on `7d981b70a42d99ae7f1122273918897fa476307b` failed the `python` job: `ruff format --check` wanted `GO_MODULES` in `scripts/run_tests.py` wrapped. The other 15 checks passed, including `go`, `devnet`, and every `go-race` shard (`indexer` and `devnet-indexer` among them). The following commit only wraps that tuple, records the two `go.sum` checksum lines `go mod tidy` keeps (`github.com/pion/stun v0.6.1` and `gotest.tools v2.2.0+incompatible`; the indexer source does not import them), and updates `docs/sbom.cdx.json`. It does not change indexer behaviour. The head CI run of that commit is cited when it has finished.
 
 Public launch: DISABLED. No tradable token. This is not an audit and not a production network. Devnet results are four
 validator processes on one machine. No independent operator is claimed.
@@ -49,7 +51,7 @@ BLOCKED, except where a row says otherwise. These are the goal 12 checks that de
 | Stop and resume consensus; stale read; no false renewal or approval | VERIFIED | Same log. Two validators were stopped. Status became stale. The projection still had one content row and no lease row. After the validators restarted, status became fresh. There is no `publication_approved` column. |
 | Goal 12 mutants | VERIFIED | [mutants.txt](logs/goal-12/mutants.txt) exit 0, `RESULT mutants=16 killed=16`. This is a spot check of the new code, not a mutation score. |
 | Race, indexer module | VERIFIED | [race-indexer.txt](logs/goal-12/race-indexer.txt) exit 0. The devnet test in that log is not under `-race`; CI's `go-race (devnet-indexer)` shard is the race run of `TestDevnetIndexer`. |
-| Head CI | Recorded with the run that includes this file | See the head-CI sentence once the run exists. |
+| Head CI | FAILED on the evidence commit, then a format and SBOM fix | Run [42695778372](https://github.com/Maxencejules/shortvideo-network/actions/runs/42695778372) on `7d981b70`: `python` failed, 15 other checks passed. The fix is the commit after `7d981b70`. |
 
 ## Requirements rows
 

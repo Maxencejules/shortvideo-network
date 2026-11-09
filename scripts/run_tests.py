@@ -150,7 +150,14 @@ def run_node() -> int:
 
 # services/broadcaster's tests start a disposable PostgreSQL 18.6 cluster
 # from /usr/lib/postgresql/18/bin and fail without it; no variable skips them.
-GO_MODULES = ("chain", "proto", "agents/provider", "agents/auditor", "services/broadcaster", "services/indexer")
+GO_MODULES = (
+    "chain",
+    "proto",
+    "agents/provider",
+    "agents/auditor",
+    "services/broadcaster",
+    "services/indexer",
+)
 # An explicit per-binary limit instead of go test's 10-minute default: the
 # chain/devnet package took 922 s on one machine at goal 10
 # (docs/evidence/logs/goal-10/tests-go.txt), and goal 11 adds the broadcaster
