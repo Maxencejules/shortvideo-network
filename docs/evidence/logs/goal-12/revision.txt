@@ -1,0 +1,9 @@
+COMMAND bash -c git\ status\ --porcelain\;\ echo\ MARKER\;\ git\ log\ -1\ --format=\"%H\ %T\ %P\ %s\"\;\ git\ merge-base\ --is-ancestor\ cb252873ec1a6e39ebebc0235f915c82e523da9d\ HEAD\ \&\&\ echo\ ancestor_ok
+DATE 2026-11-09T20:40:48Z
+HEAD 478f98cc6e99835e33500613a88f5a38c6d4a04b
+TREE 86cdf8bcc38d6327f136daf704e8542488822b7c
+DIRTY no
+MARKER
+478f98cc6e99835e33500613a88f5a38c6d4a04b 86cdf8bcc38d6327f136daf704e8542488822b7c cb252873ec1a6e39ebebc0235f915c82e523da9d goal 12: committed-state indexer and reconciliation
+ancestor_ok
+EXIT:0

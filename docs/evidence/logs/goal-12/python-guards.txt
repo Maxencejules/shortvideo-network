@@ -1,0 +1,9 @@
+COMMAND bash -c PYTHONPATH=\$PWD\ /tmp/svn-venv/bin/pytest\ -q\ tests/unit/test_ci_indexer.py\ tests/unit/test_ci_broadcaster.py\ tests/unit/test_ci_devnet_coverage.py\ tests/unit/test_scaffold.py\ tests/unit/test_repo_policy.py\ tests/unit/test_chain_writer_policy.py\ tests/unit/test_workflow_policy.py
+DATE 2026-11-09T20:41:43Z
+HEAD 478f98cc6e99835e33500613a88f5a38c6d4a04b
+TREE 86cdf8bcc38d6327f136daf704e8542488822b7c
+DIRTY no
+........................................................................ [ 42%]
+........................................................................ [ 85%]
+........................                                                 [100%]
+EXIT:0

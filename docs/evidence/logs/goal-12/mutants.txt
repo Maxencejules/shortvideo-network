@@ -1,0 +1,23 @@
+COMMAND python3 docs/evidence/goal-12/mutants.py --rev HEAD --timeout 180
+DATE 2026-11-09T20:41:09Z
+HEAD 478f98cc6e99835e33500613a88f5a38c6d4a04b
+TREE 86cdf8bcc38d6327f136daf704e8542488822b7c
+DIRTY no
+floor-zero KILLED
+floor-two KILLED
+chain-id-accepted KILLED
+commit-hash-unchecked KILLED
+event-version-flipped KILLED
+failed-tx-applied KILLED
+gap-applied KILLED
+renewal-invented KILLED
+rebuild-allows-foreign-table KILLED
+runtime-can-delete KILLED
+manifest-change-ignored KILLED
+query-error-is-empty KILLED
+commit-age-ignored KILLED
+index-above-floor KILLED
+missing-height-skipped KILLED
+bad-version-skipped KILLED
+RESULT mutants=16 killed=16
+EXIT:0

@@ -1,0 +1,25 @@
+COMMAND go test -count=1 -timeout 8m -v -run TestDevnetIndexer ./chain/devnet
+DATE 2026-11-09T20:40:55Z
+HEAD 478f98cc6e99835e33500613a88f5a38c6d4a04b
+TREE 86cdf8bcc38d6327f136daf704e8542488822b7c
+DIRTY no
+=== RUN   TestDevnetIndexer
+label=single machine, four validator processes, private network namespace (not independent operators, not production)
+phase=inject-chain-id exit=3
+phase=inject-forged exit=3
+phase=inject-missing exit=4
+phase=inject-version exit=3
+phase=register-c1 height=8 code=0 txhash=FE8CF68D4C01C8E52049B063DBE11839237C5285E27BAF4D822906D0AE72101A
+{"listen":"127.0.0.1:42001"}
+phase=wait what=fault point ok
+{"listen":"127.0.0.1:36709"}
+phase=wait what=one content row ok
+phase=indexer-stall-1 threshold=12 app_hash=87DCF3CC63D30BEA0AF9D1B464FF6B344C695506EECA6A5B719508E8E5C2CCB5
+phase=indexer-stall-2 threshold=12 app_hash=87DCF3CC63D30BEA0AF9D1B464FF6B344C695506EECA6A5B719508E8E5C2CCB5
+phase=wait what=stale read ok
+phase=wait what=fresh read ok
+phase=done
+--- PASS: TestDevnetIndexer (12.42s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/chain/devnet	12.452s
+EXIT:0
