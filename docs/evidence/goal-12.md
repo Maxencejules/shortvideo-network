@@ -32,9 +32,13 @@ The tested tree includes the ruff format of `GO_MODULES` in `scripts/run_tests.p
 
 ## Head CI
 
+Run [42719938633](https://github.com/Maxencejules/shortvideo-network/actions/runs/42719938633) on `3d42052a196b7bf3d45462478bee3153025db25e` completed **success** at 2026-11-09T23:34:58Z. All 15 jobs succeeded. `3d42052` differs from the tested commit `a8a0e59` only under `docs/evidence/`.
+
 Run [42699522138](https://github.com/Maxencejules/shortvideo-network/actions/runs/42699522138) on `bb9327bb7e1ec2587d49e682a69ea1645e594056` completed **success** at 2026-11-09T21:21:28Z. All 15 jobs succeeded: `node`, `python`, `go`, `contract`, `devnet`, and the ten `go-race` shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, and `rest`. The CodeRabbit commit status on that sha was also success. `bb9327b` differs from the tested commit `a8a0e59` only under `docs/evidence/`.
 
-Run [42695778372](https://github.com/Maxencejules/shortvideo-network/actions/runs/42695778372) on `7d981b70a42d99ae7f1122273918897fa476307b` **failed**. The `python` job stopped at `ruff format --check`: it wanted `GO_MODULES` in `scripts/run_tests.py` as a parenthesized tuple. The other 15 jobs on that run passed. That run is not a green head.
+Run [42695778372](https://github.com/Maxencejules/shortvideo-network/actions/runs/42695778372) on `7d981b70a42d99ae7f1122273918897fa476307b` **failed**. The `python` job stopped at `ruff format --check`: it wanted `GO_MODULES` in `scripts/run_tests.py` as a parenthesized tuple. That run had 15 jobs in total: `python` failed and the other 14 passed. That run is not a green head.
+
+`docs/progress.tsv` row 12 still names only run 42695778372. That file is outside `docs/evidence/`. Changing it after the tested commit would break the rule that only `docs/evidence/` changes. The green run ids are recorded in this file instead.
 
 ## Prerequisites carried from goal 11
 
@@ -51,14 +55,14 @@ BLOCKED, except where a row says otherwise:
 
 | Check | Status | Log |
 | --- | --- | --- |
-| Kill between event handling and checkpoint, resume, one projection effect | VERIFIED | [devnet-indexer.txt](logs/goal-12/devnet-indexer.txt) exit 0. `phase=before-kill content_c1_lines=0` and the canonical text under it is only `checkpoint 10`, with no `content c1` line. After SIGKILL and restart, `phase=after-resume content_c1_lines=1 lease_lines=0` and one `content c1` line. |
+| Kill between event handling and checkpoint, resume, one projection effect | VERIFIED | [devnet-indexer.txt](logs/goal-12/devnet-indexer.txt) exit 0. The log line `phase=before-kill content_c1_lines=0` is followed only by `checkpoint 10`, with no `content c1` line. The indexer was then killed and started again. The proof of that resume is the later log line `phase=after-resume content_c1_lines=1 lease_lines=0`, followed by one `content c1` line. The log does not contain the words SIGKILL. |
 | Rebuild and compare normalized rows | VERIFIED | Same log. `phase=rebuild-before` and `phase=rebuild-after` print the same content and source lines. `phase=rebuild match=yes`. The checkpoint line is not part of that comparison, because empty blocks can commit during the rebuild. |
 | Malformed event version, forged response, missing block, chain-id mismatch | VERIFIED | Same log: `inject-chain-id exit=3`, `inject-forged exit=3`, `inject-missing exit=4`, `inject-version exit=3`. |
 | Reconciliation detects an altered projection | VERIFIED | Same log. `phase=reconcile exit=5`, then `divergent`, then `phase=reconcile altered_manifest_kept=true`. The canonical line is `content c1 1 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc`. |
 | Stop and resume consensus; stale read; no false renewal or approval | VERIFIED | Same log. Two validators were stopped (`indexer-stall-1`, `indexer-stall-2`). `phase=wait what=stale read ok`, then `phase=wait what=fresh read ok`. `lease_lines=0`. There is no `publication_approved` column. |
 | Goal 12 mutants | VERIFIED | [mutants.txt](logs/goal-12/mutants.txt) exit 0, `RESULT mutants=16 killed=16`. This is a spot check of the new code, not a mutation score. |
 | Race, indexer module | VERIFIED | [race-indexer.txt](logs/goal-12/race-indexer.txt) exit 0. `TestDevnetIndexer` in the devnet log was not run under `-race`. CI's `go-race (devnet-indexer)` shard is that race run. |
-| Head CI | VERIFIED on `bb9327b` | Run [42699522138](https://github.com/Maxencejules/shortvideo-network/actions/runs/42699522138), 15 of 15 jobs, conclusion success, 2026-11-09T21:21:28Z. That sha differs from the tested commit only under `docs/evidence/`. Run 42695778372 on `7d981b7` failed `python`. |
+| Head CI | VERIFIED on `3d42052` and `bb9327b` | Run [42719938633](https://github.com/Maxencejules/shortvideo-network/actions/runs/42719938633) on `3d42052`, 15 of 15 jobs, conclusion success, 2026-11-09T23:34:58Z. Run [42699522138](https://github.com/Maxencejules/shortvideo-network/actions/runs/42699522138) on `bb9327b`, 15 of 15 jobs, conclusion success, 2026-11-09T21:21:28Z. Both shas differ from the tested commit only under `docs/evidence/`. Run 42695778372 on `7d981b7` had 15 jobs: `python` failed and 14 passed. |
 
 ## Requirements rows
 
@@ -92,7 +96,7 @@ Hosting services read `GET /v1/status`, `/v1/providers`, `/v1/content`, `/v1/lea
 
 ## Next safe action
 
-Draft [PR 17](https://github.com/Maxencejules/shortvideo-network/pull/17) stays a draft. Do not merge it. Do not start goal 13. A merge is a separate approval. The green run for the tested tree is 42699522138 on `bb9327b`.
+Draft [PR 17](https://github.com/Maxencejules/shortvideo-network/pull/17) stays a draft. Do not merge it. Do not start goal 13. A merge is a separate approval. The green runs for the tested tree are 42719938633 on `3d42052` and 42699522138 on `bb9327b`.
 
 ## Proposed pull-request title and summary
 
