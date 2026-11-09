@@ -2,7 +2,7 @@
 
 Status: BLOCKED
 
-DR-11-01 is approved for the pinned boundary document only. The goal stays BLOCKED: production custody is still DEC-001 and DR-07-01, every run is one machine, the goal 06 and goal 07 mutation anchors are still open, golangci-lint is not installed, and PostgreSQL 16 was not tested (the server in use is 18.6). The non-root PostgreSQL path in CI is not a blocker. Head CI of this commit is not cited yet.
+DR-11-01 is approved for the pinned boundary document only. The goal stays BLOCKED: production custody is still DEC-001 and DR-07-01, every run is one machine, the goal 06 and goal 07 mutation anchors are still open, golangci-lint is not installed, and PostgreSQL 16 was not tested (the server in use is 18.6). The non-root PostgreSQL path in CI is not a blocker. Head CI is not a blocker.
 
 The checks cited in this file ran on commit `8450fbdecf9bcec6bbc2de15c8927bff397b7c28` of branch `goal-11`, tree
 `a94f4848ee4ff54f8209fbb5b9afd969b7926bf7`. That commit's message carries `Tested-tree: a94f4848ee4ff54f8209fbb5b9afd969b7926bf7`.
@@ -41,7 +41,7 @@ BLOCKED, except where a row says otherwise:
 
 1. **DR-11-01: no longer a blocker (2026-11-08).** Document only, at the sha256 above. Not a merge.
 2. **REQ-CHAIN-013 production custody.** Host custody of user keys is still blocked by DEC-001 and DR-07-01. The devnet fixture's refusal of a minted provider signature and of a missing publication permission is in the policy and devnet logs. The row is not production-verified.
-3. **Head CI.** Not cited for this commit. The previous tip `7ab95e0` had run [42586688727](https://github.com/Maxencejules/shortvideo-network/actions/runs/42586688727), 13 of 13. That run is not this commit. The run on the commit that contains these logs is recorded once it is green.
+3. **Head CI: no longer a blocker.** Draft PR 16. Run [42624725287](https://github.com/Maxencejules/shortvideo-network/actions/runs/42624725287) on `f26c1881a980d96a19cf631fbbb2d342c276877d` completed success, 13 of 13: `python`, `node`, `go`, `devnet`, `contract`, and `go-race` for `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `rest`, `broadcaster`, `devnet-broadcaster` and `devnet-broadcaster-stall`. That commit holds this retest. The run before it, [42586688727](https://github.com/Maxencejules/shortvideo-network/actions/runs/42586688727) on `7ab95e0`, was also 13 of 13.
 4. **Independent operators.** Every devnet run is four processes on one machine. DEC-002 names no operator list.
 5. **Goal 06 and goal 07 mutation runners.** Anchor checks only: [goal06-anchors.txt](logs/goal-11/goal06-anchors.txt) exit 1, `RESULT search-string problems=13; no test was run`; [goal07-anchors.txt](logs/goal-11/goal07-anchors.txt) exit 1, `RESULT validation problems=3; no test was run`. Still BLOCKED.
 6. **golangci-lint.** Not installed here. [golangci-lint.txt](logs/goal-11/golangci-lint.txt) exit 1, `command not found`, `chain=127`. BLOCKED.
@@ -58,7 +58,7 @@ BLOCKED, except where a row says otherwise:
 | Restart PostgreSQL and the broadcaster, then reconcile | VERIFIED | Lifecycle phases PG and BR in [devnet-broadcaster.txt](logs/goal-11/devnet-broadcaster.txt). |
 | Read floor and indexing margin | VERIFIED | Mutants `f1-app-floor-is-status-height`, `f1-signer-startup-does-not-wait` and `f3-indexing-margin-one-allowed` are among the 284 killed ([mutants-goal11.txt](logs/goal-11/mutants-goal11.txt)). |
 | Signing boundary document approved | VERIFIED for the pinned file only | DR-11-01. Proposed numbers stay proposed. |
-| Head CI | Not cited for this commit | See prerequisites. |
+| Head CI | VERIFIED | Run 42624725287 on `f26c188`, 13 of 13, including `go-race (broadcaster)`, `go-race (devnet-broadcaster)` and `go-race (devnet-broadcaster-stall)`. |
 
 ## Requirements rows
 
@@ -107,7 +107,7 @@ Stored genesis after a refused InitChain, `svnd genesis validate` gaps on `app_s
 
 ## Next safe action
 
-Draft PR 16 stays a draft. A merge is a separate approval. The head CI run of the commit that contains these logs is cited once that run is green.
+Draft PR 16 stays a draft. A merge is a separate approval. Head CI on `f26c188` passed (run 42624725287, 13 of 13).
 
 ## Proposed pull-request title and summary
 
