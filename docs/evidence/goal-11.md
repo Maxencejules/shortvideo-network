@@ -2,7 +2,7 @@
 
 Status: BLOCKED
 
-DR-11-01 is approved for the pinned boundary document only. The goal stays BLOCKED: production custody is still DEC-001 and DR-07-01, and every run is one machine. Head CI of this rewritten head is not cited in this commit.
+DR-11-01 is approved for the pinned boundary document only. The goal stays BLOCKED: production custody is still DEC-001 and DR-07-01, and every run is one machine. Head CI on `ad55070` passed and is not a blocker.
 
 The checks cited in this file ran on commit `9a00e16b96f86cd83b6fa9b4d9f86b4d12be1526` of branch `goal-11`, tree
 `79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd`. That commit's message carries `Tested-tree: 79a7e969eaa55e1fe62785a193bafd0cbdf2b1dd`.
@@ -50,11 +50,11 @@ BLOCKED, except where a row says otherwise:
 
 1. **DR-11-01: no longer a blocker (2026-11-08).** On 2026-11-08 at 21:39 America/Toronto the owner wrote, verbatim: "I approve docs/architecture/broadcaster.md at sha256 9779fdb1e7fe5a7577565c64a8066b6bff7e7bace1174b085df81e7b17ae905b (DR-11-01)". That is the sha256 of the file at the tested commit (1563 lines). The same message approved opening a draft pull request: "yes, open a draft pr for goal-11 and send it to the reviewer". The approval is of that document only. It does not approve any PROPOSED number, and it is not a merge. The file's own text still reads "Status: PROPOSED" and "It is not approved." It is not edited, because an edit would change the pinned sha256. The number is kept so the references in this file stay valid.
 2. **REQ-CHAIN-013 production custody.** The devnet fixture refuses a minted provider signature and a missing publication permission. Host custody of user keys is still blocked by DEC-001 and DR-07-01. The row is not production-verified.
-3. **Head CI.** Draft PR 16 exists. Run 42552331705 on the pre-rewrite head `1ab4021` was 13 of 13, including `go-race (broadcaster)`, `go-race (devnet-broadcaster)` and `go-race (devnet-broadcaster-stall)`. That commit is not this head. This file does not claim the rewritten head's CI.
+3. **Head CI: no longer a blocker.** Draft PR 16. Run [42578184489](https://github.com/Maxencejules/shortvideo-network/actions/runs/42578184489) on `ad55070fbefa5def4322fdb269ad33c9f8ceb701` completed success, 13 of 13 jobs: `python`, `node`, `go`, `devnet`, `contract`, and `go-race` for `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `rest`, `broadcaster`, `devnet-broadcaster` and `devnet-broadcaster-stall`. The earlier run 42552331705 was the pre-rewrite head `1ab4021` and is not this head.
 4. **Independent operators.** Every devnet run is four processes on one machine. DEC-002 names no operator list.
 5. **Goal 06 and goal 07 mutation runners.** Anchor checks only: [goal06-anchors.txt](logs/goal-11/goal06-anchors.txt) exit 1, `RESULT search-string problems=13; no test was run`; [goal07-anchors.txt](logs/goal-11/goal07-anchors.txt) exit 1, `RESULT validation problems=3; no test was run`. Known, and still BLOCKED.
 6. **golangci-lint.** Not installed here. [golangci-lint.txt](logs/goal-11/golangci-lint.txt) exit 1, `command not found`, `chain=127`. The known go1.26 load failure is not separately reproduced because the binary is absent. BLOCKED.
-7. **Non-root pgdev path on the CI runner.** The captured broadcaster, store and worker tests ran as uid 1000 inside the private network namespace ([runtime.txt](logs/goal-11/runtime.txt) is uid 1000). The GitHub Actions job for this head has not run. BLOCKED until it does.
+7. **Non-root pgdev path on the CI runner: no longer a blocker.** The `go` job in run 42578184489 passed. That job runs `python3 scripts/run_tests.py --only go` without sudo (`.github/workflows/ci.yml`). The local capture also ran those tests as uid 1000 ([runtime.txt](logs/goal-11/runtime.txt)).
 8. **PostgreSQL 16.** The runtime command asked for `/usr/lib/postgresql/16/bin/postgres`. It is not installed. The pin in use is 18.6. A 16.x server was not tested.
 
 ## Acceptance
@@ -67,7 +67,7 @@ BLOCKED, except where a row says otherwise:
 | Restart PostgreSQL and the broadcaster, then reconcile | VERIFIED | Lifecycle phases PG and BR in [devnet-broadcaster.txt](logs/goal-11/devnet-broadcaster.txt). |
 | Read floor and indexing margin | VERIFIED | The broadcaster unit log. Mutants `f1-app-floor-is-status-height`, `f1-signer-startup-does-not-wait`, `f3-indexing-margin-one-allowed` are in the 284 killed ([mutants-goal11.txt](logs/goal-11/mutants-goal11.txt)). |
 | Signing boundary document approved | VERIFIED for the pinned file only | DR-11-01, owner quote of 2026-11-08 21:39 America/Toronto, sha256 `9779fdb1e7fe5a7577565c64a8066b6bff7e7bace1174b085df81e7b17ae905b`. PROPOSED numbers stay PROPOSED. |
-| Head CI | BLOCKED | Not run on this head. |
+| Head CI | VERIFIED | Run 42578184489 on `ad55070`, 13 of 13, including `go-race (broadcaster)`, `go-race (devnet-broadcaster)` and `go-race (devnet-broadcaster-stall)`. |
 
 ## Requirements rows
 
@@ -131,10 +131,10 @@ Stored genesis after a refused InitChain, `svnd genesis validate` gaps on `app_s
 
 ## Next safe action
 
-Draft PR 16 stays a draft. A merge is a separate approval. The rewritten head's CI is the next record for this file.
+Draft PR 16 stays a draft. A merge is a separate approval. Head CI on `ad55070` passed (run 42578184489). This sentence is the evidence record of that run.
 
 ## Proposed pull-request title and summary
 
 Title: goal 11: transaction broadcaster and outbox
 
-Summary: `services/broadcaster` is the Go outbox and signing boundary. One `ADMITTED_SERVICE` key and one `BROADCASTER` key are read only by a separate signer. Relays are pre-checked and forwards are verbatim. Query floors use the committed application height. `indexing_margin_blocks` is at least 2. DR-11-01 is approved for the pinned file only. Status stays BLOCKED on DEC-001 and single-machine operation. Head CI of the rewritten head is recorded when its run finishes.
+Summary: `services/broadcaster` is the Go outbox and signing boundary. One `ADMITTED_SERVICE` key and one `BROADCASTER` key are read only by a separate signer. Relays are pre-checked and forwards are verbatim. Query floors use the committed application height. `indexing_margin_blocks` is at least 2. DR-11-01 is approved for the pinned file only. Head CI on `ad55070` passed (run 42578184489, 13 of 13). Status stays BLOCKED on DEC-001 and single-machine operation.
