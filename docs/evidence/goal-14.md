@@ -111,7 +111,9 @@ Run [42737222474](https://github.com/Maxencejules/shortvideo-network/actions/run
 
 Run [42738414523](https://github.com/Maxencejules/shortvideo-network/actions/runs/42738414523) on the tested commit `bba18650f3eedea68f4dac3f1baf9cea85036881` completed **success**. All 16 jobs succeeded, including `python`, `go`, `devnet`, and the `go-race` shards.
 
-Run [42740055694](https://github.com/Maxencejules/shortvideo-network/actions/runs/42740055694) on `ad3e296376b3c3de783e55acf8deaef04424e439` completed **success**. All 16 jobs succeeded. That commit differs from the tested commit only in `docs/evidence/goal-14.md`. This file records that run. A later evidence commit that only adds this paragraph gets its own run; that run is not this one.
+Run [42740055694](https://github.com/Maxencejules/shortvideo-network/actions/runs/42740055694) on `ad3e296376b3c3de783e55acf8deaef04424e439` completed **success**. All 16 jobs succeeded. That commit differs from the tested commit only in `docs/evidence/goal-14.md`.
+
+Run [42742004585](https://github.com/Maxencejules/shortvideo-network/actions/runs/42742004585) on `db1108585ad5717029e41c018b1edce36f33a997` completed **success**. All 16 jobs succeeded. That commit differs from `ad3e296` only in this file. It is the green run on that head.
 
 ## Next safe action
 
