@@ -163,7 +163,9 @@ Run [42785752080](https://github.com/Maxencejules/shortvideo-network/actions/run
 
 Run [42788658554](https://github.com/Maxencejules/shortvideo-network/actions/runs/42788658554) on `ff9d9cca22f4a7d80c0f84423ee5535a68b29214` completed **success** at 2026-11-10T09:23:31Z. All 16 jobs succeeded. `ff9d9cc` differs from the tested commit only under `docs/evidence/`.
 
-Run [42790371672](https://github.com/Maxencejules/shortvideo-network/actions/runs/42790371672) on `f7281720f74eb4b689994968c032919a0d1c2aa6` completed **failure** at 2026-11-10T09:37:56Z. The `python` job failed `tests/unit/test_delivery.py::test_browser_decodes_the_mp4_it_fetched`: `run_until` returned `FAILED` and `catalog.report` was `None`. The other 15 jobs succeeded. `f728172` differs from `ff9d9cc` only in this evidence file. The same python job succeeded on `ff9d9cc`. No run on this branch was cancelled.
+Run [42790371672](https://github.com/Maxencejules/shortvideo-network/actions/runs/42790371672) on `f7281720f74eb4b689994968c032919a0d1c2aa6` completed **failure** at 2026-11-10T09:37:56Z. The `python` job failed `tests/unit/test_delivery.py::test_browser_decodes_the_mp4_it_fetched`: `run_until` returned `FAILED` and `catalog.report` was `None`. The other 15 jobs succeeded. `f728172` differs from `ff9d9cc` only in this evidence file. The same python job succeeded on `ff9d9cc`.
+
+Run [42792556946](https://github.com/Maxencejules/shortvideo-network/actions/runs/42792556946) on `ca7f8c694849ffdd6a10a802bcf32d41248d30dc` completed **success** at 2026-11-10T09:53:06Z. All 16 jobs succeeded, including `python`. `ca7f8c6` differs from the tested commit only under `docs/evidence/`. No run on this branch was cancelled.
 
 ## Log stamps
 
