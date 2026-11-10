@@ -149,7 +149,7 @@ svn-scheduler serve config.json
 
 ## Head CI
 
-Not observed yet. This section is updated after the push, in a later `docs/evidence/` commit if the run id is known then.
+Run [42801666285](https://github.com/Maxencejules/shortvideo-network/actions/runs/42801666285) on `75a708cfca79057c0f81ec49af31ed0efef041c1` completed **success** at 2026-11-10T10:57:18Z. It was created at 2026-11-10T10:44:18Z. All 16 jobs succeeded: `node`, `python`, `go`, `contract`, `devnet`, and the go-race shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, `api`, and `rest`. `75a708cf` differs from the tested commit `b7c1ed19891c297c9af9bea4afe646c64ac870c7` only under `docs/evidence/`. No run on this branch was failed or cancelled when this section was written. This docs-only commit starts a later run; that run is not 42801666285.
 
 ## Log stamps
 
