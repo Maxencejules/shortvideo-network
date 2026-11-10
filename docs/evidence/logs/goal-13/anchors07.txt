@@ -1,0 +1,17 @@
+HEAD 42eced0d4a3aaf7d196ffe3f95cd1d5ff6253d33
+TREE 3a2d13615cb399a030e56d80ac9dd537fd8be416
+DIRTY no
+CMD /tmp/goal13-evidence/anchors07.txt .venv/bin/python docs/evidence/goal-07/mutants.py --check
+revision HEAD commit 42eced0d4a3aaf7d196ffe3f95cd1d5ff6253d33 tree 3a2d13615cb399a030e56d80ac9dd537fd8be416
+copy /tmp/goal07-mutants-_j7_yas4/tree (git archive)
+mutants 30 of 30 (goal07=5, merge=14, node=11)
+COPY_MATCH m01-simulate-extra-gas: chain/msgkit/enforce.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m01-simulate-extra-gas.go.txt; chain/msgkit/enforce.go unchanged since 43c1a10
+COPY_MATCH m02-ante-gas0-always: chain/app/ante.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m02-ante-gas0-always.go.txt; chain/app/ante.go changed since 43c1a10
+COPY_MATCH m03-query-gas-zero-unlimited: chain/app/querygas.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m03-query-gas-zero-unlimited.go.txt; chain/app/querygas.go changed since 43c1a10
+COPY_MATCH m04-rotation-cap-off-by-one: chain/x/providers/msg_server.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m04-rotation-cap-off-by-one.go.txt; chain/x/providers/msg_server.go unchanged since 43c1a10
+COPY_MATCH m05-authority-meter-finalize-only: chain/x/authority/msg.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m05-authority-meter-finalize-only.go.txt; chain/x/authority/msg.go changed since 43c1a10
+NOT_FOUND auth-seat-rule-allows-auditor chain/x/authority/genesis.go occurrences=0
+NOT_FOUND doc-seat-rule-case-sensitive chain/genesis/document.go occurrences=0
+NOT_FOUND msg-success-skips-registry-write chain/x/authority/msg.go occurrences=0
+RESULT validation problems=3; no test was run
+EXIT 1
