@@ -18,16 +18,16 @@ Gate C is "upload, replication, final chain commitment and real playback survive
 
 | Item | Value |
 | --- | --- |
-| Commit | `11a9c6972ec595880665020e4ffbe764983d39a7` |
-| Tree | `f6cfdebf445781967a5d0fc8155f72772f21e959` |
+| Commit | `a5628ab5b6dfb4f1b16546654415063f1499a992` |
+| Tree | `4dcc6a681a94c7df817f62c149a23b82e8273bc4` |
 | Base | `f21ef2b22b15921600515a47f90164dede34920c` |
 | Branch | `goal-18` |
 
-[trailer.txt](logs/goal-18/trailer.txt) line 20 is `commit 11a9c6972ec595880665020e4ffbe764983d39a7`. Lines 21 and 22 name `Maxence Jules <Maxencejules@users.noreply.github.com>` as author and committer. Line 28 is `Tested-tree: f6cfdebf445781967a5d0fc8155f72772f21e959`. The same file's `TREE` line is that tree. This evidence commit changes only `docs/evidence/` relative to that tested commit.
+[trailer.txt](logs/goal-18/trailer.txt) line 20 is `commit a5628ab5b6dfb4f1b16546654415063f1499a992`. Lines 21 and 22 name `Maxence Jules <Maxencejules@users.noreply.github.com>` as author and committer. Line 28 is `Tested-tree: 4dcc6a681a94c7df817f62c149a23b82e8273bc4`. The same file's `TREE` line is that tree. This evidence commit changes only `docs/evidence/` relative to that tested commit.
 
-Earlier commits on this branch are ancestors. `1a89c0ea34b278e0f34b60876f61c9bad3669d1a` joined the path. `ea4a3593d838068ee3c5a63364ec2c6390720f38` removed an unused struct that `go vet` rejected. `21dc9f28dd3380a37db2a811937488d58c1e4e13` waits for a fresh indexer read before the withheld publish. `0c10f566e4a2ff9367d68f659f8559dbc96d75d9` recorded the first scenario log. CI run 42823652645 on that commit failed in the Python job because Ruff rejected `scripts/milestone/client.py`. The tested commit formats that file and the delivery host test. The requests are unchanged. The scenario log below is the tested commit.
+Earlier commits on this branch are ancestors. `1a89c0ea34b278e0f34b60876f61c9bad3669d1a` joined the path. `ea4a3593d838068ee3c5a63364ec2c6390720f38` removed an unused struct that `go vet` rejected. `21dc9f28dd3380a37db2a811937488d58c1e4e13` waits for a fresh indexer read before the withheld publish. `11a9c6972ec595880665020e4ffbe764983d39a7` formats the client after CI run 42823652645. `bd3869741e70e8ab397fcebface0e52df27443bf` stopped restoring host bindings into a new process after CI run 42826355319. The tested commit lets a second process name the origin in a grant when the package verifies, without advertising a host this process has not bound. The scenario log below is the tested commit.
 
-[range.txt](logs/goal-18/range.txt) is `git diff --name-only f21ef2b22b15921600515a47f90164dede34920c..HEAD`. Lines 22 through 75 are the paths. `chain/` and `proto/` are not among them. [names.txt](logs/goal-18/names.txt) is only the last commit: line 21 is `scripts/milestone/client.py` and line 22 is `tests/unit/test_delivery_hosts.py`.
+[range.txt](logs/goal-18/range.txt) is `git diff --name-only f21ef2b22b15921600515a47f90164dede34920c..HEAD`. Lines 22 through 75 are the paths. `chain/` and `proto/` are not among them. [names.txt](logs/goal-18/names.txt) is only the last commit: line 21 is `services/delivery/svn_delivery/catalog.py`.
 
 The demonstration is `scripts/milestone/run.sh`. The independent client is `scripts/milestone/client.py`. It reads the indexer and the delivery HTTPS port. It does not open a database, a key file, or the quarantine directory.
 
@@ -49,7 +49,7 @@ These are open. They are not owner decisions.
 
 | ID | Status | Effect |
 | --- | --- | --- |
-| DR-18-01 | OPEN | The content digest registered on the chain is the sha256 of the scheduler package text, not the media worker's manifest file. [scenario.txt](logs/goal-18/scenario.txt) line 49 `manifest_sha256` is `36e95fb0f7a0f46a071f82f5e40a915e404c59fc64fa840a7d066c329de19682`. Line 50 `package_text_sha256` is `4af5ea0528e5afc5c5fa0210e11ade8dab9ea16c9343c3e6597ab054218bcf74`. Line 66 shows the indexer manifest equal to the package text. Both digests are real. They are not the same document. |
+| DR-18-01 | OPEN | The content digest registered on the chain is the sha256 of the scheduler package text, not the media worker's manifest file. [scenario.txt](logs/goal-18/scenario.txt) line 49 `manifest_sha256` is `021ddad6d25e0779ea1f44b7ee245776b4afdcb3db5f956b48a36acb795b692e`. Line 50 `package_text_sha256` is `b429dedb07cf23814ef07d7e02ccb86e5724b922dd75e5088e555362e5833988`. Line 66 shows the indexer manifest equal to the package text. Both digests are real. They are not the same document. |
 | DR-18-02 | OPEN | Providers `p1`, `p2`, and `p3` submit with the genesis account `provider-1`. `p4` uses `provider-2`. [scenario.txt](logs/goal-18/scenario.txt) lines 13-16. The ed25519 agent key still signs the inner acceptance. `keys/outer.hex` is a copy of the devnet secp256k1 account, created in the test temporary directory, so the transaction signer is the admitted account. It is not committed. |
 | DR-18-03 | OPEN | Scheduler publication and the playback document are different fields. Line 63 is `publication=PUBLISHED`. Line 68 is `publication=NOT_PUBLISHED` with `hosting_promise=False` and `chain_status=HELD`. A local grant is not publication. |
 | DR-18-04 | OPEN | An accepted lease does not name the offer (DR-08-08). The indexer closes the one OPEN offer for that provider and content in the same transaction. Zero or several matches stay OPEN. [scenario.txt](logs/goal-18/scenario.txt) line 64 is `phase=INDEXER_RECONCILE ok` after the three accepts. Line 65 is `reconciliation_status":"ok"` and `"stale":false`. |
@@ -64,33 +64,33 @@ These are open. They are not owner decisions.
 
 ## Acceptance
 
-The acceptance log is [scenario.txt](logs/goal-18/scenario.txt). `HEAD` is `11a9c6972ec595880665020e4ffbe764983d39a7` and `TREE` is `f6cfdebf445781967a5d0fc8155f72772f21e959`. `DIRTY no` is line 5. The other logs in this directory were captured after that file existed, so they print `DIRTY yes` and list the earlier log paths. No source file was modified between those captures.
+The acceptance log is [scenario.txt](logs/goal-18/scenario.txt). `HEAD` is `a5628ab5b6dfb4f1b16546654415063f1499a992` and `TREE` is `4dcc6a681a94c7df817f62c149a23b82e8273bc4`. `DIRTY no` is line 5. The other logs in this directory were captured after that file existed, so they print `DIRTY yes` and list the earlier log paths. No source file was modified between those captures.
 
 The clip is synthetic. Line 44 is `bytes=12746 sha256=190072c758fab6a1b799d210630ca3baa449e3a55e856bf003c25331f31bafd6 synthetic=true`. The package is 12740 bytes with 2 segments (line 50). The played segment is 11524 bytes (line 71).
 
 | Check | Status | Where |
 | --- | --- | --- |
-| Four-validator devnet, not the fixture chain | VERIFIED on this host, one machine | Line 7 `chain_id=shortvideo-dev-7b8ab2884baa7216` `physical_count=1`. Line 8 `height=4` `validators=4` `app_hash=48FD52158B360445AE034551DB7A54F2711160619D0ECED91A32D4430012BCDA`. |
+| Four-validator devnet, not the fixture chain | VERIFIED on this host, one machine | Line 7 `chain_id=shortvideo-dev-89a7a7f306f0c3c4` `physical_count=1`. Line 8 `height=3` `validators=4` `app_hash=C7735035AC213DF7B0AA67D3F332E7C4DB884369FD2CC3589DECD48F2E19D650`. |
 | Development principal only | VERIFIED as the fixture | The API publish before the chain path is line 48 `status=403`. Public sign-up is not this goal. |
-| Upload, one reservation on retry | VERIFIED on this host | Line 45 `upload=u87ff11c5990d1fd1952a39f55ea985c8` `repeat_upload=u87ff11c5990d1fd1952a39f55ea985c8` `status=RESERVED`. The test refuses a second upload id at `services/milestone/scenario_phases_test.go:57`. |
+| Upload, one reservation on retry | VERIFIED on this host | Line 45 `upload=ueb53fb70c1b915f440b12452835d2bbe` `repeat_upload=ueb53fb70c1b915f440b12452835d2bbe` `status=RESERVED`. The test refuses a second upload id at `services/milestone/scenario_phases_test.go:57`. |
 | Bytes received, processing queued, worker ready | VERIFIED on this host | Line 46 `status=204`. Line 47 `PROCESSING_QUEUED`. Line 49 `status":"READY_FOR_REVIEW"` `publication":"NOT_PUBLISHED"` `package_bytes":12740`. |
-| Moderation withheld, then three committed leases, then publish | VERIFIED on this host | Line 54 `WITHHELD` `community_approval`. Lines 56-61 are the three `OFFER_LEASE` commits at heights 50, 55, and 59. Line 63 `PUBLISHED` `leases=3 distinct=3 verified=3` at `2026-11-10T13:34:46.978975658Z`. Line 64 reconciliation `ok`. |
+| Moderation withheld, then three committed leases, then publish | VERIFIED on this host | Line 54 `WITHHELD` `community_approval`. Lines 57, 59, and 61 are the three `OFFER_LEASE` commits at heights 57, 62, and 66. Line 63 `PUBLISHED` `leases=3 distinct=3 verified=3` at `2026-11-10T13:53:31.525725256Z`. Line 64 reconciliation `ok`. |
 | Independent client plays the segment | VERIFIED on this host | Lines 66-73. Line 71 `sha256=cbcc6ec21007d20c4bcff5223825b1a3f7e8b90b5ffbed08d9d7c9ffbe31ed04` matches `expected`. Line 73 `CLIENT ok`. |
-| Repeated register is one business effect | VERIFIED for the content row and the transaction | Line 74 repeats the register tx `45f423f75a1a51140549f3fa6e96a5756cc783c35da5164b7e00754d86385d65` at height 47, the same values as line 52. Line 75 `OPERATION_STATUS_COMMITTED`. Line 76 `content_rows=1`. The test refuses any other count at `services/milestone/scenario_phases_test.go:281`. A separate quota-balance column was not printed. |
+| Repeated register is one business effect | VERIFIED for the content row and the transaction | Line 74 repeats the register tx `e043c8cd2135abcebc6532436de05beffc143e1fc86316f724c402aefae39bbd` at height 54, the same values as line 52. Line 75 `OPERATION_STATUS_COMMITTED`. Line 76 `content_rows=1`. The test refuses any other count at `services/milestone/scenario_phases_test.go:281`. A separate quota-balance column was not printed. |
 | Corrupt one replica, a survivor still serves | VERIFIED on this host | Line 77 `availability_verified=2 distribution=200`. |
 | Origin down, distribution continues | VERIFIED on this host | Line 78 `distribution=200 bytes=12740`. |
-| One provider down, repair, restart | VERIFIED on this host | Line 79 `REACHABILITY_DEGRADED degraded=[p1]`. Line 82 `state":"CONFIRMED"` `source=p2 replacement=p4`. The repair offer committed at height 66, tx `b7d2295735db7ee8c565adb914613b37d2719e5e937d9bd5910fc24cd188e531` (lines 80-81). Line 84 `health=200`. |
-| Unapproved offer refused, unauthorized accept rejected on chain | VERIFIED on this host | Line 85 `status=400`. Line 88 `height=459 code=1 want=1 txhash=47899022548A3E7B8B76B242DA847D121F0C7EA231EEAB88F38EAAAF0FCBB330`. |
-| Quorum loss: playback continues, new commitment stays pending, resume does not reset history | VERIFIED as two of four processes stopped on this one machine | Line 89 `height_before=459 height_during=459 playback=200`. Line 90 `OPERATION_STATUS_PENDING_STALL`. Line 91 `height=462 app_hash=42DD4E623961F38856C6AFD2DD97E3BB0260AE642CC2453BBF7A77380D4DAE63 stall_height=459`. The height moved forward. The homes were not wiped. |
-| Withdraw from the controlled services | VERIFIED on this host | Line 92 withdraw tx `2b4401003f3866d68b7efee5174735d355b8fed96d5acf2b19e285ac2b528154` at height 465. Line 93 `indexer=true`. Line 94 `status=410`. Line 95 `REMOVED`. |
+| One provider down, repair, restart | VERIFIED on this host | Line 79 `REACHABILITY_DEGRADED degraded=[p1]`. Line 82 `state":"CONFIRMED"` `source=p2 replacement=p4`. The repair offer committed at height 74, tx `bc65319d65266be3aea5905e12ee0d6233cd28a0b9bdb3645a3a6c47fd85842e` (line 81). Line 84 `health=200`. |
+| Unapproved offer refused, unauthorized accept rejected on chain | VERIFIED on this host | Line 85 `status=400`. Line 88 `height=489 code=1 want=1 txhash=1BAD9EBE84422CDD6681E16F2D2773E6669E4943D6AEADCCF93309C4DDCE3D5D`. |
+| Quorum loss: playback continues, new commitment stays pending, resume does not reset history | VERIFIED as two of four processes stopped on this one machine | Line 89 `height_before=489 height_during=489 playback=200`. Line 90 `OPERATION_STATUS_PENDING_STALL`. Line 91 `height=490 app_hash=CE38387A556DDD765756FCA4C82F299208F13114523F3BFAC3E452FF679BE1D1 stall_height=489`. The height moved forward. The homes were not wiped. |
+| Withdraw from the controlled services | VERIFIED on this host | Line 92 withdraw tx `545157b6633f82f65809001161f8e43ed9e8bcbabf0789478cc8abdf05443d04` at height 494. Line 93 `indexer=true`. Line 94 `status=410`. Line 95 `REMOVED`. |
 | API and delivery status match the layer that owns them | VERIFIED as three layers, not one flag | Before publish, the API is 403 (line 48) and the worker is `NOT_PUBLISHED` (line 49). After publish, the scheduler is `PUBLISHED` (line 63) and the playback document stays `NOT_PUBLISHED` (line 68). After withdrawal, the indexer, the scheduler distribution, and delivery agree (lines 93-95). |
 | Clean approved multi-machine integration runner | BLOCKED | This VM is one machine. Line 7 `physical_count=1`. |
 
-Line 97 is `--- PASS: TestMilestone (148.14s)`. Line 98 is `PASS`. Line 100 is `EXIT:0`.
+Line 97 is `--- PASS: TestMilestone (151.32s)`. Line 98 is `PASS`. Line 100 is `EXIT:0`.
 
 ## Gate C
 
-The evidence shows, on this one VM: a synthetic upload was processed, held for approval, then published after three committed leases on chain `shortvideo-dev-7b8ab2884baa7216`; the independent client retrieved the segment and the hash matched; marking the origin down left distribution at HTTP 200; killing one provider left a survivor, and repair committed a replacement lease from that survivor; stopping two of the four validator processes froze the height, left existing playback at HTTP 200, and left a new register at `PENDING_STALL`; starting the same validator homes continued to height 462 with the app hash in line 91. The chain was not reset and no earlier height was rewritten.
+The evidence shows, on this one VM: a synthetic upload was processed, held for approval, then published after three committed leases on chain `shortvideo-dev-89a7a7f306f0c3c4`; the independent client retrieved the segment and the hash matched; marking the origin down left distribution at HTTP 200; killing one provider left a survivor, and repair committed a replacement lease from that survivor; stopping two of the four validator processes froze the height, left existing playback at HTTP 200, and left a new register at `PENDING_STALL`; starting the same validator homes continued to height 490 with the app hash in line 91. The chain was not reset and no earlier height was rewritten.
 
 The evidence does not show a second machine, a second operator, a network partition, or survival of losing this VM. Four processes on one host are one physical failure domain. Playback during the stall is the local delivery grant inside its authorization window (`chain_status=HELD`, `hosting_promise=False`, line 68). That grant is not a chain publication and not a promise that a lease was renewed. An approved multi-machine runner was not used.
 
@@ -103,7 +103,7 @@ The evidence does not show a second machine, a second operator, a network partit
 | vet | 0 | [vet.txt](logs/goal-18/vet.txt). Line 9 `EXIT:0`. |
 | regressions | 0 | [regressions.txt](logs/goal-18/regressions.txt). Lines 10-13 are the four `ok` lines. Line 14 `EXIT:0`. |
 | requirements | 0 | [requirements.txt](logs/goal-18/requirements.txt). Line 36 `errors 0`. Line 70 `result PASS`. Line 72 `EXIT:0`. |
-| pytest | 0 | [pytest.txt](logs/goal-18/pytest.txt). Line 19 ends with `[100%]`. Line 20 `EXIT:0`. The files are `tests/unit/test_ci_milestone.py`, `tests/unit/test_chain_writer_policy.py`, and `tests/unit/test_delivery_hosts.py`. |
+| pytest | 0 | [pytest.txt](logs/goal-18/pytest.txt). Line 19 ends with `[100%]`. Line 20 `EXIT:0`. The files are `tests/unit/test_ci_milestone.py`, `tests/unit/test_chain_writer_policy.py`, `tests/unit/test_delivery_hosts.py`, and `test_replica_host_failure_and_chain_outage` in `tests/unit/test_delivery.py`. |
 | secrets | 0 | [secrets.txt](logs/goal-18/secrets.txt). Line 12 `secret scan ok`. Line 13 `EXIT:0`. |
 | sbom | 0 | [sbom.txt](logs/goal-18/sbom.txt). Line 13 `sbom ok components 1322`. Line 14 `EXIT:0`. |
 | anchors06 | 1 | BLOCKED. Not a pass. |
@@ -129,7 +129,7 @@ The evidence does not show a second machine, a second operator, a network partit
 | REQ-CHAIN-005 | VERIFIED on this host | Line 89, two of four processes stopped, height unchanged. |
 | REQ-PEND-001 | VERIFIED for the stalled intent | Line 90. |
 | REQ-ARCH-012 | VERIFIED as the local grant during the stall | Line 68 and line 89. The grant is not a renewed lease. |
-| REQ-REC-001 | VERIFIED for this resume | Line 91 continues from `stall_height=459` to height 462. No genesis reset. |
+| REQ-REC-001 | VERIFIED for this resume | Line 91 continues from `stall_height=489` to height 490. No genesis reset. |
 | REQ-ACK-001 | VERIFIED as a boundary | Provider accepts print `response_committed=true counted_from_response=false` inside line 82. The lease is counted after the indexer and the chain view, not from the broadcast body alone. |
 
 ## Handoff
@@ -147,7 +147,7 @@ Blockers to resolve before goals 19-24:
 
 ## Residual risk
 
-`p1`, `p2`, and `p3` share one genesis account, so "distinct operators" is the declared label, which line 63 marks `simulated=true`. The outer key file is an interim so an ed25519 agent can submit as that account. The indexer closes an offer only when exactly one OPEN offer matches the provider and content. Two open offers for one pair stay open and the next reconciliation is divergent. The playback grant is local and expires on its own clock. The quorum drill stops processes. It does not unplug a machine. The height jump from the repair (height 66) to the unauthorized accept (height 459) is empty blocks on this devnet, not a second chain.
+`p1`, `p2`, and `p3` share one genesis account, so "distinct operators" is the declared label, which line 63 marks `simulated=true`. The outer key file is an interim so an ed25519 agent can submit as that account. The indexer closes an offer only when exactly one OPEN offer matches the provider and content. Two open offers for one pair stay open and the next reconciliation is divergent. The playback grant is local and expires on its own clock. The quorum drill stops processes. It does not unplug a machine. The height jump from the repair (height 74) to the unauthorized accept (height 489) is empty blocks on this devnet, not a second chain.
 
 ## Next safe action
 
@@ -161,4 +161,8 @@ Summary: The milestone runs a synthetic clip through the API, the media worker, 
 
 ## Head CI
 
-Run [42823652645](https://github.com/Maxencejules/shortvideo-network/actions/runs/42823652645) on `0c10f566e4a2ff9367d68f659f8559dbc96d75d9` completed **failure**. It was created at 2026-11-10T13:20:38Z. The `python` job failed because Ruff rejected `scripts/milestone/client.py` (format, then an unused `sys` import and lines longer than 100). That is not the goal 15 headless-Chrome flake. Every other job succeeded: `contract`, `devnet`, `go`, `node`, `milestone`, and the go-race shards `api`, `app`, `broadcaster`, `devnet`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-evidence`, `devnet-indexer`, `devnet-upgrade`, `indexer`, and `rest`. The `milestone` job ran `TestMilestone` and passed. The tested commit `11a9c6972ec595880665020e4ffbe764983d39a7` is the format fix. No other run on `goal-18` had finished when this paragraph was written.
+Run [42823652645](https://github.com/Maxencejules/shortvideo-network/actions/runs/42823652645) on `0c10f566e4a2ff9367d68f659f8559dbc96d75d9` completed **failure**. It was created at 2026-11-10T13:20:38Z. The `python` job failed because Ruff rejected `scripts/milestone/client.py`. That is not the goal 15 headless-Chrome flake. Every other job succeeded, including `milestone`.
+
+Run [42826355319](https://github.com/Maxencejules/shortvideo-network/actions/runs/42826355319) on `6924a498a73f4edf352c63a195fda3ffa483cba9` completed **failure**. It was created at 2026-11-10T13:38:20Z. The `python` job failed in `tests/unit/test_delivery.py::test_replica_host_failure_and_chain_outage`: a new catalog advertised hosts saved by the previous process. That is not the headless-Chrome flake. Every other job succeeded, including `milestone`. No run on this branch was cancelled.
+
+The tested commit `a5628ab5b6dfb4f1b16546654415063f1499a992` is the fix for that test. CI on the commit that contains this paragraph had not finished when the paragraph was written.

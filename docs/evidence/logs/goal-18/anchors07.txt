@@ -1,7 +1,7 @@
 COMMAND python3 docs/evidence/goal-07/mutants.py --check
-DATE 2026-11-10T13:37:25Z
-HEAD 11a9c6972ec595880665020e4ffbe764983d39a7
-TREE f6cfdebf445781967a5d0fc8155f72772f21e959
+DATE 2026-11-10T13:56:14Z
+HEAD a5628ab5b6dfb4f1b16546654415063f1499a992
+TREE 4dcc6a681a94c7df817f62c149a23b82e8273bc4
 DIRTY yes
 DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
 DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
@@ -12,8 +12,8 @@ DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
 DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
 DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
 DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
-revision HEAD commit 11a9c6972ec595880665020e4ffbe764983d39a7 tree f6cfdebf445781967a5d0fc8155f72772f21e959
-copy /tmp/goal07-mutants-7r621sog/tree (git archive)
+revision HEAD commit a5628ab5b6dfb4f1b16546654415063f1499a992 tree 4dcc6a681a94c7df817f62c149a23b82e8273bc4
+copy /tmp/goal07-mutants-pqk95bzw/tree (git archive)
 mutants 30 of 30 (goal07=5, merge=14, node=11)
 COPY_MATCH m01-simulate-extra-gas: chain/msgkit/enforce.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m01-simulate-extra-gas.go.txt; chain/msgkit/enforce.go unchanged since 43c1a10
 COPY_MATCH m02-ante-gas0-always: chain/app/ante.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m02-ante-gas0-always.go.txt; chain/app/ante.go changed since 43c1a10

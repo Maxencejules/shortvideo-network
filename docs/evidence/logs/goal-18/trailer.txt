@@ -1,7 +1,7 @@
 COMMAND git log -1 --format=full
-DATE 2026-11-10T13:37:26Z
-HEAD 11a9c6972ec595880665020e4ffbe764983d39a7
-TREE f6cfdebf445781967a5d0fc8155f72772f21e959
+DATE 2026-11-10T13:56:17Z
+HEAD a5628ab5b6dfb4f1b16546654415063f1499a992
+TREE 4dcc6a681a94c7df817f62c149a23b82e8273bc4
 DIRTY yes
 DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
 DIRTY_PATH docs/evidence/logs/goal-18/anchors07.txt
@@ -17,13 +17,13 @@ DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
 DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
 DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
 DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
-commit 11a9c6972ec595880665020e4ffbe764983d39a7
+commit a5628ab5b6dfb4f1b16546654415063f1499a992
 Author: Maxence Jules <Maxencejules@users.noreply.github.com>
 Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
 
-    Format the milestone client for the Python checks.
+    Let a second process grant the origin without binding it.
     
-    Ruff rejected the client and the delivery host test on line length, and the client imported sys without using it. The requests are unchanged.
+    The authorizing process does not own the listener. The grant can name the origin when the package verifies. A document still lists a host only after this process binds it.
     
-    Tested-tree: f6cfdebf445781967a5d0fc8155f72772f21e959
+    Tested-tree: 4dcc6a681a94c7df817f62c149a23b82e8273bc4
 EXIT:0
