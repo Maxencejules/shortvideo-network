@@ -1,0 +1,9 @@
+COMMAND bash -c go\ vet\ ./services/milestone/...\ \&\&\ go\ vet\ ./services/scheduler/...\ \&\&\ go\ vet\ ./services/indexer/...\ \&\&\ go\ vet\ ./agents/provider/...
+DATE 2026-11-10T13:18:09Z
+HEAD 21dc9f28dd3380a37db2a811937488d58c1e4e13
+TREE 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+EXIT:0

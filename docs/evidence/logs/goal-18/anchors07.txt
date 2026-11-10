@@ -1,0 +1,27 @@
+COMMAND python3 docs/evidence/goal-07/mutants.py --check
+DATE 2026-11-10T13:18:34Z
+HEAD 21dc9f28dd3380a37db2a811937488d58c1e4e13
+TREE 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-18/regressions.txt
+DIRTY_PATH docs/evidence/logs/goal-18/requirements.txt
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
+revision HEAD commit 21dc9f28dd3380a37db2a811937488d58c1e4e13 tree 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+copy /tmp/goal07-mutants-hoqech4f/tree (git archive)
+mutants 30 of 30 (goal07=5, merge=14, node=11)
+COPY_MATCH m01-simulate-extra-gas: chain/msgkit/enforce.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m01-simulate-extra-gas.go.txt; chain/msgkit/enforce.go unchanged since 43c1a10
+COPY_MATCH m02-ante-gas0-always: chain/app/ante.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m02-ante-gas0-always.go.txt; chain/app/ante.go changed since 43c1a10
+COPY_MATCH m03-query-gas-zero-unlimited: chain/app/querygas.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m03-query-gas-zero-unlimited.go.txt; chain/app/querygas.go changed since 43c1a10
+COPY_MATCH m04-rotation-cap-off-by-one: chain/x/providers/msg_server.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m04-rotation-cap-off-by-one.go.txt; chain/x/providers/msg_server.go unchanged since 43c1a10
+COPY_MATCH m05-authority-meter-finalize-only: chain/x/authority/msg.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m05-authority-meter-finalize-only.go.txt; chain/x/authority/msg.go changed since 43c1a10
+NOT_FOUND auth-seat-rule-allows-auditor chain/x/authority/genesis.go occurrences=0
+NOT_FOUND doc-seat-rule-case-sensitive chain/genesis/document.go occurrences=0
+NOT_FOUND msg-success-skips-registry-write chain/x/authority/msg.go occurrences=0
+RESULT validation problems=3; no test was run
+EXIT:1

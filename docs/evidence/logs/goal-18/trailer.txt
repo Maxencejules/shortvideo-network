@@ -1,0 +1,29 @@
+COMMAND git log -1 --format=full
+DATE 2026-11-10T13:18:35Z
+HEAD 21dc9f28dd3380a37db2a811937488d58c1e4e13
+TREE 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-18/anchors07.txt
+DIRTY_PATH docs/evidence/logs/goal-18/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-18/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pytest.txt
+DIRTY_PATH docs/evidence/logs/goal-18/regressions.txt
+DIRTY_PATH docs/evidence/logs/goal-18/requirements.txt
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
+commit 21dc9f28dd3380a37db2a811937488d58c1e4e13
+Author: Maxence Jules <Maxencejules@users.noreply.github.com>
+Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
+
+    Wait for a fresh indexer read before the withheld publish.
+    
+    A read that has not reconciled yet is stale. The scheduler reports that as a stall, which is not the moderation decision. Reconcile first.
+    
+    Tested-tree: 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+EXIT:0

@@ -1,0 +1,16 @@
+COMMAND bash -c uname\ -srm\;\ go\ version\;\ nproc\;\ python3\ --version\;\ ffmpeg\ -version\ \|\ head\ -n\ 1\;\ /usr/lib/postgresql/18/bin/postgres\ --version\;\ if\ test\ -x\ /usr/lib/postgresql/16/bin/postgres\;\ then\ echo\ pg16_present\;\ else\ echo\ pg16_test:1\;\ fi\;\ if\ command\ -v\ docker\ \>/dev/null\;\ then\ echo\ docker_present\;\ else\ echo\ docker_test:127\;\ fi\;\ if\ command\ -v\ golangci-lint\ \>/dev/null\;\ then\ echo\ golangci_present\;\ else\ echo\ golangci_test:127\;\ fi
+DATE 2026-11-10T13:18:09Z
+HEAD 21dc9f28dd3380a37db2a811937488d58c1e4e13
+TREE 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+Linux 6.12.113+ x86_64
+go version go1.26.10 linux/amd64
+4
+Python 3.12.3
+ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+pg16_test:1
+docker_test:127
+golangci_test:127
+EXIT:0

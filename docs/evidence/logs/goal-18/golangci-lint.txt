@@ -1,0 +1,17 @@
+COMMAND golangci-lint version
+DATE 2026-11-10T13:18:34Z
+HEAD 21dc9f28dd3380a37db2a811937488d58c1e4e13
+TREE 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-18/anchors07.txt
+DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-18/regressions.txt
+DIRTY_PATH docs/evidence/logs/goal-18/requirements.txt
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
+scripts/evidence/capture.sh: line 58: golangci-lint: command not found
+EXIT:127
