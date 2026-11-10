@@ -24,7 +24,7 @@ The origin adapter plays a real processed package on this host. The goal stays B
 
 The parent code commit `1255394077693248406ffe3910ad40c163a6dd36` is the same delivery behavior except the headless profile cleanup. Run [42758130972](https://github.com/Maxencejules/shortvideo-network/actions/runs/42758130972) on `5ba8c476c83ac64e641382d8486dfb3d7791061f` failed the `python` job: Chrome left its profile directory busy and `TemporaryDirectory` raised `ENOTEMPTY`. That run is not a pass. The tested commit stops the browser process group and deletes the profile with `ignore_errors`. The decode test was run again on the tested commit.
 
-[runtime.txt](logs/goal-15/runtime.txt) has Linux 6.12.113+, Python 3.12.3, Go 1.26.10, FFmpeg `6.1.1-3ubuntu5`, Google Chrome `156.0.8078.47`, `nproc` printing `4`, and uid 1000. PostgreSQL 16 is absent in that log. PostgreSQL 18.6 was installed later, before `python-tests-rerun.txt` and `go-suite-rerun.txt`. The install is the same pin CI uses, `18.6-1.pgdg24.04+2`. It is not PostgreSQL 16.
+[runtime.txt](logs/goal-15/runtime.txt) has Linux 6.12.113+, Python 3.12.3, Go 1.26.10, FFmpeg `6.1.1-3ubuntu5`, Google Chrome `156.0.8078.47`, `nproc` printing `4`, and uid 1000. PostgreSQL 16 is absent in that log. PostgreSQL 18 was installed later, before `python-tests-rerun.txt` and `go-suite-rerun.txt`. [postgres18.txt](logs/goal-15/postgres18.txt) shows `postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)` and `postgresql-18 18.6-1.pgdg24.04+2`. It is not PostgreSQL 16.
 
 ## Inherited blockers
 
@@ -69,12 +69,12 @@ BLOCKED, carried from goals 04, 11, 12, 13, and 14:
 
 | Check | Status | Log |
 | --- | --- | --- |
-| Real processed media, playlist and segment references, orientation, captions, fallback rendition | VERIFIED | [delivery-final.txt](logs/goal-15/delivery-final.txt) `test_processed_media_plays_over_https`. Portrait output is 144x256. Rotated output is 180x320. Captions contain `portrait-cue`. Requesting `h720` selects `native`. |
-| Corrupt manifest and corrupt segment detected before a verified label | VERIFIED | same log, `test_corrupt_manifest_and_segment_are_not_advertised` |
-| Harness detects a segment whose bytes do not match the advertised hash | VERIFIED | same log, `test_harness_bounds_failures_and_prefetch` |
-| Host failure, 404, slow response, bounded attempts | VERIFIED | `test_replica_host_failure_and_chain_outage` and `test_harness_bounds_failures_and_prefetch`. Six hosts and two attempts produce 8 attempts. Hosts 5 and 6 are not contacted. |
-| Revoked content, conditional request is not a 304, quarantine bytes are not served | VERIFIED | `test_range_cors_quarantine_and_removal` |
-| Abandoned prefetch and no media download of the unselected queue | VERIFIED | `test_harness_bounds_failures_and_prefetch`. One of five items is prefetched. `delivered_bytes` does not increase. No `.mp4` request is recorded for that prefetch. |
+| Real processed media, playlist and segment references, orientation, captions, fallback rendition | VERIFIED | [delivery-final.txt](logs/goal-15/delivery-final.txt) shows `test_processed_media_plays_over_https` PASSED. It does not print the measurements. Those are assertions in `tests/unit/test_delivery.py`: `RESOLUTION=144x256` at line 304, probed size `(144, 256)` at line 324, rotated `(180, 320)` at lines 328-331, `h720` selects `native` at lines 332-335, and `portrait-cue` at line 342. |
+| Corrupt manifest and corrupt segment detected before a verified label | VERIFIED | [delivery-final.txt](logs/goal-15/delivery-final.txt) shows `test_corrupt_manifest_and_segment_are_not_advertised` PASSED. |
+| Harness detects a segment whose bytes do not match the advertised hash | VERIFIED | [delivery-final.txt](logs/goal-15/delivery-final.txt) shows `test_harness_bounds_failures_and_prefetch` PASSED. |
+| Host failure, 404, slow response, bounded attempts | VERIFIED | [delivery-final.txt](logs/goal-15/delivery-final.txt) shows `test_replica_host_failure_and_chain_outage` and `test_harness_bounds_failures_and_prefetch` PASSED. The attempt count is an assertion, not a log line: `tests/unit/test_delivery.py` lines 633-635 require `attempts == 8` and that `h4` and `h5` are absent from `hosts_tried`. |
+| Revoked content, conditional request is not a 304, quarantine bytes are not served | VERIFIED | [delivery-final.txt](logs/goal-15/delivery-final.txt) shows `test_range_cors_quarantine_and_removal` PASSED. |
+| Abandoned prefetch and no media download of the unselected queue | VERIFIED | [delivery-final.txt](logs/goal-15/delivery-final.txt) shows `test_harness_bounds_failures_and_prefetch` PASSED. The queue bound is an assertion, not a log line: `tests/unit/test_delivery.py` lines 674-676 require `skipped_items == 4`, unchanged `delivered_bytes`, and no fault-host path ending in `.mp4`. |
 | Chain note down does not create a grant or a new host; an existing term still plays and `hosting_promise` stays false | VERIFIED | `test_replica_host_failure_and_chain_outage` |
 | Headless decode of the fetched MP4 | VERIFIED on this VM | [delivery-final.txt](logs/goal-15/delivery-final.txt) `test_browser_decodes_the_mp4_it_fetched` |
 | Native HLS verification of every segment | Not claimed | Not run |
@@ -93,7 +93,7 @@ BLOCKED, carried from goals 04, 11, 12, 13, and 14:
 
 ## Commands
 
-The step table is [summary.tsv](logs/goal-15/summary.tsv). Every log starts with `HEAD`, `TREE`, and `DIRTY yes` because `docs/evidence/logs/goal-15/` was already untracked. `git diff` against the tested commit had no tracked change while these commands ran.
+The step table is [summary.tsv](logs/goal-15/summary.tsv). It is step and exit code only. It has no `HEAD` line. Each command log starts with `HEAD`, `TREE`, and `DIRTY`. `DIRTY yes` is the untracked log directory. `git diff` against the tested commit had no tracked change while these commands ran.
 
 | Step | Exit | Note |
 | --- | --- | --- |
@@ -121,7 +121,11 @@ The step table is [summary.tsv](logs/goal-15/summary.tsv). Every log starts with
 
 Run [42758130972](https://github.com/Maxencejules/shortvideo-network/actions/runs/42758130972) on `5ba8c476c83ac64e641382d8486dfb3d7791061f` completed **failure**. The `python` job failed in `test_browser_decodes_the_mp4_it_fetched` because deleting Chrome's profile raised `ENOTEMPTY`. The other 15 jobs succeeded. That run is not a pass.
 
+Run [42759625636](https://github.com/Maxencejules/shortvideo-network/actions/runs/42759625636) on `2d9b615bebb8ca1e8fc97ec41228fda6450e17d5` completed **cancelled**. A later push superseded it. It is not a pass and not a failure result.
+
 Run [42760172005](https://github.com/Maxencejules/shortvideo-network/actions/runs/42760172005) on `29e4be1516e5353c5fa5e14a3d0c2455f55c7038` completed **success** at 2026-11-10T05:18:26Z. All 16 jobs succeeded: `python`, `node`, `go`, `contract`, `devnet`, and the eleven `go-race` shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, `api`, and `rest`. `29e4be1` differs from the tested commit `f81d819` only under `docs/evidence/`. The `python` job on this run includes the profile cleanup.
+
+Run [42761558025](https://github.com/Maxencejules/shortvideo-network/actions/runs/42761558025) on head `4abfd6cab55a23e3ac8c4a3f54430c8f8f25a85f` completed **success** at 2026-11-10T05:33:53Z. All 16 jobs succeeded, the same set as the run above. `4abfd6c` differs from the tested commit only under `docs/evidence/`.
 
 ## Log stamps
 

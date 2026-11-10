@@ -27,4 +27,5 @@ anchors06	1
 anchors07	1
 golangci-lint	127
 pg16	1
+postgres18	0
 docker	127
