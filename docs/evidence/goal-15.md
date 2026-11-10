@@ -121,7 +121,7 @@ The step table is [summary.tsv](logs/goal-15/summary.tsv). Every log starts with
 
 Run [42758130972](https://github.com/Maxencejules/shortvideo-network/actions/runs/42758130972) on `5ba8c476c83ac64e641382d8486dfb3d7791061f` completed **failure**. The `python` job failed in `test_browser_decodes_the_mp4_it_fetched` because deleting Chrome's profile raised `ENOTEMPTY`. The other 15 jobs succeeded. That run is not a pass.
 
-The tested commit is the cleanup. Head CI for that commit, and for this evidence commit, had not finished when this file was written. A green run is recorded only after it is seen.
+Run [42760172005](https://github.com/Maxencejules/shortvideo-network/actions/runs/42760172005) on `29e4be1516e5353c5fa5e14a3d0c2455f55c7038` completed **success** at 2026-11-10T05:18:26Z. All 16 jobs succeeded: `python`, `node`, `go`, `contract`, `devnet`, and the eleven `go-race` shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, `api`, and `rest`. `29e4be1` differs from the tested commit `f81d819` only under `docs/evidence/`. The `python` job on this run includes the profile cleanup.
 
 ## Log stamps
 
