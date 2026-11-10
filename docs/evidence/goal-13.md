@@ -22,9 +22,7 @@ Public launch: DISABLED. No public sign-up route. No tradable token. This is not
 | Branch | `goal-13` |
 | Runtime | Ubuntu 24.04.5 LTS, Linux 6.12.113+ x86_64, uid 1000. Go 1.26.10. PostgreSQL 18.6. Python 3.12.3, ruff 0.17.3, mypy 2.4.1. ffprobe 6.1.1-3ubuntu5. [runtime.txt](logs/goal-13/runtime.txt) |
 
-The tested commit message carries `Tested-tree: 3a2d13615cb399a030e56d80ac9dd537fd8be416`. This commit changes only `docs/evidence/`.
-
-Head CI had not finished when this file was written. The run id is added in a later evidence commit if a run is observed. A missing run is not a pass.
+The tested commit message carries `Tested-tree: 3a2d13615cb399a030e56d80ac9dd537fd8be416`. The evidence commit `9aae0725f083dfb413dba376f7947a7f48b91356` changes only `docs/evidence/` relative to that tested commit. This later evidence commit adds the observed head CI run and also changes only `docs/evidence/`.
 
 ## Inherited blockers
 
@@ -66,7 +64,7 @@ BLOCKED, carried from goals 04, 11, and 12:
 | Race detector on `./services/api/...` | VERIFIED | [api-race.txt](logs/goal-13/api-race.txt) exit 0 |
 | Account contract approved | BLOCKED | DR-13-01 is OPEN |
 | Approved storage adapter | BLOCKED | DR-13-02 is OPEN |
-| Head CI | not observed yet | This file does not claim a GitHub run |
+| Head CI on `9aae072` | VERIFIED | Run [42728623957](https://github.com/Maxencejules/shortvideo-network/actions/runs/42728623957) completed **success** at 2026-11-10T00:40:10Z. 16 of 16 jobs succeeded, including `go`, `python`, `go-race (api)`, and `devnet`. |
 
 `api-unit.txt` exit 0. `go test` printed `PASS` and fourteen `--- PASS:` lines. The capture header's `CMD` line repeats the log path; the arguments after it are the command.
 
@@ -100,9 +98,13 @@ Logs were captured on the clean tested tree and copied here unchanged. The step 
 
 `POST /upload-intents`, `PUT /uploads/{id}/content`, `POST /uploads/{id}/complete`, `GET /uploads/{id}`, and `DELETE /uploads/{id}` are the upload API. Fixture tokens live in `services/api/fixtures/development.json` and are development-only. Goal 14 reads `api.processing_jobs` (`QUEUED`) and the quarantine object. Goal 15 must not serve that directory. The chain row stays `HELD`. Details are in [uploads.md](../architecture/uploads.md).
 
+## Head CI
+
+Run [42728623957](https://github.com/Maxencejules/shortvideo-network/actions/runs/42728623957) on `9aae0725f083dfb413dba376f7947a7f48b91356` completed **success** at 2026-11-10T00:40:10Z. All 16 jobs succeeded: `node`, `python`, `go`, `contract`, `devnet`, and the eleven `go-race` shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, `api`, and `rest`. `9aae072` differs from the tested commit `42eced0` only under `docs/evidence/`.
+
 ## Next safe action
 
-Open one draft pull request. Do not merge it. Do not start goal 14 from this branch until the draft is reviewed. Public launch stays disabled.
+Draft [PR 18](https://github.com/Maxencejules/shortvideo-network/pull/18) stays a draft. Do not merge it. Do not start goal 14 from this branch until the draft is reviewed. Public launch stays disabled.
 
 ## Proposed pull-request title and summary
 
