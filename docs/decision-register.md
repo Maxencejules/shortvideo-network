@@ -530,6 +530,114 @@ The worker refuses a limits label other than `PROPOSED`. Duration stays at most 
 
 Status: OPEN. DEC-005 stays the allowance decision.
 
+## DR-15-01
+
+### Question
+
+How many segments and queued items may a client prefetch?
+
+### Why this needs the owner
+
+The blueprint says prefetch stays bounded. It does not name the window. DEC-005 leaves allowances unset.
+
+### Proposal, not an approval
+
+The harness fetches the current video segment and at most one segment ahead. A scroll prefetch fetches at most one queued item's master playlist and does not fetch that item's media. Changing the selected item cancels the previous request. These numbers are not an allowance.
+
+### Status
+
+Status: OPEN.
+
+## DR-15-02
+
+### Question
+
+May a ready-for-review package be played before publication is approved?
+
+### Why this needs the owner
+
+Goal 14 leaves the package at `READY_FOR_REVIEW` and `NOT_PUBLISHED`. DR-14-02 has not approved the package format. The chain row stays `HELD`. There is no publication route.
+
+### Proposal, not an approval
+
+A local playback grant names one content version and one manifest digest. The API still reports `publication: NOT_PUBLISHED`. The grant is not a chain publication and not a hosting lease. Bytes are served only for that grant, from the package directory, never from quarantine.
+
+### Status
+
+Status: OPEN. DR-14-02 stays open.
+
+## DR-15-03
+
+### Question
+
+How long may a client cache a segment, and what does removal do to that cache?
+
+### Why this needs the owner
+
+DEC-003 and DEC-004 do not set a retention promise. This process can only control caches it issued headers for.
+
+### Proposal, not an approval
+
+Playlists use `private, max-age=0, must-revalidate`. Segments use `private, max-age=60` and an ETag of the segment SHA-256. Removal drops the issued ETags and later requests, including conditional ones, are `404` with `private, no-store`. This does not delete copies outside this process.
+
+### Status
+
+Status: OPEN.
+
+## DR-15-04
+
+### Question
+
+Which host is allowed to serve bytes in this goal?
+
+### Why this needs the owner
+
+Goal 16 is the independent provider. A test process on one machine is not that provider. A public certificate is not available here.
+
+### Proposal, not an approval
+
+The adapter name is `origin-test` at version 1. It binds only to a loopback address and uses a one-day self-signed certificate generated in a temp directory. A second loopback process can be registered as a test replica after its bytes match the origin manifest. The harness tries at most four hosts and at most two attempts on each. No public name is advertised.
+
+### Status
+
+Status: OPEN.
+
+## DR-15-05
+
+### Question
+
+What clock and chain note allow playback during an outage?
+
+### Why this needs the owner
+
+Host deadlines are real time. Chain time is committed time. This service does not query the chain, and it must not turn a local note into a hosting promise.
+
+### Proposal, not an approval
+
+The chain note is operator input: `HELD`, `STALE`, or `UNAVAILABLE`. It starts as `UNAVAILABLE`. A new grant or a new host is refused unless the note is `HELD`. An existing grant keeps serving until its real-time `authorized_until`, at most 24 hours after it was written, and the API reports `chain_status: STALE` and `hosting_promise: false`. The term uses the process clock. It is not chain time.
+
+### Status
+
+Status: OPEN.
+
+## DR-15-06
+
+### Question
+
+Which bytes is the client allowed to call verified?
+
+### Why this needs the owner
+
+The blueprint asks for integrity checks where the client fetch path can make them. A browser that does not demux HLS cannot be described as verifying every native HLS segment.
+
+### Proposal, not an approval
+
+The origin refuses to advertise, and refuses to send, bytes that do not match the manifest. The harness hashes each video segment and caption file it fetches, and it does not hash segments outside its prefetch window. The test page hashes the one media segment it fetches and decodes that MP4 in a video element. That is not native HLS verification. `rendered` stays zero until that decode is observed. An HTTP 200 is not a render and not a completed watch.
+
+### Status
+
+Status: OPEN.
+
 ## Reversible choices recorded for Goal 01
 
 These are documentation choices. They are not owner approvals.

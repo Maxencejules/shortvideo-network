@@ -28,6 +28,7 @@ addopts = "-q --tb=short"
 pythonpath = [
   "services/api",
   "services/indexer",
+  "services/delivery",
   "workers/media",
   "packages/protocol",
   "proto/gen/python",
@@ -43,7 +44,7 @@ select = ["E", "F", "I", "UP"]
 [tool.mypy]
 python_version = "3.12"
 files = ["services", "workers/media", "packages/protocol", "tests/unit", "scripts"]
-mypy_path = "services/api:services/indexer:workers/media:packages/protocol:proto/gen/python"
+mypy_path = "services/api:services/indexer:services/delivery:workers/media:packages/protocol:proto/gen/python"
 disallow_untyped_defs = true
 warn_unused_ignores = true
 no_implicit_optional = true
