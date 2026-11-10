@@ -24,7 +24,7 @@ The origin adapter plays a real processed package on this host. The goal stays B
 
 The parent code commit `1255394077693248406ffe3910ad40c163a6dd36` is the same delivery behavior except the headless profile cleanup. Run [42758130972](https://github.com/Maxencejules/shortvideo-network/actions/runs/42758130972) on `5ba8c476c83ac64e641382d8486dfb3d7791061f` failed the `python` job: Chrome left its profile directory busy and `TemporaryDirectory` raised `ENOTEMPTY`. That run is not a pass. The tested commit stops the browser process group and deletes the profile with `ignore_errors`. The decode test was run again on the tested commit.
 
-[runtime.txt](logs/goal-15/runtime.txt) has Linux 6.12.113+, Python 3.12.3, Go 1.26.10, FFmpeg `6.1.1-3ubuntu5`, Google Chrome `156.0.8078.47`, `nproc` printing `4`, and uid 1000. PostgreSQL 16 is absent in that log. PostgreSQL 18 was installed later, before `python-tests-rerun.txt` and `go-suite-rerun.txt`. [postgres18.txt](logs/goal-15/postgres18.txt) shows `postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)` and `postgresql-18 18.6-1.pgdg24.04+2`. It is not PostgreSQL 16.
+[runtime.txt](logs/goal-15/runtime.txt) has Linux 6.12.113+, Python 3.12.3, Go 1.26.10, FFmpeg `6.1.1-3ubuntu5`, Google Chrome `156.0.8078.47`, `nproc` printing `4`, and uid 1000. PostgreSQL 16 is absent in that log. PostgreSQL 18 was installed later, before `python-tests-rerun.txt` and `go-suite-rerun.txt`. [postgres18.txt](logs/goal-15/postgres18.txt) was captured later. Its stamp is `HEAD 4abfd6cab55a23e3ac8c4a3f54430c8f8f25a85f`, `TREE ad3970a2ce436b82c78d81c254a8c526f4341992`, `DIRTY yes` (the new log was already untracked). It is not the tested tree `f81d819` / `89b48211`. The text it prints is `postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)` and `postgresql-18 18.6-1.pgdg24.04+2`. That package is not PostgreSQL 16.
 
 ## Inherited blockers
 
@@ -34,7 +34,7 @@ BLOCKED, carried from goals 04, 11, 12, 13, and 14:
 2. **One machine.** Every process in these logs is on this host. The second host is another loopback process. It is not an independent operator.
 3. **Goal 06 and goal 07 mutation runners.** Anchor checks only: [anchors06.txt](logs/goal-15/anchors06.txt) exit 1, `RESULT search-string problems=13; no test was run`; [anchors07.txt](logs/goal-15/anchors07.txt) exit 1, `RESULT validation problems=3; no test was run`.
 4. **golangci-lint.** Not installed. [golangci-lint.txt](logs/goal-15/golangci-lint.txt) exit 127.
-5. **PostgreSQL 16.** `/usr/lib/postgresql/16/bin/postgres` is absent (`test -x` exit 1). [pg16.txt](logs/goal-15/pg16.txt). The server used for the rerun is 18.6. Not a pass for PostgreSQL 16.
+5. **PostgreSQL 16.** `/usr/lib/postgresql/16/bin/postgres` is absent (`test -x` exit 1). [pg16.txt](logs/goal-15/pg16.txt). The rerun used the host's PostgreSQL 18 binary. The package version is the later capture in [postgres18.txt](logs/goal-15/postgres18.txt), stamped at `4abfd6c` while dirty, not on the tested tree. Not a pass for PostgreSQL 16.
 6. **Goal 04 compose bridge.** `docker` is not installed. [docker.txt](logs/goal-15/docker.txt) exit 127. Compose was not run. The unauthenticated :2375 daemon was not used.
 
 ## Decision requests
@@ -111,7 +111,8 @@ The step table is [summary.tsv](logs/goal-15/summary.tsv). It is step and exit c
 | go-final | 0 | On the tested commit. `SVN_SKIP_DEVNET=1`. 71 `ok` lines. [go-final.txt](logs/goal-15/go-final.txt). This does not run the devnet tests. Those stay on the CI race shards. |
 | anchors06, anchors07 | 1 | BLOCKED. Not passes. |
 | golangci-lint, docker | 127 | BLOCKED. Not passes. |
-| pg16 | 1 | BLOCKED. The binary is absent. Not a pass. |
+| pg16 | 1 | BLOCKED. The binary is absent. Not a pass. [pg16.txt](logs/goal-15/pg16.txt). |
+| postgres18 | 0 | Later host capture. Not the tested tree. [postgres18.txt](logs/goal-15/postgres18.txt), stamp `HEAD 4abfd6c`, `TREE ad3970a2`, `DIRTY yes`. |
 
 ## Handoff
 
@@ -129,9 +130,11 @@ Run [42761558025](https://github.com/Maxencejules/shortvideo-network/actions/run
 
 Run [42763962233](https://github.com/Maxencejules/shortvideo-network/actions/runs/42763962233) on head `a641708bc39d6cbb6c29a7f01cc7abd1bc10f0c8` completed **success** at 2026-11-10T05:55:49Z. All 16 jobs succeeded, the same set. `a641708` is the review correction. It differs from the tested commit only under `docs/evidence/`.
 
+Run [42765407058](https://github.com/Maxencejules/shortvideo-network/actions/runs/42765407058) on head `fd8ccb3b7ab9e36e42dd338cfa3e0f569677d16a` completed **success** at 2026-11-10T06:08:27Z. All 16 jobs succeeded, the same set. `fd8ccb3` differs from the tested commit only under `docs/evidence/`. The commit that adds this paragraph gets its own run. That later run supersedes 42765407058. Both are recorded: 42765407058 above, and the later run in the next evidence sentence after it is seen.
+
 ## Log stamps
 
-`delivery-final.txt`, `python-final.txt`, `go-final.txt`, `mypy-final.txt`, `ruff-format-final.txt`, and `ruff-check-final.txt` were written while `HEAD` was `f81d819427fca3fd552a93f43001aa13a08b6ae4` and `TREE` was `89b4821191228bae97c71ac9f9511e7ce1448cb2`. Earlier logs in the same directory were written on `1255394077693248406ffe3910ad40c163a6dd36`. `DIRTY yes` is the untracked log directory. No tracked source file changed during a command.
+`delivery-final.txt`, `python-final.txt`, `go-final.txt`, `mypy-final.txt`, `ruff-format-final.txt`, and `ruff-check-final.txt` were written while `HEAD` was `f81d819427fca3fd552a93f43001aa13a08b6ae4` and `TREE` was `89b4821191228bae97c71ac9f9511e7ce1448cb2`. The other command logs, except [postgres18.txt](logs/goal-15/postgres18.txt), were written on `1255394077693248406ffe3910ad40c163a6dd36`. `DIRTY yes` on those logs is the untracked log directory. No tracked source file changed during a command. [postgres18.txt](logs/goal-15/postgres18.txt) is not in that set. It was captured later, at `HEAD 4abfd6cab55a23e3ac8c4a3f54430c8f8f25a85f`, `TREE ad3970a2ce436b82c78d81c254a8c526f4341992`, `DIRTY yes`. It is not stamped as the tested tree.
 
 ## Residual risk
 
