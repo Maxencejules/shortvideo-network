@@ -1,7 +1,14 @@
-HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
-TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
+TREE 6f48906d4d772ce3810355578ff01efa773e42b2
 DIRTY yes
-?? docs/evidence/logs/goal-16/
+ M docs/evidence/logs/goal-16/anchors06.txt
+ M docs/evidence/logs/goal-16/anchors07.txt
+ M docs/evidence/logs/goal-16/conformance.txt
+ M docs/evidence/logs/goal-16/gofmt.txt
+ M docs/evidence/logs/goal-16/golangci-lint.txt
+ M docs/evidence/logs/goal-16/race.txt
+ M docs/evidence/logs/goal-16/scaffold.txt
+ M docs/evidence/logs/goal-16/vet.txt
 COMMAND golangci-lint version
 environment: line 14: golangci-lint: command not found
 EXIT:127

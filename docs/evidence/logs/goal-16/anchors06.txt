@@ -1,10 +1,15 @@
-HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
-TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
+TREE 6f48906d4d772ce3810355578ff01efa773e42b2
 DIRTY yes
-?? docs/evidence/logs/goal-16/
+ M docs/evidence/logs/goal-16/anchors06.txt
+ M docs/evidence/logs/goal-16/conformance.txt
+ M docs/evidence/logs/goal-16/gofmt.txt
+ M docs/evidence/logs/goal-16/race.txt
+ M docs/evidence/logs/goal-16/scaffold.txt
+ M docs/evidence/logs/goal-16/vet.txt
 COMMAND python3 docs/evidence/goal-06/mutants.py --check
-revision HEAD commit 0ae57fcf1896cf863da1e867c1f9081007313c57 tree 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
-copy /tmp/goal06-mutants-pwrkbctz/tree (git archive)
+revision HEAD commit 065aac1a218f6a7308c930d3fc125e5fe4d13628 tree 6f48906d4d772ce3810355578ff01efa773e42b2
+copy /tmp/goal06-mutants-5gzajf4d/tree (git archive)
 mutants 119 of 119
 NOT_FOUND ceiling-gone chain/x/authority/engine.go occurrences=0
 NOT_FOUND unknown-limit-ok chain/x/authority/engine.go occurrences=0

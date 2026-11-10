@@ -1,15 +1,27 @@
-HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
-TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
+TREE 6f48906d4d772ce3810355578ff01efa773e42b2
 DIRTY yes
-?? docs/evidence/logs/goal-16/
+ M docs/evidence/logs/goal-16/anchors06.txt
+ M docs/evidence/logs/goal-16/anchors07.txt
+ M docs/evidence/logs/goal-16/conformance.txt
+ M docs/evidence/logs/goal-16/docker.txt
+ M docs/evidence/logs/goal-16/gofmt.txt
+ M docs/evidence/logs/goal-16/golangci-lint.txt
+ M docs/evidence/logs/goal-16/names.txt
+ M docs/evidence/logs/goal-16/pg16.txt
+ M docs/evidence/logs/goal-16/race.txt
+ M docs/evidence/logs/goal-16/runtime.txt
+ M docs/evidence/logs/goal-16/scaffold.txt
+ M docs/evidence/logs/goal-16/trailer.txt
+ M docs/evidence/logs/goal-16/vet.txt
 COMMAND git log -1 --format=full
-commit 0ae57fcf1896cf863da1e867c1f9081007313c57
+commit 065aac1a218f6a7308c930d3fc125e5fe4d13628
 Author: Maxence Jules <Maxencejules@users.noreply.github.com>
 Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
 
-    Add the loopback storage-provider agent.
+    Allow the provider to sign its own acceptance transaction.
     
-    The agent enrolls a development key, signs capability manifests and lease acceptances with the chain helpers, and serves a package only after the configured chain endpoint reports the lease. Two processes on one machine are not independent operators.
+    CI run 42774846560 failed the python job because agents/provider/internal/sign/tx.go calls SignWithPrivKey and was not a named chain writer. Goal 16 is that provider self-submission path.
     
-    Tested-tree: 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+    Tested-tree: 6f48906d4d772ce3810355578ff01efa773e42b2
 EXIT:0

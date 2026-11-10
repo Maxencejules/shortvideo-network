@@ -14,14 +14,14 @@ Status: BLOCKED
 
 | Item | Value |
 | --- | --- |
-| Commit | `0ae57fcf1896cf863da1e867c1f9081007313c57` |
-| Tree | `4cd758ce0806103e86d63dc0162e2ff3aa2edde7` |
+| Commit | `065aac1a218f6a7308c930d3fc125e5fe4d13628` |
+| Tree | `6f48906d4d772ce3810355578ff01efa773e42b2` |
 | Base | `cd89c1908a045b28af7d8e429f38767eb923bb5d` |
 | Branch | `goal-16` |
 
-[trailer.txt](logs/goal-16/trailer.txt) prints `commit 0ae57fcf1896cf863da1e867c1f9081007313c57`, `Author: Maxence Jules <Maxencejules@users.noreply.github.com>`, and `Tested-tree: 4cd758ce0806103e86d63dc0162e2ff3aa2edde7`. The same file's `TREE` line is `4cd758ce0806103e86d63dc0162e2ff3aa2edde7`. This evidence commit changes only `docs/evidence/` relative to that tested commit.
+[trailer.txt](logs/goal-16/trailer.txt) prints `commit 065aac1a218f6a7308c930d3fc125e5fe4d13628`, `Author: Maxence Jules <Maxencejules@users.noreply.github.com>`, and `Tested-tree: 6f48906d4d772ce3810355578ff01efa773e42b2`. The same file's `TREE` line is `6f48906d4d772ce3810355578ff01efa773e42b2`. This evidence commit changes only `docs/evidence/` relative to that tested commit.
 
-[names.txt](logs/goal-16/names.txt) is `git diff --name-only cd89c1908a045b28af7d8e429f38767eb923bb5d..HEAD`. The names are under `agents/provider/` and `docs/`. `chain/` and `proto/` are not in that list. The agent calls the existing sign-bytes helpers. It does not change them.
+[names.txt](logs/goal-16/names.txt) is `git diff --name-only 7a4aaaf413612650012fef03a3671fb7d9c4b3d4..HEAD`. The only name is `tests/unit/test_chain_writer_policy.py`. The provider agent and `chain/` and `proto/` are unchanged by this commit. The agent still calls the existing sign-bytes helpers.
 
 ## Inherited blockers
 
@@ -62,40 +62,40 @@ BLOCKED, carried from goals 04 and 07 through 15:
 
 ## Acceptance
 
-The acceptance log is [conformance.txt](logs/goal-16/conformance.txt). `HEAD` is `0ae57fcf1896cf863da1e867c1f9081007313c57` and `TREE` is `4cd758ce0806103e86d63dc0162e2ff3aa2edde7`. `DIRTY yes` is the untracked log directory. [diffstat.txt](logs/goal-16/diffstat.txt) has an empty diff and `EXIT:0`.
+The acceptance log is [conformance.txt](logs/goal-16/conformance.txt). `HEAD` is `065aac1a218f6a7308c930d3fc125e5fe4d13628` and `TREE` is `6f48906d4d772ce3810355578ff01efa773e42b2`. `DIRTY yes` is these log files, which were already tracked from the previous evidence commit and were rewritten for this tree.
 
 | Check | Status | Where |
 | --- | --- | --- |
 | Hosting consent refused | VERIFIED on this host | [conformance.txt](logs/goal-16/conformance.txt) line 8: `CONSENT_REFUSED exit=1`. The assertion is `cmd/svn-provider/conformance_test.go` line 57. |
 | Link-local destination cannot be configured | VERIFIED on this host | Line 9: `LINK_LOCAL_CONFIG refused=true`. Assertion at `conformance_test.go` line 72. |
-| Two agents installed | VERIFIED as two processes | Line 9: `INSTALL alpha=https://127.0.0.1:36119 beta=https://127.0.0.1:44959`. Those ports are the ephemeral ports that log printed. |
-| Not independent | VERIFIED as a negative claim | Line 10: `INDEPENDENCE alpha=false beta=false machine=vm-1` and `disk_available_bytes=261396000768`. |
-| Real package transfer and HTTPS serve | VERIFIED on loopback | Line 11: `TRANSFER alpha status=200 bytes=64 sha256=5d57ec6c48c08c20543c1ff21b946d6eea681f3c1544ccab9253152898a16472 readiness=SERVING`. The hash compare is `conformance_test.go` lines 116-117. |
-| Acceptance bound to that key and the exact terms | VERIFIED | Line 12: `ACCEPT alpha verifies=true altered_signature=false service_key=false terms_bound=true`. Assertions at `conformance_test.go` lines 128, 133, 139, 144, and 152. |
-| Transaction has no segment bytes | VERIFIED | Line 13: `TX_SEGMENT_BYTES=false signer_is_alpha=true broadcasts=1`. Assertion at `conformance_test.go` lines 164-167. |
-| Repeated identical offer | VERIFIED | Line 14: `REPEAT same_signature=true used_bytes=64`. |
-| Conflict, unapproved offer, altered bytes | VERIFIED | Line 15: `REJECT conflict=409 unapproved=403 altered_bytes=422 used_bytes=64`. |
-| Malicious URL, redirect, unbounded body | VERIFIED inside the test process | Line 16: `MALICIOUS_URL http=destination_refused metadata=destination_refused dotdot=destination_refused redirect=redirect_refused unbounded=unbounded_response`. |
-| Encoded dot-dot path | VERIFIED | Line 17: `PATH_REFUSED contains_secret=false`. Assertion at `conformance_test.go` line 236. |
-| Restart after a committed acceptance | VERIFIED | Line 18: `RESTART_COMMITTED status=200 used_bytes=64 readiness=SERVING`. |
-| Real-time deadline | VERIFIED | Line 19: `DEADLINE status=410 readiness=EXPIRED`. |
-| Clock uncertainty keeps the lease off the wire | VERIFIED | Line 20: `DEADLINE_UNCERTAIN readiness=COMMITTED advertised=false certainty=uncertain`. |
-| Key rotation | VERIFIED for the local hook | Line 21: `ROTATE old_key_rejected=true new_key=ak.r2`. The old public key failing is `conformance_test.go` line 307. The rotation was not committed on a devnet. |
-| Unauthorized admin | VERIFIED | Line 22: `ADMIN_UNAUTHORIZED status=401 draining=false`. |
-| Chain stall | VERIFIED against the fixture endpoint | Line 23: `STALL chain_uncertain=true new_readiness=ACCEPTANCE_PENDING broadcasts_added=0 serving_kept=true`. This is not a four-validator halt. |
-| Drain | VERIFIED | Line 24: `DRAIN new_offer=draining serving_status=200`. |
-| Local withdrawal | VERIFIED | Line 25: `WITHDRAW chain_end=false local_readiness=REMOVED inventory_attestation=true`. |
-| Capability and receipt | VERIFIED as local signatures | Line 26: `CAPABILITY digest=ee3bc7b57b6d25ae69450720783d797619e69411d2f1ceb7a1ec9d324f2fda2c key=ak.r2`. Line 27: `RECEIPT status=201 key=ak.r2`. |
-| Second agent's key | VERIFIED | Line 28: `TWO_KEYS alpha_rejects_beta=true beta_verifies=true`. |
-| Package source requires a bearer | VERIFIED | Line 29: `SOURCE_UNAUTHENTICATED status=401`. |
-| Restart after a partial transfer | VERIFIED | Line 30: `PARTIAL_RESTART used_bytes=0 leases=0 staging_removed=true`. |
-| Insufficient disk | VERIFIED with `statfs` | Line 31: `DISK_REJECT available=261395943424 min_free=261395943424 error=insufficient_disk`. |
-| Insufficient quota | VERIFIED | Line 32: `QUOTA_REJECT quota_bytes=10 error=insufficient_quota`. |
-| Bandwidth limit | VERIFIED | Line 33: `BANDWIDTH_REJECT bytes_per_second=1 budget_seconds=1 error=bandwidth_limit`. |
+| Two agents installed | VERIFIED as two processes | Line 10: `INSTALL alpha=https://127.0.0.1:39311 beta=https://127.0.0.1:42307`. Those ports are the ephemeral ports that log printed. |
+| Not independent | VERIFIED as a negative claim | Line 11: `INDEPENDENCE alpha=false beta=false machine=vm-1` and `disk_available_bytes=261395185664`. |
+| Real package transfer and HTTPS serve | VERIFIED on loopback | Line 12: `TRANSFER alpha status=200 bytes=64 sha256=0651a6235c747637db63c3a054ab9a4bf63e17f862da679c20dbf978a807744e readiness=SERVING`. The hash compare is `conformance_test.go` lines 116-117. |
+| Acceptance bound to that key and the exact terms | VERIFIED | Line 13: `ACCEPT alpha verifies=true altered_signature=false service_key=false terms_bound=true`. Assertions at `conformance_test.go` lines 128, 133, 139, 144, and 152. |
+| Transaction has no segment bytes | VERIFIED | Line 14: `TX_SEGMENT_BYTES=false signer_is_alpha=true broadcasts=1`. Assertion at `conformance_test.go` lines 164-167. |
+| Repeated identical offer | VERIFIED | Line 15: `REPEAT same_signature=true used_bytes=64`. |
+| Conflict, unapproved offer, altered bytes | VERIFIED | Line 16: `REJECT conflict=409 unapproved=403 altered_bytes=422 used_bytes=64`. |
+| Malicious URL, redirect, unbounded body | VERIFIED inside the test process | Line 17: `MALICIOUS_URL http=destination_refused metadata=destination_refused dotdot=destination_refused redirect=redirect_refused unbounded=unbounded_response`. |
+| Encoded dot-dot path | VERIFIED | Line 18: `PATH_REFUSED contains_secret=false`. Assertion at `conformance_test.go` line 236. |
+| Restart after a committed acceptance | VERIFIED | Line 19: `RESTART_COMMITTED status=200 used_bytes=64 readiness=SERVING`. |
+| Real-time deadline | VERIFIED | Line 20: `DEADLINE status=410 readiness=EXPIRED`. |
+| Clock uncertainty keeps the lease off the wire | VERIFIED | Line 21: `DEADLINE_UNCERTAIN readiness=COMMITTED advertised=false certainty=uncertain`. |
+| Key rotation | VERIFIED for the local hook | Line 22: `ROTATE old_key_rejected=true new_key=ak.r2`. The old public key failing is `conformance_test.go` line 307. The rotation was not committed on a devnet. |
+| Unauthorized admin | VERIFIED | Line 23: `ADMIN_UNAUTHORIZED status=401 draining=false`. |
+| Chain stall | VERIFIED against the fixture endpoint | Line 24: `STALL chain_uncertain=true new_readiness=ACCEPTANCE_PENDING broadcasts_added=0 serving_kept=true`. This is not a four-validator halt. |
+| Drain | VERIFIED | Line 25: `DRAIN new_offer=draining serving_status=200`. |
+| Local withdrawal | VERIFIED | Line 26: `WITHDRAW chain_end=false local_readiness=REMOVED inventory_attestation=true`. |
+| Capability and receipt | VERIFIED as local signatures | Line 27: `CAPABILITY digest=5669f86dc409ee8cb87183135459aa835f874a69b503d3175b72ce7f0f87b5cb key=ak.r2`. Line 28: `RECEIPT status=201 key=ak.r2`. |
+| Second agent's key | VERIFIED | Line 29: `TWO_KEYS alpha_rejects_beta=true beta_verifies=true`. |
+| Package source requires a bearer | VERIFIED | Line 30: `SOURCE_UNAUTHENTICATED status=401`. |
+| Restart after a partial transfer | VERIFIED | Line 31: `PARTIAL_RESTART used_bytes=0 leases=0 staging_removed=true`. |
+| Insufficient disk | VERIFIED with `statfs` | Line 32: `DISK_REJECT available=261395140608 min_free=261395140608 error=insufficient_disk`. |
+| Insufficient quota | VERIFIED | Line 33: `QUOTA_REJECT quota_bytes=10 error=insufficient_quota`. |
+| Bandwidth limit | VERIFIED | Line 34: `BANDWIDTH_REJECT bytes_per_second=1 budget_seconds=1 error=bandwidth_limit`. |
 | Four-validator commit of this agent's transaction | BLOCKED | Not run. DR-16-04. The fixture's broadcast response was not treated as a commit (`conformance_test.go` lines 105-108 require `ACCEPTANCE_PENDING` and package status 404 before the fixture reports the lease). |
 | Independent operator or a second machine | BLOCKED | Needs another person and another machine. Listed below. |
 
-[conformance.txt](logs/goal-16/conformance.txt) ends with `--- PASS: TestConformance (7.36s)` and `ok github.com/Maxencejules/shortvideo-network/agents/provider/cmd/svn-provider 7.400s`.
+[conformance.txt](logs/goal-16/conformance.txt) ends with `--- PASS: TestConformance (7.16s)` and `ok github.com/Maxencejules/shortvideo-network/agents/provider/cmd/svn-provider 7.188s`.
 
 ## Other commands
 
@@ -105,7 +105,8 @@ The acceptance log is [conformance.txt](logs/goal-16/conformance.txt). `HEAD` is
 | scaffold | 0 | [scaffold.txt](logs/goal-16/scaffold.txt). `ok github.com/Maxencejules/shortvideo-network/agents/provider 0.001s`. |
 | vet | 0 | [vet.txt](logs/goal-16/vet.txt). |
 | gofmt | 0 | [gofmt.txt](logs/goal-16/gofmt.txt). No file names were printed. |
-| race | 0 | [race.txt](logs/goal-16/race.txt). `ok` for the root package in `1.010s` and for `cmd/svn-provider` in `16.971s`. |
+| race | 0 | [race.txt](logs/goal-16/race.txt). `ok` for the root package in `1.017s` and for `cmd/svn-provider` in `16.462s`. |
+| writer-policy | 0 | [writer-policy.txt](logs/goal-16/writer-policy.txt). `errors []` and `ok agents/provider/internal/sign/tx.go`. This is the policy functions loaded without pytest. The CI job runs pytest. |
 | anchors06 | 1 | BLOCKED. Not a pass. |
 | anchors07 | 1 | BLOCKED. Not a pass. |
 | golangci-lint | 127 | BLOCKED. Not a pass. |
@@ -119,7 +120,7 @@ The acceptance log is [conformance.txt](logs/goal-16/conformance.txt). `HEAD` is
 | REQ-PROD-006 | VERIFIED for a designated loopback agent that does not advertise a package before acceptance. Not an independent host. | `TestConformance` package fetch before and after the fixture reports the lease, `conformance_test.go` lines 105-113. |
 | REQ-UX-013 | VERIFIED for the local quota refusal and the drain. The leave-network handoff to another operator is goal 24 and was not run. | `QUOTA_REJECT` and `DRAIN` lines in [conformance.txt](logs/goal-16/conformance.txt). |
 | REQ-UX-019 | VERIFIED for a bounded lease and the rotation hook. Cost counters are goal 25. A production key rotation is goal 26. | `ROTATE` line. |
-| REQ-ARCH-004 | VERIFIED | A service key does not verify the acceptance (`conformance_test.go` line 152). Unauthorized admin is line 22 of the log. |
+| REQ-ARCH-004 | VERIFIED | A service key does not verify the acceptance (`conformance_test.go` line 152). Unauthorized admin is line 23 of the log. |
 | REQ-ARCH-010 | VERIFIED for signed manifests over HTTPS on loopback. No IPFS path was added. | `INDEPENDENCE` line includes the status note; `ipfs` is asserted false at `conformance_test.go` line 93. |
 | REQ-TECH-006 | VERIFIED for the Go agent on toolchain `go1.26.10` from [runtime.txt](logs/goal-16/runtime.txt). | `go.mod` says `go 1.26.5` and `toolchain go1.26.10`. |
 | REQ-OFF-003 | VERIFIED for the signed capability document. The chain was not given the endpoint URL. | `CAPABILITY` line. |
@@ -140,17 +141,17 @@ svn-provider run config.json
 ## Independence tests that still need another person or another machine
 
 - A second person installing this agent on infrastructure they control. Two processes here do not do that.
-- A claim that two provider ids are different operators or different failure domains. [conformance.txt](logs/goal-16/conformance.txt) line 10 records both as `false` on `machine=vm-1`.
+- A claim that two provider ids are different operators or different failure domains. [conformance.txt](logs/goal-16/conformance.txt) line 11 records both as `false` on `machine=vm-1`.
 - Physical redundancy, a site failure, or a network partition between operators.
 - Goal 30's independent installation. Not this goal's result.
 
 ## Head CI
 
-Not observed yet. This section is filled after the branch is pushed. A missing run is not a pass.
+Run [42774846560](https://github.com/Maxencejules/shortvideo-network/actions/runs/42774846560) on `7a4aaaf413612650012fef03a3671fb7d9c4b3d4` completed **failure** at 2026-11-10T07:36:25Z. The `python` job failed `tests/unit/test_chain_writer_policy.py::test_repository_follows_the_chain_writer_policy`. The assertion was `agents/provider/internal/sign/tx.go: chain writer outside the allowed paths (SignWithPrivKey)`. The other 15 jobs succeeded: `node`, `contract`, `devnet`, `go`, and the go-race shards `api`, `devnet`, `broadcaster`, `indexer`, `devnet-evidence`, `devnet-broadcaster`, `devnet-indexer`, `devnet-broadcaster-stall`, `devnet-upgrade`, `app`, and `rest`. No run on this branch was cancelled. The tested commit `065aac1` names that file in the allowlist. Its CI is not this run.
 
 ## Log stamps
 
-Every log under `docs/evidence/logs/goal-16/` starts with `HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57` and `TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7`. `DIRTY yes` is the untracked log directory. No tracked source file changed during a command. [diffstat.txt](logs/goal-16/diffstat.txt) is empty.
+Every log under `docs/evidence/logs/goal-16/` was rewritten while `HEAD` was `065aac1a218f6a7308c930d3fc125e5fe4d13628` and `TREE` was `6f48906d4d772ce3810355578ff01efa773e42b2`. `DIRTY yes` is those log files being rewritten. The provider source did not change during a command. [diffstat.txt](logs/goal-16/diffstat.txt) is from the previous tree and is not a stamp of this tested commit.
 
 ## Residual risk
 

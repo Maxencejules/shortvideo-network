@@ -1,14 +1,14 @@
-HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
-TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
+TREE 6f48906d4d772ce3810355578ff01efa773e42b2
 DIRTY yes
-?? docs/evidence/logs/goal-16/
+ M docs/evidence/logs/goal-16/conformance.txt
 COMMAND go test -count=1 -timeout 90s -v -run TestConformance ./agents/provider/cmd/svn-provider/
 === RUN   TestConformance
 CONSENT_REFUSED exit=1
 LINK_LOCAL_CONFIG refused=true
-INSTALL alpha=https://127.0.0.1:36119 beta=https://127.0.0.1:44959
-INDEPENDENCE alpha=false beta=false machine=vm-1 note=several identities on one machine are not independent ownership or physical redundancy disk_available_bytes=261396000768
-TRANSFER alpha status=200 bytes=64 sha256=5d57ec6c48c08c20543c1ff21b946d6eea681f3c1544ccab9253152898a16472 readiness=SERVING
+INSTALL alpha=https://127.0.0.1:39311 beta=https://127.0.0.1:42307
+INDEPENDENCE alpha=false beta=false machine=vm-1 note=several identities on one machine are not independent ownership or physical redundancy disk_available_bytes=261395185664
+TRANSFER alpha status=200 bytes=64 sha256=0651a6235c747637db63c3a054ab9a4bf63e17f862da679c20dbf978a807744e readiness=SERVING
 ACCEPT alpha verifies=true altered_signature=false service_key=false terms_bound=true
 TX_SEGMENT_BYTES=false signer_is_alpha=true broadcasts=1
 REPEAT same_signature=true used_bytes=64
@@ -23,15 +23,15 @@ ADMIN_UNAUTHORIZED status=401 draining=false
 STALL chain_uncertain=true new_readiness=ACCEPTANCE_PENDING broadcasts_added=0 serving_kept=true
 DRAIN new_offer=draining serving_status=200
 WITHDRAW chain_end=false local_readiness=REMOVED inventory_attestation=true
-CAPABILITY digest=ee3bc7b57b6d25ae69450720783d797619e69411d2f1ceb7a1ec9d324f2fda2c key=ak.r2
+CAPABILITY digest=5669f86dc409ee8cb87183135459aa835f874a69b503d3175b72ce7f0f87b5cb key=ak.r2
 RECEIPT status=201 key=ak.r2
 TWO_KEYS alpha_rejects_beta=true beta_verifies=true
 SOURCE_UNAUTHENTICATED status=401
 PARTIAL_RESTART used_bytes=0 leases=0 staging_removed=true
-DISK_REJECT available=261395943424 min_free=261395943424 error=insufficient_disk
+DISK_REJECT available=261395140608 min_free=261395140608 error=insufficient_disk
 QUOTA_REJECT quota_bytes=10 error=insufficient_quota
 BANDWIDTH_REJECT bytes_per_second=1 budget_seconds=1 error=bandwidth_limit
---- PASS: TestConformance (7.36s)
+--- PASS: TestConformance (7.16s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/agents/provider/cmd/svn-provider	7.400s
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider/cmd/svn-provider	7.188s
 EXIT:0
