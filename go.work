@@ -8,6 +8,7 @@ use (
 	./chain
 	./docs/evidence/goal-02/go
 	./proto
+	./services/api
 	./services/broadcaster
 	./services/indexer
 )

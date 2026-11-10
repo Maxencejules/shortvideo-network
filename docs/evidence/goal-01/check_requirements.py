@@ -197,6 +197,8 @@ SOURCE_ALLOW = (
     "services/broadcaster/",
     # Goal 12 adds the Go indexer module.
     "services/indexer/",
+    # Goal 13 adds the Go upload service.
+    "services/api/",
 )
 WALK_SKIP = {
     ".git",

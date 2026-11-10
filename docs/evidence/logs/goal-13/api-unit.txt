@@ -1,0 +1,38 @@
+HEAD 42eced0d4a3aaf7d196ffe3f95cd1d5ff6253d33
+TREE 3a2d13615cb399a030e56d80ac9dd537fd8be416
+DIRTY no
+CMD /tmp/goal13-evidence/api-unit.txt go test -v -count=1 -timeout 8m ./services/api/...
+?   	github.com/Maxencejules/shortvideo-network/services/api	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/services/api/cmd/svn-api	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/services/api/internal/pgdev	[no test files]
+=== RUN   TestPermittedFixtureQuarantineAndJob
+--- PASS: TestPermittedFixtureQuarantineAndJob (0.05s)
+=== RUN   TestMalformedUntrustedAndDimensions
+--- PASS: TestMalformedUntrustedAndDimensions (0.05s)
+=== RUN   TestOversizedBodiesAndCeiling
+--- PASS: TestOversizedBodiesAndCeiling (0.01s)
+=== RUN   TestFalseCompletionAndDuplicate
+--- PASS: TestFalseCompletionAndDuplicate (0.05s)
+=== RUN   TestConcurrentQuotaAndOutputBudget
+--- PASS: TestConcurrentQuotaAndOutputBudget (0.02s)
+=== RUN   TestInterruptedSweepReleasesOnce
+--- PASS: TestInterruptedSweepReleasesOnce (0.01s)
+=== RUN   TestExpiredTransfer
+--- PASS: TestExpiredTransfer (0.01s)
+=== RUN   TestCrossAccountDenied
+--- PASS: TestCrossAccountDenied (0.01s)
+=== RUN   TestNoPlaybackAndNotPublished
+--- PASS: TestNoPlaybackAndNotPublished (0.04s)
+=== RUN   TestRateLimitRoleAndProductionFixtures
+--- PASS: TestRateLimitRoleAndProductionFixtures (0.01s)
+=== RUN   TestDurationIgnoresClientMetadata
+--- PASS: TestDurationIgnoresClientMetadata (0.09s)
+=== RUN   TestRestartDoesNotDoubleJobOrLeakQuota
+--- PASS: TestRestartDoesNotDoubleJobOrLeakQuota (0.47s)
+=== RUN   TestCancelReleasesOnce
+--- PASS: TestCancelReleasesOnce (0.01s)
+=== RUN   TestDevelopmentConfigIsProposed
+--- PASS: TestDevelopmentConfigIsProposed (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/service	1.306s
+EXIT 0

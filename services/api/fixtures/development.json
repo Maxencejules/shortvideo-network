@@ -1,0 +1,30 @@
+{
+  "environment": "development",
+  "enable_dev_fixtures": true,
+  "public_launch": false,
+  "listen": "127.0.0.1:8080",
+  "fixtures": [
+    {
+      "token": "dev-fixture-token-creator-a",
+      "account_id": "acct-dev-a",
+      "role": "creator"
+    },
+    {
+      "token": "dev-fixture-token-creator-b",
+      "account_id": "acct-dev-b",
+      "role": "creator"
+    }
+  ],
+  "limits": {
+    "label": "PROPOSED",
+    "max_input_bytes": 100000000,
+    "max_duration_seconds": 60,
+    "max_dimension": 7680,
+    "account_input_allowance_bytes": 200000000,
+    "account_output_budget_bytes": 50000000,
+    "output_reservation_bytes": 25000000,
+    "transfer_ttl_seconds": 900,
+    "intent_rate_per_minute": 30,
+    "probe_timeout_seconds": 20
+  }
+}

@@ -1,0 +1,15 @@
+HEAD 42eced0d4a3aaf7d196ffe3f95cd1d5ff6253d33
+TREE 3a2d13615cb399a030e56d80ac9dd537fd8be416
+DATE 2026-11-10T00:20:26Z
+Linux cursor 6.12.113+ #1 SMP PREEMPT_DYNAMIC Thu Nov  5 16:04:51 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+PRETTY Ubuntu 24.04.5 LTS
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev)
+go version go1.26.10 linux/amd64
+Python 3.12.3
+ruff 0.17.3
+mypy 2.4.1 (compiled: yes)
+ffprobe version 6.1.1-3ubuntu5 Copyright (c) 2007-2023 the FFmpeg developers
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+PG16 /tmp/goal13-evidence.sh: line 48: /usr/lib/postgresql/16/bin/postgres: No such file or directory
+GOLANGCI /tmp/goal13-evidence.sh: line 49: golangci-lint: command not found
+DOCKER /tmp/goal13-evidence.sh: line 50: docker: command not found

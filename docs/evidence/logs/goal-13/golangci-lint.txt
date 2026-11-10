@@ -1,0 +1,6 @@
+HEAD 42eced0d4a3aaf7d196ffe3f95cd1d5ff6253d33
+TREE 3a2d13615cb399a030e56d80ac9dd537fd8be416
+DIRTY no
+CMD /tmp/goal13-evidence/golangci-lint.txt golangci-lint version
+/tmp/goal13-evidence.sh: line 27: golangci-lint: command not found
+EXIT 127
