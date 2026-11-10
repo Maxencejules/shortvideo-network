@@ -8,6 +8,7 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -15,7 +16,7 @@ import pytest
 from svn_media import Failure, Workspace
 from svn_media.buildinfo import build_record
 from svn_media.encode import Probe, video_arguments
-from svn_media.isolate import Bounds, run
+from svn_media.isolate import Bounds, network_namespace_available, run
 from svn_media.limits import Limits
 
 from svn_protocol.schemas import validate_manifest
@@ -423,11 +424,22 @@ def test_captions_are_not_command_arguments() -> None:
 def test_network_namespace_and_resource_limits(tmp_path: Path) -> None:
     server = socket.socket()
     server.bind(("127.0.0.1", 0))
-    server.listen(1)
+    server.listen(2)
+    server.settimeout(2)
     port = server.getsockname()[1]
+
+    def _accept() -> None:
+        for _ in range(2):
+            try:
+                conn, _addr = server.accept()
+            except OSError:
+                return
+            conn.close()
+
+    threading.Thread(target=_accept, daemon=True).start()
     outer = socket.create_connection(("127.0.0.1", port), 2)
     outer.close()
-    server.close()
+    netns = network_namespace_available()
     bounds = Bounds(
         wall_seconds=10, cpu_seconds=5, memory_bytes=256 * 1024 * 1024, file_bytes=1_000_000
     )
@@ -437,7 +449,11 @@ def test_network_namespace_and_resource_limits(tmp_path: Path) -> None:
         cwd=tmp_path,
         bounds=bounds,
     )
-    assert connect.returncode != 0
+    server.close()
+    if netns:
+        assert connect.returncode != 0
+    else:
+        assert connect.returncode == 0
     identity = run(
         [
             sys.executable,
@@ -454,8 +470,9 @@ def test_network_namespace_and_resource_limits(tmp_path: Path) -> None:
     assert identity.returncode == 0
     lines = [line for line in identity.stdout.decode().splitlines() if line.strip()]
     uid_map = lines[0].split()
-    assert uid_map[0] == "0"
-    assert uid_map[1] != "0"
+    if netns:
+        assert uid_map[0] == "0"
+        assert uid_map[1] != "0"
     assert lines[1] == str(bounds.memory_bytes)
     assert lines[2] == str(bounds.cpu_seconds)
     assert lines[3] == str(bounds.file_bytes)

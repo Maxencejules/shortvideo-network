@@ -23,5 +23,5 @@ tests/unit/test_media_postgres.py::test_postgres_claim_is_once_and_does_not_publ
 tests/unit/test_scaffold.py::test_api_refuses_to_serve PASSED            [ 93%]
 tests/unit/test_scaffold.py::test_media_worker_is_a_package_and_does_not_start_on_import PASSED [100%]
 
-======================== 15 passed, 1 skipped in 5.37s =========================
+======================== 15 passed, 1 skipped in 5.87s =========================
 EXIT:0

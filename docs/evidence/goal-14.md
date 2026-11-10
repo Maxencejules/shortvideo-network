@@ -60,7 +60,7 @@ BLOCKED, carried from goals 04, 11, 12, and 13:
 | Network namespace blocks a connect that succeeds outside it; uid map is not host root; rlimits match; a write under `/usr/bin` fails; `http` is not on the protocol whitelist; wall time and file size are bounded | VERIFIED on this host | same log, `test_network_namespace_and_resource_limits` |
 | Read-only root filesystem | UNVERIFIED | `bwrap` was not installed. DR-14-03. The external profile is in the architecture note. |
 | PostgreSQL claim once, quotas unchanged, upload stays `PROCESSING_QUEUED`, outbox stays `HELD`, `PUBLISHED` is rejected | VERIFIED | same log, `test_postgres_claim_is_once_and_does_not_publish` |
-| 60-second supported input | VERIFIED as a measurement on this VM, not a production result | [timing.txt](logs/goal-14/timing.txt) `elapsed_seconds=4.117`. The input is synthetic `testsrc` 1280x720 at 10 fps plus a sine, 60 seconds, encoded with libx264 `veryfast` to `h480` and `h720`. The proposed 120-second gate held for that input on the 4 vCPU host above. It is not a camera-recording result. |
+| 60-second supported input | VERIFIED as a measurement on this VM, not a production result | [timing.txt](logs/goal-14/timing.txt) `elapsed_seconds=5.108`. The input is synthetic `testsrc` 1280x720 at 10 fps plus a sine, 60 seconds, encoded with libx264 `veryfast` to `h480` and `h720`. The proposed 120-second gate held for that input on the 4 vCPU host above. It is not a camera-recording result. |
 | FFmpeg build and licence record | VERIFIED as a record. BLOCKED as an approval (DEC-006, REQ-MEDIA-009) | [build-record.txt](logs/goal-14/build-record.txt). `ffmpeg version 6.1.1-3ubuntu5`, configuration includes `--enable-gpl`. The GPL record does not settle codec patents. |
 | Package format approved | BLOCKED | DR-14-02 |
 | Celery/RabbitMQ or an approved queue | BLOCKED | DR-14-01. The PostgreSQL claim is the proposal that was tested. |
@@ -80,7 +80,7 @@ BLOCKED, carried from goals 04, 11, 12, and 13:
 | REQ-MEDIA-004 | VERIFIED for this encoder: the package is identified by digest, and a second encode is a new version without a byte-identical check. | `test_retry_is_one_package_and_reencode_is_a_new_version` |
 | REQ-MEDIA-007 | VERIFIED | `test_kill_restart_keeps_one_package_and_quota`, `test_cancel_removes_staging_and_does_not_publish` |
 | REQ-MEDIA-009 | BLOCKED | DEC-006. The build record exists and is not an approval. |
-| REQ-QA-006 | VERIFIED as the measurement above. The 120-second figure stays a proposed gate. | [timing.txt](logs/goal-14/timing.txt) |
+| REQ-QA-006 | VERIFIED as the measurement above. The 120-second figure stays a proposed gate. 5.108 seconds on this VM. | [timing.txt](logs/goal-14/timing.txt) |
 
 ## Commands
 
@@ -90,9 +90,9 @@ The step table is [summary.tsv](logs/goal-14/summary.tsv). Logs were copied here
 | --- | --- | --- |
 | ruff-format, ruff-check | 0 | `services workers/media packages/protocol tests scripts` |
 | mypy | 0 | |
-| python-tests | 0 | `scripts/run_tests.py --only python`. 419 passed, 1 skipped. [python-tests.txt](logs/goal-14/python-tests.txt) |
+| python-tests | 0 | `scripts/run_tests.py --only python`. 419 passed, 1 skipped, in 102.63s. [python-tests.txt](logs/goal-14/python-tests.txt) |
 | media-tests | 0 | verbose names in [media-tests.txt](logs/goal-14/media-tests.txt) |
-| timing | 0 | `elapsed_seconds=4.117` |
+| timing | 0 | `elapsed_seconds=5.108` |
 | workflow, secrets, sbom, requirements | 0 | |
 | protocol | 0 | After `scripts/install_toolchains.sh --protoc-only`. The first attempt, before `protoc` was installed, exited 1 with `protoc well-known types BLOCKED` and no other error. That attempt is not a pass. The saved log is the second run. |
 | gofmt, gen-proto | 0 | `gen-proto` used the pinned `protoc` 36.2. It did not change a tracked proto file. |
@@ -107,7 +107,7 @@ The step table is [summary.tsv](logs/goal-14/summary.tsv). Logs were copied here
 
 ## Head CI
 
-Not observed at the time of the tested commit. The evidence commit that follows cites the run on the final head after it finishes. A missing run is not a pass.
+Run [42737222474](https://github.com/Maxencejules/shortvideo-network/actions/runs/42737222474) on `07366435e249031e8d419dee8fc851902915ad48` failed the `python` job. GitHub's runner refused `unshare --user`, so `ffprobe` never started and valid files were reported as `TRUNCATED`. That run is not a pass. This commit uses the network namespace only when `unshare --user --map-root-user --net` can start a child, and it still applies `prlimit` and the protocol whitelist. The green run on the tested commit is cited in the evidence commit that follows it. A missing run is not a pass.
 
 ## Next safe action
 

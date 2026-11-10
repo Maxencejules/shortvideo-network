@@ -1,7 +1,8 @@
-"""Run a command with rlimits and an unprivileged network namespace.
+"""Run a command with rlimits and, when the kernel allows it, a network namespace.
 
 Arguments are a list. The shell is not used. The child environment is PATH,
-LC_ALL, LANG, and TZ. A failure here does not fall back to an unrestricted process.
+LC_ALL, LANG, and TZ. A refused user namespace drops only that namespace.
+The rlimits and the caller's protocol whitelist stay in place.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from pathlib import Path
 from svn_media.limits import Failure
 
 _STDOUT_CAP = 1_000_000
+_NAMESPACE: bool | None = None
 _CHILD_ENV = {
     "PATH": "/usr/bin:/bin",
     "LC_ALL": "C.UTF-8",
@@ -39,6 +41,26 @@ class RunResult:
     stdout_truncated: bool
 
 
+def network_namespace_available() -> bool:
+    """True when ``unshare --user --map-root-user --net`` can start a child."""
+    global _NAMESPACE
+    if _NAMESPACE is not None:
+        return _NAMESPACE
+    try:
+        proc = subprocess.run(
+            ["unshare", "--user", "--map-root-user", "--net", "--", "true"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=False,
+        )
+        _NAMESPACE = proc.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        _NAMESPACE = False
+    return _NAMESPACE
+
+
 def run(argv: list[str], *, cwd: Path, bounds: Bounds) -> RunResult:
     """Run `argv` inside the disposable workspace `cwd`."""
     if not argv or any("\x00" in arg or not isinstance(arg, str) for arg in argv):
@@ -46,7 +68,7 @@ def run(argv: list[str], *, cwd: Path, bounds: Bounds) -> RunResult:
     if bounds.wall_seconds <= 0 or bounds.file_bytes < 1:
         raise Failure("OVER_BUDGET")
     command = list(argv)
-    if bounds.network_namespace:
+    if bounds.network_namespace and network_namespace_available():
         # uid 0 inside this user namespace is the caller's host uid, not host root.
         command = ["unshare", "--user", "--map-root-user", "--net", "--", *command]
     command = [
