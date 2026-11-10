@@ -1,0 +1,23 @@
+HEAD 1255394077693248406ffe3910ad40c163a6dd36
+TREE 1e71eedb05330765c0da519af9f08cab5bd7af76
+DIRTY yes
+?? docs/evidence/logs/goal-15/
+COMMAND .venv/bin/python docs/evidence/goal-06/mutants.py --check
+revision HEAD commit 1255394077693248406ffe3910ad40c163a6dd36 tree 1e71eedb05330765c0da519af9f08cab5bd7af76
+copy /tmp/goal06-mutants-eexg5la1/tree (git archive)
+mutants 119 of 119
+NOT_FOUND ceiling-gone chain/x/authority/engine.go occurrences=0
+NOT_FOUND unknown-limit-ok chain/x/authority/engine.go occurrences=0
+NOT_FOUND seat-rotation-keeps-admission chain/x/authority/engine.go occurrences=0
+NOT_FOUND seat-rotation-no-submitter-dup chain/x/authority/engine.go occurrences=0
+NOT_FOUND svnd-skips-authority-rules chain/cmd/svnd/main.go occurrences=0
+NOT_FOUND swap-engine-282 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-492 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-548 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-575 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-578 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-591 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-855 chain/x/authority/engine.go occurrences=0
+NOT_FOUND ante-extra-admission chain/app/app.go occurrences=0
+RESULT search-string problems=13; no test was run
+EXIT:1

@@ -1,0 +1,25 @@
+HEAD 1255394077693248406ffe3910ad40c163a6dd36
+TREE 1e71eedb05330765c0da519af9f08cab5bd7af76
+DIRTY yes
+?? docs/evidence/logs/goal-15/
+COMMAND .venv/bin/python -m pytest tests/unit/test_delivery.py -v --tb=line -o addopts=
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /agent/repos/shortvideo-network/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /agent/repos/shortvideo-network
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 9 items
+
+tests/unit/test_delivery.py::test_package_is_not_a_scaffold PASSED       [ 11%]
+tests/unit/test_delivery.py::test_processed_media_plays_over_https PASSED [ 22%]
+tests/unit/test_delivery.py::test_corrupt_manifest_and_segment_are_not_advertised PASSED [ 33%]
+tests/unit/test_delivery.py::test_range_cors_quarantine_and_removal PASSED [ 44%]
+tests/unit/test_delivery.py::test_replica_host_failure_and_chain_outage PASSED [ 55%]
+tests/unit/test_delivery.py::test_harness_bounds_failures_and_prefetch PASSED [ 66%]
+tests/unit/test_delivery.py::test_browser_decodes_the_mp4_it_fetched PASSED [ 77%]
+tests/unit/test_delivery.py::test_cli_does_not_serve_without_a_grant PASSED [ 88%]
+tests/unit/test_delivery.py::test_loopback_only_server PASSED            [100%]
+
+============================== 9 passed in 9.75s ===============================
+EXIT:0
