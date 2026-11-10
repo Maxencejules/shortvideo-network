@@ -545,7 +545,7 @@ def test_devnet_skip_gates_use_the_guarded_variable() -> None:
 
 MATRIX = (
     "shard: [app, devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, "
-    "devnet-broadcaster-stall, devnet-indexer, broadcaster, indexer, rest]"
+    "devnet-broadcaster-stall, devnet-indexer, broadcaster, indexer, api, rest]"
 )
 DEVNET_SKIP = (
     "-skip 'TestDevnetAudit|TestDevnetUpgrade|TestDevnetMinority|TestDevnetGovernedChange"

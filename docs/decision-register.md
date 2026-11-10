@@ -382,6 +382,78 @@ Goal 06 must not treat a height and a chain time as an approved single timeline.
 
 The product name is unset. Choosing a name does not by itself change a security boundary, so this register does not request approval of a name and does not block Goal 02 on it. Exact dependency versions are Goal 03 work. They are not approved in this goal. The research-date note that Cosmos SDK 0.55.x was listed with CometBFT 0.40.x, and that CometBFT v1.x was unsupported, is a reminder to recheck. It is not a pin.
 
+## DR-13-01
+
+### Question
+
+What is the minimum session and role boundary for upload routes before Goal 19 supplies enrollment and recovery?
+
+### Why this needs the owner
+
+The goal asks for an approved account and permission contract. None is recorded. Inventing one would decide who can upload, whether a bearer token is enough, and whether a development fixture can be confused with a production session.
+
+### Proposal, not an approval
+
+`cmd/svn-api` resolves a bearer token through a verifier. In development, that verifier is an explicit fixture list, each token prefixed `dev-fixture-`, and only a `creator` may act on a row whose owner is that same account id. The comparison uses the verified account, not a constant. Production refuses the fixture list and refuses to start without a verifier. This goal does not supply that verifier. There is no public sign-up route.
+
+### Status
+
+Status: OPEN. The upload checks in goal 13 exercise this proposal. They are not an approval of it.
+
+## DR-13-02
+
+### Question
+
+Which local or object-storage adapter is approved for private quarantine?
+
+### Why this needs the owner
+
+The goal says to use the approved adapter. The repository does not name one.
+
+### Proposal, not an approval
+
+The process writes to a local directory, mode `0700`, under generated hex names, mode `0600`. No HTTP route reads those files. A transfer token authorizes one upload's write and nothing else.
+
+### Status
+
+Status: OPEN.
+
+## DR-13-03
+
+### Question
+
+What per-account input allowance and processed-output budget should the beta enforce?
+
+### Why this needs the owner
+
+DEC-005 leaves the numbers unset. The per-video ceilings of 100000000 bytes and 60 seconds are the blueprint's proposed bounds, not a measured capacity and not a sponsorship decision.
+
+### Proposal, not an approval
+
+Configuration carries the label `PROPOSED`. The process rejects a higher per-video ceiling. The fixture file's per-account numbers are stand-ins for tests. They are not a sponsor's allowance.
+
+### Status
+
+Status: OPEN. DEC-005 stays the allowance decision.
+
+## DR-13-04
+
+### Question
+
+Is a deadline-bounded `ffprobe` child an acceptable duration and structure check before the isolated worker of Goal 14?
+
+### Why this needs the owner
+
+Client duration, filename, and MIME type are not evidence. A child that parses the container is still not the isolated transcoder, and a container duration can disagree with a full decode.
+
+### Proposal, not an approval
+
+The completion path runs `ffprobe` with a deadline of at most 30 seconds, after an `ftyp` check, and rejects the upload when the probe fails, the duration is above the proposed cap, or a side is above the proposed dimension cap. The child environment does not include the process environment. Goal 14 remains the isolated worker.
+
+### Status
+
+Status: OPEN.
+
 ## Reversible choices recorded for Goal 01
 
 These are documentation choices. They are not owner approvals.

@@ -9,7 +9,7 @@ Protocol v0 is frozen for goals 03-18. Schema files under `docs/protocol/` are t
 | Path | What is here now |
 | --- | --- |
 | `apps/web` | React and TypeScript pin. No product UI. |
-| `services/api` | FastAPI pin. `serve()` raises. |
+| `services/api` | Authenticated upload intents, private quarantine, and a processing job. `svn_api.serve` still raises. |
 | `services/indexer` | Committed-state indexer. PostgreSQL read model of committed blocks. |
 | `services/broadcaster` | Goal 11 Go transaction broadcaster and PostgreSQL outbox, devnet only. Its design and signing boundary are PROPOSED in `docs/architecture/broadcaster.md`. |
 | `chain` | SDK and CometBFT module pins. No chain binary. |
