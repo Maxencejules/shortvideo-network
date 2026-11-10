@@ -57,4 +57,4 @@ bwrap --unshare-user --unshare-net --unshare-pid --die-with-parent \
 
 ## Handoff
 
-Goal 15 reads `packages/<content_id>/v<content_version>/manifest.json` only when the ready record says `READY_FOR_REVIEW`. It must not serve the quarantine directory. Goal 16 may copy segment bytes after checking the manifest hashes. Neither goal is implemented here. The chain outbox stays `HELD`.
+Goal 15 reads `packages/<content_id>/v<content_version>/manifest.json` only when the ready record says `READY_FOR_REVIEW` and a local playback grant names that digest. It does not serve the quarantine directory. The playback rules are in [delivery.md](delivery.md). Goal 16 may copy segment bytes after checking the manifest hashes. The chain outbox stays `HELD`. The worker does not publish.

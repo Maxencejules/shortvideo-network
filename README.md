@@ -17,6 +17,7 @@ Protocol v0 is frozen for goals 03-18. Schema files under `docs/protocol/` are t
 | `agents/provider` | Provider-agent slot. No process. |
 | `agents/auditor` | Audit producer for permitted test endpoints. Attestations, not proofs. |
 | `workers/media` | Isolated FFmpeg worker. It claims a queued upload and writes a ready-for-review package. It does not publish. |
+| `services/delivery` | Loopback HTTPS HLS adapter for a ready package. A local grant is not publication. P2P, TURN, and public IPFS stay off. |
 | `packages/protocol` | Loader for the frozen JSON schemas. |
 | `deployments` | Compose profile and checksum pins. No project image is published. |
 | `tests` | Unit tests. Contract entry point is `make contract`. End-to-end and fault targets fail closed. |

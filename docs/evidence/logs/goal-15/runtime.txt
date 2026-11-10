@@ -1,0 +1,16 @@
+HEAD 1255394077693248406ffe3910ad40c163a6dd36
+TREE 1e71eedb05330765c0da519af9f08cab5bd7af76
+DIRTY yes
+?? docs/evidence/logs/goal-15/
+COMMAND bash -c uname\ -a\;\ python3\ --version\;\ .venv/bin/python\ --version\;\ go\ version\;\ ffmpeg\ -version\ \|\ head\ -n\ 1\;\ ffprobe\ -version\ \|\ head\ -n\ 1\;\ google-chrome\ --version\;\ nproc\;\ id\;\ test\ -x\ /usr/lib/postgresql/16/bin/postgres\;\ echo\ pg16_test:\$\?\;\ ls\ /usr/lib/postgresql\ 2\>/dev/null\ \|\|\ true
+Linux cursor 6.12.113+ #1 SMP PREEMPT_DYNAMIC Mon Nov  9 16:04:37 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+Python 3.12.3
+Python 3.12.3
+go version go1.26.10 linux/amd64
+ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+ffprobe version 6.1.1-3ubuntu5 Copyright (c) 2007-2023 the FFmpeg developers
+Google Chrome 156.0.8078.47 
+4
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev)
+pg16_test:1
+EXIT:0

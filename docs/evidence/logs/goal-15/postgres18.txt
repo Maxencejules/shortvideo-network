@@ -1,0 +1,11 @@
+HEAD 4abfd6cab55a23e3ac8c4a3f54430c8f8f25a85f
+TREE ad3970a2ce436b82c78d81c254a8c526f4341992
+DIRTY yes
+?? docs/evidence/logs/goal-15/postgres18.txt
+COMMAND /usr/lib/postgresql/18/bin/postgres --version
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+
+COMMAND dpkg-query -W -f \$\{Package\}\ \$\{Version\}\\n postgresql-18 postgresql-client-18
+postgresql-18 18.6-1.pgdg24.04+2
+postgresql-client-18 18.6-1.pgdg24.04+2
+EXIT:0

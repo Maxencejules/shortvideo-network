@@ -1,0 +1,17 @@
+HEAD f81d819427fca3fd552a93f43001aa13a08b6ae4
+TREE 89b4821191228bae97c71ac9f9511e7ce1448cb2
+DIRTY yes
+?? docs/evidence/logs/goal-15/delivery-final.txt
+?? docs/evidence/logs/goal-15/mypy-final.txt
+?? docs/evidence/logs/goal-15/python-final.txt
+?? docs/evidence/logs/goal-15/ruff-check-final.txt
+?? docs/evidence/logs/goal-15/ruff-format-final.txt
+COMMAND .venv/bin/python scripts/run_tests.py --only python
+........................................................................ [ 16%]
+........................................................................ [ 33%]
+........................................................................ [ 50%]
+........................................................................ [ 67%]
+.............s.......................................................... [ 83%]
+.....................................................................    [100%]
+428 passed, 1 skipped in 94.20s (0:01:34)
+EXIT:0
