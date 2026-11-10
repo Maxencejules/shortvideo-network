@@ -18,7 +18,7 @@ The worker runs on this host. The goal stays BLOCKED. The queue, the package for
 | Tree | `46ed5429379f657fd616aa9dde3f34aea6af6437` |
 | Base | `08509a5bdb454ada65392a83d029807acf2c75eb` (goal 13 merge on `main`). |
 | Branch | `goal-14` |
-| Runtime | Ubuntu, Linux 6.12.113+ x86_64, uid 1000, 4 vCPU, Intel Xeon model 207 under KVM. Go 1.26.10. PostgreSQL 18.6. Python 3.12.3, ruff 0.17.3, mypy 2.4.1. FFmpeg `6.1.1-3ubuntu5`. [runtime.txt](logs/goal-14/runtime.txt) |
+| Runtime | [runtime.txt](logs/goal-14/runtime.txt) has Linux 6.12.113+, Python 3.12.3, Go 1.26.10, FFmpeg `6.1.1-3ubuntu5`, PostgreSQL 18.6, uid 1000, and `nproc` printing `4`. It does not name the CPU. [hardware.txt](logs/goal-14/hardware.txt) is a later capture on this VM: `lscpu` reports `Model name: Intel(R) Xeon(R) Processor`, `Model: 207`, and `Hypervisor vendor: KVM`. |
 
 `git rev-parse bba18650f3eedea68f4dac3f1baf9cea85036881^{tree}` is `46ed5429379f657fd616aa9dde3f34aea6af6437`. The commit message carries the same `Tested-tree` trailer. This evidence commit changes only `docs/evidence/` relative to that tested commit.
 
@@ -60,11 +60,11 @@ BLOCKED, carried from goals 04, 11, 12, and 13:
 | Network namespace blocks a connect that succeeds outside it; uid map is not host root; rlimits match; a write under `/usr/bin` fails; `http` is not on the protocol whitelist; wall time and file size are bounded | VERIFIED on this host | same log, `test_network_namespace_and_resource_limits` |
 | Read-only root filesystem | UNVERIFIED | `bwrap` was not installed. DR-14-03. The external profile is in the architecture note. |
 | PostgreSQL claim once, quotas unchanged, upload stays `PROCESSING_QUEUED`, outbox stays `HELD`, `PUBLISHED` is rejected | VERIFIED | same log, `test_postgres_claim_is_once_and_does_not_publish` |
-| 60-second supported input | VERIFIED as a measurement on this VM, not a production result | [timing.txt](logs/goal-14/timing.txt) `elapsed_seconds=5.108`. The input is synthetic `testsrc` 1280x720 at 10 fps plus a sine, 60 seconds, encoded with libx264 `veryfast` to `h480` and `h720`. The proposed 120-second gate held for that input on the 4 vCPU host above. It is not a camera-recording result. |
+| 60-second supported input | VERIFIED as a measurement on this VM, not a production result | [timing.txt](logs/goal-14/timing.txt) `elapsed_seconds=5.108`. The input is synthetic `testsrc` 1280x720 at 10 fps plus a sine, 60 seconds, encoded with libx264 `veryfast` to `h480` and `h720`. The proposed 120-second gate held for that input. It is not a camera-recording result. The CPU identity is in [hardware.txt](logs/goal-14/hardware.txt), not in `runtime.txt`. |
 | FFmpeg build and licence record | VERIFIED as a record. BLOCKED as an approval (DEC-006, REQ-MEDIA-009) | [build-record.txt](logs/goal-14/build-record.txt). `ffmpeg version 6.1.1-3ubuntu5`, configuration includes `--enable-gpl`. The GPL record does not settle codec patents. |
 | Package format approved | BLOCKED | DR-14-02 |
 | Celery/RabbitMQ or an approved queue | BLOCKED | DR-14-01. The PostgreSQL claim is the proposal that was tested. |
-| Head CI | Not observed yet | Cited in the evidence commit after the draft PR's run completes. |
+| Head CI | The run on the round-2 tip is written in the Head CI section after that run is checked. | This row is not a pass until that run is named. |
 
 `media-tests.txt` exit 0. Pytest printed `15 passed, 1 skipped`. The skip is `test_sixty_second_input_timing`, which ran in `timing.txt` with `SVN_MEDIA_TIMING=1` and passed. A skip of that test in the default suite is not the timing result.
 
@@ -107,7 +107,7 @@ The step table is [summary.tsv](logs/goal-14/summary.tsv). Logs were copied here
 
 ## Head CI
 
-Run [42737222474](https://github.com/Maxencejules/shortvideo-network/actions/runs/42737222474) on `07366435e249031e8d419dee8fc851902915ad48` failed the `python` job. GitHub's runner refused `unshare --user`, so `ffprobe` never started and valid files were reported as `TRUNCATED`. That run is not a pass. The tested commit uses the network namespace only when `unshare --user --map-root-user --net` can start a child, and it still applies `prlimit` and the protocol whitelist.
+Run [42737222474](https://github.com/Maxencejules/shortvideo-network/actions/runs/42737222474) on `07366435e249031e8d419dee8fc851902915ad48` has overall conclusion **cancelled**. The `python` job failed: GitHub's runner refused `unshare --user`, so `ffprobe` never started and valid files were reported as `TRUNCATED`. `go-race (rest)` was cancelled. That run is not a pass. The tested commit uses the network namespace only when `unshare --user --map-root-user --net` can start a child, and it still applies `prlimit` and the protocol whitelist.
 
 Run [42738414523](https://github.com/Maxencejules/shortvideo-network/actions/runs/42738414523) on the tested commit `bba18650f3eedea68f4dac3f1baf9cea85036881` completed **success**. All 16 jobs succeeded, including `python`, `go`, `devnet`, and the `go-race` shards.
 
@@ -121,9 +121,22 @@ Run [42745330380](https://github.com/Maxencejules/shortvideo-network/actions/run
 
 Run [42747253383](https://github.com/Maxencejules/shortvideo-network/actions/runs/42747253383) on `d143f137e5ec4ce74a2a0573950c1605588bee60` completed **success**. All 16 jobs succeeded. That commit differs from `992d009` only in this file.
 
+## Log stamps
+
+Goal 12 and goal 13 logs start with `HEAD` and `TREE` lines written when the command ran. The goal 14 command logs do not. Those lines were not added afterwards.
+
+- [anchors06.txt](logs/goal-14/anchors06.txt) and [anchors07.txt](logs/goal-14/anchors07.txt) print `revision HEAD commit 08509a5bdb454ada65392a83d029807acf2c75eb tree 0c506f6915e47c0ca9d81f9132edc3ba746bf499`. That line is the checker's own output.
+- [python-tests.txt](logs/goal-14/python-tests.txt), [timing.txt](logs/goal-14/timing.txt), and [media-tests.txt](logs/goal-14/media-tests.txt) were captured again after the `unshare` fix and before commit `bba18650`, with no stamp. The code they ran is the code in that commit.
+- The other logs in `logs/goal-14/` were captured in the earlier session, before `bba18650` existed, with no stamp. They are not assigned a commit sha they do not name.
+- [hardware.txt](logs/goal-14/hardware.txt) was captured later. Its stamp is `HEAD ddc3ef1c3f07f91939c52031aa7eaceca4886188`, `TREE ab7fa08f86b8fd3a752617bed91b0483c1c42756`, `DIRTY yes` (the new log was already untracked). It is not stamped as the tested tree.
+
+## Residual risk
+
+The FFmpeg and ffprobe argument lists use `-protocol_whitelist file,crypto,pipe`. `file` is what lets the child read the quarantine input and write the package. The same protocol can open other paths the process can read. This round does not change that whitelist. Narrowing it is a follow-up.
+
 ## Next safe action
 
-Open a draft pull request. Do not merge it. Do not start goal 15 from an unreviewed branch. Public launch stays disabled.
+Draft [PR 19](https://github.com/Maxencejules/shortvideo-network/pull/19) is open. Leave it a draft. Do not merge it. Do not start goal 15 from an unreviewed branch. Public launch stays disabled.
 
 ## Proposed pull-request title and summary
 
