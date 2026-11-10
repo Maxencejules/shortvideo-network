@@ -1,0 +1,102 @@
+COMMAND go test -count=1 -timeout 15m -run TestMilestone -v ./services/milestone
+DATE 2026-11-10T18:46:05Z
+HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd
+TREE 4c10752fdc54f028b996d50d1038fb9004512e0e
+DIRTY no
+=== RUN   TestMilestone
+phase=devnet chain_id=shortvideo-dev-88127d66e3922551 genesis=a3ba3c55b8e9074935a1827d4857523dcd1653cee86d38d61b56310465ad4c39 physical_count=1 independent=false
+phase=devnet-height height=3 app_hash=8D83713ADAB4D36E6A4F8899B717FB0F038F360B61A39341770EB9E09B5583CC validators=4
+phase=chainview account=svn1pupfwxmkazhewz7yr9r323gh8e4ff47euv75ss url=https://127.0.0.1:37683 providers=p1,p2,p3
+phase=chainview account=svn1jcy3q5wfl2sse4y857y3wxahvvs0vtjhax60cn url=https://127.0.0.1:38227 providers=p4
+phase=indexer url=http://127.0.0.1:46445
+phase=postgres version=postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2) port=35895
+phase=api url=http://127.0.0.1:43529 postgres=postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+phase=account creator=a8fe7d3877160b7785184b80ddbbeeb56 role=creator operator=a77a87804216ccf1410999355d89ca41f role=operator fixture=false
+phase=scheduler url=http://127.0.0.1:35253 stage=https://127.0.0.1:42911/pkg
+phase=SCHEDULER_AUTH anonymous=401 creator=401
+phase=provider id=p1 url=https://127.0.0.1:43533 outer_account=provider-1
+phase=provider id=p2 url=https://127.0.0.1:34473 outer_account=provider-1
+phase=provider id=p3 url=https://127.0.0.1:38185 outer_account=provider-1
+phase=provider id=p4 url=https://127.0.0.1:36845 outer_account=provider-2
+phase=register-p1 height=12 code=0 txhash=2796F88ECE9B6E975CD2B2D2148365700C11406EB81A60459E2BCA31DA627EFC
+phase=admit-p1-propose height=13 code=0 txhash=585842192121876BF1925FDFE3A78371B06C8305D82C9B759BFFC44D708C5D3A
+phase=admit-p1-approve-1 height=15 code=0 txhash=83C2BF807576B144E9E13026560A60CBF0699FCBB857E0EBFFA09E67549D4837
+phase=admit-p1-approve-2 height=16 code=0 txhash=FBF8DE3962B76A34099ED92049D0E2424254513AC15F235D62D1C002C6539CE5
+phase=admit-p1-approve-3 height=17 code=0 txhash=94490DD0EBB51DE8E430782696D8DE7519435F355687ACD6E1039310378DAE37
+phase=admit-p1-execute height=19 code=0 txhash=67056794A192C10ACCEDAFE0D6A680D2E54BF265A828578863FEF834F8084668
+phase=register-p2 height=20 code=0 txhash=87F2D2AFEC12C120F811640D32113328E0E2C3811C3F296F57031AD0515EA839
+phase=admit-p2-propose height=21 code=0 txhash=B4547924F156335FB75684A1D46C276F1BC01447A5A4EBC112A49A5D7A68AE9F
+phase=admit-p2-approve-1 height=22 code=0 txhash=C7E47EE3FB09CDDEC4E70A771C8E6C4C306AC96BC169DC69039C20E147FB2DCA
+phase=admit-p2-approve-2 height=23 code=0 txhash=1DBDD8B6366903FC7B52640934E70224918E928FAA94A71D7ED810F4F504B313
+phase=admit-p2-approve-3 height=24 code=0 txhash=7837109FC89ABBF2C1E747C93C2D6939FC36E9FDF6599F3FEA5725AD253C8A4A
+phase=admit-p2-execute height=25 code=0 txhash=B7E46B12867AC9716ABB45F101D67AFCD477DFA47B7E035625F6A2B8FE9F29A6
+phase=register-p3 height=26 code=0 txhash=18881FB2DC8DE6EB55010FD43802E9AC6BC9C9C108257BB31A0E55B7C6AA95EB
+phase=admit-p3-propose height=27 code=0 txhash=A73D9E9336FD83C1F02C0404478EFA9EEFB4818162C2CFE2B82DC55B3C658E30
+phase=admit-p3-approve-1 height=28 code=0 txhash=DCA1C82C7B19A0BE882F39EC8B656AB66C65CB538C46BC334BD8D117115BD83E
+phase=admit-p3-approve-2 height=29 code=0 txhash=5C2DAE4B182FBB01F70B1B786BC40FA35AF5803CAD2251AE373D3A925F560244
+phase=admit-p3-approve-3 height=30 code=0 txhash=A60791E86C258DA89CE4BC3BB676F43D8C166A7195D64EDA1C6F21550ABBDE29
+phase=admit-p3-execute height=31 code=0 txhash=A4212C3A49D27D8F3655297E8EB432DA1791FF77457547746AFAAA7AB6247EF7
+phase=register-p4 height=32 code=0 txhash=49D6E50E1AC8EC078F966A5FB2D20E45FE882DB4281744765BF3598CBC33C81B
+phase=admit-p4-propose height=33 code=0 txhash=0FC8A153864CE930BAB1E4B09A67BC4E5104BAEE3DB4D3E43DE9D6D7DB2DB5C0
+phase=admit-p4-approve-1 height=34 code=0 txhash=2EC20380FCB9C037C35FA9C354E73F1336C3D8C327F2141E0ECC6EBA9AF19715
+phase=admit-p4-approve-2 height=35 code=0 txhash=D7A2F0D2AD0862A3299AA8D0C23B79F2785AEE7C7B6D1E549F29072F4BC18993
+phase=admit-p4-approve-3 height=36 code=0 txhash=56E41E53F77AD0FA1D71554D3321D8837C09702D8F01365FD33E76093F7C74AA
+phase=admit-p4-execute height=37 code=0 txhash=D70D87030A46B1E456C6B5CF88F2B35A9725D6F3EE8D8E012CBA1DA9A7351367
+phase=broadcaster url=https://127.0.0.1:34147
+phase=clip bytes=12746 sha256=190072c758fab6a1b799d210630ca3baa449e3a55e856bf003c25331f31bafd6 synthetic=true
+phase=UPLOAD_RESERVED upload=u2d1e1562dfad995d6cc7b5009420afbe content=c777ef4f66291c0544f8c4ef5e6102273 status=RESERVED repeat_upload=u2d1e1562dfad995d6cc7b5009420afbe
+phase=UPLOAD_RECEIVED status=204
+phase=PROCESSING_QUEUED status=PROCESSING_QUEUED
+phase=API_PUBLISH_BLOCKED status=403
+phase=READY_FOR_REVIEW worker={"captions_reviewed": false, "content_id": "c777ef4f66291c0544f8c4ef5e6102273", "content_version": 1, "input_sha256": "190072c758fab6a1b799d210630ca3baa449e3a55e856bf003c25331f31bafd6", "job_id": "jfaded83e96cd26c2d9cfbd0be5ad6181", "manifest_sha256": "61481d4c5f7530dde03c120fe3207d05ed4856918382fc1026dd058001a344b0", "object_name": "96f9e8adfe3ab355618e8b9a8f848bf620ab9a275206813c6be6e4bb24c6b3b6", "output_budget_bytes": 25000000, "package_bytes": 12740, "publication": "NOT_PUBLISHED", "status": "READY_FOR_REVIEW"}
+phase=PACKAGE content=c777ef4f66291c0544f8c4ef5e6102273 package_text_sha256=33f581fe1caa2cb08f44d5fb03ce3e13d96e42ac077a49bce7f7ca14005d7d82 package_bytes=12740 segments=2
+phase=PLAYBACK_GRANT delivery=https://127.0.0.1:41021 manifest=61481d4c5f7530dde03c120fe3207d05ed4856918382fc1026dd058001a344b0
+phase=COMMITTED kind=REGISTER_CONTENT height=46 txhash=7ecc2637d6aed08d43e3e96ea1d0e3ffaab762d7b319e13866c0d2c6137ac31d idempotent=false
+phase=INDEXER_PROVIDERS admitted=4
+phase=MODERATION_WITHHELD publication=WITHHELD reason=community_approval
+phase=INDEXER_STATUS {"chain_id":"shortvideo-dev-88127d66e3922551","indexed_height":47,"canonical_height":48,"app_floor":47,"commit_time":"2026-11-10T18:46:37Z","commit_age_seconds":0.209936,"last_reconciliation":"2026-11-10T18:46:37Z","reconciliation_status":"ok","stale":false,"stale_reasons":null,"history_unavailable":false,"decoder_version":1,"database_role":"read_model","trust":{"model":"configured_read_gateway","gateway":"http://127.0.0.1:26657","light_client":false,"note":"The configured read gateway is trusted for reads. Comparing two unauthenticated responses is not light-client verification. The database is a read model, not a replacement chain."}}
+phase=COMMITTED kind=OFFER_LEASE height=50 txhash=99f02127e56b6708a3965f9253c4b61eb949d4a3387d68125de941da1d0deffc idempotent=false
+phase=OFFER_COMMITTED offer=oc777ef4f66291c0544f8c4ef5e6102273p1 height=50 txhash=99f02127e56b6708a3965f9253c4b61eb949d4a3387d68125de941da1d0deffc
+phase=COMMITTED kind=OFFER_LEASE height=54 txhash=1cacdbeb62d8f6b2bdd3c93ce3f3b1efa15ed718d961b2385b3ba1c1012047af idempotent=false
+phase=OFFER_COMMITTED offer=oc777ef4f66291c0544f8c4ef5e6102273p2 height=54 txhash=1cacdbeb62d8f6b2bdd3c93ce3f3b1efa15ed718d961b2385b3ba1c1012047af
+phase=COMMITTED kind=OFFER_LEASE height=58 txhash=65e69bc7f993a41e120748399771017db469f214d4b7844d2093e7268d185268 idempotent=false
+phase=OFFER_COMMITTED offer=oc777ef4f66291c0544f8c4ef5e6102273p3 height=58 txhash=65e69bc7f993a41e120748399771017db469f214d4b7844d2093e7268d185268
+phase=INDEXER_AFTER {"chain_id":"shortvideo-dev-88127d66e3922551","indexed_height":60,"canonical_height":61,"app_floor":60,"commit_time":"2026-11-10T18:46:39Z","commit_age_seconds":0.450647,"last_reconciliation":"2026-11-10T18:46:38Z","reconciliation_status":"ok","stale":false,"stale_reasons":null,"history_unavailable":false,"decoder_version":1,"database_role":"read_model","trust":{"model":"configured_read_gateway","gateway":"http://127.0.0.1:26657","light_client":false,"note":"The configured read gateway is trusted for reads. Comparing two unauthenticated responses is not light-client verification. The database is a read model, not a replacement chain."}}
+phase=PUBLISHED publication=PUBLISHED leases=3 distinct=3 verified=3 physical=1 simulated=true independent=false at=2026-11-10T18:46:40.340649853Z
+phase=INDEXER_RECONCILE ok
+phase=INDEXER_FRESH {"chain_id":"shortvideo-dev-88127d66e3922551","indexed_height":60,"canonical_height":61,"app_floor":60,"commit_time":"2026-11-10T18:46:39Z","commit_age_seconds":0.477975,"last_reconciliation":"2026-11-10T18:46:40Z","reconciliation_status":"ok","stale":false,"stale_reasons":null,"history_unavailable":false,"decoder_version":1,"database_role":"read_model","trust":{"model":"configured_read_gateway","gateway":"http://127.0.0.1:26657","light_client":false,"note":"The configured read gateway is trusted for reads. Comparing two unauthenticated responses is not light-client verification. The database is a read model, not a replacement chain."}}
+CLIENT metadata content=c777ef4f66291c0544f8c4ef5e6102273 version=1 withdrawn=False manifest=33f581fe1caa2cb08f44d5fb03ce3e13d96e42ac077a49bce7f7ca14005d7d82
+CLIENT fetch path=/v1/playback/c777ef4f66291c0544f8c4ef5e6102273 status=200 bytes=1092
+CLIENT playback grant=AUTHORIZED publication=NOT_PUBLISHED removal=NONE chain_status=HELD hosting_promise=False
+CLIENT fetch path=/v1/media/c777ef4f66291c0544f8c4ef5e6102273/v1/master.m3u8 status=200 bytes=171
+CLIENT fetch path=/v1/media/c777ef4f66291c0544f8c4ef5e6102273/v1/segments/native-0.mp4 status=200 bytes=11524
+CLIENT segment path=segments/native-0.mp4 sha256=cbcc6ec21007d20c4bcff5223825b1a3f7e8b90b5ffbed08d9d7c9ffbe31ed04 expected=cbcc6ec21007d20c4bcff5223825b1a3f7e8b90b5ffbed08d9d7c9ffbe31ed04 bytes=11524
+CLIENT fetch path=/v1/player/c777ef4f66291c0544f8c4ef5e6102273 status=200 bytes=3449
+CLIENT ok
+phase=COMMITTED kind=REGISTER_CONTENT height=46 txhash=7ecc2637d6aed08d43e3e96ea1d0e3ffaab762d7b319e13866c0d2c6137ac31d idempotent=false
+phase=RETRY status=OPERATION_STATUS_COMMITTED intent=f8b9917c-eedb-4eae-838b-ef241af76ce6
+phase=ONE_EFFECT content_rows=1
+phase=CORRUPT availability_verified=2 distribution=200 sha256=f7eda7eff79b78b07bc532f0a29c1505da17d997ae6af45538fb918bdd630710 origin_sha=cbcc6ec21007d20c4bcff5223825b1a3f7e8b90b5ffbed08d9d7c9ffbe31ed04
+phase=ORIGIN_DOWN distribution=200 bytes=12740
+phase=PROVIDER_DOWN reachability=REACHABILITY_DEGRADED degraded=[p1]
+phase=COMMITTED kind=OFFER_LEASE height=65 txhash=0fa49f17f16c4b87e3a6f634ad68dae24f37e3055bf84f8ec8f4d9811ab3ae23 idempotent=false
+phase=OFFER_COMMITTED offer=oc777ef4f66291c0544f8c4ef5e6102273p4 height=65 txhash=0fa49f17f16c4b87e3a6f634ad68dae24f37e3055bf84f8ec8f4d9811ab3ae23
+phase=REPAIR status=200 body={"attempts":1,"state":"CONFIRMED","traces":["publish content=c777ef4f66291c0544f8c4ef5e6102273 approval=false posts=0","skip provider=p4 reason=spare_held_back","accept provider=p1 broadcast=true response_committed=true counted_from_response=false signature=true scheduler_signed=false","offer provider=p1 status=200 error=","accept provider=p2 broadcast=true response_committed=true counted_from_response=false signature=true scheduler_signed=false","offer provider=p2 status=200 error=","accept provider=p3 broadcast=true response_committed=true counted_from_response=false signature=true scheduler_signed=false","offer provider=p3 status=200 error=","accept provider=p4 broadcast=true response_committed=true counted_from_response=false signature=true scheduler_signed=false","offer provider=p4 status=200 error=","repair confirmed content=c777ef4f66291c0544f8c4ef5e6102273 source=p2 replacement=p4 buffer=discarded"]}
+
+phase=PROVIDER_RESTART health=200
+phase=UNAPPROVED_OFFER status=400
+phase=COMMITTED kind=REGISTER_CONTENT height=491 txhash=6f2211a246d4c7db8dcb697cc36e89a6171e14ea17e010fc9120d7536bdb31f5 idempotent=false
+phase=COMMITTED kind=OFFER_LEASE height=494 txhash=7f4f2feabd531fa6c24de6dccdcaadfc0816af9d827f8d43ad2438cb8b3f3ce4 idempotent=false
+phase=UNAUTHORIZED_ACCEPT height=497 code=1 want=1 txhash=915FE41D201A969F04A8162F6966EAF893EF796F88DB92D72812D354A911BE56
+phase=QUORUM_LOST height_before=497 height_during=497 playback=200
+phase=NEW_COMMITMENT_PENDING status=OPERATION_STATUS_PENDING_STALL intent=a865775e-9dc4-4774-a986-9a9d4356c240
+phase=QUORUM_RESUMED height=498 app_hash=E8CF0392C6F581D3FB20726622830B7D34E617E41E5C5C5DA6D0AC2D8653BDC3 stall_height=497
+phase=COMMITTED kind=WITHDRAW_CONTENT height=502 txhash=f5fc5c4eea0f8875a1feb52128e4efd0876e19490213604640029cc87d76c549 idempotent=false
+phase=WITHDRAWN indexer=true
+phase=WITHDRAWN_DISTRIBUTION status=410
+phase=DELIVERY_REMOVE REMOVED
+phase=done prototype=true public_beta=false single_machine=true
+--- PASS: TestMilestone (145.37s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/milestone	145.417s
+EXIT:0

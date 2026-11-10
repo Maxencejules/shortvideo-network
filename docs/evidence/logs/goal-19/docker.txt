@@ -1,0 +1,15 @@
+COMMAND docker version
+DATE 2026-11-10T18:48:48Z
+HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd
+TREE 4c10752fdc54f028b996d50d1038fb9004512e0e
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-19/accounts.txt
+DIRTY_PATH docs/evidence/logs/goal-19/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-19/python-records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scheduler-auth.txt
+DIRTY_PATH docs/evidence/logs/goal-19/vet.txt
+scripts/evidence/capture.sh: line 58: docker: command not found
+EXIT:127

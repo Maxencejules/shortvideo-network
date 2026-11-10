@@ -1,0 +1,16 @@
+COMMAND bash -c go\ version\;\ /usr/lib/postgresql/18/bin/postgres\ --version\;\ python3\ --version\;\ printf\ \"pg16_test:\"\;\ test\ -x\ /usr/lib/postgresql/16/bin/postgres\;\ echo\ \$\?
+DATE 2026-11-10T18:48:47Z
+HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd
+TREE 4c10752fdc54f028b996d50d1038fb9004512e0e
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-19/accounts.txt
+DIRTY_PATH docs/evidence/logs/goal-19/python-records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scheduler-auth.txt
+DIRTY_PATH docs/evidence/logs/goal-19/vet.txt
+go version go1.26.10 linux/amd64
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+Python 3.12.3
+pg16_test:1
+EXIT:0
