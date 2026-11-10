@@ -165,13 +165,19 @@ class Catalog:
             if not isinstance(version, int) or not isinstance(digest, str):
                 raise DeliveryError("INTEGRITY")
             view = self._validated_origin(content_id, version, digest)
-            hosts = tuple(
+            hosts_list = [
                 host_id
-                for host_id, host in self._hosts.items()
+                for host_id, _host in self._hosts.items()
                 if self._host_verifies(host_id, view)
-            )
-            if "origin-test" not in hosts:
+            ]
+            # The origin package is on disk. A second process can name it in
+            # the grant without having bound the listener. Advertising the
+            # host still requires this process to bind it.
+            if "origin-test" not in hosts_list and self._host_verifies("origin-test", view):
+                hosts_list.insert(0, "origin-test")
+            if "origin-test" not in hosts_list:
                 raise DeliveryError("UNAVAILABLE")
+            hosts = tuple(hosts_list)
             grant = Grant(
                 content_id=content_id,
                 content_version=version,
