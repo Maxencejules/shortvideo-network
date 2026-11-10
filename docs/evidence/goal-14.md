@@ -109,7 +109,9 @@ The step table is [summary.tsv](logs/goal-14/summary.tsv). Logs were copied here
 
 Run [42737222474](https://github.com/Maxencejules/shortvideo-network/actions/runs/42737222474) on `07366435e249031e8d419dee8fc851902915ad48` failed the `python` job. GitHub's runner refused `unshare --user`, so `ffprobe` never started and valid files were reported as `TRUNCATED`. That run is not a pass. The tested commit uses the network namespace only when `unshare --user --map-root-user --net` can start a child, and it still applies `prlimit` and the protocol whitelist.
 
-Run [42738414523](https://github.com/Maxencejules/shortvideo-network/actions/runs/42738414523) on `bba18650f3eedea68f4dac3f1baf9cea85036881` completed **success**. All 16 jobs succeeded, including `python`, `go`, `devnet`, and the `go-race` shards. That is the green run on the tested commit. The run on the evidence head that only changes `docs/evidence/` is recorded below once it has completed. A run that has not completed is not a pass.
+Run [42738414523](https://github.com/Maxencejules/shortvideo-network/actions/runs/42738414523) on the tested commit `bba18650f3eedea68f4dac3f1baf9cea85036881` completed **success**. All 16 jobs succeeded, including `python`, `go`, `devnet`, and the `go-race` shards.
+
+Run [42740055694](https://github.com/Maxencejules/shortvideo-network/actions/runs/42740055694) on `ad3e296376b3c3de783e55acf8deaef04424e439` completed **success**. All 16 jobs succeeded. That commit differs from the tested commit only in `docs/evidence/goal-14.md`. This file records that run. A later evidence commit that only adds this paragraph gets its own run; that run is not this one.
 
 ## Next safe action
 
