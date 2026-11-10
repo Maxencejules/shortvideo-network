@@ -1,0 +1,25 @@
+COMMAND git log -1 --format=full
+DATE 2026-11-10T10:40:02Z
+HEAD b7c1ed19891c297c9af9bea4afe646c64ac870c7
+TREE f5621f62d5dedbf2fa8d44e306fdf76d0aa3dbf2
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-17/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-17/anchors07.txt
+DIRTY_PATH docs/evidence/logs/goal-17/conformance.txt
+DIRTY_PATH docs/evidence/logs/goal-17/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-17/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-17/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-17/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-17/policy.txt
+DIRTY_PATH docs/evidence/logs/goal-17/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-17/vet.txt
+commit b7c1ed19891c297c9af9bea4afe646c64ac870c7
+Author: Maxence Jules <Maxencejules@users.noreply.github.com>
+Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
+
+    Add the off-chain replication scheduler
+    
+    The scheduler proposes hosts from admitted records, measured reachability, and declared capacity. Providers sign their own acceptances. Publication waits for community approval, a verified transfer, and three operator-distinct commitments. Repair, drain, renewal, and chain-stall queueing stay off the chain. Processes on this machine are one physical failure domain.
+    
+    Tested-tree: f5621f62d5dedbf2fa8d44e306fdf76d0aa3dbf2
+EXIT:0

@@ -157,6 +157,7 @@ GO_MODULES = (
     "agents/auditor",
     "services/broadcaster",
     "services/indexer",
+    "services/scheduler",
     "services/api",
 )
 # An explicit per-binary limit instead of go test's 10-minute default: the

@@ -11,4 +11,5 @@ use (
 	./services/api
 	./services/broadcaster
 	./services/indexer
+	./services/scheduler
 )

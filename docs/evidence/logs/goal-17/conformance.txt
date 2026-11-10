@@ -1,0 +1,42 @@
+COMMAND go test -count=1 -timeout 300s -v -run TestUsage\|TestConformance ./services/scheduler/cmd/svn-scheduler/
+DATE 2026-11-10T10:38:58Z
+HEAD b7c1ed19891c297c9af9bea4afe646c64ac870c7
+TREE f5621f62d5dedbf2fa8d44e306fdf76d0aa3dbf2
+DIRTY no
+=== RUN   TestUsage
+usage: svn-scheduler serve config.json
+--- PASS: TestUsage (0.00s)
+=== RUN   TestConformance
+APPROVAL publication=WITHHELD reason=community_approval posts=0
+PUBLISH publication=PUBLISHED reason= evidence=PROVIDER_ACCEPTANCE claim=ATTESTATION_NOT_STORAGE_PROOF reachability=REACHABLE at_risk=false active=3 distinct=3 verified=3 counted=3 origin_tracked=true origin_counted=false physical=vm-1 physical_count=1 simulated=true independent=false service=READ_MODEL renewal=NONE scheduler_signed=false storage_proof=false reachable=p1,p2,p3 degraded=
+LOW_CAPACITY selected=false provider=pcap status=409 error=insufficient quota
+AT_RISK publication=PUBLISHED reason= evidence=PROVIDER_ACCEPTANCE claim=ATTESTATION_NOT_STORAGE_PROOF reachability=REACHABILITY_DEGRADED at_risk=true active=3 distinct=2 verified=2 counted=2 origin_tracked=true origin_counted=false physical=vm-1 physical_count=1 simulated=true independent=false service=READ_MODEL renewal=NONE scheduler_signed=false storage_proof=false reachable=p2,p3 degraded=p1
+REPAIR state=CONFIRMED source=p2 replacement=p4
+RESTORED publication=PUBLISHED reason= evidence=PROVIDER_ACCEPTANCE claim=ATTESTATION_NOT_STORAGE_PROOF reachability=REACHABLE at_risk=false active=4 distinct=3 verified=3 counted=3 origin_tracked=true origin_counted=false physical=vm-1 physical_count=1 simulated=true independent=false service=READ_MODEL renewal=NONE scheduler_signed=false storage_proof=false reachable=p2,p3,p4 degraded=p1
+ACCOUNTING active=4 reserved_p1=64 reserved_p2=64 reserved_p3=64 reserved_p4=64 origin_reserved=0 txs=4 duplicate_refused=true
+SIMULTANEOUS state=CONFIRMED counted=2 at_risk=true reachability=REACHABILITY_DEGRADED
+DUPLICATE state=DUPLICATE attempts=1 posts_while_blocked=0 final=CONFIRMED
+RENEWAL_NOTICE renewal=RENEWAL_NEEDED posts=0
+RENEWAL_EXPIRED renewal=EXPIRED lease_state=ACTIVE renewal_submitted=false
+DISHONEST mode=DISHONEST claim_limit=ATTESTATION_NOT_STORAGE_PROOF storage_proof=false
+STALE mode=STALE claim_limit=ATTESTATION_NOT_STORAGE_PROOF
+STALL publication=QUEUED_NOT_COMMITTED service=TEMPORARY_OFF_CHAIN posts=0
+REMOVAL state=STOPPED_WITHDRAWN posts=0 distribution=410 provider=410
+DRAIN depart_before_repair=false last_copy_kept=true after_depart_p1=410 p2=200 p4=200
+UNRECOVERABLE state=UNRECOVERABLE posts=0 origin_used=false
+TRACES 71
+TRACE repair confirmed content=cpub source=p2 replacement=p4 buffer=discarded
+TRACE repair confirmed content=csim source=p3 replacement=p4 buffer=discarded
+TRACE unreachable provider=p1 reachability=REACHABILITY_DEGRADED
+TRACE repair duplicate key=cdup/1 attempts=1
+TRACE repair confirmed content=cdup source=p2 replacement=p4 buffer=discarded
+TRACE queue content=cstall label=TEMPORARY_OFF_CHAIN posts=0
+TRACE unreachable provider=p1 reachability=REACHABILITY_DEGRADED
+TRACE distribution content=crem stopped=true
+TRACE repair withdrawn-before-offer content=crem posts=0
+TRACE repair confirmed content=cdrain source=p1 replacement=p4 buffer=discarded
+TRACE repair unrecoverable content=clost reachable_copies=0 origin_used=false
+--- PASS: TestConformance (47.49s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler	47.497s
+EXIT:0
