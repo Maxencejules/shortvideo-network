@@ -1,14 +1,14 @@
 COMMAND bash -c go\ test\ -count=1\ -timeout\ 90s\ ./services/milestone/internal/chainview/\ \&\&\ go\ test\ -count=1\ -timeout\ 120s\ -run\ \"TestOfferBodyUsesManifestAndTerm\|TestCommitOfferRefusesBeforeTheProvider\"\ ./services/scheduler/internal/sched/\ \&\&\ go\ test\ -count=1\ -timeout\ 90s\ -run\ TestLoadSecp\ ./agents/provider/internal/keys/\ \&\&\ go\ test\ -count=1\ -timeout\ 180s\ -run\ TestAcceptClosesTheSingleOpenOffer\ ./services/indexer/internal/store/
-DATE 2026-11-10T13:18:10Z
-HEAD 21dc9f28dd3380a37db2a811937488d58c1e4e13
-TREE 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+DATE 2026-11-10T13:37:02Z
+HEAD 11a9c6972ec595880665020e4ffbe764983d39a7
+TREE f6cfdebf445781967a5d0fc8155f72772f21e959
 DIRTY yes
 DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
 DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
 DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
 DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
-ok  	github.com/Maxencejules/shortvideo-network/services/milestone/internal/chainview	0.040s
-ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/sched	0.007s
-ok  	github.com/Maxencejules/shortvideo-network/agents/provider/internal/keys	0.019s
-ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/store	0.556s
+ok  	github.com/Maxencejules/shortvideo-network/services/milestone/internal/chainview	0.033s
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/sched	0.006s
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider/internal/keys	0.016s
+ok  	github.com/Maxencejules/shortvideo-network/services/indexer/internal/store	0.549s
 EXIT:0

@@ -1,7 +1,7 @@
 COMMAND git diff --name-only f21ef2b22b15921600515a47f90164dede34920c..HEAD
-DATE 2026-11-10T13:18:50Z
-HEAD 21dc9f28dd3380a37db2a811937488d58c1e4e13
-TREE 3cf8a70405b5dc2f6d0a8bf93816c2323d46933d
+DATE 2026-11-10T13:37:26Z
+HEAD 11a9c6972ec595880665020e4ffbe764983d39a7
+TREE f6cfdebf445781967a5d0fc8155f72772f21e959
 DIRTY yes
 DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
 DIRTY_PATH docs/evidence/logs/goal-18/anchors07.txt
@@ -26,6 +26,24 @@ agents/provider/internal/keys/keys.go
 agents/provider/internal/keys/outer_test.go
 docs/architecture/indexer.md
 docs/evidence/goal-01/check_requirements.py
+docs/evidence/goal-18.md
+docs/evidence/logs/goal-18/anchors06.txt
+docs/evidence/logs/goal-18/anchors07.txt
+docs/evidence/logs/goal-18/docker.txt
+docs/evidence/logs/goal-18/gofmt.txt
+docs/evidence/logs/goal-18/golangci-lint.txt
+docs/evidence/logs/goal-18/names.txt
+docs/evidence/logs/goal-18/pg16.txt
+docs/evidence/logs/goal-18/pytest.txt
+docs/evidence/logs/goal-18/range.txt
+docs/evidence/logs/goal-18/regressions.txt
+docs/evidence/logs/goal-18/requirements.txt
+docs/evidence/logs/goal-18/runtime.txt
+docs/evidence/logs/goal-18/sbom.txt
+docs/evidence/logs/goal-18/scenario.txt
+docs/evidence/logs/goal-18/secrets.txt
+docs/evidence/logs/goal-18/trailer.txt
+docs/evidence/logs/goal-18/vet.txt
 docs/progress.md
 docs/progress.tsv
 go.work
