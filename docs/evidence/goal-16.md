@@ -151,11 +151,13 @@ Run [42774846560](https://github.com/Maxencejules/shortvideo-network/actions/run
 
 Run [42776768957](https://github.com/Maxencejules/shortvideo-network/actions/runs/42776768957) on `f888b9db533e95048f1877e6a8402f4e2adc433f` completed **success** at 2026-11-10T07:51:31Z. All 16 jobs succeeded, the same set as above, including `python`. `f888b9d` differs from the tested commit `065aac1` only under `docs/evidence/`.
 
-Run [42778288668](https://github.com/Maxencejules/shortvideo-network/actions/runs/42778288668) on `2bfd0acf98235370d7e05d80c9bd245a33812356` completed **success** at 2026-11-10T08:04:37Z. All 16 jobs succeeded, the same set. `2bfd0ac` differs from the tested commit only under `docs/evidence/`.
+Run [42778288668](https://github.com/Maxencejules/shortvideo-network/actions/runs/42778288668) on `2bfd0acf98235370d7e05d80c9bd245a33812356` completed **success** at 2026-11-10T08:04:37Z. All 16 jobs succeeded, the same set. `2bfd0ac` differs from the then-tested commit only under `docs/evidence/`.
 
 Run [42779891920](https://github.com/Maxencejules/shortvideo-network/actions/runs/42779891920) on `a194544a934501b405fe6964d5089c72715b5676` completed **success** at 2026-11-10T08:20:19Z. All 16 jobs succeeded, the same set. `a194544` differs from the then-tested commit only under `docs/evidence/`.
 
-Run [42781924374](https://github.com/Maxencejules/shortvideo-network/actions/runs/42781924374) on `c46f55493aba3ea80331b26e7defeaa5995e287a` completed **failure** at 2026-11-10T08:32:27Z. `go-race (rest)` failed `TestConformance` at `conformance_test.go:441` with `disk:`. The offer was accepted because `min_free` was an earlier `statfs` reading and the runner had more free space by then. The other 15 jobs succeeded. The tested commit `5602ff8` sets that floor to `9223372036854775807`. No run on this branch was cancelled. The CI for this evidence commit is later.
+Run [42781924374](https://github.com/Maxencejules/shortvideo-network/actions/runs/42781924374) on `c46f55493aba3ea80331b26e7defeaa5995e287a` completed **failure** at 2026-11-10T08:32:27Z. `go-race (rest)` failed `TestConformance` at `conformance_test.go:441` with `disk:`. The offer was accepted because `min_free` was an earlier `statfs` reading and the runner had more free space by then. The other 15 jobs succeeded. The tested commit `5602ff8` sets that floor to `9223372036854775807`.
+
+Run [42783833890](https://github.com/Maxencejules/shortvideo-network/actions/runs/42783833890) on `b6034cf5fce81c38324498123fc4d9d1f7f228f6` completed **success** at 2026-11-10T08:49:26Z. All 16 jobs succeeded, including `go-race (rest)`. `b6034cf` differs from the tested commit `5602ff8ba570283cf921e6c2018ad11ddc2f6bf6` only under `docs/evidence/`. No run on this branch was cancelled. The CI that starts when this recording commit is pushed is not named in this file.
 
 ## Log stamps
 
