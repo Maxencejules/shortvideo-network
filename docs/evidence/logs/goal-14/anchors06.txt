@@ -1,0 +1,19 @@
+CMD .venv/bin/python docs/evidence/goal-06/mutants.py --check
+revision HEAD commit 08509a5bdb454ada65392a83d029807acf2c75eb tree 0c506f6915e47c0ca9d81f9132edc3ba746bf499
+copy /tmp/goal06-mutants-t693axa_/tree (git archive)
+mutants 119 of 119
+NOT_FOUND ceiling-gone chain/x/authority/engine.go occurrences=0
+NOT_FOUND unknown-limit-ok chain/x/authority/engine.go occurrences=0
+NOT_FOUND seat-rotation-keeps-admission chain/x/authority/engine.go occurrences=0
+NOT_FOUND seat-rotation-no-submitter-dup chain/x/authority/engine.go occurrences=0
+NOT_FOUND svnd-skips-authority-rules chain/cmd/svnd/main.go occurrences=0
+NOT_FOUND swap-engine-282 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-492 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-548 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-575 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-578 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-591 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-855 chain/x/authority/engine.go occurrences=0
+NOT_FOUND ante-extra-admission chain/app/app.go occurrences=0
+RESULT search-string problems=13; no test was run
+EXIT:1

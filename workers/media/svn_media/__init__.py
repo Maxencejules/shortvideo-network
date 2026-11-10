@@ -1,5 +1,7 @@
-"""Media worker package. Scaffolding only."""
+"""Isolated media worker. Importing this package does not run FFmpeg."""
 
-from svn_media.scaffold import SCAFFOLD, transcode
+from svn_media.limits import Failure
+from svn_media.queue import Pg, Workspace
+from svn_media.scaffold import SCAFFOLD
 
-__all__ = ["SCAFFOLD", "transcode"]
+__all__ = ["Failure", "Pg", "SCAFFOLD", "Workspace"]

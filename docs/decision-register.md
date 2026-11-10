@@ -450,9 +450,85 @@ Client duration, filename, and MIME type are not evidence. A child that parses t
 
 The completion path runs `ffprobe` with a deadline of at most 30 seconds, after an `ftyp` check, and rejects the upload when the probe fails, the duration is above the proposed cap, or a side is above the proposed dimension cap. The child environment does not include the process environment. Goal 14 remains the isolated worker.
 
+### Technical part
+
+Goal 14's worker runs `ffprobe` inside `prlimit` and `unshare --user --map-root-user --net`, with the protocol whitelist `file,crypto,pipe`, before it encodes. The evidence host did run that probe. That technical gap is closed. It does not approve the question, and it does not approve the API process's own probe.
+
+### Status
+
+Status: OPEN. Technical part: CLOSED on the goal 14 evidence host. Approval: OPEN.
+
+## DR-14-01
+
+### Question
+
+Which durable queue should the isolated worker claim?
+
+### Why this needs the owner
+
+The blueprint names Celery and RabbitMQ. `docs/dependencies.md` pins Celery 5.6.3 and says it is not installed. No approved adapter is recorded. Goal 13 already left a durable `QUEUED` row.
+
+### Proposal, not an approval
+
+The worker claims `api.processing_jobs` with PostgreSQL `FOR UPDATE SKIP LOCKED` and a filesystem job file. It does not import Celery and it does not require RabbitMQ. A retry renames the same job file. It does not enqueue a second job.
+
 ### Status
 
 Status: OPEN.
+
+## DR-14-02
+
+### Question
+
+Which codecs, containers, and package version rule are approved?
+
+### Why this needs the owner
+
+The v0 media-manifest schema exists and is not an approved package format. `docs/protocol.md` says a second encoding is a new `content_id` until a recorded decision. The goal text says a new encoding creates a new package version.
+
+### Proposal, not an approval
+
+Segments are H.264 in MP4, AAC when the input has audio, one JPEG thumbnail, and WebVTT captions copied as data. `h480` and `h720` are emitted only when that does not upscale. A smaller input stays `native`. A new encode of the same content id writes `content_version + 1`. The manifest digest is the identity. A second encoder is not required to match bytes.
+
+### Status
+
+Status: OPEN.
+
+## DR-14-03
+
+### Question
+
+Is the worker sandbox the approved isolation boundary?
+
+### Why this needs the owner
+
+The goal asks for an unprivileged, resource-limited process with no unnecessary network and a read-only runtime. A tested mechanism is not an approval, and one machine is not an independent operator.
+
+### Proposal, not an approval
+
+FFmpeg and ffprobe run as `prlimit` plus `unshare --user --map-root-user --net`, with a protocol whitelist and a disposable workspace. The evidence host exercised the network namespace, the uid map, and the rlimits. The root filesystem was not remounted read-only, so that part is unverified. An external `bwrap` profile is in `docs/architecture/media-worker.md`. The worker refuses to start when a validator key file is in its root. It does not load a signer key.
+
+### Status
+
+Status: OPEN. Network namespace and rlimits: exercised on the evidence host. Read-only root: UNVERIFIED.
+
+## DR-14-04
+
+### Question
+
+Which processing budgets are approved?
+
+### Why this needs the owner
+
+DEC-005 leaves allowances unset. DR-13-03 is open. The 120-second figure for a 60-second input is a proposed gate.
+
+### Proposal, not an approval
+
+The worker refuses a limits label other than `PROPOSED`. Duration stays at most 60 seconds, a side at most 7680, input at most 100000000 bytes, and package bytes at most the protocol cap 268435456. The proposed child caps are 180 seconds of wall time, 240 seconds of CPU time, and 2 GiB of address space. Output larger than the job's reserved budget is rejected. These numbers are not a measured capacity and not a sponsorship decision.
+
+### Status
+
+Status: OPEN. DEC-005 stays the allowance decision.
 
 ## Reversible choices recorded for Goal 01
 

@@ -33,6 +33,12 @@ jobs:
         run: |
           python -m venv .venv
           .venv/bin/pip install --require-hashes -r requirements.lock
+      - name: Install pinned FFmpeg
+        run: |
+          set -euo pipefail
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg=7:6.1.1-3ubuntu5
+          ffprobe -version
       - name: Format, lint, types, unit tests, secret scan
         run: |
           .venv/bin/ruff format --check services workers/media packages/protocol tests scripts

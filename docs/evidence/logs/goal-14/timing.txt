@@ -1,0 +1,13 @@
+CMD SVN_MEDIA_TIMING=1 /tmp/svn-venv/bin/python -m pytest tests/unit/test_media_worker.py::test_sixty_second_input_timing -vv --tb=short -p no:cacheprovider -s
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /tmp/svn-venv/bin/python
+rootdir: /agent/repos/shortvideo-network
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 1 item
+
+tests/unit/test_media_worker.py::test_sixty_second_input_timing elapsed_seconds=5.108
+PASSED
+
+============================== 1 passed in 8.76s ===============================
+EXIT:0

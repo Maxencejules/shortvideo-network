@@ -13,7 +13,6 @@ def test_api_refuses_to_serve() -> None:
         svn_api.serve()
 
 
-def test_media_worker_does_not_read_the_source() -> None:
-    assert svn_media.SCAFFOLD is True
-    with pytest.raises(RuntimeError, match="does not run FFmpeg"):
-        svn_media.transcode("not-a-path; rm -rf /")
+def test_media_worker_is_a_package_and_does_not_start_on_import() -> None:
+    assert svn_media.SCAFFOLD is False
+    assert svn_media.Workspace is not None

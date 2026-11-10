@@ -1,0 +1,27 @@
+CMD /tmp/svn-venv/bin/python -m pytest tests/unit/test_media_worker.py tests/unit/test_media_postgres.py tests/unit/test_scaffold.py -vv --tb=short -p no:cacheprovider
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /tmp/svn-venv/bin/python
+rootdir: /agent/repos/shortvideo-network
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 16 items
+
+tests/unit/test_media_worker.py::test_portrait_rotated_lowres_and_audio PASSED [  6%]
+tests/unit/test_media_worker.py::test_malformed_truncated_duration_dimension_and_growth PASSED [ 12%]
+tests/unit/test_media_worker.py::test_retry_is_one_package_and_reencode_is_a_new_version PASSED [ 18%]
+tests/unit/test_media_worker.py::test_cancel_removes_staging_and_does_not_publish PASSED [ 25%]
+tests/unit/test_media_worker.py::test_kill_restart_keeps_one_package_and_quota PASSED [ 31%]
+tests/unit/test_media_worker.py::test_symlink_and_validator_key_are_refused PASSED [ 37%]
+tests/unit/test_media_worker.py::test_captions_are_not_command_arguments PASSED [ 43%]
+tests/unit/test_media_worker.py::test_network_namespace_and_resource_limits PASSED [ 50%]
+tests/unit/test_media_worker.py::test_ffmpeg_build_record_names_the_gpl_package PASSED [ 56%]
+tests/unit/test_media_worker.py::test_worker_is_outside_the_api_process PASSED [ 62%]
+tests/unit/test_media_worker.py::test_python_job_installs_ffmpeg_before_tests PASSED [ 68%]
+tests/unit/test_media_worker.py::test_limits_stay_proposed PASSED        [ 75%]
+tests/unit/test_media_worker.py::test_sixty_second_input_timing SKIPPED  [ 81%]
+tests/unit/test_media_postgres.py::test_postgres_claim_is_once_and_does_not_publish PASSED [ 87%]
+tests/unit/test_scaffold.py::test_api_refuses_to_serve PASSED            [ 93%]
+tests/unit/test_scaffold.py::test_media_worker_is_a_package_and_does_not_start_on_import PASSED [100%]
+
+======================== 15 passed, 1 skipped in 5.87s =========================
+EXIT:0

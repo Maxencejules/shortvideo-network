@@ -29,7 +29,7 @@ Errors are `{"error":{"code","message"}}`. The message does not include a path, 
 
 ## Later goals
 
-Goal 14 reads `api.processing_jobs` and the quarantine object named by `api.uploads.object_name`. It does not publish. The isolated worker and the output ladder are that goal. The `ffprobe` child here is a deadline-bounded probe, not that sandbox.
+Goal 14 reads `api.processing_jobs` and the quarantine object named by `api.uploads.object_name`. It does not publish. The isolated worker and the output ladder are that goal, recorded in [media-worker.md](media-worker.md). The `ffprobe` child here is a deadline-bounded probe. The goal 14 sandbox also runs `ffprobe`, which closes the technical part of DR-13-04 and does not approve it.
 
 Goal 15 must not serve the quarantine directory.
 

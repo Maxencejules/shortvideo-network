@@ -1,0 +1,3 @@
+CMD .venv/bin/python scripts/workflow_policy.py
+workflow policy ok files 1
+EXIT:0

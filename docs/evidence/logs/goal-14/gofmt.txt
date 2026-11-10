@@ -1,0 +1,3 @@
+CMD bash scripts/gofmt_check.sh
+gofmt ok files 649
+EXIT:0

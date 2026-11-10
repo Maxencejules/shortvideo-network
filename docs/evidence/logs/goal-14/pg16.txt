@@ -1,0 +1,2 @@
+CMD test -x /usr/lib/postgresql/16/bin/postgres
+EXIT:1
