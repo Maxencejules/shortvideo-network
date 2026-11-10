@@ -147,7 +147,9 @@ svn-provider run config.json
 
 ## Head CI
 
-Run [42774846560](https://github.com/Maxencejules/shortvideo-network/actions/runs/42774846560) on `7a4aaaf413612650012fef03a3671fb7d9c4b3d4` completed **failure** at 2026-11-10T07:36:25Z. The `python` job failed `tests/unit/test_chain_writer_policy.py::test_repository_follows_the_chain_writer_policy`. The assertion was `agents/provider/internal/sign/tx.go: chain writer outside the allowed paths (SignWithPrivKey)`. The other 15 jobs succeeded: `node`, `contract`, `devnet`, `go`, and the go-race shards `api`, `devnet`, `broadcaster`, `indexer`, `devnet-evidence`, `devnet-broadcaster`, `devnet-indexer`, `devnet-broadcaster-stall`, `devnet-upgrade`, `app`, and `rest`. No run on this branch was cancelled. The tested commit `065aac1` names that file in the allowlist. Its CI is not this run.
+Run [42774846560](https://github.com/Maxencejules/shortvideo-network/actions/runs/42774846560) on `7a4aaaf413612650012fef03a3671fb7d9c4b3d4` completed **failure** at 2026-11-10T07:36:25Z. The `python` job failed `tests/unit/test_chain_writer_policy.py::test_repository_follows_the_chain_writer_policy`. The assertion was `agents/provider/internal/sign/tx.go: chain writer outside the allowed paths (SignWithPrivKey)`. The other 15 jobs succeeded: `node`, `contract`, `devnet`, `go`, and the go-race shards `api`, `devnet`, `broadcaster`, `indexer`, `devnet-evidence`, `devnet-broadcaster`, `devnet-indexer`, `devnet-broadcaster-stall`, `devnet-upgrade`, `app`, and `rest`.
+
+Run [42776768957](https://github.com/Maxencejules/shortvideo-network/actions/runs/42776768957) on `f888b9db533e95048f1877e6a8402f4e2adc433f` completed **success** at 2026-11-10T07:51:31Z. All 16 jobs succeeded, the same set as above, including `python`. `f888b9d` differs from the tested commit `065aac1` only under `docs/evidence/`. No run on this branch was cancelled. This commit records that success. Its own CI run is later.
 
 ## Log stamps
 
