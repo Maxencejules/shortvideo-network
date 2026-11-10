@@ -130,7 +130,9 @@ Run [42761558025](https://github.com/Maxencejules/shortvideo-network/actions/run
 
 Run [42763962233](https://github.com/Maxencejules/shortvideo-network/actions/runs/42763962233) on head `a641708bc39d6cbb6c29a7f01cc7abd1bc10f0c8` completed **success** at 2026-11-10T05:55:49Z. All 16 jobs succeeded, the same set. `a641708` is the review correction. It differs from the tested commit only under `docs/evidence/`.
 
-Run [42765407058](https://github.com/Maxencejules/shortvideo-network/actions/runs/42765407058) on head `fd8ccb3b7ab9e36e42dd338cfa3e0f569677d16a` completed **success** at 2026-11-10T06:08:27Z. All 16 jobs succeeded, the same set. `fd8ccb3` differs from the tested commit only under `docs/evidence/`. The commit that adds this paragraph gets its own run. That later run supersedes 42765407058. Both are recorded: 42765407058 above, and the later run in the next evidence sentence after it is seen.
+Run [42765407058](https://github.com/Maxencejules/shortvideo-network/actions/runs/42765407058) on head `fd8ccb3b7ab9e36e42dd338cfa3e0f569677d16a` completed **success** at 2026-11-10T06:08:27Z. All 16 jobs succeeded, the same set. `fd8ccb3` differs from the tested commit only under `docs/evidence/`.
+
+Run [42767408197](https://github.com/Maxencejules/shortvideo-network/actions/runs/42767408197) on head `9bf21c7bff1c707fe0c86ae24e80ab1187ecd8ca` completed **success** at 2026-11-10T06:30:16Z. All 16 jobs succeeded, the same set. `9bf21c7` is the round 2 correction. It supersedes 42765407058. It differs from the tested commit only under `docs/evidence/`.
 
 ## Log stamps
 
