@@ -14,7 +14,8 @@ requirement, not its verification. It fails when:
   are ignored): the files directly in services/broadcaster/internal/signer/ and
   services/broadcaster/internal/chain/, agents/auditor/chainclient/tx.go and
   rpc.go (the auditor's own AUDITOR path, goal 09 Q1), its chaintest helpers
-  chaintest.go and serve.go, chain/internal/statecheck/testhome/testhome.go
+  chaintest.go and serve.go, agents/provider/internal/sign/tx.go (the provider
+  signs its own acceptance transaction, goal 16), chain/internal/statecheck/testhome/testhome.go
   (a test-only package), and any _test.go file.
 
 The scan covers tracked and untracked files that git does not ignore, so a new
@@ -44,6 +45,7 @@ WRITER_FILES = frozenset(
         "agents/auditor/chainclient/rpc.go",
         "agents/auditor/chainclient/chaintest/chaintest.go",
         "agents/auditor/chainclient/chaintest/serve.go",
+        "agents/provider/internal/sign/tx.go",
         "chain/internal/statecheck/testhome/testhome.go",
     }
 )
