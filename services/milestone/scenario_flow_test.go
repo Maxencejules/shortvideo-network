@@ -209,15 +209,6 @@ func (m *mile) bootIndexer() {
 	mustMkdir(filepath.Join(base, "secrets"))
 	db := m.start("indexer-db", m.bins["svn-indexer"], "dev-db", "--chain-id", m.chainID, "--secrets-dir", filepath.Join(base, "secrets"))
 	line := m.waitLine(db, `"socket_dir"`, 60*time.Second)
-	var info struct {
-		Socket string `json:"socket_dir"`
-		Port   int    `json:"port"`
-		Name   string `json:"database"`
-		Roles  []struct {
-			Use, Role, File string `json:"use"`
-		} `json:"roles"`
-	}
-	// The struct tags above are wrong for Role and File. Decode loosely.
 	var loose struct {
 		Socket string `json:"socket_dir"`
 		Port   int    `json:"port"`
@@ -231,7 +222,6 @@ func (m *mile) bootIndexer() {
 	if err := json.Unmarshal([]byte(line), &loose); err != nil {
 		m.t.Fatalf("indexer db: %v %s", err, db.out.String())
 	}
-	info.Socket, info.Port, info.Name = loose.Socket, loose.Port, loose.Name
 	pass := map[string]string{}
 	roleName := map[string]string{}
 	for _, r := range loose.Roles {
@@ -243,7 +233,7 @@ func (m *mile) bootIndexer() {
 	writeJSON(m.t, filepath.Join(base, "indexer.json"), map[string]any{
 		"chain_id": m.chainID, "rpc_url": m.layout.Topology.Validators[0].RPC, "listen": "127.0.0.1:" + strconv.Itoa(port),
 		"database": map[string]any{
-			"socket_dir": info.Socket, "port": info.Port, "name": info.Name,
+			"socket_dir": loose.Socket, "port": loose.Port, "name": loose.Name,
 			"owner_role": roleName["owner"], "owner_password_file": pass["owner"],
 			"role": roleName["runtime"], "password_file": pass["runtime"],
 			"application_name": "milestone-indexer", "connect_timeout_seconds": 10,
@@ -254,7 +244,6 @@ func (m *mile) bootIndexer() {
 	c := m.start("indexer", m.bins["svn-indexer"], "serve", "--config", filepath.Join(base, "indexer.json"))
 	m.waitHTTP(http.DefaultClient, m.indexer+"/v1/status", 200, 40*time.Second, c)
 	fmt.Printf("phase=indexer url=%s\n", m.indexer)
-	_ = info
 }
 
 func (m *mile) bootAPI() {
