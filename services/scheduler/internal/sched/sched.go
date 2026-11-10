@@ -44,6 +44,7 @@ type Host struct {
 	Capacity         uint64 `json:"declared_capacity_bytes"`
 	Role             string `json:"role"`
 	AdminToken       string `json:"-"`
+	AdminTokenFile   string `json:"admin_token_file,omitempty"`
 }
 
 // Package is the off-chain object a publication refers to.
@@ -54,6 +55,15 @@ type Package struct {
 	ExpectedSHA string
 	TermsHex    string
 	Deadline    int64
+	// ManifestHex is the media manifest digest. When it is empty the offer
+	// uses the scheduler package text, which is the goal 17 behaviour.
+	ManifestHex string
+	// Scheduler is the chain account stored on the offer. Empty keeps the
+	// goal 17 filler. A real offer stores the admitted service signer.
+	Scheduler []byte
+	// TermSeconds is the devnet DEC-005 test duration. Zero keeps start as
+	// the wall clock and Deadline as given.
+	TermSeconds int64
 }
 
 // Posted is an offer the scheduler sent. Broadcast is not a commit.
@@ -123,9 +133,18 @@ type Config struct {
 	PhysicalDomain    string
 	IndexerURL        string
 	Stage             *stage.Stage
-	Hosts             []Host
-	Approver          func(providerID, offerID string) error
-	Now               func() time.Time
+	// OfferCommitURL, when set, receives the offer JSON and must answer
+	// 200 or 204 before the provider is asked to sign. Empty skips the call.
+	// The scheduler still does not sign and does not broadcast.
+	OfferCommitURL string
+	// ConfirmFor is how long Publish and Repair wait for a lease row.
+	// Zero keeps the 20 second default.
+	ConfirmFor time.Duration
+	// PackageRoot is the only directory a publication request may read.
+	PackageRoot string
+	Hosts       []Host
+	Approver    func(providerID, offerID string) error
+	Now         func() time.Time
 }
 
 // Sched is the coordinator.
@@ -192,6 +211,25 @@ func (s *Sched) SetBeforeOffer(fn func()) {
 	s.mu.Lock()
 	s.before = fn
 	s.mu.Unlock()
+}
+
+// UpdateHost sets the endpoint and CA file for one host. It does not sign.
+func (s *Sched) UpdateHost(id, endpoint, caFile, adminToken string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.cfg.Hosts {
+		if s.cfg.Hosts[i].ProviderID == id {
+			if endpoint != "" {
+				s.cfg.Hosts[i].Endpoint = endpoint
+			}
+			if caFile != "" {
+				s.cfg.Hosts[i].CAFile = caFile
+			}
+			if adminToken != "" {
+				s.cfg.Hosts[i].AdminToken = adminToken
+			}
+		}
+	}
 }
 
 // SetEndpoint replaces a provider URL after that process rebinds.
@@ -346,7 +384,10 @@ func (s *Sched) post(ctx context.Context, pkg Package, host Host, source string)
 	if err != nil {
 		return 0, "", err
 	}
-	raw, code, err := s.providerPost(ctx, host, "/offers/"+offerID+"/acceptance", "", body, 30*time.Second)
+	if err := s.commitOffer(ctx, body); err != nil {
+		return 0, "offer_uncommitted", err
+	}
+	raw, code, err := s.providerPost(ctx, host, "/offers/"+offerID+"/acceptance", "", body, 60*time.Second)
 	if err != nil {
 		return 0, "", err
 	}
@@ -359,6 +400,9 @@ func (s *Sched) post(ctx context.Context, pkg Package, host Host, source string)
 		Error        string `json:"error"`
 	}
 	_ = json.Unmarshal(raw, &doc)
+	if code != 200 {
+		fmt.Printf("offer-refused provider=%s status=%d error=%s\n", host.ProviderID, code, doc.Error)
+	}
 	if code == 200 {
 		s.mu.Lock()
 		s.posted = append(s.posted, Posted{
@@ -378,7 +422,11 @@ func (s *Sched) post(ctx context.Context, pkg Package, host Host, source string)
 }
 
 func (s *Sched) confirm(ctx context.Context, pkg Package) error {
-	deadline := time.Now().Add(20 * time.Second)
+	wait := s.cfg.ConfirmFor
+	if wait <= 0 {
+		wait = 20 * time.Second
+	}
+	deadline := time.Now().Add(wait)
 	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
@@ -457,6 +505,9 @@ func (s *Sched) readReceipt(ctx context.Context, pkg Package, host Host, leaseID
 	}
 	limit, _ := flat["claimLimit"].(string)
 	measured := sumHex([]byte(policy.ManifestText(pkg.ContentID, pkg.Version, pkgBytes(pkg), pkg.Segments)))
+	if pkg.ManifestHex != "" {
+		measured = pkg.ManifestHex
+	}
 	mode, claim := policy.Evidence(measured, claimed, 0, s.cfg.EvidenceMaxAge)
 	if limit != "" {
 		claim = limit
@@ -1054,7 +1105,19 @@ func offerBody(pkg Package, providerID, offerID, leaseID, source string) ([]byte
 	n := pkgBytes(pkg)
 	text := policy.ManifestText(pkg.ContentID, pkg.Version, n, pkg.Segments)
 	sum := sha256.Sum256([]byte(text))
+	manifest := hex.EncodeToString(sum[:])
+	if pkg.ManifestHex != "" {
+		manifest = pkg.ManifestHex
+	}
 	start := time.Now().Unix()
+	deadline := pkg.Deadline
+	if pkg.TermSeconds > 0 {
+		deadline = start + pkg.TermSeconds
+	}
+	sched := bytes.Repeat([]byte{0x17}, 20)
+	if len(pkg.Scheduler) == 20 {
+		sched = pkg.Scheduler
+	}
 	segs := make([]map[string]string, len(pkg.Segments))
 	for i, seg := range pkg.Segments {
 		segs[i] = map[string]string{
@@ -1064,15 +1127,53 @@ func offerBody(pkg Package, providerID, offerID, leaseID, source string) ([]byte
 	body := map[string]any{
 		"offer_id": offerID, "lease_id": leaseID, "business_id": "b" + pkg.ContentID + providerID,
 		"content_id": pkg.ContentID, "content_version": strconv.FormatUint(pkg.Version, 10),
-		"provider_id": providerID, "manifest_digest_hex": hex.EncodeToString(sum[:]),
+		"provider_id": providerID, "manifest_digest_hex": manifest,
 		"package_bytes": strconv.FormatUint(n, 10), "terms_digest_hex": pkg.TermsHex,
 		"start_unix_seconds":    strconv.FormatInt(start, 10),
-		"deadline_unix_seconds": strconv.FormatInt(pkg.Deadline, 10),
-		"expiry_unix_seconds":   strconv.FormatInt(pkg.Deadline, 10),
-		"term_version":          "1", "scheduler_hex": hex.EncodeToString(bytes.Repeat([]byte{0x17}, 20)),
+		"deadline_unix_seconds": strconv.FormatInt(deadline, 10),
+		"expiry_unix_seconds":   strconv.FormatInt(deadline, 10),
+		"term_version":          "1", "scheduler_hex": hex.EncodeToString(sched),
 		"source_url": source, "segments": segs,
 	}
 	return json.Marshal(body)
+}
+
+func (s *Sched) commitOffer(ctx context.Context, body []byte) error {
+	url := s.cfg.OfferCommitURL
+	if url == "" {
+		return nil
+	}
+	if !strings.HasPrefix(url, "http://127.0.0.1:") && !strings.HasPrefix(url, "http://[::1]:") {
+		return fmt.Errorf("sched: offer commit url must be loopback http")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	buf, _ := io.ReadAll(io.LimitReader(res.Body, 4096))
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("sched: offer commit %d %s", res.StatusCode, bytes.TrimSpace(buf))
+	}
+	return nil
+}
+
+// SetOrigin marks the creator backup reachable or not. It does not delete a replica.
+func (s *Sched) SetOrigin(contentID string, up bool) {
+	if s.cfg.Stage == nil {
+		return
+	}
+	if up {
+		s.cfg.Stage.ConnectOrigin(contentID)
+		return
+	}
+	s.cfg.Stage.DisconnectOrigin(contentID)
 }
 
 func (s *Sched) client(host Host) (*http.Client, error) {

@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/config"
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/keys"
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/store"
@@ -37,6 +39,7 @@ type Agent struct {
 	mu       sync.Mutex
 	st       *store.State
 	key      keys.Key
+	outer    cryptotypes.PrivKey
 	url      string
 	token    string
 	source   string
@@ -69,6 +72,16 @@ func Open(cfg config.File) (*Agent, error) {
 	if st.PublicHex != pub || st.KeyID == "" {
 		return nil, fmt.Errorf("agent: key file does not match state")
 	}
+	outerPath := filepath.Join(cfg.DataDir, "keys", keys.OuterName)
+	var outer cryptotypes.PrivKey
+	if _, err := os.Lstat(outerPath); err == nil {
+		outer, err = keys.LoadSecp(outerPath)
+		if err != nil {
+			return nil, err
+		}
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
 	admin, err := os.ReadFile(filepath.Join(cfg.DataDir, "admin.token"))
 	if err != nil {
 		return nil, err
@@ -87,7 +100,7 @@ func Open(cfg config.File) (*Agent, error) {
 		changed = time.Unix(st.ChainHeightUnix, 0)
 	}
 	a := &Agent{
-		cfg: cfg, st: st, key: key, token: token, heightAt: changed,
+		cfg: cfg, st: st, key: key, outer: outer, token: token, heightAt: changed,
 		source: strings.TrimSpace(string(sourceRaw)),
 		ctx:    ctx, cancel: cancel,
 	}

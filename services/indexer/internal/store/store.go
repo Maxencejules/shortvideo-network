@@ -368,6 +368,40 @@ func applyOffer(ctx context.Context, tx *sql.Tx, chainID string, eff project.Eff
 	return note(ctx, tx, chainID, "offer", o.ID, eff.Source)
 }
 
+// closeUniqueOpenOffer records that an accepted lease consumed the one
+// open offer for that provider and content. The accept event does not
+// carry the offer id. More than one open offer is left untouched.
+func closeUniqueOpenOffer(ctx context.Context, tx *sql.Tx, chainID string, l *project.Lease, src project.Source) error {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT offer_id FROM indexer.offers
+		WHERE chain_id = $1 AND provider_id = $2 AND content_id = $3 AND state = 'OPEN'
+		ORDER BY offer_id`, chainID, l.ProviderID, l.ContentID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if len(ids) != 1 {
+		return nil
+	}
+	_, err = tx.ExecContext(ctx, `
+		UPDATE indexer.offers
+		SET state = 'CLOSED', source_height = $3, source_tx = $4, source_msg = $5, source_event = $6, source_type = $7
+		WHERE chain_id = $1 AND offer_id = $2`,
+		chainID, ids[0], src.Height, src.TxHash, src.MsgIndex, src.EventIndex, src.Type)
+	return err
+}
+
 func applyLease(ctx context.Context, tx *sql.Tx, chainID string, eff project.Effect) error {
 	l := eff.Lease
 	var term int64
@@ -384,6 +418,9 @@ func applyLease(ctx context.Context, tx *sql.Tx, chainID string, eff project.Eff
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '', $10, $11, $12, $13, $14, $15)`,
 			chainID, l.ID, l.ProviderID, l.ContentID, l.Version, l.PackageBytes, l.State, l.TermVersion, l.Deadline, l.Active,
 			eff.Source.Height, eff.Source.TxHash, eff.Source.MsgIndex, eff.Source.EventIndex, eff.Source.Type)
+		if err == nil {
+			err = closeUniqueOpenOffer(ctx, tx, chainID, l, eff.Source)
+		}
 	case err != nil:
 		return err
 	case l.RenewOnly:

@@ -416,15 +416,23 @@ func (a *Agent) transfer(lease *store.Lease, source string, segs []manifest.Segm
 }
 
 func (a *Agent) buildTx(lease *store.Lease, sig *typesv1.InnerSignature, view chainView) ([]byte, error) {
+	signer := a.key.SDK()
+	addr := a.key.Address()
+	if a.outer != nil {
+		// The outer account is a devnet submitter. The ed25519 key still
+		// signs the acceptance. A service key is not accepted here.
+		signer = a.outer
+		addr = a.outer.PubKey().Address()
+	}
 	msg := &leasesv1.MsgAcceptLease{
-		Signer: a.key.Address(), BusinessId: lease.BusinessID, OfferId: lease.OfferID,
+		Signer: addr, BusinessId: lease.BusinessID, OfferId: lease.OfferID,
 		LeaseId: lease.LeaseID, ProviderAcceptance: sig,
 	}
 	timeout := view.Height + 20
 	if view.Height > ^uint64(0)-20 {
 		return nil, fail(409, "chain")
 	}
-	return sign.BuildTx(msg, a.key.SDK(), sign.Input{
+	return sign.BuildTx(msg, signer, sign.Input{
 		ChainID: a.cfg.ChainID, AccountNumber: view.Account, Sequence: view.Sequence,
 		TimeoutHeight: timeout, Gas: 200000,
 	})

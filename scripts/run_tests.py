@@ -159,6 +159,7 @@ GO_MODULES = (
     "services/indexer",
     "services/scheduler",
     "services/api",
+    "services/milestone",
 )
 # An explicit per-binary limit instead of go test's 10-minute default: the
 # chain/devnet package took 922 s on one machine at goal 10

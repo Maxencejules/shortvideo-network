@@ -111,10 +111,12 @@ class Catalog:
             if self._chain != "HELD" and not self._host_granted(host_id):
                 raise DeliveryError("REFUSED")
             self._hosts[host_id] = BoundHost(host_id, role, origin.rstrip("/"))
+            self._write_hosts()
 
     def unbind_host(self, host_id: str) -> None:
         with self._lock:
             self._hosts.pop(host_id, None)
+            self._write_hosts()
 
     def accept_replica(self, host_id: str, directory: Path) -> None:
         """Advertise `directory` only after its hashes match the origin package."""
@@ -208,6 +210,7 @@ class Catalog:
         if not ID.fullmatch(content_id):
             raise DeliveryError("BAD_REQUEST")
         with self._lock:
+            self._reload_grants_locked()
             record = load_ready_record(self.root, content_id)
             if record is None and content_id not in self._grants:
                 raise DeliveryError("NOT_FOUND")
@@ -289,6 +292,7 @@ class Catalog:
     def read(self, host_id: str, content_id: str, version: int, name: str) -> tuple[str, bytes]:
         """Return `(kind, body)` for a playlist name or a segment relative path."""
         with self._lock:
+            self._reload_grants_locked()
             view = self._servable(host_id, content_id, version)
             if name.endswith(".m3u8"):
                 body = playlist(view, name)
@@ -323,6 +327,7 @@ class Catalog:
 
     def grant_live(self, content_id: str) -> bool:
         with self._lock:
+            self._reload_grants_locked()
             return self._report_allowed(content_id)
 
     def clear_report(self, content_id: str) -> None:
@@ -445,6 +450,25 @@ class Catalog:
     def _grant_path(self, content_id: str) -> Path:
         return self.root / "playback" / f"{content_id}.json"
 
+    def _write_hosts(self) -> None:
+        rows = [
+            {"host_id": host.host_id, "role": host.role, "origin": host.origin}
+            for host in self._hosts.values()
+        ]
+        _write_json(self.root / "playback" / "hosts.json", {"hosts": rows})
+
+    def _reload_grants_locked(self) -> None:
+        """Pick up a grant written by another process. The caller holds the lock."""
+        folder = self.root / "playback"
+        if not folder.is_dir():
+            return
+        for path in sorted(folder.glob("*.json")):
+            if path.name in {"chain.json", "hosts.json"} or path.is_symlink():
+                continue
+            grant = _read_grant(path)
+            if grant is not None:
+                self._grants[grant.content_id] = grant
+
     def _load(self) -> None:
         chain_path = self.root / "playback" / "chain.json"
         if chain_path.is_file() and not chain_path.is_symlink():
@@ -454,6 +478,31 @@ class Catalog:
                 value = None
             if isinstance(value, dict) and value.get("note") in CHAIN_NOTES:
                 self._chain = str(value["note"])
+        hosts_path = self.root / "playback" / "hosts.json"
+        if hosts_path.is_file() and not hosts_path.is_symlink():
+            try:
+                saved = json.loads(hosts_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                saved = None
+            rows = saved.get("hosts") if isinstance(saved, dict) else None
+            if isinstance(rows, list):
+                for row in rows:
+                    if not isinstance(row, dict):
+                        continue
+                    host_id = row.get("host_id")
+                    role = row.get("role")
+                    origin = row.get("origin")
+                    if (
+                        isinstance(host_id, str)
+                        and ID.fullmatch(host_id)
+                        and role in {"origin", "test"}
+                        and isinstance(origin, str)
+                    ):
+                        try:
+                            _loopback_origin(origin)
+                        except DeliveryError:
+                            continue
+                        self._hosts[host_id] = BoundHost(host_id, role, origin.rstrip("/"))
         folder = self.root / "playback"
         if not folder.is_dir():
             return

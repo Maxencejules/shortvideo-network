@@ -59,6 +59,7 @@ def main(argv: list[str] | None = None) -> int:
                     "adapter": ADAPTER_NAME,
                     "adapter_version": ADAPTER_VERSION,
                     "origin": f"https://{args.bind}:{server.port}",
+                    "ca": str(server.cert.cert_path),
                     "hosting_promise": False,
                 },
                 sort_keys=True,

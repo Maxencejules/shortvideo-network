@@ -39,7 +39,9 @@ Stale reasons include `behind`, `commit_age`, `catching_up`, `history_unavailabl
 
 ## Reconciliation
 
-`reconcile-once` and the serve loop compare the projection to chain queries at the floor: provider pages, content by known id, active leases by known provider, deadlines, and the policy version. A difference is stored as a finding and the run is `divergent`. The projection row is not rewritten. A query error is `blocked`. It is not an empty chain and it does not clear the projection.
+`reconcile-once` and the serve loop compare the projection to chain queries at the floor: provider pages, content by known id, active leases by known provider, deadlines, and the policy version. A difference is stored as a finding and the run is `divergent`. The projection row is not rewritten from that finding. A query error is `blocked`. It is not an empty chain and it does not clear the projection.
+
+An accepted lease removes the offer on the chain and the accept event does not name the offer id. The projection closes the one OPEN offer for that provider and content in the same transaction as the lease. Zero or several open offers stay OPEN, and the next reconciliation records that difference.
 
 Content has no list query. Reconciliation of content uses the ids the events produced. A gap in the event history is not treated as "no content".
 
