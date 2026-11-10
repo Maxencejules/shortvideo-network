@@ -94,7 +94,7 @@ The providers are `agents/provider` `svn-provider` processes. The test builds th
 
 [conformance.txt](logs/goal-17/conformance.txt) line 39 is `--- PASS: TestConformance (47.49s)`. Line 41 is `ok github.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler 47.497s`. Line 42 is `EXIT:0`.
 
-Repair traces in the same file: line 28 `repair confirmed content=cpub source=p2 replacement=p4 buffer=discarded`, line 32 `repair duplicate key=cdup/1 attempts=1`, line 33 `queue content=cstall label=TEMPORARY_OFF_CHAIN posts=0`, line 35 `distribution content=crem stopped=true`, line 36 `repair withdrawn-before-offer content=crem posts=0`, line 38 `repair unrecoverable content=clost reachable_copies=0 origin_used=false`.
+Repair traces in the same file: line 28 `repair confirmed content=cpub source=p2 replacement=p4 buffer=discarded`, line 31 `repair duplicate key=cdup/1 attempts=1`, line 32 `repair confirmed content=cdup source=p2 replacement=p4 buffer=discarded`, line 33 `queue content=cstall label=TEMPORARY_OFF_CHAIN posts=0`, line 35 `distribution content=crem stopped=true`, line 36 `repair withdrawn-before-offer content=crem posts=0`, line 38 `repair unrecoverable content=clost reachable_copies=0 origin_used=false`.
 
 The scheduler policy is [docs/architecture/scheduler.md](../architecture/scheduler.md). It is PROPOSED.
 
@@ -149,7 +149,9 @@ svn-scheduler serve config.json
 
 ## Head CI
 
-Run [42801666285](https://github.com/Maxencejules/shortvideo-network/actions/runs/42801666285) on `75a708cfca79057c0f81ec49af31ed0efef041c1` completed **success** at 2026-11-10T10:57:18Z. It was created at 2026-11-10T10:44:18Z. All 16 jobs succeeded: `node`, `python`, `go`, `contract`, `devnet`, and the go-race shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, `api`, and `rest`. `75a708cf` differs from the tested commit `b7c1ed19891c297c9af9bea4afe646c64ac870c7` only under `docs/evidence/`. No run on this branch was failed or cancelled when this section was written. This docs-only commit starts a later run; that run is not 42801666285.
+Run [42801666285](https://github.com/Maxencejules/shortvideo-network/actions/runs/42801666285) on `75a708cfca79057c0f81ec49af31ed0efef041c1` completed **success** at 2026-11-10T10:57:18Z. It was created at 2026-11-10T10:44:18Z. All 16 jobs succeeded: `node`, `python`, `go`, `contract`, `devnet`, and the go-race shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, `api`, and `rest`. `75a708cf` differs from the tested commit `b7c1ed19891c297c9af9bea4afe646c64ac870c7` only under `docs/evidence/`.
+
+Run [42803521971](https://github.com/Maxencejules/shortvideo-network/actions/runs/42803521971) on `33b4c4644299bc9d5149e431f6ca591c0b1736c9` completed **success** at 2026-11-10T11:10:39Z. It was created at 2026-11-10T10:57:53Z. All 16 jobs succeeded, the same set as above. `33b4c46` differs from `75a708cf` only in this file's Head CI paragraph. No run on this branch was failed or cancelled before the commit that names 42803521971.
 
 ## Log stamps
 
@@ -161,7 +163,7 @@ The chain endpoint is an in-process fixture. Reserved bytes are that fixture's c
 
 ## Next safe action
 
-Open a draft pull request from `goal-17`. Do not merge it. Do not start goal 18 from an unreviewed branch. Public launch stays disabled.
+Draft pull request 22 is open from `goal-17`. Do not merge it. Do not start goal 18 from an unreviewed branch. Public launch stays disabled.
 
 ## Proposed pull-request title and summary
 
