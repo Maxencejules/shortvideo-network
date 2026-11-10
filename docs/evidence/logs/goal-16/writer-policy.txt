@@ -1,0 +1,26 @@
+HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
+TREE 6f48906d4d772ce3810355578ff01efa773e42b2
+DIRTY yes
+ M docs/evidence/logs/goal-16/anchors06.txt
+ M docs/evidence/logs/goal-16/anchors07.txt
+ M docs/evidence/logs/goal-16/conformance.txt
+ M docs/evidence/logs/goal-16/docker.txt
+ M docs/evidence/logs/goal-16/gofmt.txt
+ M docs/evidence/logs/goal-16/golangci-lint.txt
+ M docs/evidence/logs/goal-16/names.txt
+ M docs/evidence/logs/goal-16/pg16.txt
+ M docs/evidence/logs/goal-16/race.txt
+ M docs/evidence/logs/goal-16/runtime.txt
+ M docs/evidence/logs/goal-16/scaffold.txt
+ M docs/evidence/logs/goal-16/trailer.txt
+ M docs/evidence/logs/goal-16/vet.txt
+?? docs/evidence/logs/goal-16/writer-policy.txt
+COMMAND python3 -c $'\nimport sys, types, importlib.util\nm = types.ModuleType("pytest")\nm.param = lambda *a, **k: (a, k)\nclass mark:\n    @staticmethod\n    def parametrize(*a, **k):\n        def deco(fn):\n            return fn\n        return deco\nm.mark = mark\nsys.modules["pytest"] = m\nspec = importlib.util.spec_from_file_location("pol", "tests/unit/test_chain_writer_policy.py")\nmod = importlib.util.module_from_spec(spec)\nspec.loader.exec_module(mod)\nfiles = mod.repository_files()\nerrs = mod.go_writer_errors(files) + mod.consumer_errors(files)\nprint("errors", errs)\nfor path in sorted(mod.WRITER_FILES):\n    code = mod.strip_go_comments(files[path])\n    ok = any(p.search(code) for _, p in mod.GO_WRITER_MARKERS)\n    print(("ok" if ok else "MISSING"), path)\nraise SystemExit(0 if not errs else 1)\n'
+errors []
+ok agents/auditor/chainclient/chaintest/chaintest.go
+ok agents/auditor/chainclient/chaintest/serve.go
+ok agents/auditor/chainclient/rpc.go
+ok agents/auditor/chainclient/tx.go
+ok agents/provider/internal/sign/tx.go
+ok chain/internal/statecheck/testhome/testhome.go
+EXIT:0

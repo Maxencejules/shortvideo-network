@@ -1,0 +1,8 @@
+HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
+TREE 6f48906d4d772ce3810355578ff01efa773e42b2
+DIRTY yes
+ M docs/evidence/logs/goal-16/conformance.txt
+ M docs/evidence/logs/goal-16/scaffold.txt
+COMMAND go test -count=1 -timeout 30s ./agents/provider/
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider	0.001s
+EXIT:0

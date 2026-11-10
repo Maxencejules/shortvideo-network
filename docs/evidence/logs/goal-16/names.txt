@@ -1,0 +1,10 @@
+HEAD 5602ff8ba570283cf921e6c2018ad11ddc2f6bf6
+TREE e4ec2b4c007f032162cd5df22b9f5a458ada66ae
+DIRTY yes
+ M docs/evidence/logs/goal-16/conformance.txt
+ M docs/evidence/logs/goal-16/names.txt
+ M docs/evidence/logs/goal-16/race.txt
+ M docs/evidence/logs/goal-16/trailer.txt
+COMMAND git diff --name-only c46f55493aba3ea80331b26e7defeaa5995e287a..HEAD
+agents/provider/cmd/svn-provider/conformance_test.go
+EXIT:0

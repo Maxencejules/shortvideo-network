@@ -1,0 +1,24 @@
+HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
+TREE 6f48906d4d772ce3810355578ff01efa773e42b2
+DIRTY yes
+ M docs/evidence/logs/goal-16/anchors06.txt
+ M docs/evidence/logs/goal-16/anchors07.txt
+ M docs/evidence/logs/goal-16/conformance.txt
+ M docs/evidence/logs/goal-16/gofmt.txt
+ M docs/evidence/logs/goal-16/race.txt
+ M docs/evidence/logs/goal-16/scaffold.txt
+ M docs/evidence/logs/goal-16/vet.txt
+COMMAND python3 docs/evidence/goal-07/mutants.py --check
+revision HEAD commit 065aac1a218f6a7308c930d3fc125e5fe4d13628 tree 6f48906d4d772ce3810355578ff01efa773e42b2
+copy /tmp/goal07-mutants-39yw1g8f/tree (git archive)
+mutants 30 of 30 (goal07=5, merge=14, node=11)
+COPY_MATCH m01-simulate-extra-gas: chain/msgkit/enforce.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m01-simulate-extra-gas.go.txt; chain/msgkit/enforce.go unchanged since 43c1a10
+COPY_MATCH m02-ante-gas0-always: chain/app/ante.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m02-ante-gas0-always.go.txt; chain/app/ante.go changed since 43c1a10
+COPY_MATCH m03-query-gas-zero-unlimited: chain/app/querygas.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m03-query-gas-zero-unlimited.go.txt; chain/app/querygas.go changed since 43c1a10
+COPY_MATCH m04-rotation-cap-off-by-one: chain/x/providers/msg_server.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m04-rotation-cap-off-by-one.go.txt; chain/x/providers/msg_server.go unchanged since 43c1a10
+COPY_MATCH m05-authority-meter-finalize-only: chain/x/authority/msg.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m05-authority-meter-finalize-only.go.txt; chain/x/authority/msg.go changed since 43c1a10
+NOT_FOUND auth-seat-rule-allows-auditor chain/x/authority/genesis.go occurrences=0
+NOT_FOUND doc-seat-rule-case-sensitive chain/genesis/document.go occurrences=0
+NOT_FOUND msg-success-skips-registry-write chain/x/authority/msg.go occurrences=0
+RESULT validation problems=3; no test was run
+EXIT:1

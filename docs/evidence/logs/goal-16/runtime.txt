@@ -1,0 +1,21 @@
+HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
+TREE 6f48906d4d772ce3810355578ff01efa773e42b2
+DIRTY yes
+ M docs/evidence/logs/goal-16/anchors06.txt
+ M docs/evidence/logs/goal-16/anchors07.txt
+ M docs/evidence/logs/goal-16/conformance.txt
+ M docs/evidence/logs/goal-16/docker.txt
+ M docs/evidence/logs/goal-16/gofmt.txt
+ M docs/evidence/logs/goal-16/golangci-lint.txt
+ M docs/evidence/logs/goal-16/pg16.txt
+ M docs/evidence/logs/goal-16/race.txt
+ M docs/evidence/logs/goal-16/runtime.txt
+ M docs/evidence/logs/goal-16/scaffold.txt
+ M docs/evidence/logs/goal-16/vet.txt
+COMMAND bash -c uname\ -a\;\ go\ version\;\ nproc\;\ id\;\ test\ -x\ /usr/lib/postgresql/16/bin/postgres\;\ echo\ pg16_test:\$\?
+Linux cursor 6.12.113+ #1 SMP PREEMPT_DYNAMIC Mon Nov  9 16:04:37 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+go version go1.26.10 linux/amd64
+4
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev)
+pg16_test:1
+EXIT:0

@@ -2,8 +2,8 @@ package provider
 
 import "testing"
 
-func TestScaffoldIsNotAnAgent(t *testing.T) {
-	if !Scaffold {
-		t.Fatal("scaffold flag cleared")
+func TestScaffoldCleared(t *testing.T) {
+	if Scaffold {
+		t.Fatal("scaffold flag still set")
 	}
 }

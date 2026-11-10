@@ -638,6 +638,114 @@ The origin refuses to advertise, and refuses to send, bytes that do not match th
 
 Status: OPEN.
 
+## DR-16-01
+
+### Question
+
+What fields does a transfer receipt sign?
+
+### Why this needs the owner
+
+`SVN-TRANSFER-RECEIPT-1` is a domain name. Protocol v0 does not define the JSON object. DR-07-09 already records that the capability envelope is undefined.
+
+### Proposal, not an approval
+
+The receipt object is `claimLimit`, `contentId`, `contentVersion`, `manifestDigest`, `packageBytes`, `providerId`, `readiness`, and `transferId`. `claimLimit` is `ATTESTATION_NOT_STORAGE_PROOF`. Integers are decimal strings. This is an attestation, not a storage proof.
+
+### Status
+
+Status: OPEN.
+
+## DR-16-02
+
+### Question
+
+What fields does an inventory report sign?
+
+### Why this needs the owner
+
+`SVN-INVENTORY-1` is a domain name. Protocol v0 does not define the JSON object.
+
+### Proposal, not an approval
+
+The inventory object is `claimLimit`, `entries`, `generatedUnixSeconds`, `independentOperator`, `machineId`, `physicalRedundancy`, `providerId`, `quotaBytes`, and `usedBytes`. `independentOperator` and `physicalRedundancy` are false. `claimLimit` is `ATTESTATION_NOT_STORAGE_PROOF`. Entries are sorted by lease id.
+
+### Status
+
+Status: OPEN.
+
+## DR-16-03
+
+### Question
+
+May the development agent listen on a non-loopback address?
+
+### Why this needs the owner
+
+The blueprint describes a storage agent with an inbound port. This goal must not deploy to a production or operator machine. A public bind is not authorized here.
+
+### Proposal, not an approval
+
+`listen` must be a loopback address. `init` and `run` refuse any other address. The TLS certificate is a one-day certificate for `127.0.0.1` and `::1`.
+
+### Status
+
+Status: OPEN.
+
+## DR-16-04
+
+### Question
+
+How does the agent observe a committed lease?
+
+### Why this needs the owner
+
+Provider self-submission is the path goal 11 left to this goal. No query returns one lease by id (DR-08-08). A broadcast acknowledgement is not a commit. This process does not implement a light client.
+
+### Proposal, not an approval
+
+The operator configures an HTTPS base URL. The agent reads a CometBFT-shaped `/status`, `/account`, and `/lease/{id}`, and posts the signed transaction to `/broadcast`. Promotion to `COMMITTED` or `SERVING` uses the lease document, not the broadcast response. A height that does not advance for `stall_after_seconds`, an error, or `catching_up: true` is `chain_uncertain`. New promotions and new broadcasts stop. This endpoint was a test fixture in goal 16, not a four-validator devnet.
+
+### Status
+
+Status: OPEN.
+
+## DR-16-05
+
+### Question
+
+Which quota, bandwidth, clock-uncertainty, and stall numbers may the agent enforce?
+
+### Why this needs the owner
+
+DEC-005 leaves allowances unset. The blueprint does not name these seconds or byte rates.
+
+### Proposal, not an approval
+
+The operator sets `quota_bytes`, `min_free_bytes`, `bandwidth_bytes_per_second`, `transfer_budget_seconds`, `clock_uncertainty_seconds`, and `stall_after_seconds` in the config file. The agent also checks the free space reported by `statfs`. None of these values is a DEC-005 allowance.
+
+### Status
+
+Status: OPEN.
+
+## DR-16-06
+
+### Question
+
+May two provider identities on one machine count as independent ownership or physical redundancy?
+
+### Why this needs the owner
+
+The blueprint counts failure domains as well as node identities. DEC-002 names no operator. This workspace is one machine.
+
+### Proposal, not an approval
+
+The status document sets `independent_operator` and `physical_redundancy` to false and says that several identities on one machine are not independent ownership or physical redundancy. A second key on the same machine does not change either field.
+
+### Status
+
+Status: OPEN.
+
 ## Reversible choices recorded for Goal 01
 
 These are documentation choices. They are not owner approvals.
