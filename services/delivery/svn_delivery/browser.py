@@ -8,7 +8,9 @@ element. Native HLS segment verification is not claimed.
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
@@ -108,6 +110,24 @@ def page_html(content_id: str) -> str:
     return _PAGE.replace("__CONTENT_ID__", json.dumps(content_id))
 
 
+def _stop_browser(process: subprocess.Popen[bytes]) -> None:
+    """Stop the browser and the children that keep its profile directory open."""
+    if process.poll() is None:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except OSError:
+            process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except OSError:
+        return
+
+
 def find_browser() -> str | None:
     for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"):
         found = shutil.which(name)
@@ -130,27 +150,29 @@ def run_until(
     binary = find_browser()
     if binary is None:
         return "ABSENT"
-    with tempfile.TemporaryDirectory(prefix="svn-chrome-") as folder:
-        command = [
-            binary,
-            "--headless=new",
-            "--disable-gpu",
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
-            "--ignore-certificate-errors",
-            "--allow-insecure-localhost",
-            "--autoplay-policy=no-user-gesture-required",
-            "--no-first-run",
-            "--no-default-browser-check",
-            f"--user-data-dir={folder}",
-            "--window-size=640,480",
-            url,
-        ]
+    folder = tempfile.mkdtemp(prefix="svn-chrome-")
+    command = [
+        binary,
+        "--headless=new",
+        "--disable-gpu",
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--ignore-certificate-errors",
+        "--allow-insecure-localhost",
+        "--autoplay-policy=no-user-gesture-required",
+        "--no-first-run",
+        "--no-default-browser-check",
+        f"--user-data-dir={folder}",
+        "--window-size=640,480",
+        url,
+    ]
+    try:
         try:
             process = subprocess.Popen(
                 command,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                start_new_session=True,
             )
         except OSError:
             return "FAILED"
@@ -164,10 +186,6 @@ def run_until(
                 time.sleep(0.2)
             return "FAILED"
         finally:
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait(timeout=5)
+            _stop_browser(process)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
