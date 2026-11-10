@@ -1,22 +1,8 @@
-HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
-TREE 6f48906d4d772ce3810355578ff01efa773e42b2
+HEAD 5602ff8ba570283cf921e6c2018ad11ddc2f6bf6
+TREE e4ec2b4c007f032162cd5df22b9f5a458ada66ae
 DIRTY yes
  M docs/evidence/logs/goal-16/conformance.txt
- M docs/evidence/logs/goal-16/gofmt.txt
  M docs/evidence/logs/goal-16/race.txt
- M docs/evidence/logs/goal-16/scaffold.txt
- M docs/evidence/logs/goal-16/vet.txt
-COMMAND bash -c cd\ agents/provider\ \&\&\ go\ test\ -race\ -count=1\ -timeout\ 3m\ ./...
-ok  	github.com/Maxencejules/shortvideo-network/agents/provider	1.017s
-ok  	github.com/Maxencejules/shortvideo-network/agents/provider/cmd/svn-provider	16.462s
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/agent	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/cert	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/config	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/disk	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/fetch	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/httpserver	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/keys	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/manifest	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/sign	[no test files]
-?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/store	[no test files]
+COMMAND bash -c cd\ agents/provider\ \&\&\ go\ test\ -race\ -count=1\ -timeout\ 3m\ -run\ TestConformance\ ./cmd/svn-provider/
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider/cmd/svn-provider	16.340s
 EXIT:0

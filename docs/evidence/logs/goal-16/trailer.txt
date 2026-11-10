@@ -1,27 +1,17 @@
-HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
-TREE 6f48906d4d772ce3810355578ff01efa773e42b2
+HEAD 5602ff8ba570283cf921e6c2018ad11ddc2f6bf6
+TREE e4ec2b4c007f032162cd5df22b9f5a458ada66ae
 DIRTY yes
- M docs/evidence/logs/goal-16/anchors06.txt
- M docs/evidence/logs/goal-16/anchors07.txt
  M docs/evidence/logs/goal-16/conformance.txt
- M docs/evidence/logs/goal-16/docker.txt
- M docs/evidence/logs/goal-16/gofmt.txt
- M docs/evidence/logs/goal-16/golangci-lint.txt
- M docs/evidence/logs/goal-16/names.txt
- M docs/evidence/logs/goal-16/pg16.txt
  M docs/evidence/logs/goal-16/race.txt
- M docs/evidence/logs/goal-16/runtime.txt
- M docs/evidence/logs/goal-16/scaffold.txt
  M docs/evidence/logs/goal-16/trailer.txt
- M docs/evidence/logs/goal-16/vet.txt
 COMMAND git log -1 --format=full
-commit 065aac1a218f6a7308c930d3fc125e5fe4d13628
+commit 5602ff8ba570283cf921e6c2018ad11ddc2f6bf6
 Author: Maxence Jules <Maxencejules@users.noreply.github.com>
 Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
 
-    Allow the provider to sign its own acceptance transaction.
+    Keep the insufficient-disk check above the measured free space.
     
-    CI run 42774846560 failed the python job because agents/provider/internal/sign/tx.go calls SignWithPrivKey and was not a named chain writer. Goal 16 is that provider self-submission path.
+    CI run 42781924374 failed go-race rest: the test used an earlier free-space reading, and the runner had more room by the time the offer arrived.
     
-    Tested-tree: 6f48906d4d772ce3810355578ff01efa773e42b2
+    Tested-tree: e4ec2b4c007f032162cd5df22b9f5a458ada66ae
 EXIT:0

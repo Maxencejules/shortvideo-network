@@ -1,18 +1,10 @@
-HEAD 065aac1a218f6a7308c930d3fc125e5fe4d13628
-TREE 6f48906d4d772ce3810355578ff01efa773e42b2
+HEAD 5602ff8ba570283cf921e6c2018ad11ddc2f6bf6
+TREE e4ec2b4c007f032162cd5df22b9f5a458ada66ae
 DIRTY yes
- M docs/evidence/logs/goal-16/anchors06.txt
- M docs/evidence/logs/goal-16/anchors07.txt
  M docs/evidence/logs/goal-16/conformance.txt
- M docs/evidence/logs/goal-16/docker.txt
- M docs/evidence/logs/goal-16/gofmt.txt
- M docs/evidence/logs/goal-16/golangci-lint.txt
  M docs/evidence/logs/goal-16/names.txt
- M docs/evidence/logs/goal-16/pg16.txt
  M docs/evidence/logs/goal-16/race.txt
- M docs/evidence/logs/goal-16/runtime.txt
- M docs/evidence/logs/goal-16/scaffold.txt
- M docs/evidence/logs/goal-16/vet.txt
-COMMAND git diff --name-only 7a4aaaf413612650012fef03a3671fb7d9c4b3d4..HEAD
-tests/unit/test_chain_writer_policy.py
+ M docs/evidence/logs/goal-16/trailer.txt
+COMMAND git diff --name-only c46f55493aba3ea80331b26e7defeaa5995e287a..HEAD
+agents/provider/cmd/svn-provider/conformance_test.go
 EXIT:0
