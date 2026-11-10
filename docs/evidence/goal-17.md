@@ -151,7 +151,9 @@ svn-scheduler serve config.json
 
 Run [42801666285](https://github.com/Maxencejules/shortvideo-network/actions/runs/42801666285) on `75a708cfca79057c0f81ec49af31ed0efef041c1` completed **success** at 2026-11-10T10:57:18Z. It was created at 2026-11-10T10:44:18Z. All 16 jobs succeeded: `node`, `python`, `go`, `contract`, `devnet`, and the go-race shards `app`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`, `broadcaster`, `indexer`, `api`, and `rest`. `75a708cf` differs from the tested commit `b7c1ed19891c297c9af9bea4afe646c64ac870c7` only under `docs/evidence/`.
 
-Run [42803521971](https://github.com/Maxencejules/shortvideo-network/actions/runs/42803521971) on `33b4c4644299bc9d5149e431f6ca591c0b1736c9` completed **success** at 2026-11-10T11:10:39Z. It was created at 2026-11-10T10:57:53Z. All 16 jobs succeeded, the same set as above. `33b4c46` differs from `75a708cf` only in this file's Head CI paragraph. No run on this branch was failed or cancelled before the commit that names 42803521971.
+Run [42803521971](https://github.com/Maxencejules/shortvideo-network/actions/runs/42803521971) on `33b4c4644299bc9d5149e431f6ca591c0b1736c9` completed **success** at 2026-11-10T11:10:39Z. It was created at 2026-11-10T10:57:53Z. All 16 jobs succeeded, the same set as above. `33b4c46` differs from `75a708cf` only in this file's Head CI paragraph.
+
+Run [42806263748](https://github.com/Maxencejules/shortvideo-network/actions/runs/42806263748) on `f211aa2e1c6b07157ac5eb05ef92c34782159870` completed **success** at 2026-11-10T11:34:15Z. It was created at 2026-11-10T11:17:33Z. All 16 jobs succeeded, the same set as above. That commit corrects the conformance line 31 citation, names run 42803521971, and records that draft pull request 22 is already open. No run on this branch was failed or cancelled.
 
 ## Log stamps
 
