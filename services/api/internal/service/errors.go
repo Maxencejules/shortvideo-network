@@ -5,6 +5,7 @@ import "errors"
 var (
 	errUnauthenticated = errors.New("unauthenticated")
 	errRole            = errors.New("role")
+	errCSRF            = errors.New("csrf")
 	errNotFound        = errors.New("not found")
 	errConflict        = errors.New("conflict")
 	errDigest          = errors.New("digest")
@@ -34,6 +35,8 @@ func describe(err error) apiError {
 		return apiError{401, "UNAUTHENTICATED", "authentication is required"}
 	case errors.Is(err, errRole):
 		return apiError{403, "ROLE", "role cannot perform this action"}
+	case errors.Is(err, errCSRF):
+		return apiError{403, "CSRF", "cross-site request was rejected"}
 	case errors.Is(err, errNoAllowance):
 		return apiError{403, "NO_ALLOWANCE", "account has no upload allowance"}
 	case errors.Is(err, errInputQuota):

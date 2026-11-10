@@ -2,6 +2,7 @@ package milestone_test
 
 import (
 	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers/capability"
 	authorityv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/authority/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
+	"github.com/Maxencejules/shortvideo-network/services/api/passtest"
 )
 
 func (m *mile) bootProviders(pub ed25519.PublicKey) {
@@ -262,18 +264,45 @@ func (m *mile) bootAPI() {
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		m.t.Fatal(err)
 	}
+	doc["environment"] = "production"
+	doc["enable_dev_fixtures"] = false
+	delete(doc, "fixtures")
 	doc["listen"] = "127.0.0.1:" + strconv.Itoa(port)
+	doc["webauthn"] = map[string]any{
+		"rp_id": passtest.RPID, "rp_display_name": passtest.Display, "origins": []string{passtest.Origin},
+	}
 	writeJSON(m.t, cfg, doc)
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		m.t.Fatal(err)
+	}
+	bootstrap := hex.EncodeToString(buf)
 	cmd := exec.Command(m.bins["svn-api"])
 	cmd.Env = append(m.env(),
 		"SVN_API_CONFIG="+cfg, "SVN_API_PGHOST=127.0.0.1", "SVN_API_PGPORT="+pg.port,
 		"SVN_API_PGDATABASE=svn_api", "SVN_API_PGUSER=svn_api", "SVN_API_PGPASSWORD="+pg.password,
 		"SVN_API_QUARANTINE_DIR="+m.worker, "SVN_API_LISTEN="+doc["listen"].(string),
+		"SVN_API_BOOTSTRAP_TOKEN="+bootstrap,
 	)
 	c := m.startCmd("api", cmd)
 	m.waitHTTP(http.DefaultClient, m.api+"/uploads/u00000000000000000000000000000000", 401, 30*time.Second, c)
 	m.pg = pg
+	operator := passtest.NewParty(m.api)
+	if err := operator.Enroll(bootstrap); err != nil {
+		m.t.Fatal(err)
+	}
+	invited := m.sendJSON(http.MethodPost, m.api+"/v1/invites", map[string]string{"Authorization": "Bearer " + operator.Token}, map[string]string{"role": "creator"})
+	if invited.status != http.StatusCreated {
+		m.t.Fatalf("invite %d %s", invited.status, invited.body)
+	}
+	creator := passtest.NewParty(m.api)
+	if err := creator.Enroll(str(invited.json()["invite"])); err != nil {
+		m.t.Fatal(err)
+	}
+	m.operatorToken, m.operatorID = operator.Token, operator.AccountID
+	m.creatorToken, m.creatorID = creator.Token, creator.AccountID
 	fmt.Printf("phase=api url=%s postgres=%s\n", m.api, pg.version)
+	fmt.Printf("phase=account creator=%s role=creator operator=%s role=operator fixture=false\n", m.creatorID, m.operatorID)
 }
 
 type pgInfo struct {

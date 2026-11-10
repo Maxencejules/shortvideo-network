@@ -775,12 +775,19 @@ func TestRateLimitRoleAndProductionFixtures(t *testing.T) {
 	if _, err := New(t.Context(), Options{
 		Environment: "production", EnableDevFixtures: true, Fixtures: []Fixture{h.a},
 		Limits: wideLimits(1000), QuarantineDir: t.TempDir(), Database: testConfig,
+		WebAuthn: testWebAuthn(),
 	}); err == nil {
 		t.Fatal("production accepted dev fixtures")
 	}
+	if _, err := New(t.Context(), Options{
+		Environment: "production", Limits: wideLimits(1000), QuarantineDir: t.TempDir(),
+		Database: testConfig, WebAuthn: testWebAuthn(), Verifier: rejectAll{},
+	}); err == nil {
+		t.Fatal("production accepted an injected verifier")
+	}
 	prod, err := New(t.Context(), Options{
 		Environment: "production", Limits: wideLimits(1000), QuarantineDir: t.TempDir(),
-		Database: testConfig, Verifier: rejectAll{},
+		Database: testConfig, WebAuthn: testWebAuthn(),
 	})
 	if err != nil {
 		t.Fatal(err)

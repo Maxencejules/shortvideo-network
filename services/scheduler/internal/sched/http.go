@@ -4,12 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Maxencejules/shortvideo-network/services/scheduler/internal/policy"
 	"github.com/Maxencejules/shortvideo-network/services/scheduler/internal/stage"
@@ -26,10 +28,12 @@ func writeJSON(w http.ResponseWriter, v any) {
 // Distribution does not serve the origin backup.
 func (s *Sched) Handler() http.Handler {
 	mux := http.NewServeMux()
+	// GET /health is process liveness. It carries no account data.
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"ok":true,"service":"scheduler","scheduler_signed":false}`))
 	})
+	// GET /v1/availability is the public coordination read. It is not an account record.
 	mux.HandleFunc("GET /v1/availability", func(w http.ResponseWriter, r *http.Request) {
 		view, err := s.Availability(r.Context(), r.URL.Query().Get("content"))
 		if err != nil {
@@ -42,6 +46,8 @@ func (s *Sched) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/repairs", s.repairHTTP)
 	mux.HandleFunc("POST /v1/origin", s.originHTTP)
 	mux.HandleFunc("POST /v1/hosts", s.hostHTTP)
+	// GET /v1/distribution serves a package this process already accepted.
+	// Providers fetch it on the loopback listener. It is not an application session.
 	mux.HandleFunc("GET /v1/distribution/{content}/{version}", func(w http.ResponseWriter, r *http.Request) {
 		version, err := strconv.ParseUint(r.PathValue("version"), 10, 64)
 		if err != nil || version == 0 {
@@ -78,6 +84,9 @@ type publicationRequest struct {
 }
 
 func (s *Sched) publishHTTP(w http.ResponseWriter, r *http.Request) {
+	if !s.allowControl(w, r) {
+		return
+	}
 	if s.cfg.Stage == nil {
 		http.Error(w, "stage unset", http.StatusServiceUnavailable)
 		return
@@ -129,6 +138,9 @@ func (s *Sched) publishHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Sched) repairHTTP(w http.ResponseWriter, r *http.Request) {
+	if !s.allowControl(w, r) {
+		return
+	}
 	var req struct {
 		ContentID string `json:"content_id"`
 		Version   uint64 `json:"version"`
@@ -146,6 +158,9 @@ func (s *Sched) repairHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Sched) hostHTTP(w http.ResponseWriter, r *http.Request) {
+	if !s.allowControl(w, r) {
+		return
+	}
 	var req struct {
 		ProviderID string `json:"provider_id"`
 		Endpoint   string `json:"endpoint"`
@@ -165,6 +180,9 @@ func (s *Sched) hostHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Sched) originHTTP(w http.ResponseWriter, r *http.Request) {
+	if !s.allowControl(w, r) {
+		return
+	}
 	var req struct {
 		ContentID string `json:"content_id"`
 		Up        bool   `json:"up"`
@@ -175,6 +193,56 @@ func (s *Sched) originHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	s.SetOrigin(req.ContentID, req.Up)
 	writeJSON(w, map[string]any{"content_id": req.ContentID, "origin_up": req.Up})
+}
+
+// allowControl requires an application operator session. A missing checker
+// refuses the route. Loopback binding is not the authorization.
+func (s *Sched) allowControl(w http.ResponseWriter, r *http.Request) bool {
+	if s.cfg.Control == nil || !s.cfg.Control(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return false
+	}
+	return true
+}
+
+// SessionControl checks a bearer token with the account service. The account
+// service is the identity authority. An empty URL refuses every call. Only an
+// active operator session is accepted. A creator session is not.
+func SessionControl(sessionURL string) func(*http.Request) bool {
+	if sessionURL == "" {
+		return func(*http.Request) bool { return false }
+	}
+	client := &http.Client{Timeout: 2 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return errors.New("redirect")
+	}}
+	return func(r *http.Request) bool {
+		auth := r.Header.Get("Authorization")
+		if len(auth) < 8 || len(auth) > 512 || !strings.HasPrefix(auth, "Bearer ") {
+			return false
+		}
+		req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, sessionURL, nil)
+		if err != nil {
+			return false
+		}
+		req.Header.Set("Authorization", auth)
+		res, err := client.Do(req)
+		if err != nil {
+			return false
+		}
+		defer res.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(res.Body, 4096))
+		if err != nil || res.StatusCode != http.StatusOK {
+			return false
+		}
+		var view struct {
+			Role   string `json:"role"`
+			Status string `json:"status"`
+		}
+		if json.Unmarshal(body, &view) != nil {
+			return false
+		}
+		return view.Role == "operator" && view.Status == "active"
+	}
 }
 
 func readUnder(root, path string) ([]byte, error) {

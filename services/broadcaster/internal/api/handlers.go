@@ -27,6 +27,8 @@ func callerOf(ctx context.Context) policy.Caller {
 
 // routes builds the handler: every route needs an authenticated, known
 // caller; every request is bounded in number and time.
+// The caller is the operator mTLS identity for chain submission. It is not
+// an application account session and it is not a viewer passkey.
 func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /v1/intents", s.handleCreate)
