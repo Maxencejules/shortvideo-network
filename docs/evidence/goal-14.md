@@ -64,7 +64,7 @@ BLOCKED, carried from goals 04, 11, 12, and 13:
 | FFmpeg build and licence record | VERIFIED as a record. BLOCKED as an approval (DEC-006, REQ-MEDIA-009) | [build-record.txt](logs/goal-14/build-record.txt). `ffmpeg version 6.1.1-3ubuntu5`, configuration includes `--enable-gpl`. The GPL record does not settle codec patents. |
 | Package format approved | BLOCKED | DR-14-02 |
 | Celery/RabbitMQ or an approved queue | BLOCKED | DR-14-01. The PostgreSQL claim is the proposal that was tested. |
-| Head CI | The run on the round-2 tip is written in the Head CI section after that run is checked. | This row is not a pass until that run is named. |
+| Head CI | VERIFIED | Run [42751446400](https://github.com/Maxencejules/shortvideo-network/actions/runs/42751446400) on `67893c888024386010692506cff13fc0e1bfcc54` completed success. 16 of 16 jobs. That is the round-2 tip that was checked. |
 
 `media-tests.txt` exit 0. Pytest printed `15 passed, 1 skipped`. The skip is `test_sixty_second_input_timing`, which ran in `timing.txt` with `SVN_MEDIA_TIMING=1` and passed. A skip of that test in the default suite is not the timing result.
 
@@ -120,6 +120,8 @@ Run [42743416537](https://github.com/Maxencejules/shortvideo-network/actions/run
 Run [42745330380](https://github.com/Maxencejules/shortvideo-network/actions/runs/42745330380) on `992d0099720104a60c9c61a5fddc0991f8d2e5bf` completed **success**. All 16 jobs succeeded.
 
 Run [42747253383](https://github.com/Maxencejules/shortvideo-network/actions/runs/42747253383) on `d143f137e5ec4ce74a2a0573950c1605588bee60` completed **success**. All 16 jobs succeeded. That commit differs from `992d009` only in this file.
+
+Run [42751446400](https://github.com/Maxencejules/shortvideo-network/actions/runs/42751446400) on `67893c888024386010692506cff13fc0e1bfcc54` completed **success**. All 16 jobs succeeded. That commit is the round-2 evidence correction. It differs from `ddc3ef1` only under `docs/evidence/`.
 
 ## Log stamps
 
