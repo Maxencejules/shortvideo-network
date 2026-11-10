@@ -1,0 +1,174 @@
+$ ffmpeg -version
+ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+built with gcc 13 (Ubuntu 13.2.0-23ubuntu3)
+configuration: --prefix=/usr --extra-version=3ubuntu5 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --disable-omx --enable-gnutls --enable-libaom --enable-libass --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libcodec2 --enable-libdav1d --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libglslang --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzimg --enable-openal --enable-opencl --enable-opengl --disable-sndio --enable-libvpl --disable-libmfx --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-ladspa --enable-libbluray --enable-libjack --enable-libpulse --enable-librabbitmq --enable-librist --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libx264 --enable-libzmq --enable-libzvbi --enable-lv2 --enable-sdl2 --enable-libplacebo --enable-librav1e --enable-pocketsphinx --enable-librsvg --enable-libjxl --enable-shared
+libavutil      58. 29.100 / 58. 29.100
+libavcodec     60. 31.102 / 60. 31.102
+libavformat    60. 16.100 / 60. 16.100
+libavdevice    60.  3.100 / 60.  3.100
+libavfilter     9. 12.100 /  9. 12.100
+libswscale      7.  5.100 /  7.  5.100
+libswresample   4. 12.100 /  4. 12.100
+libpostproc    57.  3.100 / 57.  3.100
+
+$ ffmpeg -buildconf
+
+  configuration:
+    --prefix=/usr
+    --extra-version=3ubuntu5
+    --toolchain=hardened
+    --libdir=/usr/lib/x86_64-linux-gnu
+    --incdir=/usr/include/x86_64-linux-gnu
+    --arch=amd64
+    --enable-gpl
+    --disable-stripping
+    --disable-omx
+    --enable-gnutls
+    --enable-libaom
+    --enable-libass
+    --enable-libbs2b
+    --enable-libcaca
+    --enable-libcdio
+    --enable-libcodec2
+    --enable-libdav1d
+    --enable-libflite
+    --enable-libfontconfig
+    --enable-libfreetype
+    --enable-libfribidi
+    --enable-libglslang
+    --enable-libgme
+    --enable-libgsm
+    --enable-libharfbuzz
+    --enable-libmp3lame
+    --enable-libmysofa
+    --enable-libopenjpeg
+    --enable-libopenmpt
+    --enable-libopus
+    --enable-librubberband
+    --enable-libshine
+    --enable-libsnappy
+    --enable-libsoxr
+    --enable-libspeex
+    --enable-libtheora
+    --enable-libtwolame
+    --enable-libvidstab
+    --enable-libvorbis
+    --enable-libvpx
+    --enable-libwebp
+    --enable-libx265
+    --enable-libxml2
+    --enable-libxvid
+    --enable-libzimg
+    --enable-openal
+    --enable-opencl
+    --enable-opengl
+    --disable-sndio
+    --enable-libvpl
+    --disable-libmfx
+    --enable-libdc1394
+    --enable-libdrm
+    --enable-libiec61883
+    --enable-chromaprint
+    --enable-frei0r
+    --enable-ladspa
+    --enable-libbluray
+    --enable-libjack
+    --enable-libpulse
+    --enable-librabbitmq
+    --enable-librist
+    --enable-libsrt
+    --enable-libssh
+    --enable-libsvtav1
+    --enable-libx264
+    --enable-libzmq
+    --enable-libzvbi
+    --enable-lv2
+    --enable-sdl2
+    --enable-libplacebo
+    --enable-librav1e
+    --enable-pocketsphinx
+    --enable-librsvg
+    --enable-libjxl
+    --enable-shared
+
+$ ffmpeg -codecs
+ DEV.LS h264                 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (decoders: h264 h264_v4l2m2m h264_qsv h264_cuvid) (encoders: libx264 libx264rgb h264_nvenc h264_qsv h264_v4l2m2m h264_vaapi)
+ DEVILS jpeg2000             JPEG 2000 (encoders: jpeg2000 libopenjpeg)
+ DEVILS jpegls               JPEG-LS
+ DEVILS jpegxl               JPEG XL (decoders: libjxl) (encoders: libjxl)
+ .EVI.S ljpeg                Lossless JPEG
+ DEVIL. mjpeg                Motion JPEG (decoders: mjpeg mjpeg_cuvid mjpeg_qsv) (encoders: mjpeg mjpeg_qsv mjpeg_vaapi)
+ D.VIL. mjpegb               Apple MJPEG-B
+ D.V.L. nuv                  NuppelVideo/RTJPEG
+ D.VI.S pgx                  PGX (JPEG2000 Test Format)
+ D.VIL. smvjpeg              Sigmatel Motion Video
+ D.VIL. sp5x                 Sunplus JPEG (SP5X)
+ DEAIL. aac                  AAC (Advanced Audio Coding) (decoders: aac aac_fixed)
+ D.AIL. aac_latm             AAC LATM (Advanced Audio Coding LATM syntax)
+ D.AIL. adpcm_ima_smjpeg     ADPCM IMA Loki SDL MJPEG
+
+copyright-head
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: FFmpeg
+Upstream-Contact: ffmpeg-devel@ffmpeg.org
+Source: https://ffmpeg.org
+Comment:
+ Most files in FFmpeg are licensed under the GNU Lesser General Public License
+ version 2.1 or later (LGPL v2.1+), but some optional parts of FFmpeg are
+ licensed under the GNU General Public License version 2 or later (GPL v2+)
+ and a few have different, but compatible licenses.
+ .
+ For building the default Debian packages some of the GPL licensed files are used,
+ so the resulting binaries are licensed under GPL v2+.
+ For libavcodec/libavfilter an extra flavor is built, which links against external
+ libraries licensed under the Apache License 2.0, which makes it effectively licensed
+ under the GPL v3+
+ The HTML documentation /usr/share/doc/ffmpeg/manual/*.html in the ffmpeg-doc
+ package is effectively licensed under GPL-3+, because during its creation
+ the GPL-3+ licensed file doc/t2h.pm is used.
+ .
+ FFmpeg can also be combined with non-free libraries, which would make the
+ resulting binaries unredistributable.
+ But this is not done for the Debian packages.
+
+Files: *
+Copyright:
+  Christian Holschuh
+  Sebastien Bechet <s.bechet@av7.net>
+  1990, James Ashton - Sydney University
+  1993, Computer Science, Speech Group
+  1994-2012, the Xiph.Org Foundation and contributors
+  1997-1999, H. Dietz
+  1997-1999, R. Fisher
+  1998-2009, Conifer Software
+  1999, Nick Bailey
+  1999, Roger Hardiman
+  1999-2000, Sebastien Rougeaux <sebastien.rougeaux@anu.edu.au>
+  1999-2001, Chris Bagwell <cbagwell@sprynet.com>
+  1999-2013, Intel Corporation
+  2000, Chris Ausbrooks <weed@bucket.pp.ualr.edu>
+  2000, Fabien COELHO <fabien@coelho.net>
+  2000, John Walker
+  2000-2001, Michel Lespinasse <walken@zoy.org>
+  2000-2001, Peter Gubanov <peter@elecard.net.ru>
+  2000-2003, Nick Kurshev <nickols_k@mail.ru>
+  2000-2010, Fabrice Bellard
+  2001, Dan Dennedy <dan@dennedy.org>
+  2001, Heikki Leinonen
+  2001, Juan J. Sierralta P
+  2001, Lionel Ulmer
+  2001, Tim Ferguson
+  2001-2003, BERO <bero@geocities.co.jp>
+  2001-2006, Daniel Maas <dmaas@dcine.com> <dmaas@maasdigital.com>
+  2001-2010, Krzysztof Foltman, Markus Schmidt, Thor Harald Johansen, Damien Zammit, Vladimir Sadovnikov and others
+  2001-2018, Michael Niedermayer <michaelni@gmx.at>
+  2001-2022, Peter Ross <pross@xvid.org>
+  2001-2019, The FFmpeg project
+  2002, Anders Johansson <ajh@atri.curtin.edu.au>
+  2002, Brian Foley
+  2002, Daniel Pouzzner
+  2002, Dieter Shirley
+
+This Ubuntu package reports a GPL build when --enable-gpl is present. A GPL build record does not settle codec patent obligations. DEC-006 is open.
+
+EXIT:0

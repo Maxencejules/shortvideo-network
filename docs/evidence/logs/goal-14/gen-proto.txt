@@ -1,0 +1,3 @@
+CMD PATH=.toolchains/bin:$PATH bash scripts/gen_proto.sh
+generated 28 proto files
+EXIT:0

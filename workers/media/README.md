@@ -1,3 +1,5 @@
 # workers/media
 
-Scaffolding for isolated media jobs. Goal 04 pins the development-profile FFmpeg package. Goal 13 leaves a `QUEUED` row in `api.processing_jobs` and the input under a generated name in private quarantine. Goal 14 selects the isolated worker build, records its licence flags, and runs it outside the API process. This package does not invoke a shell.
+Isolated FFmpeg worker for one queued upload. `python -m svn_media run --root <dir>` recovers a crashed job, then encodes every filesystem job under that root. `python -m svn_media claim-run` first claims `api.processing_jobs` rows through `psql`. `python -m svn_media build-record` prints the FFmpeg build on this host.
+
+The shell is not used. Caption text is not a command argument. The process does not publish and does not hold a signer key. The package layout and the open decisions are in `docs/architecture/media-worker.md`.

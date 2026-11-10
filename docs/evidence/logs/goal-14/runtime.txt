@@ -1,0 +1,10 @@
+CMD bash -lc date -u +%Y-%m-%dT%H:%M:%SZ; uname -a; python3 --version; go version; ffmpeg -version | head -n 1; /usr/lib/postgresql/18/bin/postgres --version; id; nproc
+2026-11-10T01:23:40Z
+Linux cursor 6.12.113+ #1 SMP PREEMPT_DYNAMIC Mon Nov  9 16:04:37 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+Python 3.12.3
+go version go1.26.10 linux/amd64
+ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev)
+4
+EXIT:0

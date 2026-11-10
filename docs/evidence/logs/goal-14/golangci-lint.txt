@@ -1,0 +1,3 @@
+CMD golangci-lint version
+environment: line 2: golangci-lint: command not found
+EXIT:127

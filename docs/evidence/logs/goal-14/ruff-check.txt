@@ -1,0 +1,3 @@
+CMD .venv/bin/ruff check services workers/media packages/protocol tests scripts
+[1;32mAll checks passed![0m
+EXIT:0

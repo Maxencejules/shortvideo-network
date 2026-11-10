@@ -1,0 +1,3 @@
+CMD .venv/bin/ruff format --check services workers/media packages/protocol tests scripts
+50 files already formatted
+EXIT:0
