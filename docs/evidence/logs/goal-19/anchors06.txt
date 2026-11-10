@@ -1,0 +1,35 @@
+COMMAND python3 docs/evidence/goal-06/mutants.py --check
+DATE 2026-11-10T18:49:05Z
+HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd
+TREE 4c10752fdc54f028b996d50d1038fb9004512e0e
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-19/accounts.txt
+DIRTY_PATH docs/evidence/logs/goal-19/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-19/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-19/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-19/python-records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scheduler-auth.txt
+DIRTY_PATH docs/evidence/logs/goal-19/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-19/trailer.txt
+DIRTY_PATH docs/evidence/logs/goal-19/vet.txt
+revision HEAD commit fec7ab32dc24be11065327ccd8b0d996e53798cd tree 4c10752fdc54f028b996d50d1038fb9004512e0e
+copy /tmp/goal06-mutants-g33a3wza/tree (git archive)
+mutants 119 of 119
+NOT_FOUND ceiling-gone chain/x/authority/engine.go occurrences=0
+NOT_FOUND unknown-limit-ok chain/x/authority/engine.go occurrences=0
+NOT_FOUND seat-rotation-keeps-admission chain/x/authority/engine.go occurrences=0
+NOT_FOUND seat-rotation-no-submitter-dup chain/x/authority/engine.go occurrences=0
+NOT_FOUND svnd-skips-authority-rules chain/cmd/svnd/main.go occurrences=0
+NOT_FOUND swap-engine-282 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-492 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-548 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-575 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-578 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-591 chain/x/authority/engine.go occurrences=0
+NOT_FOUND swap-engine-855 chain/x/authority/engine.go occurrences=0
+NOT_FOUND ante-extra-admission chain/app/app.go occurrences=0
+RESULT search-string problems=13; no test was run
+EXIT:1

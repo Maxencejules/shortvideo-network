@@ -37,6 +37,8 @@ import (
 )
 
 // Server is one provider's view of one node.
+// This is the milestone chain gateway. Its /account route is a chain account
+// query, not an application login. It does not accept an application session.
 type Server struct {
 	RPC       string
 	Account   string

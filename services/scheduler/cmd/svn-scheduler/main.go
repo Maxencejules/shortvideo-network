@@ -31,15 +31,16 @@ func command(args []string) int {
 		return 1
 	}
 	var file struct {
-		Listen         string       `json:"listen"`
-		IndexerURL     string       `json:"indexer_url"`
-		PolicyID       string       `json:"policy_id"`
-		PhysicalDomain string       `json:"physical_failure_domain"`
-		OfferCommitURL string       `json:"offer_commit_url"`
-		StageToken     string       `json:"stage_token"`
-		PackageRoot    string       `json:"package_root"`
-		ConfirmSeconds int          `json:"confirm_seconds"`
-		Hosts          []sched.Host `json:"hosts"`
+		Listen            string       `json:"listen"`
+		IndexerURL        string       `json:"indexer_url"`
+		PolicyID          string       `json:"policy_id"`
+		PhysicalDomain    string       `json:"physical_failure_domain"`
+		OfferCommitURL    string       `json:"offer_commit_url"`
+		StageToken        string       `json:"stage_token"`
+		PackageRoot       string       `json:"package_root"`
+		ConfirmSeconds    int          `json:"confirm_seconds"`
+		ControlSessionURL string       `json:"control_session_url"`
+		Hosts             []sched.Host `json:"hosts"`
 	}
 	if err := json.Unmarshal(raw, &file); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
@@ -76,6 +77,7 @@ func command(args []string) int {
 		PolicyID: file.PolicyID, PhysicalDomain: file.PhysicalDomain,
 		IndexerURL: file.IndexerURL, Hosts: file.Hosts,
 		OfferCommitURL: file.OfferCommitURL, PackageRoot: file.PackageRoot,
+		Control: sched.SessionControl(file.ControlSessionURL),
 	}
 	if file.ConfirmSeconds > 0 {
 		cfg.ConfirmFor = time.Duration(file.ConfirmSeconds) * time.Second

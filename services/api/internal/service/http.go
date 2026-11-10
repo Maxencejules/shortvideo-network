@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/Maxencejules/shortvideo-network/services/api/internal/account"
 )
 
 var (
@@ -27,6 +29,9 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("GET /uploads/{uploadID}", s.getUpload)
 	mux.HandleFunc("DELETE /uploads/{uploadID}", s.cancel)
 	mux.HandleFunc("POST /publish", s.publish)
+	if s.accounts != nil {
+		s.accounts.Register(mux)
+	}
 	return mux
 }
 
@@ -301,6 +306,19 @@ func (s *Service) publish(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) session(r *http.Request) (Principal, error) {
+	if s.accounts != nil {
+		sess, err := s.accounts.Authenticate(r)
+		if err != nil {
+			if errors.Is(err, account.ErrCSRF) {
+				return Principal{}, errCSRF
+			}
+			return Principal{}, errUnauthenticated
+		}
+		if sess.Role != "creator" {
+			return Principal{}, errRole
+		}
+		return Principal{AccountID: sess.AccountID, Role: sess.Role}, nil
+	}
 	kind, token, err := splitAuth(r.Header.Get("Authorization"))
 	if err != nil || kind != "Bearer" {
 		return Principal{}, errUnauthenticated

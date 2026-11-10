@@ -1,0 +1,11 @@
+COMMAND python3 -c import\ importlib.util\;\ spec=importlib.util.spec_from_file_location\(\"t\"\,\"tests/unit/test_account_records.py\"\)\;\ m=importlib.util.module_from_spec\(spec\)\;\ spec.loader.exec_module\(m\)\;\ m.test_public_record_history_fixture\(\)\;\ print\(\"ok\"\)
+DATE 2026-11-10T18:48:47Z
+HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd
+TREE 4c10752fdc54f028b996d50d1038fb9004512e0e
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-19/accounts.txt
+DIRTY_PATH docs/evidence/logs/goal-19/records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scheduler-auth.txt
+ok
+EXIT:0

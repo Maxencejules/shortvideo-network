@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/ed25519"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -9,23 +10,25 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/Maxencejules/shortvideo-network/services/api/internal/account"
 	"github.com/lib/pq"
 )
 
 // Service is the upload API. Publication is not a status this service can set.
 type Service struct {
-	store   *Store
-	blob    *Blob
-	limits  Limits
-	verify  Verifier
-	now     func() time.Time
-	delay   time.Duration
-	ffprobe string
-	db      *sql.DB
+	store    *Store
+	blob     *Blob
+	limits   Limits
+	verify   Verifier
+	accounts *account.Service
+	now      func() time.Time
+	delay    time.Duration
+	ffprobe  string
+	db       *sql.DB
 }
 
 // Options is the process configuration. Database is required.
-// A production process must pass Verifier and must not pass fixtures.
+// Production uses the account service. It refuses fixtures and an injected verifier.
 type Options struct {
 	Environment       string
 	EnableDevFixtures bool
@@ -37,6 +40,13 @@ type Options struct {
 	Verifier          Verifier
 	ProbeDelay        time.Duration
 	Now               func() time.Time
+	WebAuthn          WebAuthnConfig
+	BootstrapToken    string
+	ExportKey         ed25519.PrivateKey
+	TrustedExporters  []ed25519.PublicKey
+	EnrollPerMinute   int
+	LoginPerMinute    int
+	SessionTTL        time.Duration
 }
 
 // New migrates the schema, provisions fixture allowances, and refuses a public launch.
@@ -53,10 +63,12 @@ func New(ctx context.Context, opt Options) (*Service, error) {
 		if opt.EnableDevFixtures || len(opt.Fixtures) > 0 || opt.ProbeDelay != 0 {
 			return nil, errors.New("production refuses development fixtures")
 		}
-		if opt.Verifier == nil {
-			return nil, errors.New("production session verifier is not configured")
+		if opt.Verifier != nil {
+			return nil, errors.New("production refuses an injected session verifier")
 		}
-		verify = opt.Verifier
+		if opt.WebAuthn.RPID == "" || len(opt.WebAuthn.Origins) == 0 {
+			return nil, errors.New("production webauthn relying party is not configured")
+		}
 	case "development":
 		if !opt.EnableDevFixtures {
 			return nil, errors.New("development requires explicit dev fixtures")
@@ -95,6 +107,21 @@ func New(ctx context.Context, opt Options) (*Service, error) {
 		return nil, err
 	}
 	store := NewStore(db)
+	var accounts *account.Service
+	if opt.Environment == "production" {
+		opened, err := account.Open(pingCtx, db, account.Config{
+			RPID: opt.WebAuthn.RPID, Display: opt.WebAuthn.DisplayName, Origins: opt.WebAuthn.Origins,
+			InputAllowance: opt.Limits.AccountInputAllowanceBytes, OutputAllowance: opt.Limits.AccountOutputBudgetBytes,
+			EnrollPerMinute: opt.EnrollPerMinute, LoginPerMinute: opt.LoginPerMinute, SessionTTL: opt.SessionTTL,
+			BootstrapToken: opt.BootstrapToken, ExportKey: opt.ExportKey, TrustedExporters: opt.TrustedExporters,
+			Now: nowFunc(opt),
+		})
+		if err != nil {
+			_ = db.Close()
+			return nil, err
+		}
+		accounts = opened
+	}
 	if opt.Environment == "development" {
 		for _, fixture := range opt.Fixtures {
 			if fixture.Role != "creator" {
@@ -106,20 +133,18 @@ func New(ctx context.Context, opt Options) (*Service, error) {
 			}
 		}
 	}
-	now := opt.Now
-	if now == nil {
-		now = time.Now
-	}
+	now := nowFunc(opt)
 	return &Service{
-		store:   store,
-		blob:    blob,
-		limits:  opt.Limits,
-		verify:  verify,
-		now:     now,
-		delay:   opt.ProbeDelay,
-		ffprobe: ffprobe,
-		db:      db,
+		store: store, blob: blob, limits: opt.Limits, verify: verify, accounts: accounts,
+		now: now, delay: opt.ProbeDelay, ffprobe: ffprobe, db: db,
 	}, nil
+}
+
+func nowFunc(opt Options) func() time.Time {
+	if opt.Now != nil {
+		return opt.Now
+	}
+	return time.Now
 }
 
 // Close closes the database pool.

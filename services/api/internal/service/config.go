@@ -39,15 +39,28 @@ type Fixture struct {
 	Role      string `json:"role"`
 }
 
-// File is the on-disk configuration. Database credentials are not in this file.
+// WebAuthnConfig is the relying party. Origins are exact. http://localhost is
+// the development relying-party origin. Any other origin must be https.
+type WebAuthnConfig struct {
+	RPID        string   `json:"rp_id"`
+	DisplayName string   `json:"rp_display_name"`
+	Origins     []string `json:"origins"`
+}
+
+// File is the on-disk configuration. Database credentials, the bootstrap
+// invite, and the application export key are not in this file.
 type File struct {
-	Environment       string    `json:"environment"`
-	EnableDevFixtures bool      `json:"enable_dev_fixtures"`
-	PublicLaunch      bool      `json:"public_launch"`
-	Listen            string    `json:"listen"`
-	QuarantineDir     string    `json:"quarantine_dir"`
-	Fixtures          []Fixture `json:"fixtures"`
-	Limits            Limits    `json:"limits"`
+	Environment       string         `json:"environment"`
+	EnableDevFixtures bool           `json:"enable_dev_fixtures"`
+	PublicLaunch      bool           `json:"public_launch"`
+	Listen            string         `json:"listen"`
+	QuarantineDir     string         `json:"quarantine_dir"`
+	Fixtures          []Fixture      `json:"fixtures"`
+	Limits            Limits         `json:"limits"`
+	WebAuthn          WebAuthnConfig `json:"webauthn"`
+	EnrollPerMinute   int            `json:"enroll_per_minute"`
+	LoginPerMinute    int            `json:"login_per_minute"`
+	SessionSeconds    int            `json:"session_seconds"`
 }
 
 // LoadFile reads a configuration file. It does not open a database or a socket.

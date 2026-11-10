@@ -1,0 +1,30 @@
+COMMAND git log -1 --format=full
+DATE 2026-11-10T18:49:05Z
+HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd
+TREE 4c10752fdc54f028b996d50d1038fb9004512e0e
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-19/accounts.txt
+DIRTY_PATH docs/evidence/logs/goal-19/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-19/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-19/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-19/python-records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/records.txt
+DIRTY_PATH docs/evidence/logs/goal-19/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-19/scheduler-auth.txt
+DIRTY_PATH docs/evidence/logs/goal-19/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-19/vet.txt
+commit fec7ab32dc24be11065327ccd8b0d996e53798cd
+Author: Maxence Jules <Maxencejules@users.noreply.github.com>
+Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
+
+    goal 19: invited accounts, sessions, and portability
+    
+    Passkeys are verified by go-webauthn. Sessions rotate and revoke.
+    Export, import, and deletion are in the account service. Delegated
+    host-signing custody and account recovery stay blocked on DEC-001.
+    Scheduler control routes require an operator session.
+    
+    Tested-tree: 4c10752fdc54f028b996d50d1038fb9004512e0e
+    Co-authored-by: Maxence Jules <Maxencejules@users.noreply.github.com>
+EXIT:0

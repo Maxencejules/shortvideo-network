@@ -27,6 +27,9 @@ type Server struct {
 }
 
 // Handler returns the HTTP handler.
+// These routes are the committed chain read model. They are public
+// coordination, not application account data, so they do not take an
+// account session.
 func (s Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/status", s.status)
