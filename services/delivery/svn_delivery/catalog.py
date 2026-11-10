@@ -111,12 +111,10 @@ class Catalog:
             if self._chain != "HELD" and not self._host_granted(host_id):
                 raise DeliveryError("REFUSED")
             self._hosts[host_id] = BoundHost(host_id, role, origin.rstrip("/"))
-            self._write_hosts()
 
     def unbind_host(self, host_id: str) -> None:
         with self._lock:
             self._hosts.pop(host_id, None)
-            self._write_hosts()
 
     def accept_replica(self, host_id: str, directory: Path) -> None:
         """Advertise `directory` only after its hashes match the origin package."""
@@ -450,13 +448,6 @@ class Catalog:
     def _grant_path(self, content_id: str) -> Path:
         return self.root / "playback" / f"{content_id}.json"
 
-    def _write_hosts(self) -> None:
-        rows = [
-            {"host_id": host.host_id, "role": host.role, "origin": host.origin}
-            for host in self._hosts.values()
-        ]
-        _write_json(self.root / "playback" / "hosts.json", {"hosts": rows})
-
     def _reload_grants_locked(self) -> None:
         """Pick up a grant written by another process. The caller holds the lock."""
         folder = self.root / "playback"
@@ -478,31 +469,6 @@ class Catalog:
                 value = None
             if isinstance(value, dict) and value.get("note") in CHAIN_NOTES:
                 self._chain = str(value["note"])
-        hosts_path = self.root / "playback" / "hosts.json"
-        if hosts_path.is_file() and not hosts_path.is_symlink():
-            try:
-                saved = json.loads(hosts_path.read_text(encoding="utf-8"))
-            except (OSError, UnicodeError, json.JSONDecodeError):
-                saved = None
-            rows = saved.get("hosts") if isinstance(saved, dict) else None
-            if isinstance(rows, list):
-                for row in rows:
-                    if not isinstance(row, dict):
-                        continue
-                    host_id = row.get("host_id")
-                    role = row.get("role")
-                    origin = row.get("origin")
-                    if (
-                        isinstance(host_id, str)
-                        and ID.fullmatch(host_id)
-                        and role in {"origin", "test"}
-                        and isinstance(origin, str)
-                    ):
-                        try:
-                            _loopback_origin(origin)
-                        except DeliveryError:
-                            continue
-                        self._hosts[host_id] = BoundHost(host_id, role, origin.rstrip("/"))
         folder = self.root / "playback"
         if not folder.is_dir():
             return
