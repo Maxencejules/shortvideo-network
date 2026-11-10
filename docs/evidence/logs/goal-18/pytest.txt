@@ -1,0 +1,20 @@
+COMMAND /tmp/svn-py/bin/python -m pytest -q tests/unit/test_ci_milestone.py tests/unit/test_chain_writer_policy.py tests/unit/test_delivery_hosts.py tests/unit/test_delivery.py::test_replica_host_failure_and_chain_outage --tb=line
+DATE 2026-11-10T13:56:15Z
+HEAD a5628ab5b6dfb4f1b16546654415063f1499a992
+TREE 4dcc6a681a94c7df817f62c149a23b82e8273bc4
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-18/anchors07.txt
+DIRTY_PATH docs/evidence/logs/goal-18/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-18/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-18/regressions.txt
+DIRTY_PATH docs/evidence/logs/goal-18/requirements.txt
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
+.......................                                                  [100%]
+EXIT:0

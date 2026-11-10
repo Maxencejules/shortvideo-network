@@ -15,6 +15,7 @@ import (
 	"os"
 
 	sdked "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdksecp "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
@@ -102,6 +103,42 @@ func Load(path string) (Key, error) {
 		return Key{}, ErrInvalid
 	}
 	return Key{private: priv}, nil
+}
+
+// OuterName is the optional secp256k1 account key file under keys/.
+// A development run may place a devnet account key there so the outer
+// transaction signer is that account. The ed25519 file remains the
+// inner signing key. The file is not a production key.
+const OuterName = "outer.hex"
+
+// LoadSecp reads a 32-byte secp256k1 key in the devnet hex layout.
+func LoadSecp(path string) (cryptotypes.PrivKey, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		return nil, ErrUnsafe
+	}
+	if perm := info.Mode().Perm(); perm&0o077 != 0 {
+		return nil, ErrUnsafe
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) != 64+1 || raw[len(raw)-1] != '\n' {
+		return nil, ErrInvalid
+	}
+	buf := make([]byte, 32)
+	if _, err := hex.Decode(buf, raw[:len(raw)-1]); err != nil {
+		return nil, ErrInvalid
+	}
+	key := &sdksecp.PrivKey{Key: buf}
+	if len(key.PubKey().Bytes()) == 0 {
+		return nil, ErrInvalid
+	}
+	return key, nil
 }
 
 func writeNew(path string, body []byte) error {

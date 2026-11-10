@@ -47,6 +47,9 @@ WRITER_FILES = frozenset(
         "agents/auditor/chainclient/chaintest/serve.go",
         "agents/provider/internal/sign/tx.go",
         "chain/internal/statecheck/testhome/testhome.go",
+        # Goal 18. The loopback chain view submits the provider's already
+        # signed bytes. It does not sign.
+        "services/milestone/internal/chainview/server.go",
     }
 )
 GO_WRITER_MARKERS = (

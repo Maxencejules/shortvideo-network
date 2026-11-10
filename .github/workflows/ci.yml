@@ -175,7 +175,7 @@ jobs:
             exit 1
           fi
           git diff --exit-code -- proto/svn proto/gen/python
-          echo "SVN_SKIP_DEVNET=1: the multi-process chain/devnet tests run in the go-race devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, devnet-broadcaster-stall, and devnet-indexer shards"
+          echo "SVN_SKIP_DEVNET=1: the multi-process chain/devnet tests run in the go-race devnet, devnet-evidence, devnet-upgrade, devnet-broadcaster, devnet-broadcaster-stall, and devnet-indexer shards; TestMilestone runs in the milestone job"
           python3 scripts/run_tests.py --only go
           go vet ./chain/...
           go vet ./proto/...
@@ -190,6 +190,7 @@ jobs:
           go test -count=1 -timeout 2m -tags svn_faultpoint ./services/indexer/internal/faultpoint/
           go vet ./services/api/...
           go vet ./services/scheduler/...
+          go vet ./services/milestone/...
 
   # The race detector run of ./chain/..., ./proto/..., ./agents/provider/...,
   # ./agents/auditor/... and ./services/broadcaster/..., split into eight
@@ -421,3 +422,100 @@ jobs:
           export PATH="${GITHUB_WORKSPACE}/.toolchains/bin:${PATH}"
           .venv/bin/python docs/evidence/goal-01/check_requirements.py
           .venv/bin/python docs/evidence/goal-02/check_protocol.py
+
+  # Goal 18. One four-validator devnet, the upload path, and playback, on
+  # the runner. The go job sets SVN_SKIP_DEVNET=1, so this job is the run.
+  # A skip there is not this result. The install script matches the go job.
+  milestone:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: "1.26.10"
+          cache: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12.3"
+      - name: Install PostgreSQL 18.6
+        run: |
+          set -euo pipefail
+          pg_ver="18.6-1.pgdg24.04+2"
+          pg_fpr="B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8"
+          key=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          fpr="$(gpg --batch --show-keys --with-colons "${key}" | awk -F: '$1 == "fpr" { print $10; exit }')"
+          if [ "${fpr}" != "${pg_fpr}" ]; then
+            echo "PostgreSQL apt key fingerprint ${fpr} is not ${pg_fpr}"
+            exit 1
+          fi
+          for f in /etc/apt/sources.list.d/*; do
+            if [ -f "${f}" ] && grep -q 'apt.postgresql.org' "${f}"; then
+              sudo rm -f "${f}"
+            fi
+          done
+          write_source() {
+            printf '%s\n' 'Types: deb' "URIs: $2" "Suites: $3" 'Architectures: amd64' \
+              'Components: main' "Signed-By: ${key}" | sudo tee "/etc/apt/sources.list.d/$1.sources" >/dev/null
+          }
+          has_pin() {
+            local found
+            found="$(apt-cache madison postgresql-18)"
+            awk -F'|' -v want="${pg_ver}" '{ gsub(/[[:space:]]/, "", $2); if ($2 == want) hit = 1 } END { exit hit ? 0 : 1 }' <<<"${found}"
+          }
+          write_source pgdg https://apt.postgresql.org/pub/repos/apt noble-pgdg
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+          if ! has_pin; then
+            echo "apt.postgresql.org no longer lists postgresql-18 ${pg_ver}; trying apt-archive.postgresql.org"
+            write_source pgdg-archive https://apt-archive.postgresql.org/pub/repos/apt noble-pgdg-archive
+            sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+            if ! has_pin; then
+              echo "postgresql-18 ${pg_ver} is in neither PGDG archive; update the pin in docs/dependencies.md, scripts/env/install.sh and this workflow"
+              exit 1
+            fi
+          fi
+          created_policy=0
+          if [ ! -e /usr/sbin/policy-rc.d ]; then
+            printf '#!/bin/sh\nexit 101\n' | sudo tee /usr/sbin/policy-rc.d >/dev/null
+            sudo chmod 755 /usr/sbin/policy-rc.d
+            created_policy=1
+          fi
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            "postgresql-18=${pg_ver}" "postgresql-client-18=${pg_ver}"
+          if [ "${created_policy}" = 1 ]; then
+            sudo rm -f /usr/sbin/policy-rc.d
+          fi
+          installed="$(dpkg-query -W -f '${Version}' postgresql-18)"
+          if [ "${installed}" != "${pg_ver}" ]; then
+            echo "installed postgresql-18 ${installed}, want ${pg_ver}"
+            exit 1
+          fi
+          /usr/lib/postgresql/18/bin/postgres --version
+      - name: Install pinned FFmpeg
+        run: |
+          set -euo pipefail
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg=7:6.1.1-3ubuntu5
+          ffprobe -version
+      - name: Install Python dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --require-hashes -r requirements.lock
+      - name: Run the milestone scenario
+        env:
+          SVN_MILESTONE_PATH: ${{ github.workspace }}/.venv/bin
+        run: |
+          go build -C chain -o /dev/null ./cmd/svnd
+          go build -C agents/provider -o /dev/null ./cmd/svn-provider
+          go build -C services/broadcaster -o /dev/null ./cmd/svn-broadcaster
+          go build -C services/indexer -o /dev/null ./cmd/svn-indexer
+          go build -C services/api -o /dev/null ./cmd/svn-api
+          go build -C services/scheduler -o /dev/null ./cmd/svn-scheduler
+          go build -C services/milestone -o /dev/null ./cmd/svn-chainview
+          go test -count=1 -timeout 15m -run TestMilestone ./services/milestone/

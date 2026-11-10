@@ -201,6 +201,8 @@ SOURCE_ALLOW = (
     "services/api/",
     # Goal 17 adds the Go replication scheduler.
     "services/scheduler/",
+    # Goal 18 adds the milestone harness and its loopback chain view.
+    "services/milestone/",
 )
 WALK_SKIP = {
     ".git",

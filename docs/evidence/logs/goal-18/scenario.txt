@@ -1,0 +1,100 @@
+COMMAND bash scripts/milestone/run.sh
+DATE 2026-11-10T13:52:51Z
+HEAD a5628ab5b6dfb4f1b16546654415063f1499a992
+TREE 4dcc6a681a94c7df817f62c149a23b82e8273bc4
+DIRTY no
+=== RUN   TestMilestone
+phase=devnet chain_id=shortvideo-dev-89a7a7f306f0c3c4 genesis=2f9e3ea68f3ce2424254512ef23c1b2397be0aad04250f5663ba0756ae997865 physical_count=1 independent=false
+phase=devnet-height height=3 app_hash=C7735035AC213DF7B0AA67D3F332E7C4DB884369FD2CC3589DECD48F2E19D650 validators=4
+phase=chainview account=svn17lqp9fyfsljx8sewkc7vutn6tukfa9z8dyff87 url=https://127.0.0.1:44259 providers=p1,p2,p3
+phase=chainview account=svn1tmupydl47sn6055p3pzugwvsch84qx530fvcdc url=https://127.0.0.1:35801 providers=p4
+phase=indexer url=http://127.0.0.1:42153
+phase=scheduler url=http://127.0.0.1:34951 stage=https://127.0.0.1:38989/pkg
+phase=provider id=p1 url=https://127.0.0.1:39945 outer_account=provider-1
+phase=provider id=p2 url=https://127.0.0.1:33467 outer_account=provider-1
+phase=provider id=p3 url=https://127.0.0.1:46101 outer_account=provider-1
+phase=provider id=p4 url=https://127.0.0.1:37297 outer_account=provider-2
+phase=register-p1 height=10 code=0 txhash=11315F33B5258860809B774A46DC766AC4FC64E31B5C77462E564FCD6E2B09C5
+phase=admit-p1-propose height=11 code=0 txhash=AF1CFD9C7DC311B92B5691AC699D8D7441C1862460A3B64B7070379C148A67B0
+phase=admit-p1-approve-1 height=12 code=0 txhash=72BEF97F1ECFB3094773B290DDD3276F082BDE35B824F1D9F03716E4B6299722
+phase=admit-p1-approve-2 height=14 code=0 txhash=A5704C3F538459821E62DE9D5244948A1803E8EFDE04C568578ADE03F67BBFCA
+phase=admit-p1-approve-3 height=15 code=0 txhash=E3DF1553D7FC7D056F36B0C2C5D6840CF3E1895415D5794BD71698228CB2F46C
+phase=admit-p1-execute height=16 code=0 txhash=70AA591EFF4042214ED0D2DE17366354EEAA5F3DE0FFD0E8EC1304B2CC53617C
+phase=register-p2 height=18 code=0 txhash=637ED3EE2E56ADA8EEA72B87102977BE24FAF323029DA5E0891A4F05457D5D6F
+phase=admit-p2-propose height=19 code=0 txhash=E4F286C919784F273BA4217E0E9A84AE225E3A9F382A876C45E12D63B63AA7C1
+phase=admit-p2-approve-1 height=20 code=0 txhash=A9CEA429404F4A66A2D86CEC84C7647FD7861B4F81EF4BC5E7F0E99ECBA66A58
+phase=admit-p2-approve-2 height=22 code=0 txhash=1C7E1DEE150B3029E073B4BAC857B24A8B09808A73F2C2078F0737B42D22ECC9
+phase=admit-p2-approve-3 height=23 code=0 txhash=450319E69E0993A735EF0F2BA0FB71819D89ACD3945A2A84A176D2BE48F651C3
+phase=admit-p2-execute height=24 code=0 txhash=AB038B0EC15A74F29EABA11B2C6C5E0A22728D02C9F18B09C9993070F1B7D536
+phase=register-p3 height=26 code=0 txhash=791F85BDF001FE705B79D035FC37CEBF0ABC5A8E30D4E1C8FA93C67BB1FE81D0
+phase=admit-p3-propose height=28 code=0 txhash=A97BE1DA553822E1D0AB32977420866C154F38D865CC81726D7B38F2F7406082
+phase=admit-p3-approve-1 height=30 code=0 txhash=8BAF7B8FC41F24B2C35EBF92804320308ACBA4478407379520103264E8BF659F
+phase=admit-p3-approve-2 height=31 code=0 txhash=ACC04F16363898EB4822BB557508D40AC5A71F689F2ED360A213840F8ACE8B7B
+phase=admit-p3-approve-3 height=32 code=0 txhash=B3D4780B6B5897B6E9CBFE7A2F6C8B3A7386E2660C9540CA0D00CF4498FCAA52
+phase=admit-p3-execute height=34 code=0 txhash=7FD097E99522124F57D21885B0C08F07430CA886029D8F9983D5B5D2146F41F0
+phase=register-p4 height=35 code=0 txhash=9D9FF13F0360D86B3D8047CEA363D583406972ABC1DC599E908B228634517B81
+phase=admit-p4-propose height=36 code=0 txhash=883FA4D788E06EE3F10BC9CF9CF2999496A3EAE2EACA5C6AD69FCDF5FDA2FABB
+phase=admit-p4-approve-1 height=38 code=0 txhash=DBBC9E0E0A65AB7DA6B215DF5176B094E9DE3289B62D11BED8F8FD53E5FC3474
+phase=admit-p4-approve-2 height=39 code=0 txhash=8BD6D7555B5B9B6F5E6EDF22578E9CCC7332400666377575D26459C90B7D60BB
+phase=admit-p4-approve-3 height=40 code=0 txhash=CF4166E6625A3A04FE68714647038EA6DDB812D66746B2959E8FA320CFCC3C95
+phase=admit-p4-execute height=42 code=0 txhash=7DB079AFF6ED090192DEE017385A7EEA5843802AE4E35022B62667841284615E
+phase=broadcaster url=https://127.0.0.1:34643
+phase=postgres version=postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2) port=40283
+phase=api url=http://127.0.0.1:35633 postgres=postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+phase=clip bytes=12746 sha256=190072c758fab6a1b799d210630ca3baa449e3a55e856bf003c25331f31bafd6 synthetic=true
+phase=UPLOAD_RESERVED upload=ueb53fb70c1b915f440b12452835d2bbe content=cbebfdf3acc46174e0136d684f46dfd14 status=RESERVED repeat_upload=ueb53fb70c1b915f440b12452835d2bbe
+phase=UPLOAD_RECEIVED status=204
+phase=PROCESSING_QUEUED status=PROCESSING_QUEUED
+phase=API_PUBLISH_BLOCKED status=403
+phase=READY_FOR_REVIEW worker={"captions_reviewed": false, "content_id": "cbebfdf3acc46174e0136d684f46dfd14", "content_version": 1, "input_sha256": "190072c758fab6a1b799d210630ca3baa449e3a55e856bf003c25331f31bafd6", "job_id": "j2aa6e824793b2ca5506b2f191e56f927", "manifest_sha256": "021ddad6d25e0779ea1f44b7ee245776b4afdcb3db5f956b48a36acb795b692e", "object_name": "425dc92dc323e68f1c102cb5f6c1928a0b2eb14e969c5370b2de4d927d7a95b3", "output_budget_bytes": 25000000, "package_bytes": 12740, "publication": "NOT_PUBLISHED", "status": "READY_FOR_REVIEW"}
+phase=PACKAGE content=cbebfdf3acc46174e0136d684f46dfd14 package_text_sha256=b429dedb07cf23814ef07d7e02ccb86e5724b922dd75e5088e555362e5833988 package_bytes=12740 segments=2
+phase=PLAYBACK_GRANT delivery=https://127.0.0.1:40629 manifest=021ddad6d25e0779ea1f44b7ee245776b4afdcb3db5f956b48a36acb795b692e
+phase=COMMITTED kind=REGISTER_CONTENT height=54 txhash=e043c8cd2135abcebc6532436de05beffc143e1fc86316f724c402aefae39bbd idempotent=false
+phase=INDEXER_PROVIDERS admitted=4
+phase=MODERATION_WITHHELD publication=WITHHELD reason=community_approval
+phase=INDEXER_STATUS {"chain_id":"shortvideo-dev-89a7a7f306f0c3c4","indexed_height":54,"canonical_height":55,"app_floor":54,"commit_time":"2026-11-10T13:53:27Z","commit_age_seconds":0.400284,"last_reconciliation":"2026-11-10T13:53:28Z","reconciliation_status":"ok","stale":false,"stale_reasons":null,"history_unavailable":false,"decoder_version":1,"database_role":"read_model","trust":{"model":"configured_read_gateway","gateway":"http://127.0.0.1:26657","light_client":false,"note":"The configured read gateway is trusted for reads. Comparing two unauthenticated responses is not light-client verification. The database is a read model, not a replacement chain."}}
+phase=COMMITTED kind=OFFER_LEASE height=57 txhash=e1fe1f34ef646027aa5cfcf4544329d3bc8385d175d8bd23d8bc571fd140c939 idempotent=false
+phase=OFFER_COMMITTED offer=ocbebfdf3acc46174e0136d684f46dfd14p1 height=57 txhash=e1fe1f34ef646027aa5cfcf4544329d3bc8385d175d8bd23d8bc571fd140c939
+phase=COMMITTED kind=OFFER_LEASE height=62 txhash=81438db84c32136b7283f8b3d52b58777015cc68ec3880ae7134cb7ebdedb489 idempotent=false
+phase=OFFER_COMMITTED offer=ocbebfdf3acc46174e0136d684f46dfd14p2 height=62 txhash=81438db84c32136b7283f8b3d52b58777015cc68ec3880ae7134cb7ebdedb489
+phase=COMMITTED kind=OFFER_LEASE height=66 txhash=2a8376ca5377010c76afcb028375d9e7486b60b207e0a54522cf77a431790915 idempotent=false
+phase=OFFER_COMMITTED offer=ocbebfdf3acc46174e0136d684f46dfd14p3 height=66 txhash=2a8376ca5377010c76afcb028375d9e7486b60b207e0a54522cf77a431790915
+phase=INDEXER_AFTER {"chain_id":"shortvideo-dev-89a7a7f306f0c3c4","indexed_height":69,"canonical_height":70,"app_floor":69,"commit_time":"2026-11-10T13:53:31Z","commit_age_seconds":0.499635,"last_reconciliation":"2026-11-10T13:53:28Z","reconciliation_status":"ok","stale":false,"stale_reasons":null,"history_unavailable":false,"decoder_version":1,"database_role":"read_model","trust":{"model":"configured_read_gateway","gateway":"http://127.0.0.1:26657","light_client":false,"note":"The configured read gateway is trusted for reads. Comparing two unauthenticated responses is not light-client verification. The database is a read model, not a replacement chain."}}
+phase=PUBLISHED publication=PUBLISHED leases=3 distinct=3 verified=3 physical=1 simulated=true independent=false at=2026-11-10T13:53:31.525725256Z
+phase=INDEXER_RECONCILE ok
+phase=INDEXER_FRESH {"chain_id":"shortvideo-dev-89a7a7f306f0c3c4","indexed_height":70,"canonical_height":71,"app_floor":70,"commit_time":"2026-11-10T13:53:31Z","commit_age_seconds":0.314645,"last_reconciliation":"2026-11-10T13:53:31Z","reconciliation_status":"ok","stale":false,"stale_reasons":null,"history_unavailable":false,"decoder_version":1,"database_role":"read_model","trust":{"model":"configured_read_gateway","gateway":"http://127.0.0.1:26657","light_client":false,"note":"The configured read gateway is trusted for reads. Comparing two unauthenticated responses is not light-client verification. The database is a read model, not a replacement chain."}}
+CLIENT metadata content=cbebfdf3acc46174e0136d684f46dfd14 version=1 withdrawn=False manifest=b429dedb07cf23814ef07d7e02ccb86e5724b922dd75e5088e555362e5833988
+CLIENT fetch path=/v1/playback/cbebfdf3acc46174e0136d684f46dfd14 status=200 bytes=1092
+CLIENT playback grant=AUTHORIZED publication=NOT_PUBLISHED removal=NONE chain_status=HELD hosting_promise=False
+CLIENT fetch path=/v1/media/cbebfdf3acc46174e0136d684f46dfd14/v1/master.m3u8 status=200 bytes=171
+CLIENT fetch path=/v1/media/cbebfdf3acc46174e0136d684f46dfd14/v1/segments/native-0.mp4 status=200 bytes=11524
+CLIENT segment path=segments/native-0.mp4 sha256=cbcc6ec21007d20c4bcff5223825b1a3f7e8b90b5ffbed08d9d7c9ffbe31ed04 expected=cbcc6ec21007d20c4bcff5223825b1a3f7e8b90b5ffbed08d9d7c9ffbe31ed04 bytes=11524
+CLIENT fetch path=/v1/player/cbebfdf3acc46174e0136d684f46dfd14 status=200 bytes=3449
+CLIENT ok
+phase=COMMITTED kind=REGISTER_CONTENT height=54 txhash=e043c8cd2135abcebc6532436de05beffc143e1fc86316f724c402aefae39bbd idempotent=false
+phase=RETRY status=OPERATION_STATUS_COMMITTED intent=4ee3ce60-f404-46a3-865c-3968405ee459
+phase=ONE_EFFECT content_rows=1
+phase=CORRUPT availability_verified=2 distribution=200 sha256=f7eda7eff79b78b07bc532f0a29c1505da17d997ae6af45538fb918bdd630710 origin_sha=cbcc6ec21007d20c4bcff5223825b1a3f7e8b90b5ffbed08d9d7c9ffbe31ed04
+phase=ORIGIN_DOWN distribution=200 bytes=12740
+phase=PROVIDER_DOWN reachability=REACHABILITY_DEGRADED degraded=[p1]
+phase=COMMITTED kind=OFFER_LEASE height=74 txhash=bc65319d65266be3aea5905e12ee0d6233cd28a0b9bdb3645a3a6c47fd85842e idempotent=false
+phase=OFFER_COMMITTED offer=ocbebfdf3acc46174e0136d684f46dfd14p4 height=74 txhash=bc65319d65266be3aea5905e12ee0d6233cd28a0b9bdb3645a3a6c47fd85842e
+phase=REPAIR status=200 body={"attempts":1,"state":"CONFIRMED","traces":["publish content=cbebfdf3acc46174e0136d684f46dfd14 approval=false posts=0","skip provider=p4 reason=spare_held_back","accept provider=p1 broadcast=true response_committed=true counted_from_response=false signature=true scheduler_signed=false","offer provider=p1 status=200 error=","accept provider=p2 broadcast=true response_committed=true counted_from_response=false signature=true scheduler_signed=false","offer provider=p2 status=200 error=","accept provider=p3 broadcast=true response_committed=true counted_from_response=false signature=true scheduler_signed=false","offer provider=p3 status=200 error=","accept provider=p4 broadcast=true response_committed=true counted_from_response=false signature=true scheduler_signed=false","offer provider=p4 status=200 error=","repair confirmed content=cbebfdf3acc46174e0136d684f46dfd14 source=p2 replacement=p4 buffer=discarded"]}
+
+phase=PROVIDER_RESTART health=200
+phase=UNAPPROVED_OFFER status=400
+phase=COMMITTED kind=REGISTER_CONTENT height=484 txhash=9dbe992295904946d150fedb9a189c1386356e3ee3585269a77c8c054b9960c3 idempotent=false
+phase=COMMITTED kind=OFFER_LEASE height=487 txhash=a52ac6b60cfc1000e50e73b008b7488fde0e76c0a1d31578141c3f2a37e33d09 idempotent=false
+phase=UNAUTHORIZED_ACCEPT height=489 code=1 want=1 txhash=1BAD9EBE84422CDD6681E16F2D2773E6669E4943D6AEADCCF93309C4DDCE3D5D
+phase=QUORUM_LOST height_before=489 height_during=489 playback=200
+phase=NEW_COMMITMENT_PENDING status=OPERATION_STATUS_PENDING_STALL intent=18fa5381-2a07-4e15-961f-ffc675822ebc
+phase=QUORUM_RESUMED height=490 app_hash=CE38387A556DDD765756FCA4C82F299208F13114523F3BFAC3E452FF679BE1D1 stall_height=489
+phase=COMMITTED kind=WITHDRAW_CONTENT height=494 txhash=545157b6633f82f65809001161f8e43ed9e8bcbabf0789478cc8abdf05443d04 idempotent=false
+phase=WITHDRAWN indexer=true
+phase=WITHDRAWN_DISTRIBUTION status=410
+phase=DELIVERY_REMOVE REMOVED
+phase=done prototype=true public_beta=false single_machine=true
+--- PASS: TestMilestone (151.32s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/milestone	151.370s
+EXIT:0

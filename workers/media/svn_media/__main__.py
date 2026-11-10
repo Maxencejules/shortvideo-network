@@ -19,6 +19,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pg-socket", type=Path)
     parser.add_argument("--pg-user", default="")
     parser.add_argument("--pg-database", default="")
+    parser.add_argument("--pg-port", type=int, default=5432)
     args = parser.parse_args(argv)
     try:
         if args.command == "build-record":
@@ -30,7 +31,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "claim-run":
             if args.pg_socket is None or not args.pg_user or not args.pg_database:
                 return _fail(Failure("REFUSED"))
-            pg = Pg(args.pg_socket, args.pg_user, args.pg_database, _password_from_env())
+            pg = Pg(
+                args.pg_socket,
+                args.pg_user,
+                args.pg_database,
+                _password_from_env(),
+                port=args.pg_port,
+            )
             workspace = Workspace(args.root, pg=pg)
             pg.pull(workspace)
         else:

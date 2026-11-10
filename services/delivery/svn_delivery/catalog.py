@@ -165,13 +165,19 @@ class Catalog:
             if not isinstance(version, int) or not isinstance(digest, str):
                 raise DeliveryError("INTEGRITY")
             view = self._validated_origin(content_id, version, digest)
-            hosts = tuple(
+            hosts_list = [
                 host_id
-                for host_id, host in self._hosts.items()
+                for host_id, _host in self._hosts.items()
                 if self._host_verifies(host_id, view)
-            )
-            if "origin-test" not in hosts:
+            ]
+            # The origin package is on disk. A second process can name it in
+            # the grant without having bound the listener. Advertising the
+            # host still requires this process to bind it.
+            if "origin-test" not in hosts_list and self._host_verifies("origin-test", view):
+                hosts_list.insert(0, "origin-test")
+            if "origin-test" not in hosts_list:
                 raise DeliveryError("UNAVAILABLE")
+            hosts = tuple(hosts_list)
             grant = Grant(
                 content_id=content_id,
                 content_version=version,
@@ -208,6 +214,7 @@ class Catalog:
         if not ID.fullmatch(content_id):
             raise DeliveryError("BAD_REQUEST")
         with self._lock:
+            self._reload_grants_locked()
             record = load_ready_record(self.root, content_id)
             if record is None and content_id not in self._grants:
                 raise DeliveryError("NOT_FOUND")
@@ -289,6 +296,7 @@ class Catalog:
     def read(self, host_id: str, content_id: str, version: int, name: str) -> tuple[str, bytes]:
         """Return `(kind, body)` for a playlist name or a segment relative path."""
         with self._lock:
+            self._reload_grants_locked()
             view = self._servable(host_id, content_id, version)
             if name.endswith(".m3u8"):
                 body = playlist(view, name)
@@ -323,6 +331,7 @@ class Catalog:
 
     def grant_live(self, content_id: str) -> bool:
         with self._lock:
+            self._reload_grants_locked()
             return self._report_allowed(content_id)
 
     def clear_report(self, content_id: str) -> None:
@@ -444,6 +453,18 @@ class Catalog:
 
     def _grant_path(self, content_id: str) -> Path:
         return self.root / "playback" / f"{content_id}.json"
+
+    def _reload_grants_locked(self) -> None:
+        """Pick up a grant written by another process. The caller holds the lock."""
+        folder = self.root / "playback"
+        if not folder.is_dir():
+            return
+        for path in sorted(folder.glob("*.json")):
+            if path.name in {"chain.json", "hosts.json"} or path.is_symlink():
+                continue
+            grant = _read_grant(path)
+            if grant is not None:
+                self._grants[grant.content_id] = grant
 
     def _load(self) -> None:
         chain_path = self.root / "playback" / "chain.json"

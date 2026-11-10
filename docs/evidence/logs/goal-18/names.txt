@@ -1,0 +1,22 @@
+COMMAND git diff-tree --no-commit-id --name-only -r HEAD
+DATE 2026-11-10T13:56:17Z
+HEAD a5628ab5b6dfb4f1b16546654415063f1499a992
+TREE 4dcc6a681a94c7df817f62c149a23b82e8273bc4
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-18/anchors07.txt
+DIRTY_PATH docs/evidence/logs/goal-18/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-18/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pytest.txt
+DIRTY_PATH docs/evidence/logs/goal-18/regressions.txt
+DIRTY_PATH docs/evidence/logs/goal-18/requirements.txt
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-18/trailer.txt
+DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
+services/delivery/svn_delivery/catalog.py
+EXIT:0

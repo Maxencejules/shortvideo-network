@@ -75,11 +75,16 @@ FROM (
 class Pg:
     """A local PostgreSQL session. `password` is not logged and not placed in argv."""
 
-    def __init__(self, socket_dir: Path, user: str, database: str, password: str) -> None:
+    def __init__(
+        self, socket_dir: Path, user: str, database: str, password: str, port: int = 5432
+    ) -> None:
+        if port < 1 or port > 65535:
+            raise Failure("REFUSED")
         self.socket_dir = socket_dir
         self.user = user
         self.database = database
         self._password = password
+        self.port = port
 
     def execute(self, sql: str, variables: dict[str, str] | None = None) -> str:
         argv = [
@@ -91,7 +96,7 @@ class Pg:
             "-h",
             str(self.socket_dir),
             "-p",
-            "5432",
+            str(self.port),
             "-U",
             self.user,
             "-d",

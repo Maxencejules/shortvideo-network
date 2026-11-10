@@ -1,0 +1,29 @@
+COMMAND git log -1 --format=full
+DATE 2026-11-10T13:56:17Z
+HEAD a5628ab5b6dfb4f1b16546654415063f1499a992
+TREE 4dcc6a681a94c7df817f62c149a23b82e8273bc4
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-18/anchors07.txt
+DIRTY_PATH docs/evidence/logs/goal-18/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-18/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pytest.txt
+DIRTY_PATH docs/evidence/logs/goal-18/regressions.txt
+DIRTY_PATH docs/evidence/logs/goal-18/requirements.txt
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
+commit a5628ab5b6dfb4f1b16546654415063f1499a992
+Author: Maxence Jules <Maxencejules@users.noreply.github.com>
+Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
+
+    Let a second process grant the origin without binding it.
+    
+    The authorizing process does not own the listener. The grant can name the origin when the package verifies. A document still lists a host only after this process binds it.
+    
+    Tested-tree: 4dcc6a681a94c7df817f62c149a23b82e8273bc4
+EXIT:0

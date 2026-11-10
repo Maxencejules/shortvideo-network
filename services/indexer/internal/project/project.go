@@ -278,8 +278,10 @@ func fromMessage(msg proto.Message, src Source) (Effect, error) {
 		if !msgkit.ValidID(m.GetLeaseId()) || !msgkit.ValidID(m.GetProviderId()) || !msgkit.ValidID(m.GetContentId()) || m.GetContentVersion() < 1 || !canonicalDec(m.GetPackageBytes()) {
 			return Effect{}, fmt.Errorf("%w: lease accepted", ErrMalformed)
 		}
-		// The accept event does not name the offer. The offer stays OPEN until
-		// leases_offer_closed or a reconciliation finding says otherwise.
+		// The accept event does not name the offer (DR-08-08). The store
+		// closes the one OPEN offer for this provider and content in the
+		// same transaction. Zero or several matches stay OPEN, and
+		// reconciliation records the difference.
 		eff.Lease = &Lease{
 			ID: m.GetLeaseId(), ProviderID: m.GetProviderId(), ContentID: m.GetContentId(),
 			Version: m.GetContentVersion(), PackageBytes: m.GetPackageBytes(),

@@ -1,0 +1,8 @@
+COMMAND gofmt -l services/milestone services/scheduler services/indexer agents/provider services/delivery workers/media
+DATE 2026-11-10T13:55:49Z
+HEAD a5628ab5b6dfb4f1b16546654415063f1499a992
+TREE 4dcc6a681a94c7df817f62c149a23b82e8273bc4
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+EXIT:0

@@ -169,6 +169,58 @@ func TestRebuildLeavesOtherSchemas(t *testing.T) {
 	}
 }
 
+func TestAcceptClosesTheSingleOpenOffer(t *testing.T) {
+	_, runtime, _ := newDB(t)
+	ctx := context.Background()
+	st := New(runtime, testChain)
+	block := oneContent(1)
+	offer := func(block project.Block, id string, index int32) project.Effect {
+		return project.Effect{
+			Source: project.Source{Height: block.Height, TxHash: block.Hash, MsgIndex: 0, EventIndex: index, Type: "svn.events.v1.LeaseOffered"},
+			Offer:  &project.Offer{ID: id, ProviderID: "p1", ContentID: "c1", State: "OPEN"},
+		}
+	}
+	lease := project.Effect{
+		Source: project.Source{Height: 1, TxHash: block.Hash, MsgIndex: 0, EventIndex: 2, Type: "svn.events.v1.LeaseAccepted"},
+		Lease: &project.Lease{
+			ID: "l1", ProviderID: "p1", ContentID: "c1", Version: 1, PackageBytes: "4",
+			State: "ACTIVE", TermVersion: 1, Deadline: 100, Active: true,
+		},
+	}
+	if err := st.Apply(ctx, block, append(contentEffect(block), offer(block, "o1", 1), lease)); err != nil {
+		t.Fatal(err)
+	}
+	var state string
+	if err := runtime.QueryRowContext(ctx, `SELECT state FROM indexer.offers WHERE offer_id = 'o1'`).Scan(&state); err != nil || state != "CLOSED" {
+		t.Fatalf("single offer %q %v", state, err)
+	}
+	block2 := oneContent(2)
+	two := append(contentEffect(block2), offer(block2, "oa", 1), offer(block2, "ob", 2), lease)
+	two[3].Lease.ID = "l2"
+	two[3].Source.Height = 2
+	two[3].Source.TxHash = block2.Hash
+	two[3].Source.EventIndex = 3
+	if err := st.Apply(ctx, block2, two); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := runtime.QueryContext(ctx, `SELECT offer_id, state FROM indexer.offers WHERE offer_id IN ('oa', 'ob') ORDER BY offer_id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	got := map[string]string{}
+	for rows.Next() {
+		var id, st string
+		if err := rows.Scan(&id, &st); err != nil {
+			t.Fatal(err)
+		}
+		got[id] = st
+	}
+	if got["oa"] != "OPEN" || got["ob"] != "OPEN" {
+		t.Fatalf("ambiguous offers %+v", got)
+	}
+}
+
 func TestRecordRunDoesNotChangeALease(t *testing.T) {
 	_, _, runtime := newDB(t)
 	ctx := context.Background()

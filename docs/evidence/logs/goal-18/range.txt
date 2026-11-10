@@ -1,0 +1,76 @@
+COMMAND git diff --name-only f21ef2b22b15921600515a47f90164dede34920c..HEAD
+DATE 2026-11-10T13:56:17Z
+HEAD a5628ab5b6dfb4f1b16546654415063f1499a992
+TREE 4dcc6a681a94c7df817f62c149a23b82e8273bc4
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-18/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-18/anchors07.txt
+DIRTY_PATH docs/evidence/logs/goal-18/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-18/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-18/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-18/names.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-18/pytest.txt
+DIRTY_PATH docs/evidence/logs/goal-18/regressions.txt
+DIRTY_PATH docs/evidence/logs/goal-18/requirements.txt
+DIRTY_PATH docs/evidence/logs/goal-18/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-18/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-18/scenario.txt
+DIRTY_PATH docs/evidence/logs/goal-18/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-18/trailer.txt
+DIRTY_PATH docs/evidence/logs/goal-18/vet.txt
+.github/workflows/ci.yml
+agents/provider/internal/agent/accept.go
+agents/provider/internal/agent/agent.go
+agents/provider/internal/keys/keys.go
+agents/provider/internal/keys/outer_test.go
+docs/architecture/indexer.md
+docs/evidence/goal-01/check_requirements.py
+docs/evidence/goal-18.md
+docs/evidence/logs/goal-18/anchors06.txt
+docs/evidence/logs/goal-18/anchors07.txt
+docs/evidence/logs/goal-18/docker.txt
+docs/evidence/logs/goal-18/gofmt.txt
+docs/evidence/logs/goal-18/golangci-lint.txt
+docs/evidence/logs/goal-18/names.txt
+docs/evidence/logs/goal-18/pg16.txt
+docs/evidence/logs/goal-18/pytest.txt
+docs/evidence/logs/goal-18/range.txt
+docs/evidence/logs/goal-18/regressions.txt
+docs/evidence/logs/goal-18/requirements.txt
+docs/evidence/logs/goal-18/runtime.txt
+docs/evidence/logs/goal-18/sbom.txt
+docs/evidence/logs/goal-18/scenario.txt
+docs/evidence/logs/goal-18/secrets.txt
+docs/evidence/logs/goal-18/trailer.txt
+docs/evidence/logs/goal-18/vet.txt
+docs/progress.md
+docs/progress.tsv
+go.work
+scripts/milestone/client.py
+scripts/milestone/run.sh
+scripts/run_tests.py
+services/delivery/svn_delivery/__main__.py
+services/delivery/svn_delivery/catalog.py
+services/indexer/internal/project/project.go
+services/indexer/internal/store/store.go
+services/indexer/internal/store/store_test.go
+services/milestone/cmd/svn-chainview/main.go
+services/milestone/doc.go
+services/milestone/go.mod
+services/milestone/go.sum
+services/milestone/internal/chainview/server.go
+services/milestone/internal/chainview/server_test.go
+services/milestone/scenario_flow_test.go
+services/milestone/scenario_phases_test.go
+services/milestone/scenario_test.go
+services/scheduler/cmd/svn-scheduler/main.go
+services/scheduler/internal/sched/http.go
+services/scheduler/internal/sched/offer_test.go
+services/scheduler/internal/sched/sched.go
+tests/unit/test_chain_writer_policy.py
+tests/unit/test_ci_milestone.py
+tests/unit/test_delivery_hosts.py
+workers/media/svn_media/__main__.py
+workers/media/svn_media/queue.py
+EXIT:0
