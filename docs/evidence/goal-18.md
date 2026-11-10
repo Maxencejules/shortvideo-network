@@ -165,4 +165,6 @@ Run [42823652645](https://github.com/Maxencejules/shortvideo-network/actions/run
 
 Run [42826355319](https://github.com/Maxencejules/shortvideo-network/actions/runs/42826355319) on `6924a498a73f4edf352c63a195fda3ffa483cba9` completed **failure**. It was created at 2026-11-10T13:38:20Z. The `python` job failed in `tests/unit/test_delivery.py::test_replica_host_failure_and_chain_outage`: a new catalog advertised hosts saved by the previous process. That is not the headless-Chrome flake. Every other job succeeded, including `milestone`. No run on this branch was cancelled.
 
-The tested commit `a5628ab5b6dfb4f1b16546654415063f1499a992` is the fix for that test. CI on the commit that contains this paragraph had not finished when the paragraph was written.
+The tested commit `a5628ab5b6dfb4f1b16546654415063f1499a992` is the fix for that test.
+
+Run [42829240686](https://github.com/Maxencejules/shortvideo-network/actions/runs/42829240686) on `f41529e9737703407e65286087e5362381d77628` completed **success** at 2026-11-10T14:08:19Z. It was created at 2026-11-10T13:57:02Z. All 17 jobs succeeded: `contract`, `devnet`, `go`, `milestone`, `node`, `python`, and the go-race shards `api`, `app`, `broadcaster`, `devnet`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-evidence`, `devnet-indexer`, `devnet-upgrade`, `indexer`, and `rest`. `f41529e` differs from the tested commit only under `docs/evidence/`. No run on this branch was cancelled. The run on the commit that adds this paragraph had not finished when the paragraph was written.
