@@ -1,0 +1,9 @@
+HEAD f81d819427fca3fd552a93f43001aa13a08b6ae4
+TREE 89b4821191228bae97c71ac9f9511e7ce1448cb2
+DIRTY yes
+?? docs/evidence/logs/goal-15/mypy-final.txt
+?? docs/evidence/logs/goal-15/ruff-check-final.txt
+?? docs/evidence/logs/goal-15/ruff-format-final.txt
+COMMAND .venv/bin/mypy
+Success: no issues found in 49 source files
+EXIT:0

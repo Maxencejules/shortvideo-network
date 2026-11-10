@@ -17,6 +17,12 @@ gen-proto	127
 gen-proto-rerun	0
 go-suite	1
 go-suite-rerun	0
+ruff-format-final	0
+ruff-check-final	0
+mypy-final	0
+delivery-final	0
+python-final	0
+go-final	0
 anchors06	1
 anchors07	1
 golangci-lint	127

@@ -14,13 +14,15 @@ The origin adapter plays a real processed package on this host. The goal stays B
 
 | Item | Value |
 | --- | --- |
-| Commit | `1255394077693248406ffe3910ad40c163a6dd36` |
-| Tree | `1e71eedb05330765c0da519af9f08cab5bd7af76` |
+| Commit | `f81d819427fca3fd552a93f43001aa13a08b6ae4` |
+| Tree | `89b4821191228bae97c71ac9f9511e7ce1448cb2` |
 | Base | `fc8b79da5f6a96f8dfad4aebb4bf74a4a38d82f0` (goal 14 merge on `main`). |
 | Branch | `goal-15` |
 | Draft PR | [PR 20](https://github.com/Maxencejules/shortvideo-network/pull/20) |
 
-`git rev-parse 1255394077693248406ffe3910ad40c163a6dd36^{tree}` is `1e71eedb05330765c0da519af9f08cab5bd7af76`. The commit message carries the same `Tested-tree` trailer. This evidence commit changes only `docs/evidence/` relative to that tested commit.
+`git rev-parse f81d819427fca3fd552a93f43001aa13a08b6ae4^{tree}` is `89b4821191228bae97c71ac9f9511e7ce1448cb2`. The commit message carries the same `Tested-tree` trailer. This evidence commit changes only `docs/evidence/` relative to that tested commit.
+
+The parent code commit `1255394077693248406ffe3910ad40c163a6dd36` is the same delivery behavior except the headless profile cleanup. Run [42758130972](https://github.com/Maxencejules/shortvideo-network/actions/runs/42758130972) on `5ba8c476c83ac64e641382d8486dfb3d7791061f` failed the `python` job: Chrome left its profile directory busy and `TemporaryDirectory` raised `ENOTEMPTY`. That run is not a pass. The tested commit stops the browser process group and deletes the profile with `ignore_errors`. The decode test was run again on the tested commit.
 
 [runtime.txt](logs/goal-15/runtime.txt) has Linux 6.12.113+, Python 3.12.3, Go 1.26.10, FFmpeg `6.1.1-3ubuntu5`, Google Chrome `156.0.8078.47`, `nproc` printing `4`, and uid 1000. PostgreSQL 16 is absent in that log. PostgreSQL 18.6 was installed later, before `python-tests-rerun.txt` and `go-suite-rerun.txt`. The install is the same pin CI uses, `18.6-1.pgdg24.04+2`. It is not PostgreSQL 16.
 
@@ -60,21 +62,21 @@ BLOCKED, carried from goals 04, 11, 12, 13, and 14:
 | Origin, before a host is listed | Schema, canonical manifest bytes, ready-record digest, every segment hash and length, ffprobe of each video segment | VERIFIED. A corrupt manifest or segment leaves `hosts` empty and `package_verified` false. A corrupt replica is not accepted. |
 | Origin, on the bytes it sends | The sent buffer matches the manifest hash | VERIFIED. The response is `409` and the body is the JSON error, not the media. |
 | Harness | SHA-256 of each video segment and caption file it actually fetched. Segments outside the window are not requested. | VERIFIED. `rendered` stays 0. An HTTP 200 is counted in `http_responses` and is not a render. |
-| Test page, headless Chrome 156 | The page fetches one rendition playlist, hashes the first media segment with `crypto.subtle`, and decodes that MP4 in a `video` element. The test requires matching width and height, `readyState` at least 2, a non-zero canvas sample, and the caption file starting with `WEBVTT`. | VERIFIED for that one MP4. [delivery-verbose.txt](logs/goal-15/delivery-verbose.txt) `test_browser_decodes_the_mp4_it_fetched` PASSED. |
+| Test page, headless Chrome 156 | The page fetches one rendition playlist, hashes the first media segment with `crypto.subtle`, and decodes that MP4 in a `video` element. The test requires matching width and height, `readyState` at least 2, a non-zero canvas sample, and the caption file starting with `WEBVTT`. | VERIFIED for that one MP4. [delivery-final.txt](logs/goal-15/delivery-final.txt) `test_browser_decodes_the_mp4_it_fetched` PASSED. |
 | Native HLS demuxer | Not claimed | Not run. Chromium on Linux has no HLS demuxer. Segments the page did not fetch were not client-verified. |
 
 ## Acceptance
 
 | Check | Status | Log |
 | --- | --- | --- |
-| Real processed media, playlist and segment references, orientation, captions, fallback rendition | VERIFIED | [delivery-verbose.txt](logs/goal-15/delivery-verbose.txt) `test_processed_media_plays_over_https`. Portrait output is 144x256. Rotated output is 180x320. Captions contain `portrait-cue`. Requesting `h720` selects `native`. |
+| Real processed media, playlist and segment references, orientation, captions, fallback rendition | VERIFIED | [delivery-final.txt](logs/goal-15/delivery-final.txt) `test_processed_media_plays_over_https`. Portrait output is 144x256. Rotated output is 180x320. Captions contain `portrait-cue`. Requesting `h720` selects `native`. |
 | Corrupt manifest and corrupt segment detected before a verified label | VERIFIED | same log, `test_corrupt_manifest_and_segment_are_not_advertised` |
 | Harness detects a segment whose bytes do not match the advertised hash | VERIFIED | same log, `test_harness_bounds_failures_and_prefetch` |
 | Host failure, 404, slow response, bounded attempts | VERIFIED | `test_replica_host_failure_and_chain_outage` and `test_harness_bounds_failures_and_prefetch`. Six hosts and two attempts produce 8 attempts. Hosts 5 and 6 are not contacted. |
 | Revoked content, conditional request is not a 304, quarantine bytes are not served | VERIFIED | `test_range_cors_quarantine_and_removal` |
 | Abandoned prefetch and no media download of the unselected queue | VERIFIED | `test_harness_bounds_failures_and_prefetch`. One of five items is prefetched. `delivered_bytes` does not increase. No `.mp4` request is recorded for that prefetch. |
 | Chain note down does not create a grant or a new host; an existing term still plays and `hosting_promise` stays false | VERIFIED | `test_replica_host_failure_and_chain_outage` |
-| Headless decode of the fetched MP4 | VERIFIED on this VM | `test_browser_decodes_the_mp4_it_fetched` |
+| Headless decode of the fetched MP4 | VERIFIED on this VM | [delivery-final.txt](logs/goal-15/delivery-final.txt) `test_browser_decodes_the_mp4_it_fetched` |
 | Native HLS verification of every segment | Not claimed | Not run |
 | Package format approved | BLOCKED | DR-14-02, DR-15-02 |
 | PostgreSQL 16, golangci-lint, compose, mutation anchors | BLOCKED | logs above. Not passes. |
@@ -95,11 +97,10 @@ The step table is [summary.tsv](logs/goal-15/summary.tsv). Every log starts with
 
 | Step | Exit | Note |
 | --- | --- | --- |
-| ruff-format, ruff-check | 0 | `services workers/media packages/protocol tests scripts` |
-| mypy | 0 | |
-| python-tests | 0 | First run, before PostgreSQL 18 was installed: 427 passed, 2 skipped. The extra skip is the media PostgreSQL test. [python-tests.txt](logs/goal-15/python-tests.txt). This is not the cited Python result. |
-| python-tests-rerun | 0 | After PostgreSQL 18.6 was installed. 428 passed, 1 skipped, in 101.50s. The skip is `test_sixty_second_input_timing`. [python-tests-rerun.txt](logs/goal-15/python-tests-rerun.txt). This is the cited Python result. |
-| delivery-verbose | 0 | 9 passed. Names are in [delivery-verbose.txt](logs/goal-15/delivery-verbose.txt). |
+| ruff-format-final, ruff-check-final | 0 | On the tested commit. [ruff-format-final.txt](logs/goal-15/ruff-format-final.txt), [ruff-check-final.txt](logs/goal-15/ruff-check-final.txt). |
+| mypy-final | 0 | [mypy-final.txt](logs/goal-15/mypy-final.txt). |
+| python-final | 0 | 428 passed, 1 skipped, in 94.20s. The skip is `test_sixty_second_input_timing`. [python-final.txt](logs/goal-15/python-final.txt). This is the cited Python result. |
+| delivery-final | 0 | 9 passed, including the browser decode, in 8.66s. [delivery-final.txt](logs/goal-15/delivery-final.txt). |
 | workflow, secrets, sbom, requirements | 0 | |
 | protocol | 1 | `protoc well-known types BLOCKED`. Not a pass. [protocol.txt](logs/goal-15/protocol.txt). |
 | protocol-rerun | 0 | After `scripts/install_toolchains.sh --protoc-only`. `result PASS`. [protocol-rerun.txt](logs/goal-15/protocol-rerun.txt). |
@@ -107,7 +108,7 @@ The step table is [summary.tsv](logs/goal-15/summary.tsv). Every log starts with
 | gen-proto | 127 | `protoc` was not on `PATH`. Not a pass. [gen-proto.txt](logs/goal-15/gen-proto.txt). |
 | gen-proto-rerun | 0 | Pinned protoc 36.2. `git diff --exit-code -- proto/svn proto/gen/python` was clean. [gen-proto-rerun.txt](logs/goal-15/gen-proto-rerun.txt). |
 | go-suite | 1 | PostgreSQL 18 was not installed yet. Broadcaster tests failed on the missing binary. Not a pass. [go-suite.txt](logs/goal-15/go-suite.txt). |
-| go-suite-rerun | 0 | `SVN_SKIP_DEVNET=1`. 71 `ok` lines. [go-suite-rerun.txt](logs/goal-15/go-suite-rerun.txt). This does not run the devnet tests. Those stay on the CI race shards. |
+| go-final | 0 | On the tested commit. `SVN_SKIP_DEVNET=1`. 71 `ok` lines. [go-final.txt](logs/goal-15/go-final.txt). This does not run the devnet tests. Those stay on the CI race shards. |
 | anchors06, anchors07 | 1 | BLOCKED. Not passes. |
 | golangci-lint, docker | 127 | BLOCKED. Not passes. |
 | pg16 | 1 | BLOCKED. The binary is absent. Not a pass. |
@@ -118,11 +119,13 @@ The step table is [summary.tsv](logs/goal-15/summary.tsv). Every log starts with
 
 ## Head CI
 
-Not observed when this file was written. The run that checks the commit which adds this file is recorded in the next evidence note if it is green, and in the handoff after it is checked. A run that was not seen is not a pass.
+Run [42758130972](https://github.com/Maxencejules/shortvideo-network/actions/runs/42758130972) on `5ba8c476c83ac64e641382d8486dfb3d7791061f` completed **failure**. The `python` job failed in `test_browser_decodes_the_mp4_it_fetched` because deleting Chrome's profile raised `ENOTEMPTY`. The other 15 jobs succeeded. That run is not a pass.
+
+The tested commit is the cleanup. Head CI for that commit, and for this evidence commit, had not finished when this file was written. A green run is recorded only after it is seen.
 
 ## Log stamps
 
-The command logs in `logs/goal-15/` were written while `HEAD` was `1255394077693248406ffe3910ad40c163a6dd36` and `TREE` was `1e71eedb05330765c0da519af9f08cab5bd7af76`. `DIRTY yes` is the untracked log directory. No tracked source file changed between those commands.
+`delivery-final.txt`, `python-final.txt`, `go-final.txt`, `mypy-final.txt`, `ruff-format-final.txt`, and `ruff-check-final.txt` were written while `HEAD` was `f81d819427fca3fd552a93f43001aa13a08b6ae4` and `TREE` was `89b4821191228bae97c71ac9f9511e7ce1448cb2`. Earlier logs in the same directory were written on `1255394077693248406ffe3910ad40c163a6dd36`. `DIRTY yes` is the untracked log directory. No tracked source file changed during a command.
 
 ## Residual risk
 
