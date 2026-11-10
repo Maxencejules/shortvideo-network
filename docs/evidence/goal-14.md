@@ -14,13 +14,13 @@ The worker runs on this host. The goal stays BLOCKED. The queue, the package for
 
 | Item | Value |
 | --- | --- |
-| Commit | The commit whose message contains the `Tested-tree` trailer below. The sha is added in the evidence commit that follows, because it does not exist until this commit is created. |
-| Tree | The `Tested-tree` trailer on that commit. |
+| Commit | `bba18650f3eedea68f4dac3f1baf9cea85036881` |
+| Tree | `46ed5429379f657fd616aa9dde3f34aea6af6437` |
 | Base | `08509a5bdb454ada65392a83d029807acf2c75eb` (goal 13 merge on `main`). |
 | Branch | `goal-14` |
 | Runtime | Ubuntu, Linux 6.12.113+ x86_64, uid 1000, 4 vCPU, Intel Xeon model 207 under KVM. Go 1.26.10. PostgreSQL 18.6. Python 3.12.3, ruff 0.17.3, mypy 2.4.1. FFmpeg `6.1.1-3ubuntu5`. [runtime.txt](logs/goal-14/runtime.txt) |
 
-The commands ran on this code before the log files were added. Adding the logs does not change the worker. No code file was edited after these commands.
+`git rev-parse bba18650f3eedea68f4dac3f1baf9cea85036881^{tree}` is `46ed5429379f657fd616aa9dde3f34aea6af6437`. The commit message carries the same `Tested-tree` trailer. This evidence commit changes only `docs/evidence/` relative to that tested commit.
 
 ## Inherited blockers
 
@@ -107,7 +107,9 @@ The step table is [summary.tsv](logs/goal-14/summary.tsv). Logs were copied here
 
 ## Head CI
 
-Run [42737222474](https://github.com/Maxencejules/shortvideo-network/actions/runs/42737222474) on `07366435e249031e8d419dee8fc851902915ad48` failed the `python` job. GitHub's runner refused `unshare --user`, so `ffprobe` never started and valid files were reported as `TRUNCATED`. That run is not a pass. This commit uses the network namespace only when `unshare --user --map-root-user --net` can start a child, and it still applies `prlimit` and the protocol whitelist. The green run on the tested commit is cited in the evidence commit that follows it. A missing run is not a pass.
+Run [42737222474](https://github.com/Maxencejules/shortvideo-network/actions/runs/42737222474) on `07366435e249031e8d419dee8fc851902915ad48` failed the `python` job. GitHub's runner refused `unshare --user`, so `ffprobe` never started and valid files were reported as `TRUNCATED`. That run is not a pass. The tested commit uses the network namespace only when `unshare --user --map-root-user --net` can start a child, and it still applies `prlimit` and the protocol whitelist.
+
+Run [42738414523](https://github.com/Maxencejules/shortvideo-network/actions/runs/42738414523) on `bba18650f3eedea68f4dac3f1baf9cea85036881` completed **success**. All 16 jobs succeeded, including `python`, `go`, `devnet`, and the `go-race` shards. That is the green run on the tested commit. The run on the evidence head that only changes `docs/evidence/` is recorded below once it has completed. A run that has not completed is not a pass.
 
 ## Next safe action
 
