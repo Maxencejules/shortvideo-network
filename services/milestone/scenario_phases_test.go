@@ -195,6 +195,10 @@ func (m *mile) registerAndPublish() {
 	}
 	m.intentRegister(m.content, m.digest, m.pkgBytes, "reg-"+m.content)
 	m.waitIndexer("ADMITTED")
+	// A read that has not reconciled yet is stale. Wait until it is fresh,
+	// then ask. A stale read is a stall, not a moderation decision.
+	m.run("indexer-reconcile-before", m.bins["svn-indexer"], "reconcile-once", "--config", filepath.Join(m.work, "indexer", "indexer.json"))
+	m.waitFresh()
 	withheld := m.publish(false, "")
 	fmt.Printf("phase=MODERATION_WITHHELD publication=%s reason=%s\n", str(withheld["publication"]), str(withheld["publication_reason"]))
 	if str(withheld["publication"]) != "WITHHELD" {
