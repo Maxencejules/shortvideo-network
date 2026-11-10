@@ -27,7 +27,8 @@ def test_a_running_catalog_reloads_a_grant(tmp_path: Path) -> None:
     (playback / "c1.json").write_text(
         '{"content_id":"c1","content_version":1,"manifest_sha256":"'
         + "ab" * 32
-        + '","state":"AUTHORIZED","authorized_until":9999999999,"host_ids":["origin-test"],"hosting_promise":false}',
+        + '","state":"AUTHORIZED","authorized_until":9999999999,'
+        + '"host_ids":["origin-test"],"hosting_promise":false}',
         encoding="utf-8",
     )
     assert serving.grant_live("c1") is True
