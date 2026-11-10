@@ -1,0 +1,18 @@
+HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
+TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+DIRTY yes
+?? docs/evidence/logs/goal-16/
+COMMAND bash -c cd\ agents/provider\ \&\&\ go\ test\ -race\ -count=1\ -timeout\ 3m\ ./...
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider	1.010s
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider/cmd/svn-provider	16.971s
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/agent	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/cert	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/config	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/disk	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/fetch	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/httpserver	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/keys	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/manifest	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/sign	[no test files]
+?   	github.com/Maxencejules/shortvideo-network/agents/provider/internal/store	[no test files]
+EXIT:0

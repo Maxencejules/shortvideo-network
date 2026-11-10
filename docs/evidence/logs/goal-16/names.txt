@@ -1,0 +1,32 @@
+HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
+TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+DIRTY yes
+?? docs/evidence/logs/goal-16/
+COMMAND git diff --name-only cd89c1908a045b28af7d8e429f38767eb923bb5d..HEAD
+agents/provider/README.md
+agents/provider/cmd/svn-provider/conformance_test.go
+agents/provider/cmd/svn-provider/main.go
+agents/provider/doc.go
+agents/provider/go.mod
+agents/provider/go.sum
+agents/provider/internal/agent/accept.go
+agents/provider/internal/agent/agent.go
+agents/provider/internal/agent/chain.go
+agents/provider/internal/agent/read.go
+agents/provider/internal/cert/cert.go
+agents/provider/internal/config/config.go
+agents/provider/internal/disk/disk.go
+agents/provider/internal/fetch/fetch.go
+agents/provider/internal/httpserver/server.go
+agents/provider/internal/keys/keys.go
+agents/provider/internal/manifest/manifest.go
+agents/provider/internal/sign/sign.go
+agents/provider/internal/sign/tx.go
+agents/provider/internal/store/store.go
+agents/provider/scaffold_test.go
+docs/architecture/README.md
+docs/architecture/provider-agent.md
+docs/decision-register.md
+docs/progress.md
+docs/progress.tsv
+EXIT:0

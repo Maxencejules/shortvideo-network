@@ -1,0 +1,11 @@
+HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
+TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+DIRTY yes
+?? docs/evidence/logs/goal-16/
+COMMAND bash -c uname\ -a\;\ go\ version\;\ nproc\;\ id\;\ test\ -x\ /usr/lib/postgresql/16/bin/postgres\;\ echo\ pg16_test:\$\?\;\ ls\ /usr/lib/postgresql\ 2\>/dev/null\ \|\|\ true\;\ command\ -v\ docker\ \|\|\ true\;\ command\ -v\ golangci-lint\ \|\|\ true
+Linux cursor 6.12.113+ #1 SMP PREEMPT_DYNAMIC Mon Nov  9 16:04:37 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+go version go1.26.10 linux/amd64
+4
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev)
+pg16_test:1
+EXIT:0

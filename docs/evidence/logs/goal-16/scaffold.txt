@@ -1,0 +1,7 @@
+HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
+TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+DIRTY yes
+?? docs/evidence/logs/goal-16/
+COMMAND go test -count=1 -timeout 30s ./agents/provider/
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider	0.001s
+EXIT:0

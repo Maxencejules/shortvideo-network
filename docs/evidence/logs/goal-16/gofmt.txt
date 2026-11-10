@@ -1,0 +1,6 @@
+HEAD 0ae57fcf1896cf863da1e867c1f9081007313c57
+TREE 4cd758ce0806103e86d63dc0162e2ff3aa2edde7
+DIRTY yes
+?? docs/evidence/logs/goal-16/
+COMMAND bash -c cd\ agents/provider\ \&\&\ out=\$\(gofmt\ -l\ .\)\;\ printf\ \"%s\"\ \"\$out\"\;\ test\ -z\ \"\$out\"
+EXIT:0
