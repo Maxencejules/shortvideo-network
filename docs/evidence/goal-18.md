@@ -55,6 +55,7 @@ These are open. They are not owner decisions.
 | DR-18-04 | OPEN | An accepted lease does not name the offer (DR-08-08). The indexer closes the one OPEN offer for that provider and content in the same transaction. Zero or several matches stay OPEN. [scenario.txt](logs/goal-18/scenario.txt) line 64 is `phase=INDEXER_RECONCILE ok` after the three accepts. Line 65 is `reconciliation_status":"ok"` and `"stale":false`. |
 | DR-18-05 | OPEN | A stale indexer read blocks publication and repair. The tested commit reconciles before the withheld publish so a not-yet-run reconciliation is not reported as the moderation decision. Line 54 is `publication=WITHHELD reason=community_approval`. |
 | DR-18-06 | OPEN | Declared operator labels are simulation. Line 63 is `simulated=true independent=false physical=1`. Three counted replicas on one machine are not three failure domains. |
+| DR-18-07 | OPEN | `POST /v1/publications`, `/v1/repairs`, `/v1/origin`, and `/v1/hosts` are unauthenticated. `/v1/hosts` accepts a provider admin token. They are test-harness control routes. `svn-scheduler` refuses a non-loopback listen (`services/scheduler/cmd/svn-scheduler/main.go` lines 57-60). Authenticate them or remove them before any non-loopback binding. See the residual-risk section. |
 | DR-17-01 .. DR-17-08 | OPEN | Carried. The scheduler still does not sign. |
 | DR-16-01 .. DR-16-06 | OPEN | Carried. DR-16-04 is closed only for this scenario's chain view. |
 | DR-15-01 .. DR-15-06 | OPEN | Carried. The playback grant is still local. |
@@ -74,12 +75,12 @@ The clip is synthetic. Line 44 is `bytes=12746 sha256=190072c758fab6a1b799d21063
 | Development principal only | VERIFIED as the fixture | The API publish before the chain path is line 48 `status=403`. Public sign-up is not this goal. |
 | Upload, one reservation on retry | VERIFIED on this host | Line 45 `upload=ueb53fb70c1b915f440b12452835d2bbe` `repeat_upload=ueb53fb70c1b915f440b12452835d2bbe` `status=RESERVED`. The test refuses a second upload id at `services/milestone/scenario_phases_test.go:57`. |
 | Bytes received, processing queued, worker ready | VERIFIED on this host | Line 46 `status=204`. Line 47 `PROCESSING_QUEUED`. Line 49 `status":"READY_FOR_REVIEW"` `publication":"NOT_PUBLISHED"` `package_bytes":12740`. |
-| Moderation withheld, then three committed leases, then publish | VERIFIED on this host | Line 54 `WITHHELD` `community_approval`. Lines 57, 59, and 61 are the three `OFFER_LEASE` commits at heights 57, 62, and 66. Line 63 `PUBLISHED` `leases=3 distinct=3 verified=3` at `2026-11-10T13:53:31.525725256Z`. Line 64 reconciliation `ok`. |
+| Moderation withheld, then three committed leases, then publish | VERIFIED on this host | Line 54 `WITHHELD` `community_approval`. Lines 56, 58, and 60 are `phase=COMMITTED kind=OFFER_LEASE` at heights 57, 62, and 66. Lines 57, 59, and 61 are the matching `phase=OFFER_COMMITTED` lines. Line 63 `PUBLISHED` `leases=3 distinct=3 verified=3` at `2026-11-10T13:53:31.525725256Z`. Line 64 reconciliation `ok`. |
 | Independent client plays the segment | VERIFIED on this host | Lines 66-73. Line 71 `sha256=cbcc6ec21007d20c4bcff5223825b1a3f7e8b90b5ffbed08d9d7c9ffbe31ed04` matches `expected`. Line 73 `CLIENT ok`. |
 | Repeated register is one business effect | VERIFIED for the content row and the transaction | Line 74 repeats the register tx `e043c8cd2135abcebc6532436de05beffc143e1fc86316f724c402aefae39bbd` at height 54, the same values as line 52. Line 75 `OPERATION_STATUS_COMMITTED`. Line 76 `content_rows=1`. The test refuses any other count at `services/milestone/scenario_phases_test.go:281`. A separate quota-balance column was not printed. |
 | Corrupt one replica, a survivor still serves | VERIFIED on this host | Line 77 `availability_verified=2 distribution=200`. |
 | Origin down, distribution continues | VERIFIED on this host | Line 78 `distribution=200 bytes=12740`. |
-| One provider down, repair, restart | VERIFIED on this host | Line 79 `REACHABILITY_DEGRADED degraded=[p1]`. Line 82 `state":"CONFIRMED"` `source=p2 replacement=p4`. The repair offer committed at height 74, tx `bc65319d65266be3aea5905e12ee0d6233cd28a0b9bdb3645a3a6c47fd85842e` (line 81). Line 84 `health=200`. |
+| One provider down, repair, restart | VERIFIED on this host | Line 79 `REACHABILITY_DEGRADED degraded=[p1]`. Line 82 `state":"CONFIRMED"` `source=p2 replacement=p4`. Line 80 is `phase=COMMITTED kind=OFFER_LEASE` at height 74, tx `bc65319d65266be3aea5905e12ee0d6233cd28a0b9bdb3645a3a6c47fd85842e`. Line 81 is the matching `phase=OFFER_COMMITTED` line. Line 84 `health=200`. |
 | Unapproved offer refused, unauthorized accept rejected on chain | VERIFIED on this host | Line 85 `status=400`. Line 88 `height=489 code=1 want=1 txhash=1BAD9EBE84422CDD6681E16F2D2773E6669E4943D6AEADCCF93309C4DDCE3D5D`. |
 | Quorum loss: playback continues, new commitment stays pending, resume does not reset history | VERIFIED as two of four processes stopped on this one machine | Line 89 `height_before=489 height_during=489 playback=200`. Line 90 `OPERATION_STATUS_PENDING_STALL`. Line 91 `height=490 app_hash=CE38387A556DDD765756FCA4C82F299208F13114523F3BFAC3E452FF679BE1D1 stall_height=489`. The height moved forward. The homes were not wiped. |
 | Withdraw from the controlled services | VERIFIED on this host | Line 92 withdraw tx `545157b6633f82f65809001161f8e43ed9e8bcbabf0789478cc8abdf05443d04` at height 494. Line 93 `indexer=true`. Line 94 `status=410`. Line 95 `REMOVED`. |
@@ -118,7 +119,7 @@ The evidence does not show a second machine, a second operator, a network partit
 | --- | --- | --- |
 | REQ-SCOPE-005 | VERIFIED on this host for the development-principal path. Not a public beta. | The scenario log, lines 44-96. Login as a product is Goal 19. |
 | REQ-ARCH-011 | VERIFIED on this host for the stall | Line 89 playback 200. Line 90 the new register stays `PENDING_STALL`. |
-| REQ-DEV-003 | VERIFIED on this host for registration, three commitments, and resume without a wiped home | Lines 52, 56-61, and 91. A database replay after a destroyed disk was not run. |
+| REQ-DEV-003 | VERIFIED on this host for registration, three commitments, and resume without a wiped home | Lines 52, 56, 58, 60, and 91. Lines 57, 59, and 61 repeat those offers as `OFFER_COMMITTED`. A database replay after a destroyed disk was not run. |
 | REQ-OPS-006 | VERIFIED on this host for the stall disclosure the scheduler and the broadcaster already return | Line 90 `PENDING_STALL`. The playback document does not itself say the chain is stalled (line 68 `chain_status=HELD`). DR-18-03. |
 | REQ-QA-003 | VERIFIED on this host as one machine | Lines 78, 79, and 82. Not three physical hosts. |
 | REQ-RISK-002 | IMPLEMENTED as scope | This goal did not add a native app, a token, or a recommender. |
@@ -142,22 +143,24 @@ Blockers to resolve before goals 19-24:
 - One machine and simulated operator labels (DR-18-06), before any independence or onboarding claim (Goal 24).
 - The goal 06 and goal 07 mutation anchors (`problems=13` and `problems=3`).
 - golangci-lint, PostgreSQL 16, and the goal 04 compose bridge.
-- DR-18-01 (which digest is the content digest), DR-18-02 (shared genesis account), DR-18-03 (playback publication field), DR-18-04 (offer id missing from the accept event), and DR-18-05 (a stale read blocks publication).
+- DR-18-01 (which digest is the content digest), DR-18-02 (shared genesis account), DR-18-03 (playback publication field), DR-18-04 (offer id missing from the accept event), DR-18-05 (a stale read blocks publication), and DR-18-07 (unauthenticated scheduler control routes).
 - Carried DR-13, DR-14, DR-15, DR-16, and DR-17 requests. Accounts, retention, and audience rules stay Goals 19 and later.
 
 ## Residual risk
 
-`p1`, `p2`, and `p3` share one genesis account, so "distinct operators" is the declared label, which line 63 marks `simulated=true`. The outer key file is an interim so an ed25519 agent can submit as that account. The indexer closes an offer only when exactly one OPEN offer matches the provider and content. Two open offers for one pair stay open and the next reconciliation is divergent. The playback grant is local and expires on its own clock. The quorum drill stops processes. It does not unplug a machine. The height jump from the repair (height 74) to the unauthorized accept (height 489) is empty blocks on this devnet, not a second chain.
+`p1`, `p2`, and `p3` share one genesis account, so "distinct operators" is the declared label, which line 63 marks `simulated=true`. The outer key file is an interim so an ed25519 agent can submit as that account. The indexer closes an offer only when exactly one OPEN offer matches the provider and content. Two open offers for one pair stay open and the next reconciliation is divergent. The playback grant is local and expires on its own clock. The quorum drill stops processes. It does not unplug a machine. The height jump from the repair (height 74, line 80) to the unauthorized accept (height 489, line 88) is empty blocks on this devnet, not a second chain.
+
+**DR-18-07 (OPEN).** `services/scheduler/internal/sched/http.go` lines 41-44 register `POST /v1/publications`, `POST /v1/repairs`, `POST /v1/origin`, and `POST /v1/hosts`. None of these routes existed in goal 17. They are unauthenticated. `POST /v1/hosts` accepts a provider admin token (`http.go` lines 148-163). They are test-harness control routes. `svn-scheduler` binds them only when `listen` is a loopback address (`services/scheduler/cmd/svn-scheduler/main.go` lines 57-60). Authenticate them or remove them before any non-loopback binding.
 
 ## Next safe action
 
-Open a draft pull request from `goal-18`. Do not merge it. Do not start goals 19-24 from this branch. Public launch stays disabled.
+Draft pull request 23 is already open from `goal-18`. Do not merge it. Do not start goals 19-24 from this branch. Public launch stays disabled.
 
 ## Proposed pull-request title and summary
 
 Title: Join the upload-to-playback path on the devnet
 
-Summary: The milestone runs a synthetic clip through the API, the media worker, the broadcaster, the indexer, four provider agents, the scheduler, and delivery, against a four-validator devnet. Playback continues after the origin is marked down. Repair commits a replacement lease from a survivor. Stopping two validators freezes new commits and leaves existing playback on the local grant. Restarting those same homes continues the chain. This is one VM, one physical failure domain, and a working prototype, not a reviewed public beta. The goal stays BLOCKED on custody, that single machine, the mutation anchors, golangci-lint, PostgreSQL 16, and compose. DR-18-01 through DR-18-06 are open.
+Summary: The milestone runs a synthetic clip through the API, the media worker, the broadcaster, the indexer, four provider agents, the scheduler, and delivery, against a four-validator devnet. Playback continues after the origin is marked down. Repair commits a replacement lease from a survivor. Stopping two validators freezes new commits and leaves existing playback on the local grant. Restarting those same homes continues the chain. This is one VM, one physical failure domain, and a working prototype, not a reviewed public beta. The goal stays BLOCKED on custody, that single machine, the mutation anchors, golangci-lint, PostgreSQL 16, and compose. DR-18-01 through DR-18-07 are open.
 
 ## Head CI
 
@@ -171,4 +174,8 @@ Run [42829240686](https://github.com/Maxencejules/shortvideo-network/actions/run
 
 Run [42831321972](https://github.com/Maxencejules/shortvideo-network/actions/runs/42831321972) on `5aec8ea211b6e8e1c6719eff3ddc4dd480f9ed60` completed **success** at 2026-11-10T14:24:31Z. It was created at 2026-11-10T14:09:55Z. All 17 jobs succeeded, the same set as run 42829240686. `5aec8ea` differs from `f41529e` only in the Head CI paragraph.
 
-Run [42833971143](https://github.com/Maxencejules/shortvideo-network/actions/runs/42833971143) on `cadf516dec0242618112609a4b60b153b19de6c4` completed **success** at 2026-11-10T14:38:09Z. It was created at 2026-11-10T14:25:42Z. All 17 jobs succeeded, the same set. `cadf516` differs from `5aec8ea` only by naming run 42831321972. No run on this branch was cancelled. The run on the commit that adds this sentence had not finished when the sentence was written.
+Run [42833971143](https://github.com/Maxencejules/shortvideo-network/actions/runs/42833971143) on `cadf516dec0242618112609a4b60b153b19de6c4` completed **success** at 2026-11-10T14:38:09Z. It was created at 2026-11-10T14:25:42Z. All 17 jobs succeeded, the same set. `cadf516` differs from `5aec8ea` only by naming run 42831321972.
+
+Run [42836248937](https://github.com/Maxencejules/shortvideo-network/actions/runs/42836248937) on `f1db3a9208105091b91d787dc62aa051cbb1f68c` completed **success** at 2026-11-10T14:54:16Z. It was created at 2026-11-10T14:39:07Z. All 17 jobs succeeded, the same set. `f1db3a9` differs from `cadf516` only by naming run 42833971143. No run on this branch was cancelled.
+
+Docs-only commits after the tested commit start another CI run. The run on the commit that adds a sentence is not named in that sentence. This paragraph names every run that had finished on `goal-18` before this commit. The run this commit starts is a tip-lag run and is not named here.
