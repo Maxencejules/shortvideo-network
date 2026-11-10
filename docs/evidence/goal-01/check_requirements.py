@@ -199,6 +199,8 @@ SOURCE_ALLOW = (
     "services/indexer/",
     # Goal 13 adds the Go upload service.
     "services/api/",
+    # Goal 17 adds the Go replication scheduler.
+    "services/scheduler/",
 )
 WALK_SKIP = {
     ".git",

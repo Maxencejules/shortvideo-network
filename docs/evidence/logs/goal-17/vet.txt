@@ -1,0 +1,8 @@
+COMMAND go vet ./services/scheduler/...
+DATE 2026-11-10T10:40:01Z
+HEAD b7c1ed19891c297c9af9bea4afe646c64ac870c7
+TREE f5621f62d5dedbf2fa8d44e306fdf76d0aa3dbf2
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-17/conformance.txt
+DIRTY_PATH docs/evidence/logs/goal-17/policy.txt
+EXIT:0

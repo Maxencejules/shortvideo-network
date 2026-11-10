@@ -1,0 +1,17 @@
+COMMAND bash -c uname\ -srm\;\ go\ version\;\ nproc\;\ python3\ --version\;\ if\ test\ -x\ /usr/lib/postgresql/16/bin/postgres\;\ then\ echo\ pg16_present\;\ else\ echo\ pg16_test:1\;\ fi\;\ if\ command\ -v\ docker\ \>/dev/null\;\ then\ echo\ docker_present\;\ else\ echo\ docker_test:127\;\ fi\;\ if\ command\ -v\ golangci-lint\ \>/dev/null\;\ then\ echo\ golangci_present\;\ else\ echo\ golangci_test:127\;\ fi
+DATE 2026-11-10T10:40:01Z
+HEAD b7c1ed19891c297c9af9bea4afe646c64ac870c7
+TREE f5621f62d5dedbf2fa8d44e306fdf76d0aa3dbf2
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-17/conformance.txt
+DIRTY_PATH docs/evidence/logs/goal-17/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-17/policy.txt
+DIRTY_PATH docs/evidence/logs/goal-17/vet.txt
+Linux 6.12.113+ x86_64
+go version go1.26.10 linux/amd64
+4
+Python 3.12.3
+pg16_test:1
+docker_test:127
+golangci_test:127
+EXIT:0

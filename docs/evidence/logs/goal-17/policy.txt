@@ -1,0 +1,19 @@
+COMMAND go test -count=1 -timeout 60s -v ./services/scheduler/internal/policy/
+DATE 2026-11-10T10:40:01Z
+HEAD b7c1ed19891c297c9af9bea4afe646c64ac870c7
+TREE f5621f62d5dedbf2fa8d44e306fdf76d0aa3dbf2
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-17/conformance.txt
+=== RUN   TestSelectSkipsOriginPolicyCapacityAndDuplicateOperators
+--- PASS: TestSelectSkipsOriginPolicyCapacityAndDuplicateOperators (0.00s)
+=== RUN   TestSpareIsEligibleForRepair
+--- PASS: TestSpareIsEligibleForRepair (0.00s)
+=== RUN   TestGateAndEvidenceAndRenewal
+--- PASS: TestGateAndEvidenceAndRenewal (0.00s)
+=== RUN   TestJobDoesNotStartTwiceOrDuringCooldown
+--- PASS: TestJobDoesNotStartTwiceOrDuringCooldown (0.00s)
+=== RUN   TestManifestOrdersKeys
+--- PASS: TestManifestOrdersKeys (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/policy	0.002s
+EXIT:0

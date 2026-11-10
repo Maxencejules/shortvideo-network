@@ -1,0 +1,24 @@
+COMMAND python3 -m pytest -q tests/unit/test_ci_scheduler.py tests/unit/test_chain_writer_policy.py --tb=line
+DATE 2026-11-10T10:42:17Z
+HEAD b7c1ed19891c297c9af9bea4afe646c64ac870c7
+TREE f5621f62d5dedbf2fa8d44e306fdf76d0aa3dbf2
+DIRTY yes
+DIRTY_PATH docs/evidence/goal-01/check_requirements.py
+DIRTY_PATH docs/evidence/logs/goal-17/anchors06.txt
+DIRTY_PATH docs/evidence/logs/goal-17/anchors07.txt
+DIRTY_PATH docs/evidence/logs/goal-17/conformance.txt
+DIRTY_PATH docs/evidence/logs/goal-17/docker.txt
+DIRTY_PATH docs/evidence/logs/goal-17/gofmt.txt
+DIRTY_PATH docs/evidence/logs/goal-17/golangci-lint.txt
+DIRTY_PATH docs/evidence/logs/goal-17/names.txt
+DIRTY_PATH docs/evidence/logs/goal-17/pg16.txt
+DIRTY_PATH docs/evidence/logs/goal-17/policy.txt
+DIRTY_PATH docs/evidence/logs/goal-17/race.txt
+DIRTY_PATH docs/evidence/logs/goal-17/requirements.txt
+DIRTY_PATH docs/evidence/logs/goal-17/runtime.txt
+DIRTY_PATH docs/evidence/logs/goal-17/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-17/secrets.txt
+DIRTY_PATH docs/evidence/logs/goal-17/trailer.txt
+DIRTY_PATH docs/evidence/logs/goal-17/vet.txt
+....................                                                     [100%]
+EXIT:0
