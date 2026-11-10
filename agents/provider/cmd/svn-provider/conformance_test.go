@@ -433,14 +433,17 @@ func TestConformance(t *testing.T) {
 	}
 	fmt.Printf("PARTIAL_RESTART used_bytes=%d leases=%d staging_removed=true\n", pst.UsedBytes, len(pst.Leases))
 
-	diskA := newRunning(t, "disk", "dk", "vm-1", 1<<20, stA.DiskAvailableBytes, 1<<20, 30, 2, 1, src, chain, srcCA, chainCA)
+	// min_free is above any disk this test runner has. The agent still reads
+	// statfs and refuses because the measured free space is smaller.
+	const minFree = uint64(1<<63 - 1)
+	diskA := newRunning(t, "disk", "dk", "vm-1", 1<<20, minFree, 1<<20, 30, 2, 1, src, chain, srcCA, chainCA)
 	defer diskA.stop()
 	diskPkg := putPackage(t, src, "cdisk")
 	diskA.approve(t, diskPkg.id)
 	if _, msg := diskA.acceptCode(t, diskPkg); msg != "insufficient disk" {
 		t.Fatalf("disk: %s", msg)
 	}
-	fmt.Printf("DISK_REJECT available=%d min_free=%d error=insufficient_disk\n", stA.DiskAvailableBytes, stA.DiskAvailableBytes)
+	fmt.Printf("DISK_REJECT available=%d min_free=%d error=insufficient_disk\n", diskA.status(t).DiskAvailableBytes, minFree)
 
 	quota := newRunning(t, "quota", "qk", "vm-1", 10, 0, 1<<20, 30, 2, 1, src, chain, srcCA, chainCA)
 	defer quota.stop()
