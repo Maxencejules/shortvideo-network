@@ -39,7 +39,15 @@ ROTATED = (
     " if (!node || !node.textContent) return null;"
     " let data; try { data = JSON.parse(node.textContent); } catch (err) { return null; }"
     " if (!data || data.contentId !== 'crotated' || data.phase !== 'ready') return null;"
-    " return document.querySelectorAll('video').length === 1 ? 1 : null; })()"
+    " const count = document.querySelectorAll('video').length;"
+    " if (count !== 1) return null;"
+    " return {contentId: data.contentId, videos: count}; })()"
+)
+MUTED = (
+    "(() => { const video = document.querySelector('video');"
+    " const button = document.querySelector('#mute');"
+    " if (!video || !button) return null;"
+    " return {muted: video.muted, label: button.textContent}; })()"
 )
 ORIGIN = (
     "(() => { const node = document.querySelector('#svn-playback');"
@@ -135,7 +143,14 @@ def test_viewer_plays_processed_media_in_a_browser(tmp_path: Path) -> None:
         assert isinstance(recovered, dict)
         assert "origin-test" in recovered["hostsTried"]
         assert recovered["rendered"] is True
-        assert saved["videos"] == 1
+        keyboard = saved["videos"]
+        assert isinstance(keyboard, dict)
+        assert keyboard["contentId"] == "crotated"
+        assert keyboard["videos"] == 1
+        muted = saved["muted"]
+        assert isinstance(muted, dict)
+        assert muted["muted"] is False
+        assert muted["label"] == "Mute"
         home = saved["home"]
         assert isinstance(home, dict)
         quality = saved["quality"]
@@ -172,6 +187,9 @@ def test_viewer_plays_processed_media_in_a_browser(tmp_path: Path) -> None:
                     "indexer": "stand-in",
                     "account": "stand-in",
                     "delivery": "svn-delivery",
+                    "muted": muted["muted"],
+                    "muteLabel": muted["label"],
+                    "afterKey": keyboard["contentId"],
                 },
                 sort_keys=True,
             )
@@ -350,6 +368,12 @@ def _plan(chrome: str, origin: str) -> dict[str, Any]:
             {"do": "eval", "expr": QUALITY, "save": "marked"},
             {"do": "click", "selector": "#quality-target"},
             {"do": "wait", "expr": READY, "save": "quality", "ms": 25000},
+            {
+                "do": "eval",
+                "expr": "document.querySelector('#mute').click(), true",
+                "save": "toggled",
+            },
+            {"do": "eval", "expr": MUTED, "save": "muted"},
             {
                 "do": "eval",
                 "expr": "document.querySelector('#feed').focus(), true",

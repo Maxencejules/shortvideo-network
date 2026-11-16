@@ -177,7 +177,11 @@ function player(props: ViewerProps, row: FeedRow): ReactElement {
       { className: "controls" },
       createElement("button", { type: "button", onClick: props.onTogglePlay }, props.player.playing ? "Pause" : "Play"),
       createElement("button", { type: "button", id: "replay", onClick: props.onReplay }, "Play again"),
-      createElement("button", { type: "button", onClick: props.onToggleMute }, props.player.muted ? "Unmute" : "Mute"),
+      createElement(
+        "button",
+        { type: "button", id: "mute", onClick: props.onToggleMute },
+        props.player.muted ? "Unmute" : "Mute",
+      ),
       createElement("button", { type: "button", onClick: props.onToggleCaptions }, props.player.captionsOn ? "Hide captions" : "Show captions"),
       createElement("button", { type: "button", onClick: () => props.onActive(Math.max(0, props.active - 1)) }, "Previous video"),
       createElement("button", { type: "button", onClick: () => props.onActive(Math.min(props.rows.length - 1, props.active + 1)) }, "Next video"),

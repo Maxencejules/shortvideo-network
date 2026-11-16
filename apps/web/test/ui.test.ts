@@ -41,6 +41,19 @@ test("captions and titles render as text", () => {
   assert.match(html, /not a live creator/);
 });
 
+test("the mute button names the state it will apply", () => {
+  const quiet = renderToStaticMarkup(
+    createElement(Viewer, { ...props(), player: { ...EMPTY_PLAYER, contentId: "cportrait", mediaUrl: "blob:test", muted: true } }),
+  );
+  const audible = renderToStaticMarkup(
+    createElement(Viewer, { ...props(), player: { ...EMPTY_PLAYER, contentId: "cportrait", mediaUrl: "blob:test", muted: false } }),
+  );
+  assert.match(quiet, /id="mute"/);
+  assert.match(quiet, />Unmute</);
+  assert.equal(audible.includes(">Unmute<"), false);
+  assert.match(audible, />Mute</);
+});
+
 test("withdrawn content has no video element", () => {
   const html = renderToStaticMarkup(
     createElement(Viewer, {
