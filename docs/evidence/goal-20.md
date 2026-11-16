@@ -43,7 +43,9 @@ The tested commit message carries `Tested-tree: 7b5c5e8d7a506fbe8b7b3bb1aba41214
 
 [Run 43929997253](https://github.com/Maxencejules/shortvideo-network/actions/runs/43929997253) on `7ebfaeb9d25dbcf000e4b53ca0e36b681f82c5c5` finished with conclusion `failure`. Sixteen jobs passed, including `python` with the 60 second deadline. `go-race (devnet-broadcaster)` failed in `Install PostgreSQL 18.6` with exit code 56, again while `curl` fetched the apt key. No test assertion failed. This tested commit tries that download three times and still exits 1 when all three fail.
 
-[Run 43933027338](https://github.com/Maxencejules/shortvideo-network/actions/runs/43933027338) on `5d468f8de4ce9adfffebb0f443b1cee3a0e7966c` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `milestone`, `devnet`, and every `go-race` shard. That head is the evidence commit above this tested commit. A green run is not visual approval.
+[Run 43933027338](https://github.com/Maxencejules/shortvideo-network/actions/runs/43933027338) on `5d468f8de4ce9adfffebb0f443b1cee3a0e7966c` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `milestone`, `devnet`, and every `go-race` shard. That head is the evidence commit above the apt-key retry. A green run is not visual approval.
+
+[Run 43940598569](https://github.com/Maxencejules/shortvideo-network/actions/runs/43940598569) on `ed67573989ba11ac1a0c6fa86372c8584fd5bf25` finished with conclusion `success`. All 17 jobs passed, including `python`. That head is the evidence commit above this tested commit. A green run is not visual approval.
 
 ## What ran
 
