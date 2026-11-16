@@ -1,0 +1,7 @@
+HEAD 797d85626447ad00e40d35b0039548dfeeea451c
+TREE d4f296c4e72468770944c7a8196a9ff9b6821521
+DIRTY no
+COMMAND python3 -m pytest -q tests/unit/test_delivery.py::test_browser_decodes_the_mp4_it_fetched -s --tb=short 
+decode-retry no status=REPORTED
+.
+EXIT:0

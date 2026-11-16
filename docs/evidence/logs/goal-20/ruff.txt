@@ -1,7 +1,7 @@
-HEAD 894aa0c4345fc3d77c1f5338356202e9bc6f4b0c
-TREE b7e1589a0f0d53f45d80de73268f63fe3d680119
+HEAD 797d85626447ad00e40d35b0039548dfeeea451c
+TREE d4f296c4e72468770944c7a8196a9ff9b6821521
 DIRTY no
-COMMAND ruff format --check tests/unit/test_web_viewer.py tests/unit/test_delivery.py && ruff check tests/unit/test_web_viewer.py tests/unit/test_delivery.py
-2 files already formatted
+COMMAND ruff format --check services/delivery/svn_delivery/browser.py tests/unit/test_delivery.py tests/unit/test_web_viewer.py && ruff check services/delivery/svn_delivery/browser.py tests/unit/test_delivery.py tests/unit/test_web_viewer.py
+3 files already formatted
 [1;32mAll checks passed![0m
 EXIT:0
