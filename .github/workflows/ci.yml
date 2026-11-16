@@ -98,7 +98,18 @@ jobs:
           pg_fpr="B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8"
           key=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
           sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          fetched=0
+          for attempt in 1 2 3; do
+            if sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc; then
+              fetched=1
+              break
+            fi
+            sleep "${attempt}"
+          done
+          if [ "${fetched}" != 1 ]; then
+            echo "PostgreSQL apt key download failed"
+            exit 1
+          fi
           fpr="$(gpg --batch --show-keys --with-colons "${key}" | awk -F: '$1 == "fpr" { print $10; exit }')"
           if [ "${fpr}" != "${pg_fpr}" ]; then
             echo "PostgreSQL apt key fingerprint ${fpr} is not ${pg_fpr}"
@@ -240,7 +251,18 @@ jobs:
           pg_fpr="B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8"
           key=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
           sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          fetched=0
+          for attempt in 1 2 3; do
+            if sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc; then
+              fetched=1
+              break
+            fi
+            sleep "${attempt}"
+          done
+          if [ "${fetched}" != 1 ]; then
+            echo "PostgreSQL apt key download failed"
+            exit 1
+          fi
           fpr="$(gpg --batch --show-keys --with-colons "${key}" | awk -F: '$1 == "fpr" { print $10; exit }')"
           if [ "${fpr}" != "${pg_fpr}" ]; then
             echo "PostgreSQL apt key fingerprint ${fpr} is not ${pg_fpr}"
@@ -450,7 +472,18 @@ jobs:
           pg_fpr="B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8"
           key=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
           sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          fetched=0
+          for attempt in 1 2 3; do
+            if sudo curl -fsSL -o "${key}" https://www.postgresql.org/media/keys/ACCC4CF8.asc; then
+              fetched=1
+              break
+            fi
+            sleep "${attempt}"
+          done
+          if [ "${fetched}" != 1 ]; then
+            echo "PostgreSQL apt key download failed"
+            exit 1
+          fi
           fpr="$(gpg --batch --show-keys --with-colons "${key}" | awk -F: '$1 == "fpr" { print $10; exit }')"
           if [ "${fpr}" != "${pg_fpr}" ]; then
             echo "PostgreSQL apt key fingerprint ${fpr} is not ${pg_fpr}"
