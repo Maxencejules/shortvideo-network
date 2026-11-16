@@ -704,7 +704,10 @@ def test_browser_decodes_the_mp4_it_fetched(tmp_path: Path, media_root: Path) ->
         catalog.clear_hits()
         catalog.clear_report("cportrait")
         url = f"https://127.0.0.1:{server.port}/v1/player/cportrait"
-        status = run_until(url, lambda: catalog.report("cportrait"), timeout=25)
+        # The page posts within about 14s of loading, including its own
+        # decode deadline. A cold runner can spend the rest starting Chrome.
+        # Sixty seconds covers that start. A deadline with no report fails.
+        status = run_until(url, lambda: catalog.report("cportrait"), timeout=60)
         report = catalog.report("cportrait")
         # Only an early process exit is retried. A timeout with no report
         # stays a failure, so a decode that never posts cannot pass later.
@@ -712,7 +715,7 @@ def test_browser_decodes_the_mp4_it_fetched(tmp_path: Path, media_root: Path) ->
             print("decode-retry reason=EXITED", flush=True)
             catalog.clear_report("cportrait")
             catalog.clear_hits()
-            status = run_until(url, lambda: catalog.report("cportrait"), timeout=25)
+            status = run_until(url, lambda: catalog.report("cportrait"), timeout=60)
             report = catalog.report("cportrait")
         else:
             print(f"decode-retry no status={status}", flush=True)
