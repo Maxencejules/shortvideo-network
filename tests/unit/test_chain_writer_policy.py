@@ -52,6 +52,19 @@ WRITER_FILES = frozenset(
         "services/milestone/internal/chainview/server.go",
     }
 )
+# Goal 19. These files load the application export key for SVN-ACCOUNT-EXPORT-1.
+# That key signs an export bundle. It is not a chain signer. The other consumer
+# markers still apply, so a broadcast or a Cosmos transaction builder in one of
+# these files still fails.
+APPLICATION_EXPORT_KEY = frozenset(
+    {
+        "services/api/cmd/svn-api/main.go",
+        "services/api/internal/account/account.go",
+        "services/api/internal/account/bundle.go",
+        "services/api/internal/service/account_test.go",
+        "services/api/internal/service/service.go",
+    }
+)
 GO_WRITER_MARKERS = (
     ("SignWithPrivKey", re.compile(r"\bSignWithPrivKey\b")),
     ("BroadcastTx", re.compile(r"(?<![A-Za-z0-9_])BroadcastTx\w*")),
@@ -166,6 +179,8 @@ def consumer_errors(files: Mapping[str, str]) -> list[str]:
             continue
         markers = CONSUMER_MARKERS + (WEB_MARKERS if path.startswith("apps/web/") else ())
         for name, pattern in markers:
+            if name == "signing-key loader" and path in APPLICATION_EXPORT_KEY:
+                continue
             if pattern.search(text):
                 errors.append(f"{path}: {name}")
     return errors
@@ -188,6 +203,20 @@ def repository_files() -> dict[str, str]:
         if full.is_file():
             files[path] = full.read_text(encoding="utf-8")
     return files
+
+
+def test_application_export_key_is_not_a_chain_writer() -> None:
+    """The exemption is the export key only. The files still cannot broadcast."""
+    files = repository_files()
+    loader = next(pattern for name, pattern in CONSUMER_MARKERS if name == "signing-key loader")
+    others = tuple(
+        (name, pattern) for name, pattern in CONSUMER_MARKERS if name != "signing-key loader"
+    )
+    for path in sorted(APPLICATION_EXPORT_KEY):
+        assert path in files, path
+        assert loader.search(files[path]), path
+        for name, pattern in others:
+            assert pattern.search(files[path]) is None, f"{path}: {name}"
 
 
 def test_repository_follows_the_chain_writer_policy() -> None:
@@ -290,6 +319,12 @@ PLANTED = [
         '{"dependencies": {"@cosmjs/stargate": "0.33.0"}}\n',
         "cosmos.tx.v1beta1 builder",
         id="web-depends-on-a-transaction-builder",
+    ),
+    pytest.param(
+        "services/api/internal/account/bundle.go",
+        "package account\n\nfunc send(c Client) { c.BroadcastTxSync(ctx, raw) }\n",
+        "transaction broadcast",
+        id="export-key-file-still-cannot-broadcast",
     ),
     pytest.param(
         "services/api/svn_api/sign_test.go",
