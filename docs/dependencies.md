@@ -31,10 +31,11 @@ This repository does not build or publish an image. Goal 04 records upstream ima
 
 | Family | Pin | Source | Licence | Why |
 | --- | --- | --- | --- | --- |
-| React | 19.3.1 | https://www.npmjs.com/package/react | MIT | REQ-TECH-001. Latest stable `npm view react version` on 2026-10-31. The web package does not render a product. |
+| React | 19.3.1 | https://www.npmjs.com/package/react | MIT | REQ-TECH-001. Latest stable `npm view react version` on 2026-10-31. Goal 20 renders the invited viewer with this pin. |
 | React DOM | 19.3.1 | https://www.npmjs.com/package/react-dom | MIT | Same release as React. |
 | TypeScript | 7.0.2 | https://www.npmjs.com/package/typescript | Apache-2.0 | Latest stable `npm view typescript version` on 2026-10-31. |
 | `@types/react` and `@types/react-dom` | 19.3.0 | https://www.npmjs.com/package/@types/react | MIT | Matching DefinitelyTyped line for React 19. |
+| esbuild | 0.28.2 | https://www.npmjs.com/package/esbuild | MIT | Goal 20 bundles the viewer for the browser. It is a dev dependency. The bundle is not committed. |
 | FastAPI | 0.162.0 | https://pypi.org/project/fastapi/ | MIT | REQ-TECH-002. Latest stable PyPI release on 2026-10-31. No route is implemented. |
 | PostgreSQL | 18.6, package `18.6-1.pgdg24.04+2` | https://www.postgresql.org/support/versioning/ and https://apt.postgresql.org/pub/repos/apt noble-pgdg | PostgreSQL License, https://www.postgresql.org/about/licence/ | REQ-TECH-003. Current minor on the versioning page checked 2026-10-31. The apt key fingerprint is `B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8`. No Python client is pinned. Smoke tests use `psql`. |
 | lib/pq | v1.12.3 | `github.com/lib/pq` in the Go module cache (`$(go env GOMODCACHE)/github.com/lib/pq@v1.12.3`) | MIT, `LICENSE` in that module | Recorded 2026-11-08 for goal 11. The PostgreSQL driver of `services/broadcaster` (`database/sql`). The version is the one `chain/go.mod` already requires as indirect, because CometBFT's node package imports it, so it is already linked into `svnd`. Its `go.mod` requires no other module. The broadcaster opens it with an explicit `pq.Config` (DR-11-22). |
