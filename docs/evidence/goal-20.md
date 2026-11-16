@@ -31,7 +31,9 @@ Behavior logs other than those two were captured on `4242618b9e8048744796f90076a
 
 [Run 43918347593](https://github.com/Maxencejules/shortvideo-network/actions/runs/43918347593) on `7251719db45c8ecf5634fac86172608cdabdee2e` was cancelled after `python` stopped at `ruff format --check`. `milestone` had exited 56 while `curl` downloaded the PostgreSQL apt key. That download is the existing install step.
 
-[Run 43919422615](https://github.com/Maxencejules/shortvideo-network/actions/runs/43919422615) on `7c609ec334922c42604ce62e1fe595e917b6f3c2` failed `python` after format, mypy, the secret scan, and the SBOM check had passed. `test_corpus_cli_paths_are_reported` refused `git add` because `apps/web/dist` was gitignored. `test_browser_decodes_the_mp4_it_fetched` returned `FAILED` with no report: headless Chrome exited before the page posted. The tested commit drops that ignore and retries that decode once. A later run on this tested head is recorded when it finishes. A green run is not visual approval.
+[Run 43919422615](https://github.com/Maxencejules/shortvideo-network/actions/runs/43919422615) on `7c609ec334922c42604ce62e1fe595e917b6f3c2` failed `python` after format, mypy, the secret scan, and the SBOM check had passed. `test_corpus_cli_paths_are_reported` refused `git add` because `apps/web/dist` was gitignored. `test_browser_decodes_the_mp4_it_fetched` returned `FAILED` with no report: headless Chrome exited before the page posted. The tested commit drops that ignore and retries that decode once.
+
+[Run 43920889498](https://github.com/Maxencejules/shortvideo-network/actions/runs/43920889498) on `8767c92abc900584a4bedb7f26a4a0fdd7428e2f` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `milestone`, `devnet`, and every `go-race` shard. That head is the evidence commit above the tested commit `894aa0c4345fc3d77c1f5338356202e9bc6f4b0c`. A green run is not visual approval.
 
 ## What ran
 
