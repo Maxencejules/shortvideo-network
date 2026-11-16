@@ -16,13 +16,16 @@ The account service is `services/api`. Passkeys are verified by `github.com/go-w
 
 | Item | Value |
 | --- | --- |
-| Commit | `1e6fb55b28aa1da00f67d8d970f64e9ae41294d5` |
-| Tree | `60073a3bfeba938eeacf8541b0052862a65e9a22` |
+| Commit | `068484aef7df8f3ca72b3f33c2adc0251f8599e3` |
+| Tree | `556344c31037fbd3b086a9fff144923a969c3724` |
+| SBOM parent | `1e6fb55b28aa1da00f67d8d970f64e9ae41294d5`, tree `60073a3bfeba938eeacf8541b0052862a65e9a22` |
 | Behavior parent | `fec7ab32dc24be11065327ccd8b0d996e53798cd`, tree `4c10752fdc54f028b996d50d1038fb9004512e0e` |
 | Base | `b5b05b37c6885ca1c63176cf7c240bea59bd955c` |
 | Branch | `goal-19` |
 
-[trailer-sbom.txt](logs/goal-19/trailer-sbom.txt) line 7 is `commit 1e6fb55b28aa1da00f67d8d970f64e9ae41294d5`. Line 8 is `Author: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 9 is `Commit: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 17 is `Tested-tree: 60073a3bfeba938eeacf8541b0052862a65e9a22`. That commit changes `docs/dependencies.md` and `docs/sbom.cdx.json` only. It does not change the account service or the milestone.
+[trailer-writer.txt](logs/goal-19/trailer-writer.txt) line 7 is `commit 068484aef7df8f3ca72b3f33c2adc0251f8599e3`. Line 8 is `Author: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 9 is `Commit: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 17 is `Tested-tree: 556344c31037fbd3b086a9fff144923a969c3724`. That commit changes `tests/unit/test_chain_writer_policy.py` only.
+
+[trailer-sbom.txt](logs/goal-19/trailer-sbom.txt) line 7 is `commit 1e6fb55b28aa1da00f67d8d970f64e9ae41294d5`. Line 17 is `Tested-tree: 60073a3bfeba938eeacf8541b0052862a65e9a22`. That commit changes `docs/dependencies.md` and `docs/sbom.cdx.json` only. Neither commit changes the account service or the milestone.
 
 The behavior logs below were captured on the parent. [scenario.txt](logs/goal-19/scenario.txt) line 3 is `HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd` and line 4 is `TREE 4c10752fdc54f028b996d50d1038fb9004512e0e`. Line 5 is `DIRTY no`. [trailer.txt](logs/goal-19/trailer.txt) line 17 names that parent commit and line 28 is `Tested-tree: 4c10752fdc54f028b996d50d1038fb9004512e0e`. The scenario was not rerun for the SBOM commit: those two files are not on the scenario path.
 
@@ -31,6 +34,10 @@ The behavior logs below were captured on the parent. [scenario.txt](logs/goal-19
 Run [42879300822](https://github.com/Maxencejules/shortvideo-network/actions/runs/42879300822) on `e3317788c472b8c4acf1319e688985fdc4912aac` failed. Sixteen jobs succeeded. The `python` job failed. [ci-python-fail.txt](logs/goal-19/ci-python-fail.txt) line 8 is `{"conclusion":"failure","headSha":"e3317788c472b8c4acf1319e688985fdc4912aac"}`. Line 9 is `sbom drift`. Line 10 is the process exit code 1. Ruff, mypy, the workflow policy, and the secret scan in that job had already passed. This is not the goal 15 headless Chrome decode flake.
 
 `services/api/go.sum` and `services/milestone/go.sum` added `github.com/go-webauthn/webauthn` v0.18.2 and `github.com/descope/virtualwebauthn` v1.0.5, and the modules those sums lock. `docs/sbom.cdx.json` had not been regenerated. [sbom.txt](logs/goal-19/sbom.txt) line 3 is `HEAD 1e6fb55b28aa1da00f67d8d970f64e9ae41294d5`, line 5 is `DIRTY no`, line 6 is `sbom ok components 1362`, and line 7 is `EXIT:0`. The direct licences are BSD-3-Clause for go-webauthn and MIT for virtualwebauthn, recorded in `docs/dependencies.md`. Neither is a commercial-only component.
+
+## CI failure after the SBOM fix
+
+Run [43805353569](https://github.com/Maxencejules/shortvideo-network/actions/runs/43805353569) on `85d699aad59488efcc90fdfb006c3228ef8f9e5d` failed. The other sixteen jobs succeeded, including `milestone`. The `python` job failed one test. [ci-python-policy.txt](logs/goal-19/ci-python-policy.txt) line 8 is `{"conclusion":"failure","headSha":"85d699aad59488efcc90fdfb006c3228ef8f9e5d"}`. Line 15 is `FAILED tests/unit/test_chain_writer_policy.py::test_repository_follows_the_chain_writer_policy`. The scan treats `ed25519.PrivateKey` as a signing-key loader. The account service uses that type for the application export key, not for a chain signer. The exemption is those five files, and a broadcast in one of them still fails the scan. [writer-policy.txt](logs/goal-19/writer-policy.txt) line 3 is `HEAD 068484aef7df8f3ca72b3f33c2adc0251f8599e3`, line 5 is `DIRTY no`, line 6 ends with `[100%]`, and line 7 is `EXIT:0`. This is not the goal 15 headless Chrome decode flake. The milestone was not rerun: this commit does not change it.
 
 ## What ran
 

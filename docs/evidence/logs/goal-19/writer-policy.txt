@@ -1,0 +1,7 @@
+COMMAND python3 -m pytest -q tests/unit/test_chain_writer_policy.py
+DATE 2026-11-16T04:51:27Z
+HEAD 068484aef7df8f3ca72b3f33c2adc0251f8599e3
+TREE 556344c31037fbd3b086a9fff144923a969c3724
+DIRTY no
+.....................                                                    [100%]
+EXIT:0

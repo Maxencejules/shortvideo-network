@@ -1,0 +1,22 @@
+COMMAND bash -c gh\ run\ view\ 43805353569\ --json\ conclusion\,headSha\ --jq\ \"\{conclusion\,headSha\}\"\ \;\ gh\ run\ view\ 43805353569\ --log-failed\ \|\ grep\ -E\ \"signing-key\ loader\|FAILED\ tests/unit/test_chain_writer\"
+DATE 2026-11-16T04:51:28Z
+HEAD 068484aef7df8f3ca72b3f33c2adc0251f8599e3
+TREE 556344c31037fbd3b086a9fff144923a969c3724
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-19/trailer-writer.txt
+DIRTY_PATH docs/evidence/logs/goal-19/writer-policy.txt
+{"conclusion":"failure","headSha":"85d699aad59488efcc90fdfb006c3228ef8f9e5d"}
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7262475Z E     Left contains 5 more items, first extra item: 'services/api/cmd/svn-api/main.go: signing-key loader'
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7265261Z E     +     'services/api/cmd/svn-api/main.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7265996Z E     +     'services/api/internal/account/account.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7266917Z E     +     'services/api/internal/account/bundle.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7267861Z E     +     'services/api/internal/service/account_test.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7268784Z E     +     'services/api/internal/service/service.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7271626Z FAILED tests/unit/test_chain_writer_policy.py::test_repository_follows_the_chain_writer_policy - AssertionError: assert ['services/ap...g-key loader'] == []
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7273915Z   Left contains 5 more items, first extra item: 'services/api/cmd/svn-api/main.go: signing-key loader'
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7276678Z   +     'services/api/cmd/svn-api/main.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7277457Z   +     'services/api/internal/account/account.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7278352Z   +     'services/api/internal/account/bundle.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7279486Z   +     'services/api/internal/service/account_test.go: signing-key loader',
+python	Format, lint, types, unit tests, secret scan	2026-11-16T04:42:20.7280523Z   +     'services/api/internal/service/service.go: signing-key loader',
+EXIT:0
