@@ -1,0 +1,11 @@
+COMMAND bash -c gh\ run\ view\ 42879300822\ --json\ conclusion\,headSha\ --jq\ \"\{conclusion\,headSha\}\"\ \;\ gh\ run\ view\ 42879300822\ --log-failed\ \|\ grep\ -E\ \"sbom\ drift\|exit\ code\ 1\"
+DATE 2026-11-16T04:38:23Z
+HEAD 1e6fb55b28aa1da00f67d8d970f64e9ae41294d5
+TREE 60073a3bfeba938eeacf8541b0052862a65e9a22
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-19/sbom.txt
+DIRTY_PATH docs/evidence/logs/goal-19/trailer-sbom.txt
+{"conclusion":"failure","headSha":"e3317788c472b8c4acf1319e688985fdc4912aac"}
+python	UNKNOWN STEP	2026-11-10T18:52:17.3572370Z sbom drift
+python	UNKNOWN STEP	2026-11-10T18:52:17.3624800Z ##[error]Process completed with exit code 1.
+EXIT:0
