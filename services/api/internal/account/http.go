@@ -161,7 +161,6 @@ func (s *Service) enrollFinish(w http.ResponseWriter, r *http.Request) {
 	user := &waUser{id: row.handle, name: row.accountID, display: row.accountID}
 	cred, err := s.web.FinishRegistration(user, session, r)
 	if err != nil {
-		_ = s.dropCeremony(r.Context(), row.id)
 		s.writeErr(w, ErrUnauthenticated)
 		return
 	}
@@ -203,8 +202,7 @@ func (s *Service) enrollFinish(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 		}
-		_, err = tx.ExecContext(r.Context(), `DELETE FROM api.ceremonies WHERE id = $1`, row.id)
-		return err
+		return nil
 	})
 	if err != nil {
 		s.writeErr(w, err)
@@ -230,14 +228,13 @@ func (s *Service) loginBegin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) loginFinish(w http.ResponseWriter, r *http.Request) {
-	row, session, ok := s.ceremony(w, r, "login")
+	_, session, ok := s.ceremony(w, r, "login")
 	if !ok {
 		return
 	}
 	cred, err := s.web.FinishDiscoverableLogin(func(rawID, userHandle []byte) (webauthn.User, error) {
 		return s.userByHandle(r.Context(), rawID, userHandle)
 	}, session, r)
-	_ = s.dropCeremony(r.Context(), row.id)
 	if err != nil || cred.Authenticator.CloneWarning {
 		s.writeErr(w, ErrUnauthenticated)
 		return
@@ -288,7 +285,6 @@ func (s *Service) confirmFinish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if row.accountID != sess.AccountID {
-		_ = s.dropCeremony(r.Context(), row.id)
 		s.writeErr(w, ErrUnauthenticated)
 		return
 	}
@@ -298,7 +294,6 @@ func (s *Service) confirmFinish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cred, err := s.web.FinishLogin(user, ceremony, r)
-	_ = s.dropCeremony(r.Context(), row.id)
 	if err != nil || cred.Authenticator.CloneWarning {
 		s.writeErr(w, ErrUnauthenticated)
 		return
@@ -484,6 +479,8 @@ type ceremonyRow struct {
 	handle                               []byte
 }
 
+// ceremony consumes one ceremony. DELETE ... RETURNING is the only copy of the
+// row, so a second finish of the same id cannot also succeed.
 func (s *Service) ceremony(w http.ResponseWriter, r *http.Request, purpose string) (ceremonyRow, webauthn.SessionData, bool) {
 	id := r.Header.Get(ceremonyHeader)
 	rawID, err := hex.DecodeString(id)
@@ -494,12 +491,13 @@ func (s *Service) ceremony(w http.ResponseWriter, r *http.Request, purpose strin
 	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
 	var row ceremonyRow
 	var raw []byte
-	var expires time.Time
 	err = s.db.QueryRowContext(r.Context(), `
-		SELECT id, purpose, account_id, role, webauthn_id, invite_hash, session_data, expires_at
-		FROM api.ceremonies WHERE id = $1`, id).Scan(
-		&row.id, &row.purpose, &row.accountID, &row.role, &row.handle, &row.invite, &raw, &expires)
-	if err != nil || row.purpose != purpose || !expires.After(s.now()) {
+		DELETE FROM api.ceremonies
+		WHERE id = $1 AND purpose = $2 AND expires_at > $3
+		RETURNING id, purpose, account_id, role, webauthn_id, invite_hash, session_data`,
+		id, purpose, s.now()).Scan(
+		&row.id, &row.purpose, &row.accountID, &row.role, &row.handle, &row.invite, &raw)
+	if err != nil {
 		s.writeErr(w, ErrUnauthenticated)
 		return ceremonyRow{}, webauthn.SessionData{}, false
 	}
@@ -531,11 +529,6 @@ func (s *Service) storeCeremony(w http.ResponseWriter, r *http.Request, purpose,
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ceremony_id": id, "options": options})
-}
-
-func (s *Service) dropCeremony(ctx context.Context, id string) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM api.ceremonies WHERE id = $1`, id)
-	return err
 }
 
 func (s *Service) userByHandle(ctx context.Context, rawID, userHandle []byte) (webauthn.User, error) {

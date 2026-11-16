@@ -90,6 +90,30 @@ func (p *Party) Confirm() error {
 	return p.assert("/v1/confirm/finish", raw)
 }
 
+// PrepareLogin builds one login finish body and does not post it.
+func (p *Party) PrepareLogin() (ceremonyID, body string, err error) {
+	status, raw, _, err := p.post("/v1/login/begin", map[string]string{}, false)
+	if err != nil {
+		return "", "", err
+	}
+	if status != http.StatusOK {
+		return "", "", fmt.Errorf("login begin %d %s", status, raw)
+	}
+	var began struct {
+		CeremonyID string          `json:"ceremony_id"`
+		Options    json.RawMessage `json:"options"`
+	}
+	if err := json.Unmarshal(raw, &began); err != nil {
+		return "", "", err
+	}
+	opts, err := virtualwebauthn.ParseAssertionOptions(string(began.Options))
+	if err != nil {
+		return "", "", err
+	}
+	p.Cred.Counter++
+	return began.CeremonyID, virtualwebauthn.CreateAssertionResponse(p.RP, p.Auth, p.Cred, *opts), nil
+}
+
 func (p *Party) assert(path string, rawBegan []byte) error {
 	var began struct {
 		CeremonyID string          `json:"ceremony_id"`

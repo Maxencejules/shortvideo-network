@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -492,4 +493,48 @@ func TestAccountMigration(t *testing.T) {
 		t.Fatal("bad signature imported")
 	}
 	badRes.Body.Close()
+}
+
+func TestConcurrentCeremonyFinish(t *testing.T) {
+	e := startAccounts(t, 0, 0, time.Hour, nil, "")
+	party := e.enroll("creator")
+	ceremony, body, err := party.PrepareLogin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	codes := make([]int, 2)
+	started := make(chan struct{})
+	for i := range codes {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			<-started
+			req, err := http.NewRequest(http.MethodPost, e.srv.URL+"/v1/login/finish", strings.NewReader(body))
+			if err != nil {
+				codes[i] = -1
+				return
+			}
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-SVN-Ceremony", ceremony)
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				codes[i] = -1
+				return
+			}
+			res.Body.Close()
+			codes[i] = res.StatusCode
+		}(i)
+	}
+	close(started)
+	wg.Wait()
+	ok := 0
+	for _, code := range codes {
+		if code == http.StatusOK {
+			ok++
+		}
+	}
+	if ok != 1 {
+		t.Fatalf("concurrent finishes succeeded %d times, codes %v", ok, codes)
+	}
 }
