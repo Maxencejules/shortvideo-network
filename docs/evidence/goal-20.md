@@ -16,16 +16,16 @@ The browser run decoded one processed portrait package in headless Chrome and pl
 
 | Item | Value |
 | --- | --- |
-| Commit | `797d85626447ad00e40d35b0039548dfeeea451c` |
-| Tree | `d4f296c4e72468770944c7a8196a9ff9b6821521` |
+| Commit | `5fa9b7b7d5e59345760e2e629b1e0a7a25b04be4` |
+| Tree | `8e7cbd62fafce8e5ef6fb5358e819b8aac3db560` |
 | Base | `5d64047d9d532f9c0bba709b0f9f61da4724b2fa` |
 | Branch | `goal-20` |
 
-The tested commit message carries `Tested-tree: d4f296c4e72468770944c7a8196a9ff9b6821521`. `git rev-parse 797d85626447ad00e40d35b0039548dfeeea451c^{tree}` is that tree. `run_until` returns `EXITED` when the browser process ends before a report (`services/delivery/svn_delivery/browser.py` lines 181 and 188) and `TIMEOUT` when the deadline passes with no report (line 190). The decode test retries only `EXITED` (`tests/unit/test_delivery.py` lines 711 through 716). A timeout, a missing report, or any other first result is not launched again (lines 717 and 718). [decode.txt](logs/goal-20/decode.txt) line 5 is `decode-retry no status=REPORTED`. Line 7 is `EXIT:0`. This run did not retry. That line is the record of whether a retry fired.
+The tested commit message carries `Tested-tree: 8e7cbd62fafce8e5ef6fb5358e819b8aac3db560`. `git rev-parse 5fa9b7b7d5e59345760e2e629b1e0a7a25b04be4^{tree}` is that tree. `run_until` returns `EXITED` when the browser process ends before a report (`services/delivery/svn_delivery/browser.py` lines 181 and 188) and `TIMEOUT` when the deadline passes with no report (line 190). The decode test waits 60 seconds (`tests/unit/test_delivery.py` line 710). It retries only `EXITED` (lines 714 through 719). A timeout, a missing report, or any other first result is not launched again (lines 720 and 721). [decode.txt](logs/goal-20/decode.txt) line 5 is `decode-retry no status=REPORTED`. Line 7 is `EXIT:0`. This run did not retry. That line is the record of whether a retry fired.
 
-[ruff.txt](logs/goal-20/ruff.txt) line 1 is `HEAD 797d85626447ad00e40d35b0039548dfeeea451c`. Line 2 is `TREE d4f296c4e72468770944c7a8196a9ff9b6821521`. Line 3 is `DIRTY no`. Line 5 is `3 files already formatted`. Line 7 is `EXIT:0`. [corpus.txt](logs/goal-20/corpus.txt) line 1 is `HEAD 894aa0c4345fc3d77c1f5338356202e9bc6f4b0c`. Line 6 is `EXIT:0`. That corpus run is the commit that stopped ignoring `apps/web/dist`. This tested commit does not add that ignore back.
+[ruff.txt](logs/goal-20/ruff.txt) line 1 is `HEAD 5fa9b7b7d5e59345760e2e629b1e0a7a25b04be4`. Line 2 is `TREE 8e7cbd62fafce8e5ef6fb5358e819b8aac3db560`. Line 3 is `DIRTY no`. Line 5 is `3 files already formatted`. Line 7 is `EXIT:0`. [corpus.txt](logs/goal-20/corpus.txt) line 1 is `HEAD 894aa0c4345fc3d77c1f5338356202e9bc6f4b0c`. Line 6 is `EXIT:0`. That corpus run is the commit that stopped ignoring `apps/web/dist`. This tested commit does not add that ignore back.
 
-[typecheck.txt](logs/goal-20/typecheck.txt), [node.txt](logs/goal-20/node.txt), [browser.txt](logs/goal-20/browser.txt), [decode.txt](logs/goal-20/decode.txt), [secrets.txt](logs/goal-20/secrets.txt), and [ruff.txt](logs/goal-20/ruff.txt) were captured on this tested commit. [sbom.txt](logs/goal-20/sbom.txt), [runtime.txt](logs/goal-20/runtime.txt), [pg16.txt](logs/goal-20/pg16.txt), [docker.txt](logs/goal-20/docker.txt), and [golangci-lint.txt](logs/goal-20/golangci-lint.txt) were captured on `4242618b9e8048744796f90076a880558fd633b6`. Those commands do not depend on the viewer edits in this commit.
+[decode.txt](logs/goal-20/decode.txt) and [ruff.txt](logs/goal-20/ruff.txt) were captured on this tested commit. [typecheck.txt](logs/goal-20/typecheck.txt), [node.txt](logs/goal-20/node.txt), [browser.txt](logs/goal-20/browser.txt), and [secrets.txt](logs/goal-20/secrets.txt) were captured on `797d85626447ad00e40d35b0039548dfeeea451c`. This tested commit changes only the decode deadline. [sbom.txt](logs/goal-20/sbom.txt), [runtime.txt](logs/goal-20/runtime.txt), [pg16.txt](logs/goal-20/pg16.txt), [docker.txt](logs/goal-20/docker.txt), and [golangci-lint.txt](logs/goal-20/golangci-lint.txt) were captured on `4242618b9e8048744796f90076a880558fd633b6`. Those commands do not depend on the viewer edits.
 
 [trailer.txt](logs/goal-20/trailer.txt) line 5 is `commit 4242618b9e8048744796f90076a880558fd633b6`. Line 6 is `Author: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 7 is `Commit: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 13 is `Tested-tree: 1f07eb33e2d43b789219e510b86582abd236f1c9`. That trailer is an earlier code commit. This tested commit's trailer is in the commit message, not in that file.
 
@@ -37,7 +37,9 @@ The tested commit message carries `Tested-tree: d4f296c4e72468770944c7a8196a9ff9
 
 [Run 43920889498](https://github.com/Maxencejules/shortvideo-network/actions/runs/43920889498) on `8767c92abc900584a4bedb7f26a4a0fdd7428e2f` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `milestone`, `devnet`, and every `go-race` shard.
 
-[Run 43922844188](https://github.com/Maxencejules/shortvideo-network/actions/runs/43922844188) on `67212967e503447123f86cc1eeaa38c255bd55d8` finished with conclusion `success`. All 17 jobs passed. That head is the evidence commit reviewed in round 1. This tested commit is after it. A green run is not visual approval.
+[Run 43922844188](https://github.com/Maxencejules/shortvideo-network/actions/runs/43922844188) on `67212967e503447123f86cc1eeaa38c255bd55d8` finished with conclusion `success`. All 17 jobs passed. That head is the evidence commit reviewed in round 1.
+
+[Run 43928148973](https://github.com/Maxencejules/shortvideo-network/actions/runs/43928148973) on `9eecc4fcb174fea9e068e6ec2504a0d0daadcc6f` is the first run after the early-exit split. Its `python` job failed `test_browser_decodes_the_mp4_it_fetched`: the status was `TIMEOUT`, the report was empty, and stdout was `decode-retry no status=TIMEOUT`. The test did not launch Chrome again. `go` and `go-race (broadcaster)` failed while installing PostgreSQL 18.6, both with exit code 56. That is the same `curl` receive failure seen on an earlier milestone job, not a test assertion. This tested commit raises the decode deadline from 25 seconds to 60. A green run is not visual approval.
 
 ## What ran
 

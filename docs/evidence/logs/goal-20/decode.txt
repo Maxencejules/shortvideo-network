@@ -1,7 +1,7 @@
-HEAD 797d85626447ad00e40d35b0039548dfeeea451c
-TREE d4f296c4e72468770944c7a8196a9ff9b6821521
+HEAD 5fa9b7b7d5e59345760e2e629b1e0a7a25b04be4
+TREE 8e7cbd62fafce8e5ef6fb5358e819b8aac3db560
 DIRTY no
-COMMAND python3 -m pytest -q tests/unit/test_delivery.py::test_browser_decodes_the_mp4_it_fetched -s --tb=short 
+COMMAND python3 -m pytest -q tests/unit/test_delivery.py::test_browser_decodes_the_mp4_it_fetched -s --tb=short
 decode-retry no status=REPORTED
 .
 EXIT:0
