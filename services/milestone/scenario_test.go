@@ -48,41 +48,45 @@ func TestMilestone(t *testing.T) {
 }
 
 type mile struct {
-	t         *testing.T
-	root      string
-	work      string
-	bins      map[string]string
-	layout    devnet.Layout
-	enc       app.Encoding
-	rpc       *rpchttp.HTTP
-	vals      []*child
-	chainID   string
-	svc       loaded
-	auth      loaded
-	p1        loaded
-	p2        loaded
-	seats     []loaded
-	policy    uint64
-	intent    ed25519.PrivateKey
-	bc        *http.Client
-	bcURL     string
-	indexer   string
-	sched     string
-	schedProc *child
-	api       string
-	stage     string
-	stageCA   string
-	views     map[string]viewInfo
-	prov      map[string]*provider
-	content   string
-	digest    string
-	pkgBytes  uint64
-	segments  []seg
-	deliver   string
-	deliverCA string
-	worker    string
-	clipSHA   string
-	pg        pgInfo
+	t             *testing.T
+	root          string
+	work          string
+	bins          map[string]string
+	layout        devnet.Layout
+	enc           app.Encoding
+	rpc           *rpchttp.HTTP
+	vals          []*child
+	chainID       string
+	svc           loaded
+	auth          loaded
+	p1            loaded
+	p2            loaded
+	seats         []loaded
+	policy        uint64
+	intent        ed25519.PrivateKey
+	bc            *http.Client
+	bcURL         string
+	indexer       string
+	sched         string
+	schedProc     *child
+	api           string
+	creatorToken  string
+	operatorToken string
+	creatorID     string
+	operatorID    string
+	stage         string
+	stageCA       string
+	views         map[string]viewInfo
+	prov          map[string]*provider
+	content       string
+	digest        string
+	pkgBytes      uint64
+	segments      []seg
+	deliver       string
+	deliverCA     string
+	worker        string
+	clipSHA       string
+	pg            pgInfo
 }
 
 type viewInfo struct {
@@ -211,11 +215,12 @@ func (m *mile) boot() {
 	m.intent = priv
 	m.bootChainviews()
 	m.bootIndexer()
+	m.bootAPI()
 	m.bootScheduler()
+	m.checkSchedulerAuth()
 	m.bootProviders(pub)
 	m.admitProviders(pub)
 	m.bootBroadcaster(pub)
-	m.bootAPI()
 }
 
 func (m *mile) load(name string, ed bool) loaded {
@@ -277,6 +282,7 @@ func (m *mile) bootScheduler() {
 		"listen": "127.0.0.1:" + strconv.Itoa(port), "indexer_url": m.indexer, "policy_id": "policy-1",
 		"physical_failure_domain": "vm-1", "stage_token": "milestone-source", "package_root": m.work,
 		"confirm_seconds": 90, "offer_commit_url": m.offerHook(), "hosts": hosts,
+		"control_session_url": m.api + "/v1/session",
 	}
 	path := filepath.Join(m.work, "scheduler.json")
 	writeJSON(m.t, path, cfg)

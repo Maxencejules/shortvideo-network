@@ -51,7 +51,7 @@ func (m *mile) upload() {
 	sum := sha256.Sum256(body)
 	m.clipSHA = hex.EncodeToString(sum[:])
 	fmt.Printf("phase=clip bytes=%d sha256=%s synthetic=true\n", len(body), m.clipSHA)
-	auth := map[string]string{"Authorization": "Bearer dev-fixture-token-creator-a"}
+	auth := m.creatorHeader()
 	first := m.sendJSON(http.MethodPost, m.api+"/upload-intents", auth, map[string]any{"idempotency_key": "clip-1", "declared_bytes": len(body)})
 	again := m.sendJSON(http.MethodPost, m.api+"/upload-intents", auth, map[string]any{"idempotency_key": "clip-1", "declared_bytes": len(body)})
 	if first.status != 202 || again.status != 202 || first.json()["upload_id"] != again.json()["upload_id"] {
@@ -239,7 +239,7 @@ func (m *mile) publish(approved bool, approval string) map[string]any {
 	for _, seg := range m.segments {
 		segs = append(segs, map[string]any{"segment_id": seg.ID, "sha256": seg.SHA, "byte_count": seg.N, "path": seg.Path})
 	}
-	res := m.sendJSON(http.MethodPost, m.sched+"/v1/publications", nil, map[string]any{
+	res := m.sendJSON(http.MethodPost, m.sched+"/v1/publications", m.operatorHeader(), map[string]any{
 		"content_id": m.content, "version": 1, "manifest_hex": m.digest, "terms_hex": hex.EncodeToString(bytes.Repeat([]byte{0x22}, 32)),
 		"term_seconds": 3600, "scheduler_hex": hex.EncodeToString(m.svc.key.PubKey().Address()),
 		"approved": approved, "approval_id": approval, "segments": segs,
@@ -363,7 +363,7 @@ func (m *mile) faults() {
 	view := m.getJSON(m.sched + "/v1/availability?content=" + m.content)
 	fmt.Printf("phase=PROVIDER_DOWN reachability=%s degraded=%v\n", str(view["reachability"]), view["degraded_providers"])
 	m.waitFresh()
-	repair := m.sendJSON(http.MethodPost, m.sched+"/v1/repairs", nil, map[string]any{"content_id": m.content, "version": 1})
+	repair := m.sendJSON(http.MethodPost, m.sched+"/v1/repairs", m.operatorHeader(), map[string]any{"content_id": m.content, "version": 1})
 	fmt.Printf("phase=REPAIR status=%d body=%s\n", repair.status, repair.body)
 	if repair.status != 200 || repair.json()["state"] != "CONFIRMED" {
 		m.t.Fatalf("repair %d %s", repair.status, repair.body)
@@ -991,8 +991,26 @@ func (m *mile) sendRaw(method, url string, header map[string]string, body []byte
 	return httpResult{status: res.StatusCode, body: string(buf), raw: buf}
 }
 
+func (m *mile) creatorHeader() map[string]string {
+	return map[string]string{"Authorization": "Bearer " + m.creatorToken}
+}
+
+func (m *mile) operatorHeader() map[string]string {
+	return map[string]string{"Authorization": "Bearer " + m.operatorToken}
+}
+
+func (m *mile) checkSchedulerAuth() {
+	m.t.Helper()
+	anonymous := m.sendJSON(http.MethodPost, m.sched+"/v1/publications", nil, map[string]any{"content_id": "x"})
+	creator := m.sendJSON(http.MethodPost, m.sched+"/v1/publications", m.creatorHeader(), map[string]any{"content_id": "x"})
+	fmt.Printf("phase=SCHEDULER_AUTH anonymous=%d creator=%d\n", anonymous.status, creator.status)
+	if anonymous.status != http.StatusUnauthorized || creator.status != http.StatusUnauthorized {
+		m.t.Fatalf("scheduler auth anonymous=%d creator=%d", anonymous.status, creator.status)
+	}
+}
+
 func (m *mile) postJSON(url string, body any) {
-	res := m.sendJSON(http.MethodPost, url, nil, body)
+	res := m.sendJSON(http.MethodPost, url, m.operatorHeader(), body)
 	if res.status >= 300 {
 		m.t.Fatalf("POST %s %d %s", url, res.status, res.body)
 	}

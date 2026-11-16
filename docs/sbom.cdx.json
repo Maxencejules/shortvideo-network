@@ -1325,6 +1325,20 @@
       "version": "v4.4.1/go.mod"
     },
     {
+      "name": "github.com/descope/virtualwebauthn",
+      "purl": "pkg:golang/github.com/descope/virtualwebauthn@v1.0.5",
+      "scope": "required",
+      "type": "library",
+      "version": "v1.0.5"
+    },
+    {
+      "name": "github.com/descope/virtualwebauthn",
+      "purl": "pkg:golang/github.com/descope/virtualwebauthn@v1.0.5/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v1.0.5/go.mod"
+    },
+    {
       "name": "github.com/desertbit/timer",
       "purl": "pkg:golang/github.com/desertbit/timer@v0.0.0-20180107155436-c41aec40b27f",
       "scope": "required",
@@ -1710,6 +1724,20 @@
       "version": "v1.9.0/go.mod"
     },
     {
+      "name": "github.com/fxamacker/cbor/v2",
+      "purl": "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.4",
+      "scope": "required",
+      "type": "library",
+      "version": "v2.9.4"
+    },
+    {
+      "name": "github.com/fxamacker/cbor/v2",
+      "purl": "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.4/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v2.9.4/go.mod"
+    },
+    {
       "name": "github.com/getsentry/sentry-go",
       "purl": "pkg:golang/github.com/getsentry/sentry-go@v0.46.2",
       "scope": "required",
@@ -1976,6 +2004,34 @@
       "version": "v2.5.0/go.mod"
     },
     {
+      "name": "github.com/go-webauthn/webauthn",
+      "purl": "pkg:golang/github.com/go-webauthn/webauthn@v0.18.2",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.18.2"
+    },
+    {
+      "name": "github.com/go-webauthn/webauthn",
+      "purl": "pkg:golang/github.com/go-webauthn/webauthn@v0.18.2/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.18.2/go.mod"
+    },
+    {
+      "name": "github.com/go-webauthn/x",
+      "purl": "pkg:golang/github.com/go-webauthn/x@v0.3.1",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.3.1"
+    },
+    {
+      "name": "github.com/go-webauthn/x",
+      "purl": "pkg:golang/github.com/go-webauthn/x@v0.3.1/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.3.1/go.mod"
+    },
+    {
       "name": "github.com/gobwas/httphead",
       "purl": "pkg:golang/github.com/gobwas/httphead@v0.0.0-20180130184737-2c6c146eadee/go.mod",
       "scope": "required",
@@ -2079,6 +2135,20 @@
       "scope": "required",
       "type": "library",
       "version": "v1.3.2/go.mod"
+    },
+    {
+      "name": "github.com/golang-jwt/jwt/v5",
+      "purl": "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.1",
+      "scope": "required",
+      "type": "library",
+      "version": "v5.3.1"
+    },
+    {
+      "name": "github.com/golang-jwt/jwt/v5",
+      "purl": "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.1/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v5.3.1/go.mod"
     },
     {
       "name": "github.com/golang/glog",
@@ -2387,6 +2457,34 @@
       "scope": "required",
       "type": "library",
       "version": "v0.7.0/go.mod"
+    },
+    {
+      "name": "github.com/google/go-tpm-tools",
+      "purl": "pkg:golang/github.com/google/go-tpm-tools@v0.3.13-0.20230620182252-4639ecce2aba",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.3.13-0.20230620182252-4639ecce2aba"
+    },
+    {
+      "name": "github.com/google/go-tpm-tools",
+      "purl": "pkg:golang/github.com/google/go-tpm-tools@v0.3.13-0.20230620182252-4639ecce2aba/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.3.13-0.20230620182252-4639ecce2aba/go.mod"
+    },
+    {
+      "name": "github.com/google/go-tpm",
+      "purl": "pkg:golang/github.com/google/go-tpm@v0.9.8",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.9.8"
+    },
+    {
+      "name": "github.com/google/go-tpm",
+      "purl": "pkg:golang/github.com/google/go-tpm@v0.9.8/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.9.8/go.mod"
     },
     {
       "name": "github.com/google/gofuzz",
@@ -4622,6 +4720,20 @@
       "version": "v0.0.0-20260330135022-df67b199bc81/go.mod"
     },
     {
+      "name": "github.com/philhofer/fwd",
+      "purl": "pkg:golang/github.com/philhofer/fwd@v1.2.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v1.2.0"
+    },
+    {
+      "name": "github.com/philhofer/fwd",
+      "purl": "pkg:golang/github.com/philhofer/fwd@v1.2.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v1.2.0/go.mod"
+    },
+    {
       "name": "github.com/pierrec/lz4",
       "purl": "pkg:golang/github.com/pierrec/lz4@v1.0.2-0.20190131084431-473cd7ce01a1/go.mod",
       "scope": "required",
@@ -5750,6 +5862,20 @@
     },
     {
       "name": "github.com/stretchr/testify",
+      "purl": "pkg:golang/github.com/stretchr/testify@v1.12.1",
+      "scope": "required",
+      "type": "library",
+      "version": "v1.12.1"
+    },
+    {
+      "name": "github.com/stretchr/testify",
+      "purl": "pkg:golang/github.com/stretchr/testify@v1.12.1/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v1.12.1/go.mod"
+    },
+    {
+      "name": "github.com/stretchr/testify",
       "purl": "pkg:golang/github.com/stretchr/testify@v1.2.2/go.mod",
       "scope": "required",
       "type": "library",
@@ -5903,6 +6029,20 @@
       "version": "v1.8.1/go.mod"
     },
     {
+      "name": "github.com/tinylib/msgp",
+      "purl": "pkg:golang/github.com/tinylib/msgp@v1.6.4",
+      "scope": "required",
+      "type": "library",
+      "version": "v1.6.4"
+    },
+    {
+      "name": "github.com/tinylib/msgp",
+      "purl": "pkg:golang/github.com/tinylib/msgp@v1.6.4/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v1.6.4/go.mod"
+    },
+    {
       "name": "github.com/tklauser/go-sysconf",
       "purl": "pkg:golang/github.com/tklauser/go-sysconf@v0.4.0",
       "scope": "required",
@@ -5999,6 +6139,20 @@
       "scope": "required",
       "type": "library",
       "version": "v0.0.5/go.mod"
+    },
+    {
+      "name": "github.com/x448/float16",
+      "purl": "pkg:golang/github.com/x448/float16@v0.8.4",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.8.4"
+    },
+    {
+      "name": "github.com/x448/float16",
+      "purl": "pkg:golang/github.com/x448/float16@v0.8.4/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.8.4/go.mod"
     },
     {
       "name": "github.com/xiang90/probing",
@@ -6876,6 +7030,20 @@
       "version": "v0.54.0/go.mod"
     },
     {
+      "name": "golang.org/x/crypto",
+      "purl": "pkg:golang/golang.org/x/crypto@v0.57.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.57.0"
+    },
+    {
+      "name": "golang.org/x/crypto",
+      "purl": "pkg:golang/golang.org/x/crypto@v0.57.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.57.0/go.mod"
+    },
+    {
       "name": "golang.org/x/exp",
       "purl": "pkg:golang/golang.org/x/exp@v0.0.0-20190121172915-509febef88a4/go.mod",
       "scope": "required",
@@ -7014,6 +7182,20 @@
       "scope": "required",
       "type": "library",
       "version": "v0.37.0/go.mod"
+    },
+    {
+      "name": "golang.org/x/mod",
+      "purl": "pkg:golang/golang.org/x/mod@v0.41.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.41.0"
+    },
+    {
+      "name": "golang.org/x/mod",
+      "purl": "pkg:golang/golang.org/x/mod@v0.41.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.41.0/go.mod"
     },
     {
       "name": "golang.org/x/net",
@@ -7233,6 +7415,20 @@
       "version": "v0.57.0/go.mod"
     },
     {
+      "name": "golang.org/x/net",
+      "purl": "pkg:golang/golang.org/x/net@v0.58.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.58.0"
+    },
+    {
+      "name": "golang.org/x/net",
+      "purl": "pkg:golang/golang.org/x/net@v0.58.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.58.0/go.mod"
+    },
+    {
       "name": "golang.org/x/oauth2",
       "purl": "pkg:golang/golang.org/x/oauth2@v0.0.0-20180821212333-d2e6202438be/go.mod",
       "scope": "required",
@@ -7329,6 +7525,20 @@
       "scope": "required",
       "type": "library",
       "version": "v0.22.0/go.mod"
+    },
+    {
+      "name": "golang.org/x/sync",
+      "purl": "pkg:golang/golang.org/x/sync@v0.23.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.23.0"
+    },
+    {
+      "name": "golang.org/x/sync",
+      "purl": "pkg:golang/golang.org/x/sync@v0.23.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.23.0/go.mod"
     },
     {
       "name": "golang.org/x/sys",
@@ -7723,6 +7933,20 @@
       "version": "v0.47.0/go.mod"
     },
     {
+      "name": "golang.org/x/sys",
+      "purl": "pkg:golang/golang.org/x/sys@v0.48.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.48.0"
+    },
+    {
+      "name": "golang.org/x/sys",
+      "purl": "pkg:golang/golang.org/x/sys@v0.48.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.48.0/go.mod"
+    },
+    {
       "name": "golang.org/x/telemetry",
       "purl": "pkg:golang/golang.org/x/telemetry@v0.0.0-20260625142307-59b4966ccb57",
       "scope": "required",
@@ -7735,6 +7959,20 @@
       "scope": "required",
       "type": "library",
       "version": "v0.0.0-20260625142307-59b4966ccb57/go.mod"
+    },
+    {
+      "name": "golang.org/x/telemetry",
+      "purl": "pkg:golang/golang.org/x/telemetry@v0.0.0-20260811182544-a038080d80e5",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.0.0-20260811182544-a038080d80e5"
+    },
+    {
+      "name": "golang.org/x/telemetry",
+      "purl": "pkg:golang/golang.org/x/telemetry@v0.0.0-20260811182544-a038080d80e5/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.0.0-20260811182544-a038080d80e5/go.mod"
     },
     {
       "name": "golang.org/x/term",
@@ -7763,6 +8001,20 @@
       "scope": "required",
       "type": "library",
       "version": "v0.45.0/go.mod"
+    },
+    {
+      "name": "golang.org/x/term",
+      "purl": "pkg:golang/golang.org/x/term@v0.46.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.46.0"
+    },
+    {
+      "name": "golang.org/x/term",
+      "purl": "pkg:golang/golang.org/x/term@v0.46.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.46.0/go.mod"
     },
     {
       "name": "golang.org/x/text",
@@ -7819,6 +8071,20 @@
       "scope": "required",
       "type": "library",
       "version": "v0.40.0/go.mod"
+    },
+    {
+      "name": "golang.org/x/text",
+      "purl": "pkg:golang/golang.org/x/text@v0.42.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.42.0"
+    },
+    {
+      "name": "golang.org/x/text",
+      "purl": "pkg:golang/golang.org/x/text@v0.42.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.42.0/go.mod"
     },
     {
       "name": "golang.org/x/time",
@@ -8001,6 +8267,20 @@
       "scope": "required",
       "type": "library",
       "version": "v0.47.0/go.mod"
+    },
+    {
+      "name": "golang.org/x/tools",
+      "purl": "pkg:golang/golang.org/x/tools@v0.49.0",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.49.0"
+    },
+    {
+      "name": "golang.org/x/tools",
+      "purl": "pkg:golang/golang.org/x/tools@v0.49.0/go.mod",
+      "scope": "required",
+      "type": "library",
+      "version": "v0.49.0/go.mod"
     },
     {
       "name": "golang.org/x/xerrors",

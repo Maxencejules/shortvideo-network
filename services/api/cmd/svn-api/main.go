@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/hex"
 	"errors"
 	"log"
 	"net"
@@ -9,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -49,6 +52,18 @@ func run() error {
 	if listen == "" {
 		listen = file.Listen
 	}
+	exportKey, err := loadExportKey(os.Getenv("SVN_API_EXPORT_KEY_FILE"))
+	if err != nil {
+		return err
+	}
+	trusted, err := loadTrusted(os.Getenv("SVN_API_TRUSTED_EXPORTERS"))
+	if err != nil {
+		return err
+	}
+	var sessionTTL time.Duration
+	if file.SessionSeconds > 0 {
+		sessionTTL = time.Duration(file.SessionSeconds) * time.Second
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	svc, err := service.New(ctx, service.Options{
@@ -58,6 +73,13 @@ func run() error {
 		Fixtures:          file.Fixtures,
 		Limits:            file.Limits,
 		QuarantineDir:     quarantine,
+		WebAuthn:          file.WebAuthn,
+		BootstrapToken:    os.Getenv("SVN_API_BOOTSTRAP_TOKEN"),
+		ExportKey:         exportKey,
+		TrustedExporters:  trusted,
+		EnrollPerMinute:   file.EnrollPerMinute,
+		LoginPerMinute:    file.LoginPerMinute,
+		SessionTTL:        sessionTTL,
 		Database: pq.Config{
 			Host:     os.Getenv("SVN_API_PGHOST"),
 			Port:     uint16(port),
@@ -124,6 +146,47 @@ func probeDelay() (time.Duration, error) {
 		return 0, nil
 	}
 	return time.ParseDuration(value)
+}
+
+func loadExportKey(path string) (ed25519.PrivateKey, error) {
+	if path == "" {
+		return nil, nil
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if info.Mode().Perm()&0o077 != 0 {
+		return nil, errors.New("export key file is readable by other users")
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	raw, err := hex.DecodeString(strings.TrimSpace(string(body)))
+	if err != nil || len(raw) != ed25519.PrivateKeySize {
+		return nil, errors.New("export key file is not an ed25519 key")
+	}
+	return ed25519.PrivateKey(raw), nil
+}
+
+func loadTrusted(value string) ([]ed25519.PublicKey, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
+	}
+	var out []ed25519.PublicKey
+	for _, part := range strings.Split(value, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		raw, err := hex.DecodeString(part)
+		if err != nil || len(raw) != ed25519.PublicKeySize {
+			return nil, errors.New("trusted exporter is not an ed25519 public key")
+		}
+		out = append(out, ed25519.PublicKey(raw))
+	}
+	return out, nil
 }
 
 func getenv(key, fallback string) string {

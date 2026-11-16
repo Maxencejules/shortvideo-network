@@ -1,0 +1,10 @@
+COMMAND bash -c go\ version\;\ /usr/lib/postgresql/18/bin/postgres\ --version\;\ python3\ --version\;\ printf\ \"pg16_test:\"\;\ test\ -x\ /usr/lib/postgresql/16/bin/postgres\;\ echo\ \$\?
+DATE 2026-11-16T05:26:06Z
+HEAD 71fd314f64c4845bb44d30f34ea34e8671c1b99d
+TREE 77fb1904cb562554a08b211a01847329e92e31ea
+DIRTY no
+go version go1.26.10 linux/amd64
+postgres (PostgreSQL) 18.7 (Ubuntu 18.7-1.pgdg24.04+2)
+Python 3.12.3
+pg16_test:1
+EXIT:0

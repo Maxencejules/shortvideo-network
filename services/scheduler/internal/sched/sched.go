@@ -145,6 +145,9 @@ type Config struct {
 	Hosts       []Host
 	Approver    func(providerID, offerID string) error
 	Now         func() time.Time
+	// Control authorizes the four mutating routes. Nil refuses them.
+	// It is an application operator session, not a chain key.
+	Control func(r *http.Request) bool
 }
 
 // Sched is the coordinator.

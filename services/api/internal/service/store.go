@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Maxencejules/shortvideo-network/services/api/internal/account"
 	"github.com/lib/pq"
 )
 
@@ -121,10 +122,12 @@ func Open(cfg pq.Config) (*sql.DB, error) {
 	return db, nil
 }
 
-// Migrate creates the upload schema. It does not drop existing tables.
+// Migrate creates the upload schema and the account tables. It does not drop existing tables.
 func Migrate(ctx context.Context, db *sql.DB) error {
-	_, err := db.ExecContext(ctx, schemaSQL)
-	return err
+	if _, err := db.ExecContext(ctx, schemaSQL); err != nil {
+		return err
+	}
+	return account.Migrate(ctx, db)
 }
 
 // Store is the upload, quota, and job database.

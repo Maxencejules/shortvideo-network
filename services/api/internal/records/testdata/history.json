@@ -1,0 +1,30 @@
+{
+  "domain": "SVN-PUBLIC-RECORD-1",
+  "keys": [
+    {
+      "key_id": "k-old",
+      "public": "111a4e011500827ac87f3617df8356957fdf2a65dad05f98e9abba598ee7edad"
+    },
+    {
+      "key_id": "k-new",
+      "public": "dfc1384b87dbd46d946ed26dc1850f99c124a84d4ee0d261690818cb4c3370c3"
+    }
+  ],
+  "records": [
+    {
+      "canonical": "{\"author_id\":\"author-1\",\"key_id\":\"k-old\",\"payload\":{\"body\":\"first\",\"record_type\":\"post\"},\"previous_digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"privacy_class\":\"PUBLIC_RECORD\",\"profile\":\"SVN-JCS-1\",\"record_id\":\"record-1\",\"schema_version\":1,\"sequence\":0}",
+      "signature": "df8c8f877713cefa4b60be502ec77b93b2b052a3bff280cb839153bf28a6588b449c5f6de97bc0c5582955057bc1eeeb31dd61f20c67fc342a842d9a56f01805",
+      "key_id": "k-old"
+    },
+    {
+      "canonical": "{\"author_id\":\"author-1\",\"key_id\":\"k-new\",\"payload\":{\"body\":\"second\",\"record_type\":\"post\"},\"previous_digest\":\"e751266c70a01935870ac8cbc03b33ab5ac492b5d6f40a1485c01777a74c9952\",\"privacy_class\":\"PUBLIC_RECORD\",\"profile\":\"SVN-JCS-1\",\"record_id\":\"record-1\",\"schema_version\":1,\"sequence\":1}",
+      "signature": "84b757f4b08894a4d14ffc18a7d3de2520c98ba9d46e731efe80030187714c2113c02f9ac7190fc5bbf2bf9e02af90da3542f455e46d9424b6bfb538cbe4160b",
+      "key_id": "k-new"
+    },
+    {
+      "canonical": "{\"author_id\":\"author-1\",\"key_id\":\"k-old\",\"payload\":{\"body\":\"retired\",\"record_type\":\"post\"},\"previous_digest\":\"8d15127498ab4db418a1eecd0c33b60a8295b7f362f091f3411979cb5357e64c\",\"privacy_class\":\"PUBLIC_RECORD\",\"profile\":\"SVN-JCS-1\",\"record_id\":\"record-1\",\"schema_version\":1,\"sequence\":2}",
+      "signature": "344abf4b61f8ebcb0e6997eecd349f392d995925ddf3422e6ee6d9804ddc066dfe5a59ad920848f631f86b0666425e996e8e26a57dca75ac9b362da02057120e",
+      "key_id": "k-old"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+COMMAND git log -1 --format=full
+DATE 2026-11-16T04:51:28Z
+HEAD 068484aef7df8f3ca72b3f33c2adc0251f8599e3
+TREE 556344c31037fbd3b086a9fff144923a969c3724
+DIRTY yes
+DIRTY_PATH docs/evidence/logs/goal-19/writer-policy.txt
+commit 068484aef7df8f3ca72b3f33c2adc0251f8599e3
+Author: Maxence Jules <Maxencejules@users.noreply.github.com>
+Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
+
+    goal 19: allow the application export key in the chain-writer scan
+    
+    The scan treats ed25519.PrivateKey as a signing-key loader. The account
+    service uses that type for SVN-ACCOUNT-EXPORT-1, not for a chain signer.
+    A broadcast in those files still fails the scan.
+    
+    Tested-tree: 556344c31037fbd3b086a9fff144923a969c3724
+    Co-authored-by: Maxence Jules <Maxencejules@users.noreply.github.com>
+EXIT:0

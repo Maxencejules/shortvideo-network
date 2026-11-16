@@ -4,7 +4,7 @@ Authenticated upload intents, private quarantine, and a processing-job outbox. T
 
 `svn_api.serve` still raises. FastAPI 0.162.0 stays the pinned family and does not open a second listener. There is no public sign-up route. Public launch stays disabled.
 
-Development sessions are the fixtures in `fixtures/development.json`. The tokens use the `dev-fixture-` prefix. They are not secrets and they are refused when `environment` is `production`. Production does not start: this goal does not include a production session verifier. That boundary is DR-13-01 and is not an approved account contract.
+Development sessions are the fixtures in `fixtures/development.json`. The tokens use the `dev-fixture-` prefix. They are not secrets and they are refused when `environment` is `production`. Production starts the account service. Passkeys are verified by `github.com/go-webauthn/webauthn`. A passkey is an application login, not a chain key. DR-13-01 stays open: the owner has not approved this session boundary as the account contract. Delegated host-signing custody and account recovery stay blocked on DEC-001.
 
 Proposed limits, labeled `PROPOSED`, are 100000000 input bytes and 60 seconds. Those ceilings cannot be raised in configuration. Per-account allowances in the fixture file are not a DEC-005 decision.
 

@@ -1,0 +1,22 @@
+COMMAND go test -count=1 -timeout 8m -v -run TestAccount\|TestConcurrent\|TestRateLimitRoleAndProductionFixtures ./services/api/internal/service/
+DATE 2026-11-16T05:26:30Z
+HEAD 71fd314f64c4845bb44d30f34ea34e8671c1b99d
+TREE 77fb1904cb562554a08b211a01847329e92e31ea
+DIRTY no
+=== RUN   TestAccountSessionsAndAuthorization
+--- PASS: TestAccountSessionsAndAuthorization (0.04s)
+=== RUN   TestAccountRateLimit
+--- PASS: TestAccountRateLimit (0.01s)
+=== RUN   TestAccountDeletionAndBackup
+--- PASS: TestAccountDeletionAndBackup (0.02s)
+=== RUN   TestAccountMigration
+--- PASS: TestAccountMigration (0.09s)
+=== RUN   TestConcurrentCeremonyFinish
+--- PASS: TestConcurrentCeremonyFinish (0.01s)
+=== RUN   TestConcurrentQuotaAndOutputBudget
+--- PASS: TestConcurrentQuotaAndOutputBudget (0.02s)
+=== RUN   TestRateLimitRoleAndProductionFixtures
+--- PASS: TestRateLimitRoleAndProductionFixtures (0.01s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/service	0.657s
+EXIT:0

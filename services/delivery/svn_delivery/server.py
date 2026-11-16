@@ -44,7 +44,11 @@ _SEGMENT = re.compile(
 
 
 class MediaServer:
-    """One origin or test host. TLS is required. The certificate is ephemeral."""
+    """One origin or test host. TLS is required. The certificate is ephemeral.
+
+    Playback uses a local grant on this loopback listener. The grant is not an
+    application account session and it is not publication.
+    """
 
     def __init__(
         self,

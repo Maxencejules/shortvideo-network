@@ -130,6 +130,8 @@ func (s *Server) receipt(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, doc)
 }
 
+// admin requires the provider machine credential. That credential is not an
+// application account session and it is not a chain key.
 func (s *Server) admin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.Agent.Authorize(bearer(r)) {
