@@ -1,23 +1,10 @@
 COMMAND python3 docs/evidence/goal-07/mutants.py --check
-DATE 2026-11-10T18:49:06Z
-HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd
-TREE 4c10752fdc54f028b996d50d1038fb9004512e0e
-DIRTY yes
-DIRTY_PATH docs/evidence/logs/goal-19/accounts.txt
-DIRTY_PATH docs/evidence/logs/goal-19/anchors06.txt
-DIRTY_PATH docs/evidence/logs/goal-19/docker.txt
-DIRTY_PATH docs/evidence/logs/goal-19/golangci-lint.txt
-DIRTY_PATH docs/evidence/logs/goal-19/pg16.txt
-DIRTY_PATH docs/evidence/logs/goal-19/python-records.txt
-DIRTY_PATH docs/evidence/logs/goal-19/records.txt
-DIRTY_PATH docs/evidence/logs/goal-19/runtime.txt
-DIRTY_PATH docs/evidence/logs/goal-19/scenario.txt
-DIRTY_PATH docs/evidence/logs/goal-19/scheduler-auth.txt
-DIRTY_PATH docs/evidence/logs/goal-19/secrets.txt
-DIRTY_PATH docs/evidence/logs/goal-19/trailer.txt
-DIRTY_PATH docs/evidence/logs/goal-19/vet.txt
-revision HEAD commit fec7ab32dc24be11065327ccd8b0d996e53798cd tree 4c10752fdc54f028b996d50d1038fb9004512e0e
-copy /tmp/goal07-mutants-q7gpb9ho/tree (git archive)
+DATE 2026-11-16T05:26:07Z
+HEAD 71fd314f64c4845bb44d30f34ea34e8671c1b99d
+TREE 77fb1904cb562554a08b211a01847329e92e31ea
+DIRTY no
+revision HEAD commit 71fd314f64c4845bb44d30f34ea34e8671c1b99d tree 77fb1904cb562554a08b211a01847329e92e31ea
+copy /tmp/goal07-mutants-twth40e_/tree (git archive)
 mutants 30 of 30 (goal07=5, merge=14, node=11)
 COPY_MATCH m01-simulate-extra-gas: chain/msgkit/enforce.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m01-simulate-extra-gas.go.txt; chain/msgkit/enforce.go unchanged since 43c1a10
 COPY_MATCH m02-ante-gas0-always: chain/app/ante.go@43c1a10 with this change equals docs/evidence/goal-07/mutants/m02-ante-gas0-always.go.txt; chain/app/ante.go changed since 43c1a10

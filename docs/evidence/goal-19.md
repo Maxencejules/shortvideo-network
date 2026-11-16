@@ -16,42 +16,54 @@ The account service is `services/api`. Passkeys are verified by `github.com/go-w
 
 | Item | Value |
 | --- | --- |
-| Commit | `068484aef7df8f3ca72b3f33c2adc0251f8599e3` |
-| Tree | `556344c31037fbd3b086a9fff144923a969c3724` |
-| SBOM parent | `1e6fb55b28aa1da00f67d8d970f64e9ae41294d5`, tree `60073a3bfeba938eeacf8541b0052862a65e9a22` |
-| Behavior parent | `fec7ab32dc24be11065327ccd8b0d996e53798cd`, tree `4c10752fdc54f028b996d50d1038fb9004512e0e` |
+| Commit | `71fd314f64c4845bb44d30f34ea34e8671c1b99d` |
+| Tree | `77fb1904cb562554a08b211a01847329e92e31ea` |
 | Base | `b5b05b37c6885ca1c63176cf7c240bea59bd955c` |
 | Branch | `goal-19` |
 
-[trailer-writer.txt](logs/goal-19/trailer-writer.txt) line 7 is `commit 068484aef7df8f3ca72b3f33c2adc0251f8599e3`. Line 8 is `Author: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 9 is `Commit: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 17 is `Tested-tree: 556344c31037fbd3b086a9fff144923a969c3724`. That commit changes `tests/unit/test_chain_writer_policy.py` only.
+[trailer.txt](logs/goal-19/trailer.txt) line 6 is `commit 71fd314f64c4845bb44d30f34ea34e8671c1b99d`. Line 7 is `Author: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 8 is `Commit: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 16 is `Tested-tree: 77fb1904cb562554a08b211a01847329e92e31ea`. [scenario.txt](logs/goal-19/scenario.txt) line 3 is that same HEAD, line 4 is that same TREE, and line 5 is `DIRTY no`. This commit consumes each WebAuthn ceremony with `DELETE ... RETURNING`. It also updates `services/api/README.md` and the progress pointer. The behavior logs in this file were recaptured on this commit.
 
-[trailer-sbom.txt](logs/goal-19/trailer-sbom.txt) line 7 is `commit 1e6fb55b28aa1da00f67d8d970f64e9ae41294d5`. Line 17 is `Tested-tree: 60073a3bfeba938eeacf8541b0052862a65e9a22`. That commit changes `docs/dependencies.md` and `docs/sbom.cdx.json` only. Neither commit changes the account service or the milestone.
+## Head CI
 
-The behavior logs below were captured on the parent. [scenario.txt](logs/goal-19/scenario.txt) line 3 is `HEAD fec7ab32dc24be11065327ccd8b0d996e53798cd` and line 4 is `TREE 4c10752fdc54f028b996d50d1038fb9004512e0e`. Line 5 is `DIRTY no`. [trailer.txt](logs/goal-19/trailer.txt) line 17 names that parent commit and line 28 is `Tested-tree: 4c10752fdc54f028b996d50d1038fb9004512e0e`. The scenario was not rerun for the SBOM commit: those two files are not on the scenario path.
+`docs/progress.md` and `docs/progress.tsv` point here.
+
+| Run | Head | Conclusion |
+| --- | --- | --- |
+| [42879300822](https://github.com/Maxencejules/shortvideo-network/actions/runs/42879300822) | `e3317788c472b8c4acf1319e688985fdc4912aac` | failure. Sixteen jobs succeeded. `python` failed on `sbom drift`. [ci-python-fail.txt](logs/goal-19/ci-python-fail.txt) line 8 names that head. Line 9 is `sbom drift`. |
+| [43805353569](https://github.com/Maxencejules/shortvideo-network/actions/runs/43805353569) | `85d699aad59488efcc90fdfb006c3228ef8f9e5d` | failure. The other jobs succeeded, including `milestone`. `python` failed `test_repository_follows_the_chain_writer_policy`. [ci-python-policy.txt](logs/goal-19/ci-python-policy.txt) line 8 names that head. Line 15 is the `FAILED` line. |
+| [43806620322](https://github.com/Maxencejules/shortvideo-network/actions/runs/43806620322) | `ea9be80d3ff91227304ce09f05046bf4315e189b` | success. 17 of 17 jobs. |
+
+Those three runs are behind this tested commit. A CI run for a later head of `goal-19` is tip-lag until it is added here. Neither failure is the goal 15 headless Chrome decode flake.
+
+## Log cleanliness
+
+The behavior logs recaptured for `71fd314f64c4845bb44d30f34ea34e8671c1b99d` were written outside the worktree and then copied here, so each one starts `DIRTY no`. That includes [scenario.txt](logs/goal-19/scenario.txt), [accounts.txt](logs/goal-19/accounts.txt), [records.txt](logs/goal-19/records.txt), [python-records.txt](logs/goal-19/python-records.txt), [scheduler-auth.txt](logs/goal-19/scheduler-auth.txt), [writer-policy.txt](logs/goal-19/writer-policy.txt), [sbom.txt](logs/goal-19/sbom.txt), [vet.txt](logs/goal-19/vet.txt), [secrets.txt](logs/goal-19/secrets.txt), [runtime.txt](logs/goal-19/runtime.txt), [pg16.txt](logs/goal-19/pg16.txt), [docker.txt](logs/goal-19/docker.txt), [golangci-lint.txt](logs/goal-19/golangci-lint.txt), [anchors06.txt](logs/goal-19/anchors06.txt), [anchors07.txt](logs/goal-19/anchors07.txt), and [trailer.txt](logs/goal-19/trailer.txt).
+
+[ci-python-fail.txt](logs/goal-19/ci-python-fail.txt) line 5 is `DIRTY yes`. [ci-python-policy.txt](logs/goal-19/ci-python-policy.txt) line 5 is `DIRTY yes`. Those two are excerpts of GitHub job logs. They were captured while other files under `docs/evidence/logs/goal-19/` were still untracked, and their HEAD is not this tested commit. [trailer-sbom.txt](logs/goal-19/trailer-sbom.txt) and [trailer-writer.txt](logs/goal-19/trailer-writer.txt) are the same kind of earlier capture. They are not the behavior retest.
 
 ## CI failure on the previous head
 
 Run [42879300822](https://github.com/Maxencejules/shortvideo-network/actions/runs/42879300822) on `e3317788c472b8c4acf1319e688985fdc4912aac` failed. Sixteen jobs succeeded. The `python` job failed. [ci-python-fail.txt](logs/goal-19/ci-python-fail.txt) line 8 is `{"conclusion":"failure","headSha":"e3317788c472b8c4acf1319e688985fdc4912aac"}`. Line 9 is `sbom drift`. Line 10 is the process exit code 1. Ruff, mypy, the workflow policy, and the secret scan in that job had already passed. This is not the goal 15 headless Chrome decode flake.
 
-`services/api/go.sum` and `services/milestone/go.sum` added `github.com/go-webauthn/webauthn` v0.18.2 and `github.com/descope/virtualwebauthn` v1.0.5, and the modules those sums lock. `docs/sbom.cdx.json` had not been regenerated. [sbom.txt](logs/goal-19/sbom.txt) line 3 is `HEAD 1e6fb55b28aa1da00f67d8d970f64e9ae41294d5`, line 5 is `DIRTY no`, line 6 is `sbom ok components 1362`, and line 7 is `EXIT:0`. The direct licences are BSD-3-Clause for go-webauthn and MIT for virtualwebauthn, recorded in `docs/dependencies.md`. Neither is a commercial-only component.
+`services/api/go.sum` and `services/milestone/go.sum` added `github.com/go-webauthn/webauthn` v0.18.2 and `github.com/descope/virtualwebauthn` v1.0.5, and the modules those sums lock. `docs/sbom.cdx.json` had not been regenerated. [sbom.txt](logs/goal-19/sbom.txt) line 3 is `HEAD 71fd314f64c4845bb44d30f34ea34e8671c1b99d`, line 5 is `DIRTY no`, line 6 is `sbom ok components 1362`, and line 7 is `EXIT:0`. The direct licences are BSD-3-Clause for go-webauthn and MIT for virtualwebauthn, recorded in `docs/dependencies.md`. Neither is a commercial-only component.
 
 ## CI failure after the SBOM fix
 
-Run [43805353569](https://github.com/Maxencejules/shortvideo-network/actions/runs/43805353569) on `85d699aad59488efcc90fdfb006c3228ef8f9e5d` failed. The other sixteen jobs succeeded, including `milestone`. The `python` job failed one test. [ci-python-policy.txt](logs/goal-19/ci-python-policy.txt) line 8 is `{"conclusion":"failure","headSha":"85d699aad59488efcc90fdfb006c3228ef8f9e5d"}`. Line 15 is `FAILED tests/unit/test_chain_writer_policy.py::test_repository_follows_the_chain_writer_policy`. The scan treats `ed25519.PrivateKey` as a signing-key loader. The account service uses that type for the application export key, not for a chain signer. The exemption is those five files, and a broadcast in one of them still fails the scan. [writer-policy.txt](logs/goal-19/writer-policy.txt) line 3 is `HEAD 068484aef7df8f3ca72b3f33c2adc0251f8599e3`, line 5 is `DIRTY no`, line 6 ends with `[100%]`, and line 7 is `EXIT:0`. This is not the goal 15 headless Chrome decode flake. The milestone was not rerun: this commit does not change it.
+Run [43805353569](https://github.com/Maxencejules/shortvideo-network/actions/runs/43805353569) on `85d699aad59488efcc90fdfb006c3228ef8f9e5d` failed. The other sixteen jobs succeeded, including `milestone`. The `python` job failed one test. [ci-python-policy.txt](logs/goal-19/ci-python-policy.txt) line 8 is `{"conclusion":"failure","headSha":"85d699aad59488efcc90fdfb006c3228ef8f9e5d"}`. Line 15 is `FAILED tests/unit/test_chain_writer_policy.py::test_repository_follows_the_chain_writer_policy`. The scan treats `ed25519.PrivateKey` as a signing-key loader. The account service uses that type for the application export key, not for a chain signer. The exemption is those five files, and a broadcast in one of them still fails the scan. [writer-policy.txt](logs/goal-19/writer-policy.txt) line 3 is `HEAD 71fd314f64c4845bb44d30f34ea34e8671c1b99d`, line 5 is `DIRTY no`, line 6 ends with `[100%]`, and line 7 is `EXIT:0`. This is not the goal 15 headless Chrome decode flake.
 
 ## What ran
 
 | Command | Log | Result |
 | --- | --- | --- |
-| `go test -count=1 -timeout 15m -run TestMilestone -v ./services/milestone` | [scenario.txt](logs/goal-19/scenario.txt) | line 101 `ok`, line 102 `EXIT:0` |
-| `go test -count=1 -timeout 8m -run 'TestAccount\|TestRateLimitRoleAndProductionFixtures' ./services/api/internal/service/` | [accounts.txt](logs/goal-19/accounts.txt) | line 7 `ok`, line 8 `EXIT:0` |
-| `go test -count=1 -timeout 2m -v ./services/api/internal/records/` | [records.txt](logs/goal-19/records.txt) | line 9 `--- PASS: TestKeyHistoryAndReplay`, line 12 `EXIT:0` |
-| Python fixture check of `services/api/internal/records/testdata/history.json` | [python-records.txt](logs/goal-19/python-records.txt) | line 10 `ok`, line 11 `EXIT:0` |
-| `go test -count=1 -timeout 3m -run TestControlRoutesRequireOperator -v ./services/scheduler/internal/sched/` | [scheduler-auth.txt](logs/goal-19/scheduler-auth.txt) | line 12 `ok`, line 13 `EXIT:0` |
-| `go vet ./services/api/...` | [vet.txt](logs/goal-19/vet.txt) | line 11 `EXIT:0` |
-| `python3 scripts/scan_secrets.py` | [secrets.txt](logs/goal-19/secrets.txt) | line 16 `secret scan ok`, line 17 `EXIT:0` |
+| `go test -count=1 -timeout 15m -run TestMilestone -v ./services/milestone` | [scenario.txt](logs/goal-19/scenario.txt) | line 328 `ok`, line 329 `EXIT:0` |
+| `go test -count=1 -timeout 8m -v -run 'TestAccount\|TestConcurrent\|TestRateLimitRoleAndProductionFixtures' ./services/api/internal/service/` | [accounts.txt](logs/goal-19/accounts.txt) | line 15 `--- PASS: TestConcurrentCeremonyFinish`, line 21 `ok`, line 22 `EXIT:0` |
+| `go test -count=1 -timeout 2m -v ./services/api/internal/records/` | [records.txt](logs/goal-19/records.txt) | line 7 `--- PASS: TestKeyHistoryAndReplay`, line 10 `EXIT:0` |
+| Python fixture check of `services/api/internal/records/testdata/history.json` | [python-records.txt](logs/goal-19/python-records.txt) | line 6 `ok`, line 7 `EXIT:0` |
+| `go test -count=1 -timeout 3m -run TestControlRoutesRequireOperator -v ./services/scheduler/internal/sched/` | [scheduler-auth.txt](logs/goal-19/scheduler-auth.txt) | line 9 `ok`, line 10 `EXIT:0` |
+| `go vet ./services/api/...` | [vet.txt](logs/goal-19/vet.txt) | line 6 `EXIT:0` |
+| `python3 scripts/scan_secrets.py` | [secrets.txt](logs/goal-19/secrets.txt) | line 6 `secret scan ok`, line 7 `EXIT:0` |
 
-[runtime.txt](logs/goal-19/runtime.txt) line 12 is `go version go1.26.10 linux/amd64`. Line 13 is `postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)`. Line 14 is `Python 3.12.3`. Line 15 is `pg16_test:1`.
+[runtime.txt](logs/goal-19/runtime.txt) line 6 is `go version go1.26.10 linux/amd64`. Line 7 is `postgres (PostgreSQL) 18.7 (Ubuntu 18.7-1.pgdg24.04+2)`. Line 8 is `Python 3.12.3`. Line 9 is `pg16_test:1`. The apt suite installed 18.7 on this machine. CI still installs the 18.6 pin from `docs/dependencies.md`.
 
 ## Acceptance
 
@@ -62,19 +74,19 @@ Run [43805353569](https://github.com/Maxencejules/shortvideo-network/actions/run
 | Stolen and revoked sessions, rotation, expiry | VERIFIED | same test. |
 | CSRF and protected cookies | VERIFIED | same test. The session cookie is `HttpOnly`, `Secure`, and `SameSite=Strict`. A cookie write without `X-CSRF-Token` is 403. Bearer calls are not cookie submissions. |
 | Privilege escalation | VERIFIED | a viewer cannot upload or create invites. A creator cannot create invites. A preference body cannot change the role. |
-| Cross-account access | VERIFIED | another creator's upload read is 404. An export does not contain another account's preference or a moderation note. |
-| Rate limits on enrollment and login | VERIFIED | `TestAccountRateLimit`. |
-| Passkeys | VERIFIED | enrollment, login, and step-up confirmation use WebAuthn ceremonies checked by go-webauthn. |
+| Cross-account access | VERIFIED | `TestAccountSessionsAndAuthorization` reads another creator's upload as 404. The export exclusion of another account's preference and of a moderation note is `TestAccountMigration`, [accounts.txt](logs/goal-19/accounts.txt) line 13, at `services/api/internal/service/account_test.go` lines 405-407. |
+| Rate limits on enrollment and login | VERIFIED | `TestAccountRateLimit`. [accounts.txt](logs/goal-19/accounts.txt) line 9. |
+| Passkeys | VERIFIED for ceremonies and for single use of a ceremony | Enrollment, login, and step-up confirmation are checked by go-webauthn. `TestConcurrentCeremonyFinish` posts two finishes of one login ceremony. [accounts.txt](logs/goal-19/accounts.txt) line 15 is `--- PASS: TestConcurrentCeremonyFinish (0.01s)`. The test fails unless exactly one of those two responses is 200 (`services/api/internal/service/account_test.go` lines 531-538). |
 | Strong confirmation | VERIFIED for session revocation, export, backup, deletion, and import. Recovery-key changes are BLOCKED with recovery. |
 | Key rotation, old and new signed records, replay | VERIFIED | `TestKeyHistoryAndReplay` and the Python fixture check. Retired keys still verify old records. A new sequence needs the active key. |
 | Migrate a test account between two hosts | VERIFIED | `TestAccountMigration`. Host B verifies host A's application export signature and the same passkey logs in. |
 | Delete a test account | VERIFIED | `TestAccountDeletionAndBackup`. Future login fails. Preferences are removed. Moderation notes and public-record refs remain. `history_erased` is false. The retention decision id is `DEC-004` and the value version is 0. |
 | Encrypted backup | VERIFIED | `SVN-BACKUP-1`, AES-256-GCM. The key is returned once and is not stored. Losing it is not recoverable. Recovery of that key is BLOCKED on DEC-001. |
-| Goal 18 scenario under the new identities | VERIFIED on this host, one machine | [scenario.txt](logs/goal-19/scenario.txt) line 14 `fixture=false`. Line 16 `anonymous=401 creator=401`. Line 47 is the reserved upload. Line 75 is `CLIENT ok`. Line 98 is `phase=done`. |
+| Goal 18 scenario under the new identities | VERIFIED on this host, one machine | [scenario.txt](logs/goal-19/scenario.txt) line 241 `fixture=false`. Line 243 `anonymous=401 creator=401`. Line 274 is the reserved upload. Line 302 is `CLIENT ok`. Line 325 is `phase=done`. |
 | Recovery links and challenges | BLOCKED | no route and no stub. `POST /v1/recovery` is 404. |
 | Delegated host-signing custody | BLOCKED | DEC-001. Public-record code stores and checks public key references. It does not generate or hold a host signing key. |
 
-The milestone is still one machine. [scenario.txt](logs/goal-19/scenario.txt) line 7 is `physical_count=1 independent=false`. That does not become an independent-operator result.
+The milestone is still one machine. [scenario.txt](logs/goal-19/scenario.txt) line 234 is `physical_count=1 independent=false`. That does not become an independent-operator result.
 
 ## Endpoint audit
 
@@ -84,7 +96,7 @@ Application routes on `svn-api` require an account session, except enroll and lo
 | --- | --- | --- |
 | `svn-api` upload routes | account session, role `creator`, and the row owner | production no longer accepts `dev-fixture-` tokens or an injected verifier |
 | `svn-api` `POST /v1/invites` and `POST /v1/account/import` | operator session, and import also needs a fresh passkey confirmation | a creator or viewer is 403 |
-| `svn-scheduler` `POST /v1/publications`, `/v1/repairs`, `/v1/origin`, `/v1/hosts` | active operator session, checked with `GET /v1/session` | DR-18-07. A creator session is 401. [scenario.txt](logs/goal-19/scenario.txt) line 16. |
+| `svn-scheduler` `POST /v1/publications`, `/v1/repairs`, `/v1/origin`, `/v1/hosts` | active operator session, checked with `GET /v1/session` | DR-18-07. A creator session is 401. [scenario.txt](logs/goal-19/scenario.txt) line 243. |
 | `svn-scheduler` `GET /health` | none | process liveness, no account data |
 | `svn-scheduler` `GET /v1/availability` | none | public coordination read, no account data |
 | `svn-scheduler` `GET /v1/distribution/...` | none | package bytes this loopback process already accepted. It is not an application session. Providers fetch it on the loopback listener. |
@@ -123,11 +135,11 @@ BLOCKED, carried forward. A missing tool is not a pass.
 1. **DEC-001 and DR-07-01.** Custody and recovery stay unimplemented. DR-19-02 and DR-19-03.
 2. **DEC-004.** The retention period is unset. DR-19-04.
 3. **DEC-007.** Audience and age stay unset. DR-19-07.
-4. **One machine.** [scenario.txt](logs/goal-19/scenario.txt) line 7 `physical_count=1 independent=false`.
-5. **Goal 06 and goal 07 mutation runners.** Anchor checks only. [anchors06.txt](logs/goal-19/anchors06.txt) line 34 is `RESULT search-string problems=13; no test was run` and line 35 is `EXIT:1`. [anchors07.txt](logs/goal-19/anchors07.txt) line 30 is `RESULT validation problems=3; no test was run` and line 31 is `EXIT:1`.
-6. **golangci-lint.** Not installed. [golangci-lint.txt](logs/goal-19/golangci-lint.txt) line 15 is `scripts/evidence/capture.sh: line 58: golangci-lint: command not found` and line 16 is `EXIT:127`.
-7. **PostgreSQL 16.** Not installed. [pg16.txt](logs/goal-19/pg16.txt) line 13 is `EXIT:1`. The server in use is 18.6. [runtime.txt](logs/goal-19/runtime.txt) line 13.
-8. **Goal 04 compose bridge.** [docker.txt](logs/goal-19/docker.txt) line 14 is `scripts/evidence/capture.sh: line 58: docker: command not found` and line 15 is `EXIT:127`. Compose was not run. The unauthenticated :2375 daemon was not used.
+4. **One machine.** [scenario.txt](logs/goal-19/scenario.txt) line 234 `physical_count=1 independent=false`.
+5. **Goal 06 and goal 07 mutation runners.** Anchor checks only. [anchors06.txt](logs/goal-19/anchors06.txt) line 22 is `RESULT search-string problems=13; no test was run` and line 23 is `EXIT:1`. [anchors07.txt](logs/goal-19/anchors07.txt) line 17 is `RESULT validation problems=3; no test was run` and line 18 is `EXIT:1`.
+6. **golangci-lint.** Not installed. [golangci-lint.txt](logs/goal-19/golangci-lint.txt) line 6 is `scripts/evidence/capture.sh: line 58: golangci-lint: command not found` and line 7 is `EXIT:127`.
+7. **PostgreSQL 16.** Not installed. [pg16.txt](logs/goal-19/pg16.txt) line 6 is `EXIT:1`. This machine's server is 18.7. [runtime.txt](logs/goal-19/runtime.txt) line 7.
+8. **Goal 04 compose bridge.** [docker.txt](logs/goal-19/docker.txt) line 6 is `scripts/evidence/capture.sh: line 58: docker: command not found` and line 7 is `EXIT:127`. Compose was not run. The unauthenticated :2375 daemon was not used.
 
 ## Requirements
 
