@@ -341,7 +341,11 @@ def _plan(chrome: str, origin: str) -> dict[str, Any]:
             {"do": "wait", "expr": READY, "save": "ready", "ms": 25000},
             {"do": "eval", "expr": WIDTH, "save": "desktop"},
             {"do": "pause"},
-            {"do": "eval", "expr": "document.querySelector('#replay').click(), true", "save": "replayed"},
+            {
+                "do": "eval",
+                "expr": "document.querySelector('#replay').click(), true",
+                "save": "replayed",
+            },
             {"do": "wait", "expr": ORIGIN, "save": "recovered", "ms": 40000},
             {"do": "eval", "expr": QUALITY, "save": "marked"},
             {"do": "click", "selector": "#quality-target"},
