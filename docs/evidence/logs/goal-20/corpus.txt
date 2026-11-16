@@ -1,0 +1,6 @@
+HEAD 894aa0c4345fc3d77c1f5338356202e9bc6f4b0c
+TREE b7e1589a0f0d53f45d80de73268f63fe3d680119
+DIRTY no
+COMMAND python3 -m pytest -q tests/unit/test_secret_corpus.py::test_corpus_cli_paths_are_reported --tb=short
+.                                                                        [100%]
+EXIT:0

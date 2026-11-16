@@ -16,18 +16,22 @@ The browser run decoded one processed portrait package in headless Chrome and pl
 
 | Item | Value |
 | --- | --- |
-| Commit | `9da318eb19fc8d3d55430597351d8a216044eb19` |
-| Tree | `8cb7dbdce136090d449b475be50638a67498e88b` |
+| Commit | `894aa0c4345fc3d77c1f5338356202e9bc6f4b0c` |
+| Tree | `b7e1589a0f0d53f45d80de73268f63fe3d680119` |
 | Base | `5d64047d9d532f9c0bba709b0f9f61da4724b2fa` |
 | Branch | `goal-20` |
 
-The tested commit message carries `Tested-tree: 8cb7dbdce136090d449b475be50638a67498e88b`. `git rev-parse 9da318eb19fc8d3d55430597351d8a216044eb19^{tree}` is that tree. The only change from `4242618b9e8048744796f90076a880558fd633b6` is the ruff wrap of one dict in `tests/unit/test_web_viewer.py`. Behavior logs below were captured on `4242618b9e8048744796f90076a880558fd633b6` except [ruff.txt](logs/goal-20/ruff.txt), which was captured on this tested commit. [ruff.txt](logs/goal-20/ruff.txt) line 1 is `HEAD 9da318eb19fc8d3d55430597351d8a216044eb19`. Line 2 is `TREE 8cb7dbdce136090d449b475be50638a67498e88b`. Line 3 is `DIRTY no`. Line 5 is `1 file already formatted`. Line 7 is `EXIT:0`.
+The tested commit message carries `Tested-tree: b7e1589a0f0d53f45d80de73268f63fe3d680119`. `git rev-parse 894aa0c4345fc3d77c1f5338356202e9bc6f4b0c^{tree}` is that tree. It removes the `apps/web/dist/` ignore line and retries the goal 15 headless decode once when Chrome exits before it reports. [ruff.txt](logs/goal-20/ruff.txt) line 1 is `HEAD 894aa0c4345fc3d77c1f5338356202e9bc6f4b0c`. Line 2 is `TREE b7e1589a0f0d53f45d80de73268f63fe3d680119`. Line 3 is `DIRTY no`. Line 5 is `2 files already formatted`. Line 7 is `EXIT:0`. [corpus.txt](logs/goal-20/corpus.txt) line 1 is that same HEAD. Line 6 is `EXIT:0`.
+
+Behavior logs other than those two were captured on `4242618b9e8048744796f90076a880558fd633b6`. The viewer behavior did not change after that commit. The later commits wrap one test dict, drop the dist ignore, and retry the older decode test.
 
 [trailer.txt](logs/goal-20/trailer.txt) line 5 is `commit 4242618b9e8048744796f90076a880558fd633b6`. Line 6 is `Author: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 7 is `Commit: Maxence Jules <Maxencejules@users.noreply.github.com>`. Line 13 is `Tested-tree: 1f07eb33e2d43b789219e510b86582abd236f1c9`. That trailer is the parent code commit. This tested commit's trailer is in the commit message, not in that file.
 
 ## Head CI
 
-[Run 43918347593](https://github.com/Maxencejules/shortvideo-network/actions/runs/43918347593) on `7251719db45c8ecf5634fac86172608cdabdee2e` failed. `python` stopped at `ruff format --check`: `tests/unit/test_web_viewer.py` would be reformatted at the replay step. `milestone` exited 56 while `curl` downloaded the PostgreSQL apt key (`Failure when receiving data from the peer`). That download is the existing install step. Other jobs in the same run completed the same download. It is not a viewer defect. `node` and `contract` had already passed. A later run on the format-fix head is recorded when it finishes. A green run is not visual approval.
+[Run 43918347593](https://github.com/Maxencejules/shortvideo-network/actions/runs/43918347593) on `7251719db45c8ecf5634fac86172608cdabdee2e` was cancelled after `python` stopped at `ruff format --check`. `milestone` had exited 56 while `curl` downloaded the PostgreSQL apt key. That download is the existing install step.
+
+[Run 43919422615](https://github.com/Maxencejules/shortvideo-network/actions/runs/43919422615) on `7c609ec334922c42604ce62e1fe595e917b6f3c2` failed `python` after format, mypy, the secret scan, and the SBOM check had passed. `test_corpus_cli_paths_are_reported` refused `git add` because `apps/web/dist` was gitignored. `test_browser_decodes_the_mp4_it_fetched` returned `FAILED` with no report: headless Chrome exited before the page posted. The tested commit drops that ignore and retries that decode once. A later run on this tested head is recorded when it finishes. A green run is not visual approval.
 
 ## What ran
 
@@ -38,7 +42,8 @@ The tested commit message carries `Tested-tree: 8cb7dbdce136090d449b475be50638a6
 | `python3 -m pytest -q tests/unit/test_web_viewer.py -s --tb=short` | [browser.txt](logs/goal-20/browser.txt) | line 6 `.`, line 7 `EXIT:0` |
 | `python3 scripts/scan_secrets.py` | [secrets.txt](logs/goal-20/secrets.txt) | line 5 `secret scan ok`, line 6 `EXIT:0` |
 | `python3 scripts/write_sbom.py --check` | [sbom.txt](logs/goal-20/sbom.txt) | line 5 `sbom ok components 1389`, line 6 `EXIT:0` |
-| `ruff format --check` and `ruff check` on the viewer test | [ruff.txt](logs/goal-20/ruff.txt) | line 7 `EXIT:0` |
+| `ruff format --check` and `ruff check` on the two edited tests | [ruff.txt](logs/goal-20/ruff.txt) | line 5 `2 files already formatted`, line 7 `EXIT:0` |
+| `python3 -m pytest -q tests/unit/test_secret_corpus.py::test_corpus_cli_paths_are_reported --tb=short` | [corpus.txt](logs/goal-20/corpus.txt) | line 6 `EXIT:0` |
 
 [node.txt](logs/goal-20/node.txt) line 87 is `# pass 13` and line 88 is `# fail 0` for the evidence-label file. Line 157 is `# pass 10` and line 158 is `# fail 0` for the model file. Line 185 is `# pass 3` and line 186 is `# fail 0` for playback. Line 201 is `# pass 1` for the React pin. Line 241 is `# pass 5` and line 242 is `# fail 0` for the component file.
 
