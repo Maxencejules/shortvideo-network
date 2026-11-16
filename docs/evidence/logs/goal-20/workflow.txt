@@ -1,0 +1,7 @@
+HEAD 4680eff106f98bc44a6b8ab98d18e1cd2000601e
+TREE dd04b15fe7fc5874d13715cf5bfb9beada56aee7
+DIRTY no
+COMMAND python3 scripts/workflow_policy.py && python3 -m pytest -q tests/unit/test_ci_broadcaster.py --tb=line
+workflow policy ok files 1
+...................................................                      [100%]
+EXIT:0
