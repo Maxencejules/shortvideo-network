@@ -689,6 +689,20 @@ def test_harness_bounds_failures_and_prefetch(tmp_path: Path) -> None:
         cert.close()
 
 
+def test_a_missing_browser_binary_is_not_an_early_exit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("svn_delivery.browser.find_browser", lambda: "/no/such/svn-chrome")
+    status = run_until("https://127.0.0.1/unused", lambda: None, timeout=1)
+    assert status == "LAUNCH_FAILED"
+
+
+def test_a_started_process_that_ends_before_a_report_is_exited(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("svn_delivery.browser.find_browser", lambda: "/bin/true")
+    status = run_until("https://127.0.0.1/unused", lambda: None, timeout=2)
+    assert status == "EXITED"
+
+
 def test_browser_decodes_the_mp4_it_fetched(tmp_path: Path, media_root: Path) -> None:
     if find_browser() is None:
         pytest.skip("headless browser is not installed; rendering is unverified")
@@ -709,8 +723,8 @@ def test_browser_decodes_the_mp4_it_fetched(tmp_path: Path, media_root: Path) ->
         # Sixty seconds covers that start. A deadline with no report fails.
         status = run_until(url, lambda: catalog.report("cportrait"), timeout=60)
         report = catalog.report("cportrait")
-        # Only an early process exit is retried. A timeout with no report
-        # stays a failure, so a decode that never posts cannot pass later.
+        # Only a process that started and then exited is retried. A launch
+        # that never started, or a timeout with no report, stays a failure.
         if status == "EXITED":
             print("decode-retry reason=EXITED", flush=True)
             catalog.clear_report("cportrait")

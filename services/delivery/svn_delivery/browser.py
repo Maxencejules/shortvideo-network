@@ -142,11 +142,12 @@ def run_until(
     *,
     timeout: float = 25,
 ) -> str:
-    """Start a headless browser. Return ABSENT, REPORTED, EXITED, or TIMEOUT.
+    """Start a headless browser. Return ABSENT, REPORTED, EXITED, LAUNCH_FAILED, or TIMEOUT.
 
     REPORTED means `ready` returned a document. It does not, by itself, mean
     the video decoded. The caller checks width, height, and the hash.
-    EXITED means the browser process ended before that document existed.
+    EXITED means the process started and then ended before that document existed.
+    LAUNCH_FAILED means the process never started. A failed launch is not an early exit.
     TIMEOUT means the process was still running at the deadline and `ready`
     was still empty. A timeout is not an early exit.
     """
@@ -178,7 +179,7 @@ def run_until(
                 start_new_session=True,
             )
         except OSError:
-            return "EXITED"
+            return "LAUNCH_FAILED"
         deadline = time.monotonic() + timeout
         try:
             while time.monotonic() < deadline:
