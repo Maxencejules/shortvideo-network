@@ -69,12 +69,15 @@ def test_viewer_uses_discovery(tmp_path: Path) -> None:
                 "published_at": 100000,
                 "available": True,
             },
-            creator["token"],
+            _text(creator, "token"),
         )
         site = _Site(base)
         site.start()
         plan = tmp_path / "plan.json"
-        plan.write_text(json.dumps(_plan(chrome, site.origin, viewer["token"])), encoding="utf-8")
+        plan.write_text(
+            json.dumps(_plan(chrome, site.origin, _text(viewer, "token"))),
+            encoding="utf-8",
+        )
         run = subprocess.run(
             ["node", str(DRIVE), str(plan)],
             cwd=ROOT,
@@ -93,6 +96,13 @@ def test_viewer_uses_discovery(tmp_path: Path) -> None:
     finally:
         proc.terminate()
         proc.wait(timeout=5)
+
+
+def _text(doc: dict[str, object], key: str) -> str:
+    value = doc[key]
+    if not isinstance(value, str) or value == "":
+        raise RuntimeError(key)
+    return value
 
 
 def _post(url: str, body: dict[str, object], token: str = "") -> dict[str, object]:
