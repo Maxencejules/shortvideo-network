@@ -1,6 +1,6 @@
 /**
- * Viewer and operator UI slot.
- * Goal 20 implements the product. This module does not render a page.
+ * The viewer is the React application in this package.
+ * Goal 24 still owns the operator dashboard.
  */
-export const SCAFFOLD = true;
+export const SCAFFOLD = false;
 export const CLIENT_FAMILY = "react+typescript";

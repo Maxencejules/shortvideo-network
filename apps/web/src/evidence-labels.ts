@@ -15,7 +15,9 @@
  * are the kind names of the chain's evidence.KindName; state keys are the
  * short state names of evidence.StateName.
  *
- * Nothing renders these strings yet. Goals 20, 21, and 24 build the UI.
+ * The viewer shows the acceptance sentence and the claim limit as proposed
+ * wording. It does not invent an attestation for a video. Goals 21 and 24
+ * still own the creator and operator surfaces.
  */
 export const EVIDENCE_LABELS = {
   catalog: "svn-evidence-labels-proposed-v0",

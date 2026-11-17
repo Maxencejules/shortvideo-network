@@ -1,0 +1,15 @@
+HEAD 4242618b9e8048744796f90076a880558fd633b6
+TREE 1f07eb33e2d43b789219e510b86582abd236f1c9
+DIRTY no
+COMMAND git log -1 --format
+commit 4242618b9e8048744796f90076a880558fd633b6
+Author: Maxence Jules <Maxencejules@users.noreply.github.com>
+Commit: Maxence Jules <Maxencejules@users.noreply.github.com>
+
+goal 20: add the invited viewer
+
+The web client plays a processed package from the delivery adapter, with bounded prefetch, host fallback, captions, and account-session errors. Social and moderation actions stay visibly unavailable.
+
+Tested-tree: 1f07eb33e2d43b789219e510b86582abd236f1c9
+
+EXIT:0

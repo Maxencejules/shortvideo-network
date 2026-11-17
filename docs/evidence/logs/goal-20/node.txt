@@ -1,0 +1,253 @@
+HEAD 797d85626447ad00e40d35b0039548dfeeea451c
+TREE d4f296c4e72468770944c7a8196a9ff9b6821521
+DIRTY no
+COMMAND python3 scripts/run_tests.py --only node 
+TAP version 13
+# Subtest: the module exports only the catalog, and its JSON text is the Go catalog file byte for byte
+ok 1 - the module exports only the catalog, and its JSON text is the Go catalog file byte for byte
+  ---
+  duration_ms: 1.342178
+  type: 'test'
+  ...
+# Subtest: every catalog string is pinned sentence by sentence, in order
+ok 2 - every catalog string is pinned sentence by sentence, in order
+  ---
+  duration_ms: 0.583515
+  type: 'test'
+  ...
+# Subtest: every string is bounded printable ASCII; labels are phrases, texts are sentences
+ok 3 - every string is bounded printable ASCII; labels are phrases, texts are sentences
+  ---
+  duration_ms: 0.436609
+  type: 'test'
+  ...
+# Subtest: the mode is explicit: auditor attestation or provider receipt (goal requirement 4)
+ok 4 - the mode is explicit: auditor attestation or provider receipt (goal requirement 4)
+  ---
+  duration_ms: 0.160629
+  type: 'test'
+  ...
+# Subtest: the state keys are the three short reported state names
+ok 5 - the state keys are the three short reported state names
+  ---
+  duration_ms: 0.08447
+  type: 'test'
+  ...
+# Subtest: the goal limitations, REQ-INV-007, and the decision gate appear verbatim
+ok 6 - the goal limitations, REQ-INV-007, and the decision gate appear verbatim
+  ---
+  duration_ms: 0.093996
+  type: 'test'
+  ...
+# Subtest: the acceptance text calls the signature a promise, not possession (REQ-EVID-002)
+ok 7 - the acceptance text calls the signature a promise, not possession (REQ-EVID-002)
+  ---
+  duration_ms: 0.074562
+  type: 'test'
+  ...
+# Subtest: state and event texts limit the claim: past observation, public digest, no blame, not a pass
+ok 8 - state and event texts limit the claim: past observation, public digest, no blame, not a pass
+  ---
+  duration_ms: 0.88412
+  type: 'test'
+  ...
+# Subtest: the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs
+ok 9 - the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs
+  ---
+  duration_ms: 0.392548
+  type: 'test'
+  ...
+# Subtest: claim_limit and the modes match the frozen envelope schema
+ok 10 - claim_limit and the modes match the frozen envelope schema
+  ---
+  duration_ms: 0.371415
+  type: 'test'
+  ...
+# Subtest: the denylist rules are well formed and are exactly the list of this test
+ok 11 - the denylist rules are well formed and are exactly the list of this test
+  ---
+  duration_ms: 1.823598
+  type: 'test'
+  ...
+# Subtest: no catalog string claims proof of storage, a unique replica, independence, legality, or future quality
+ok 12 - no catalog string claims proof of storage, a unique replica, independence, legality, or future quality
+  ---
+  duration_ms: 0.780965
+  type: 'test'
+  ...
+# Subtest: the denylist scanner detects denied claims and passes the allowed negations
+ok 13 - the denylist scanner detects denied claims and passes the allowed negations
+  ---
+  duration_ms: 3.661771
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 92.972719
+TAP version 13
+# Subtest: plain text drops markup
+ok 1 - plain text drops markup
+  ---
+  duration_ms: 0.778211
+  type: 'test'
+  ...
+# Subtest: captions parse as text
+ok 2 - captions parse as text
+  ---
+  duration_ms: 0.308525
+  type: 'test'
+  ...
+# Subtest: withdrawn and quarantined rows are not playable
+ok 3 - withdrawn and quarantined rows are not playable
+  ---
+  duration_ms: 0.720373
+  type: 'test'
+  ...
+# Subtest: a content row without a withdrawn flag is refused
+ok 4 - a content row without a withdrawn flag is refused
+  ---
+  duration_ms: 0.606219
+  type: 'test'
+  ...
+# Subtest: playback document drops a non-loopback or quarantine host
+ok 5 - playback document drops a non-loopback or quarantine host
+  ---
+  duration_ms: 0.357646
+  type: 'test'
+  ...
+# Subtest: a hosting promise is refused
+ok 6 - a hosting promise is refused
+  ---
+  duration_ms: 0.141455
+  type: 'test'
+  ...
+# Subtest: stale and degraded sentences stay visible
+ok 7 - stale and degraded sentences stay visible
+  ---
+  duration_ms: 0.17797
+  type: 'test'
+  ...
+# Subtest: status reads do not treat two responses as a light client
+ok 8 - status reads do not treat two responses as a light client
+  ---
+  duration_ms: 0.122388
+  type: 'test'
+  ...
+# Subtest: settings reject a public host and a secret query
+ok 9 - settings reject a public host and a secret query
+  ---
+  duration_ms: 0.540076
+  type: 'test'
+  ...
+# Subtest: aggregate counters have no content id
+ok 10 - aggregate counters have no content id
+  ---
+  duration_ms: 0.273379
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 85.516499
+TAP version 13
+# Subtest: playback hashes a segment, skips the rest, and does not mark a response as rendered
+ok 1 - playback hashes a segment, skips the rest, and does not mark a response as rendered
+  ---
+  duration_ms: 6.503706
+  type: 'test'
+  ...
+# Subtest: a dead host falls back and a bad hash is not played
+ok 2 - a dead host falls back and a bad hash is not played
+  ---
+  duration_ms: 1.359057
+  type: 'test'
+  ...
+# Subtest: cancel stops a hanging fetch and prefetch does not download media
+ok 3 - cancel stops a hanging fetch and prefetch does not download media
+  ---
+  duration_ms: 0.541767
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 88.583023
+TAP version 13
+# Subtest: react version is the pinned release
+ok 1 - react version is the pinned release
+  ---
+  duration_ms: 0.525013
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 57.307106
+TAP version 13
+# Subtest: the shell is an invited build with gated social actions and no wallet control
+ok 1 - the shell is an invited build with gated social actions and no wallet control
+  ---
+  duration_ms: 7.756968
+  type: 'test'
+  ...
+# Subtest: captions and titles render as text
+ok 2 - captions and titles render as text
+  ---
+  duration_ms: 0.996501
+  type: 'test'
+  ...
+# Subtest: the mute button names the state it will apply
+ok 3 - the mute button names the state it will apply
+  ---
+  duration_ms: 1.43708
+  type: 'test'
+  ...
+# Subtest: withdrawn content has no video element
+ok 4 - withdrawn content has no video element
+  ---
+  duration_ms: 0.86875
+  type: 'test'
+  ...
+# Subtest: discover, activity, and profile expose the gates
+ok 5 - discover, activity, and profile expose the gates
+  ---
+  duration_ms: 1.968508
+  type: 'test'
+  ...
+# Subtest: source does not render user text as HTML or open a peer transport
+ok 6 - source does not render user text as HTML or open a peer transport
+  ---
+  duration_ms: 0.690007
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 114.63927
+EXIT:0

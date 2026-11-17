@@ -1,0 +1,6 @@
+HEAD 1c320e35282561e7a7bd9b4670b0360d8dcc4441
+TREE 7b5c5e8d7a506fbe8b7b3bb1aba412142516fabb
+DIRTY no
+COMMAND python3 -m pytest -q tests/unit/test_delivery.py::test_a_missing_browser_binary_is_not_an_early_exit tests/unit/test_delivery.py::test_a_started_process_that_ends_before_a_report_is_exited --tb=short
+..                                                                       [100%]
+EXIT:0

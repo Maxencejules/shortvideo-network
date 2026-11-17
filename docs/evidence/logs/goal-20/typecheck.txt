@@ -1,0 +1,13 @@
+HEAD 797d85626447ad00e40d35b0039548dfeeea451c
+TREE d4f296c4e72468770944c7a8196a9ff9b6821521
+DIRTY no
+COMMAND npm run typecheck
+
+> shortvideo-network@0.0.0 typecheck
+> npm run typecheck --workspace apps/web
+
+
+> @svn/web@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+EXIT:0
