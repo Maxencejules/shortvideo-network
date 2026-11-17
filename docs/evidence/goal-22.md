@@ -16,14 +16,14 @@ The recommendation order in the tests is a fixture result. It is not evidence th
 
 | Item | Value |
 | --- | --- |
-| Commit | `3acbfb49706d751fca8b844e2b89d28e4e1a295b` |
-| Tree | `f403361ede70ac54887402882a7f691d6f26562f` |
+| Commit | `29f82eb0fc24acc5e76099d066b6f70c3ee66062` |
+| Tree | `d854aa495c2d625ae7025cc4f973b6721c04a187` |
 | Base | `313cbc6658d4d7a960f61be7594a384f03a00518` |
 | Branch | `goal-22` |
 
-The tested commit message carries `Tested-tree: f403361ede70ac54887402882a7f691d6f26562f`. `git rev-parse 3acbfb49706d751fca8b844e2b89d28e4e1a295b^{tree}` is that tree. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: d854aa495c2d625ae7025cc4f973b6721c04a187`. `git rev-parse 29f82eb0fc24acc5e76099d066b6f70c3ee66062^{tree}` is that tree. Later commits change only `docs/evidence/`.
 
-Two earlier heads failed CI and are not this tested commit. [Run 44063910995](https://github.com/Maxencejules/shortvideo-network/actions/runs/44063910995) on `25bc3c3af03af7f5e331ff0c67af67a19481e871` failed mypy with `arg-type` on the session token. [Run 44064972702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44064972702) on `cfd3801539e562927793a05f586bc620b2cfa369` failed because the Python job does not install esbuild and the discovery browser test tried to build the viewer. This tested commit reads the token as a string and skips that browser test when `node_modules/esbuild` is absent, which is the same rule as the other browser tests. Where esbuild is installed, the test still runs. [mypy.txt](logs/goal-22/mypy.txt) line 5 is `Success: no issues found in 1 source file` and line 6 is `EXIT:0`. [browser.txt](logs/goal-22/browser.txt) line 6 is `EXIT:0`.
+Earlier heads are not this tested commit. [Run 44063910995](https://github.com/Maxencejules/shortvideo-network/actions/runs/44063910995) failed mypy on the session token. [Run 44064972702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44064972702) failed because the Python job does not install esbuild. [Run 44067966596](https://github.com/Maxencejules/shortvideo-network/actions/runs/44067966596) passed every job except `devnet`: with two validators stopped, one of the remaining nodes reported height 14 and then 15 while the other was already at 15, and the app hash did not change. Empty blocks keep the same app hash, so that was catch-up to a block already observed, not a new commit. The stall check now uses the maximum height (`scripts/devnet/prove-containers.sh:229`). [mypy.txt](logs/goal-22/mypy.txt) line 5 is `Success: no issues found in 1 source file` and line 6 is `EXIT:0`. [browser.txt](logs/goal-22/browser.txt) line 6 is `EXIT:0`.
 
 ## Captures
 
@@ -33,7 +33,7 @@ Every log under `docs/evidence/logs/goal-22/` was captured while `git status --p
 
 ## Head CI
 
-[Run 44065982112](https://github.com/Maxencejules/shortvideo-network/actions/runs/44065982112) on `71ab57ac1c6c90e8d06e46acf51f2637ef61dead` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. That sha is the evidence commit before this sentence. This sentence is docs-only. The checks that run on the commit that adds it are recorded in the next revision of this section.
+Not yet observed for `29f82eb0fc24acc5e76099d066b6f70c3ee66062`. [Run 44067966596](https://github.com/Maxencejules/shortvideo-network/actions/runs/44067966596) failed only the `devnet` job, for the catch-up described above. The run for the head that contains this note is recorded here after it finishes.
 
 ## What ran
 

@@ -1,5 +1,5 @@
-HEAD 3acbfb49706d751fca8b844e2b89d28e4e1a295b
-TREE f403361ede70ac54887402882a7f691d6f26562f
+HEAD 29f82eb0fc24acc5e76099d066b6f70c3ee66062
+TREE d854aa495c2d625ae7025cc4f973b6721c04a187
 DIRTY no
 CMD cd services/api && go test -count=1 -timeout 180s -v ./internal/social/
 === RUN   TestFollowPermissionsDuplicateLikesAndSaves
@@ -19,7 +19,7 @@ CMD cd services/api && go test -count=1 -timeout 180s -v ./internal/social/
 === RUN   TestRateLimitHidesTheBudget
 --- PASS: TestRateLimitHidesTheBudget (0.00s)
 === RUN   TestSecondClientReadsStableIDs
---- PASS: TestSecondClientReadsStableIDs (0.30s)
+--- PASS: TestSecondClientReadsStableIDs (0.32s)
 === RUN   TestCanonicalMatchesProfile
 --- PASS: TestCanonicalMatchesProfile (0.02s)
 === RUN   TestDiscoveryDocumentAndDevFlag
@@ -27,6 +27,6 @@ CMD cd services/api && go test -count=1 -timeout 180s -v ./internal/social/
 === RUN   TestPackageDoesNotImportChain
 --- PASS: TestPackageDoesNotImportChain (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/social	0.324s
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/social	0.341s
 EXIT:0
 AFTER clean

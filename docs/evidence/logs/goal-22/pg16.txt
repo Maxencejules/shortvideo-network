@@ -1,5 +1,5 @@
-HEAD 3acbfb49706d751fca8b844e2b89d28e4e1a295b
-TREE f403361ede70ac54887402882a7f691d6f26562f
+HEAD 29f82eb0fc24acc5e76099d066b6f70c3ee66062
+TREE d854aa495c2d625ae7025cc4f973b6721c04a187
 DIRTY no
 CMD if [ -x /usr/lib/postgresql/16/bin/postgres ]; then echo pg16 present; else echo pg16 absent; fi; if [ -x /usr/lib/postgresql/18/bin/postgres ]; then echo pg18 present; else echo pg18 absent; fi; exit 1
 pg16 absent
