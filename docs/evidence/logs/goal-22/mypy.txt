@@ -1,0 +1,7 @@
+HEAD b07d079e559d503b49ea44da2842cc62cd92f7a3
+TREE e788921c6b40587aa22facad1ec039ad52099b2d
+DIRTY no
+CMD python3 -m mypy tests/unit/test_social_browser.py
+Success: no issues found in 1 source file
+EXIT:0
+AFTER clean

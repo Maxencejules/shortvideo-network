@@ -1,5 +1,5 @@
-HEAD 21d82ffae98d925fc1ccf12933cf2d8b8cb874e1
-TREE 340da8a6142b2200866c4fd056d6e59e5ffc2bfe
+HEAD b07d079e559d503b49ea44da2842cc62cd92f7a3
+TREE e788921c6b40587aa22facad1ec039ad52099b2d
 DIRTY no
 CMD python3 -m ruff check tests/unit/test_social_browser.py tests/unit/test_web_viewer.py apps/web && python3 -m ruff format --check tests/unit/test_social_browser.py tests/unit/test_web_viewer.py
 [1;32mAll checks passed![0m

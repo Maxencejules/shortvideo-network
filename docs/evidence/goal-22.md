@@ -16,12 +16,14 @@ The recommendation order in the tests is a fixture result. It is not evidence th
 
 | Item | Value |
 | --- | --- |
-| Commit | `21d82ffae98d925fc1ccf12933cf2d8b8cb874e1` |
-| Tree | `340da8a6142b2200866c4fd056d6e59e5ffc2bfe` |
+| Commit | `b07d079e559d503b49ea44da2842cc62cd92f7a3` |
+| Tree | `e788921c6b40587aa22facad1ec039ad52099b2d` |
 | Base | `313cbc6658d4d7a960f61be7594a384f03a00518` |
 | Branch | `goal-22` |
 
-The tested commit message carries `Tested-tree: 340da8a6142b2200866c4fd056d6e59e5ffc2bfe`. `git rev-parse 21d82ffae98d925fc1ccf12933cf2d8b8cb874e1^{tree}` is that tree. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: e788921c6b40587aa22facad1ec039ad52099b2d`. `git rev-parse b07d079e559d503b49ea44da2842cc62cd92f7a3^{tree}` is that tree. Later commits change only `docs/evidence/`.
+
+The first push, `25bc3c3af03af7f5e331ff0c67af67a19481e871`, was not this tested commit. [Run 44063910995](https://github.com/Maxencejules/shortvideo-network/actions/runs/44063910995) on that commit failed the `python` job: mypy reported `arg-type` at `tests/unit/test_social_browser.py` for the session token. This tested commit reads that value as a string. [mypy.txt](logs/goal-22/mypy.txt) line 5 is `Success: no issues found in 1 source file` and line 6 is `EXIT:0`.
 
 ## Captures
 
@@ -31,7 +33,7 @@ Every log under `docs/evidence/logs/goal-22/` was captured while `git status --p
 
 ## Head CI
 
-Pending on the push of this note. The run id is added under `docs/evidence/` after GitHub reports it.
+Not yet observed for `b07d079e559d503b49ea44da2842cc62cd92f7a3`. [Run 44063910995](https://github.com/Maxencejules/shortvideo-network/actions/runs/44063910995) is the failed run on the earlier head. The run for the head that contains this note is recorded here after it finishes.
 
 ## What ran
 
@@ -46,6 +48,7 @@ Pending on the push of this note. The run id is added under `docs/evidence/` aft
 | `npm run typecheck --workspace apps/web` | `apps/web` | [typecheck.txt](logs/goal-22/typecheck.txt) | line 9 `EXIT:0` |
 | `python3 scripts/scan_secrets.py` | repository | [secrets.txt](logs/goal-22/secrets.txt) | line 5 `secret scan ok`, line 6 `EXIT:0` |
 | `ruff check` and `ruff format --check` | the two browser tests and `apps/web` | [ruff.txt](logs/goal-22/ruff.txt) | line 7 `EXIT:0` |
+| `python3 -m mypy tests/unit/test_social_browser.py` | that test file | [mypy.txt](logs/goal-22/mypy.txt) | line 6 `EXIT:0` |
 | discovery browser | `tests/unit/test_social_browser.py` against `cmd/svn-discovery` | [browser.txt](logs/goal-22/browser.txt) | line 6 `EXIT:0` |
 | existing viewer browser | `tests/unit/test_web_viewer.py` | [viewer.txt](logs/goal-22/viewer.txt) | line 6 `EXIT:0` |
 | PostgreSQL binaries | `/usr/lib/postgresql/16` and `/usr/lib/postgresql/18` | [pg16.txt](logs/goal-22/pg16.txt) | line 5 `pg16 absent`, line 6 `pg18 absent`, line 7 `EXIT:1` |
