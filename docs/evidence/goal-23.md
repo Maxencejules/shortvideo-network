@@ -29,7 +29,7 @@ Every log under `docs/evidence/logs/goal-23/` was captured while `git status --p
 
 ## Head CI
 
-Not recorded in this commit. A later `docs/evidence/` commit cites the run once.
+[Run 44132283702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44132283702) on `df33648c06a3d7725059be590a65035b5a0e6d7b` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. CodeRabbit on that head was also success. This paragraph is added after `df33648`. The commit that adds it is a new head, so this file names `df33648` and not that later head. `df33648` differs from the tested commit `7fc13c2fae788ca256cd7516878e3184feae9661` only under `docs/evidence/`.
 
 ## What ran
 
