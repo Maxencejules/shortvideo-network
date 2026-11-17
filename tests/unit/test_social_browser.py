@@ -29,6 +29,8 @@ def test_viewer_uses_discovery(tmp_path: Path) -> None:
         pytest.skip("headless browser is not installed; rendering is unverified")
     if shutil.which("node") is None or shutil.which("go") is None:
         pytest.skip("node or go is not installed")
+    if not (ROOT / "node_modules" / "esbuild").exists():
+        pytest.skip("esbuild is not installed; the discovery bundle is unverified")
     binary = tmp_path / "svn-discovery"
     built = subprocess.run(
         ["go", "build", "-o", str(binary), "./cmd/svn-discovery"],
