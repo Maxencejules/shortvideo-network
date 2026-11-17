@@ -7,7 +7,31 @@ import { createElement, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { EVIDENCE_LABELS } from "./evidence-labels.ts";
-import { getBytes, getJson, postJson } from "./http.ts";
+import {
+  analyticsLines,
+  assignFile,
+  availabilityUrl,
+  composeCreator,
+  emptyDraft,
+  explainError,
+  hostingTerms,
+  newVersion,
+  type LimitView,
+  parseAvailability,
+  parseDrafts,
+  parseUpload,
+  performCancel,
+  performPublish,
+  performRemoval,
+  performUpload,
+  publicSnapshot,
+  shareInflight,
+  validateText,
+  type AvailabilityView,
+  type Draft,
+  type UploadView,
+} from "./creator.ts";
+import { deleteJson, getBytes, getJson, postJson, putBytes } from "./http.ts";
 import {
   ApiError,
   EMPTY_SETTINGS,
@@ -68,7 +92,23 @@ function App(): ReturnType<typeof createElement> {
   const [replay, setReplay] = useState(0);
   const [actionMessage, setActionMessage] = useState("");
   const [ready, setReady] = useState(false);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [activeId, setActiveId] = useState("");
+  const [creatorMessage, setCreatorMessage] = useState("");
+  const [creatorCode, setCreatorCode] = useState("");
+  const [uploadView, setUploadView] = useState<UploadView | null>(null);
+  const [availability, setAvailability] = useState<AvailabilityView | null>(null);
+  const [contentRows, setContentRows] = useState<ContentRow[]>([]);
+  const [indexerStale, setIndexerStale] = useState(false);
+  const [playbackPublication, setPlaybackPublication] = useState("");
+  const [serverLimits, setServerLimits] = useState<LimitView | null>(null);
   const leases = useRef<LeaseRow[]>([]);
+  const blank = useRef<Draft | null>(null);
+  const fileBytes = useRef<Uint8Array | null>(null);
+  const inflight = useRef(new Map<string, Promise<void>>());
+  const [draftRevision, setDraftRevision] = useState(0);
+  const [confirmWord, setConfirmWord] = useState("");
+  if (!blank.current) blank.current = emptyDraft();
   const videoNode = useRef<HTMLVideoElement | null>(null);
   const blobUrl = useRef("");
   const renderedFor = useRef("");
@@ -93,9 +133,21 @@ function App(): ReturnType<typeof createElement> {
       setSession,
       setReadLines,
       setReady,
+      setContentRows,
+      setIndexerStale,
       leases,
     });
     return () => ctrl.abort();
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stored = parseDrafts(JSON.parse(sessionStorage.getItem("svn.creator.drafts") ?? "[]") as unknown);
+      setDrafts(stored);
+      if (stored[0]) setActiveId(stored[0].localId);
+    } catch {
+      setDrafts([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -216,6 +268,214 @@ function App(): ReturnType<typeof createElement> {
     });
   };
   const setVideo = useVideoReady(player.mediaUrl, onReady);
+  void draftRevision;
+  const currentDraft = drafts.find((item) => item.localId === activeId) ?? blank.current ?? emptyDraft();
+  const providers = leases.current
+    .filter((lease) => lease.Active && lease.ContentID === currentDraft.contentId)
+    .map((lease) => lease.ProviderID);
+  const withdrawn = contentRows.some((row) => row.ID === currentDraft.contentId && (row.Withdrawn || row.HistoryErased));
+  const creatorState = composeCreator({
+    ownerAccountId: currentDraft.ownerAccountId,
+    sessionAccountId: session.signedIn ? session.accountId : "",
+    optimisticPublished: false,
+    upload: uploadView && uploadView.upload_id === currentDraft.uploadId ? uploadView : null,
+    availability: availability && availability.content_id === currentDraft.contentId ? availability : null,
+    chain: null,
+    indexerStale,
+    withdrawn,
+    activeLeaseProviders: providers,
+    removalRequested: currentDraft.removalRequested,
+    mediaStatus: uploadView?.job_status === "READY_FOR_REVIEW" ? "READY_FOR_REVIEW" : "",
+    playbackPublication,
+  });
+  const panel = {
+    state: creatorState,
+    snapshot: publicSnapshot(creatorState, creatorCode),
+    fields: {
+      title: currentDraft.title,
+      description: currentDraft.description,
+      captions: currentDraft.captions,
+      trimStart: currentDraft.trimStart,
+      trimEnd: currentDraft.trimEnd,
+      confirm: confirmWord,
+    },
+    fileName: currentDraft.fileName,
+    message: creatorMessage,
+    terms: hostingTerms(serverLimits),
+    analytics: analyticsLines(METRICS),
+    videos: drafts.map((item) => ({
+      key: item.localId,
+      label: item.title || item.uploadId || "Draft",
+      stage: item.localId === currentDraft.localId ? creatorState.stage : "Open this draft to read its status.",
+    })),
+  };
+
+  function rememberDraft(next: Draft): void {
+    if (!blank.current || blank.current.localId === next.localId) blank.current = next;
+    const exists = drafts.some((item) => item.localId === next.localId);
+    const list = exists ? drafts.map((item) => (item.localId === next.localId ? next : item)) : [next, ...drafts].slice(0, 20);
+    setDrafts(list);
+    setActiveId(next.localId);
+    sessionStorage.setItem("svn.creator.drafts", JSON.stringify(list));
+    setDraftRevision((value) => value + 1);
+  }
+
+  async function rememberFile(file: File | null): Promise<void> {
+    if (!file) return;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const assigned = assignFile(currentDraft, bytes.byteLength, file.name);
+    if (assigned.code) {
+      setCreatorCode(assigned.code);
+      setCreatorMessage(explainError(assigned.code));
+      return;
+    }
+    let known = "";
+    try {
+      known = await fileDuration(file);
+    } catch {
+      known = "";
+    }
+    fileBytes.current = bytes;
+    rememberDraft({ ...assigned.draft, knownDuration: known });
+    setCreatorCode("");
+    setCreatorMessage(known ? `Duration ${known} seconds. The server still probes the file.` : "Duration is not known in this browser. The server probe decides.");
+  }
+
+  async function refreshCreator(draft: Draft): Promise<void> {
+    let next = draft;
+    let sessionNext: SessionState | null = null;
+    if (settings.accountBase) {
+      try {
+        const who = await getJson(joinUrl(settings.accountBase, "/v1/session"), AbortSignal.timeout(8000), bearer);
+        if (isRecord(who) && typeof who.account_id === "string" && ID.test(who.account_id)) {
+          sessionNext = {
+            signedIn: true,
+            accountId: who.account_id,
+            role: typeof who.role === "string" ? who.role : "",
+            message: "",
+          };
+        }
+      } catch (error) {
+        if (error instanceof ApiError && error.code === "UNAUTHENTICATED") {
+          sessionNext = { ...EMPTY_SESSION, message: "Session is missing or expired." };
+        }
+      }
+    }
+    let stale = indexerStale;
+    let rows = contentRows;
+    if (settings.indexerBase) {
+      const status = parseStatus(await getJson(joinUrl(settings.indexerBase, "/v1/status"), AbortSignal.timeout(8000)));
+      stale = status.stale;
+      rows = parseContentList(await getJson(joinUrl(settings.indexerBase, "/v1/content"), AbortSignal.timeout(8000)));
+      leases.current = parseLeases(await getJson(joinUrl(settings.indexerBase, "/v1/leases"), AbortSignal.timeout(8000)));
+    }
+    let upload = uploadView;
+    if (settings.accountBase && draft.uploadId && bearer) {
+      upload = parseUpload(await getJson(joinUrl(settings.accountBase, `/uploads/${draft.uploadId}`), AbortSignal.timeout(8000), bearer));
+      if (upload.content_id) next = { ...draft, contentId: upload.content_id, uploadId: upload.upload_id };
+    }
+    const contentId = next.contentId;
+    let view = availability;
+    if (settings.schedulerBase && contentId) {
+      view = parseAvailability(await getJson(availabilityUrl(settings.schedulerBase, contentId), AbortSignal.timeout(8000)));
+    }
+    let playback = playbackPublication;
+    if (settings.deliveryBase && contentId) {
+      try {
+        playback = parsePlayback(await getJson(joinUrl(settings.deliveryBase, `/v1/playback/${contentId}`), AbortSignal.timeout(8000))).publication;
+      } catch {
+        playback = "";
+      }
+    }
+    if (sessionNext) setSession(sessionNext);
+    setIndexerStale(stale);
+    setContentRows(rows);
+    setUploadView(upload);
+    setAvailability(view);
+    setPlaybackPublication(playback);
+    if (next !== draft) rememberDraft(next);
+  }
+
+  function auth(): { accountId: string; token: string; role: string } {
+    return { accountId: session.signedIn ? session.accountId : "", token: bearer, role: session.role };
+  }
+
+  async function runCreatorAction(action: string): Promise<void> {
+    const draft = currentDraft;
+    const confirm = confirmWord;
+    if (action === "save") {
+      rememberDraft(draft.ownerAccountId ? draft : { ...draft, ownerAccountId: session.accountId });
+      setCreatorMessage("Draft saved in this browser.");
+      return;
+    }
+    if (action === "delete") {
+      if (confirm !== "delete") {
+        setCreatorCode("CONFIRMATION_REQUIRED");
+        setCreatorMessage(explainError("CONFIRMATION_REQUIRED"));
+        return;
+      }
+      const list = drafts.filter((item) => item.localId !== draft.localId);
+      setDrafts(list);
+      sessionStorage.setItem("svn.creator.drafts", JSON.stringify(list));
+      blank.current = emptyDraft(session.accountId);
+      setActiveId(blank.current.localId);
+      setCreatorMessage("Draft removed from this browser. This does not cancel an upload.");
+      return;
+    }
+    if (action === "version") {
+      const created = newVersion(draft);
+      rememberDraft(created);
+      fileBytes.current = null;
+      setUploadView(null);
+      setCreatorMessage("A new version is a new upload. The previous bytes stay on the previous version.");
+      return;
+    }
+    if (action === "refresh") {
+      try {
+        await refreshCreator(draft);
+        setCreatorCode("");
+        setCreatorMessage("Status was read again.");
+      } catch (error) {
+        const code = error instanceof ApiError ? error.code : "UNAVAILABLE";
+        setCreatorCode(code);
+        setCreatorMessage(explainError(code));
+      }
+      return;
+    }
+    if (action === "remove") {
+      const result = performRemoval(draft, confirm, auth());
+      if (result.draft) rememberDraft(result.draft);
+      setCreatorCode(result.code);
+      setCreatorMessage(explainError(result.code));
+      return;
+    }
+    const bytes = fileBytes.current;
+    await shareInflight(inflight.current, draft.localId + action, async () => {
+      const transport = creatorTransport(setServerLimits);
+      try {
+        const result = action === "cancel"
+          ? await performCancel(draft, confirm, auth(), settings.accountBase, transport)
+          : action === "publish"
+            ? await performPublish(draft, confirm, auth(), settings.accountBase, transport)
+            : await performUpload(draft, bytes ?? new Uint8Array(), serverLimits, auth(), settings.accountBase, transport);
+        if (result.draft) rememberDraft(result.draft);
+        if (result.upload) setUploadView(result.upload);
+        setCreatorCode(result.code);
+        setCreatorMessage(result.code ? explainError(result.code) : result.idempotent ? "This submission is the existing upload." : "The upload request finished. Published is not set from this request.");
+        if (result.draft?.contentId) {
+          try {
+            await refreshCreator(result.draft);
+          } catch {
+            setCreatorMessage("The upload request finished. Hosting status could not be read.");
+          }
+        }
+      } catch (error) {
+        const code = error instanceof ApiError ? error.code : "UNAVAILABLE";
+        setCreatorCode(code);
+        setCreatorMessage(explainError(code));
+      }
+    });
+  }
 
   return createElement(Viewer, {
     page,
@@ -265,6 +525,27 @@ function App(): ReturnType<typeof createElement> {
       setVideo(node);
     },
     actionMessage,
+    creator: panel,
+    onCreatorField: (name, value) => {
+      const next = { ...currentDraft, [name]: value };
+      const checked = name === "title" || name === "description" ? validateText(next.title, next.description) : { ok: true as const, code: "" };
+      if (!checked.ok) {
+        setCreatorCode(checked.code);
+        setCreatorMessage(explainError(checked.code));
+        return;
+      }
+      if (name === "confirm") {
+        setConfirmWord(value);
+        return;
+      }
+      rememberDraft(next);
+    },
+    onCreatorFile: (file) => {
+      void rememberFile(file);
+    },
+    onCreatorAction: (action) => {
+      void runCreatorAction(action);
+    },
   });
 }
 
@@ -303,6 +584,72 @@ function publish(current: PlayerState, doc: PlaybackDocument, outcome: PlayOutco
   };
 }
 
+function creatorTransport(setLimits: (value: LimitView) => void) {
+  return {
+    postJson: async (url: string, body: unknown, token: string) => {
+      try {
+        const value = await postJson(url, body, AbortSignal.timeout(8000), token);
+        if (url.endsWith("/upload-intents") && isRecord(value) && isRecord(value.limits)) {
+          const limits = value.limits;
+          if (typeof limits.max_input_bytes === "number" && typeof limits.max_duration_seconds === "number") {
+            setLimits({
+              label: typeof limits.label === "string" ? limits.label : "",
+              max_input_bytes: limits.max_input_bytes,
+              max_duration_seconds: limits.max_duration_seconds,
+            });
+          }
+        }
+        return value;
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError("UNAVAILABLE", 0);
+      }
+    },
+    putBytes: async (url: string, bytes: Uint8Array, token: string) => {
+      try {
+        return await putBytes(url, bytes, AbortSignal.timeout(8000), token);
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError("UNAVAILABLE", 0);
+      }
+    },
+    getJson: async (url: string, token: string) => {
+      try {
+        return await getJson(url, AbortSignal.timeout(8000), token);
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError("UNAVAILABLE", 0);
+      }
+    },
+    deleteJson: async (url: string, token: string) => {
+      try {
+        return await deleteJson(url, AbortSignal.timeout(8000), token);
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError("UNAVAILABLE", 0);
+      }
+    },
+  };
+}
+
+function fileDuration(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    const finish = (value: string) => {
+      URL.revokeObjectURL(url);
+      resolve(value);
+    };
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const seconds = video.duration;
+      finish(Number.isFinite(seconds) && seconds > 0 ? String(Math.round(seconds * 1000) / 1000) : "");
+    };
+    video.onerror = () => finish("");
+    video.src = url;
+  });
+}
+
 function toBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(copy).set(bytes);
@@ -315,6 +662,8 @@ type ShellSetters = {
   setSession: (value: SessionState) => void;
   setReadLines: (value: string[]) => void;
   setReady: (value: boolean) => void;
+  setContentRows: (value: ContentRow[]) => void;
+  setIndexerStale: (value: boolean) => void;
   leases: { current: LeaseRow[] };
 };
 
@@ -345,9 +694,11 @@ async function loadShell(signal: AbortSignal, setters: ShellSetters): Promise<vo
   if (settings.indexerBase) {
     try {
       const status = parseStatus(await getJson(joinUrl(settings.indexerBase, "/v1/status"), bounded(signal)));
+      setters.setIndexerStale(status.stale);
       lines.push(readLine("Indexer", status));
       if (status.lightClient) lines.push("A light_client flag in an HTTP body is not light-client verification.");
       content = parseContentList(await getJson(joinUrl(settings.indexerBase, "/v1/content"), bounded(signal)));
+      setters.setContentRows(content);
       setters.leases.current = parseLeases(await getJson(joinUrl(settings.indexerBase, "/v1/leases"), bounded(signal)));
     } catch (error) {
       lines.push("The indexer could not be read.");

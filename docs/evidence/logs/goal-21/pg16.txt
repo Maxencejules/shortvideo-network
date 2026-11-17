@@ -1,0 +1,8 @@
+HEAD c3ef99b8b503729b3b98393381689d3ef897e242
+TREE 8b462c5f92a80f042deea093aa0473716689ed49
+DIRTY no
+CMD test -x /usr/lib/postgresql/16/bin/postgres; test -x /usr/lib/postgresql/18/bin/postgres
+pg16 absent
+pg18 absent
+EXIT:1
+AFTER clean

@@ -104,7 +104,10 @@ func (s *Service) createIntent(w http.ResponseWriter, r *http.Request) {
 		writeMapped(w, err)
 		return
 	}
-	response := intentResponse{UploadID: row.UploadID, Status: row.Status, LimitsLabel: LimitsLabel, Limits: s.limitView()}
+	response := intentResponse{
+		UploadID: row.UploadID, ContentID: row.ContentID, Status: row.Status,
+		LimitsLabel: LimitsLabel, Limits: s.limitView(),
+	}
 	if row.Status == "RESERVED" || row.Status == "RECEIVING" || row.Status == "RECEIVED" {
 		token, hash, err := newToken()
 		if err != nil {
@@ -358,6 +361,7 @@ func splitAuth(header string) (string, string, error) {
 
 type statusView struct {
 	UploadID        string   `json:"upload_id"`
+	ContentID       string   `json:"content_id,omitempty"`
 	Status          string   `json:"status"`
 	DeclaredBytes   int64    `json:"declared_bytes"`
 	ReceivedBytes   int64    `json:"received_bytes"`
@@ -380,6 +384,7 @@ type transferView struct {
 
 type intentResponse struct {
 	UploadID    string        `json:"upload_id"`
+	ContentID   string        `json:"content_id,omitempty"`
 	Status      string        `json:"status"`
 	LimitsLabel string        `json:"limits_label"`
 	Limits      limitsView    `json:"limits"`
@@ -399,6 +404,7 @@ func (s *Service) limitView() limitsView {
 func (s *Service) statusView(row uploadRow) statusView {
 	view := statusView{
 		UploadID:      row.UploadID,
+		ContentID:     row.ContentID,
 		Status:        row.Status,
 		DeclaredBytes: row.DeclaredBytes,
 		ReceivedBytes: row.ReceivedBytes,

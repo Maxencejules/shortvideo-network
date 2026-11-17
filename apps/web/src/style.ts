@@ -17,7 +17,11 @@ button, input { font: inherit; }
 .slide { min-height: 70dvh; scroll-snap-align: start; display: grid; align-content: center; gap: 0.6rem; }
 video { display: block; width: 100%; max-width: 420px; max-height: 78dvh; background: #111; aspect-ratio: 9 / 16; object-fit: contain; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
-.controls, .gates, .list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.controls, .gates, .list, .creator { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.creator { display: grid; gap: 0.6rem; max-width: 40rem; }
+.creator input, .creator textarea { display: block; width: 100%; max-width: 40rem; }
+.stages { display: flex; flex-wrap: wrap; gap: 0.4rem; padding-left: 1.2rem; }
+.stages [aria-current="step"] { outline: 2px solid currentColor; }
 .gate, .note, .panel { border: 1px solid currentColor; padding: 0.6rem 0.75rem; }
 .caption { min-height: 1.4em; background: #111; color: #fff; padding: 0.2rem 0.4rem; }
 :focus-visible { outline: 3px solid #0b57d0; outline-offset: 2px; }

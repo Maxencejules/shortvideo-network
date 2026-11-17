@@ -1,0 +1,10 @@
+HEAD c3ef99b8b503729b3b98393381689d3ef897e242
+TREE 8b462c5f92a80f042deea093aa0473716689ed49
+DIRTY no
+CMD npm run typecheck --workspace apps/web
+
+> @svn/web@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+EXIT:0
+AFTER clean

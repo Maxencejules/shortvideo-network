@@ -274,6 +274,10 @@ func TestPermittedFixtureQuarantineAndJob(t *testing.T) {
 		t.Fatalf("label %#v", body["limits_label"])
 	}
 	id, _ := body["upload_id"].(string)
+	contentID, _ := body["content_id"].(string)
+	if len(contentID) != 33 || contentID[0] != 'c' {
+		t.Fatalf("content id %#v", body["content_id"])
+	}
 	token, path := transfer(t, body)
 	put := h.put(path, token, shortVideo)
 	if put.StatusCode != http.StatusNoContent {
@@ -287,6 +291,9 @@ func TestPermittedFixtureQuarantineAndJob(t *testing.T) {
 	}
 	if doneBody["status"] != "PROCESSING_QUEUED" || doneBody["publication"] != "NOT_PUBLISHED" {
 		t.Fatalf("status %#v", doneBody)
+	}
+	if doneBody["content_id"] != contentID {
+		t.Fatalf("content id %#v", doneBody["content_id"])
 	}
 	if doneBody["job_status"] != "QUEUED" || doneBody["job_id"] == "" {
 		t.Fatalf("job %#v", doneBody)

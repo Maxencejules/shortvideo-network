@@ -38,6 +38,7 @@ try {
   const send = cdp(ws);
   await send("Runtime.enable");
   await send("Page.enable");
+  await send("DOM.enable");
   const browser = {
     browser: version.Browser ?? "",
     userAgent: version["User-Agent"] ?? "",
@@ -62,7 +63,11 @@ try {
       await send("Page.reload", { ignoreCache: true });
       await sleep(500);
     } else if (step.do === "wait") {
-      saved[step.save ?? "last"] = await waitFor(send, step.expr, step.ms ?? 20000);
+      try {
+        saved[step.save ?? "last"] = await waitFor(send, step.expr, step.ms ?? 20000);
+      } catch (error) {
+        throw new Error(`${step.save ?? "wait"}: ${error.message}`);
+      }
     } else if (step.do === "eval") {
       saved[step.save ?? "last"] = await evaluate(send, step.expr);
     } else if (step.do === "click") {
@@ -78,6 +83,11 @@ try {
       await readLine();
     } else if (step.do === "sleep") {
       await sleep(step.ms ?? 200);
+    } else if (step.do === "file") {
+      const documentNode = await send("DOM.getDocument");
+      const found = await send("DOM.querySelector", { nodeId: documentNode.root.nodeId, selector: step.selector });
+      if (!found.nodeId) throw new Error(`missing ${step.selector}`);
+      await send("DOM.setFileInputFiles", { files: [step.path], nodeId: found.nodeId });
     } else {
       throw new Error(`unknown step ${step.do}`);
     }
@@ -131,8 +141,8 @@ async function waitFor(send, expression, ms) {
     if (last) return last;
     await sleep(200);
   }
-  const page = await evaluate(send, "(document.querySelector('#svn-playback') || {}).textContent || ''").catch(() => "");
-  throw new Error(`timeout last ${JSON.stringify(last)} page ${String(page).slice(0, 500)}`);
+  const page = await evaluate(send, "document.body ? document.body.innerText.slice(0, 700) : ''").catch(() => "");
+  throw new Error(`timeout last ${JSON.stringify(last)} page ${String(page).slice(0, 700)}`);
 }
 
 async function debuggingPort(child) {
