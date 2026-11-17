@@ -33,7 +33,7 @@ Every log under `docs/evidence/logs/goal-22/` was captured while `git status --p
 
 ## Head CI
 
-Not yet observed for `29f82eb0fc24acc5e76099d066b6f70c3ee66062`. [Run 44067966596](https://github.com/Maxencejules/shortvideo-network/actions/runs/44067966596) failed only the `devnet` job, for the catch-up described above. The run for the head that contains this note is recorded here after it finishes.
+[Run 44070159526](https://github.com/Maxencejules/shortvideo-network/actions/runs/44070159526) on `ef432131baf5030ed45cadf56dd4fa31d463613f` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. That sha contains this note except this paragraph. The commit that adds this paragraph is docs-only.
 
 ## What ran
 
