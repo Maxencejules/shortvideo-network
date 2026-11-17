@@ -29,7 +29,7 @@ The tested commit message carries `Tested-tree: 5407ec1d9d5c7fb49ee18768b9c2ed82
 
 ## Head CI
 
-Not recorded for `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5`. Earlier runs [44132283702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44132283702) on `df33648c06a3d7725059be590a65035b5a0e6d7b` and [44134781022](https://github.com/Maxencejules/shortvideo-network/actions/runs/44134781022) on `505ec18b4be33f41eab78fd1550ed73e93b60705` finished `success`. Neither includes the search filter. The run on the head that contains this fix is cited once after it finishes.
+[Run 44138496171](https://github.com/Maxencejules/shortvideo-network/actions/runs/44138496171) on `c422b930c6cfe11bcec5b5828df7d08981bd1a95` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. That head contains the search filter. It differs from the tested commit `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5` only under `docs/evidence/`. This paragraph is added after `c422b93`. The commit that adds it is a new head, so this file names `c422b93` and not that later head. Earlier runs [44132283702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44132283702) and [44134781022](https://github.com/Maxencejules/shortvideo-network/actions/runs/44134781022) also finished `success`. They do not include the search filter.
 
 ## What ran
 
