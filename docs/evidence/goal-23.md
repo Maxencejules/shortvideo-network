@@ -14,22 +14,22 @@ Reports, account blocks, a moderator queue, decisions, appeals, escalation, and 
 
 | Item | Value |
 | --- | --- |
-| Commit | `7fc13c2fae788ca256cd7516878e3184feae9661` |
-| Tree | `407e652e4515e66b6c4430f428db3a8ffcd57d78` |
+| Commit | `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5` |
+| Tree | `5407ec1d9d5c7fb49ee18768b9c2ed829558aa4d` |
 | Base | `39e98b05137a10e5b12c8e3962b4934a297db6a4` |
 | Branch | `goal-23` |
 
-The tested commit message carries `Tested-tree: 407e652e4515e66b6c4430f428db3a8ffcd57d78`. `git rev-parse 7fc13c2fae788ca256cd7516878e3184feae9661^{tree}` is that tree. Its parent `a9611b24e77907ac84c6c6dedaee15348db10132` is the same implementation with the browser steps in the order that timed out. The tested commit changes only `tests/unit/test_social_browser.py`. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: 5407ec1d9d5c7fb49ee18768b9c2ed829558aa4d`. `git rev-parse 366eb6b6d3b533a37b2cd62d4459946bf8ac92b5^{tree}` is that tree. It filters search. The earlier tested commit `7fc13c2fae788ca256cd7516878e3184feae9661` (tree `407e652e4515e66b6c4430f428db3a8ffcd57d78`) did not. Later commits change only `docs/evidence/`.
 
 ## Captures
 
-Every log under `docs/evidence/logs/goal-23/` was captured while `git status --porcelain` was empty. Each file's line 3 is `DIRTY no`. The commands ran from the repository root. A `cd` inside a command is the scope of that command.
+[moderation.txt](logs/goal-23/moderation.txt) and [race.txt](logs/goal-23/race.txt) were captured on `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5` while `git status --porcelain` was empty. Their line 3 is `DIRTY no`. The other logs stay the captures on `7fc13c2fae788ca256cd7516878e3184feae9661`. Each of those also has line 3 `DIRTY no`. They were not re-run. The commands ran from the repository root. A `cd` inside a command is the scope of that command.
 
 `apps/web/dist/` is not ignored. [browser.txt](logs/goal-23/browser.txt) line 8 and [creator-browser.txt](logs/goal-23/creator-browser.txt) line 8 are `?? apps/web/dist/`. That directory was removed after each of those commands and was not committed. Every other log ends `AFTER clean`. No other untracked path remained when the captures finished.
 
 ## Head CI
 
-[Run 44132283702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44132283702) on `df33648c06a3d7725059be590a65035b5a0e6d7b` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. CodeRabbit on that head was also success. This paragraph is added after `df33648`. The commit that adds it is a new head, so this file names `df33648` and not that later head. `df33648` differs from the tested commit `7fc13c2fae788ca256cd7516878e3184feae9661` only under `docs/evidence/`.
+Not recorded for `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5`. Earlier runs [44132283702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44132283702) on `df33648c06a3d7725059be590a65035b5a0e6d7b` and [44134781022](https://github.com/Maxencejules/shortvideo-network/actions/runs/44134781022) on `505ec18b4be33f41eab78fd1550ed73e93b60705` finished `success`. Neither includes the search filter. The run on the head that contains this fix is cited once after it finishes.
 
 ## What ran
 
@@ -38,7 +38,7 @@ Every log under `docs/evidence/logs/goal-23/` was captured while `git status --p
 | runtime versions | repository root | [runtime.txt](logs/goal-23/runtime.txt) | line 11 `EXIT:0` |
 | `gofmt -l` on the Go paths this goal edited | those packages | [gofmt.txt](logs/goal-23/gofmt.txt) | line 5 `EXIT:0` |
 | `go vet` | moderation, social, upload service, scheduler, provider | [govet.txt](logs/goal-23/govet.txt) | line 5 `EXIT:0` |
-| `go test -count=1 -timeout 180s -v` | `services/api` moderation and social | [moderation.txt](logs/goal-23/moderation.txt) | line 52 `EXIT:0` |
+| `go test -count=1 -timeout 180s -v` | `services/api` moderation and social | [moderation.txt](logs/goal-23/moderation.txt) | line 54 `EXIT:0` |
 | `go test -race` | those packages, scheduler, provider agent | [race.txt](logs/goal-23/race.txt) | line 9 `EXIT:0` |
 | scheduler delist | `TestLocalDelistDoesNotWaitForAStalledChain` | [scheduler.txt](logs/goal-23/scheduler.txt) | line 9 `EXIT:0` |
 | provider admission | `TestDelistedContentIsNotAdmitted` | [provider.txt](logs/goal-23/provider.txt) | line 9 `EXIT:0` |
@@ -51,12 +51,12 @@ Every log under `docs/evidence/logs/goal-23/` was captured while `git status --p
 | discovery browser | `tests/unit/test_social_browser.py` against `cmd/svn-discovery` | [browser.txt](logs/goal-23/browser.txt) | line 6 `EXIT:0` |
 | creator browser | `tests/unit/test_creator_browser.py` | [creator-browser.txt](logs/goal-23/creator-browser.txt) | line 6 `EXIT:0` |
 | PostgreSQL binaries | `/usr/lib/postgresql/16` and `/usr/lib/postgresql/18` | [pg16.txt](logs/goal-23/pg16.txt) | line 5 `pg16 absent`, line 6 `pg18 absent`, line 7 `EXIT:1` |
-| `docker version` | host | [docker.txt](logs/goal-23/docker.txt) | line 5 `docker: command not found`, line 6 `EXIT:127` |
-| `golangci-lint version` | host | [golangci.txt](logs/goal-23/golangci.txt) | line 5 `golangci-lint: command not found`, line 6 `EXIT:127` |
+| `docker version` | host | [docker.txt](logs/goal-23/docker.txt) | line 5 `bash: line 1: docker: command not found`, line 6 `EXIT:127` |
+| `golangci-lint version` | host | [golangci.txt](logs/goal-23/golangci.txt) | line 5 `bash: line 1: golangci-lint: command not found`, line 6 `EXIT:127` |
 
 [runtime.txt](logs/goal-23/runtime.txt) line 5 is `v22.23.4`. Line 6 is `10.9.9`. Line 7 is `Python 3.12.3`. Line 8 begins with `go version go1.26.10`. Line 9 begins with `Google Chrome 157.0.8103.50`. Line 10 begins with `Linux 6.12.113+`.
 
-[moderation.txt](logs/goal-23/moderation.txt) lines 6 through 19 are the five moderation-package tests. Lines 23 and 25 are the discovery queue test and the creator-removal test. Lines 27 through 49 are the existing social tests, still passing. Line 50 is `PASS` for that package.
+[moderation.txt](logs/goal-23/moderation.txt) lines 6 through 19 are the five moderation-package tests. Line 23 is the discovery queue test. Line 25 is the search test. Line 27 is the creator-removal test. Lines 29 through 51 are the existing social tests, still passing. Line 52 is `PASS` for that package.
 
 [node.txt](logs/goal-23/node.txt) pass counts are line 93 `14`, line 181 `13`, line 251 `10`, line 279 `3`, line 295 `1`, line 317 `2`, and line 375 `8`. Each following line is `# fail 0`. The suite total is 51 passing tests.
 
@@ -85,7 +85,7 @@ The slow controlled host and the unresponsive independent host keep `successful_
 | Uploading | VERIFIED for the local pipeline and the upload gate function | [moderation.txt](logs/goal-23/moderation.txt) line 10. `services/api/internal/moderation/removal.go` stops the uploading stage. `services/api/internal/service/http.go:402` refuses a blocked account. The HTTP upload process was not started here. |
 | Processing | VERIFIED for a queued filesystem job | [pytest.txt](logs/goal-23/pytest.txt) line 6 includes `tests/unit/test_media_delist.py`. `workers/media/svn_media/queue.py:293` cancels before encode. |
 | Replicating | VERIFIED that a stalled read does not publish after a local delist | [scheduler.txt](logs/goal-23/scheduler.txt) line 9. `services/scheduler/internal/sched/sched.go:306` returns before a new offer. `services/scheduler/internal/sched/sched.go:1098` is `DelistLocal`. |
-| Repair | VERIFIED that repair does not post an offer | Same scheduler log. The discovery removal test also refuses `AllowRepair` ([moderation.txt](logs/goal-23/moderation.txt) line 25). |
+| Repair | VERIFIED that repair does not post an offer | Same scheduler log. The discovery removal test also refuses `AllowRepair` ([moderation.txt](logs/goal-23/moderation.txt) line 27). |
 | Playback | VERIFIED that the cache drops without a chain note of HELD | [pytest.txt](logs/goal-23/pytest.txt) line 6 includes `tests/unit/test_delivery_hosts.py`. `services/delivery/svn_delivery/catalog.py:196`. |
 | Storage admission | VERIFIED that a delisted id is refused before fetch | [provider.txt](logs/goal-23/provider.txt) line 9. `agents/provider/internal/agent/accept.go:144`. |
 | Offline controlled host | VERIFIED as incomplete | [moderation.txt](logs/goal-23/moderation.txt) line 12. |
@@ -100,11 +100,11 @@ The slow controlled host and the unresponsive independent host keep `successful_
 | Unauthorized moderator action | VERIFIED | [moderation.txt](logs/goal-23/moderation.txt) line 23. A stranger receives 403 on the queue, the case, and the decision. |
 | Confidential case access | VERIFIED | Same test. The report response and the stranger's case response do not contain the narrative. The reporter's case response does not contain `complainant`. |
 | Spam report | VERIFIED | Same test. A second report is `spam` and does not store another narrative (`services/api/internal/social/moderation.go:123`). |
-| Block interactions | VERIFIED | Same test. A comment and a follow after the block are `BLOCKED`. The blocker's recommended feed drops that creator. `services/api/internal/social/feed.go:147`. |
+| Block interactions | VERIFIED for comments, follows, feeds, and search | [moderation.txt](logs/goal-23/moderation.txt) line 23 covers the comment, the follow, and the recommended feed. Line 25 is `TestSearchOmitsBlockedAndWithdrawn`. After the block, profile, video, and topic search omit that account and that account's videos, and the feed cache header is `refreshed`. A withdrawn video is then absent from video and topic search. `services/api/internal/social/feed.go:140` is `profileVisible`. `services/api/internal/social/feed.go:160` is the block check inside `visible`. `services/api/internal/social/feed.go:258` and `services/api/internal/social/feed.go:274` and `services/api/internal/social/feed.go:289` are the search checks. |
 | Appeals and escalation | VERIFIED | Same test. The appeal statement is not echoed. Escalation moves to `requested` and then `escalated`. Reversal restores a moderator hide that was not a creator removal. |
 | Account takedown | VERIFIED | Same test. The bearer no longer works, a new session is refused, `history_erased` is false, and `universal_deletion` is false. |
 | UI report and block | VERIFIED against `svn-discovery` | [browser.txt](logs/goal-23/browser.txt) line 6. The test then reads `GET /v1/reports` and `GET /v1/blocks`. The report list does not contain the narrative. |
-| Creator removal request | VERIFIED in the client and against the discovery removal route | [node.txt](logs/goal-23/node.txt) line 93 includes the removal test. [creator-browser.txt](logs/goal-23/creator-browser.txt) line 6 expects `REMOVAL_ACCEPTED` from the stand-in, which is not `svn-api`. The discovery route is `services/api/internal/social/http.go:62` and is covered by [moderation.txt](logs/goal-23/moderation.txt) line 25. `apps/web/src/creator.ts:575` sends the request. |
+| Creator removal request | VERIFIED in the client and against the discovery removal route | [node.txt](logs/goal-23/node.txt) line 93 includes the removal test. [creator-browser.txt](logs/goal-23/creator-browser.txt) line 6 expects `REMOVAL_ACCEPTED` from the stand-in, which is not `svn-api`. The discovery route is `services/api/internal/social/http.go:62` and is covered by [moderation.txt](logs/goal-23/moderation.txt) line 27. `apps/web/src/creator.ts:575` sends the request. |
 | Policy and contact page | VERIFIED as placeholders | `GET /v1/policy` is in the queue test. The page copy is `apps/web/src/ui.ts:633`. `services/api/internal/moderation/policy.go:59` forces `legal_approval` false. |
 | Upload and publication HTTP | BLOCKED | PostgreSQL is absent ([pg16.txt](logs/goal-23/pg16.txt) line 5). The routes are `services/api/internal/service/http.go:344` and the refusal is `services/api/internal/service/http.go:416`. Vet compiled the package. The tests that start PostgreSQL were not run. |
 | PostgreSQL persistence of cases | BLOCKED | Restart loses the in-memory rows. |

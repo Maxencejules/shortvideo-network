@@ -1,5 +1,5 @@
-HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
-TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+HEAD 366eb6b6d3b533a37b2cd62d4459946bf8ac92b5
+TREE 5407ec1d9d5c7fb49ee18768b9c2ed829558aa4d
 DIRTY no
 CMD cd services/api && go test -count=1 -timeout 180s -v ./internal/moderation/ ./internal/social/
 === RUN   TestGateIgnoresACommittedPublication
@@ -18,9 +18,11 @@ CMD cd services/api && go test -count=1 -timeout 180s -v ./internal/moderation/ 
     removal_test.go:164: GATE name=other-community kind=independent endpoint= elapsed=301 within=false late=false unreachable=true cache=0
 --- PASS: TestProposedFiveMinuteGate (0.00s)
 PASS
-ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/moderation	0.006s
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/moderation	0.007s
 === RUN   TestModerationQueueBlocksAppealsAndTakedown
 --- PASS: TestModerationQueueBlocksAppealsAndTakedown (0.00s)
+=== RUN   TestSearchOmitsBlockedAndWithdrawn
+--- PASS: TestSearchOmitsBlockedAndWithdrawn (0.00s)
 === RUN   TestCreatorRemovalDoesNotWaitAndDoesNotRevive
 --- PASS: TestCreatorRemovalDoesNotWaitAndDoesNotRevive (0.00s)
 === RUN   TestFollowPermissionsDuplicateLikesAndSaves
