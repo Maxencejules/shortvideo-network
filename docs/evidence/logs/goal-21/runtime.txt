@@ -1,6 +1,7 @@
 HEAD c3ef99b8b503729b3b98393381689d3ef897e242
 TREE 8b462c5f92a80f042deea093aa0473716689ed49
-CMD bash -lc node -v; npm -v; python3 --version; google-chrome --version; ffmpeg -version | head -n 1; uname -srm
+DIRTY no
+CMD bash -c 'node -v; npm -v; python3 --version; google-chrome --version; ffmpeg -version | head -n 1; uname -srm'
 v22.23.4
 10.9.9
 Python 3.12.3
@@ -8,3 +9,4 @@ Google Chrome 157.0.8103.50
 ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
 Linux 6.12.113+ x86_64
 EXIT:0
+AFTER clean

@@ -1,6 +1,9 @@
 HEAD c3ef99b8b503729b3b98393381689d3ef897e242
 TREE 8b462c5f92a80f042deea093aa0473716689ed49
-CMD PYTHONPATH=services/delivery python3 -m pytest -q tests/unit/test_creator_browser.py -s --tb=short
+DIRTY no
+CMD env PYTHONPATH=services/delivery python3 -m pytest -q tests/unit/test_creator_browser.py -s --tb=short 
 {"account": "stand-in", "browser": {"browser": "Chrome/157.0.8103.50", "protocol": "1.3", "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36"}, "indexer": "stand-in", "intents": 2, "pageAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36", "puts": 1, "scheduler": "stand-in", "stage": "Cancelled", "upload": "stand-in", "viewport": {"dpr": 1, "height": 713, "width": 1280}}
 .
 EXIT:0
+AFTER
+?? apps/web/dist/

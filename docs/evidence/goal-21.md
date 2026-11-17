@@ -21,11 +21,13 @@ The browser run walked those states against loopback stand-ins. The stand-ins ar
 | Base | `fa6817cbee38eb54cfc9009a36fbdf20a21bc16c` |
 | Branch | `goal-21` |
 
-The tested commit message carries `Tested-tree: 8b462c5f92a80f042deea093aa0473716689ed49`. `git rev-parse c3ef99b8b503729b3b98393381689d3ef897e242^{tree}` is that tree. The evidence commit `98c21be277095e13a938b686a28a20c366efd824` changes only `docs/evidence/` relative to that tested commit.
+The tested commit message carries `Tested-tree: 8b462c5f92a80f042deea093aa0473716689ed49`. `git rev-parse c3ef99b8b503729b3b98393381689d3ef897e242^{tree}` is that tree. Later commits change only `docs/evidence/`.
+
+The captures below were taken in a detached checkout of that tested commit. `git status --porcelain` was empty before every command. Each log's line 3 is `DIRTY no`. The two browser commands then wrote untracked `apps/web/dist/` because that path is not ignored. That directory is the `AFTER` line in those two logs. It was removed after each command and was not committed. Every other command's last line is `AFTER clean`.
 
 ## Head CI
 
-[Run 43999956488](https://github.com/Maxencejules/shortvideo-network/actions/runs/43999956488) on `98c21be277095e13a938b686a28a20c366efd824` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. A green run is not visual approval. `98c21be` differs from the tested commit only under `docs/evidence/`.
+[Run 44001360745](https://github.com/Maxencejules/shortvideo-network/actions/runs/44001360745) on `06dc5e0d124287e9c3d2acb4f17e2d0716e1fc8d` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. That was the head when this note was revised. A green run is not visual approval. `06dc5e0` differs from the tested commit only under `docs/evidence/`. [Run 43999956488](https://github.com/Maxencejules/shortvideo-network/actions/runs/43999956488) on `98c21be277095e13a938b686a28a20c366efd824` also finished `success` with 17 jobs.
 
 `publishedNow` requires `publication === "PUBLISHED"`, `community_approval === true`, a fresh indexer read, and a committed chain operation when one was supplied (`apps/web/src/creator.ts:436`). A local flag is ignored (`apps/web/src/main.ts:280` passes `optimisticPublished: false`; `apps/web/src/creator.ts:346` records that a true flag is not publication). The Published sentence does not say the chain certified the video (`apps/web/src/creator.ts:19`). Review pending says Goal 23 is not implemented (`apps/web/src/creator.ts:21`). Removal is not sent (`apps/web/src/creator.ts:580` through `apps/web/src/creator.ts:583`). A shorter trim is refused (`apps/web/src/creator.ts:219`). The owner-only upload JSON includes `content_id` (`services/api/internal/service/http.go:364` and `services/api/internal/service/http.go:407`). The Go assertion that the id is present was not run here (`services/api/internal/service/http_test.go:277`).
 
@@ -33,33 +35,33 @@ The tested commit message carries `Tested-tree: 8b462c5f92a80f042deea093aa047371
 
 | Command | Log | Result |
 | --- | --- | --- |
-| `npm run typecheck --workspace apps/web` | [typecheck.txt](logs/goal-21/typecheck.txt) | line 8 `EXIT:0` |
-| `python3 scripts/run_tests.py --only node` | [node.txt](logs/goal-21/node.txt) | line 358 `EXIT:0` |
-| creator browser stand-in | [browser.txt](logs/goal-21/browser.txt) | line 6 `EXIT:0` |
-| existing viewer browser test | [viewer.txt](logs/goal-21/viewer.txt) | line 6 `EXIT:0` |
-| `python3 scripts/scan_secrets.py` | [secrets.txt](logs/goal-21/secrets.txt) | line 4 `secret scan ok`, line 5 `EXIT:0` |
-| `ruff check` on the new Python test | [ruff.txt](logs/goal-21/ruff.txt) | line 5 `EXIT:0` |
-| `gofmt -l` on the two Go files | [gofmt.txt](logs/goal-21/gofmt.txt) | line 4 `EXIT:0` |
+| `npm run typecheck --workspace apps/web` | [typecheck.txt](logs/goal-21/typecheck.txt) | line 9 `EXIT:0` |
+| `python3 scripts/run_tests.py --only node` | [node.txt](logs/goal-21/node.txt) | line 359 `EXIT:0` |
+| creator browser stand-in | [browser.txt](logs/goal-21/browser.txt) | line 7 `EXIT:0` |
+| existing viewer browser test | [viewer.txt](logs/goal-21/viewer.txt) | line 7 `EXIT:0` |
+| `python3 scripts/scan_secrets.py` | [secrets.txt](logs/goal-21/secrets.txt) | line 5 `secret scan ok`, line 6 `EXIT:0` |
+| `ruff check` on `tests/unit/test_creator_browser.py` and `apps/web` | [ruff.txt](logs/goal-21/ruff.txt) | line 6 `EXIT:0` |
+| `gofmt -l` on the two Go files | [gofmt.txt](logs/goal-21/gofmt.txt) | line 5 `EXIT:0` |
 
-[node.txt](logs/goal-21/node.txt) line 92 is `# pass 14` and line 93 is `# fail 0` for the creator file. Line 352 is `# pass 8` and line 353 is `# fail 0` for the component file. The suite total is 49 passing tests: 14 creator, 13 evidence-label, 10 model, 3 playback, 1 React pin, and 8 component tests.
+[node.txt](logs/goal-21/node.txt) line 93 is `# pass 14` and line 94 is `# fail 0` for the creator file. Line 353 is `# pass 8` and line 354 is `# fail 0` for the component file. The suite total is 49 passing tests: 14 creator, 13 evidence-label, 10 model, 3 playback, 1 React pin, and 8 component tests.
 
-[runtime.txt](logs/goal-21/runtime.txt) line 4 is `v22.23.4`. Line 5 is `10.9.9`. Line 6 is `Python 3.12.3`. Line 7 begins with `Google Chrome 157.0.8103.50`. Line 8 begins with `ffmpeg version 6.1.1-3ubuntu5`. Line 9 is `Linux 6.12.113+ x86_64`. Line 10 is `EXIT:0`.
+[runtime.txt](logs/goal-21/runtime.txt) line 5 is `v22.23.4`. Line 6 is `10.9.9`. Line 7 is `Python 3.12.3`. Line 8 begins with `Google Chrome 157.0.8103.50`. Line 9 begins with `ffmpeg version 6.1.1-3ubuntu5`. Line 10 is `Linux 6.12.113+ x86_64`. Line 11 is `EXIT:0`.
 
 ## Browser and device
 
-Headless Chrome on this VM. No screenshot was taken. This is not visual design approval. A successful web build is not this check. The creator check is [browser.txt](logs/goal-21/browser.txt) line 6 `EXIT:0`.
+Headless Chrome on this VM. No screenshot was taken. This is not visual design approval. A successful web build is not this check. The creator check is [browser.txt](logs/goal-21/browser.txt) line 7 `EXIT:0`.
 
-[browser.txt](logs/goal-21/browser.txt) line 4 records `Chrome/157.0.8103.50`, the page user agent `HeadlessChrome/157.0.0.0`, and the viewport at the end of the run: width 1280, height 713, device pixel ratio 1. Line 4 also records `account` `stand-in`, `indexer` `stand-in`, `scheduler` `stand-in`, `upload` `stand-in`, `intents` 2, `puts` 1, and `stage` `Cancelled`.
+[browser.txt](logs/goal-21/browser.txt) line 5 records `Chrome/157.0.8103.50`, the page user agent `HeadlessChrome/157.0.0.0`, and the viewport at the end of the run: width 1280, height 713, device pixel ratio 1. Line 5 also records `account` `stand-in`, `indexer` `stand-in`, `scheduler` `stand-in`, `upload` `stand-in`, `intents` 2, `puts` 1, and `stage` `Cancelled`. Line 3 is `DIRTY no`. Line 9 is `?? apps/web/dist/`.
 
-That process is `tests/unit/test_creator_browser.py`. The trim refusal is line 60. The second intent is line 73. Review pending is line 81. The lawful-or-truthful sentence is line 100. The participating host is line 126. `PUBLICATION_BLOCKED` is line 130. The stand-in buffer is empty after cancel at line 137. Those asserts are covered by [browser.txt](logs/goal-21/browser.txt) line 6.
+That process is `tests/unit/test_creator_browser.py`. The trim refusal is line 60. The second intent is line 73. Review pending is line 81. The lawful-or-truthful sentence is line 100. The participating host is line 126. `PUBLICATION_BLOCKED` is line 130. The stand-in buffer is empty after cancel at line 137. Those asserts are covered by [browser.txt](logs/goal-21/browser.txt) line 7.
 
-The same Chrome binary ran the existing viewer test again ([viewer.txt](logs/goal-21/viewer.txt) line 6). That run is playback of a processed package, not a creator upload. Its ending viewport is 390 by 844, device pixel ratio 2 ([viewer.txt](logs/goal-21/viewer.txt) line 4).
+The same Chrome binary ran the existing viewer test again ([viewer.txt](logs/goal-21/viewer.txt) line 7). That run is playback of a processed package, not a creator upload. Its ending viewport is 390 by 844, device pixel ratio 2 ([viewer.txt](logs/goal-21/viewer.txt) line 5). Line 3 of that log is `DIRTY no`. Line 9 is `?? apps/web/dist/`.
 
 ## Acceptance
 
 | Check | Status | Where |
 | --- | --- | --- |
-| Upload selection and a typed intent | VERIFIED against a stand-in and a fake transport | [browser.txt](logs/goal-21/browser.txt) line 4 `intents` 2 and `puts` 1. [node.txt](logs/goal-21/node.txt) line 92. |
+| Upload selection and a typed intent | VERIFIED against a stand-in and a fake transport | [browser.txt](logs/goal-21/browser.txt) line 5 `intents` 2 and `puts` 1. [node.txt](logs/goal-21/node.txt) line 93. |
 | Illegal trim, shorter trim, captions checked and not sent | VERIFIED in unit tests and, for the illegal range, in the browser | `apps/web/test/creator.test.ts:37`, `apps/web/test/creator.test.ts:50`, `apps/web/test/creator.test.ts:233`. Browser trim code `tests/unit/test_creator_browser.py:60`. |
 | Title, description, thumbnail choice | IMPLEMENTED as browser-only fields | The upload API has no field for them. `apps/web/src/creator.ts:31` and `apps/web/src/ui.ts:481`. |
 | Five lifecycle states, including Published only from the read | VERIFIED in unit tests; the browser stand-in walked each label | `apps/web/test/creator.test.ts:172`. Browser review, replicating, published, and cancelled asserts are in `tests/unit/test_creator_browser.py`. |
@@ -70,7 +72,7 @@ The same Chrome binary ran the existing viewer test again ([viewer.txt](logs/goa
 | Removal does not claim universal deletion | VERIFIED for the copy | `apps/web/src/creator.ts:23` and `apps/web/src/creator.ts:25`. Browser `tests/unit/test_creator_browser.py:126`. The request is not sent. |
 | Recovery unavailable, export link, proposed terms | VERIFIED for the copy | `apps/web/src/creator.ts:17`. `apps/web/src/ui.ts:487`. |
 | Analytics are the browser counters only | VERIFIED | `apps/web/test/ui.test.ts` create-page test. No view count and no revenue figure is invented. |
-| Real `svn-api` upload, quota, and quarantine leak check | BLOCKED | PostgreSQL is absent. [pg16.txt](logs/goal-21/pg16.txt) line 4 is `pg16 absent` and line 5 is `pg18 absent`. |
+| Real `svn-api` upload, quota, and quarantine leak check | BLOCKED | PostgreSQL is absent. [pg16.txt](logs/goal-21/pg16.txt) line 5 is `pg16 absent` and line 6 is `pg18 absent`. |
 | Creator disconnect, origin down, later playback | BLOCKED | This run did not publish a package and then stop the origin. [viewer.txt](logs/goal-21/viewer.txt) is the existing playback failover, not that scenario. |
 | Committed-chain publication | BLOCKED | The browser scheduler body was a stand-in. No chain process ran. |
 | Passkey login in the browser | BLOCKED | DR-19-06 and PostgreSQL. The stand-in returned a session without a ceremony. |
@@ -107,9 +109,9 @@ BLOCKED, carried forward. A missing tool is not a pass.
 1. **DEC-001 and DR-07-01.** Custody and recovery stay unimplemented. The page says recovery is not available.
 2. **One machine.** The browser stand-ins are one process on this VM.
 3. **Goal 06 and goal 07 mutation runners.** Not re-run.
-4. **golangci-lint.** Not installed. [golangci-lint.txt](logs/goal-21/golangci-lint.txt) line 4 is `--: line 12: golangci-lint: command not found` and line 5 is `EXIT:127`.
-5. **PostgreSQL 16.** Not installed. [pg16.txt](logs/goal-21/pg16.txt) line 4 is `pg16 absent`, line 5 is `pg18 absent`, and line 6 is `EXIT:1`. The API test that checks `content_id` did not run.
-6. **Goal 04 compose bridge.** [docker.txt](logs/goal-21/docker.txt) line 4 is `--: line 5: docker: command not found` and line 5 is `EXIT:127`. Compose was not run. The unauthenticated :2375 daemon was not used.
+4. **golangci-lint.** Not installed. [golangci-lint.txt](logs/goal-21/golangci-lint.txt) line 5 is `--: line 69: golangci-lint: command not found` and line 6 is `EXIT:127`.
+5. **PostgreSQL 16.** Not installed. [pg16.txt](logs/goal-21/pg16.txt) line 5 is `pg16 absent`, line 6 is `pg18 absent`, and line 7 is `EXIT:1`. The API test that checks `content_id` did not run.
+6. **Goal 04 compose bridge.** [docker.txt](logs/goal-21/docker.txt) line 5 is `--: line 56: docker: command not found` and line 6 is `EXIT:127`. Compose was not run. The unauthenticated :2375 daemon was not used.
 
 ## Requirements
 

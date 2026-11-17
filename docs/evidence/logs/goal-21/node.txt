@@ -1,89 +1,90 @@
 HEAD c3ef99b8b503729b3b98393381689d3ef897e242
 TREE 8b462c5f92a80f042deea093aa0473716689ed49
+DIRTY no
 CMD python3 scripts/run_tests.py --only node
 TAP version 13
 # Subtest: illegal trim ranges are refused before a request
 ok 1 - illegal trim ranges are refused before a request
   ---
-  duration_ms: 3.524204
+  duration_ms: 4.795505
   type: 'test'
   ...
 # Subtest: a shorter trim does not rewrite bytes
 ok 2 - a shorter trim does not rewrite bytes
   ---
-  duration_ms: 0.23895
+  duration_ms: 0.50681
   type: 'test'
   ...
 # Subtest: an upload uses one reservation and a repeat is the same upload
 ok 3 - an upload uses one reservation and a repeat is the same upload
   ---
-  duration_ms: 4.122454
+  duration_ms: 6.504259
   type: 'test'
   ...
 # Subtest: a failed transfer does not complete and a timeout can be retried
 ok 4 - a failed transfer does not complete and a timeout can be retried
   ---
-  duration_ms: 1.106418
+  duration_ms: 1.501364
   type: 'test'
   ...
 # Subtest: expired authorization, size, quota, and rejected content stay typed
 ok 5 - expired authorization, size, quota, and rejected content stay typed
   ---
-  duration_ms: 1.84436
+  duration_ms: 3.060895
   type: 'test'
   ...
 # Subtest: another account cannot cancel, publish, or remove
 ok 6 - another account cannot cancel, publish, or remove
   ---
-  duration_ms: 0.296503
+  duration_ms: 0.49522
   type: 'test'
   ...
 # Subtest: cancel during processing releases once and requires confirmation
 ok 7 - cancel during processing releases once and requires confirmation
   ---
-  duration_ms: 0.225548
+  duration_ms: 0.41037
   type: 'test'
   ...
 # Subtest: publication intent cannot mark the video published
 ok 8 - publication intent cannot mark the video published
   ---
-  duration_ms: 0.346379
+  duration_ms: 0.641525
   type: 'test'
   ...
 # Subtest: removal is not sent and does not claim universal deletion
 ok 9 - removal is not sent and does not claim universal deletion
   ---
-  duration_ms: 0.39265
+  duration_ms: 0.630499
   type: 'test'
   ...
 # Subtest: lifecycle states stay distinct and Published waits for the read
 ok 10 - lifecycle states stay distinct and Published waits for the read
   ---
-  duration_ms: 0.479752
+  duration_ms: 0.831206
   type: 'test'
   ...
 # Subtest: media bytes under one upload are not replaced
 ok 11 - media bytes under one upload are not replaced
   ---
-  duration_ms: 1.50679
+  duration_ms: 2.436151
   type: 'test'
   ...
 # Subtest: captions are checked and not sent as a command
 ok 12 - captions are checked and not sent as a command
   ---
-  duration_ms: 0.106324
+  duration_ms: 0.147604
   type: 'test'
   ...
 # Subtest: parsers accept the service fields and drop a bad draft
 ok 13 - parsers accept the service fields and drop a bad draft
   ---
-  duration_ms: 0.881017
+  duration_ms: 1.062765
   type: 'test'
   ...
 # Subtest: repeated clicks share one request
 ok 14 - repeated clicks share one request
   ---
-  duration_ms: 10.973193
+  duration_ms: 10.082354
   type: 'test'
   ...
 1..14
@@ -94,84 +95,84 @@ ok 14 - repeated clicks share one request
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 104.914416
+# duration_ms 148.896462
 TAP version 13
 # Subtest: the module exports only the catalog, and its JSON text is the Go catalog file byte for byte
 ok 1 - the module exports only the catalog, and its JSON text is the Go catalog file byte for byte
   ---
-  duration_ms: 1.248259
+  duration_ms: 1.352329
   type: 'test'
   ...
 # Subtest: every catalog string is pinned sentence by sentence, in order
 ok 2 - every catalog string is pinned sentence by sentence, in order
   ---
-  duration_ms: 0.551619
+  duration_ms: 0.577384
   type: 'test'
   ...
 # Subtest: every string is bounded printable ASCII; labels are phrases, texts are sentences
 ok 3 - every string is bounded printable ASCII; labels are phrases, texts are sentences
   ---
-  duration_ms: 0.441787
+  duration_ms: 0.434461
   type: 'test'
   ...
 # Subtest: the mode is explicit: auditor attestation or provider receipt (goal requirement 4)
 ok 4 - the mode is explicit: auditor attestation or provider receipt (goal requirement 4)
   ---
-  duration_ms: 0.165025
+  duration_ms: 0.170705
   type: 'test'
   ...
 # Subtest: the state keys are the three short reported state names
 ok 5 - the state keys are the three short reported state names
   ---
-  duration_ms: 0.083831
+  duration_ms: 0.096231
   type: 'test'
   ...
 # Subtest: the goal limitations, REQ-INV-007, and the decision gate appear verbatim
 ok 6 - the goal limitations, REQ-INV-007, and the decision gate appear verbatim
   ---
-  duration_ms: 0.100618
+  duration_ms: 0.10003
   type: 'test'
   ...
 # Subtest: the acceptance text calls the signature a promise, not possession (REQ-EVID-002)
 ok 7 - the acceptance text calls the signature a promise, not possession (REQ-EVID-002)
   ---
-  duration_ms: 0.773715
+  duration_ms: 0.075361
   type: 'test'
   ...
 # Subtest: state and event texts limit the claim: past observation, public digest, no blame, not a pass
 ok 8 - state and event texts limit the claim: past observation, public digest, no blame, not a pass
   ---
-  duration_ms: 0.152119
+  duration_ms: 0.766467
   type: 'test'
   ...
 # Subtest: the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs
 ok 9 - the no-renewal sentence is catalog-wide; no mode, state, acceptance, or event text renews, extends, revives, or prolongs
   ---
-  duration_ms: 0.398035
+  duration_ms: 0.477284
   type: 'test'
   ...
 # Subtest: claim_limit and the modes match the frozen envelope schema
 ok 10 - claim_limit and the modes match the frozen envelope schema
   ---
-  duration_ms: 0.366211
+  duration_ms: 0.390986
   type: 'test'
   ...
 # Subtest: the denylist rules are well formed and are exactly the list of this test
 ok 11 - the denylist rules are well formed and are exactly the list of this test
   ---
-  duration_ms: 1.817729
+  duration_ms: 2.052276
   type: 'test'
   ...
 # Subtest: no catalog string claims proof of storage, a unique replica, independence, legality, or future quality
 ok 12 - no catalog string claims proof of storage, a unique replica, independence, legality, or future quality
   ---
-  duration_ms: 0.760997
+  duration_ms: 0.913797
   type: 'test'
   ...
 # Subtest: the denylist scanner detects denied claims and passes the allowed negations
 ok 13 - the denylist scanner detects denied claims and passes the allowed negations
   ---
-  duration_ms: 3.574382
+  duration_ms: 3.725324
   type: 'test'
   ...
 1..13
@@ -182,66 +183,66 @@ ok 13 - the denylist scanner detects denied claims and passes the allowed negati
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 83.240574
+# duration_ms 91.94203
 TAP version 13
 # Subtest: plain text drops markup
 ok 1 - plain text drops markup
   ---
-  duration_ms: 0.793034
+  duration_ms: 1.028798
   type: 'test'
   ...
 # Subtest: captions parse as text
 ok 2 - captions parse as text
   ---
-  duration_ms: 0.311348
+  duration_ms: 0.352425
   type: 'test'
   ...
 # Subtest: withdrawn and quarantined rows are not playable
 ok 3 - withdrawn and quarantined rows are not playable
   ---
-  duration_ms: 0.687789
+  duration_ms: 0.802403
   type: 'test'
   ...
 # Subtest: a content row without a withdrawn flag is refused
 ok 4 - a content row without a withdrawn flag is refused
   ---
-  duration_ms: 0.412689
+  duration_ms: 0.444039
   type: 'test'
   ...
 # Subtest: playback document drops a non-loopback or quarantine host
 ok 5 - playback document drops a non-loopback or quarantine host
   ---
-  duration_ms: 0.299986
+  duration_ms: 0.335674
   type: 'test'
   ...
 # Subtest: a hosting promise is refused
 ok 6 - a hosting promise is refused
   ---
-  duration_ms: 0.124058
+  duration_ms: 0.135207
   type: 'test'
   ...
 # Subtest: stale and degraded sentences stay visible
 ok 7 - stale and degraded sentences stay visible
   ---
-  duration_ms: 0.149682
+  duration_ms: 0.174233
   type: 'test'
   ...
 # Subtest: status reads do not treat two responses as a light client
 ok 8 - status reads do not treat two responses as a light client
   ---
-  duration_ms: 0.11621
+  duration_ms: 0.12046
   type: 'test'
   ...
 # Subtest: settings reject a public host and a secret query
 ok 9 - settings reject a public host and a secret query
   ---
-  duration_ms: 0.532958
+  duration_ms: 0.557802
   type: 'test'
   ...
 # Subtest: aggregate counters have no content id
 ok 10 - aggregate counters have no content id
   ---
-  duration_ms: 0.273667
+  duration_ms: 0.324532
   type: 'test'
   ...
 1..10
@@ -252,24 +253,24 @@ ok 10 - aggregate counters have no content id
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 78.487147
+# duration_ms 93.227994
 TAP version 13
 # Subtest: playback hashes a segment, skips the rest, and does not mark a response as rendered
 ok 1 - playback hashes a segment, skips the rest, and does not mark a response as rendered
   ---
-  duration_ms: 6.022043
+  duration_ms: 6.741785
   type: 'test'
   ...
 # Subtest: a dead host falls back and a bad hash is not played
 ok 2 - a dead host falls back and a bad hash is not played
   ---
-  duration_ms: 1.396471
+  duration_ms: 1.609834
   type: 'test'
   ...
 # Subtest: cancel stops a hanging fetch and prefetch does not download media
 ok 3 - cancel stops a hanging fetch and prefetch does not download media
   ---
-  duration_ms: 0.526104
+  duration_ms: 0.61696
   type: 'test'
   ...
 1..3
@@ -280,12 +281,12 @@ ok 3 - cancel stops a hanging fetch and prefetch does not download media
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 82.185759
+# duration_ms 98.091007
 TAP version 13
 # Subtest: react version is the pinned release
 ok 1 - react version is the pinned release
   ---
-  duration_ms: 0.439127
+  duration_ms: 0.492628
   type: 'test'
   ...
 1..1
@@ -296,54 +297,54 @@ ok 1 - react version is the pinned release
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 51.291831
+# duration_ms 54.848508
 TAP version 13
 # Subtest: the shell is an invited build with gated social actions and no wallet control
 ok 1 - the shell is an invited build with gated social actions and no wallet control
   ---
-  duration_ms: 7.851411
+  duration_ms: 8.110897
   type: 'test'
   ...
 # Subtest: captions and titles render as text
 ok 2 - captions and titles render as text
   ---
-  duration_ms: 1.039956
+  duration_ms: 1.211644
   type: 'test'
   ...
 # Subtest: the mute button names the state it will apply
 ok 3 - the mute button names the state it will apply
   ---
-  duration_ms: 1.638492
+  duration_ms: 1.691016
   type: 'test'
   ...
 # Subtest: withdrawn content has no video element
 ok 4 - withdrawn content has no video element
   ---
-  duration_ms: 1.067378
+  duration_ms: 1.042381
   type: 'test'
   ...
 # Subtest: discover, activity, and profile expose the gates
 ok 5 - discover, activity, and profile expose the gates
   ---
-  duration_ms: 2.298671
+  duration_ms: 2.283586
   type: 'test'
   ...
 # Subtest: the create page keeps stages separate and does not publish from a draft
 ok 6 - the create page keeps stages separate and does not publish from a draft
   ---
-  duration_ms: 3.378135
+  duration_ms: 3.116181
   type: 'test'
   ...
 # Subtest: published copy names the conditions and not a certification
 ok 7 - published copy names the conditions and not a certification
   ---
-  duration_ms: 2.192827
+  duration_ms: 2.410565
   type: 'test'
   ...
 # Subtest: source does not render user text as HTML or open a peer transport
 ok 8 - source does not render user text as HTML or open a peer transport
   ---
-  duration_ms: 0.553461
+  duration_ms: 0.567233
   type: 'test'
   ...
 1..8
@@ -354,5 +355,6 @@ ok 8 - source does not render user text as HTML or open a peer transport
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 124.305125
+# duration_ms 152.249887
 EXIT:0
+AFTER clean
