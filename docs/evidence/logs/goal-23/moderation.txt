@@ -1,0 +1,53 @@
+HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
+TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+DIRTY no
+CMD cd services/api && go test -count=1 -timeout 180s -v ./internal/moderation/ ./internal/social/
+=== RUN   TestGateIgnoresACommittedPublication
+--- PASS: TestGateIgnoresACommittedPublication (0.00s)
+=== RUN   TestContactFileCannotGrantApproval
+--- PASS: TestContactFileCannotGrantApproval (0.00s)
+=== RUN   TestRemovalStopsEveryStageWithoutWaiting
+--- PASS: TestRemovalStopsEveryStageWithoutWaiting (0.00s)
+=== RUN   TestStalledChainAndUnreachableHosts
+--- PASS: TestStalledChainAndUnreachableHosts (0.00s)
+=== RUN   TestProposedFiveMinuteGate
+    removal_test.go:164: GATE name=local kind=controlled endpoint=pipeline: elapsed=0 within=true late=false unreachable=false cache=0
+    removal_test.go:164: GATE name=discovery kind=controlled endpoint=/v1/feeds/following elapsed=1 within=true late=false unreachable=false cache=2
+    removal_test.go:164: GATE name=delivery kind=controlled endpoint=/v1/playback/c1 elapsed=240 within=true late=false unreachable=false cache=9
+    removal_test.go:164: GATE name=slow-cache kind=controlled endpoint=/v1/media/c1 elapsed=301 within=false late=true unreachable=false cache=9
+    removal_test.go:164: GATE name=other-community kind=independent endpoint= elapsed=301 within=false late=false unreachable=true cache=0
+--- PASS: TestProposedFiveMinuteGate (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/moderation	0.006s
+=== RUN   TestModerationQueueBlocksAppealsAndTakedown
+--- PASS: TestModerationQueueBlocksAppealsAndTakedown (0.00s)
+=== RUN   TestCreatorRemovalDoesNotWaitAndDoesNotRevive
+--- PASS: TestCreatorRemovalDoesNotWaitAndDoesNotRevive (0.00s)
+=== RUN   TestFollowPermissionsDuplicateLikesAndSaves
+--- PASS: TestFollowPermissionsDuplicateLikesAndSaves (0.00s)
+=== RUN   TestCommentBoundariesActivityAndDeletion
+--- PASS: TestCommentBoundariesActivityAndDeletion (0.00s)
+=== RUN   TestPaginationUnderConcurrentUpdates
+--- PASS: TestPaginationUnderConcurrentUpdates (0.00s)
+=== RUN   TestChronologicalFilterAndCachedPage
+--- PASS: TestChronologicalFilterAndCachedPage (0.00s)
+=== RUN   TestRecommendationFixtureIsNotAQualityClaim
+--- PASS: TestRecommendationFixtureIsNotAQualityClaim (0.00s)
+=== RUN   TestRebuildSearchCoverage
+--- PASS: TestRebuildSearchCoverage (0.00s)
+=== RUN   TestSignedFollowAndAccountDeletion
+--- PASS: TestSignedFollowAndAccountDeletion (0.00s)
+=== RUN   TestRateLimitHidesTheBudget
+--- PASS: TestRateLimitHidesTheBudget (0.00s)
+=== RUN   TestSecondClientReadsStableIDs
+--- PASS: TestSecondClientReadsStableIDs (0.31s)
+=== RUN   TestCanonicalMatchesProfile
+--- PASS: TestCanonicalMatchesProfile (0.02s)
+=== RUN   TestDiscoveryDocumentAndDevFlag
+--- PASS: TestDiscoveryDocumentAndDevFlag (0.00s)
+=== RUN   TestPackageDoesNotImportChain
+--- PASS: TestPackageDoesNotImportChain (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/social	0.341s
+EXIT:0
+AFTER clean

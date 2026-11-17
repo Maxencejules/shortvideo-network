@@ -1,0 +1,10 @@
+HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
+TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+DIRTY no
+CMD cd agents/provider && go test -count=1 -timeout 120s -v ./internal/agent/ -run TestDelistedContentIsNotAdmitted
+=== RUN   TestDelistedContentIsNotAdmitted
+--- PASS: TestDelistedContentIsNotAdmitted (0.02s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider/internal/agent	0.048s
+EXIT:0
+AFTER clean

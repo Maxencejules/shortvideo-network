@@ -1,0 +1,10 @@
+HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
+TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+DIRTY no
+CMD cd services/api && go test -race -count=1 -timeout 180s ./internal/moderation/ ./internal/social/ && cd ../scheduler && go test -race -count=1 -timeout 120s ./internal/sched/ && cd ../../agents/provider && go test -race -count=1 -timeout 180s ./internal/agent/
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/moderation	1.014s
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/social	1.393s
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/sched	1.027s
+ok  	github.com/Maxencejules/shortvideo-network/agents/provider/internal/agent	1.128s
+EXIT:0
+AFTER clean

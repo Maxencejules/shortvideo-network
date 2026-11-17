@@ -1,0 +1,7 @@
+HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
+TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+DIRTY no
+CMD python3 -m mypy tests/unit/test_media_delist.py tests/unit/test_delivery_hosts.py tests/unit/test_social_browser.py tests/unit/test_creator_browser.py workers/media/svn_media/queue.py services/delivery/svn_delivery/catalog.py services/delivery/svn_delivery/server.py
+Success: no issues found in 7 source files
+EXIT:0
+AFTER clean
