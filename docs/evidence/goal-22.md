@@ -33,7 +33,7 @@ Every log under `docs/evidence/logs/goal-22/` was captured while `git status --p
 
 ## Head CI
 
-[Run 44101481653](https://github.com/Maxencejules/shortvideo-network/actions/runs/44101481653) on `c87cc6b2114f9ba7914033ba9de1dbe0428a3143` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. [Run 44098884012](https://github.com/Maxencejules/shortvideo-network/actions/runs/44098884012) on `60dd89cc342d3d47b404f765b42581d7db22a41a` also finished `success` with those 17 jobs. This paragraph is added after `c87cc6b`.
+[Run 44104399712](https://github.com/Maxencejules/shortvideo-network/actions/runs/44104399712) on `7fed3e25491b1efad1eca78a8511b700704f2cfc` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. [Run 44101481653](https://github.com/Maxencejules/shortvideo-network/actions/runs/44101481653) on `c87cc6b2114f9ba7914033ba9de1dbe0428a3143` also finished `success` with those 17 jobs. This paragraph is added after `7fed3e2`.
 
 ## What ran
 
