@@ -8,7 +8,7 @@ Reports, account blocks, a moderator queue, decisions, appeals, escalation, and 
 
 - Playbook assignment: GPT-6.1 Sol, effort HIGH (`docs/goals/23-moderation-blocking-and-removal.md` line 6). GPT-6.1 Sol was not used.
 - This run is Cursor cloud agent `bc-07987115-d869-5b75-b845-1d0a20ac9497`. `cursor-cloud` `run-info` reported `originalModelName` `grok-4.7-high-fast` and no separate effort or reasoning field. The effort setting is **not reported**. It is not guessed. That is the account default model for this run. The playbook's GPT-6.1 Sol was replaced by this Cursor cloud agent on that default model.
-- On 2026-10-31 the owner waived the model requirement as a blocker. On 2026-11-01 the owner extended that acknowledgement through goal 30. That covers model allocation only.
+- On 2026-10-31 (Toronto) the owner said "Don't mind the ai model requirement", so a model/effort mismatch with the playbook is not a blocker. The evidence still records the model that actually ran.
 
 ## Tested revision
 
