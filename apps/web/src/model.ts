@@ -110,6 +110,8 @@ export type FeedRow = {
   contentId: string;
   withdrawn: boolean;
   clientSelected: boolean;
+  creatorId?: string;
+  title?: string;
 };
 
 export type Aggregates = {
@@ -144,6 +146,7 @@ export type ClientSettings = {
   indexerBase2: string;
   accountBase: string;
   schedulerBase: string;
+  discoveryBase: string;
   contentIds: string[];
 };
 
@@ -153,6 +156,7 @@ export const EMPTY_SETTINGS: ClientSettings = {
   indexerBase2: "",
   accountBase: "",
   schedulerBase: "",
+  discoveryBase: "",
   contentIds: [],
 };
 
@@ -476,6 +480,7 @@ export function readSettings(value: unknown): ClientSettings {
     indexerBase2: safeBase(stringField(source.indexerBase2)),
     accountBase: safeBase(stringField(source.accountBase)),
     schedulerBase: safeBase(stringField(source.schedulerBase)),
+    discoveryBase: safeBase(stringField(source.discoveryBase)),
     contentIds: ids.slice(0, 50),
   };
 }
@@ -487,6 +492,7 @@ export function settingsRecord(settings: ClientSettings): string {
     indexerBase2: settings.indexerBase2,
     accountBase: settings.accountBase,
     schedulerBase: settings.schedulerBase,
+    discoveryBase: settings.discoveryBase,
     contentIds: settings.contentIds,
   });
 }
