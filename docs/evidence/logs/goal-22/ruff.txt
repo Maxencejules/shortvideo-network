@@ -1,0 +1,8 @@
+HEAD 21d82ffae98d925fc1ccf12933cf2d8b8cb874e1
+TREE 340da8a6142b2200866c4fd056d6e59e5ffc2bfe
+DIRTY no
+CMD python3 -m ruff check tests/unit/test_social_browser.py tests/unit/test_web_viewer.py apps/web && python3 -m ruff format --check tests/unit/test_social_browser.py tests/unit/test_web_viewer.py
+[1;32mAll checks passed![0m
+2 files already formatted
+EXIT:0
+AFTER clean
