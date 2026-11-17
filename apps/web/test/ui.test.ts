@@ -4,8 +4,9 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { EMPTY_SETTINGS } from "../src/model.ts";
-import { EMPTY_PLAYER, EMPTY_SESSION, Viewer } from "../src/ui.ts";
+import { composeCreator, emptyDraft, hostingTerms, analyticsLines, publicSnapshot, RECOVERY_TEXT } from "../src/creator.ts";
+import { EMPTY_SETTINGS, emptyAggregates } from "../src/model.ts";
+import { EMPTY_PLAYER, EMPTY_SESSION, Viewer, type CreatorPanel } from "../src/ui.ts";
 
 test("the shell is an invited build with gated social actions and no wallet control", () => {
   const html = renderToStaticMarkup(createElement(Viewer, props()));
@@ -87,6 +88,83 @@ test("discover, activity, and profile expose the gates", () => {
   assert.match(profile, /Reduce motion/);
 });
 
+test("the create page keeps stages separate and does not publish from a draft", () => {
+  const draft = emptyDraft("acct");
+  const state = composeCreator({
+    ownerAccountId: draft.ownerAccountId,
+    sessionAccountId: "acct",
+    optimisticPublished: true,
+    upload: null,
+    availability: null,
+    chain: null,
+    indexerStale: false,
+    withdrawn: false,
+    activeLeaseProviders: [],
+    removalRequested: false,
+    mediaStatus: "",
+    playbackPublication: "",
+  });
+  const html = renderToStaticMarkup(
+    createElement(Viewer, {
+      ...props(),
+      page: "create",
+      session: { signedIn: true, accountId: "acct", role: "creator", message: "" },
+      creator: panel(state, "<img src=x>"),
+    }),
+  );
+  assert.equal(html.includes("<img"), false);
+  assert.match(html, /&lt;img/);
+  assert.match(html, /id="creator-stage"[^>]*>Draft</);
+  assert.equal(html.includes('aria-current="step"'), false);
+  for (const name of ["Uploading", "Processing", "Review pending", "Replicating", "Published"]) {
+    assert.equal(html.includes(`<li>${name}</li>`), true, name);
+  }
+  assert.match(html, new RegExp(RECOVERY_TEXT.replace(/[.]/g, "\\.")));
+  assert.match(html, /Another frame/);
+  assert.match(html, /disabled/);
+  assert.match(html, /not an approved allowance/);
+  assert.match(html, /not views, not revenue/);
+  assert.match(html, /local publish flag is ignored/);
+  assert.equal(html.includes("chain certified this video as lawful or truthful.</"), false);
+});
+
+test("published copy names the conditions and not a certification", () => {
+  const state = composeCreator({
+    ownerAccountId: "acct",
+    sessionAccountId: "acct",
+    optimisticPublished: true,
+    upload: null,
+    availability: {
+      content_id: "c".padEnd(33, "a"),
+      publication: "PUBLISHED",
+      publication_reason: "",
+      community_approval: true,
+      reachability: "REACHABLE",
+      at_risk: false,
+      renewal: "NONE",
+      degraded_providers: [],
+      simulated_labels: false,
+      independent_operator_verification: false,
+      storage_proof: false,
+      active_commitments: 3,
+      verified_transfers: 3,
+    },
+    chain: { status: "OPERATION_STATUS_COMMITTED" },
+    indexerStale: false,
+    withdrawn: false,
+    activeLeaseProviders: [],
+    removalRequested: false,
+    mediaStatus: "READY_FOR_REVIEW",
+    playbackPublication: "NOT_PUBLISHED",
+  });
+  assert.equal(state.stage, "Published");
+  assert.equal(state.published, true);
+  const html = renderToStaticMarkup(createElement(Viewer, { ...props(), page: "create", creator: panel(state, "clip") }));
+  assert.match(html, /does not mean the chain certified this video as lawful or truthful/);
+  assert.match(html, /Goal 23 moderation completion is not this screen/);
+  assert.match(html, /playback document is not the publication record/);
+});
+
 test("source does not render user text as HTML or open a peer transport", () => {
   for (const name of readdirSync(new URL("../src/", import.meta.url))) {
     if (!name.endsWith(".ts")) continue;
@@ -125,5 +203,35 @@ function props() {
     onReducedMotion: () => undefined,
     onVideo: () => undefined,
     actionMessage: "",
+    creator: panel(composeCreator({
+      ownerAccountId: "",
+      sessionAccountId: "",
+      optimisticPublished: false,
+      upload: null,
+      availability: null,
+      chain: null,
+      indexerStale: false,
+      withdrawn: false,
+      activeLeaseProviders: [],
+      removalRequested: false,
+      mediaStatus: "",
+      playbackPublication: "",
+    }), ""),
+    onCreatorField: () => undefined,
+    onCreatorFile: () => undefined,
+    onCreatorAction: () => undefined,
+  };
+}
+
+function panel(state: ReturnType<typeof composeCreator>, title: string): CreatorPanel {
+  return {
+    state,
+    snapshot: publicSnapshot(state, ""),
+    fields: { title, description: "", captions: "", trimStart: "0", trimEnd: "1", confirm: "" },
+    fileName: "",
+    message: "",
+    terms: hostingTerms(null),
+    analytics: analyticsLines(emptyAggregates()),
+    videos: [],
   };
 }

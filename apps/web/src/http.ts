@@ -32,6 +32,36 @@ export async function postJson(url: string, body: unknown, signal: AbortSignal, 
   return readBody(response);
 }
 
+export async function putBytes(url: string, bytes: Uint8Array, signal: AbortSignal, token: string): Promise<unknown> {
+  assertNoSecretQuery(url);
+  const headers = new Headers({ Accept: "application/json" });
+  if (token) headers.set("Authorization", `Transfer ${token}`);
+  const response = await fetch(url, {
+    method: "PUT",
+    headers,
+    body: toBuffer(bytes),
+    signal,
+    redirect: "error",
+    credentials: "omit",
+  });
+  if (response.status === 204) return { status: "RECEIVED" };
+  return readBody(response);
+}
+
+export async function deleteJson(url: string, signal: AbortSignal, token = ""): Promise<unknown> {
+  assertNoSecretQuery(url);
+  const headers = new Headers({ Accept: "application/json" });
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(url, { method: "DELETE", headers, signal, redirect: "error", credentials: "omit" });
+  return readBody(response);
+}
+
+function toBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(copy).set(bytes);
+  return copy;
+}
+
 export async function getBytes(url: string, signal: AbortSignal, limit: number): Promise<ByteResponse> {
   assertNoSecretQuery(url);
   const timed = AbortSignal.any([signal, AbortSignal.timeout(800)]);

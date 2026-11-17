@@ -143,6 +143,7 @@ export type ClientSettings = {
   indexerBase: string;
   indexerBase2: string;
   accountBase: string;
+  schedulerBase: string;
   contentIds: string[];
 };
 
@@ -151,6 +152,7 @@ export const EMPTY_SETTINGS: ClientSettings = {
   indexerBase: "",
   indexerBase2: "",
   accountBase: "",
+  schedulerBase: "",
   contentIds: [],
 };
 
@@ -473,6 +475,7 @@ export function readSettings(value: unknown): ClientSettings {
     indexerBase: safeBase(stringField(source.indexerBase)),
     indexerBase2: safeBase(stringField(source.indexerBase2)),
     accountBase: safeBase(stringField(source.accountBase)),
+    schedulerBase: safeBase(stringField(source.schedulerBase)),
     contentIds: ids.slice(0, 50),
   };
 }
@@ -483,6 +486,7 @@ export function settingsRecord(settings: ClientSettings): string {
     indexerBase: settings.indexerBase,
     indexerBase2: settings.indexerBase2,
     accountBase: settings.accountBase,
+    schedulerBase: settings.schedulerBase,
     contentIds: settings.contentIds,
   });
 }

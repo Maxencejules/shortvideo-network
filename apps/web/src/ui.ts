@@ -5,9 +5,30 @@
 import { createElement, useEffect, useRef, type KeyboardEvent, type ReactElement, type ReactNode } from "react";
 
 import { EVIDENCE_LABELS } from "./evidence-labels.ts";
+import { RECOVERY_TEXT, stageNames, type CreatorState } from "./creator.ts";
 import type { ClientSettings, FeedRow } from "./model.ts";
 
-export type PageName = "home" | "discover" | "activity" | "profile";
+export type PageName = "home" | "discover" | "activity" | "profile" | "create";
+
+export type CreatorFields = {
+  title: string;
+  description: string;
+  captions: string;
+  trimStart: string;
+  trimEnd: string;
+  confirm: string;
+};
+
+export type CreatorPanel = {
+  state: CreatorState;
+  snapshot: string;
+  fields: CreatorFields;
+  fileName: string;
+  message: string;
+  terms: string[];
+  analytics: string[];
+  videos: { key: string; label: string; stage: string }[];
+};
 
 export type QualityChoice = { id: string; label: string; current: boolean };
 
@@ -75,9 +96,13 @@ export type ViewerProps = {
   onReducedMotion: (value: boolean) => void;
   onVideo: (node: HTMLVideoElement | null) => void;
   actionMessage: string;
+  creator: CreatorPanel;
+  onCreatorField: (name: keyof CreatorFields, value: string) => void;
+  onCreatorFile: (file: File | null) => void;
+  onCreatorAction: (action: string) => void;
 };
 
-const PAGES: PageName[] = ["home", "discover", "activity", "profile"];
+const PAGES: PageName[] = ["home", "discover", "activity", "profile", "create"];
 
 export function Viewer(props: ViewerProps): ReactElement {
   return createElement(
@@ -108,6 +133,7 @@ export function Viewer(props: ViewerProps): ReactElement {
       props.page === "discover" ? discover(props) : null,
       props.page === "activity" ? activity() : null,
       props.page === "profile" ? profile(props) : null,
+      props.page === "create" ? create(props) : null,
     ),
   );
 }
@@ -289,7 +315,17 @@ function profile(props: ViewerProps): ReactElement {
         props.onEnroll(invite);
       } }, "Enroll with this invite"),
     ),
-    createElement("p", { className: "panel" }, "Account recovery is not available."),
+    createElement("p", { className: "panel" }, RECOVERY_TEXT),
+    createElement("h2", null, "Your videos"),
+    props.creator.videos.length === 0
+      ? createElement("p", null, "No upload is stored in this browser.")
+      : createElement(
+          "ul",
+          null,
+          ...props.creator.videos.map((item) =>
+            createElement("li", { key: item.key }, `${item.label}. ${item.stage}`),
+          ),
+        ),
     createElement("button", { type: "button", onClick: props.onExport, disabled: !props.session.signedIn }, "Export account"),
     createElement("button", { type: "button", onClick: props.onBackup, disabled: !props.session.signedIn }, "Create encrypted backup"),
     createElement(
@@ -338,6 +374,7 @@ function settingsForm(props: ViewerProps): ReactElement {
     ["indexerBase", "Indexer"],
     ["indexerBase2", "Second indexer"],
     ["accountBase", "Account"],
+    ["schedulerBase", "Scheduler"],
   ];
   return createElement(
     "form",
@@ -351,6 +388,7 @@ function settingsForm(props: ViewerProps): ReactElement {
           indexerBase: String(data.get("indexerBase") ?? ""),
           indexerBase2: String(data.get("indexerBase2") ?? ""),
           accountBase: String(data.get("accountBase") ?? ""),
+          schedulerBase: String(data.get("schedulerBase") ?? ""),
           contentIds: String(data.get("contentIds") ?? "")
             .split(/[\s,]+/)
             .filter((item) => item.length > 0),
@@ -390,10 +428,111 @@ function onFeedKey(event: KeyboardEvent<HTMLDivElement>, props: ViewerProps): vo
   }
 }
 
+function create(props: ViewerProps): ReactElement {
+  const panel = props.creator;
+  const locked = !panel.state.canEdit;
+  return createElement(
+    "div",
+    { className: "creator" },
+    createElement("h1", null, "Create"),
+    createElement(
+      "ol",
+      { className: "stages", "aria-label": "Creator stages" },
+      ...stageNames().map((name) =>
+        createElement("li", { key: name, "aria-current": panel.state.stage === name ? "step" : undefined }, name),
+      ),
+    ),
+    createElement("p", { id: "creator-stage", role: "status", "aria-live": "polite" }, panel.state.stage),
+    panel.state.progressMax
+      ? createElement("progress", { max: panel.state.progressMax, value: panel.state.progressValue ?? 0 })
+      : null,
+    ...panel.state.notices.map((notice) => createElement("p", { key: notice }, notice)),
+    createElement(
+      "label",
+      null,
+      "Video file",
+      createElement("input", {
+        id: "video-file",
+        type: "file",
+        accept: "video/mp4,video/quicktime",
+        disabled: locked,
+        onChange: (event: { currentTarget: HTMLInputElement }) => {
+          props.onCreatorFile(event.currentTarget.files?.[0] ?? null);
+        },
+      }),
+    ),
+    createElement("p", null, panel.fileName ? `Selected file ${panel.fileName}` : "No file is selected."),
+    field(props, "trimStart", "Trim start, seconds"),
+    field(props, "trimEnd", "Trim end, seconds"),
+    field(props, "title", "Title"),
+    textArea(props, "description", "Description"),
+    textArea(props, "captions", "Captions"),
+    createElement("p", null, "Thumbnail"),
+    createElement(
+      "label",
+      null,
+      createElement("input", { type: "radio", name: "thumbnail", checked: true, readOnly: true }),
+      "Worker thumbnail",
+    ),
+    createElement(
+      "label",
+      null,
+      createElement("input", { type: "radio", name: "thumbnail", disabled: true }),
+      "Another frame",
+    ),
+    createElement("h2", null, "Hosting terms"),
+    ...panel.terms.map((line) => createElement("p", { key: line }, line)),
+    createElement("h2", null, "Analytics"),
+    ...panel.analytics.map((line) => createElement("p", { key: line }, line)),
+    createElement("p", { className: "panel" }, RECOVERY_TEXT),
+    createElement("button", { type: "button", onClick: props.onExport, disabled: locked }, "Export account"),
+    field(props, "confirm", "Confirmation word"),
+    createElement("button", { type: "button", id: "creator-upload", onClick: () => props.onCreatorAction("upload"), disabled: locked }, "Upload"),
+    createElement("button", { type: "button", id: "creator-refresh", onClick: () => props.onCreatorAction("refresh") }, "Refresh status"),
+    createElement("button", { type: "button", id: "creator-retry", onClick: () => props.onCreatorAction("retry"), disabled: locked }, "Retry"),
+    createElement("button", { type: "button", id: "creator-save", onClick: () => props.onCreatorAction("save") }, "Save draft"),
+    createElement("button", { type: "button", id: "creator-version", onClick: () => props.onCreatorAction("version"), disabled: locked }, "New version"),
+    createElement("button", { type: "button", id: "creator-cancel", onClick: () => props.onCreatorAction("cancel"), disabled: locked }, "Cancel upload"),
+    createElement("button", { type: "button", id: "creator-publish", onClick: () => props.onCreatorAction("publish"), disabled: locked }, "Publication intent"),
+    createElement("button", { type: "button", id: "creator-remove", onClick: () => props.onCreatorAction("remove"), disabled: locked }, "Removal request"),
+    createElement("button", { type: "button", id: "creator-delete", onClick: () => props.onCreatorAction("delete") }, "Delete draft"),
+    panel.message ? createElement("p", { id: "creator-message", role: "status" }, panel.message) : null,
+    createElement("pre", { id: "svn-creator" }, panel.snapshot),
+  );
+}
+
+function field(props: ViewerProps, name: keyof CreatorFields, labelText: string): ReactElement {
+  return createElement(
+    "label",
+    null,
+    labelText,
+    createElement("input", {
+      name,
+      value: props.creator.fields[name],
+      autoComplete: "off",
+      onChange: (event: { currentTarget: HTMLInputElement }) => props.onCreatorField(name, event.currentTarget.value),
+    }),
+  );
+}
+
+function textArea(props: ViewerProps, name: keyof CreatorFields, labelText: string): ReactElement {
+  return createElement(
+    "label",
+    null,
+    labelText,
+    createElement("textarea", {
+      name,
+      value: props.creator.fields[name],
+      onChange: (event: { currentTarget: HTMLTextAreaElement }) => props.onCreatorField(name, event.currentTarget.value),
+    }),
+  );
+}
+
 function label(page: PageName): string {
   if (page === "home") return "Home";
   if (page === "discover") return "Discover";
   if (page === "activity") return "Activity";
+  if (page === "create") return "Create";
   return "Profile";
 }
 
