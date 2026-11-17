@@ -14,12 +14,14 @@ Status: BLOCKED
 
 | Item | Value |
 | --- | --- |
-| Commit | `903d7022161013b15994c69e0e03e652c3646ba8` |
-| Tree | `ecce301f1aa081d96711dcfae26052a6a53a21a8` |
+| Commit | `bb637fa19d2ee2cfa9774f59c62edd36256533d2` |
+| Tree | `fd0f0089c6b9aa66c9e289d7eb659feb8e0fc2ef` |
 | Base | `536f1f12581baa58b9c01adfa373feeddcd1ae49` |
 | Branch | `goal-24` |
 
-The tested commit message carries `Tested-tree: ecce301f1aa081d96711dcfae26052a6a53a21a8`. `git rev-parse 903d7022161013b15994c69e0e03e652c3646ba8^{tree}` is that tree. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: fd0f0089c6b9aa66c9e289d7eb659feb8e0fc2ef`. `git rev-parse bb637fa19d2ee2cfa9774f59c62edd36256533d2^{tree}` is that tree. That commit adds `services/operator/` to the requirements checker allowlist at `docs/evidence/goal-01/check_requirements.py:207`. The dashboard code is the parent implementation. Later commits change only `docs/evidence/`.
+
+[Run 44160840392](https://github.com/Maxencejules/shortvideo-network/actions/runs/44160840392) on `3c0dc00213eef00fa122accc1c766ab054f4df65` failed the `contract` job. The checker reported `application source present` for the six Go files under `services/operator`. This tested commit is the fix. [requirements.txt](logs/goal-24/requirements.txt) line 30 is `errors 0` and line 64 is `result PASS`.
 
 ## Captures
 
@@ -43,6 +45,7 @@ Every log under [logs/goal-24/](logs/goal-24/) was captured while `git status --
 | `python3 scripts/scan_secrets.py` | tracked files | [secrets.txt](logs/goal-24/secrets.txt) | line 5 `secret scan ok`, line 6 `EXIT:0` |
 | `python3 scripts/workflow_policy.py` | the workflow file | [workflow.txt](logs/goal-24/workflow.txt) | line 5 `workflow policy ok files 1`, line 6 `EXIT:0` |
 | `python3 scripts/write_sbom.py --check` | lockfiles | [sbom.txt](logs/goal-24/sbom.txt) | line 5 `sbom ok components 1389`, line 6 `EXIT:0` |
+| `python3 docs/evidence/goal-01/check_requirements.py` | requirements checker | [requirements.txt](logs/goal-24/requirements.txt) | line 64 `result PASS`, line 66 `EXIT:0` |
 | PostgreSQL binaries | `/usr/lib/postgresql/16` and `/usr/lib/postgresql/18` | [pg16.txt](logs/goal-24/pg16.txt) | line 5 `pg16 absent`, line 6 `pg18 absent`, line 7 `EXIT:1` |
 | `docker version` | host | [docker.txt](logs/goal-24/docker.txt) | line 5 `docker: command not found`, line 6 `EXIT:127` |
 | `golangci-lint version` | host | [golangci.txt](logs/goal-24/golangci.txt) | line 5 `golangci-lint: command not found`, line 6 `EXIT:127` |
@@ -51,7 +54,7 @@ Every log under [logs/goal-24/](logs/goal-24/) was captured while `git status --
 
 [node.txt](logs/goal-24/node.txt) pass counts are line 93 `14`, line 181 `13`, line 251 `10`, line 291 `5`, line 319 `3`, line 335 `1`, line 357 `2`, and line 415 `8`. Each following line is `# fail 0`. Line 258 is `storage does not select validator`. The suite total is 56 passing tests.
 
-[pytest.txt](logs/goal-24/pytest.txt) line 6 is `32 passed in 2.71s`. That includes the browser run against `svn-operator`.
+[pytest.txt](logs/goal-24/pytest.txt) line 6 is `32 passed in 2.89s`. That includes the browser run against `svn-operator`.
 
 The operator module adds no third-party Go module and no `go.sum`. `agents/provider` tests import it through a `replace`. [sbom.txt](logs/goal-24/sbom.txt) line 5 stayed `sbom ok`.
 
@@ -64,7 +67,7 @@ These numbers are this VM, one physical machine, two provider processes. They ar
 | Step | Observation |
 | --- | --- |
 | Onboard | `storage=true validator=false forces_validator=false single_machine=true` |
-| Delivery | HTTP 200, `used_bytes=64`, provider `disk_available_bytes=261624107008` |
+| Delivery | HTTP 200, `used_bytes=64`, provider `disk_available_bytes=261620527104` |
 | Exhaust | quota set to 64, next accept HTTP 409 `insufficient quota` |
 | Drain | serving stays 200, a new offer is `draining` |
 | Handoff | alpha 410, beta 200, `used_after=0`, `broadcasts_added=0` |
@@ -72,7 +75,7 @@ These numbers are this VM, one physical machine, two provider processes. They ar
 
 [provider-test.txt](logs/goal-24/provider-test.txt) line 37 is `TestConformance` still passing. Line 45 is the dashboard flow. The package bytes were fetched from the provider process and the sha256 matched inside that test.
 
-[operator-test.txt](logs/goal-24/operator-test.txt) line 7 prints `local_disk_available_bytes=2.61682601984e+11`, which is 261682601984 bytes, class `measured`. That is statfs on this process. The note in the service is `services/operator/dash/model.go:102`.
+[operator-test.txt](logs/goal-24/operator-test.txt) line 7 prints `local_disk_available_bytes=2.61677277184e+11`, which is 261677277184 bytes, class `measured`. That is statfs on this process. The note in the service is `services/operator/dash/model.go:102`.
 
 ## Acceptance
 

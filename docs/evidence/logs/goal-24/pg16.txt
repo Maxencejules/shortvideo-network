@@ -1,5 +1,5 @@
-HEAD 903d7022161013b15994c69e0e03e652c3646ba8
-TREE ecce301f1aa081d96711dcfae26052a6a53a21a8
+HEAD bb637fa19d2ee2cfa9774f59c62edd36256533d2
+TREE fd0f0089c6b9aa66c9e289d7eb659feb8e0fc2ef
 CMD bash -lc if\ \[\ -x\ /usr/lib/postgresql/16/bin/postgres\ \]\;\ then\ echo\ pg16\ present\;\ else\ echo\ pg16\ absent\;\ fi\;\ if\ \[\ -x\ /usr/lib/postgresql/18/bin/postgres\ \]\;\ then\ echo\ pg18\ present\;\ else\ echo\ pg18\ absent\;\ fi\;\ exit\ 1
 DIRTY no
 pg16 absent
