@@ -14,22 +14,22 @@ Reports, account blocks, a moderator queue, decisions, appeals, escalation, and 
 
 | Item | Value |
 | --- | --- |
-| Commit | `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5` |
-| Tree | `5407ec1d9d5c7fb49ee18768b9c2ed829558aa4d` |
+| Commit | `21672f8609ce0def3bb7973ea8598344ba472818` |
+| Tree | `e1d349cb4bffeedf3adc7d0d220378ea7f499ba9` |
 | Base | `39e98b05137a10e5b12c8e3962b4934a297db6a4` |
 | Branch | `goal-23` |
 
-The tested commit message carries `Tested-tree: 5407ec1d9d5c7fb49ee18768b9c2ed829558aa4d`. `git rev-parse 366eb6b6d3b533a37b2cd62d4459946bf8ac92b5^{tree}` is that tree. It filters search. The earlier tested commit `7fc13c2fae788ca256cd7516878e3184feae9661` (tree `407e652e4515e66b6c4430f428db3a8ffcd57d78`) did not. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: e1d349cb4bffeedf3adc7d0d220378ea7f499ba9`. `git rev-parse 21672f8609ce0def3bb7973ea8598344ba472818^{tree}` is that tree. It requires the content owner on `POST /removal` and an operator session on `POST /v1/policy/delist`. The earlier tested commit `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5` (tree `5407ec1d9d5c7fb49ee18768b9c2ed829558aa4d`) filters search and does not contain those checks. Later commits change only `docs/evidence/`.
 
 ## Captures
 
-[moderation.txt](logs/goal-23/moderation.txt) and [race.txt](logs/goal-23/race.txt) were captured on `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5` while `git status --porcelain` was empty. Their line 3 is `DIRTY no`. The other logs stay the captures on `7fc13c2fae788ca256cd7516878e3184feae9661`. Each of those also has line 3 `DIRTY no`. They were not re-run. The commands ran from the repository root. A `cd` inside a command is the scope of that command.
+[removal-auth.txt](logs/goal-23/removal-auth.txt) was captured on `21672f8609ce0def3bb7973ea8598344ba472818` while `git status --porcelain` was empty. Its line 3 is `DIRTY no`. [moderation.txt](logs/goal-23/moderation.txt) and [race.txt](logs/goal-23/race.txt) stay the captures on `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5`. Their line 3 is `DIRTY no`. They were not re-run. The other logs stay the captures on `7fc13c2fae788ca256cd7516878e3184feae9661`. Each of those also has line 3 `DIRTY no`. The commands ran from the repository root. A `cd` inside a command is the scope of that command.
 
 `apps/web/dist/` is not ignored. [browser.txt](logs/goal-23/browser.txt) line 8 and [creator-browser.txt](logs/goal-23/creator-browser.txt) line 8 are `?? apps/web/dist/`. That directory was removed after each of those commands and was not committed. Every other log ends `AFTER clean`. No other untracked path remained when the captures finished.
 
 ## Head CI
 
-[Run 44138496171](https://github.com/Maxencejules/shortvideo-network/actions/runs/44138496171) on `c422b930c6cfe11bcec5b5828df7d08981bd1a95` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. That head contains the search filter. It differs from the tested commit `366eb6b6d3b533a37b2cd62d4459946bf8ac92b5` only under `docs/evidence/`. This paragraph is added after `c422b93`. The commit that adds it is a new head, so this file names `c422b93` and not that later head. Earlier runs [44132283702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44132283702) and [44134781022](https://github.com/Maxencejules/shortvideo-network/actions/runs/44134781022) also finished `success`. They do not include the search filter.
+The head that contains the owner and operator checks does not have a recorded CI run in this commit. [Run 44138496171](https://github.com/Maxencejules/shortvideo-network/actions/runs/44138496171) on `c422b930c6cfe11bcec5b5828df7d08981bd1a95` finished with conclusion `success`. That head contains the search filter and does not contain the owner or operator checks. Earlier runs [44132283702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44132283702) and [44134781022](https://github.com/Maxencejules/shortvideo-network/actions/runs/44134781022) also finished `success`. They do not include the search filter.
 
 ## What ran
 
@@ -53,6 +53,7 @@ The tested commit message carries `Tested-tree: 5407ec1d9d5c7fb49ee18768b9c2ed82
 | PostgreSQL binaries | `/usr/lib/postgresql/16` and `/usr/lib/postgresql/18` | [pg16.txt](logs/goal-23/pg16.txt) | line 5 `pg16 absent`, line 6 `pg18 absent`, line 7 `EXIT:1` |
 | `docker version` | host | [docker.txt](logs/goal-23/docker.txt) | line 5 `bash: line 1: docker: command not found`, line 6 `EXIT:127` |
 | `golangci-lint version` | host | [golangci.txt](logs/goal-23/golangci.txt) | line 5 `bash: line 1: golangci-lint: command not found`, line 6 `EXIT:127` |
+| `go test -count=1 -timeout 60s -v` | `services/api/internal/service/removaltest` | [removal-auth.txt](logs/goal-23/removal-auth.txt) | line 6 `--- PASS`, line 9 `EXIT:0` |
 
 [runtime.txt](logs/goal-23/runtime.txt) line 5 is `v22.23.4`. Line 6 is `10.9.9`. Line 7 is `Python 3.12.3`. Line 8 begins with `go version go1.26.10`. Line 9 begins with `Google Chrome 157.0.8103.50`. Line 10 begins with `Linux 6.12.113+`.
 
@@ -60,7 +61,7 @@ The tested commit message carries `Tested-tree: 5407ec1d9d5c7fb49ee18768b9c2ed82
 
 [node.txt](logs/goal-23/node.txt) pass counts are line 93 `14`, line 181 `13`, line 251 `10`, line 279 `3`, line 295 `1`, line 317 `2`, and line 375 `8`. Each following line is `# fail 0`. The suite total is 51 passing tests.
 
-The `services/api` packages that start PostgreSQL through `pgdev` were not run. PostgreSQL is not installed here. That is BLOCKED, not a pass. `go vet` on `services/api/internal/service` did run ([govet.txt](logs/goal-23/govet.txt) line 5).
+The `services/api` packages that start PostgreSQL through `pgdev` were not run. PostgreSQL is not installed here. That is BLOCKED, not a pass. `go vet` on `services/api/internal/service` did run ([govet.txt](logs/goal-23/govet.txt) line 5). That vet log is the capture on `7fc13c2fae788ca256cd7516878e3184feae9661`. It was not re-run after the authorization change. [removal-auth.txt](logs/goal-23/removal-auth.txt) line 6 is the handler test. It uses an in-memory owner map and does not open PostgreSQL.
 
 ## Delisting gate
 
@@ -82,9 +83,9 @@ The slow controlled host and the unresponsive independent host keep `successful_
 
 | Stage or fault | Status | Where |
 | --- | --- | --- |
-| Uploading | VERIFIED for the local pipeline and the upload gate function | [moderation.txt](logs/goal-23/moderation.txt) line 10. `services/api/internal/moderation/removal.go` stops the uploading stage. `services/api/internal/service/http.go:402` refuses a blocked account. The HTTP upload process was not started here. |
+| Uploading | VERIFIED for the local pipeline and the upload gate function | [moderation.txt](logs/goal-23/moderation.txt) line 10. `services/api/internal/moderation/removal.go` stops the uploading stage. `services/api/internal/service/http.go:61` calls `withheld` before an upload is stored. `services/api/internal/service/http.go:422` is the blocked-account check. The HTTP upload process was not started here. |
 | Processing | VERIFIED for a queued filesystem job | [pytest.txt](logs/goal-23/pytest.txt) line 6 includes `tests/unit/test_media_delist.py`. `workers/media/svn_media/queue.py:293` cancels before encode. |
-| Replicating | VERIFIED that a stalled read does not publish after a local delist | [scheduler.txt](logs/goal-23/scheduler.txt) line 9. `services/scheduler/internal/sched/sched.go:306` returns before a new offer. `services/scheduler/internal/sched/sched.go:1098` is `DelistLocal`. |
+| Replicating | VERIFIED that a stalled read does not publish after a local delist | [scheduler.txt](logs/goal-23/scheduler.txt) line 9. `services/scheduler/internal/sched/sched.go:308` returns before a new offer. `services/scheduler/internal/sched/sched.go:1098` is `DelistLocal`. |
 | Repair | VERIFIED that repair does not post an offer | Same scheduler log. The discovery removal test also refuses `AllowRepair` ([moderation.txt](logs/goal-23/moderation.txt) line 27). |
 | Playback | VERIFIED that the cache drops without a chain note of HELD | [pytest.txt](logs/goal-23/pytest.txt) line 6 includes `tests/unit/test_delivery_hosts.py`. `services/delivery/svn_delivery/catalog.py:196`. |
 | Storage admission | VERIFIED that a delisted id is refused before fetch | [provider.txt](logs/goal-23/provider.txt) line 9. `agents/provider/internal/agent/accept.go:144`. |
@@ -105,8 +106,9 @@ The slow controlled host and the unresponsive independent host keep `successful_
 | Account takedown | VERIFIED | Same test. The bearer no longer works, a new session is refused, `history_erased` is false, and `universal_deletion` is false. |
 | UI report and block | VERIFIED against `svn-discovery` | [browser.txt](logs/goal-23/browser.txt) line 6. The test then reads `GET /v1/reports` and `GET /v1/blocks`. The report list does not contain the narrative. |
 | Creator removal request | VERIFIED in the client and against the discovery removal route | [node.txt](logs/goal-23/node.txt) line 93 includes the removal test. [creator-browser.txt](logs/goal-23/creator-browser.txt) line 6 expects `REMOVAL_ACCEPTED` from the stand-in, which is not `svn-api`. The discovery route is `services/api/internal/social/http.go:62` and is covered by [moderation.txt](logs/goal-23/moderation.txt) line 27. `apps/web/src/creator.ts:575` sends the request. |
-| Policy and contact page | VERIFIED as placeholders | `GET /v1/policy` is in the queue test. The page copy is `apps/web/src/ui.ts:633`. `services/api/internal/moderation/policy.go:59` forces `legal_approval` false. |
-| Upload and publication HTTP | BLOCKED | PostgreSQL is absent ([pg16.txt](logs/goal-23/pg16.txt) line 5). The routes are `services/api/internal/service/http.go:344` and the refusal is `services/api/internal/service/http.go:416`. Vet compiled the package. The tests that start PostgreSQL were not run. |
+| Policy and contact page | VERIFIED as placeholders | `GET /v1/policy` is in the queue test. The page copy is `apps/web/src/ui.ts:633`. `services/api/internal/moderation/policy.go:62` sets `LegalApproval` false. |
+| Upload removal authorization | VERIFIED at the handler | [removal-auth.txt](logs/goal-23/removal-auth.txt) line 6. A non-owner receives 403 on `POST /removal` and the item stays publishable. The owner receives 202 and the gate then refuses publication. No session and a creator session receive 403 on `POST /v1/policy/delist` and the gate does not change. An operator session receives 200 and the gate delists the content and blocks the account. `services/api/internal/service/http.go:346` is `removal`. `services/api/internal/service/http.go:369` is the owner refusal. `services/api/internal/service/http.go:381` is `policyDelist`. `services/api/internal/service/http.go:384` is the operator refusal. `services/api/internal/service/http.go:473` builds the harness. |
+| Upload and publication HTTP | BLOCKED for the database path | PostgreSQL is absent ([pg16.txt](logs/goal-23/pg16.txt) line 5). `services/api/internal/service/store.go:337` is `ContentOwner`. That query was not executed. The publication refusal is `services/api/internal/service/http.go:432`. The tests that start PostgreSQL were not run. |
 | PostgreSQL persistence of cases | BLOCKED | Restart loses the in-memory rows. |
 | golangci-lint | BLOCKED | [golangci.txt](logs/goal-23/golangci.txt) line 6 `EXIT:127`. |
 | Compose | BLOCKED | [docker.txt](logs/goal-23/docker.txt) line 6 `EXIT:127`. The daemon on port 2375 was not used. |
@@ -127,7 +129,7 @@ The slow controlled host and the unresponsive independent host keep `successful_
 | DR-23-05 | OPEN, BLOCKED | PostgreSQL is absent. Moderation rows are in memory and are lost on restart. |
 | DR-23-06 | OPEN | The five-minute figure is a PROPOSED gate. The measurement above is this test's clock, not a service promise. |
 | DR-23-07 | OPEN | No appeal authority is named. Escalation status is recorded. The authority line is `PLACEHOLDER unassigned`. |
-| DR-23-08 | OPEN, BLOCKED | The upload service's `POST /removal` and `POLICY_WITHHELD` path were not executed here. PostgreSQL is absent. `go vet` compiled the package. |
+| DR-23-08 | OPEN, BLOCKED for the database path | Authorization of `POST /removal` and `POST /v1/policy/delist` ran in [removal-auth.txt](logs/goal-23/removal-auth.txt) line 6. The check uses the session and the operator role. There is no dev bypass on these routes. `Store.ContentOwner` (`services/api/internal/service/store.go:337`) and the `POLICY_WITHHELD` publication path (`services/api/internal/service/http.go:432`) were not executed. PostgreSQL is absent. |
 | DR-23-09 | OPEN | A committed publication does not clear a local delist. Validators are not given a legality vote. The complaint is not a chain message. |
 | DR-23-10 | OPEN, BLOCKED | One machine. An unresponsive independent host was a test double, not a second operator. That host was not counted as deleted. |
 
@@ -155,7 +157,7 @@ The requirements matrix was not edited.
 | REQ-MEDIA-008 | Cooperating services in the tests delist. An independent host that does not answer is disclosed. |
 | REQ-UX-016 | Report and block in the viewer call the discovery process. |
 | REQ-UX-017 | The creator removal control sends a request. The stand-in in the creator browser is not `svn-api`. |
-| REQ-API-001 | `POST /v1/reports` and `POST /v1/removal` are implemented on discovery. The upload HTTP tests did not run. |
+| REQ-API-001 | `POST /v1/reports` and `POST /v1/removal` are implemented on discovery. Upload `POST /removal` and `POST /v1/policy/delist` authorization ran through the harness. The PostgreSQL handler tests did not run. |
 | REQ-SCOPE-018 | The policy page carries the placeholder contact lines. |
 
 ## Next safe action
