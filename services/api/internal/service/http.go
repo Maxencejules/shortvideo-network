@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/account"
+	"github.com/Maxencejules/shortvideo-network/services/api/internal/moderation"
 )
 
 var (
@@ -342,7 +344,7 @@ func (s *Service) publish(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) removal(w http.ResponseWriter, r *http.Request) {
-	principal, err := s.session(r)
+	principal, err := s.identity(r)
 	if err != nil {
 		writeMapped(w, err)
 		return
@@ -358,6 +360,15 @@ func (s *Service) removal(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "MALFORMED", "request body is not valid")
 		return
 	}
+	owner, ok, err := s.contentOwner(r.Context(), body.ContentID)
+	if err != nil {
+		writeMapped(w, err)
+		return
+	}
+	if !ok || owner != principal.AccountID {
+		writeError(w, http.StatusForbidden, "FORBIDDEN", "only the owner can request removal")
+		return
+	}
 	s.gate.Delist(body.ContentID)
 	writeJSON(w, http.StatusAccepted, map[string]any{
 		"content_id": body.ContentID, "account_id": principal.AccountID,
@@ -368,6 +379,11 @@ func (s *Service) removal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) policyDelist(w http.ResponseWriter, r *http.Request) {
+	principal, err := s.identity(r)
+	if err != nil || principal.Role != "operator" {
+		writeError(w, http.StatusForbidden, "FORBIDDEN", "an operator session is required")
+		return
+	}
 	var body struct {
 		ContentID string `json:"content_id"`
 		AccountID string `json:"account_id"`
@@ -417,6 +433,17 @@ func (s *Service) policyDenied(w http.ResponseWriter) {
 }
 
 func (s *Service) session(r *http.Request) (Principal, error) {
+	principal, err := s.identity(r)
+	if err != nil {
+		return Principal{}, err
+	}
+	if principal.Role != "creator" {
+		return Principal{}, errRole
+	}
+	return principal, nil
+}
+
+func (s *Service) identity(r *http.Request) (Principal, error) {
 	if s.accounts != nil {
 		sess, err := s.accounts.Authenticate(r)
 		if err != nil {
@@ -425,8 +452,8 @@ func (s *Service) session(r *http.Request) (Principal, error) {
 			}
 			return Principal{}, errUnauthenticated
 		}
-		if sess.Role != "creator" {
-			return Principal{}, errRole
+		if sess.AccountID == "" || sess.Role == "" {
+			return Principal{}, errUnauthenticated
 		}
 		return Principal{AccountID: sess.AccountID, Role: sess.Role}, nil
 	}
@@ -435,13 +462,29 @@ func (s *Service) session(r *http.Request) (Principal, error) {
 		return Principal{}, errUnauthenticated
 	}
 	principal, err := s.verify.Verify(token)
-	if err != nil {
+	if err != nil || principal.AccountID == "" || principal.Role == "" {
 		return Principal{}, errUnauthenticated
 	}
-	if principal.Role != "creator" {
-		return Principal{}, errRole
-	}
 	return principal, nil
+}
+
+// NewRemovalHarness serves the removal routes with an in-memory owner map.
+// It does not open a database. Production uses the store lookup.
+func NewRemovalHarness(verify Verifier, owners map[string]string) (*moderation.Gate, http.Handler) {
+	gate := moderation.NewGate()
+	svc := &Service{gate: gate, verify: verify, ownerMap: owners}
+	return gate, svc.Handler()
+}
+
+func (s *Service) contentOwner(ctx context.Context, contentID string) (string, bool, error) {
+	if s.ownerMap != nil {
+		owner, ok := s.ownerMap[contentID]
+		return owner, ok && owner != "", nil
+	}
+	if s.store == nil {
+		return "", false, nil
+	}
+	return s.store.ContentOwner(ctx, contentID)
 }
 
 func (s *Service) transferUpload(r *http.Request) (uploadRow, error) {

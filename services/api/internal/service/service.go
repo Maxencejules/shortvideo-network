@@ -27,6 +27,7 @@ type Service struct {
 	ffprobe  string
 	db       *sql.DB
 	gate     *moderation.Gate
+	ownerMap map[string]string
 }
 
 // Options is the process configuration. Database is required.

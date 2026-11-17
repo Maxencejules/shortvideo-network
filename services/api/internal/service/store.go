@@ -333,6 +333,30 @@ func (s *Store) ByTransfer(ctx context.Context, tokenHash string) (uploadRow, er
 	return s.Owned(ctx, id, owner)
 }
 
+// ContentOwner is the single account that owns contentID. Zero or several owners are not a match.
+func (s *Store) ContentOwner(ctx context.Context, contentID string) (string, bool, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT DISTINCT owner_account_id FROM api.uploads WHERE content_id = $1`, contentID)
+	if err != nil {
+		return "", false, err
+	}
+	defer rows.Close()
+	var owners []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return "", false, err
+		}
+		owners = append(owners, id)
+	}
+	if err := rows.Err(); err != nil {
+		return "", false, err
+	}
+	if len(owners) != 1 || owners[0] == "" {
+		return "", false, nil
+	}
+	return owners[0], true, nil
+}
+
 // Owned loads one upload for its owner. Another account gets the not-found error.
 func (s *Store) Owned(ctx context.Context, uploadID, owner string) (uploadRow, error) {
 	return loadOwned(ctx, s.db, uploadID, owner)
