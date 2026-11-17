@@ -18,9 +18,9 @@ export const RECOVERY_TEXT = "Account recovery is not available. DEC-001 is unse
 export const PUBLISHED_TEXT =
   "Published means the moderation and hosting conditions in this read are satisfied. It does not mean the chain certified this video as lawful or truthful.";
 export const REVIEW_TEXT =
-  "Review pending. Goal 23 moderation is not implemented, so this screen cannot complete review. This is not Published.";
+  "Review pending. Goal 23 records a moderator decision separately, so this screen cannot complete review. This is not Published.";
 export const REMOVAL_TEXT =
-  "Removal was not sent. No creator removal route exists. Goal 23 owns moderation removal. This does not delete copies and it is not universal deletion.";
+  "A removal request was sent. It delists cooperating services. It does not erase independent copies or historical ledger records. This is not universal deletion.";
 export const WITHDRAWN_TEXT =
   "Withdrawn. Playback is not requested. This is not universal deletion.";
 export const TRIM_TEXT =
@@ -310,6 +310,7 @@ export function explainError(code: string): string {
     case "CONFIRMATION_REQUIRED":
       return "This action needs the confirmation word.";
     case "REMOVAL_UNAVAILABLE":
+    case "REMOVAL_ACCEPTED":
       return REMOVAL_TEXT;
     case "STATE":
       return "The upload is not in a state that accepts this action.";
@@ -396,7 +397,7 @@ export function composeCreator(input: ComposeInput): CreatorState {
   }
   if (publishedNow(input)) {
     notices.push(PUBLISHED_TEXT);
-    notices.push("Goal 23 moderation completion is not this screen. Published is shown because this read already says the approval and hosting conditions hold.");
+    notices.push("This screen does not grant community approval. Published is shown because this read already says the approval and hosting conditions hold.");
     return { ...base, stage: "Published", published: true };
   }
   const uploading = upload !== null && (upload.status === "RESERVED" || upload.status === "RECEIVING" || upload.status === "RECEIVED");
@@ -571,19 +572,40 @@ export async function performPublish(
   return { ok: true, code: "NOT_PUBLISHED", idempotent: false, published: false, sent: true, upload: null, draft };
 }
 
-export function performRemoval(draft: Draft, confirm: string, session: SessionAuth): ActionResult {
+export async function performRemoval(
+  draft: Draft,
+  confirm: string,
+  session: SessionAuth,
+  base: string,
+  path: string,
+  transport: Transport,
+): Promise<ActionResult> {
   if (confirm !== "withdraw") return failure("CONFIRMATION_REQUIRED", draft);
   const owned = own(draft, session);
   if (owned) return failure(owned, draft);
-  return {
-    ok: true,
-    code: "REMOVAL_UNAVAILABLE",
-    idempotent: draft.removalRequested,
-    published: false,
-    sent: false,
-    upload: null,
-    draft: { ...draft, removalRequested: true },
-  };
+  if (!base || !path.startsWith("/")) {
+    return { ...failure("REMOVAL_UNAVAILABLE", draft), draft: { ...draft, removalRequested: true } };
+  }
+  try {
+    const body = await transport.postJson(join(base, path), {
+      content_id: draft.contentId,
+      confirm: "withdraw",
+    }, session.token);
+    if (!isRecord(body) || body.universal_deletion !== false || body.ledger_retained !== true || body.legal_approval === true) {
+      return failure("MALFORMED", draft);
+    }
+    return {
+      ok: true,
+      code: "REMOVAL_ACCEPTED",
+      idempotent: body.duplicate === true,
+      published: false,
+      sent: true,
+      upload: null,
+      draft: { ...draft, removalRequested: true },
+    };
+  } catch (error) {
+    return failure(codeOf(error), draft);
+  }
 }
 
 export function shareInflight<T>(map: Map<string, Promise<T>>, key: string, start: () => Promise<T>): Promise<T> {

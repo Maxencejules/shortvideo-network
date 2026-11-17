@@ -117,7 +117,7 @@ test("another account cannot cancel, publish, or remove", async () => {
   const published = await performPublish(draft, "publish", other, "http://127.0.0.1:9", transport);
   assert.equal(published.published, false);
   assert.equal(published.sent, false);
-  const removed = performRemoval(draft, "withdraw", other);
+  const removed = await performRemoval(draft, "withdraw", other, "http://127.0.0.1:9", "/v1/removal", transport);
   assert.equal(removed.code, "NOT_OWNER");
   assert.equal(removed.sent, false);
 });
@@ -148,15 +148,21 @@ test("publication intent cannot mark the video published", async () => {
   assert.match(state.notices.join(" "), /local publish flag is ignored/);
 });
 
-test("removal is not sent and does not claim universal deletion", () => {
+test("removal is sent and does not claim universal deletion", async () => {
   const draft = { ...readyDraft(), uploadId: UPLOAD, ownerAccountId: "acct", contentId: CONTENT };
-  const missing = performRemoval(draft, "remove", SESSION);
+  const missing = await performRemoval(draft, "remove", SESSION, "http://127.0.0.1:9", "/v1/removal", fake());
   assert.equal(missing.code, "CONFIRMATION_REQUIRED");
-  const result = performRemoval(draft, "withdraw", SESSION);
-  assert.equal(result.sent, false);
+  const offline = await performRemoval(draft, "withdraw", SESSION, "", "/v1/removal", fake());
+  assert.equal(offline.sent, false);
+  assert.equal(offline.code, "REMOVAL_UNAVAILABLE");
+  const transport = fake();
+  const result = await performRemoval(draft, "withdraw", SESSION, "http://127.0.0.1:9", "/v1/removal", transport);
+  assert.equal(result.sent, true);
+  assert.equal(result.code, "REMOVAL_ACCEPTED");
   assert.equal(result.draft?.removalRequested, true);
-  const again = performRemoval(result.draft ?? draft, "withdraw", SESSION);
-  assert.equal(again.idempotent, true);
+  assert.equal(transport.posts.some((item) => item.url.endsWith("/v1/removal")), true);
+  const again = await performRemoval(result.draft ?? draft, "withdraw", SESSION, "http://127.0.0.1:9", "/v1/removal", transport);
+  assert.equal(again.sent, true);
   const withdrawn = composeCreator(input({
     withdrawn: true,
     activeLeaseProviders: ["p1"],
@@ -367,6 +373,15 @@ class FakeTransport implements Transport {
   async postJson(url: string, body: unknown): Promise<unknown> {
     this.posts.push({ url, body });
     if (url.endsWith("/publish")) throw new ApiError("PUBLICATION_BLOCKED", 403);
+    if (url.endsWith("/removal") || url.endsWith("/v1/removal")) {
+      return {
+        universal_deletion: false,
+        ledger_retained: true,
+        legal_approval: false,
+        waited_for_finality: false,
+        duplicate: this.posts.filter((item) => String(item.url).endsWith("removal")).length > 1,
+      };
+    }
     if (url.endsWith("/complete")) {
       if (this.failComplete) throw new ApiError(this.failComplete, 422);
       this.completions += 1;

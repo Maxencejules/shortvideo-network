@@ -48,8 +48,22 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/keys", s.key)
 	mux.HandleFunc("POST /v1/public-records", s.publicRecord)
 	mux.HandleFunc("POST /v1/account/social-deletion", s.deletion)
-	mux.HandleFunc("POST /v1/reports", s.deferred)
-	mux.HandleFunc("POST /v1/blocks", s.deferred)
+	mux.HandleFunc("POST /v1/reports", s.report)
+	mux.HandleFunc("GET /v1/reports", s.listReports)
+	mux.HandleFunc("POST /v1/blocks", s.block)
+	mux.HandleFunc("GET /v1/blocks", s.listBlocks)
+	mux.HandleFunc("GET /v1/moderation/queue", s.queue)
+	mux.HandleFunc("GET /v1/moderation/audit", s.audit)
+	mux.HandleFunc("GET /v1/moderation/cases/{id}", s.getCase)
+	mux.HandleFunc("POST /v1/moderation/cases/{id}/decision", s.decide)
+	mux.HandleFunc("POST /v1/moderation/cases/{id}/appeal", s.appeal)
+	mux.HandleFunc("POST /v1/moderation/cases/{id}/escalate", s.escalate)
+	mux.HandleFunc("POST /v1/moderation/accounts/{id}/takedown", s.takedown)
+	mux.HandleFunc("POST /v1/removal", s.removal)
+	mux.HandleFunc("GET /v1/policy", s.policyPage)
+	if s.dev {
+		mux.HandleFunc("POST /v1/dev/moderator", s.devModerator)
+	}
 	if s.dev {
 		mux.HandleFunc("POST /v1/dev/session", s.devSession)
 	}
@@ -198,7 +212,8 @@ func (s *Service) comment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) listComments(w http.ResponseWriter, r *http.Request) {
-	if _, err := s.bearer(r); err != nil {
+	account, err := s.bearer(r)
+	if err != nil {
 		writeAPI(w, err)
 		return
 	}
@@ -207,7 +222,7 @@ func (s *Service) listComments(w http.ResponseWriter, r *http.Request) {
 		writeAPI(w, err)
 		return
 	}
-	writeResult(w, s.Comments(r.PathValue("content"), r.PathValue("cursor"), limit))
+	writeResult(w, s.Comments(account, r.PathValue("content"), r.PathValue("cursor"), limit))
 }
 
 func (s *Service) deleteComment(w http.ResponseWriter, r *http.Request) {
@@ -404,15 +419,6 @@ func (s *Service) deletion(w http.ResponseWriter, r *http.Request) {
 	writeResult(w, s.DeleteAccount(account))
 }
 
-func (s *Service) deferred(w http.ResponseWriter, r *http.Request) {
-	if _, err := s.bearer(r); err != nil {
-		writeAPI(w, err)
-		return
-	}
-	_, _ = io.Copy(io.Discard, io.LimitReader(r.Body, 1<<16))
-	writeAPI(w, errDeferred)
-}
-
 func (s *Service) devSession(w http.ResponseWriter, r *http.Request) {
 	if r.URL.RawQuery != "" {
 		writeAPI(w, errMalformed)
@@ -552,8 +558,8 @@ func writeAPI(w http.ResponseWriter, err error) {
 		status, code, message = http.StatusBadRequest, "COMMENT_REFUSED", "the comment was refused"
 	case errors.Is(err, errNotFound):
 		status, code, message = http.StatusNotFound, "NOT_FOUND", "that record is not available"
-	case errors.Is(err, errDeferred):
-		status, code, message = http.StatusNotImplemented, "MODERATION_DEFERRED", "Goal 23 moderation is not implemented"
+	case errors.Is(err, errBlocked):
+		status, code, message = http.StatusForbidden, "BLOCKED", "this interaction is blocked"
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "private, no-store")

@@ -144,6 +144,27 @@ def _handler(catalog: Catalog, host_id: str, allow_origin: str) -> type[BaseHTTP
             )
 
         def do_POST(self) -> None:  # noqa: N802
+            path = urlsplit(self.path).path
+            if path == "/v1/delist":
+                try:
+                    payload = _read_body(self)
+                except DeliveryError as exc:
+                    self._fail(exc, True)
+                    return
+                if not isinstance(payload, dict) or not isinstance(payload.get("content_id"), str):
+                    self._fail(DeliveryError("BAD_REQUEST"), True)
+                    return
+                try:
+                    body = json.dumps(
+                        catalog.delist(payload["content_id"]),
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                except DeliveryError as exc:
+                    self._fail(exc, True)
+                    return
+                self._send(200, body, CONTENT_TYPE[".json"], None, "private, no-store", True, None)
+                return
             match = _REPORT.fullmatch(self.path)
             if match is None or not _safe_path(self.path):
                 self._fail(DeliveryError("BAD_REQUEST"), True)

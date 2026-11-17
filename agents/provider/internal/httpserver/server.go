@@ -33,6 +33,7 @@ func (s *Server) Serve(cert, key string) error {
 	mux.HandleFunc("POST /transfers/{transfer_id}/receipt", s.receipt)
 	mux.HandleFunc("POST /admin/drain", s.admin(s.drain))
 	mux.HandleFunc("POST /admin/withdraw", s.admin(s.withdraw))
+	mux.HandleFunc("POST /admin/delist", s.admin(s.delistContent))
 	mux.HandleFunc("POST /admin/rotate", s.admin(s.rotate))
 	httpServer := &http.Server{
 		Handler:           guard(mux),
@@ -148,6 +149,28 @@ func (s *Server) drain(w http.ResponseWriter, _ *http.Request) {
 		writeAgent(w, err)
 		return
 	}
+	writeJSON(w, 200, doc)
+}
+
+func (s *Server) delistContent(w http.ResponseWriter, r *http.Request) {
+	body, err := readBody(r, 4096)
+	if err != nil {
+		writeErr(w, 400, "malformed")
+		return
+	}
+	var in struct {
+		ContentID string `json:"content_id"`
+	}
+	if json.Unmarshal(body, &in) != nil {
+		writeErr(w, 400, "malformed")
+		return
+	}
+	doc, err := s.Agent.Delist(in.ContentID)
+	if err != nil {
+		writeAgent(w, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "private, no-store")
 	writeJSON(w, 200, doc)
 }
 

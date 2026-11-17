@@ -37,9 +37,11 @@ import {
   fetchActivity,
   fetchComments,
   fetchFeed,
+  sendBlock,
   sendComment,
   sendFollow,
   sendLike,
+  sendReport,
   sendNotInterested,
   sendSave,
   sendSearch,
@@ -501,7 +503,11 @@ function App(): ReturnType<typeof createElement> {
       return;
     }
     if (action === "remove") {
-      const result = performRemoval(draft, confirm, auth());
+      const transport = creatorTransport(setServerLimits);
+      const useDiscovery = Boolean(settings.discoveryBase);
+      const base = useDiscovery ? settings.discoveryBase : settings.accountBase;
+      const path = useDiscovery ? "/v1/removal" : "/removal";
+      const result = await performRemoval(draft, confirm, auth(), base, path, transport);
       if (result.draft) rememberDraft(result.draft);
       setCreatorCode(result.code);
       setCreatorMessage(explainError(result.code));
@@ -616,6 +622,8 @@ function App(): ReturnType<typeof createElement> {
       onNotInterested: settings.discoveryBase && bearer && rows[active] ? () => void hideCurrent(settings, rows[active], setActionMessage, () => setDiscoveryTick((n) => n + 1)) : undefined,
       onComment: settings.discoveryBase && bearer && rows[active] ? (text) => void commentCurrent(settings, rows[active], text, setActionMessage, setComments) : undefined,
       onSearch: settings.discoveryBase && bearer ? (kind, query) => void searchCurrent(settings, kind, query, setHits, setActionMessage) : undefined,
+      onBlock: settings.discoveryBase && bearer && rows[active]?.creatorId ? () => void blockCurrent(settings, rows[active], setActionMessage, () => setDiscoveryTick((n) => n + 1)) : undefined,
+      onReport: settings.discoveryBase && bearer && rows[active] ? () => void reportCurrent(settings, rows[active], setActionMessage) : undefined,
     },
   });
 }
@@ -949,6 +957,32 @@ async function followCurrent(
     bump();
   } catch {
     setAction("The follow request did not finish.");
+  }
+}
+
+async function blockCurrent(
+  settings: ClientSettings,
+  row: FeedRow | undefined,
+  setAction: (value: string) => void,
+  bump: () => void,
+): Promise<void> {
+  if (!settings.discoveryBase || !bearer || !row?.creatorId) return;
+  try {
+    await sendBlock(settings.discoveryBase, bearer, row.creatorId, AbortSignal.timeout(8000));
+    setAction("Block stored for this account. It is not a chain transaction.");
+    bump();
+  } catch {
+    setAction("The block request did not finish.");
+  }
+}
+
+async function reportCurrent(settings: ClientSettings, row: FeedRow | undefined, setAction: (value: string) => void): Promise<void> {
+  if (!settings.discoveryBase || !bearer || !row) return;
+  try {
+    await sendReport(settings.discoveryBase, bearer, row.contentId, AbortSignal.timeout(8000));
+    setAction("Report stored. It is not a decision and not a deletion.");
+  } catch {
+    setAction("The report request did not finish.");
   }
 }
 

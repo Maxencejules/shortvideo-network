@@ -86,6 +86,7 @@ class Catalog:
         self._replicas: dict[tuple[str, str, int], Path] = {}
         self._reports: dict[str, dict[str, object]] = {}
         self._hits: list[str] = []
+        self._delisted: set[str] = set()
         self.record_hits = False
         self._chain = "UNAVAILABLE"
         self._load()
@@ -155,6 +156,8 @@ class Catalog:
         if seconds < 1 or seconds > MAX_TERM_SECONDS:
             raise DeliveryError("REFUSED")
         with self._lock:
+            if content_id in self._delisted:
+                raise DeliveryError("REFUSED")
             if self._chain != "HELD":
                 raise DeliveryError("REFUSED")
             record = load_ready_record(self.root, content_id)
@@ -189,6 +192,40 @@ class Catalog:
             self._grants[content_id] = grant
             _write_json(self._grant_path(content_id), _grant_body(grant))
             return grant
+
+    def delist(self, content_id: str) -> dict[str, object]:
+        """Stop playback without waiting for a chain commit. Cache entries drop."""
+        if not ID.fullmatch(content_id):
+            raise DeliveryError("BAD_REQUEST")
+        with self._lock:
+            self._delisted.add(content_id)
+            self._write_delisted_locked()
+            previous = self._grants.get(content_id)
+            if previous is not None:
+                grant = Grant(
+                    content_id=previous.content_id,
+                    content_version=previous.content_version,
+                    manifest_sha256=previous.manifest_sha256,
+                    state="REMOVED",
+                    authorized_until=previous.authorized_until,
+                    host_ids=(),
+                )
+                self._grants[content_id] = grant
+                _write_json(self._grant_path(content_id), _grant_body(grant))
+            self.cache.drop(content_id)
+            return {
+                "content_id": content_id,
+                "removal": "REMOVED",
+                "cache_dropped": True,
+                "waited_for_finality": False,
+                "chain_note": self._chain,
+                "endpoint": "/v1/delist",
+            }
+
+    def _write_delisted_locked(self) -> None:
+        folder = self.root / "playback"
+        folder.mkdir(parents=True, exist_ok=True)
+        _write_json(folder / "delisted.json", {"content_ids": sorted(self._delisted)})
 
     def remove(self, content_id: str) -> None:
         if not ID.fullmatch(content_id):
@@ -349,7 +386,8 @@ class Catalog:
     def _report_allowed(self, content_id: str) -> bool:
         grant = self._grants.get(content_id)
         return (
-            grant is not None
+            content_id not in self._delisted
+            and grant is not None
             and grant.state == "AUTHORIZED"
             and self._now() < grant.authorized_until
         )
@@ -460,7 +498,7 @@ class Catalog:
         if not folder.is_dir():
             return
         for path in sorted(folder.glob("*.json")):
-            if path.name in {"chain.json", "hosts.json"} or path.is_symlink():
+            if path.name in {"chain.json", "hosts.json", "delisted.json"} or path.is_symlink():
                 continue
             grant = _read_grant(path)
             if grant is not None:
@@ -478,8 +516,16 @@ class Catalog:
         folder = self.root / "playback"
         if not folder.is_dir():
             return
+        delisted_path = folder / "delisted.json"
+        if delisted_path.is_file() and not delisted_path.is_symlink():
+            try:
+                value = json.loads(delisted_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                value = None
+            if isinstance(value, dict) and isinstance(value.get("content_ids"), list):
+                self._delisted = {item for item in value["content_ids"] if isinstance(item, str)}
         for path in sorted(folder.glob("*.json")):
-            if path.name == "chain.json" or path.is_symlink():
+            if path.name in {"chain.json", "delisted.json"} or path.is_symlink():
                 continue
             grant = _read_grant(path)
             if grant is not None:

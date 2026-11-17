@@ -144,6 +144,9 @@ func (s *Service) visible(account string, it item) bool {
 	if _, ok := s.hidden[account][it.CreatorID]; ok {
 		return false
 	}
+	if s.blocked(account, it.CreatorID) {
+		return false
+	}
 	if _, ok := s.nope[account][it.ContentID]; ok {
 		return false
 	}

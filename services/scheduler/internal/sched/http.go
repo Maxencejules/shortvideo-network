@@ -44,6 +44,7 @@ func (s *Sched) Handler() http.Handler {
 	})
 	mux.HandleFunc("POST /v1/publications", s.publishHTTP)
 	mux.HandleFunc("POST /v1/repairs", s.repairHTTP)
+	mux.HandleFunc("POST /v1/delist", s.delistHTTP)
 	mux.HandleFunc("POST /v1/origin", s.originHTTP)
 	mux.HandleFunc("POST /v1/hosts", s.hostHTTP)
 	// GET /v1/distribution serves a package this process already accepted.
@@ -135,6 +136,29 @@ func (s *Sched) publishHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, view)
+}
+
+func (s *Sched) delistHTTP(w http.ResponseWriter, r *http.Request) {
+	if !s.allowControl(w, r) {
+		return
+	}
+	var req struct {
+		ContentID string `json:"content_id"`
+		Version   uint64 `json:"version"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil || req.ContentID == "" || req.Version == 0 {
+		http.Error(w, "malformed", http.StatusBadRequest)
+		return
+	}
+	if err := s.DelistLocal(r.Context(), req.ContentID, req.Version); err != nil {
+		http.Error(w, "delist failed", http.StatusBadGateway)
+		return
+	}
+	w.Header().Set("Cache-Control", "private, no-store")
+	writeJSON(w, map[string]any{
+		"content_id": req.ContentID, "local_delist": true, "waited_for_finality": false,
+		"endpoint": "/v1/delist", "chain_end": false,
+	})
 }
 
 func (s *Sched) repairHTTP(w http.ResponseWriter, r *http.Request) {

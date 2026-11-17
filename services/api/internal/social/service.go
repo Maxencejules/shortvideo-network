@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Maxencejules/shortvideo-network/services/api/internal/moderation"
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/records"
 )
 
@@ -44,8 +45,8 @@ var (
 	errRate      = errors.New("rate")
 	errRefused   = errors.New("refused")
 	errNotFound  = errors.New("notfound")
-	errDeferred  = errors.New("deferred")
 	errDuplicate = errors.New("duplicate")
+	errBlocked   = errors.New("blocked")
 
 	idRE    = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
 	idemRE  = regexp.MustCompile(`^[A-Za-z0-9._:-]{1,80}$`)
@@ -54,9 +55,13 @@ var (
 
 // Options configures the in-memory service. Now is injectable so tests do
 // not depend on the wall clock. Dev registers the loopback session route.
+// Delist is the set of cooperating services a removal asks. PolicyPath may
+// replace contact placeholders. It cannot grant legal approval.
 type Options struct {
-	Dev bool
-	Now func() time.Time
+	Dev        bool
+	Now        func() time.Time
+	PolicyPath string
+	Delist     []moderation.Endpoint
 }
 
 type Service struct {
@@ -68,26 +73,35 @@ type Service struct {
 	hits map[string][]time.Time
 	idem map[string]idemRec
 
-	tokens   map[string]string
-	profiles map[string]profile
-	prefs    map[string]pref
-	follows  map[string]map[string]edge
-	likes    map[string]map[string]string
-	saves    map[string]map[string]struct{}
-	nope     map[string]map[string]struct{}
-	hidden   map[string]map[string]struct{}
-	comments []comment
-	notes    map[string][]note
-	catalog  map[string]item
-	index    map[string]item
-	hideItem map[string]struct{}
-	hideAcct map[string]struct{}
-	refuse   map[string]struct{}
-	keys     map[string]records.Key
-	keyOwner map[string]string
-	history  records.History
-	public   []publicRow
-	cache    map[string]cached
+	tokens    map[string]string
+	profiles  map[string]profile
+	prefs     map[string]pref
+	follows   map[string]map[string]edge
+	likes     map[string]map[string]string
+	saves     map[string]map[string]struct{}
+	nope      map[string]map[string]struct{}
+	hidden    map[string]map[string]struct{}
+	comments  []comment
+	notes     map[string][]note
+	catalog   map[string]item
+	index     map[string]item
+	hideItem  map[string]struct{}
+	hideAcct  map[string]struct{}
+	refuse    map[string]struct{}
+	keys      map[string]records.Key
+	keyOwner  map[string]string
+	history   records.History
+	public    []publicRow
+	cache     map[string]cached
+	mods      map[string]struct{}
+	suspended map[string]struct{}
+	blocks    map[string]map[string]struct{}
+	cases     map[string]*modCase
+	caseBy    map[string]string
+	sticky    map[string]struct{}
+	audits    []auditRow
+	coord     *moderation.Coordinator
+	policy    moderation.Policy
 }
 
 type idemRec struct {
@@ -189,7 +203,20 @@ func New(opt Options) *Service {
 		hideItem: map[string]struct{}{}, hideAcct: map[string]struct{}{},
 		refuse: map[string]struct{}{}, keys: map[string]records.Key{},
 		keyOwner: map[string]string{}, cache: map[string]cached{},
+		mods: map[string]struct{}{}, suspended: map[string]struct{}{},
+		blocks: map[string]map[string]struct{}{}, cases: map[string]*modCase{},
+		caseBy: map[string]string{}, sticky: map[string]struct{}{},
+		coord:  moderation.New(moderation.Options{Now: now, Endpoints: opt.Delist}),
+		policy: policyDoc(opt.PolicyPath),
 	}
+}
+
+func policyDoc(path string) moderation.Policy {
+	doc, err := moderation.LoadContacts(path)
+	if err != nil {
+		return moderation.Document()
+	}
+	return doc
 }
 
 // Issue mints a bearer for an account id. The token is not a chain key.
@@ -203,6 +230,10 @@ func (s *Service) Issue(account string) (string, error) {
 	}
 	token := hex.EncodeToString(buf)
 	s.mu.Lock()
+	if _, suspended := s.suspended[account]; suspended {
+		s.mu.Unlock()
+		return "", errForbidden
+	}
 	s.tokens[token] = account
 	s.mu.Unlock()
 	return token, nil
@@ -243,6 +274,9 @@ func (s *Service) account(token string) (string, error) {
 	defer s.mu.Unlock()
 	id, ok := s.tokens[token]
 	if !ok {
+		return "", errAuth
+	}
+	if _, suspended := s.suspended[id]; suspended {
 		return "", errAuth
 	}
 	return id, nil

@@ -4,6 +4,8 @@ Development setup and service commands are in [docs/environment.md](../environme
 
 Validator admission, removal, local endpoint disablement, and loss of quorum are in [validator-lifecycle.md](validator-lifecycle.md).
 
+Goal 23 local moderation and removal, with placeholder contacts and no legal approval, are in [moderation-and-removal.md](moderation-and-removal.md).
+
 Reading the provider and content registries from a node (ABCI query and gRPC paths, heights, error codes) is in [../architecture/registries.md](../architecture/registries.md#reading-committed-records).
 
 Goal 10 governance and upgrade runbooks (devnet beta only; the specification is [../architecture/governance-and-upgrades.md](../architecture/governance-and-upgrades.md), PROPOSED):

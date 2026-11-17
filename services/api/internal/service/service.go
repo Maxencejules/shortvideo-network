@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/account"
+	"github.com/Maxencejules/shortvideo-network/services/api/internal/moderation"
 	"github.com/lib/pq"
 )
 
@@ -25,6 +26,7 @@ type Service struct {
 	delay    time.Duration
 	ffprobe  string
 	db       *sql.DB
+	gate     *moderation.Gate
 }
 
 // Options is the process configuration. Database is required.
@@ -137,6 +139,7 @@ func New(ctx context.Context, opt Options) (*Service, error) {
 	return &Service{
 		store: store, blob: blob, limits: opt.Limits, verify: verify, accounts: accounts,
 		now: now, delay: opt.ProbeDelay, ffprobe: ffprobe, db: db,
+		gate: moderation.NewGate(),
 	}, nil
 }
 

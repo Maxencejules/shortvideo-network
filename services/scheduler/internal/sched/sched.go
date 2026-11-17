@@ -152,23 +152,24 @@ type Config struct {
 
 // Sched is the coordinator.
 type Sched struct {
-	cfg      Config
-	indexer  readmodel.Client
-	mu       sync.Mutex
-	down     map[string]bool
-	draining map[string]bool
-	jobs     map[string]*policy.Job
-	posted   []Posted
-	pkgs     map[string]Package
-	tokens   map[string]string
-	evidence map[string]ev
-	queued   []string
-	origin   map[string]bool
-	holds    map[string]map[string]hold
-	traces   []string
-	views    map[string]View
-	before   func()
-	clients  map[string]*http.Client
+	cfg         Config
+	indexer     readmodel.Client
+	mu          sync.Mutex
+	down        map[string]bool
+	draining    map[string]bool
+	jobs        map[string]*policy.Job
+	posted      []Posted
+	pkgs        map[string]Package
+	tokens      map[string]string
+	evidence    map[string]ev
+	queued      []string
+	origin      map[string]bool
+	holds       map[string]map[string]hold
+	traces      []string
+	views       map[string]View
+	before      func()
+	clients     map[string]*http.Client
+	localDelist map[string]struct{}
 }
 
 type ev struct {
@@ -205,7 +206,7 @@ func New(cfg Config) *Sched {
 		down: map[string]bool{}, draining: map[string]bool{}, jobs: map[string]*policy.Job{},
 		pkgs: map[string]Package{}, tokens: map[string]string{}, evidence: map[string]ev{},
 		origin: map[string]bool{}, holds: map[string]map[string]hold{}, views: map[string]View{},
-		clients: map[string]*http.Client{},
+		clients: map[string]*http.Client{}, localDelist: map[string]struct{}{},
 	}
 }
 
@@ -298,7 +299,14 @@ func (s *Sched) Publish(ctx context.Context, pkg Package, approved bool, approva
 	s.mu.Lock()
 	s.pkgs[pkg.ContentID] = pkg
 	s.origin[pkg.ContentID] = true
+	_, local := s.localDelist[pkg.ContentID]
 	s.mu.Unlock()
+	if local {
+		s.mu.Lock()
+		s.note("publish content=" + pkg.ContentID + " local_delist=true posts=0")
+		s.mu.Unlock()
+		return s.finish(ctx, pkg, approved, approvalID, policy.PublicationWithheld, "local_delist", policy.ServiceReadModel)
+	}
 	snap, err := s.indexer.Load(ctx)
 	if err != nil || snap.Stale {
 		s.mu.Lock()
@@ -552,11 +560,15 @@ func (s *Sched) Repair(ctx context.Context, contentID string, version uint64) (p
 	if !run {
 		return next, nil
 	}
+	if s.locallyDelisted(contentID) {
+		_ = s.Stop(ctx, contentID, version)
+		return s.finishJob(key, policy.JobWithdrawn, "repair local-delist key="+key+" posts=0")
+	}
 	snap, err := s.indexer.Load(ctx)
 	if err != nil || snap.Stale {
 		return s.cool(key, policy.JobCooling, "repair stalled key="+key)
 	}
-	if withdrawn(snap, contentID, version) {
+	if s.locallyDelisted(contentID) || withdrawn(snap, contentID, version) {
 		_ = s.Stop(ctx, contentID, version)
 		return s.finishJob(key, policy.JobWithdrawn, "repair withdrawn key="+key+" posts=0")
 	}
@@ -591,7 +603,7 @@ func (s *Sched) Repair(ctx context.Context, contentID string, version uint64) (p
 		before()
 	}
 	snap, err = s.indexer.Load(ctx)
-	if err != nil || withdrawn(snap, contentID, version) {
+	if err != nil || s.locallyDelisted(contentID) || withdrawn(snap, contentID, version) {
 		_ = s.Stop(ctx, contentID, version)
 		return s.finishJob(key, policy.JobWithdrawn, "repair withdrawn-before-offer content="+contentID+" posts=0")
 	}
@@ -602,7 +614,7 @@ func (s *Sched) Repair(ctx context.Context, contentID string, version uint64) (p
 		return policy.Job{}, err
 	}
 	snap, _ = s.indexer.Load(ctx)
-	if withdrawn(snap, contentID, version) {
+	if s.locallyDelisted(contentID) || withdrawn(snap, contentID, version) {
 		_ = s.Stop(ctx, contentID, version)
 		return s.finishJob(key, policy.JobWithdrawn, "repair withdrawn-after-transfer content="+contentID)
 	}
@@ -787,6 +799,9 @@ func (s *Sched) withdraw(ctx context.Context, providerID, leaseID string) error 
 // Distribute returns bytes from a reachable verified replica.
 // Withdrawn content is refused. The origin backup is not a source.
 func (s *Sched) Distribute(ctx context.Context, contentID string, version uint64) (int, []byte) {
+	if s.locallyDelisted(contentID) {
+		return 410, nil
+	}
 	snap, err := s.indexer.Load(ctx)
 	if err != nil {
 		return 503, nil
@@ -898,10 +913,15 @@ func (s *Sched) finish(ctx context.Context, pkg Package, approved bool, approval
 		s.refresh(ctx, pkg, snap)
 	}
 	view := s.assemble(snap, pkg, approved, approvalID, service)
+	local := s.locallyDelisted(pkg.ContentID)
 	s.mu.Lock()
 	previous := s.views[pkg.ContentID].Publication
 	s.mu.Unlock()
-	if forced != "" {
+	if local {
+		view.Publication = policy.PublicationWithheld
+		view.PublicationReason = "local_delist"
+		view.Renewal = policy.RenewalNone
+	} else if forced != "" {
 		view.Publication = forced
 		view.PublicationReason = reason
 	} else if previous == policy.PublicationPublished && !withdrawn(snap, pkg.ContentID, pkg.Version) {
@@ -909,7 +929,7 @@ func (s *Sched) finish(ctx context.Context, pkg Package, approved bool, approval
 	} else {
 		view.Publication, view.PublicationReason = policy.Gate(approved, view.VerifiedTransfers, view.DistinctOperators, s.cfg.Target)
 	}
-	if snap.Stale {
+	if snap.Stale && !local {
 		view.ServiceLabel = policy.ServiceTemporary
 		if view.Publication == policy.PublicationPublished {
 			view.Publication = policy.QueuedNotCommitted
@@ -1071,6 +1091,26 @@ func (s *Sched) host(id string) Host {
 		}
 	}
 	return Host{}
+}
+
+// DelistLocal stops distribution without waiting for a new committed height.
+// Repair and renewal must not copy the bytes back onto a host.
+func (s *Sched) DelistLocal(ctx context.Context, contentID string, version uint64) error {
+	s.mu.Lock()
+	if s.localDelist == nil {
+		s.localDelist = map[string]struct{}{}
+	}
+	s.localDelist[contentID] = struct{}{}
+	s.note("delist content=" + contentID + " waited_for_finality=false")
+	s.mu.Unlock()
+	return s.Stop(ctx, contentID, version)
+}
+
+func (s *Sched) locallyDelisted(contentID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.localDelist[contentID]
+	return ok
 }
 
 func withdrawn(snap readmodel.Snapshot, contentID string, version uint64) bool {

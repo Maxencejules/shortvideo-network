@@ -17,7 +17,7 @@ test("the shell is an invited build with gated social actions and no wallet cont
   assert.match(html, /Block is not available/);
   assert.match(html, /Report is not available/);
   assert.match(html, /Comments are plain text/);
-  assert.match(html, /moderator queue is not implemented/);
+  assert.match(html, /moderator queue stores reports off the public page/);
   assert.match(html, /Peer sharing is off/);
   assert.match(html, /A response is not a completed watch/);
   assert.equal(html.includes("<video"), true);
@@ -206,7 +206,7 @@ test("published copy names the conditions and not a certification", () => {
   assert.equal(state.published, true);
   const html = renderToStaticMarkup(createElement(Viewer, { ...props(), page: "create", creator: panel(state, "clip") }));
   assert.match(html, /does not mean the chain certified this video as lawful or truthful/);
-  assert.match(html, /Goal 23 moderation completion is not this screen/);
+  assert.match(html, /does not grant community approval/);
   assert.match(html, /playback document is not the publication record/);
 });
 

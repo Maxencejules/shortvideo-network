@@ -42,6 +42,9 @@ func (s *Service) Follow(account, target, key, sum string, signed bool) result {
 	if !idRE.MatchString(target) || target == account {
 		return result{err: errMalformed}
 	}
+	if s.blocked(account, target) {
+		return result{err: errBlocked}
+	}
 	edges := s.follows[account]
 	if edges == nil {
 		edges = map[string]edge{}
@@ -131,6 +134,9 @@ func (s *Service) Like(account, contentID, key, sum string) result {
 	it, ok := s.catalog[contentID]
 	if !ok || !s.permitted(it) {
 		return result{err: errNotFound}
+	}
+	if s.blocked(account, it.CreatorID) {
+		return result{err: errBlocked}
 	}
 	likes := s.likes[account]
 	if likes == nil {
@@ -249,6 +255,9 @@ func (s *Service) Comment(account, contentID, text, key, sum string) result {
 	if !ok || !s.permitted(it) {
 		return result{err: errNotFound}
 	}
+	if s.blocked(account, it.CreatorID) {
+		return result{err: errBlocked}
+	}
 	clean, err := cleanText(text, maxComment)
 	if err != nil {
 		return result{err: err}
@@ -317,8 +326,11 @@ func (s *Service) DeleteComment(account, commentID string) result {
 	for i, row := range s.comments {
 		if row.ID == commentID {
 			idx = i
-			if row.Author != account {
+			if row.Author != account && !s.isMod(account) {
 				return result{err: errForbidden}
+			}
+			if row.Author != account {
+				s.addAudit(account, "comment_remove", commentID, "moderator")
 			}
 			break
 		}
@@ -769,7 +781,7 @@ func (s *Service) DeleteAccount(account string) result {
 	})
 }
 
-func (s *Service) Comments(contentID, cursor string, limit int) result {
+func (s *Service) Comments(viewer, contentID, cursor string, limit int) result {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	it, ok := s.catalog[contentID]
@@ -784,7 +796,7 @@ func (s *Service) Comments(contentID, cursor string, limit int) result {
 	rows := make([]map[string]any, 0)
 	var last int64
 	for _, row := range s.comments {
-		if row.Content != contentID || row.Seq <= after {
+		if row.Content != contentID || row.Seq <= after || s.blocked(viewer, row.Author) {
 			continue
 		}
 		if len(rows) == limit {

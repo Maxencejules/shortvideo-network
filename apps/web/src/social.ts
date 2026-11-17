@@ -95,6 +95,19 @@ export async function sendNotInterested(base: string, token: string, contentId: 
   await postJson(joinUrl(base, "/v1/not-interested"), { content_id: contentId }, signal, token);
 }
 
+export async function sendBlock(base: string, token: string, accountId: string, signal: AbortSignal) {
+  await postJson(joinUrl(base, "/v1/blocks"), { account_id: accountId }, signal, token);
+}
+
+export async function sendReport(base: string, token: string, contentId: string, signal: AbortSignal) {
+  await postJson(joinUrl(base, "/v1/reports"), {
+    target_type: "content",
+    target_id: contentId,
+    category: "other",
+    narrative: "viewer report",
+  }, signal, token);
+}
+
 export async function sendComment(base: string, token: string, contentId: string, text: string, signal: AbortSignal) {
   await postJson(joinUrl(base, "/v1/comments"), { content_id: contentId, text }, signal, token, "", commentKey(contentId, text));
 }

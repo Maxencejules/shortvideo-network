@@ -230,6 +230,7 @@ class Workspace:
             "jobs/ready",
             "jobs/failed",
             "jobs/cancel",
+            "jobs/delist",
             "staging",
             "packages",
             "captions",
@@ -274,7 +275,7 @@ class Workspace:
             raise Failure("REFUSED")
         manifest_id = f"m{content_version}-{content_id}"
         check_id(manifest_id)
-        if self.has_job(job_id):
+        if self.has_job(job_id) or self.delisted(content_id):
             raise Failure("REFUSED")
         if captions is not None:
             _atomic_bytes(self.root / "captions" / f"{job_id}.vtt", captions)
@@ -288,6 +289,17 @@ class Workspace:
             "captions_reviewed": captions_reviewed,
         }
         _atomic_json(self.root / "jobs" / "queued" / f"{job_id}.json", record)
+
+    def delist(self, content_id: str) -> None:
+        """Stop a queued encode. This does not wait for a chain commit."""
+        check_id(content_id)
+        _atomic_json(
+            self.root / "jobs" / "delist" / f"{content_id}.json",
+            {"content_id": content_id, "waited_for_finality": False},
+        )
+
+    def delisted(self, content_id: str) -> bool:
+        return (self.root / "jobs" / "delist" / f"{content_id}.json").is_file()
 
     def cancel(self, job_id: str) -> None:
         check_id(job_id)
@@ -327,6 +339,16 @@ class Workspace:
         if running is None:
             return None
         job_id = running.stem
+        claimed = _read_job(running)
+        if self.delisted(str(claimed["content_id"])):
+            self._fail(job_id, Failure("CANCELLED"))
+            return {
+                "job_id": job_id,
+                "content_id": str(claimed["content_id"]),
+                "status": "CANCELLED",
+                "encoded": False,
+                "waited_for_finality": False,
+            }
         try:
             record = self._process(running)
         except Failure as exc:

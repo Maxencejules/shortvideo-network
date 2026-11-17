@@ -95,6 +95,14 @@ def test_viewer_uses_discovery(tmp_path: Path) -> None:
         assert saved["saved"]["found"] is True
         assert saved["saved"]["moderation"]["block"] is True
         assert saved["saved"]["moderation"]["report"] is True
+        reports = _get(base + "/v1/reports", _text(viewer, "token"))
+        encoded = json.dumps(reports)
+        assert "viewer report" not in encoded
+        assert reports.get("cases")
+        blocks = _get(base + "/v1/blocks", _text(viewer, "token"))
+        blocked = blocks.get("blocked")
+        assert isinstance(blocked, list)
+        assert "creator1" in blocked
     finally:
         proc.terminate()
         proc.wait(timeout=5)
@@ -105,6 +113,17 @@ def _text(doc: dict[str, object], key: str) -> str:
     if not isinstance(value, str) or value == "":
         raise RuntimeError(key)
     return value
+
+
+def _get(url: str, token: str) -> dict[str, object]:
+    req = urllib.request.Request(url, method="GET")
+    req.add_header("Accept", "application/json")
+    req.add_header("Authorization", "Bearer " + token)
+    with urllib.request.urlopen(req, timeout=5) as res:
+        parsed = json.load(res)
+    if not isinstance(parsed, dict):
+        raise RuntimeError("response")
+    return parsed
 
 
 def _post(url: str, body: dict[str, object], token: str = "") -> dict[str, object]:
@@ -148,8 +167,14 @@ def _plan(chrome: str, origin: str, token: str) -> dict[str, object]:
         "document.querySelector('#comments img') === null"
     )
     moderation = (
-        "(() => ({ block: document.querySelector('[aria-describedby=\"gate-block\"]').disabled, "
-        "report: document.querySelector('[aria-describedby=\"gate-report\"]').disabled }))()"
+        "(() => { document.querySelector('#block').click(); "
+        "document.querySelector('#report').click(); return true; })()"
+    )
+    stored = (
+        "(() => { const text = document.body.innerText; "
+        "if (!text.includes('Block stored') || !text.includes('Report stored')) return null; "
+        "return { block: document.querySelector('#block').disabled === false, "
+        "report: document.querySelector('#report').disabled === false }; })()"
     )
     discover = (
         "(() => { const button = [...document.querySelectorAll('nav button')]"
@@ -181,7 +206,8 @@ def _plan(chrome: str, origin: str, token: str) -> dict[str, object]:
             {"do": "wait", "expr": comment, "save": "comment", "ms": 20000},
             {"do": "eval", "expr": send_markup, "save": "refused"},
             {"do": "wait", "expr": safe, "save": "safe", "ms": 20000},
-            {"do": "eval", "expr": moderation, "save": "moderation"},
+            {"do": "eval", "expr": moderation, "save": "clicked"},
+            {"do": "wait", "expr": stored, "save": "moderation", "ms": 20000},
             {"do": "eval", "expr": discover, "save": "discover"},
             {"do": "eval", "expr": query, "save": "query"},
             {"do": "wait", "expr": found, "save": "found", "ms": 20000},

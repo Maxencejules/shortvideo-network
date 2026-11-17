@@ -48,6 +48,7 @@ type Agent struct {
 	chainC   *tls.Config
 	cancel   context.CancelFunc
 	ctx      context.Context
+	delisted map[string]struct{}
 }
 
 // Open loads the key and state for cfg. Hosting consent was checked when
@@ -99,10 +100,14 @@ func Open(cfg config.File) (*Agent, error) {
 	if st.ChainHeightUnix != 0 {
 		changed = time.Unix(st.ChainHeightUnix, 0)
 	}
+	delisted := map[string]struct{}{}
+	for _, id := range st.Delisted {
+		delisted[id] = struct{}{}
+	}
 	a := &Agent{
 		cfg: cfg, st: st, key: key, outer: outer, token: token, heightAt: changed,
 		source: strings.TrimSpace(string(sourceRaw)),
-		ctx:    ctx, cancel: cancel,
+		ctx:    ctx, cancel: cancel, delisted: delisted,
 	}
 	if cfg.SourceCA != "" {
 		a.sourceC, err = clientTLS(cfg.SourceCA)
