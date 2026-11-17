@@ -33,7 +33,7 @@ Every log under `docs/evidence/logs/goal-22/` was captured while `git status --p
 
 ## Head CI
 
-Not yet observed for `3acbfb49706d751fca8b844e2b89d28e4e1a295b`. The two runs named above failed on earlier heads. The run for the head that contains this note is recorded here after it finishes.
+[Run 44065982112](https://github.com/Maxencejules/shortvideo-network/actions/runs/44065982112) on `71ab57ac1c6c90e8d06e46acf51f2637ef61dead` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. That sha is the evidence commit before this sentence. This sentence is docs-only. The checks that run on the commit that adds it are recorded in the next revision of this section.
 
 ## What ran
 
