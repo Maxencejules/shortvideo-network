@@ -1,0 +1,8 @@
+HEAD 903d7022161013b15994c69e0e03e652c3646ba8
+TREE ecce301f1aa081d96711dcfae26052a6a53a21a8
+CMD bash -lc .venv/bin/ruff\ check\ tests/unit/test_operator_browser.py\ tests/unit/test_ci_operator.py\ \&\&\ .venv/bin/ruff\ format\ --check\ tests/unit/test_operator_browser.py\ tests/unit/test_ci_operator.py
+DIRTY no
+[1;32mAll checks passed![0m
+2 files already formatted
+EXIT:0
+AFTER clean

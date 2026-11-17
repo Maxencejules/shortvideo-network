@@ -1,0 +1,6 @@
+HEAD 903d7022161013b15994c69e0e03e652c3646ba8
+TREE ecce301f1aa081d96711dcfae26052a6a53a21a8
+CMD bash -lc gofmt\ -l\ agents/provider/internal/agent/accept.go\ agents/provider/internal/agent/agent.go\ agents/provider/internal/agent/read.go\ agents/provider/internal/httpserver/server.go\ agents/provider/internal/store/store.go\ agents/provider/cmd/svn-provider/operator_flow_test.go\ services/operator/dash\ services/operator/cmd/svn-operator/main.go
+DIRTY no
+EXIT:0
+AFTER clean

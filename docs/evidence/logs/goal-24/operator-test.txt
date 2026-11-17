@@ -1,0 +1,16 @@
+HEAD 903d7022161013b15994c69e0e03e652c3646ba8
+TREE ecce301f1aa081d96711dcfae26052a6a53a21a8
+CMD go test -count=1 -timeout 120s -v ./services/operator/...
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/services/operator/cmd/svn-operator	[no test files]
+=== RUN   TestRolesOnboardingStaleAndActions
+    service_test.go:109: local_disk_available_bytes=2.61682601984e+11 class=measured
+--- PASS: TestRolesOnboardingStaleAndActions (0.01s)
+=== RUN   TestFreshIndexIsNotMarkedStaleAndMissingCountersStayAbsent
+--- PASS: TestFreshIndexIsNotMarkedStaleAndMissingCountersStayAbsent (0.00s)
+=== RUN   TestDevSessionRouteIsAbsentWhenDisabled
+--- PASS: TestDevSessionRouteIsAbsentWhenDisabled (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/operator/dash	0.013s
+EXIT:0
+AFTER clean
