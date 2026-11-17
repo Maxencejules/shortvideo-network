@@ -16,14 +16,14 @@ The recommendation order in the tests is a fixture result. It is not evidence th
 
 | Item | Value |
 | --- | --- |
-| Commit | `b07d079e559d503b49ea44da2842cc62cd92f7a3` |
-| Tree | `e788921c6b40587aa22facad1ec039ad52099b2d` |
+| Commit | `3acbfb49706d751fca8b844e2b89d28e4e1a295b` |
+| Tree | `f403361ede70ac54887402882a7f691d6f26562f` |
 | Base | `313cbc6658d4d7a960f61be7594a384f03a00518` |
 | Branch | `goal-22` |
 
-The tested commit message carries `Tested-tree: e788921c6b40587aa22facad1ec039ad52099b2d`. `git rev-parse b07d079e559d503b49ea44da2842cc62cd92f7a3^{tree}` is that tree. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: f403361ede70ac54887402882a7f691d6f26562f`. `git rev-parse 3acbfb49706d751fca8b844e2b89d28e4e1a295b^{tree}` is that tree. Later commits change only `docs/evidence/`.
 
-The first push, `25bc3c3af03af7f5e331ff0c67af67a19481e871`, was not this tested commit. [Run 44063910995](https://github.com/Maxencejules/shortvideo-network/actions/runs/44063910995) on that commit failed the `python` job: mypy reported `arg-type` at `tests/unit/test_social_browser.py` for the session token. This tested commit reads that value as a string. [mypy.txt](logs/goal-22/mypy.txt) line 5 is `Success: no issues found in 1 source file` and line 6 is `EXIT:0`.
+Two earlier heads failed CI and are not this tested commit. [Run 44063910995](https://github.com/Maxencejules/shortvideo-network/actions/runs/44063910995) on `25bc3c3af03af7f5e331ff0c67af67a19481e871` failed mypy with `arg-type` on the session token. [Run 44064972702](https://github.com/Maxencejules/shortvideo-network/actions/runs/44064972702) on `cfd3801539e562927793a05f586bc620b2cfa369` failed because the Python job does not install esbuild and the discovery browser test tried to build the viewer. This tested commit reads the token as a string and skips that browser test when `node_modules/esbuild` is absent, which is the same rule as the other browser tests. Where esbuild is installed, the test still runs. [mypy.txt](logs/goal-22/mypy.txt) line 5 is `Success: no issues found in 1 source file` and line 6 is `EXIT:0`. [browser.txt](logs/goal-22/browser.txt) line 6 is `EXIT:0`.
 
 ## Captures
 
@@ -33,7 +33,7 @@ Every log under `docs/evidence/logs/goal-22/` was captured while `git status --p
 
 ## Head CI
 
-Not yet observed for `b07d079e559d503b49ea44da2842cc62cd92f7a3`. [Run 44063910995](https://github.com/Maxencejules/shortvideo-network/actions/runs/44063910995) is the failed run on the earlier head. The run for the head that contains this note is recorded here after it finishes.
+Not yet observed for `3acbfb49706d751fca8b844e2b89d28e4e1a295b`. The two runs named above failed on earlier heads. The run for the head that contains this note is recorded here after it finishes.
 
 ## What ran
 

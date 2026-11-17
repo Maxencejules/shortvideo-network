@@ -1,5 +1,5 @@
-HEAD b07d079e559d503b49ea44da2842cc62cd92f7a3
-TREE e788921c6b40587aa22facad1ec039ad52099b2d
+HEAD 3acbfb49706d751fca8b844e2b89d28e4e1a295b
+TREE f403361ede70ac54887402882a7f691d6f26562f
 DIRTY no
 CMD golangci-lint version
 bash: line 1: golangci-lint: command not found
