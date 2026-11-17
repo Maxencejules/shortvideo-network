@@ -21,7 +21,11 @@ The browser run walked those states against loopback stand-ins. The stand-ins ar
 | Base | `fa6817cbee38eb54cfc9009a36fbdf20a21bc16c` |
 | Branch | `goal-21` |
 
-The tested commit message carries `Tested-tree: 8b462c5f92a80f042deea093aa0473716689ed49`. `git rev-parse c3ef99b8b503729b3b98393381689d3ef897e242^{tree}` is that tree. This evidence commit changes only `docs/evidence/`.
+The tested commit message carries `Tested-tree: 8b462c5f92a80f042deea093aa0473716689ed49`. `git rev-parse c3ef99b8b503729b3b98393381689d3ef897e242^{tree}` is that tree. The evidence commit `98c21be277095e13a938b686a28a20c366efd824` changes only `docs/evidence/` relative to that tested commit.
+
+## Head CI
+
+[Run 43999956488](https://github.com/Maxencejules/shortvideo-network/actions/runs/43999956488) on `98c21be277095e13a938b686a28a20c366efd824` finished with conclusion `success`. All 17 jobs passed, including `python`, `node`, `go`, `contract`, `milestone`, `devnet`, and every `go-race` shard. A green run is not visual approval. `98c21be` differs from the tested commit only under `docs/evidence/`.
 
 `publishedNow` requires `publication === "PUBLISHED"`, `community_approval === true`, a fresh indexer read, and a committed chain operation when one was supplied (`apps/web/src/creator.ts:436`). A local flag is ignored (`apps/web/src/main.ts:280` passes `optimisticPublished: false`; `apps/web/src/creator.ts:346` records that a true flag is not publication). The Published sentence does not say the chain certified the video (`apps/web/src/creator.ts:19`). Review pending says Goal 23 is not implemented (`apps/web/src/creator.ts:21`). Removal is not sent (`apps/web/src/creator.ts:580` through `apps/web/src/creator.ts:583`). A shorter trim is refused (`apps/web/src/creator.ts:219`). The owner-only upload JSON includes `content_id` (`services/api/internal/service/http.go:364` and `services/api/internal/service/http.go:407`). The Go assertion that the id is present was not run here (`services/api/internal/service/http_test.go:277`).
 
