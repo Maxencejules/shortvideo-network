@@ -84,10 +84,10 @@ The slow controlled host and the unresponsive independent host keep `successful_
 | Stage or fault | Status | Where |
 | --- | --- | --- |
 | Uploading | VERIFIED for the local pipeline and the upload gate function | [moderation.txt](logs/goal-23/moderation.txt) line 10. `services/api/internal/moderation/removal.go` stops the uploading stage. `services/api/internal/service/http.go:61` calls `withheld` before an upload is stored. `services/api/internal/service/http.go:422` is the blocked-account check. The HTTP upload process was not started here. |
-| Processing | VERIFIED for a queued filesystem job | [pytest.txt](logs/goal-23/pytest.txt) line 6 includes `tests/unit/test_media_delist.py`. `workers/media/svn_media/queue.py:293` cancels before encode. |
+| Processing | VERIFIED for a queued filesystem job | [pytest.txt](logs/goal-23/pytest.txt) line 4 includes `tests/unit/test_media_delist.py`. `workers/media/svn_media/queue.py:293` cancels before encode. |
 | Replicating | VERIFIED that a stalled read does not publish after a local delist | [scheduler.txt](logs/goal-23/scheduler.txt) line 9. `services/scheduler/internal/sched/sched.go:308` returns before a new offer. `services/scheduler/internal/sched/sched.go:1098` is `DelistLocal`. |
 | Repair | VERIFIED that repair does not post an offer | Same scheduler log. The discovery removal test also refuses `AllowRepair` ([moderation.txt](logs/goal-23/moderation.txt) line 27). |
-| Playback | VERIFIED that the cache drops without a chain note of HELD | [pytest.txt](logs/goal-23/pytest.txt) line 6 includes `tests/unit/test_delivery_hosts.py`. `services/delivery/svn_delivery/catalog.py:196`. |
+| Playback | VERIFIED that the cache drops without a chain note of HELD | [pytest.txt](logs/goal-23/pytest.txt) line 4 includes `tests/unit/test_delivery_hosts.py`. `services/delivery/svn_delivery/catalog.py:196`. |
 | Storage admission | VERIFIED that a delisted id is refused before fetch | [provider.txt](logs/goal-23/provider.txt) line 9. `agents/provider/internal/agent/accept.go:144`. |
 | Offline controlled host | VERIFIED as incomplete | [moderation.txt](logs/goal-23/moderation.txt) line 12. |
 | Stalled chain | VERIFIED that commit is not called and local delist still holds | Same line, and the scheduler log. |
@@ -116,7 +116,7 @@ The slow controlled host and the unresponsive independent host keep `successful_
 
 ## Runbook
 
-`docs/operations/moderation-and-removal.md`. The checks in [pytest.txt](logs/goal-23/pytest.txt) line 6 include `tests/unit/test_operations_docs.py`. The page states that it is not a production runbook and that public launch is disabled. Contact roles are `PLACEHOLDER unassigned`.
+`docs/operations/moderation-and-removal.md`. The checks in [pytest.txt](logs/goal-23/pytest.txt) line 4 include `tests/unit/test_operations_docs.py`. The page states that it is not a production runbook and that public launch is disabled. Contact roles are `PLACEHOLDER unassigned`.
 
 ## Decision requests
 
