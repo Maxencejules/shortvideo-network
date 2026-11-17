@@ -123,6 +123,7 @@ func Open(cfg config.File) (*Agent, error) {
 			return nil, err
 		}
 	}
+	a.applyOverrides()
 	if err := a.reconcileDisk(); err != nil {
 		cancel()
 		return nil, err
@@ -151,6 +152,54 @@ func (a *Agent) Authorize(got string) bool {
 
 func (a *Agent) save() error {
 	return store.Save(filepath.Join(a.cfg.DataDir, "state.json"), a.st)
+}
+
+// applyOverrides installs a local quota or bandwidth the operator set.
+// A stored quota above the declared capacity is ignored.
+func (a *Agent) applyOverrides() {
+	if a.st.QuotaOverride != nil && *a.st.QuotaOverride > 0 && *a.st.QuotaOverride <= a.cfg.DeclaredCapacityBytes {
+		a.cfg.QuotaBytes = *a.st.QuotaOverride
+	}
+	if a.st.BandwidthOverride != nil && *a.st.BandwidthOverride > 0 {
+		a.cfg.BandwidthBytesPerSecond = *a.st.BandwidthOverride
+	}
+}
+
+// SetLimits changes the local quota and bandwidth. It does not change the
+// declared capacity and it does not submit a chain transaction.
+func (a *Agent) SetLimits(quota, bandwidth uint64) (map[string]any, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if quota == 0 || quota > a.cfg.DeclaredCapacityBytes {
+		return nil, fail(400, "quota")
+	}
+	if bandwidth == 0 {
+		return nil, fail(400, "bandwidth")
+	}
+	a.cfg.QuotaBytes = quota
+	a.cfg.BandwidthBytesPerSecond = bandwidth
+	q, b := quota, bandwidth
+	a.st.QuotaOverride = &q
+	a.st.BandwidthOverride = &b
+	if err := a.save(); err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"quota_bytes": quota, "bandwidth_bytes_per_second": bandwidth,
+		"declared_capacity_bytes": a.cfg.DeclaredCapacityBytes, "chain_submitted": false,
+	}, nil
+}
+
+// DisableEndpoint stops package acceptance and package reads. Status stays
+// available. This is a local switch, not a chain transaction.
+func (a *Agent) DisableEndpoint() (map[string]any, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.st.EndpointDisabled = true
+	if err := a.save(); err != nil {
+		return nil, err
+	}
+	return map[string]any{"endpoint_enabled": false, "chain_submitted": false}, nil
 }
 
 func clientTLS(path string) (*tls.Config, error) {

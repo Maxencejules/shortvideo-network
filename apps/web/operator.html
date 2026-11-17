@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="svn-public" content="__SVN_PUBLIC__" />
+    <title>Operator dashboard — development build</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { margin: 0; font: 16px/1.45 system-ui, sans-serif; }
+      main { display: grid; gap: 1rem; padding: 1rem; max-width: 48rem; }
+      button, input { font: inherit; }
+      section { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+      #status p, #council, #queue, #result { white-space: pre-wrap; overflow-wrap: anywhere; }
+      .banner { padding: 0.6rem 1rem; background: #1c1c1c; color: #f5f5f5; }
+    </style>
+  </head>
+  <body>
+    <p class="banner">Development operator dashboard. Single-machine demo. Public launch is disabled. This page does not accept a consensus private key.</p>
+    <main id="operator"></main>
+    <script src="/operator.js"></script>
+  </body>
+</html>

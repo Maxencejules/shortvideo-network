@@ -6,6 +6,8 @@ Validator admission, removal, local endpoint disablement, and loss of quorum are
 
 Goal 23 local moderation and removal, with placeholder contacts and no legal approval, are in [moderation-and-removal.md](moderation-and-removal.md).
 
+Goal 24 operator onboarding, the role map, and local drain and handoff are in [operator-dashboard.md](operator-dashboard.md#role-and-permission-map). The public listener is read-only. The admin listener does not accept a consensus key.
+
 Reading the provider and content registries from a node (ABCI query and gRPC paths, heights, error codes) is in [../architecture/registries.md](../architecture/registries.md#reading-committed-records).
 
 Goal 10 governance and upgrade runbooks (devnet beta only; the specification is [../architecture/governance-and-upgrades.md](../architecture/governance-and-upgrades.md), PROPOSED):

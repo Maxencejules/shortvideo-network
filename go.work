@@ -12,5 +12,6 @@ use (
 	./services/broadcaster
 	./services/indexer
 	./services/milestone
+	./services/operator
 	./services/scheduler
 )

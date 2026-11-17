@@ -153,6 +153,10 @@ func (a *Agent) Accept(offerID string, body []byte) (Result, error) {
 		a.mu.Unlock()
 		return Result{}, fail(409, "draining")
 	}
+	if a.st.EndpointDisabled {
+		a.mu.Unlock()
+		return Result{}, fail(409, "endpoint disabled")
+	}
 	if existing, ok := a.st.OfferLease[in.OfferID]; ok {
 		lease := a.st.Leases[existing]
 		a.mu.Unlock()
@@ -219,6 +223,9 @@ func (a *Agent) Accept(offerID string, body []byte) (Result, error) {
 	}
 
 	a.mu.Lock()
+	if a.st.BytesFetched <= ^uint64(0)-terms.PackageBytes {
+		a.st.BytesFetched += terms.PackageBytes
+	}
 	sig, canonical, err := sign.Accept(a.key.Private(), a.st.KeyID, in.LeaseID, terms)
 	if err != nil {
 		a.dropTransfer(lease)

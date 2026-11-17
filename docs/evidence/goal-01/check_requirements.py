@@ -203,6 +203,8 @@ SOURCE_ALLOW = (
     "services/scheduler/",
     # Goal 18 adds the milestone harness and its loopback chain view.
     "services/milestone/",
+    # Goal 24 adds the operator dashboard.
+    "services/operator/",
 )
 WALK_SKIP = {
     ".git",

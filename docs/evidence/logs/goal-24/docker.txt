@@ -1,0 +1,7 @@
+HEAD bb637fa19d2ee2cfa9774f59c62edd36256533d2
+TREE fd0f0089c6b9aa66c9e289d7eb659feb8e0fc2ef
+CMD bash -lc docker\ version
+DIRTY no
+bash: line 1: docker: command not found
+EXIT:127
+AFTER clean

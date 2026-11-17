@@ -1,0 +1,12 @@
+HEAD bb637fa19d2ee2cfa9774f59c62edd36256533d2
+TREE fd0f0089c6b9aa66c9e289d7eb659feb8e0fc2ef
+CMD bash -lc node\ -v\;\ npm\ -v\;\ python3\ --version\;\ go\ version\;\ \(google-chrome\ --version\ \|\|\ true\)\;\ uname\ -srm
+DIRTY no
+v22.23.4
+10.9.9
+Python 3.12.3
+go version go1.26.10 linux/amd64
+Google Chrome 157.0.8103.50 
+Linux 6.12.113+ x86_64
+EXIT:0
+AFTER clean

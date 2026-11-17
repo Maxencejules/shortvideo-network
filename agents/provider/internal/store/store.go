@@ -53,21 +53,26 @@ type Lease struct {
 
 // State is the whole local record.
 type State struct {
-	Generation      uint64            `json:"generation"`
-	KeyID           string            `json:"key_id"`
-	PublicHex       string            `json:"public_hex"`
-	Previous        []Public          `json:"previous"`
-	Draining        bool              `json:"draining"`
-	UsedBytes       uint64            `json:"used_bytes"`
-	ChainHeight     uint64            `json:"chain_height"`
-	ChainHeightUnix int64             `json:"chain_height_unix"`
-	Uncertain       bool              `json:"chain_uncertain"`
-	Leases          map[string]*Lease `json:"leases"`
-	OfferLease      map[string]string `json:"offer_lease"`
-	Rotations       []string          `json:"rotations"`
-	Drains          []string          `json:"drains"`
-	Ends            []string          `json:"ends"`
-	Delisted        []string          `json:"delisted,omitempty"`
+	Generation        uint64            `json:"generation"`
+	KeyID             string            `json:"key_id"`
+	PublicHex         string            `json:"public_hex"`
+	Previous          []Public          `json:"previous"`
+	Draining          bool              `json:"draining"`
+	UsedBytes         uint64            `json:"used_bytes"`
+	BytesFetched      uint64            `json:"bytes_fetched,omitempty"`
+	BytesServed       uint64            `json:"bytes_served,omitempty"`
+	QuotaOverride     *uint64           `json:"quota_override,omitempty"`
+	BandwidthOverride *uint64           `json:"bandwidth_override,omitempty"`
+	EndpointDisabled  bool              `json:"endpoint_disabled,omitempty"`
+	ChainHeight       uint64            `json:"chain_height"`
+	ChainHeightUnix   int64             `json:"chain_height_unix"`
+	Uncertain         bool              `json:"chain_uncertain"`
+	Leases            map[string]*Lease `json:"leases"`
+	OfferLease        map[string]string `json:"offer_lease"`
+	Rotations         []string          `json:"rotations"`
+	Drains            []string          `json:"drains"`
+	Ends              []string          `json:"ends"`
+	Delisted          []string          `json:"delisted,omitempty"`
 }
 
 // Open reads path, or returns an empty state when the file is absent.

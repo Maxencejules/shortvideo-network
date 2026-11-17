@@ -17,30 +17,44 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/x/providers/capability"
 )
 
+// EvidenceMode is the claim this process makes. It is an attestation label,
+// not a storage proof and not a measurement of one.
+const EvidenceMode = "ATTESTATION_NOT_STORAGE_PROOF"
+
+// SoftwareVersion names this development build. It is not a release.
+const SoftwareVersion = "development"
+
 // Status is the public status document. independent_operator and
 // physical_redundancy are false: this process cannot prove either.
 type Status struct {
-	OK                  bool          `json:"ok"`
-	ProviderID          string        `json:"provider_id"`
-	MachineID           string        `json:"machine_id"`
-	IndependentOperator bool          `json:"independent_operator"`
-	PhysicalRedundancy  bool          `json:"physical_redundancy"`
-	SameMachineNote     string        `json:"same_machine_note"`
-	HostingConsent      bool          `json:"hosting_consent"`
-	Draining            bool          `json:"draining"`
-	UsedBytes           uint64        `json:"used_bytes"`
-	QuotaBytes          uint64        `json:"quota_bytes"`
-	DiskAvailableBytes  uint64        `json:"disk_available_bytes"`
-	ClockUncertainty    int64         `json:"clock_uncertainty_seconds"`
-	ChainUncertain      bool          `json:"chain_uncertain"`
-	ChainHeight         uint64        `json:"chain_height"`
-	CommitmentCertainty string        `json:"commitment_certainty"`
-	ChainObservation    string        `json:"chain_observation"`
-	LightClient         bool          `json:"light_client"`
-	IPFS                bool          `json:"ipfs"`
-	KeyID               string        `json:"key_id"`
-	KeyGeneration       uint64        `json:"key_generation"`
-	Leases              []StatusLease `json:"leases"`
+	OK                      bool          `json:"ok"`
+	ProviderID              string        `json:"provider_id"`
+	MachineID               string        `json:"machine_id"`
+	IndependentOperator     bool          `json:"independent_operator"`
+	PhysicalRedundancy      bool          `json:"physical_redundancy"`
+	SameMachineNote         string        `json:"same_machine_note"`
+	HostingConsent          bool          `json:"hosting_consent"`
+	Draining                bool          `json:"draining"`
+	UsedBytes               uint64        `json:"used_bytes"`
+	QuotaBytes              uint64        `json:"quota_bytes"`
+	DeclaredCapacityBytes   uint64        `json:"declared_capacity_bytes"`
+	BandwidthBytesPerSecond uint64        `json:"bandwidth_bytes_per_second"`
+	BytesFetched            uint64        `json:"bytes_fetched"`
+	BytesServed             uint64        `json:"bytes_served"`
+	DiskAvailableBytes      uint64        `json:"disk_available_bytes"`
+	EndpointEnabled         bool          `json:"endpoint_enabled"`
+	EvidenceMode            string        `json:"evidence_mode"`
+	SoftwareVersion         string        `json:"software_version"`
+	ClockUncertainty        int64         `json:"clock_uncertainty_seconds"`
+	ChainUncertain          bool          `json:"chain_uncertain"`
+	ChainHeight             uint64        `json:"chain_height"`
+	CommitmentCertainty     string        `json:"commitment_certainty"`
+	ChainObservation        string        `json:"chain_observation"`
+	LightClient             bool          `json:"light_client"`
+	IPFS                    bool          `json:"ipfs"`
+	KeyID                   string        `json:"key_id"`
+	KeyGeneration           uint64        `json:"key_generation"`
+	Leases                  []StatusLease `json:"leases"`
 }
 
 // StatusLease is one row of the status list.
@@ -96,7 +110,12 @@ func (a *Agent) status(avail uint64) Status {
 		IndependentOperator: false, PhysicalRedundancy: false,
 		SameMachineNote: "several identities on one machine are not independent ownership or physical redundancy",
 		HostingConsent:  a.cfg.HostingConsent, Draining: a.st.Draining,
-		UsedBytes: a.st.UsedBytes, QuotaBytes: a.cfg.QuotaBytes, DiskAvailableBytes: avail,
+		UsedBytes: a.st.UsedBytes, QuotaBytes: a.cfg.QuotaBytes,
+		DeclaredCapacityBytes:   a.cfg.DeclaredCapacityBytes,
+		BandwidthBytesPerSecond: a.cfg.BandwidthBytesPerSecond,
+		BytesFetched:            a.st.BytesFetched, BytesServed: a.st.BytesServed,
+		DiskAvailableBytes: avail, EndpointEnabled: !a.st.EndpointDisabled,
+		EvidenceMode: EvidenceMode, SoftwareVersion: SoftwareVersion,
 		ClockUncertainty: a.cfg.ClockUncertaintySeconds, ChainUncertain: a.st.Uncertain,
 		ChainHeight: a.st.ChainHeight, CommitmentCertainty: certainty,
 		ChainObservation: "operator_endpoint", LightClient: false, IPFS: false,
@@ -218,6 +237,9 @@ func (a *Agent) Package(contentID, version, token string) ([]byte, error) {
 	a.refresh()
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	if a.st.EndpointDisabled {
+		return nil, fail(503, "endpoint disabled")
+	}
 	var lease *store.Lease
 	for _, item := range a.st.Leases {
 		if item.ContentID == contentID && item.ContentVersion == ver {
@@ -245,6 +267,10 @@ func (a *Agent) Package(contentID, version, token string) ([]byte, error) {
 		}
 		out = append(out, buf...)
 	}
+	if a.st.BytesServed <= ^uint64(0)-uint64(len(out)) {
+		a.st.BytesServed += uint64(len(out))
+	}
+	_ = a.save()
 	return out, nil
 }
 
