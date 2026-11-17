@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -122,6 +123,64 @@ func TestModerationQueueBlocksAppealsAndTakedown(t *testing.T) {
 	code, policy := b.call("GET", "/v1/policy", "", nil, nil)
 	if code != http.StatusOK || bytes.Contains(policy, []byte(`"legal_approval":true`)) || !bytes.Contains(policy, []byte("PLACEHOLDER")) || !bytes.Contains(policy, []byte(`"public_launch":"DISABLED"`)) {
 		t.Fatalf("policy %d %s", code, policy)
+	}
+}
+
+func TestSearchOmitsBlockedAndWithdrawn(t *testing.T) {
+	b := newBox(t, Options{})
+	viewer := b.issue("viewer1")
+	creator := b.issue("creator1")
+	other := b.issue("other1")
+	b.video(creator, "c-harbor", "harbor clip", 20, []string{"boats"}, true)
+	b.video(other, "c-other", "harbor pier", 10, []string{"boats"}, true)
+	if code, _ := b.call("PUT", "/v1/profile", creator, map[string]any{"display_name": "Harbor Maker", "topics": []string{"boats"}}, nil); code != http.StatusOK {
+		t.Fatal(code)
+	}
+	if code, _ := b.call("PUT", "/v1/profile", other, map[string]any{"display_name": "Harbor Hand", "topics": []string{"boats"}}, nil); code != http.StatusOK {
+		t.Fatal(code)
+	}
+	_, videos, _ := b.doc("POST", "/v1/search", viewer, map[string]any{"kind": "video", "q": "harbor"}, nil)
+	if strings.Join(hitIDs(t, videos), ",") != "c-harbor,c-other" {
+		t.Fatalf("videos before %#v", videos)
+	}
+	_, profiles, _ := b.doc("POST", "/v1/search", viewer, map[string]any{"kind": "profile", "q": "harbor"}, nil)
+	if strings.Join(hitIDs(t, profiles), ",") != "creator1,other1" {
+		t.Fatalf("profiles before %#v", profiles)
+	}
+	_, _, header := b.doc("GET", "/v1/feeds/recommended", viewer, nil, nil)
+	gen := header.Get("X-SVN-Cache-Generation")
+	if gen == "" {
+		t.Fatal("missing cache generation")
+	}
+	if code, raw := b.call("POST", "/v1/blocks", viewer, map[string]any{"account_id": "creator1"}, nil); code != http.StatusCreated {
+		t.Fatalf("block %d %s", code, raw)
+	}
+	_, _, after := b.doc("GET", "/v1/feeds/recommended", viewer, nil, map[string]string{"X-SVN-Cached-Generation": gen})
+	if after.Get("X-SVN-Cache") != "refreshed" || after.Get("X-SVN-Cache-Generation") == "" || after.Get("X-SVN-Cache-Generation") == gen {
+		t.Fatalf("cache %s -> %s", gen, after.Get("X-SVN-Cache-Generation"))
+	}
+	_, videos, _ = b.doc("POST", "/v1/search", viewer, map[string]any{"kind": "video", "q": "harbor"}, nil)
+	if strings.Join(hitIDs(t, videos), ",") != "c-other" {
+		t.Fatalf("videos after block %#v", videos)
+	}
+	_, profiles, _ = b.doc("POST", "/v1/search", viewer, map[string]any{"kind": "profile", "q": "harbor"}, nil)
+	if strings.Join(hitIDs(t, profiles), ",") != "other1" {
+		t.Fatalf("profiles after block %#v", profiles)
+	}
+	_, topics, _ := b.doc("POST", "/v1/search", viewer, map[string]any{"kind": "topic", "q": "boats"}, nil)
+	if strings.Join(hitIDs(t, topics), ",") != "c-other" {
+		t.Fatalf("topics after block %#v", topics)
+	}
+	if code, _ := b.call("POST", "/v1/catalog/c-other/withdraw", other, nil, nil); code != http.StatusOK {
+		t.Fatal(code)
+	}
+	_, videos, _ = b.doc("POST", "/v1/search", viewer, map[string]any{"kind": "video", "q": "harbor"}, nil)
+	if len(hitIDs(t, videos)) != 0 {
+		t.Fatalf("withdrawn %#v", videos)
+	}
+	_, topics, _ = b.doc("POST", "/v1/search", viewer, map[string]any{"kind": "topic", "q": "boats"}, nil)
+	if len(hitIDs(t, topics)) != 0 {
+		t.Fatalf("withdrawn topic %#v", topics)
 	}
 }
 
