@@ -8,6 +8,7 @@ require (
 	github.com/Maxencejules/shortvideo-network/agents/auditor v0.0.0
 	github.com/Maxencejules/shortvideo-network/chain v0.0.0
 	github.com/Maxencejules/shortvideo-network/protocol v0.0.0
+	github.com/Maxencejules/shortvideo-network/services/operator v0.0.0
 	github.com/cosmos/cosmos-sdk v0.55.0
 )
 
@@ -277,4 +278,5 @@ replace (
 	github.com/Maxencejules/shortvideo-network/agents/auditor => ../auditor
 	github.com/Maxencejules/shortvideo-network/chain => ../../chain
 	github.com/Maxencejules/shortvideo-network/protocol => ../../proto
+	github.com/Maxencejules/shortvideo-network/services/operator => ../../services/operator
 )

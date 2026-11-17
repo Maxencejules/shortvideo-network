@@ -158,6 +158,7 @@ GO_MODULES = (
     "services/broadcaster",
     "services/indexer",
     "services/scheduler",
+    "services/operator",
     "services/api",
     "services/milestone",
 )

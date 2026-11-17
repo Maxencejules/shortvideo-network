@@ -32,6 +32,8 @@ func (s *Server) Serve(cert, key string) error {
 	mux.HandleFunc("GET /packages/{content_id}/{content_version}", s.pkg)
 	mux.HandleFunc("POST /transfers/{transfer_id}/receipt", s.receipt)
 	mux.HandleFunc("POST /admin/drain", s.admin(s.drain))
+	mux.HandleFunc("POST /admin/limits", s.admin(s.limits))
+	mux.HandleFunc("POST /admin/disable", s.admin(s.disable))
 	mux.HandleFunc("POST /admin/withdraw", s.admin(s.withdraw))
 	mux.HandleFunc("POST /admin/delist", s.admin(s.delistContent))
 	mux.HandleFunc("POST /admin/rotate", s.admin(s.rotate))
@@ -141,6 +143,50 @@ func (s *Server) admin(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(w, r)
 	}
+}
+
+func (s *Server) limits(w http.ResponseWriter, r *http.Request) {
+	body, err := readBody(r, 4096)
+	if err != nil {
+		writeErr(w, 400, "malformed")
+		return
+	}
+	var in struct {
+		Quota     uint64 `json:"quota_bytes"`
+		Bandwidth uint64 `json:"bandwidth_bytes_per_second"`
+		Confirm   string `json:"confirm"`
+	}
+	if json.Unmarshal(body, &in) != nil || in.Confirm != "CHANGE LIMITS" {
+		writeErr(w, 400, "confirm")
+		return
+	}
+	doc, err := s.Agent.SetLimits(in.Quota, in.Bandwidth)
+	if err != nil {
+		writeAgent(w, err)
+		return
+	}
+	writeJSON(w, 200, doc)
+}
+
+func (s *Server) disable(w http.ResponseWriter, r *http.Request) {
+	body, err := readBody(r, 4096)
+	if err != nil {
+		writeErr(w, 400, "malformed")
+		return
+	}
+	var in struct {
+		Confirm string `json:"confirm"`
+	}
+	if json.Unmarshal(body, &in) != nil || in.Confirm != "DISABLE ENDPOINT" {
+		writeErr(w, 400, "confirm")
+		return
+	}
+	doc, err := s.Agent.DisableEndpoint()
+	if err != nil {
+		writeAgent(w, err)
+		return
+	}
+	writeJSON(w, 200, doc)
 }
 
 func (s *Server) drain(w http.ResponseWriter, _ *http.Request) {
