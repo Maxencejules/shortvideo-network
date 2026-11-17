@@ -1,0 +1,10 @@
+HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
+TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+DIRTY no
+CMD cd services/scheduler && go test -count=1 -timeout 120s -v ./internal/sched/ -run TestLocalDelistDoesNotWaitForAStalledChain
+=== RUN   TestLocalDelistDoesNotWaitForAStalledChain
+--- PASS: TestLocalDelistDoesNotWaitForAStalledChain (0.01s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/sched	0.008s
+EXIT:0
+AFTER clean

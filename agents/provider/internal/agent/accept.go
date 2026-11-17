@@ -61,6 +61,73 @@ type segment struct {
 	ByteCount string `json:"byte_count"`
 }
 
+func (a *Agent) isDelisted(contentID string) bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if _, ok := a.delisted[contentID]; ok {
+		return true
+	}
+	if a.st == nil {
+		return false
+	}
+	for _, id := range a.st.Delisted {
+		if id == contentID {
+			return true
+		}
+	}
+	return false
+}
+
+// Delist refuses later offers for contentID and ends local leases for it.
+// chain_end is false: this is not a committed ledger transaction.
+func (a *Agent) Delist(contentID string) (map[string]any, error) {
+	if contentID == "" || strings.ContainsAny(contentID, " /\n") {
+		return nil, fail(400, "malformed")
+	}
+	a.mu.Lock()
+	if a.delisted == nil {
+		a.delisted = map[string]struct{}{}
+	}
+	a.delisted[contentID] = struct{}{}
+	var ids []string
+	if a.st != nil {
+		seen := false
+		for _, id := range a.st.Delisted {
+			if id == contentID {
+				seen = true
+			}
+		}
+		if !seen {
+			a.st.Delisted = append(a.st.Delisted, contentID)
+		}
+		for id, lease := range a.st.Leases {
+			if lease != nil && lease.ContentID == contentID && lease.Readiness != store.Removed && lease.Readiness != store.Expired {
+				ids = append(ids, id)
+			}
+		}
+		if a.cfg.DataDir != "" {
+			if err := a.save(); err != nil {
+				a.mu.Unlock()
+				return nil, err
+			}
+		}
+	}
+	a.mu.Unlock()
+	ended := make([]string, 0)
+	endErr := ""
+	for _, id := range ids {
+		if _, err := a.Withdraw(id); err != nil {
+			endErr = err.Error()
+			continue
+		}
+		ended = append(ended, id)
+	}
+	return map[string]any{
+		"content_id": contentID, "delisted": true, "chain_end": false,
+		"ended": ended, "end_error": endErr, "waited_for_finality": false,
+	}, nil
+}
+
 // Accept checks policy, disk, and quota, fetches the package, and signs the
 // exact terms. A repeated identical offer returns the same signature and
 // does not reserve twice. A different body for the same offer is a conflict.
@@ -73,6 +140,9 @@ func (a *Agent) Accept(offerID string, body []byte) (Result, error) {
 	}
 	if in.OfferID != offerID {
 		return Result{}, fail(400, "malformed")
+	}
+	if a.isDelisted(in.ContentID) {
+		return Result{}, fail(410, "delisted")
 	}
 	terms, segs, err := a.parseOffer(in)
 	if err != nil {

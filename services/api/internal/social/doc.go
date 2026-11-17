@@ -9,4 +9,6 @@
 //
 // State is in memory. A PostgreSQL store is not wired: this workspace has no
 // PostgreSQL server, and the account schema is a separate process.
+// Reports, blocks, and removal decisions stay in this process. Complaint
+// text is not a chain transaction.
 package social

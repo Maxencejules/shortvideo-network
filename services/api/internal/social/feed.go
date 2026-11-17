@@ -137,11 +137,27 @@ func (s *Service) recommended(account string) []item {
 	return out
 }
 
+func (s *Service) profileVisible(account, id string) bool {
+	if s.blocked(account, id) {
+		return false
+	}
+	if _, ok := s.hidden[account][id]; ok {
+		return false
+	}
+	if _, ok := s.hideAcct[id]; ok {
+		return false
+	}
+	return true
+}
+
 func (s *Service) visible(account string, it item) bool {
 	if !s.permitted(it) {
 		return false
 	}
 	if _, ok := s.hidden[account][it.CreatorID]; ok {
+		return false
+	}
+	if s.blocked(account, it.CreatorID) {
 		return false
 	}
 	if _, ok := s.nope[account][it.ContentID]; ok {
@@ -239,6 +255,9 @@ func (s *Service) Search(account, kind, q string) result {
 		}
 		sort.Strings(ids)
 		for _, id := range ids {
+			if !s.profileVisible(account, id) {
+				continue
+			}
 			row := s.profiles[id]
 			if strings.Contains(strings.ToLower(row.Name), q) {
 				hits = append(hits, map[string]any{"kind": "profile", "account_id": id, "text": row.Name})
@@ -252,6 +271,9 @@ func (s *Service) Search(account, kind, q string) result {
 		sort.Strings(ids)
 		for _, id := range ids {
 			it := s.index[id]
+			if !s.visible(account, it) {
+				continue
+			}
 			if strings.Contains(strings.ToLower(it.Title), q) {
 				hits = append(hits, map[string]any{"kind": "video", "content_id": id, "text": it.Title})
 			}
@@ -264,6 +286,9 @@ func (s *Service) Search(account, kind, q string) result {
 		sort.Strings(ids)
 		for _, id := range ids {
 			it := s.index[id]
+			if !s.visible(account, it) {
+				continue
+			}
 			for _, topic := range it.Topics {
 				if strings.Contains(topic, q) {
 					hits = append(hits, map[string]any{"kind": "topic", "content_id": id, "text": topic})

@@ -1,0 +1,10 @@
+HEAD 21672f8609ce0def3bb7973ea8598344ba472818
+TREE e1d349cb4bffeedf3adc7d0d220378ea7f499ba9
+DIRTY no
+CMD cd services/api && go test -count=1 -timeout 60s -v ./internal/service/removaltest/
+=== RUN   TestRemovalRequiresOwnerAndPolicyRequiresOperator
+--- PASS: TestRemovalRequiresOwnerAndPolicyRequiresOperator (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/service/removaltest	0.003s
+EXIT:0
+AFTER clean

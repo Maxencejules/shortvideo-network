@@ -13,6 +13,30 @@ def test_a_second_catalog_does_not_restore_a_host(tmp_path: Path) -> None:
     assert "origin-test" not in again._hosts
 
 
+def test_delist_drops_the_cache_without_waiting_for_a_chain(tmp_path: Path) -> None:
+    catalog = Catalog(tmp_path)
+    catalog.note_chain("UNAVAILABLE")
+    catalog.remember_etag("c-play", '"etag-1"')
+    playback = tmp_path / "playback"
+    playback.mkdir(exist_ok=True)
+    (playback / "c-play.json").write_text(
+        '{"content_id":"c-play","content_version":1,"manifest_sha256":"'
+        + "ab" * 32
+        + '","state":"AUTHORIZED","authorized_until":9999999999,'
+        + '"host_ids":["origin-test"],"hosting_promise":false}',
+        encoding="utf-8",
+    )
+    assert catalog.grant_live("c-play") is True
+    result = catalog.delist("c-play")
+    assert result["waited_for_finality"] is False
+    assert result["cache_dropped"] is True
+    assert result["chain_note"] == "UNAVAILABLE"
+    assert catalog.etag_known("c-play", '"etag-1"') is False
+    assert catalog.grant_live("c-play") is False
+    again = Catalog(tmp_path)
+    assert again.grant_live("c-play") is False
+
+
 def test_a_running_catalog_reloads_a_grant(tmp_path: Path) -> None:
     serving = Catalog(tmp_path)
     serving.note_chain("HELD")

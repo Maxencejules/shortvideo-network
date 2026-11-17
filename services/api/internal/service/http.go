@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -12,12 +13,14 @@ import (
 	"time"
 
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/account"
+	"github.com/Maxencejules/shortvideo-network/services/api/internal/moderation"
 )
 
 var (
-	uploadIDRE = regexp.MustCompile(`^u[0-9a-f]{32}$`)
-	keyRE      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$`)
-	digestRE   = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	uploadIDRE  = regexp.MustCompile(`^u[0-9a-f]{32}$`)
+	contentIDRE = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
+	keyRE       = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$`)
+	digestRE    = regexp.MustCompile(`^[0-9a-f]{64}$`)
 )
 
 // Handler is the upload HTTP API. Unregistered paths, including signup and playback, are 404.
@@ -29,6 +32,8 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("GET /uploads/{uploadID}", s.getUpload)
 	mux.HandleFunc("DELETE /uploads/{uploadID}", s.cancel)
 	mux.HandleFunc("POST /publish", s.publish)
+	mux.HandleFunc("POST /removal", s.removal)
+	mux.HandleFunc("POST /v1/policy/delist", s.policyDelist)
 	if s.accounts != nil {
 		s.accounts.Register(mux)
 	}
@@ -51,6 +56,10 @@ func (s *Service) createIntent(w http.ResponseWriter, r *http.Request) {
 	// ClientDuration, Filename, and MIME are accepted and ignored.
 	// The worker reads the bytes. The object name is generated.
 	if !readJSON(w, r, &body) {
+		return
+	}
+	if s.withheld(principal.AccountID, "") {
+		s.policyDenied(w)
 		return
 	}
 	if !keyRE.MatchString(body.IdempotencyKey) || body.DeclaredBytes == nil || *body.DeclaredBytes < 1 {
@@ -146,6 +155,10 @@ func (s *Service) putContent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "NOT_FOUND", "upload not found")
 		return
 	}
+	if s.withheld(row.Owner, row.ContentID) {
+		s.policyDenied(w)
+		return
+	}
 	if !row.Expires.After(s.now()) {
 		writeMapped(w, errExpired)
 		return
@@ -208,6 +221,15 @@ func (s *Service) complete(w http.ResponseWriter, r *http.Request) {
 	}
 	if !digestRE.MatchString(body.Digest) {
 		writeError(w, 400, "MALFORMED", "request body is not valid")
+		return
+	}
+	if s.withheld(principal.AccountID, "") {
+		s.policyDenied(w)
+		return
+	}
+	if owned, ownErr := s.store.Owned(r.Context(), id, principal.AccountID); ownErr == nil && s.withheld("", owned.ContentID) {
+		_ = s.store.Release(r.Context(), id, principal.AccountID, "CANCELLED", s.now())
+		s.policyDenied(w)
 		return
 	}
 	row, err := s.store.BeginProbe(r.Context(), id, principal.AccountID, body.Digest, s.now())
@@ -301,14 +323,127 @@ func (s *Service) cancel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) publish(w http.ResponseWriter, r *http.Request) {
-	if _, err := s.session(r); err != nil {
+	principal, err := s.session(r)
+	if err != nil {
 		writeMapped(w, err)
 		return
 	}
+	var body struct {
+		UploadID  string `json:"upload_id"`
+		ContentID string `json:"content_id"`
+	}
+	if !readJSON(w, r, &body) {
+		return
+	}
+	if s.withheld(principal.AccountID, body.ContentID) {
+		s.policyDenied(w)
+		return
+	}
+	_ = body.UploadID
 	writeError(w, http.StatusForbidden, "PUBLICATION_BLOCKED", "publication is separate from upload and public launch is disabled")
 }
 
+func (s *Service) removal(w http.ResponseWriter, r *http.Request) {
+	principal, err := s.identity(r)
+	if err != nil {
+		writeMapped(w, err)
+		return
+	}
+	var body struct {
+		ContentID string `json:"content_id"`
+		Confirm   string `json:"confirm"`
+	}
+	if !readJSON(w, r, &body) {
+		return
+	}
+	if body.Confirm != "withdraw" || !contentIDRE.MatchString(body.ContentID) {
+		writeError(w, 400, "MALFORMED", "request body is not valid")
+		return
+	}
+	owner, ok, err := s.contentOwner(r.Context(), body.ContentID)
+	if err != nil {
+		writeMapped(w, err)
+		return
+	}
+	if !ok || owner != principal.AccountID {
+		writeError(w, http.StatusForbidden, "FORBIDDEN", "only the owner can request removal")
+		return
+	}
+	s.gate.Delist(body.ContentID)
+	writeJSON(w, http.StatusAccepted, map[string]any{
+		"content_id": body.ContentID, "account_id": principal.AccountID,
+		"local_delist": true, "waited_for_finality": false, "universal_deletion": false,
+		"ledger_retained": true, "legal_approval": false, "public_launch": "DISABLED",
+		"retention": "DEC-004 unset; minimum records kept", "chain_event": false,
+	})
+}
+
+func (s *Service) policyDelist(w http.ResponseWriter, r *http.Request) {
+	principal, err := s.identity(r)
+	if err != nil || principal.Role != "operator" {
+		writeError(w, http.StatusForbidden, "FORBIDDEN", "an operator session is required")
+		return
+	}
+	var body struct {
+		ContentID string `json:"content_id"`
+		AccountID string `json:"account_id"`
+	}
+	if !readJSON(w, r, &body) {
+		return
+	}
+	if body.ContentID != "" {
+		if !contentIDRE.MatchString(body.ContentID) {
+			writeError(w, 400, "MALFORMED", "request body is not valid")
+			return
+		}
+		s.gate.Delist(body.ContentID)
+	}
+	if body.AccountID != "" {
+		if !contentIDRE.MatchString(body.AccountID) {
+			writeError(w, 400, "MALFORMED", "request body is not valid")
+			return
+		}
+		s.gate.BlockAccount(body.AccountID)
+	}
+	if body.ContentID == "" && body.AccountID == "" {
+		writeError(w, 400, "MALFORMED", "request body is not valid")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"endpoint": "/v1/policy/delist", "cache_generation": int64(1), "bytes_deleted": false,
+		"waited_for_finality": false, "chain_end": false,
+	})
+}
+
+func (s *Service) withheld(account, content string) bool {
+	if s.gate == nil {
+		return false
+	}
+	if account != "" && !s.gate.UploadAllowed(account) {
+		return true
+	}
+	if content != "" && !s.gate.PublishAllowed(content) {
+		return true
+	}
+	return false
+}
+
+func (s *Service) policyDenied(w http.ResponseWriter) {
+	writeError(w, http.StatusForbidden, "POLICY_WITHHELD", "local policy refuses distribution of this item")
+}
+
 func (s *Service) session(r *http.Request) (Principal, error) {
+	principal, err := s.identity(r)
+	if err != nil {
+		return Principal{}, err
+	}
+	if principal.Role != "creator" {
+		return Principal{}, errRole
+	}
+	return principal, nil
+}
+
+func (s *Service) identity(r *http.Request) (Principal, error) {
 	if s.accounts != nil {
 		sess, err := s.accounts.Authenticate(r)
 		if err != nil {
@@ -317,8 +452,8 @@ func (s *Service) session(r *http.Request) (Principal, error) {
 			}
 			return Principal{}, errUnauthenticated
 		}
-		if sess.Role != "creator" {
-			return Principal{}, errRole
+		if sess.AccountID == "" || sess.Role == "" {
+			return Principal{}, errUnauthenticated
 		}
 		return Principal{AccountID: sess.AccountID, Role: sess.Role}, nil
 	}
@@ -327,13 +462,29 @@ func (s *Service) session(r *http.Request) (Principal, error) {
 		return Principal{}, errUnauthenticated
 	}
 	principal, err := s.verify.Verify(token)
-	if err != nil {
+	if err != nil || principal.AccountID == "" || principal.Role == "" {
 		return Principal{}, errUnauthenticated
 	}
-	if principal.Role != "creator" {
-		return Principal{}, errRole
-	}
 	return principal, nil
+}
+
+// NewRemovalHarness serves the removal routes with an in-memory owner map.
+// It does not open a database. Production uses the store lookup.
+func NewRemovalHarness(verify Verifier, owners map[string]string) (*moderation.Gate, http.Handler) {
+	gate := moderation.NewGate()
+	svc := &Service{gate: gate, verify: verify, ownerMap: owners}
+	return gate, svc.Handler()
+}
+
+func (s *Service) contentOwner(ctx context.Context, contentID string) (string, bool, error) {
+	if s.ownerMap != nil {
+		owner, ok := s.ownerMap[contentID]
+		return owner, ok && owner != "", nil
+	}
+	if s.store == nil {
+		return "", false, nil
+	}
+	return s.store.ContentOwner(ctx, contentID)
 }
 
 func (s *Service) transferUpload(r *http.Request) (uploadRow, error) {

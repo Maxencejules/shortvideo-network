@@ -67,6 +67,7 @@ type State struct {
 	Rotations       []string          `json:"rotations"`
 	Drains          []string          `json:"drains"`
 	Ends            []string          `json:"ends"`
+	Delisted        []string          `json:"delisted,omitempty"`
 }
 
 // Open reads path, or returns an empty state when the file is absent.

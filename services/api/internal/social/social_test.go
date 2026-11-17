@@ -257,11 +257,13 @@ func TestCommentBoundariesActivityAndDeletion(t *testing.T) {
 	if len(after["notes"].([]any)) != 0 {
 		t.Fatalf("activity after delete %#v", after)
 	}
-	code, report := b.call("POST", "/v1/reports", viewer, map[string]any{"text": "private complaint"}, nil)
-	if code != http.StatusNotImplemented || !bytes.Contains(report, []byte("MODERATION_DEFERRED")) || bytes.Contains(report, []byte("complaint")) {
+	code, report := b.call("POST", "/v1/reports", viewer, map[string]any{
+		"target_type": "content", "target_id": "c-note", "category": "other", "narrative": "private complaint",
+	}, nil)
+	if code != http.StatusCreated || bytes.Contains(report, []byte("complaint")) || bytes.Contains(report, []byte("MODERATION_DEFERRED")) {
 		t.Fatalf("report %d %s", code, report)
 	}
-	if code, _ := b.call("POST", "/v1/blocks", viewer, map[string]any{"account_id": "creator1"}, nil); code != http.StatusNotImplemented {
+	if code, _ := b.call("POST", "/v1/blocks", viewer, map[string]any{"account_id": "creator1"}, nil); code != http.StatusCreated {
 		t.Fatal(code)
 	}
 }

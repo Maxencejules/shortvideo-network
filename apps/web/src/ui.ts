@@ -9,7 +9,7 @@ import { RECOVERY_TEXT, stageNames, type CreatorState } from "./creator.ts";
 import type { ClientSettings, FeedRow } from "./model.ts";
 import type { SocialHit, SocialNote } from "./social.ts";
 
-export type PageName = "home" | "discover" | "activity" | "profile" | "create";
+export type PageName = "home" | "discover" | "activity" | "profile" | "create" | "policy";
 
 export type CreatorFields = {
   title: string;
@@ -113,10 +113,12 @@ export type ViewerProps = {
     onNotInterested?: () => void;
     onComment?: (text: string) => void;
     onSearch?: (kind: string, query: string) => void;
+    onBlock?: () => void;
+    onReport?: () => void;
   };
 };
 
-const PAGES: PageName[] = ["home", "discover", "activity", "profile", "create"];
+const PAGES: PageName[] = ["home", "discover", "activity", "profile", "create", "policy"];
 
 export function Viewer(props: ViewerProps): ReactElement {
   return createElement(
@@ -148,6 +150,7 @@ export function Viewer(props: ViewerProps): ReactElement {
       props.page === "activity" ? activity(props) : null,
       props.page === "profile" ? profile(props) : null,
       props.page === "create" ? create(props) : null,
+      props.page === "policy" ? policyPage() : null,
     ),
   );
 }
@@ -296,20 +299,29 @@ function socialControls(props: ViewerProps): ReactElement {
       createElement("label", null, "Comment", createElement("textarea", { id: "comment-text", name: "text", disabled: !social?.onComment })),
       createElement("button", { type: "submit", id: "comment-send", disabled: !social?.onComment }, "Comment"),
     ),
-    createElement("p", { id: "comment-note" }, "Comments are plain text. A moderator queue is not implemented."),
+    createElement("p", { id: "comment-note" }, "Comments are plain text. A moderator queue stores reports off the public page."),
     createElement("ul", { id: "comments" }, ...((social?.comments ?? []).map((note) => createElement("li", { key: note.id }, note.text)))),
-    gate("Block", "gate-block", "Block is not available. No block request is sent."),
-    gate("Report", "gate-report", "Report is not available. No report request is sent."),
+    createElement("button", {
+      type: "button",
+      id: "block",
+      disabled: !social?.onBlock,
+      "aria-describedby": "gate-block",
+      onClick: () => social?.onBlock?.(),
+    }, "Block"),
+    createElement("p", { id: "gate-block" }, social?.onBlock
+      ? "A block is stored for this account. It is not a chain transaction."
+      : "Block is not available. No block request is sent."),
+    createElement("button", {
+      type: "button",
+      id: "report",
+      disabled: !social?.onReport,
+      "aria-describedby": "gate-report",
+      onClick: () => social?.onReport?.(),
+    }, "Report"),
+    createElement("p", { id: "gate-report" }, social?.onReport
+      ? "A report is stored for a moderator. The complaint text is not shown here."
+      : "Report is not available. No report request is sent."),
     createElement("p", null, "Peer sharing is off."),
-  );
-}
-
-function gate(name: string, id: string, text: string): ReactElement {
-  return createElement(
-    "div",
-    { className: "gate" },
-    createElement("button", { type: "button", disabled: true, "aria-describedby": id }, name),
-    createElement("p", { id }, text),
   );
 }
 
@@ -613,11 +625,30 @@ function textArea(props: ViewerProps, name: keyof CreatorFields, labelText: stri
   );
 }
 
+function policyPage(): ReactElement {
+  return createElement(
+    "section",
+    { id: "policy" },
+    createElement("h1", null, "Community policy"),
+    createElement("p", null, "PLACEHOLDER. No community rule text is approved. This page is not legal approval."),
+    createElement("p", null, "Public launch is disabled."),
+    createElement("p", null, "DEC-004 sets no retention period. The minimum record is kept."),
+    createElement("p", null, "DEC-007 is unset. This build makes no minor-safety claim."),
+    createElement("p", null, "Appeal authority: PLACEHOLDER unassigned."),
+    createElement("p", null, "Contact trust/safety: PLACEHOLDER unassigned."),
+    createElement("p", null, "Contact product: PLACEHOLDER unassigned."),
+    createElement("p", null, "The five-minute delisting figure is a PROPOSED gate, not a promise."),
+    createElement("p", null, "A committed chain record cannot force this service to keep distributing an item."),
+    createElement("p", null, "Removal does not erase independent copies or historical ledger records."),
+  );
+}
+
 function label(page: PageName): string {
   if (page === "home") return "Home";
   if (page === "discover") return "Discover";
   if (page === "activity") return "Activity";
   if (page === "create") return "Create";
+  if (page === "policy") return "Policy";
   return "Profile";
 }
 

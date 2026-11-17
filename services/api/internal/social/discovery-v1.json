@@ -23,6 +23,9 @@
   "goal_23": [
     "/v1/reports",
     "/v1/blocks",
+    "/v1/moderation/queue",
+    "/v1/removal",
+    "/v1/policy",
     "X-SVN-Cache-Generation"
   ]
 }

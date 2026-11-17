@@ -1,0 +1,7 @@
+HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
+TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+DIRTY no
+CMD python3 -m pytest tests/unit/test_delivery_hosts.py tests/unit/test_media_delist.py tests/unit/test_operations_docs.py -q --tb=short
+..................................                                       [100%]
+EXIT:0
+AFTER clean

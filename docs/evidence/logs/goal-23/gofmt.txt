@@ -1,0 +1,6 @@
+HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
+TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+DIRTY no
+CMD gofmt -l services/api/internal/moderation services/api/internal/social services/api/internal/service services/scheduler/internal/sched agents/provider/internal/agent agents/provider/internal/httpserver agents/provider/internal/store
+EXIT:0
+AFTER clean

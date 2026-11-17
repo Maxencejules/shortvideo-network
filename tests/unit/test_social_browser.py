@@ -93,8 +93,16 @@ def test_viewer_uses_discovery(tmp_path: Path) -> None:
         assert saved["saved"]["comment"]["plain"] is True
         assert saved["saved"]["comment"]["markup"] is False
         assert saved["saved"]["found"] is True
-        assert saved["saved"]["moderation"]["block"] is True
+        assert saved["saved"]["blockedUi"]["block"] is True
         assert saved["saved"]["moderation"]["report"] is True
+        reports = _get(base + "/v1/reports", _text(viewer, "token"))
+        encoded = json.dumps(reports)
+        assert "viewer report" not in encoded
+        assert reports.get("cases")
+        blocks = _get(base + "/v1/blocks", _text(viewer, "token"))
+        blocked = blocks.get("blocked")
+        assert isinstance(blocked, list)
+        assert "creator1" in blocked
     finally:
         proc.terminate()
         proc.wait(timeout=5)
@@ -105,6 +113,17 @@ def _text(doc: dict[str, object], key: str) -> str:
     if not isinstance(value, str) or value == "":
         raise RuntimeError(key)
     return value
+
+
+def _get(url: str, token: str) -> dict[str, object]:
+    req = urllib.request.Request(url, method="GET")
+    req.add_header("Accept", "application/json")
+    req.add_header("Authorization", "Bearer " + token)
+    with urllib.request.urlopen(req, timeout=5) as res:
+        parsed = json.load(res)
+    if not isinstance(parsed, dict):
+        raise RuntimeError("response")
+    return parsed
 
 
 def _post(url: str, body: dict[str, object], token: str = "") -> dict[str, object]:
@@ -147,9 +166,15 @@ def _plan(chrome: str, origin: str, token: str) -> dict[str, object]:
         "document.body.innerText.includes('Comment text is plain.') && "
         "document.querySelector('#comments img') === null"
     )
-    moderation = (
-        "(() => ({ block: document.querySelector('[aria-describedby=\"gate-block\"]').disabled, "
-        "report: document.querySelector('[aria-describedby=\"gate-report\"]').disabled }))()"
+    click_report = "(() => { document.querySelector('#report').click(); return true; })()"
+    reported_ui = (
+        "(() => { const button = document.querySelector('#report'); "
+        "if (!button || button.disabled || !document.body.innerText.includes('Report stored')) "
+        "return null; return { report: true }; })()"
+    )
+    click_block = "(() => { document.querySelector('#block').click(); return true; })()"
+    blocked_ui = (
+        "(() => document.body.innerText.includes('Block stored') ? { block: true } : null)()"
     )
     discover = (
         "(() => { const button = [...document.querySelectorAll('nav button')]"
@@ -181,10 +206,22 @@ def _plan(chrome: str, origin: str, token: str) -> dict[str, object]:
             {"do": "wait", "expr": comment, "save": "comment", "ms": 20000},
             {"do": "eval", "expr": send_markup, "save": "refused"},
             {"do": "wait", "expr": safe, "save": "safe", "ms": 20000},
-            {"do": "eval", "expr": moderation, "save": "moderation"},
+            {"do": "eval", "expr": click_report, "save": "clickedReport"},
+            {"do": "wait", "expr": reported_ui, "save": "moderation", "ms": 20000},
             {"do": "eval", "expr": discover, "save": "discover"},
             {"do": "eval", "expr": query, "save": "query"},
             {"do": "wait", "expr": found, "save": "found", "ms": 20000},
+            {
+                "do": "eval",
+                "expr": (
+                    "(() => { const button = [...document.querySelectorAll('nav button')]"
+                    ".find((item) => item.textContent === 'Home'); "
+                    "button.click(); return true; })()"
+                ),
+                "save": "home",
+            },
+            {"do": "eval", "expr": click_block, "save": "clickedBlock"},
+            {"do": "wait", "expr": blocked_ui, "save": "blockedUi", "ms": 20000},
         ],
     }
 

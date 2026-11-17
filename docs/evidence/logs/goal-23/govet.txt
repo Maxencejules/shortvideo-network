@@ -1,0 +1,6 @@
+HEAD 7fc13c2fae788ca256cd7516878e3184feae9661
+TREE 407e652e4515e66b6c4430f428db3a8ffcd57d78
+DIRTY no
+CMD cd services/api && go vet ./internal/moderation/ ./internal/social/ ./internal/service/ && cd ../scheduler && go vet ./internal/sched/ && cd ../../agents/provider && go vet ./internal/agent/ ./internal/httpserver/
+EXIT:0
+AFTER clean

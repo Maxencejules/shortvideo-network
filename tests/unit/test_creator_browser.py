@@ -121,10 +121,10 @@ def test_creator_page_shows_lifecycle_states(tmp_path: Path) -> None:
         _resume(proc)
         removed = _stopped(proc)
         removed_notes = " ".join(removed["saved"]["removed"]["notices"])
-        assert removed["saved"]["removed"]["code"] == "REMOVAL_UNAVAILABLE"
+        assert removed["saved"]["removed"]["code"] == "REMOVAL_ACCEPTED"
         assert "not universal deletion" in removed_notes
         assert "host-a" in removed_notes
-        assert web.removal_posts == 0
+        assert web.removal_posts == 1
         _resume(proc)
         blocked = _stopped(proc)
         assert blocked["saved"]["blocked"]["code"] == "PUBLICATION_BLOCKED"
@@ -274,6 +274,23 @@ class _StandIn:
                         return
                     if path == "/publish" and method == "POST":
                         self._send(403, _error("PUBLICATION_BLOCKED"), "application/json")
+                        return
+                    if path == "/removal" and method == "POST":
+                        length = int(self.headers.get("Content-Length", "0"))
+                        self.rfile.read(length)
+                        standin.removal_posts += 1
+                        self._send(
+                            202,
+                            json.dumps(
+                                {
+                                    "universal_deletion": False,
+                                    "ledger_retained": True,
+                                    "legal_approval": False,
+                                    "waited_for_finality": False,
+                                }
+                            ).encode(),
+                            "application/json",
+                        )
                         return
                     if (
                         path == "/sched/v1/availability"
@@ -545,7 +562,7 @@ def _plan(chrome: str, origin: str, clip: str) -> dict[str, Any]:
             {"do": "eval", "expr": _press("#creator-remove"), "save": "clickedRemove"},
             {
                 "do": "wait",
-                "expr": _snapshot(code="REMOVAL_UNAVAILABLE"),
+                "expr": _snapshot(code="REMOVAL_ACCEPTED"),
                 "save": "removed",
                 "ms": 10000,
             },
