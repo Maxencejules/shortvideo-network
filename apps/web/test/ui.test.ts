@@ -12,9 +12,12 @@ test("the shell is an invited build with gated social actions and no wallet cont
   const html = renderToStaticMarkup(createElement(Viewer, props()));
   assert.match(html, /Invited development build/);
   assert.match(html, /does not ask for a wallet/);
-  assert.match(html, /Follow is not available/);
+  assert.match(html, /A follow is stored for this account/);
+  assert.match(html, /not a chain transaction/);
   assert.match(html, /Block is not available/);
   assert.match(html, /Report is not available/);
+  assert.match(html, /Comments are plain text/);
+  assert.match(html, /moderator queue is not implemented/);
   assert.match(html, /Peer sharing is off/);
   assert.match(html, /A response is not a completed watch/);
   assert.equal(html.includes("<video"), true);
@@ -67,12 +70,54 @@ test("withdrawn content has no video element", () => {
   assert.match(html, /Withdrawn. Playback is not requested/);
 });
 
-test("discover, activity, and profile expose the gates", () => {
-  const discover = renderToStaticMarkup(createElement(Viewer, { ...props(), page: "discover" }));
-  assert.match(discover, /Search is not available/);
-  assert.match(discover, /not a social search/);
-  const activity = renderToStaticMarkup(createElement(Viewer, { ...props(), page: "activity" }));
-  assert.match(activity, /Replies and notifications are not available/);
+test("discover, activity, and profile expose search, replies, and the moderation gates", () => {
+  const discover = renderToStaticMarkup(createElement(Viewer, {
+    ...props(),
+    page: "discover",
+    social: {
+      feedKind: "recommended",
+      factors: [],
+      comments: [{ id: "m1", text: '<img src=x onerror="alert(1)">' }],
+      activity: [],
+      hits: [{ id: "cportrait", kind: "video", text: "harbor" }],
+      onFeedKind: () => undefined,
+      onSearch: () => undefined,
+    },
+  }));
+  assert.match(discover, /Search reads permitted profiles, topics, and videos/);
+  assert.equal(discover.includes("Search is not available"), false);
+  assert.equal(discover.includes("<img"), false);
+  assert.match(discover, /harbor/);
+  const activity = renderToStaticMarkup(createElement(Viewer, {
+    ...props(),
+    page: "activity",
+    social: {
+      feedKind: "following",
+      factors: ["followed creator +3"],
+      comments: [],
+      activity: [{ id: "n1", text: "hello" }],
+      hits: [],
+      onFeedKind: () => undefined,
+    },
+  }));
+  assert.match(activity, /hello/);
+  assert.equal(activity.includes("Replies and notifications are not available"), false);
+  const home = renderToStaticMarkup(createElement(Viewer, {
+    ...props(),
+    social: {
+      feedKind: "recommended",
+      factors: ["followed creator +3"],
+      comments: [{ id: "m1", text: '<img src=x onerror="alert(1)">' }],
+      activity: [],
+      hits: [],
+      onFeedKind: () => undefined,
+      onComment: () => undefined,
+    },
+  }));
+  assert.match(home, /Ranking factors/);
+  assert.match(home, /not a measured improvement/);
+  assert.equal(home.includes("<img"), false);
+  assert.match(home, /&lt;img/);
   const profile = renderToStaticMarkup(
     createElement(Viewer, {
       ...props(),

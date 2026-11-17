@@ -7,6 +7,7 @@ import { createElement, useEffect, useRef, type KeyboardEvent, type ReactElement
 import { EVIDENCE_LABELS } from "./evidence-labels.ts";
 import { RECOVERY_TEXT, stageNames, type CreatorState } from "./creator.ts";
 import type { ClientSettings, FeedRow } from "./model.ts";
+import type { SocialHit, SocialNote } from "./social.ts";
 
 export type PageName = "home" | "discover" | "activity" | "profile" | "create";
 
@@ -100,6 +101,19 @@ export type ViewerProps = {
   onCreatorField: (name: keyof CreatorFields, value: string) => void;
   onCreatorFile: (file: File | null) => void;
   onCreatorAction: (action: string) => void;
+  social?: {
+    feedKind: "following" | "recommended";
+    factors: string[];
+    comments: SocialNote[];
+    activity: SocialNote[];
+    hits: SocialHit[];
+    onFeedKind: (kind: "following" | "recommended") => void;
+    onFollow?: () => void;
+    onLike?: () => void;
+    onNotInterested?: () => void;
+    onComment?: (text: string) => void;
+    onSearch?: (kind: string, query: string) => void;
+  };
 };
 
 const PAGES: PageName[] = ["home", "discover", "activity", "profile", "create"];
@@ -131,7 +145,7 @@ export function Viewer(props: ViewerProps): ReactElement {
       { className: "layout" },
       props.page === "home" ? home(props) : null,
       props.page === "discover" ? discover(props) : null,
-      props.page === "activity" ? activity() : null,
+      props.page === "activity" ? activity(props) : null,
       props.page === "profile" ? profile(props) : null,
       props.page === "create" ? create(props) : null,
     ),
@@ -153,6 +167,26 @@ function home(props: ViewerProps): ReactElement {
         "aria-label": "Videos",
         onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => onFeedKey(event, props),
       },
+      createElement(
+        "div",
+        { className: "controls" },
+        createElement("button", {
+          type: "button",
+          id: "feed-following",
+          "aria-pressed": props.social?.feedKind === "following",
+          onClick: () => props.social?.onFeedKind("following"),
+        }, "Following"),
+        createElement("button", {
+          type: "button",
+          id: "feed-recommended",
+          "aria-pressed": props.social?.feedKind !== "following",
+          onClick: () => props.social?.onFeedKind("recommended"),
+        }, "Recommended"),
+      ),
+      props.social?.factors.length
+        ? createElement("p", { id: "ranking-factors" }, `Ranking factors: ${props.social.factors.join(". ")}. This is a fixture rule, not a measured improvement.`)
+        : null,
+      props.actionMessage ? createElement("p", { id: "action-status", role: "status" }, props.actionMessage) : null,
       props.rows.length === 0
         ? createElement("p", null, "No playable record is loaded.")
         : props.rows.map((item, index) => slide(props, item, index)),
@@ -167,6 +201,7 @@ function slide(props: ViewerProps, item: FeedRow, index: number): ReactElement {
     "section",
     { key: item.contentId, className: "slide", "aria-label": `Content ${item.contentId}` },
     createElement("p", null, `Content ${item.contentId}`),
+    item.title ? createElement("p", null, item.title) : null,
     item.withdrawn ? createElement("p", null, "Withdrawn. Playback is not requested.") : null,
     item.clientSelected ? createElement("p", null, "Selected in this client. This is not a live catalogue.") : null,
     current
@@ -225,20 +260,46 @@ function player(props: ViewerProps, row: FeedRow): ReactElement {
         ),
       ),
     ),
-    gates(),
+    socialControls(props),
     createElement("p", null, "A response is not a completed watch."),
     props.player.details ? createElement("pre", { id: "svn-playback" }, props.player.details) : createElement("pre", { id: "svn-playback" }, ""),
   );
 }
 
-function gates(): ReactElement {
+function socialControls(props: ViewerProps): ReactElement {
+  const social = props.social;
   return createElement(
     "div",
     { className: "gates" },
-    gate("Follow", "gate-follow", "Follow is not available. No follow request is sent."),
+    createElement("button", {
+      type: "button",
+      id: "follow",
+      disabled: !social?.onFollow,
+      onClick: () => social?.onFollow?.(),
+    }, "Follow"),
+    createElement("p", { id: "follow-note" }, "A follow is stored for this account. It is not a chain transaction."),
+    createElement("button", { type: "button", id: "like", disabled: !social?.onLike, onClick: () => social?.onLike?.() }, "Like"),
+    createElement("button", {
+      type: "button",
+      id: "not-interested",
+      disabled: !social?.onNotInterested,
+      onClick: () => social?.onNotInterested?.(),
+    }, "Not interested"),
+    createElement(
+      "form",
+      {
+        onSubmit: (event: { preventDefault: () => void; currentTarget: HTMLFormElement }) => {
+          event.preventDefault();
+          social?.onComment?.(String(new FormData(event.currentTarget).get("text") ?? ""));
+        },
+      },
+      createElement("label", null, "Comment", createElement("textarea", { id: "comment-text", name: "text", disabled: !social?.onComment })),
+      createElement("button", { type: "submit", id: "comment-send", disabled: !social?.onComment }, "Comment"),
+    ),
+    createElement("p", { id: "comment-note" }, "Comments are plain text. A moderator queue is not implemented."),
+    createElement("ul", { id: "comments" }, ...((social?.comments ?? []).map((note) => createElement("li", { key: note.id }, note.text)))),
     gate("Block", "gate-block", "Block is not available. No block request is sent."),
     gate("Report", "gate-report", "Report is not available. No report request is sent."),
-    createElement("p", { id: "gate-comments" }, "Comments are not available."),
     createElement("p", null, "Peer sharing is off."),
   );
 }
@@ -253,13 +314,32 @@ function gate(name: string, id: string, text: string): ReactElement {
 }
 
 function discover(props: ViewerProps): ReactElement {
+  const social = props.social;
   return createElement(
     "div",
     null,
     createElement("h1", null, "Discover"),
-    createElement("p", null, "Committed content records. This is not a social search."),
-    createElement("label", null, "Search", createElement("input", { disabled: true, "aria-describedby": "gate-search" })),
-    createElement("p", { id: "gate-search" }, "Search is not available."),
+    createElement("p", null, "Search reads permitted profiles, topics, and videos."),
+    createElement(
+      "form",
+      {
+        onSubmit: (event: { preventDefault: () => void; currentTarget: HTMLFormElement }) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          social?.onSearch?.(String(data.get("kind") ?? "video"), String(data.get("q") ?? ""));
+        },
+      },
+      createElement("label", null, "Search", createElement("input", { id: "search-query", name: "q", disabled: !social?.onSearch })),
+      createElement(
+        "select",
+        { id: "search-kind", name: "kind", defaultValue: "video", disabled: !social?.onSearch },
+        createElement("option", { value: "video" }, "Videos"),
+        createElement("option", { value: "profile" }, "Profiles"),
+        createElement("option", { value: "topic" }, "Topics"),
+      ),
+      createElement("button", { type: "submit", id: "search-go", disabled: !social?.onSearch }, "Search"),
+    ),
+    createElement("ul", { id: "search-hits" }, ...((social?.hits ?? []).map((hit) => createElement("li", { key: `${hit.kind}-${hit.id}` }, `${hit.text} ${hit.id}`)))),
     createElement(
       "div",
       { className: "list" },
@@ -276,12 +356,15 @@ function discover(props: ViewerProps): ReactElement {
   );
 }
 
-function activity(): ReactElement {
+function activity(props: ViewerProps): ReactElement {
+  const notes = props.social?.activity ?? [];
   return createElement(
     "div",
     null,
     createElement("h1", null, "Activity"),
-    createElement("p", { className: "panel" }, "Replies and notifications are not available."),
+    notes.length === 0
+      ? createElement("p", { className: "panel" }, props.social ? "No replies or notifications." : "Set the discovery endpoint to load replies and notifications.")
+      : createElement("ul", { id: "activity-notes" }, ...notes.map((note) => createElement("li", { key: note.id }, note.text))),
   );
 }
 
@@ -375,6 +458,7 @@ function settingsForm(props: ViewerProps): ReactElement {
     ["indexerBase2", "Second indexer"],
     ["accountBase", "Account"],
     ["schedulerBase", "Scheduler"],
+    ["discoveryBase", "Discovery"],
   ];
   return createElement(
     "form",
@@ -389,6 +473,7 @@ function settingsForm(props: ViewerProps): ReactElement {
           indexerBase2: String(data.get("indexerBase2") ?? ""),
           accountBase: String(data.get("accountBase") ?? ""),
           schedulerBase: String(data.get("schedulerBase") ?? ""),
+          discoveryBase: String(data.get("discoveryBase") ?? ""),
           contentIds: String(data.get("contentIds") ?? "")
             .split(/[\s,]+/)
             .filter((item) => item.length > 0),

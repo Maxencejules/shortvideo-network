@@ -1,0 +1,28 @@
+{
+  "interface_version": 1,
+  "name": "svn-discovery",
+  "chain_events": false,
+  "watch_history_stored": false,
+  "activitypub": false,
+  "at_protocol": false,
+  "note": "No ActivityPub or AT Protocol adapter is implemented. Ordinary social actions are not chain transactions. Saved videos, private preferences, and raw viewing histories are not public records.",
+  "paths": [
+    "/v1/discovery",
+    "/v1/feeds/following",
+    "/v1/feeds/recommended",
+    "/v1/search",
+    "/v1/follows",
+    "/v1/likes",
+    "/v1/comments",
+    "/v1/saves",
+    "/v1/not-interested",
+    "/v1/activity",
+    "/v1/profile",
+    "/v1/index/rebuild"
+  ],
+  "goal_23": [
+    "/v1/reports",
+    "/v1/blocks",
+    "X-SVN-Cache-Generation"
+  ]
+}

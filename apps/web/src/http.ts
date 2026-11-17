@@ -16,11 +16,12 @@ export async function getJson(url: string, signal: AbortSignal, token = ""): Pro
   return readBody(response);
 }
 
-export async function postJson(url: string, body: unknown, signal: AbortSignal, token = "", ceremony = ""): Promise<unknown> {
+export async function postJson(url: string, body: unknown, signal: AbortSignal, token = "", ceremony = "", idempotency = ""): Promise<unknown> {
   assertNoSecretQuery(url);
   const headers = new Headers({ Accept: "application/json", "Content-Type": "application/json" });
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (ceremony) headers.set("X-SVN-Ceremony", ceremony);
+  if (idempotency) headers.set("Idempotency-Key", idempotency);
   const response = await fetch(url, {
     method: "POST",
     headers,

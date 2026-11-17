@@ -1,0 +1,32 @@
+HEAD 29f82eb0fc24acc5e76099d066b6f70c3ee66062
+TREE d854aa495c2d625ae7025cc4f973b6721c04a187
+DIRTY no
+CMD cd services/api && go test -count=1 -timeout 180s -v ./internal/social/
+=== RUN   TestFollowPermissionsDuplicateLikesAndSaves
+--- PASS: TestFollowPermissionsDuplicateLikesAndSaves (0.00s)
+=== RUN   TestCommentBoundariesActivityAndDeletion
+--- PASS: TestCommentBoundariesActivityAndDeletion (0.00s)
+=== RUN   TestPaginationUnderConcurrentUpdates
+--- PASS: TestPaginationUnderConcurrentUpdates (0.00s)
+=== RUN   TestChronologicalFilterAndCachedPage
+--- PASS: TestChronologicalFilterAndCachedPage (0.00s)
+=== RUN   TestRecommendationFixtureIsNotAQualityClaim
+--- PASS: TestRecommendationFixtureIsNotAQualityClaim (0.00s)
+=== RUN   TestRebuildSearchCoverage
+--- PASS: TestRebuildSearchCoverage (0.00s)
+=== RUN   TestSignedFollowAndAccountDeletion
+--- PASS: TestSignedFollowAndAccountDeletion (0.00s)
+=== RUN   TestRateLimitHidesTheBudget
+--- PASS: TestRateLimitHidesTheBudget (0.00s)
+=== RUN   TestSecondClientReadsStableIDs
+--- PASS: TestSecondClientReadsStableIDs (0.32s)
+=== RUN   TestCanonicalMatchesProfile
+--- PASS: TestCanonicalMatchesProfile (0.02s)
+=== RUN   TestDiscoveryDocumentAndDevFlag
+--- PASS: TestDiscoveryDocumentAndDevFlag (0.00s)
+=== RUN   TestPackageDoesNotImportChain
+--- PASS: TestPackageDoesNotImportChain (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/social	0.341s
+EXIT:0
+AFTER clean

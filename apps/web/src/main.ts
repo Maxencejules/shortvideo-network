@@ -33,6 +33,20 @@ import {
 } from "./creator.ts";
 import { deleteJson, getBytes, getJson, postJson, putBytes } from "./http.ts";
 import {
+  commentAllowed,
+  fetchActivity,
+  fetchComments,
+  fetchFeed,
+  sendComment,
+  sendFollow,
+  sendLike,
+  sendNotInterested,
+  sendSave,
+  sendSearch,
+  type SocialHit,
+  type SocialNote,
+} from "./social.ts";
+import {
   ApiError,
   EMPTY_SETTINGS,
   ID,
@@ -108,6 +122,12 @@ function App(): ReturnType<typeof createElement> {
   const inflight = useRef(new Map<string, Promise<void>>());
   const [draftRevision, setDraftRevision] = useState(0);
   const [confirmWord, setConfirmWord] = useState("");
+  const [feedKind, setFeedKind] = useState<"following" | "recommended">("recommended");
+  const [factors, setFactors] = useState<string[]>([]);
+  const [comments, setComments] = useState<SocialNote[]>([]);
+  const [activityNotes, setActivityNotes] = useState<SocialNote[]>([]);
+  const [hits, setHits] = useState<SocialHit[]>([]);
+  const [discoveryTick, setDiscoveryTick] = useState(0);
   if (!blank.current) blank.current = emptyDraft();
   const videoNode = useRef<HTMLVideoElement | null>(null);
   const blobUrl = useRef("");
@@ -139,6 +159,44 @@ function App(): ReturnType<typeof createElement> {
     });
     return () => ctrl.abort();
   }, []);
+
+  useEffect(() => {
+    if (!ready || !settings.discoveryBase || !bearer) return;
+    const ctrl = new AbortController();
+    void (async () => {
+      try {
+        const feed = await fetchFeed(settings.discoveryBase, bearer, feedKind, ctrl.signal);
+        if (ctrl.signal.aborted) return;
+        setFactors(feed.factors);
+        setRows(feed.cards.map((card) => ({
+          contentId: card.contentId,
+          withdrawn: false,
+          clientSelected: false,
+          creatorId: card.creatorId,
+          title: card.title,
+        })));
+        setActivityNotes(await fetchActivity(settings.discoveryBase, bearer, ctrl.signal));
+      } catch {
+        if (!ctrl.signal.aborted) setActionMessage("The discovery service could not be read.");
+      }
+    })();
+    return () => ctrl.abort();
+  }, [ready, settings.discoveryBase, session.accountId, feedKind, discoveryTick]);
+
+  const shownId = rows[active]?.contentId ?? "";
+  useEffect(() => {
+    if (!settings.discoveryBase || !bearer || !shownId) {
+      setComments([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    void fetchComments(settings.discoveryBase, bearer, shownId, ctrl.signal).then((notes) => {
+      if (!ctrl.signal.aborted) setComments(notes);
+    }).catch(() => {
+      if (!ctrl.signal.aborted) setComments([]);
+    });
+    return () => ctrl.abort();
+  }, [settings.discoveryBase, shownId, session.accountId]);
 
   useEffect(() => {
     try {
@@ -546,6 +604,19 @@ function App(): ReturnType<typeof createElement> {
     onCreatorAction: (action) => {
       void runCreatorAction(action);
     },
+    social: {
+      feedKind,
+      factors,
+      comments,
+      activity: activityNotes,
+      hits,
+      onFeedKind: setFeedKind,
+      onFollow: settings.discoveryBase && bearer && rows[active]?.creatorId ? () => void followCurrent(settings, rows[active], setActionMessage, setFeedKind, () => setDiscoveryTick((n) => n + 1)) : undefined,
+      onLike: settings.discoveryBase && bearer && rows[active] && !rows[active].withdrawn ? () => void likeCurrent(settings, rows[active], setActionMessage) : undefined,
+      onNotInterested: settings.discoveryBase && bearer && rows[active] ? () => void hideCurrent(settings, rows[active], setActionMessage, () => setDiscoveryTick((n) => n + 1)) : undefined,
+      onComment: settings.discoveryBase && bearer && rows[active] ? (text) => void commentCurrent(settings, rows[active], text, setActionMessage, setComments) : undefined,
+      onSearch: settings.discoveryBase && bearer ? (kind, query) => void searchCurrent(settings, kind, query, setHits, setActionMessage) : undefined,
+    },
   });
 }
 
@@ -848,7 +919,96 @@ async function saveCurrent(settings: ClientSettings, row: FeedRow | undefined, s
     setAction("Withdrawn. Playback is not requested.");
     return;
   }
+  if (settings.discoveryBase && bearer) {
+    try {
+      await sendSave(settings.discoveryBase, bearer, row.contentId, AbortSignal.timeout(8000));
+      setAction("Saved for this account. It is not a public record.");
+    } catch {
+      setAction("The save request did not finish.");
+    }
+    return;
+  }
   await accountAction(settings, "/v1/saved-videos", { content_id: row.contentId }, "Saved for this account.", setAction, false);
+}
+
+async function followCurrent(
+  settings: ClientSettings,
+  row: FeedRow | undefined,
+  setAction: (value: string) => void,
+  setKind: (kind: "following" | "recommended") => void,
+  bump: () => void,
+): Promise<void> {
+  if (!settings.discoveryBase || !bearer || !row?.creatorId) {
+    setAction("Set the discovery endpoint and sign in.");
+    return;
+  }
+  try {
+    await sendFollow(settings.discoveryBase, bearer, row.creatorId, AbortSignal.timeout(8000));
+    setAction("Follow stored for this account. It is not a chain transaction.");
+    setKind("following");
+    bump();
+  } catch {
+    setAction("The follow request did not finish.");
+  }
+}
+
+async function likeCurrent(settings: ClientSettings, row: FeedRow | undefined, setAction: (value: string) => void): Promise<void> {
+  if (!settings.discoveryBase || !bearer || !row) return;
+  try {
+    await sendLike(settings.discoveryBase, bearer, row.contentId, AbortSignal.timeout(8000));
+    setAction("Like stored for this account. It is not a public record.");
+  } catch {
+    setAction("The like request did not finish.");
+  }
+}
+
+async function hideCurrent(settings: ClientSettings, row: FeedRow | undefined, setAction: (value: string) => void, bump: () => void): Promise<void> {
+  if (!settings.discoveryBase || !bearer || !row) return;
+  try {
+    await sendNotInterested(settings.discoveryBase, bearer, row.contentId, AbortSignal.timeout(8000));
+    setAction("Not interested is stored for this account.");
+    bump();
+  } catch {
+    setAction("The request did not finish.");
+  }
+}
+
+async function commentCurrent(
+  settings: ClientSettings,
+  row: FeedRow | undefined,
+  text: string,
+  setAction: (value: string) => void,
+  setNotes: (notes: SocialNote[]) => void,
+): Promise<void> {
+  if (!commentAllowed(text)) {
+    setAction("Comment text is plain.");
+    return;
+  }
+  if (!settings.discoveryBase || !bearer || !row) return;
+  try {
+    await sendComment(settings.discoveryBase, bearer, row.contentId, text.trim(), AbortSignal.timeout(8000));
+    setNotes(await fetchComments(settings.discoveryBase, bearer, row.contentId, AbortSignal.timeout(8000)));
+    setAction("Comment stored.");
+  } catch {
+    setAction("The comment request did not finish.");
+  }
+}
+
+async function searchCurrent(
+  settings: ClientSettings,
+  kind: string,
+  query: string,
+  setHits: (hits: SocialHit[]) => void,
+  setAction: (value: string) => void,
+): Promise<void> {
+  if (!settings.discoveryBase || !bearer) return;
+  try {
+    setHits(await sendSearch(settings.discoveryBase, bearer, kind, query.trim(), AbortSignal.timeout(8000)));
+    setAction("Search results are from the discovery service.");
+  } catch {
+    setAction("The search request did not finish.");
+    setHits([]);
+  }
 }
 
 const root = document.getElementById("root");

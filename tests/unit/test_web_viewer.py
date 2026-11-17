@@ -340,7 +340,8 @@ def _plan(chrome: str, origin: str) -> dict[str, Any]:
         "(() => { const text = document.body.innerText; return {"
         " fixture: text.includes('not a live creator'),"
         " withdrawn: text.includes('Withdrawn. Playback is not requested.'),"
-        " gates: text.includes('Follow is not available') && text.includes('Peer sharing is off.')"
+        " gates: text.includes('not a chain transaction') &&"
+        " text.includes('Block is not available') && text.includes('Peer sharing is off.')"
         " }; })()"
     )
     profile_expr = (
