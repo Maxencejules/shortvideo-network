@@ -223,9 +223,12 @@ for sample in range(samples):
         ceiling = heights
         first = min(heights)
     elif mode == "stall":
-        for index, height in enumerate(heights):
-            if height > ceiling[index]:
-                raise SystemExit(f"phase {phase} node {index} moved from {ceiling[index]} to {height}")
+        # Empty blocks keep the same app hash, so one node can still be
+        # reporting a height another node already had. That catch-up is not
+        # a new commit. A higher maximum height is.
+        seen = max(ceiling)
+        if max(heights) > seen:
+            raise SystemExit(f"phase {phase} height moved from {seen} to {max(heights)}")
     elif min(heights) < first:
         raise SystemExit(f"phase {phase} height moved backward")
     time.sleep(1)
