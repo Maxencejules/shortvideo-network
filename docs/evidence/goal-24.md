@@ -25,6 +25,10 @@ The tested commit message carries `Tested-tree: fd0f0089c6b9aa66c9e289d7eb659feb
 
 ## Captures
 
+## Head CI
+
+[Run 44162084743](https://github.com/Maxencejules/shortvideo-network/actions/runs/44162084743) on `8905588e4de545aabcc95fcc1ad4b36e706782b9` finished with conclusion `success`. All 17 jobs passed, including `contract`, `python`, `node`, `go`, `milestone`, `devnet`, and every `go-race` shard. That head contains the allowlist and these logs. It differs from the tested commit `bb637fa19d2ee2cfa9774f59c62edd36256533d2` only under `docs/evidence/`. This paragraph is added after `8905588`. The commit that adds it is a new head, so this file names `8905588` and not that later head.
+
 Every log under [logs/goal-24/](logs/goal-24/) was captured while `git status --porcelain` was empty. Each file's line 4 is `DIRTY no`. The commands ran from the repository root. The log files were written outside the worktree and copied in afterward, so they do not appear in those stamps. [pytest.txt](logs/goal-24/pytest.txt) line 7 records that `apps/web/dist` was removed after that command. It was not committed. Every log ends `AFTER clean`. Nothing was left untracked when the captures finished.
 
 ## What ran
