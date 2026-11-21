@@ -106,12 +106,16 @@ var (
 )
 
 // Options configures one process. Token is required and is never logged.
+// Limits and Queues replace the placeholder caps when set. A missing kind
+// keeps the placeholder. Queue 0 is a hard stop with no waiting room.
 type Options struct {
 	Token      string
 	Now        func() time.Time
 	LogEntries int
 	LogBytes   int
 	Lookup     Lookup
+	Limits     map[string]int64
+	Queues     map[string]int64
 }
 
 // Decision is one admission result. SpendCap is always false.
@@ -271,6 +275,20 @@ func New(opt Options) (*Service, error) {
 	}
 	for _, name := range []string{"chain", "indexer", "database"} {
 		s.deps[name] = &dependency{critical: true, usable: false}
+	}
+	for kind, n := range opt.Limits {
+		lim, ok := s.limits[kind]
+		if !ok || n < 1 {
+			return nil, ErrKind
+		}
+		lim.limit = n
+	}
+	for kind, n := range opt.Queues {
+		lim, ok := s.limits[kind]
+		if !ok || n < 0 {
+			return nil, ErrKind
+		}
+		lim.queue = n
 	}
 	return s, nil
 }

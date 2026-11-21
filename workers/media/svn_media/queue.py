@@ -14,6 +14,7 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 
+from svn_media.admit import processing as admit_processing
 from svn_media.correlate import new_id
 from svn_media.encode import process_input
 from svn_media.limits import Failure, Limits, check_id, check_object_name, check_sha256
@@ -62,7 +63,7 @@ _LIST_SQL = """
 SELECT row_to_json(t)
 FROM (
     SELECT a.job_id, u.content_id, u.object_name, i.input_sha256,
-           i.output_budget_bytes, i.input_bytes
+           i.output_budget_bytes, i.input_bytes, j.idempotency_key
     FROM media.attempts a
     JOIN api.processing_jobs j ON j.job_id = a.job_id
     JOIN api.uploads u ON u.upload_id = j.upload_id
@@ -150,6 +151,7 @@ class Pg:
             job_id = str(row["job_id"])
             if workspace.has_job(job_id):
                 continue
+            admit_key = row.get("idempotency_key")
             workspace.enqueue(
                 job_id=job_id,
                 content_id=str(row["content_id"]),
@@ -157,6 +159,7 @@ class Pg:
                 output_budget_bytes=int(row["output_budget_bytes"]),
                 content_version=workspace.next_version(str(row["content_id"])),
                 input_sha256=str(row["input_sha256"]),
+                admit_key=str(admit_key) if isinstance(admit_key, str) and admit_key else None,
             )
             count += 1
         return count
@@ -267,6 +270,7 @@ class Workspace:
         input_sha256: str | None = None,
         captions: bytes | None = None,
         captions_reviewed: bool = False,
+        admit_key: str | None = None,
     ) -> None:
         check_id(job_id)
         check_id(content_id)
@@ -291,6 +295,8 @@ class Workspace:
             "input_sha256": input_sha256,
             "captions_reviewed": captions_reviewed,
         }
+        if admit_key:
+            record["admit_key"] = admit_key
         _atomic_json(self.root / "jobs" / "queued" / f"{job_id}.json", record)
 
     def delist(self, content_id: str) -> None:
@@ -344,6 +350,17 @@ class Workspace:
         self.last_correlation_id = new_id()
         job_id = running.stem
         claimed = _read_job(running)
+        admit_key = claimed.get("admit_key")
+        key = str(admit_key) if isinstance(admit_key, str) and admit_key else job_id
+        gate = admit_processing(key)
+        if gate != "granted":
+            os.rename(running, self.root / "jobs" / "queued" / running.name)
+            return {
+                "job_id": job_id,
+                "content_id": str(claimed["content_id"]),
+                "status": gate,
+                "encoded": False,
+            }
         if self.delisted(str(claimed["content_id"])):
             self._fail(job_id, Failure("CANCELLED"))
             return {

@@ -45,6 +45,14 @@ const maxGapCheck = 256
 //     locks (a refusal discards the bytes, which were never sent); then the
 //     first send.
 func (s *session) startAttempt(ctx context.Context, work store.Work, atts []store.Attempt, msg sdk.Msg) (bool, error) {
+	if len(atts) > 0 {
+		if s.w.cfg.Retries == nil {
+			return false, errors.New("admission unreachable")
+		}
+		if err := s.w.cfg.Retries.Admit(ctx, work.ID); err != nil {
+			return false, err
+		}
+	}
 	acct, seq, ok, err := s.allocate(ctx)
 	if err != nil || !ok {
 		return false, err

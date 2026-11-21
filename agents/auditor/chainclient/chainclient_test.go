@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -42,6 +43,7 @@ import (
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 // headerTime is 30 minutes into epoch 490896.
@@ -156,6 +158,7 @@ func setup(t *testing.T) *env {
 	sub := &chainclient.Submitter{
 		Client: client, Store: st, Key: &key, Gas: 2_000_000,
 		Inclusion: 200 * time.Millisecond, Interval: 5 * time.Millisecond, Window: window,
+		Admit: permitAdmit(t),
 	}
 	t.Logf("%s", chaintest.Label)
 	return &env{node: node, sub: sub, b: b, key: key, store: st, root: root}
@@ -1128,5 +1131,52 @@ func TestChaintestOnlyInTests(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+var (
+	permitOnce sync.Once
+	permitGate *client.Client
+	permitErr  error
+)
+
+func permitAdmit(t *testing.T) *client.Client {
+	t.Helper()
+	permitOnce.Do(func() {
+		base, token, _, err := client.Listen(client.Permissive(), nil)
+		permitGate = client.New(base, token)
+		permitErr = err
+	})
+	if permitErr != nil {
+		t.Fatal(permitErr)
+	}
+	return permitGate
+}
+
+func TestSubmitRefusesASecondAuditBatch(t *testing.T) {
+	e := setup(t)
+	base, token, stop, err := client.Listen(map[string]int64{client.KindAudit: 1}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(stop)
+	e.sub.Admit = client.New(base, token)
+	ctx := context.Background()
+	if _, err := e.sub.Submit(ctx, e.b, "run-cap"); err != nil && strings.Contains(err.Error(), "admission") {
+		t.Fatal(err)
+	}
+	other := *e.b
+	other.Msg = batch.WithBusinessID(e.b.Msg, "audit-cap-other")
+	if _, err := e.sub.Submit(ctx, &other, "run-cap-2"); err == nil || !strings.Contains(err.Error(), "admission refused") {
+		t.Fatalf("second batch %v", err)
+	}
+	if _, err := e.sub.Submit(ctx, e.b, "run-cap"); err != nil && strings.Contains(err.Error(), "admission refused") {
+		t.Fatalf("replay %v", err)
+	}
+	e.sub.Admit = client.New("http://127.0.0.1:1", token)
+	down := *e.b
+	down.Msg = batch.WithBusinessID(e.b.Msg, "audit-cap-down")
+	if _, err := e.sub.Submit(ctx, &down, "run-down"); err == nil || !strings.Contains(err.Error(), "unreachable") {
+		t.Fatalf("down %v", err)
 	}
 }

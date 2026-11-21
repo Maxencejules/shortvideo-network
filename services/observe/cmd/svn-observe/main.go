@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Maxencejules/shortvideo-network/services/observe/internal/obs"
@@ -23,7 +24,12 @@ func run() int {
 		fmt.Fprintln(os.Stderr, "listen address must be a loopback host")
 		return 1
 	}
-	svc, err := obs.New(obs.Options{Token: os.Getenv("SVN_OBSERVE_TOKEN")})
+	limits, queues, err := limitEnv()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "observer limit is not a number")
+		return 1
+	}
+	svc, err := obs.New(obs.Options{Token: os.Getenv("SVN_OBSERVE_TOKEN"), Limits: limits, Queues: queues})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "observer token is missing")
 		return 1
@@ -43,6 +49,31 @@ func run() int {
 		return 1
 	}
 	return 0
+}
+
+func limitEnv() (map[string]int64, map[string]int64, error) {
+	limits := map[string]int64{}
+	queues := map[string]int64{}
+	for _, kind := range []string{
+		obs.KindUploads, obs.KindProcessing, obs.KindOutputBytes, obs.KindStorage,
+		obs.KindAudit, obs.KindRetries, obs.KindLogin, obs.KindSearch, obs.KindReport, obs.KindDiscovery,
+	} {
+		if raw := os.Getenv("SVN_OBSERVE_LIMIT_" + kind); raw != "" {
+			n, err := strconv.ParseInt(raw, 10, 64)
+			if err != nil {
+				return nil, nil, err
+			}
+			limits[kind] = n
+		}
+		if raw := os.Getenv("SVN_OBSERVE_QUEUE_" + kind); raw != "" {
+			n, err := strconv.ParseInt(raw, 10, 64)
+			if err != nil {
+				return nil, nil, err
+			}
+			queues[kind] = n
+		}
+	}
+	return limits, queues, nil
 }
 
 func loopback(addr string) bool {

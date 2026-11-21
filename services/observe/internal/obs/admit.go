@@ -181,7 +181,7 @@ func (s *Service) intakeReason(kind string, units int64) string {
 			return "repair_backlog"
 		}
 	case KindAudit, KindRetries:
-		if !s.deps["chain"].usable {
+		if (s.quorumKnown && s.quorumLost) || (s.commitKnown && s.commitAge > s.commitLimit) {
 			return "chain_unusable"
 		}
 	}

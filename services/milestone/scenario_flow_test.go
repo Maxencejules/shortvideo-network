@@ -49,6 +49,7 @@ func (m *mile) bootProviders(pub ed25519.PublicKey) {
 			"max_package_bytes": 50000000, "max_term_seconds": 7200,
 			"clock_uncertainty_seconds": 30, "stall_after_seconds": 12,
 			"chain_id": m.chainID, "chain_url": view.URL, "source_ca": m.stageCA, "chain_ca": view.CA,
+			"observe_url": m.observeURL, "observe_token": m.observeToken,
 			"destinations":       []any{dest(stageURL.Hostname(), stagePort)},
 			"chain_destinations": []any{dest(chainURL.Hostname(), portOf(m.t, chainURL.Host))},
 		}

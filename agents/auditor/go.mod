@@ -29,6 +29,7 @@ require (
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
+	github.com/Maxencejules/shortvideo-network/services/observe v0.0.0
 	github.com/RoaringBitmap/roaring/v2 v2.24.0 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -275,4 +276,5 @@ require (
 replace (
 	github.com/Maxencejules/shortvideo-network/chain => ../../chain
 	github.com/Maxencejules/shortvideo-network/protocol => ../../proto
+	github.com/Maxencejules/shortvideo-network/services/observe => ../../services/observe
 )

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -10,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/disk"
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/fetch"
@@ -169,7 +172,7 @@ func (a *Agent) Accept(offerID string, body []byte) (Result, error) {
 		a.mu.Unlock()
 		return Result{}, fail(403, "unapproved offer")
 	}
-	if err := a.reserve(terms.PackageBytes); err != nil {
+	if err := a.reserve(terms.PackageBytes, in.OfferID); err != nil {
 		a.mu.Unlock()
 		return Result{}, err
 	}
@@ -398,7 +401,27 @@ func (a *Agent) approved(offerID string) bool {
 	return false
 }
 
-func (a *Agent) reserve(n uint64) error {
+func (a *Agent) reserve(n uint64, key string) error {
+	if n > uint64(^uint64(0)>>1) {
+		return fail(409, "insufficient quota")
+	}
+	decision, err := a.observe.Admit(context.Background(), client.KindStorage, int64(n), key)
+	if err != nil {
+		return fail(503, "admission_unreachable")
+	}
+	if !decision.Granted {
+		return fail(429, "admission")
+	}
+	kept := false
+	if decision.Replayed {
+		return nil
+	}
+	defer func() {
+		if kept || decision.Replayed || decision.GrantID == "" {
+			return
+		}
+		_ = a.observe.Release(context.Background(), decision.GrantID)
+	}()
 	if a.st.UsedBytes > ^uint64(0)-n {
 		return fail(409, "insufficient quota")
 	}
@@ -419,6 +442,7 @@ func (a *Agent) reserve(n uint64) error {
 		return fail(409, "insufficient disk")
 	}
 	a.st.UsedBytes += n
+	kept = true
 	return nil
 }
 

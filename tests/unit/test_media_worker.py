@@ -587,6 +587,9 @@ def _child_env(fault: str | None) -> dict[str, str]:
         "TZ": "UTC",
         "HOME": os.environ.get("HOME", "/tmp"),
     }
+    for name in ("SVN_OBSERVE_URL", "SVN_OBSERVE_TOKEN"):
+        if os.environ.get(name):
+            env[name] = os.environ[name]
     if fault:
         env["SVN_MEDIA_TIMING"] = ""
         env["SVN_MEDIA_FAULT"] = fault

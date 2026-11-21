@@ -50,6 +50,7 @@ import (
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 // headerTime is 20 minutes into epoch 490896 (2026-01-01).
@@ -751,8 +752,14 @@ func TestRunSignSubmitReviewUnit(t *testing.T) {
 		n.Commit(hash, 0, "")
 	}
 	key := h.key
+	base, token, stop, err := client.Listen(client.Permissive(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(stop)
 	sub := &chainclient.Submitter{Client: h.chain, Store: st, Key: &key, Gas: h.cfg.GasLimit,
-		Inclusion: time.Second, Interval: 5 * time.Millisecond, Window: h.cfg.Window}
+		Inclusion: time.Second, Interval: 5 * time.Millisecond, Window: h.cfg.Window,
+		Admit: client.New(base, token)}
 	var buf bytes.Buffer
 	code, err := eachBatch(st, []string{signed[0].BatchID, signed[1].BatchID}, &buf, func(b *batch.Batch, s batch.Summary) (chainclient.Result, error) {
 		return sub.Submit(context.Background(), b, s.RunID)

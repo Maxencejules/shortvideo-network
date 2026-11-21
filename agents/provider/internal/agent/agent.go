@@ -21,6 +21,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/config"
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/keys"
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/store"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 // Error is a refusal with an HTTP status. Code is a short stable string.
@@ -49,6 +50,7 @@ type Agent struct {
 	cancel   context.CancelFunc
 	ctx      context.Context
 	delisted map[string]struct{}
+	observe  *client.Client
 }
 
 // Open loads the key and state for cfg. Hosting consent was checked when
@@ -108,6 +110,7 @@ func Open(cfg config.File) (*Agent, error) {
 		cfg: cfg, st: st, key: key, outer: outer, token: token, heightAt: changed,
 		source: strings.TrimSpace(string(sourceRaw)),
 		ctx:    ctx, cancel: cancel, delisted: delisted,
+		observe: client.New(cfg.ObserveURL, cfg.ObserveToken),
 	}
 	if cfg.SourceCA != "" {
 		a.sourceC, err = clientTLS(cfg.SourceCA)

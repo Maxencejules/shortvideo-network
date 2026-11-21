@@ -47,6 +47,7 @@ func startAccounts(t *testing.T, enroll, login int, ttl time.Duration, trusted [
 		Database: testConfig, Now: clk.Now, WebAuthn: testWebAuthn(),
 		EnrollPerMinute: enroll, LoginPerMinute: login, SessionTTL: ttl,
 		ExportKey: key, TrustedExporters: trusted, BootstrapToken: bootstrap,
+		Admit: permitAdmit(t),
 	})
 	if err != nil {
 		t.Fatal(err)

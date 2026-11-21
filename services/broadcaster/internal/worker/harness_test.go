@@ -43,6 +43,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/signer"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/store"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 const testChainID = "shortvideo-dev-workertest"
@@ -281,7 +282,8 @@ func newEnv(t *testing.T) *env {
 		Registry: registry, Callers: []policy.Caller{{Principal: principalApp, Kinds: all, BoundProviderID: "p1"},
 			{Principal: principalLimited, Kinds: []policy.Kind{policy.KindRegisterContent}},
 			{Principal: principalSQL, Kinds: all}, {Principal: principalSQLLimited, Kinds: []policy.Kind{policy.KindRegisterContent}}},
-		Outbox: outboxLimits(), Numbers: testNumbers(), Logger: slog.New(slog.NewJSONHandler(e.logs, nil))}
+		Outbox: outboxLimits(), Numbers: testNumbers(), Logger: slog.New(slog.NewJSONHandler(e.logs, nil)),
+		Retries: permissiveRetries(t)}
 	if e.w, err = New(e.cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -289,6 +291,25 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	return e
+}
+
+var (
+	retryOnce sync.Once
+	retryGate RetryGate
+	retryErr  error
+)
+
+func permissiveRetries(t *testing.T) RetryGate {
+	t.Helper()
+	retryOnce.Do(func() {
+		base, token, _, err := client.Listen(client.Permissive(), nil)
+		retryGate = ObserveGate(base, token)
+		retryErr = err
+	})
+	if retryErr != nil {
+		t.Fatal(retryErr)
+	}
+	return retryGate
 }
 
 // connConfig is the socket connection to the test database as user.
