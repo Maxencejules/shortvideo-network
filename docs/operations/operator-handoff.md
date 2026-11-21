@@ -16,6 +16,7 @@ On one development machine, with the toolchains named in [../dependencies.md](..
 
 ## What you cannot treat as done
 
+- The requirement-to-test links. Of 216 in-scope `TEST:` rows, 33 resolve to a test function. 183 are prose-only dispositions and name no test function. DR-30-12 stays open. The audit log lists each unresolved id.
 - A separate operator on separate infrastructure. DR-30-01 stays open. Several processes on one machine are one failure domain.
 - Owner sign-off for moderation coverage, privacy and rights, funding and quotas, operator participation, or security review. The rows in the release decision are blank. DR-30-02 through DR-30-06 stay open.
 - A human security audit. DR-29-01 stays open. F-29-05 stays open (DR-30-08).
