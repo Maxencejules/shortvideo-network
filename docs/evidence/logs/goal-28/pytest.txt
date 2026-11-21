@@ -1,0 +1,7 @@
+HEAD 14a39c168d148e4ba67f1e009671d9e5ddcb6820
+TREE 278e9dd5e112424481f316d56ea9fd1a82d13eb4
+CMD .venv/bin/python -m pytest -q tests/unit/test_capacity.py tests/unit/test_delivery.py --tb=short
+DIRTY no
+..................                                                       [100%]
+EXIT:0
+AFTER clean

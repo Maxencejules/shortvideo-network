@@ -110,6 +110,132 @@ def page_html(content_id: str) -> str:
     return _PAGE.replace("__CONTENT_ID__", json.dumps(content_id))
 
 
+_CAPACITY_PAGE = """<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>svn capacity</title></head>
+<body><pre id="svn-result">pending</pre>
+<script>
+const contentId = __CONTENT_ID__;
+function rel(base, ref) {
+  if (!ref || ref.includes("..") || ref.startsWith("/") || ref.includes("://")) {
+    throw new Error("relative");
+  }
+  return base.replace(/\\/$/, "") + "/" + ref;
+}
+async function sha256(buffer) {
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  const bytes = new Uint8Array(digest);
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function main() {
+  const started = performance.now();
+  const out = {
+    rendered: false, caption: false, error: "", sha256: "",
+    videoWidth: 0, videoHeight: 0, readyState: 0, nonzero: 0,
+    renderMs: 0, fetchMs: 0, stallMs: 0, mediaMs: 0, segment: ""
+  };
+  let renderedAt = 0;
+  let stallMark = 0;
+  let stall = 0;
+  function addStall() {
+    if (!stallMark) return;
+    stall += performance.now() - stallMark;
+    stallMark = 0;
+  }
+  try {
+    const doc = await (await fetch("/v1/playback/" + contentId)).json();
+    if (doc.hosting_promise !== false || !doc.hosts || !doc.hosts.length) {
+      throw new Error("no-host");
+    }
+    const base = doc.hosts[0].base_url;
+    const masterText = await (await fetch(rel(base, "master.m3u8"))).text();
+    const masterLines = masterText.split("\\n").map((line) => line.trim());
+    const variants = masterLines.filter((line) => line && !line.startsWith("#"));
+    const variant = variants[0];
+    if (!variant) throw new Error("variant");
+    const mediaText = await (await fetch(rel(base, variant))).text();
+    const mediaLines = mediaText.split("\\n").map((line) => line.trim());
+    const segment = mediaLines.filter((line) => line && !line.startsWith("#"))[0];
+    if (!segment) throw new Error("segment");
+    out.segment = segment;
+    const fetchStart = performance.now();
+    const payload = await (await fetch(rel(base, segment))).arrayBuffer();
+    out.fetchMs = Math.round(performance.now() - fetchStart);
+    out.sha256 = await sha256(payload);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    const blob = new Blob([payload], {type: "video/mp4"});
+    video.src = URL.createObjectURL(blob);
+    document.body.appendChild(video);
+    video.addEventListener("waiting", () => {
+      if (renderedAt && !stallMark) stallMark = performance.now();
+    });
+    video.addEventListener("playing", addStall);
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("timeout")), 20000);
+      video.onloadeddata = () => { clearTimeout(timer); resolve(); };
+      video.onerror = () => { clearTimeout(timer); reject(new Error("decode")); };
+      video.play().catch(() => {});
+    });
+    if (video.requestVideoFrameCallback) {
+      await new Promise((resolve) => {
+        const timer = setTimeout(resolve, 2000);
+        video.requestVideoFrameCallback(() => { clearTimeout(timer); resolve(); });
+      });
+    }
+    out.readyState = video.readyState;
+    out.videoWidth = video.videoWidth;
+    out.videoHeight = video.videoHeight;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas");
+    ctx.drawImage(video, 0, 0);
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let nonzero = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (pixels[i] || pixels[i + 1] || pixels[i + 2]) nonzero += 1;
+    }
+    out.nonzero = nonzero;
+    const drew = video.readyState >= 2 && video.videoWidth > 0 && nonzero > 0;
+    out.rendered = drew;
+    if (drew) renderedAt = performance.now();
+    out.renderMs = Math.round(drew ? renderedAt - started : 0);
+    await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(), 80000);
+      video.onended = () => { clearTimeout(timer); resolve(); };
+    });
+    addStall();
+    out.stallMs = Math.round(stall);
+    out.mediaMs = Math.round((video.currentTime || 0) * 1000);
+  } catch (err) {
+    out.error = String((err && err.message) || err).slice(0, 200);
+  }
+  const node = document.getElementById("svn-result");
+  if (node) node.textContent = JSON.stringify(out);
+  await fetch("/v1/player/" + contentId + "/report", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(out)
+  });
+}
+main();
+</script></body></html>
+"""
+
+
+def capacity_page_html(content_id: str) -> str:
+    """Play the first master variant through to the end.
+
+    `apps/web/src/playback.ts` selects that first variant. Stall time starts
+    only after a decoded frame. A download without that frame is not success.
+    """
+    if not ID.fullmatch(content_id):
+        raise DeliveryError("BAD_REQUEST")
+    return _CAPACITY_PAGE.replace("__CONTENT_ID__", json.dumps(content_id))
+
+
 def _stop_browser(process: subprocess.Popen[bytes]) -> None:
     """Stop the browser and the children that keep its profile directory open."""
     if process.poll() is None:

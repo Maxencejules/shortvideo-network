@@ -1,0 +1,9 @@
+HEAD 61dcd350bf50f083d87039484c97b4da817df427
+TREE a4ae0605e6ef15c1b19800590150920d7bf8ee75
+CMD go test -count=1 -timeout 8m ./services/scheduler/cmd/svn-scheduler/ ./services/scheduler/internal/sched/ ./services/scheduler/internal/policy/
+DIRTY no
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler	22.352s
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/sched	0.007s
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/policy	0.002s
+EXIT:0
+AFTER clean

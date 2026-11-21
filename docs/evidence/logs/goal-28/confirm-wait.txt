@@ -1,0 +1,17 @@
+HEAD 61dcd350bf50f083d87039484c97b4da817df427
+TREE a4ae0605e6ef15c1b19800590150920d7bf8ee75
+CMD go test -count=1 -timeout 4m -v -run TestUnreachableHolderDoesNotExtendConfirm\|TestReachableByteMismatchStillWaits\|TestRepairReverifyFailureIsCooling ./services/scheduler/cmd/svn-scheduler/
+DIRTY no
+=== RUN   TestUnreachableHolderDoesNotExtendConfirm
+CONFIRM_UNREACHABLE wall_ms=114 limit_ms=5000 state=CONFIRMED replacement=p4
+--- PASS: TestUnreachableHolderDoesNotExtendConfirm (4.96s)
+=== RUN   TestReachableByteMismatchStillWaits
+CONFIRM_MISMATCH wall_ms=1297 limit_ms=1200 state=CONFIRMED replacement=p4
+--- PASS: TestReachableByteMismatchStillWaits (6.25s)
+=== RUN   TestRepairReverifyFailureIsCooling
+CONFIRM_REVERIFY state=COOLING replacement=
+--- PASS: TestRepairReverifyFailureIsCooling (4.81s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler	16.024s
+EXIT:0
+AFTER clean

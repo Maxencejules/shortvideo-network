@@ -2,7 +2,7 @@
 
 Development procedure for the devnet beta. This is not a production runbook. Public launch is disabled. Every profile in [../../deployments/profiles/profiles.json](../../deployments/profiles/profiles.json) is NOT-RELEASED. The licence is UNCONFIRMED.
 
-No profile requires a commercial cloud account. No profile publishes a port. Binds in the reference are `127.0.0.1`. Resource figures are `not-measured`. Goal 28 owns measurement. A dev-machine result is one failure domain and is not independent operation.
+No profile requires a commercial cloud account. No profile publishes a port. Binds in the reference are `127.0.0.1`. Resource figures are `not-measured`. Goal 28 owns measurement. The procedure is [load-plan.md](load-plan.md). A result there is one machine's observation. It is not a profile minimum and it is not an operating budget. A dev-machine result is one failure domain and is not independent operation.
 
 ## Separation
 

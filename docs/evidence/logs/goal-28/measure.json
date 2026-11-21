@@ -1,0 +1,146 @@
+{
+  "arithmetic": {
+    "illustrative_tx_per_day": 800,
+    "illustrative_tx_per_second": "800/86400",
+    "label": "blueprint arithmetic, not a measurement",
+    "peer_share": null,
+    "small_beta_storage_gb": 45,
+    "small_beta_viewer_gb": 900
+  },
+  "chain": {
+    "comet_commit_interval": {
+      "gate": "BLOCKED",
+      "reason": "this fixture does not run CometBFT"
+    },
+    "exit": 0,
+    "fields": {
+      "code": "0",
+      "commit_wall_ms": "2",
+      "dup_code": "32",
+      "dup_state_delta": "0",
+      "empty_hash_changed": "false",
+      "empty_wall_ms": "0",
+      "gas_used": "111353",
+      "heights": "4",
+      "label": "in-process-abci",
+      "nodes": "2",
+      "payload_bytes": "195",
+      "replay_wall_ms": "17",
+      "state_after": "3194",
+      "state_before": "2996",
+      "state_delta": "198",
+      "tx_bytes": "394"
+    },
+    "gate": "RECORDED",
+    "index_lag": {
+      "gate": "BLOCKED",
+      "reason": "postgresql is absent; the indexer was not started"
+    },
+    "scope": "in-process ABCI, two nodes, one machine; not CometBFT throughput",
+    "tail": "ore.go:680: <nil> DBG pruning skipped, height is less than or equal to 0\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bstore.go:674: <nil> DBG prune end height=3\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bstore.go:1142: <nil> DBG flushing metadata height=3\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bstore.go:1159: <nil> DBG flushing metadata finished height=3\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\babci.go:1131: <nil> DBG hash of all writes module=baseapp workingHash=14AB69F917DF21523FD5827A9F6D7DD60A26EAB9F66E9DBAF224F77830E6C085\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bmutable_tree.go:738: <nil> DBG SAVE TREE version=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bmutable_tree.go:738: <nil> DBG SAVE TREE version=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bmutable_tree.go:738: <nil> DBG SAVE TREE version=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bmutable_tree.go:738: <nil> DBG SAVE TREE version=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bmutable_tree.go:738: <nil> DBG SAVE TREE version=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bmutable_tree.go:738: <nil> DBG SAVE TREE version=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bmutable_tree.go:738: <nil> DBG SAVE TREE version=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bmutable_tree.go:738: <nil> DBG SAVE TREE version=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bstore.go:672: <nil> DBG prune start height=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bstore.go:680: <nil> DBG pruning skipped, height is less than or equal to 0\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bstore.go:674: <nil> DBG prune end height=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bstore.go:1142: <nil> DBG flushing metadata height=4\n    buffer.go:279: \b\b\b\b\b\b\b\b\b\b\b\b\b\b\bstore.go:1159: <nil> DBG flushing metadata finished height=4\nCAPACITY_CHAIN nodes=2 tx_bytes=394 gas_used=111353 code=0 payload_bytes=195 state_before=2996 state_after=3194 state_delta=198 dup_code=32 dup_state_delta=0 empty_hash_changed=false commit_wall_ms=2 empty_wall_ms=0 replay_wall_ms=17 heights=4 label=in-process-abci\n--- PASS: TestCapacityFixture (0.06s)\nPASS\nok  \tgithub.com/Maxencejules/shortvideo-network/chain/app\t0.100s\n"
+  },
+  "design_point": {
+    "gate": "BLOCKED",
+    "reason": "no approved runner and no budget; 100 viewers and 10 uploads were not started",
+    "uploads_started": 1,
+    "viewers_started": 0
+  },
+  "hardware": {
+    "chrome": "Google Chrome 157.0.8103.50",
+    "docker": "absent",
+    "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+    "head": "14a39c168d148e4ba67f1e009671d9e5ddcb6820",
+    "mem_total_kib": 16387328,
+    "model": "Intel(R) Xeon(R) Processor",
+    "not_a_universal_minimum": true,
+    "not_an_operating_budget": true,
+    "nproc": 4,
+    "os": "Ubuntu 24.04.5 LTS",
+    "ping": "/usr/bin/ping",
+    "psql": "absent",
+    "tc": "absent",
+    "tree": "278e9dd5e112424481f316d56ea9fd1a82d13eb4",
+    "uname": "Linux 6.12.113+ x86_64",
+    "worker_concurrency": 1
+  },
+  "playback": {
+    "detail": "Error: Specified qdisc kind is unknown.\n",
+    "gate": "BLOCKED",
+    "qdisc": "",
+    "reason": "qdisc was not installed"
+  },
+  "processing": {
+    "admission": "local permit stand-in, not a DEC-005 allowance",
+    "codec": "libx264 veryfast",
+    "concurrency": 1,
+    "elapsed_seconds": 3.51,
+    "gate": "PASS",
+    "generate_seconds": 2.77,
+    "input": "synthetic testsrc 1280x720 10fps sine 440Hz 60s",
+    "limit_seconds": 120.0,
+    "moderation": {
+      "gate": "BLOCKED",
+      "reason": "DEC-003 is open; this object is not moderated"
+    },
+    "package_bytes": 1620354,
+    "publication": "NOT_PUBLISHED",
+    "publication_phase": {
+      "gate": "BLOCKED",
+      "reason": "the worker record is NOT_PUBLISHED"
+    },
+    "renditions": [
+      "h480",
+      "h720",
+      "thumb"
+    ],
+    "replication": {
+      "gate": "BLOCKED",
+      "reason": "the 60-second package was not handed to the scheduler"
+    },
+    "resources": {
+      "cpu_busy_ratio": 0.5497,
+      "cpu_definition": "(total-idle)/total from /proc/stat; iowait counts as busy",
+      "min_mem_available_kib": 4757896,
+      "peak_tree_rss_kib": 247740
+    },
+    "status": "READY_FOR_REVIEW"
+  },
+  "scheduler": {
+    "exit": 0,
+    "gate": "RECORDED",
+    "multi_host": {
+      "gate": "BLOCKED",
+      "reason": "one machine; provider labels are simulated"
+    },
+    "publish": {
+      "label": "one-machine-fixture",
+      "package_bytes": "64",
+      "physical_count": "1",
+      "publication": "PUBLISHED",
+      "simulated": "true",
+      "verified": "3",
+      "wall_ms": "180"
+    },
+    "repair": {
+      "hosts": "4",
+      "label": "process-stop-not-multi-host",
+      "machine": "1",
+      "package_bytes": "64",
+      "replacement": "p4",
+      "simulated": "true",
+      "source": "p2",
+      "state": "CONFIRMED",
+      "stopped": "p1",
+      "wall_ms": "117"
+    },
+    "slow": {
+      "approvals": "3",
+      "injected_ms": "250",
+      "label": "in-process-sleep-not-a-shaped-network",
+      "package_bytes": "64",
+      "wall_ms": "982"
+    },
+    "tail": "=== RUN   TestCapacityFixture\nCAPACITY_PUBLISH package_bytes=64 wall_ms=180 publication=PUBLISHED verified=3 physical_count=1 simulated=true label=one-machine-fixture\nCAPACITY_REPAIR package_bytes=64 wall_ms=117 state=CONFIRMED source=p2 replacement=p4 stopped=p1 hosts=4 machine=1 simulated=true label=process-stop-not-multi-host\nCAPACITY_SLOW package_bytes=64 wall_ms=982 injected_ms=250 approvals=3 label=in-process-sleep-not-a-shaped-network\n--- PASS: TestCapacityFixture (5.77s)\nPASS\nok  \tgithub.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler\t5.771s\n"
+  },
+  "workspace": "/tmp/svn-goal28-26200"
+}

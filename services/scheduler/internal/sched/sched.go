@@ -152,24 +152,25 @@ type Config struct {
 
 // Sched is the coordinator.
 type Sched struct {
-	cfg         Config
-	indexer     readmodel.Client
-	mu          sync.Mutex
-	down        map[string]bool
-	draining    map[string]bool
-	jobs        map[string]*policy.Job
-	posted      []Posted
-	pkgs        map[string]Package
-	tokens      map[string]string
-	evidence    map[string]ev
-	queued      []string
-	origin      map[string]bool
-	holds       map[string]map[string]hold
-	traces      []string
-	views       map[string]View
-	before      func()
-	clients     map[string]*http.Client
-	localDelist map[string]struct{}
+	cfg          Config
+	indexer      readmodel.Client
+	mu           sync.Mutex
+	down         map[string]bool
+	draining     map[string]bool
+	jobs         map[string]*policy.Job
+	posted       []Posted
+	pkgs         map[string]Package
+	tokens       map[string]string
+	evidence     map[string]ev
+	queued       []string
+	origin       map[string]bool
+	holds        map[string]map[string]hold
+	traces       []string
+	views        map[string]View
+	before       func()
+	afterConfirm func()
+	clients      map[string]*http.Client
+	localDelist  map[string]struct{}
 }
 
 type ev struct {
@@ -214,6 +215,14 @@ func New(cfg Config) *Sched {
 func (s *Sched) SetBeforeOffer(fn func()) {
 	s.mu.Lock()
 	s.before = fn
+	s.mu.Unlock()
+}
+
+// SetAfterConfirm runs fn after confirm returns and before the replacement
+// is verified again. Nil does nothing. Production repair leaves it nil.
+func (s *Sched) SetAfterConfirm(fn func()) {
+	s.mu.Lock()
+	s.afterConfirm = fn
 	s.mu.Unlock()
 }
 
@@ -441,11 +450,16 @@ func (s *Sched) confirm(ctx context.Context, pkg Package) error {
 	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
+	// A holder that no longer answers does not extend this wait. A byte
+	// mismatch on a host that still answers does. Repair verifies the
+	// replacement again after this returns.
+	skip := map[string]bool{}
 	for time.Now().Before(deadline) {
 		snap, err := s.indexer.Load(ctx)
 		if err == nil && !snap.Stale {
 			ready := true
 			waiting := 0
+			verified := 0
 			s.mu.Lock()
 			posted := append([]Posted(nil), s.posted...)
 			s.mu.Unlock()
@@ -454,15 +468,24 @@ func (s *Sched) confirm(ctx context.Context, pkg Package) error {
 					continue
 				}
 				waiting++
+				if skip[post.ProviderID] {
+					continue
+				}
 				if !leaseActive(snap, post.LeaseID) {
 					ready = false
 					continue
 				}
 				if err := s.verify(ctx, pkg, post.ProviderID, post.LeaseID); err != nil {
+					if !s.hostReachable(ctx, post.ProviderID) {
+						skip[post.ProviderID] = true
+						continue
+					}
 					ready = false
+					continue
 				}
+				verified++
 			}
-			if waiting == 0 || ready {
+			if waiting == 0 || (ready && verified > 0) {
 				return nil
 			}
 		}
@@ -612,6 +635,12 @@ func (s *Sched) Repair(ctx context.Context, contentID string, version uint64) (p
 	}
 	if err := s.confirm(ctx, pkg); err != nil {
 		return policy.Job{}, err
+	}
+	s.mu.Lock()
+	after := s.afterConfirm
+	s.mu.Unlock()
+	if after != nil {
+		after()
 	}
 	snap, _ = s.indexer.Load(ctx)
 	if s.locallyDelisted(contentID) || withdrawn(snap, contentID, version) {
@@ -1082,6 +1111,15 @@ func (s *Sched) operator(id string) string {
 		}
 	}
 	return ""
+}
+
+func (s *Sched) hostReachable(ctx context.Context, providerID string) bool {
+	host := s.host(providerID)
+	if host.ProviderID == "" {
+		return false
+	}
+	_, _, _, reachable := s.probe(ctx, host)
+	return reachable
 }
 
 func (s *Sched) host(id string) Host {
