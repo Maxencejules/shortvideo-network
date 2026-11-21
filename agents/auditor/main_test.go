@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"testing"
@@ -928,8 +929,35 @@ func (h *harness) configFile(chainRPC, keyPath string) string {
 	return path
 }
 
+var (
+	cliObserveOnce sync.Once
+	cliObserveErr  error
+)
+
+// admitCLI points the in-process command at a granting svn-observe.
+// Submit refuses when that address is empty. This suite is not a cap test.
+func admitCLI(t *testing.T) {
+	t.Helper()
+	cliObserveOnce.Do(func() {
+		base, token, _, err := client.Listen(client.Permissive(), nil)
+		if err != nil {
+			cliObserveErr = err
+			return
+		}
+		if err = os.Setenv("SVN_OBSERVE_URL", base); err != nil {
+			cliObserveErr = err
+			return
+		}
+		cliObserveErr = os.Setenv("SVN_OBSERVE_TOKEN", token)
+	})
+	if cliObserveErr != nil {
+		t.Fatal(cliObserveErr)
+	}
+}
+
 func cliRun(t *testing.T, args ...string) (int, string, string) {
 	t.Helper()
+	admitCLI(t)
 	var stdout, stderr bytes.Buffer
 	done := make(chan int)
 	go func() { done <- cli(args, &stdout, &stderr) }()
