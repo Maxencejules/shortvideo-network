@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import urllib.request
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import cast
@@ -272,6 +273,54 @@ def _ffmpeg(args: list[str]) -> None:
         raise RuntimeError(proc.stderr.decode("utf-8", "replace")[-500:])
 
 
+def _permit_admission() -> tuple[ThreadingHTTPServer, threading.Thread]:
+    """Local stand-in that grants one processing slot.
+
+    This is the same response the unit tests use. It is not a DEC-005 allowance
+    and it is not svn-observe.
+    """
+    token = "synthetic-observe-25"
+
+    class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def log_message(self, fmt: str, *args: object) -> None:
+            return
+
+        def do_POST(self) -> None:  # noqa: N802
+            length = int(self.headers.get("Content-Length", "0") or "0")
+            self.rfile.read(length)
+            if self.headers.get("Authorization") != "Bearer " + token:
+                self._send(401, b'{"error":"unauthorized"}')
+                return
+            body = (
+                b'{"granted":true,"queued":false,"replayed":false,'
+                b'"reason":"admitted","grant_id":"gpermissive"}'
+            )
+            self._send(200, body)
+
+        def _send(self, status: int, body: bytes) -> None:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, name="admit-permit", daemon=True)
+    thread.start()
+    bound = server.server_address
+    host = bound[0]
+    port = bound[1]
+    if isinstance(host, bytes):
+        host = host.decode()
+    if not isinstance(port, int):
+        raise RuntimeError("port")
+    os.environ["SVN_OBSERVE_URL"] = f"http://{host}:{port}"
+    os.environ["SVN_OBSERVE_TOKEN"] = token
+    return server, thread
+
+
 def processing(root: Path) -> dict[str, object]:
     from svn_media import Workspace
 
@@ -320,8 +369,15 @@ def processing(root: Path) -> dict[str, object]:
     record = ws.run_once()
     elapsed = time.monotonic() - started
     resources = sampler.finish()
-    if record is None:
-        return {"gate": "FAIL", "reason": "no job"}
+    if not isinstance(record, dict) or record.get("status") != "READY_FOR_REVIEW":
+        return {
+            "gate": "FAIL",
+            "reason": "the job did not reach ready-for-review",
+            "record": record,
+            "elapsed_seconds": round(elapsed, 3),
+            "resources": resources,
+            "admission": "local permit stand-in, not a DEC-005 allowance",
+        }
     manifest_path = ws.root / "packages" / "cminute" / "v1" / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     renditions = manifest.get("renditions")
@@ -339,6 +395,7 @@ def processing(root: Path) -> dict[str, object]:
         "package_bytes": record.get("package_bytes"),
         "renditions": names,
         "concurrency": WORKER_CONCURRENCY,
+        "admission": "local permit stand-in, not a DEC-005 allowance",
         "codec": "libx264 veryfast",
         "input": "synthetic testsrc 1280x720 10fps sine 440Hz 60s",
         "moderation": {
@@ -818,6 +875,7 @@ def _write(path: Path, body: dict[str, object]) -> None:
 def run_measure(out: Path) -> int:
     root = Path("/tmp") / f"svn-goal28-{os.getpid()}"
     root.mkdir(mode=0o700)
+    permit, permit_thread = _permit_admission()
     report: dict[str, object] = {
         "arithmetic": arithmetic(),
         "design_point": {
@@ -830,22 +888,32 @@ def run_measure(out: Path) -> int:
         },
         "workspace": str(root),
     }
+
+    def section(name: str, fn: Callable[[], object]) -> None:
+        try:
+            report[name] = fn()
+        except Exception as exc:
+            report[name] = {"gate": "FAIL", "error": f"{type(exc).__name__}: {exc}"}
+        _write(out, report)
+
     try:
-        report["hardware"] = hardware()
-        _write(out, report)
-        report["processing"] = processing(root)
-        _write(out, report)
-        report["chain"] = chain()
-        _write(out, report)
-        report["scheduler"] = scheduler()
-        _write(out, report)
-        report["playback"] = playback(root)
-        _write(out, report)
-    except Exception as exc:
-        report["runner_error"] = f"{type(exc).__name__}: {exc}"
-        _write(out, report)
-        return 1
-    return 0
+        section("hardware", hardware)
+        section("processing", lambda: processing(root))
+        section("chain", chain)
+        section("scheduler", scheduler)
+        package = root / "work" / "packages" / "cminute" / "v1" / "manifest.json"
+        if package.is_file():
+            section("playback", lambda: playback(root))
+        else:
+            report["playback"] = {
+                "gate": "BLOCKED",
+                "reason": "no ready package, so playback was not started",
+            }
+            _write(out, report)
+    finally:
+        permit.shutdown()
+        permit_thread.join(timeout=2)
+    return 0 if "runner_error" not in report else 1
 
 
 def _pythonpath() -> None:

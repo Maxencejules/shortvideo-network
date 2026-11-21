@@ -27,7 +27,7 @@ There is no approved integration runner and no resource budget. Those are DR-28-
 
 ## Corpus and cache
 
-The input is a synthetic `testsrc` of 1280x720 at 10 frames per second plus a 440 Hz sine, 60 seconds, written by the local FFmpeg. It is not a camera recording. The worker encodes `h480` and `h720` with libx264 `veryfast`. The file is placed in the worker quarantine on this disk. The processing clock starts at `run_once` and does not include generating that file or a network upload.
+The input is a synthetic `testsrc` of 1280x720 at 10 frames per second plus a 440 Hz sine, 60 seconds, written by the local FFmpeg. It is not a camera recording. The worker encodes `h480` and `h720` with libx264 `veryfast`. The file is placed in the worker quarantine on this disk. The processing clock starts at `run_once` and does not include generating that file or a network upload. The worker asks a local admission stand-in that grants the slot. That stand-in is the same response the unit tests use. It is not `svn-observe` and it is not a DEC-005 allowance.
 
 Each playback sample uses a new Chrome profile. The delivery process drops its ETag memory for the content id before the sample. The first response is a cold response. `Cache-Control` on a segment is the existing `private, max-age=60`. A 304 is not a cold sample.
 
