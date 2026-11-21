@@ -441,11 +441,16 @@ func (s *Sched) confirm(ctx context.Context, pkg Package) error {
 	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
+	// A holder that no longer answers does not extend this wait. A byte
+	// mismatch on a host that still answers does. Repair verifies the
+	// replacement again after this returns.
+	skip := map[string]bool{}
 	for time.Now().Before(deadline) {
 		snap, err := s.indexer.Load(ctx)
 		if err == nil && !snap.Stale {
 			ready := true
 			waiting := 0
+			verified := 0
 			s.mu.Lock()
 			posted := append([]Posted(nil), s.posted...)
 			s.mu.Unlock()
@@ -454,15 +459,24 @@ func (s *Sched) confirm(ctx context.Context, pkg Package) error {
 					continue
 				}
 				waiting++
+				if skip[post.ProviderID] {
+					continue
+				}
 				if !leaseActive(snap, post.LeaseID) {
 					ready = false
 					continue
 				}
 				if err := s.verify(ctx, pkg, post.ProviderID, post.LeaseID); err != nil {
+					if !s.hostReachable(ctx, post.ProviderID) {
+						skip[post.ProviderID] = true
+						continue
+					}
 					ready = false
+					continue
 				}
+				verified++
 			}
-			if waiting == 0 || ready {
+			if waiting == 0 || (ready && verified > 0) {
 				return nil
 			}
 		}
@@ -1082,6 +1096,15 @@ func (s *Sched) operator(id string) string {
 		}
 	}
 	return ""
+}
+
+func (s *Sched) hostReachable(ctx context.Context, providerID string) bool {
+	host := s.host(providerID)
+	if host.ProviderID == "" {
+		return false
+	}
+	_, _, _, reachable := s.probe(ctx, host)
+	return reachable
 }
 
 func (s *Sched) host(id string) Host {
