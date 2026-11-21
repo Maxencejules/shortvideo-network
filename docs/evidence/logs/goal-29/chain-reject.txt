@@ -1,0 +1,10 @@
+HEAD 82f3d6566046f18b9cbaeeeeab547b1d3b2dc954
+TREE 0565fac273d92f5caf3f28355aeab3ae53be2582
+CMD go test -count=1 -timeout 300s -run TestRejectedContentMessagesLeaveTheStore\|TestRejectedProviderMessagesLeaveTheStore\|TestIdempotentReplay\$\|TestRejectedAuditMessagesLeaveTheFullState\|TestRejectedLeaseMessagesLeaveTheFullState ./chain/x/content/ ./chain/x/providers/ ./chain/x/evidence/ ./chain/app/
+DIRTY no
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/content	0.088s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/providers	0.047s
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	0.050s
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	0.799s
+EXIT:0
+AFTER clean

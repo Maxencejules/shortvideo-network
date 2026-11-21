@@ -1,0 +1,7 @@
+HEAD 82f3d6566046f18b9cbaeeeeab547b1d3b2dc954
+TREE 0565fac273d92f5caf3f28355aeab3ae53be2582
+CMD go test -count=1 -timeout 120s -run TestFetcherRejectsPrivateTargets ./services/observe/internal/obs/
+DIRTY no
+ok  	github.com/Maxencejules/shortvideo-network/services/observe/internal/obs	0.002s
+EXIT:0
+AFTER clean

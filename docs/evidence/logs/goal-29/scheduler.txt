@@ -1,0 +1,12 @@
+HEAD 82f3d6566046f18b9cbaeeeeab547b1d3b2dc954
+TREE 0565fac273d92f5caf3f28355aeab3ae53be2582
+CMD go test -count=1 -timeout 240s -run TestLocalDelistDoesNotWaitForAStalledChain\|TestUnreachableHolderDoesNotExtendConfirm\|TestReachableByteMismatchStillWaits\|TestRepairReverifyFailureIsCooling ./services/scheduler/...
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/services/scheduler	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler	15.184s
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/policy	0.002s [no tests to run]
+?   	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/readmodel	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/sched	0.007s
+?   	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/stage	[no test files]
+EXIT:0
+AFTER clean
