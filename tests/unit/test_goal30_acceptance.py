@@ -333,17 +333,13 @@ def test_real_matrix_resolver_balances_and_names_functions() -> None:
     index = index_tests(ROOT)
     text = render(rows, index, load_logs([], "")[0], ["LOG none"])
     first = text.splitlines()[0]
-    assert first.startswith(
-        "RESULT rows=265 in_scope=250 test=216 blocker=34 out=15 goal30=10 "
-    )
+    assert first.startswith("RESULT rows=265 in_scope=250 test=216 blocker=34 out=15 goal30=10 ")
     fields = dict(part.split("=", 1) for part in first.split() if "=" in part)
     assert int(fields["resolved"]) + int(fields["unresolved"]) == int(fields["test"])
     verdicts = ("pass", "fail", "skip", "unrun", "mixed")
     assert sum(int(fields[name]) for name in verdicts) == int(fields["resolved"])
     by_id = {row["id"]: row for row in rows}
-    linked, problems = resolve_row(
-        "REQ-ACK-001", by_id["REQ-ACK-001"]["disposition"], index
-    )
+    linked, problems = resolve_row("REQ-ACK-001", by_id["REQ-ACK-001"]["disposition"], index)
     assert problems == ()
     assert {item.function for item in linked} >= {
         "TestAckNeverCommits",

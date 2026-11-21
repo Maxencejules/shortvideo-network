@@ -277,11 +277,7 @@ def resolve_row(
             return (), tuple(problems)
         if chosen:
             return tuple(_dedupe(chosen)), ()
-        cited = [
-            item
-            for item in index.by_req.get(row_id, [])
-            if not paths or item.path in paths
-        ]
+        cited = [item for item in index.by_req.get(row_id, []) if not paths or item.path in paths]
         if cited:
             return tuple(_dedupe(cited)), ()
         return (), ("named file has no test function for this id",)
