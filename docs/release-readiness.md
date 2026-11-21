@@ -10,7 +10,7 @@ No tradable token, coin, sale, or mining. This file is not an audit, not a produ
 
 The three categories are implemented prototype, beta candidate, and beta approved after required human sign-offs. No human sign-off exists, so the category cannot be beta approved. It is also not a beta candidate. A beta candidate would mean the prototype is complete enough to ask a named operator to install, with only those signatures outstanding. The open items include missing independence, an unmet human audit, an unapplied licence, unset quotas, a contract gap on published client paths, an open grant-accounting finding, and load gates that were not met. Those are release blockers, not a short signature list.
 
-The candidate is the commit that adds this file and carries `Tested-tree` in its message. Later commits may change only `docs/evidence/`. The evidence file records the commit, the tree, the commands, and the exits. A command that was not run is not a pass.
+The candidate is the commit whose message carries `Tested-tree` and whose tree hash equals that trailer. Later commits may change only `docs/evidence/`. The evidence file records the commit, the tree, the commands, and the exits. A command that was not run is not a pass.
 
 ## What is usable
 
