@@ -25,7 +25,8 @@ No tradable token, coin, sale, or mining.
 | --- | --- |
 | `svnd` | Chain binary. `svnd version` prints the revision. |
 | `svn-api` | Upload and account service. It requires configuration and does not start without it. |
-| `svn-feed-client` | Example client for a following feed on a loopback base URL. |
+| `svn-feed-client` | Example client for a following feed on a loopback base URL. It links the discovery package. |
+| `scripts/acceptance/second_client.py` | Second minimal client. It calls only the paths in the two published API documents and does not follow a redirect. |
 | `svn-discovery` | In-process discovery. It binds only on loopback. The smoke does not start it. |
 | `svn-broadcaster` | Devnet transaction broadcaster. A chain id must start with the development prefix. |
 | `svn-indexer` | Committed-state read model. |

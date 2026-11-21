@@ -746,6 +746,204 @@ The status document sets `independent_operator` and `physical_redundancy` to fal
 
 Status: OPEN.
 
+## DR-30-01
+
+### Question
+
+Did a separate operator install this candidate on separate infrastructure and serve the agreed catalogue without private instructions?
+
+### Why this needs the owner
+
+DEC-002 says independence is a separate person and separate infrastructure. A process count is not that evidence. No operator is named.
+
+### Proposal, not an approval
+
+The installation in goal 30 is a rehearsal by the agent on this VM. Independence stays unverified.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-02
+
+### Question
+
+Does the owner sign the moderation coverage for this candidate?
+
+### Why this needs the owner
+
+The acceptance gate asks for that sign-off. No name and no date were given. DEC-003's rule text is still the approved default, not a signed coverage statement for this revision.
+
+### Proposal, not an approval
+
+The sign-off row stays blank. This register does not invent a name.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-03
+
+### Question
+
+Does the owner sign a privacy and rights policy for this candidate?
+
+### Why this needs the owner
+
+Retention (DEC-004), the creator upload licence (DEC-006), and the audience rule (DEC-007) are not a signed policy. REQ-MOD-006 stays blocked on DEC-007.
+
+### Proposal, not an approval
+
+The sign-off row stays blank. This file is not legal advice and not a rights review.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-04
+
+### Question
+
+Does the owner sign funding and quotas for this candidate?
+
+### Why this needs the owner
+
+DEC-005 leaves the allowance and the lease length unset. Goal 25 thresholds are placeholders. No budget owner is named.
+
+### Proposal, not an approval
+
+The sign-off row stays blank. No sponsor is named and no token is created.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-05
+
+### Question
+
+Does the owner sign operator participation for this candidate?
+
+### Why this needs the owner
+
+DEC-002 names no operator. A rehearsal by the agent is not participation by an operator the owner named.
+
+### Proposal, not an approval
+
+The sign-off row stays blank.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-06
+
+### Question
+
+Does the owner sign a security review of this candidate?
+
+### Why this needs the owner
+
+REQ-SEC-011 asks for an independent human audit. DR-29-01 is that unmet audit. A model-assisted pass is not that signature.
+
+### Proposal, not an approval
+
+The sign-off row stays blank. Goal 30 does not supply the audit.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-07
+
+### Question
+
+Did the success demonstration run on separate hosts?
+
+### Why this needs the owner
+
+The demonstration asks a creator to publish, hosts to accept exact terms, the chain to commit, the origin to disconnect, another client to watch, one provider to leave, repair to restore the target, and controlled services to remove a test item. Hosts that are processes on one machine are one failure domain.
+
+### Proposal, not an approval
+
+A local multi-process run, if the evidence log shows one, is labeled as that. It is not a pass for separate hosts. Anything that needs a separate machine stays blocked.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-08
+
+### Question
+
+Is finding F-29-05 closed?
+
+### Why this needs the owner
+
+Storage and processing grant ids are process memory. A provider restart, or a worker crash after the job file is removed, can leave a hold. No owner sentence closed it in goal 29.
+
+### Proposal, not an approval
+
+F-29-05 stays open. Goal 30 does not mark it complete.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-09
+
+### Question
+
+Can this VM reproduce the container devnet without the unauthenticated docker port?
+
+### Why this needs the owner
+
+The container proof is part of reproducing the candidate. The docker command is absent here. Something accepts TCP on port 2375. That port must not be used.
+
+### Proposal, not an approval
+
+Container reproduction on this VM stays blocked. Port 2375 is not a docker context for this goal.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-10
+
+### Question
+
+Does this candidate meet the page 26 design point?
+
+### Why this needs the owner
+
+There is no approved load runner and no resource budget (DR-28-01, DR-28-02). The shaped playback gate did not become a pass in goal 28 (DR-28-03, DR-28-04, DR-28-05).
+
+### Proposal, not an approval
+
+A local measure, if the evidence log records one, is one machine. It is not 100 simultaneous viewers and not 10 upload sessions. It is not an operating budget.
+
+### Status
+
+Status: OPEN.
+
+## DR-30-11
+
+### Question
+
+Do the running services implement every published client path the second client is allowed to call?
+
+### Why this needs the owner
+
+The published client document lists `GET /feeds`, `POST /reports`, and `GET /exports`. The handlers that exist register `/v1/feeds/{kind}`, `POST /v1/reports`, and `POST /v1/account/export`. A second client that stays on the published paths cannot complete those three operations by calling a private alias.
+
+### Proposal, not an approval
+
+The second client does not call the `/v1` aliases and does not follow a redirect. The gap stays open. Goal 30 does not relabel either side as the contract.
+
+### Status
+
+Status: OPEN.
+
 ## Reversible choices recorded for Goal 01
 
 These are documentation choices. They are not owner approvals.
