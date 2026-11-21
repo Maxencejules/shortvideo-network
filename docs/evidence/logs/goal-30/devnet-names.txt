@@ -1,0 +1,39 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD python3 -c $'\nimport json\nnames=[]\nseen=set()\npassed=failed=skipped=0\nfor line in open("/tmp/svn-goal30-logs/devnet.json"):\n    ev=json.loads(line)\n    act=ev.get("Action")\n    test=ev.get("Test")\n    if act=="pass" and isinstance(test, str):\n        passed+=1\n        if "/" not in test and test not in seen:\n            seen.add(test)\n            names.append(test)\n    elif act=="fail" and isinstance(test, str):\n        failed+=1\n    elif act=="skip" and isinstance(test, str):\n        skipped+=1\nprint(f"pass_events {passed} fail_events {failed} skip_events {skipped} parents {len(names)}")\nfor name in names:\n    print(name)\n'
+DIRTY no
+pass_events 84 fail_events 0 skip_events 0 parents 32
+TestInitPowerDefaultIsOne
+TestInitPowerRejects
+TestInitPowerTopology
+TestDevnetAuditLifecycle
+TestDevnetBroadcasterQuorumStall
+TestDevnetBroadcasterLifecycle
+TestDevnetIndexer
+TestInitCouncilDelayAndAppVersion
+TestDevnetLeaseLifecycle
+TestDevnetLeaseHaltRestart
+TestDevnetValidatorLifecycle
+TestQuorumModelVectors
+TestDevnetKeysAreDistinct
+TestDevnetSeatsHaveNoSubmitterRow
+TestDevnetQuorumFollowsVotingPower
+TestInitRefusesToReplaceGenesis
+TestFourValidatorsCommitRestartAndQuorum
+TestDevnetRegistryDemo
+TestStallLimit
+TestStallLimitWithoutVerifier
+TestStallLimitSequences
+TestStopForStall
+TestStopForStallRefuses
+TestStoppedSigned
+TestWatchStall
+TestWatchStallStatusError
+TestStopForStallThenObserveStall
+TestObserveStallFailsTheTest
+TestDevnetRunsBuiltSvnd
+TestDevnetUpgradeRehearsal
+TestDevnetMinorityWrongMigration
+TestDevnetGovernedChangeTiming
+EXIT:0
+AFTER clean

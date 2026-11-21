@@ -14,6 +14,8 @@ Goal 26 backups, restore order, and signer locks are in [backup-and-restore.md](
 
 Goal 27 packaging is NOT-RELEASED. Profiles, the install, signing, and migration limits are in [deployment-profiles.md](deployment-profiles.md), [packaging.md](packaging.md), [operator-quickstart.md](operator-quickstart.md), [signing-procedure.md](signing-procedure.md), [migration-and-recovery.md](migration-and-recovery.md), [ffmpeg-obligations.md](ffmpeg-obligations.md), and [governance-notes.md](governance-notes.md).
 
+Goal 30's operator handoff is in [operator-handoff.md](operator-handoff.md). It says what one machine can rehearse and what stays unverified. It is not a launch approval.
+
 Reading the provider and content registries from a node (ABCI query and gRPC paths, heights, error codes) is in [../architecture/registries.md](../architecture/registries.md#reading-committed-records).
 
 Goal 10 governance and upgrade runbooks (devnet beta only; the specification is [../architecture/governance-and-upgrades.md](../architecture/governance-and-upgrades.md), PROPOSED):

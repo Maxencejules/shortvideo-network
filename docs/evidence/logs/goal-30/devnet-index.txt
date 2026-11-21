@@ -1,0 +1,93 @@
+HEAD fbb301fddae6825d8c707da2e1f9b494b824d4b0
+TREE 6673de4435b88b27cbccb4fe3f6f40070ca5ab0c
+CMD bash /tmp/svn-setup/r2-devnet.sh
+DIRTY no
+INNER GOTOOLCHAIN=local go test -count=1 -timeout 45m -json ./devnet/
+NOTE one VM. This is not a separate-host pass.
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestInitPowerDefaultIsOne
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestInitPowerRejects
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestInitPowerTopology
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetAuditLifecycle
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetBroadcasterQuorumStall
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetBroadcasterLifecycle
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetIndexer
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestInitCouncilDelayAndAppVersion/default
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestInitCouncilDelayAndAppVersion/set
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestInitCouncilDelayAndAppVersion/maximum
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestInitCouncilDelayAndAppVersion
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetLeaseLifecycle
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetLeaseHaltRestart
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetValidatorLifecycle
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestQuorumModelVectors
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetKeysAreDistinct
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetSeatsHaveNoSubmitterRow
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetQuorumFollowsVotingPower
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestInitRefusesToReplaceGenesis
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestFourValidatorsCommitRestartAndQuorum
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetRegistryDemo
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/catch-up_below_threshold
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/far_behind_the_threshold
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/equal_to_threshold
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/threshold+1_with_a_passing_verifier_moves_the_limit
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/threshold+1_with_a_failing_verifier
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/threshold+2
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/threshold+1_again_after_the_limit_moved_is_the_same_block
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/below_threshold_after_the_limit_moved
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/second_in-flight_attempt_after_the_limit_moved
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/height_far_above_the_limit_when_the_limit_is_threshold+1
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/limit_below_threshold_is_refused
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit/limit_above_threshold+1_is_refused
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimit
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitWithoutVerifier
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitSequences/CI_41362122347:_node_0_catches_up_11_to_12
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitSequences/local:_node_0_catches_up_15_to_16
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitSequences/local:_node_1_catches_up_12_to_13
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitSequences/local:_in-flight_block_14_after_the_stop_at_13
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitSequences/in-flight_block_without_the_stopped_validator
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitSequences/a_second_block_after_the_in-flight_one
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitSequences/chain_still_committing
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStallLimitSequences
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStall
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStallRefuses/index_without_a_process
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStallRefuses/index_below_range
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStallRefuses/index_above_range
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStallRefuses/stops_shorter_than_the_validators
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStallRefuses/app_hash_disagreement_before_the_stop
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStallRefuses/stop_fails
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStallRefuses
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/v1_v2_v3_before_the_stop
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/v3_voted_exactly_at_the_stop_time
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/v3_voted_after_the_stop
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/v3_absent_and_v4_signed
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/v3_voted_nil
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/v3_absent
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/v4_with_no_process_signed_too
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/a_signer_missing_from_the_keys
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/two_of_four_power
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/case_Y:_v1_v2_v4_hold_30_of_33
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/case_Y:_v1_v2_v3_hold_22_of_33,_two_thirds_exactly
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned/case_Y:_v5_with_no_process_signed
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStoppedSigned
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/every_node_at_the_threshold
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/CI_41362122347:_node_0_catches_up_11_to_12
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/node_1_far_behind_catches_up
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/in-flight_block_with_v3's_precommit
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/in-flight_block_first_seen_on_node_1
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/in-flight_block_without_v3
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/in-flight_block_signed_by_v4,_which_has_no_process
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/in-flight_block_with_v3's_precommit_after_the_stop
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/a_second_block_after_the_in-flight_one
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/two_blocks_at_once
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/in-flight_block_without_a_check
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall/app_hash_disagreement
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStall
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestWatchStallStatusError
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestStopForStallThenObserveStall
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestObserveStallFailsTheTest
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetRunsBuiltSvnd
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetUpgradeRehearsal
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetMinorityWrongMigration
+PASS github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetGovernedChangeTiming
+DEVNET_EXIT 0
+EXIT:0
+AFTER clean

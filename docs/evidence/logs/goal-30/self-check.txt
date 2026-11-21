@@ -1,0 +1,11 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD /agent/repos/shortvideo-network/.venv/bin/python scripts/acceptance/second_client.py --root /tmp/svn-goal30-src self-check
+DIRTY no
+CLIENT source_problems=0
+CLIENT operations=12
+CLIENT private_shortcut=false
+CLIENT interop activitypub=false atproto=false ipfs=false filecoin=false
+CLIENT ok
+EXIT:0
+AFTER clean

@@ -1,0 +1,243 @@
+HEAD fbb301fddae6825d8c707da2e1f9b494b824d4b0
+TREE 6673de4435b88b27cbccb4fe3f6f40070ca5ab0c
+CMD /agent/repos/shortvideo-network/.venv/bin/python scripts/acceptance/audit_matrix.py --expect-head fbb301fddae6825d8c707da2e1f9b494b824d4b0 --log /tmp/svn-goal30-r3/pytest-v.txt --log /tmp/svn-goal30-r3/go-index.txt --log /tmp/svn-goal30-r3/node.txt --log /tmp/svn-goal30-r3/devnet-index.txt
+DIRTY no
+RESULT rows=265 in_scope=250 test=216 blocker=34 out=15 goal30=10 resolved=33 unresolved=183 pass=33 fail=0 skip=0 unrun=0 mixed=0
+LOG /tmp/svn-goal30-r3/pytest-v.txt head=fbb301fddae6825d8c707da2e1f9b494b824d4b0 accepted
+LOG /tmp/svn-goal30-r3/go-index.txt head=fbb301fddae6825d8c707da2e1f9b494b824d4b0 accepted
+LOG /tmp/svn-goal30-r3/node.txt head=fbb301fddae6825d8c707da2e1f9b494b824d4b0 accepted
+LOG /tmp/svn-goal30-r3/devnet-index.txt head=fbb301fddae6825d8c707da2e1f9b494b824d4b0 accepted
+UNRESOLVED REQ-PROD-001 no test function
+UNRESOLVED REQ-PROD-002 no test function
+UNRESOLVED REQ-PROD-003 no test function
+UNRESOLVED REQ-PROD-004 no test function
+UNRESOLVED REQ-PROD-005 no test function
+UNRESOLVED REQ-PROD-006 no test function
+UNRESOLVED REQ-PROD-007 no test function
+UNRESOLVED REQ-PROD-008 no test function
+UNRESOLVED REQ-PROD-009 no test function
+UNRESOLVED REQ-PROD-011 no test function
+UNRESOLVED REQ-PROD-012 no test function
+UNRESOLVED REQ-PROD-013 no test function
+UNRESOLVED REQ-UX-001 no test function
+UNRESOLVED REQ-UX-002 no test function
+UNRESOLVED REQ-UX-003 no test function
+UNRESOLVED REQ-UX-004 no test function
+UNRESOLVED REQ-UX-005 no test function
+BLOCKER REQ-UX-006
+UNRESOLVED REQ-UX-007 no test function
+UNRESOLVED REQ-UX-008 no test function
+UNRESOLVED REQ-UX-009 no test function
+UNRESOLVED REQ-UX-010 no test function
+UNRESOLVED REQ-UX-011 no test function
+UNRESOLVED REQ-UX-012 no test function
+UNRESOLVED REQ-UX-013 no test function
+UNRESOLVED REQ-UX-014 no test function
+UNRESOLVED REQ-UX-015 no test function
+UNRESOLVED REQ-UX-016 no test function
+UNRESOLVED REQ-UX-017 no test function
+UNRESOLVED REQ-UX-018 no test function
+UNRESOLVED REQ-UX-019 no test function
+UNRESOLVED REQ-UX-020 no test function
+UNRESOLVED REQ-UX-021 no test function
+UNRESOLVED REQ-SCOPE-001 no test function
+UNRESOLVED REQ-SCOPE-002 no test function
+BLOCKER REQ-SCOPE-003
+BLOCKER REQ-SCOPE-004
+UNRESOLVED REQ-SCOPE-005 no test function
+UNRESOLVED REQ-SCOPE-006 no test function
+UNRESOLVED REQ-SCOPE-007 no test function
+UNRESOLVED REQ-SCOPE-008 no test function
+UNRESOLVED REQ-SCOPE-009 no test function
+UNRESOLVED REQ-SCOPE-010 no test function
+OUT REQ-SCOPE-011 DEFERRED
+UNRESOLVED REQ-SCOPE-012 no test function
+BLOCKER REQ-SCOPE-013
+UNRESOLVED REQ-SCOPE-014 no test function
+UNRESOLVED REQ-SCOPE-015 no test function
+BLOCKER REQ-SCOPE-016
+UNRESOLVED REQ-SCOPE-017 no test function
+UNRESOLVED REQ-SCOPE-018 no test function
+OUT REQ-SCOPE-019 DEFERRED
+UNRESOLVED REQ-SCOPE-020 no test function
+OUT REQ-NG-001 NON_GOAL
+OUT REQ-NG-002 NON_GOAL
+OUT REQ-NG-003 NON_GOAL
+OUT REQ-NG-004 NON_GOAL
+OUT REQ-NG-005 NON_GOAL
+UNRESOLVED REQ-BOUND-001 no test function
+UNRESOLVED REQ-BOUND-002 no test function
+UNRESOLVED REQ-BOUND-003 no test function
+UNRESOLVED REQ-BOUND-006 no test function
+UNRESOLVED REQ-ARCH-001 no test function
+UNRESOLVED REQ-ARCH-002 no test function
+UNRESOLVED REQ-ARCH-003 no test function
+UNRESOLVED REQ-ARCH-004 no test function
+BLOCKER REQ-ARCH-006
+UNRESOLVED REQ-ARCH-007 no test function
+UNRESOLVED REQ-ARCH-008 no test function
+UNRESOLVED REQ-ARCH-009 no test function
+UNRESOLVED REQ-ARCH-010 no test function
+UNRESOLVED REQ-ARCH-011 no test function
+UNRESOLVED REQ-ARCH-012 no test function
+UNRESOLVED REQ-TECH-001 no test function
+UNRESOLVED REQ-TECH-002 no test function
+UNRESOLVED REQ-TECH-003 no test function
+UNRESOLVED REQ-TECH-004 no test function
+UNRESOLVED REQ-TECH-005 no test function
+UNRESOLVED REQ-TECH-006 no test function
+UNRESOLVED REQ-TECH-007 no test function
+UNRESOLVED REQ-TECH-008 no test function
+UNRESOLVED REQ-TECH-009 no test function
+UNRESOLVED REQ-TECH-010 no test function
+UNRESOLVED REQ-TECH-011 no test function
+UNRESOLVED REQ-TECH-012 no test function
+UNRESOLVED REQ-TECH-013 no test function
+UNRESOLVED REQ-TECH-014 no test function
+UNRESOLVED REQ-CHAIN-001 no test function
+UNRESOLVED REQ-CHAIN-002 no test function
+UNRESOLVED REQ-CHAIN-003 no test function
+UNRESOLVED REQ-CHAIN-004 no test function
+UNRESOLVED REQ-CHAIN-005 no test function
+UNRESOLVED REQ-CHAIN-006 no test function
+UNRESOLVED REQ-CHAIN-007 no test function
+BLOCKER REQ-CHAIN-009
+UNRESOLVED REQ-CHAIN-011 no test function
+UNRESOLVED REQ-CHAIN-013 no test function
+UNRESOLVED REQ-CHAIN-014 no test function
+OUT REQ-DEFER-001 DEFERRED
+UNRESOLVED REQ-MODU-001 no test function
+UNRESOLVED REQ-MODU-006 no test function
+UNRESOLVED REQ-OFF-002 no test function
+UNRESOLVED REQ-OFF-003 no test function
+UNRESOLVED REQ-OFF-004 no test function
+UNRESOLVED REQ-OFF-005 no test function
+UNRESOLVED REQ-TX-001 no test function
+UNRESOLVED REQ-TX-002 no test function
+UNRESOLVED REQ-TX-004 no test function
+BLOCKER REQ-TX-006
+UNRESOLVED REQ-DET-001 no test function
+UNRESOLVED REQ-GEN-001 no test function
+UNRESOLVED REQ-GEN-002 no test function
+UNRESOLVED REQ-GEN-003 no test function
+UNRESOLVED REQ-GEN-004 no test function
+UNRESOLVED REQ-GEN-005 no test function
+UNRESOLVED REQ-DEV-001 no test function
+UNRESOLVED REQ-DEV-002 no test function
+UNRESOLVED REQ-DEV-003 no test function
+UNRESOLVED REQ-VAL-001 no test function
+UNRESOLVED REQ-UPG-001 no test function
+UNRESOLVED REQ-REC-001 no test function
+BLOCKER REQ-REC-002
+UNRESOLVED REQ-API-001 no test function
+UNRESOLVED REQ-API-002 no test function
+UNRESOLVED REQ-API-003 no test function
+UNRESOLVED REQ-IDEM-002 no test function
+UNRESOLVED REQ-GW-001 no test function
+UNRESOLVED REQ-PEND-001 no test function
+UNRESOLVED REQ-HOST-001 no test function
+UNRESOLVED REQ-HOST-002 no test function
+BLOCKER REQ-HOST-004
+UNRESOLVED REQ-HOST-005 no test function
+UNRESOLVED REQ-HOST-006 no test function
+BLOCKER REQ-HOST-008
+UNRESOLVED REQ-EVID-003 no test function
+UNRESOLVED REQ-EVID-004 no test function
+UNRESOLVED REQ-EVID-005 no test function
+OUT REQ-EVID-006 DEFERRED
+UNRESOLVED REQ-MEDIA-001 no test function
+UNRESOLVED REQ-MEDIA-002 no test function
+UNRESOLVED REQ-MEDIA-003 no test function
+UNRESOLVED REQ-MEDIA-004 no test function
+UNRESOLVED REQ-MEDIA-005 no test function
+UNRESOLVED REQ-MEDIA-006 no test function
+UNRESOLVED REQ-MEDIA-007 no test function
+BLOCKER REQ-MEDIA-008
+BLOCKER REQ-MEDIA-009
+OUT REQ-DEFER-003 DEFERRED
+UNRESOLVED REQ-ID-001 no test function
+UNRESOLVED REQ-ID-002 no test function
+UNRESOLVED REQ-ID-003 no test function
+BLOCKER REQ-ID-004
+OUT REQ-ID-005 DEFERRED
+OUT REQ-ID-006 NON_GOAL
+BLOCKER REQ-ID-007
+BLOCKER REQ-ID-008
+UNRESOLVED REQ-ID-009 no test function
+UNRESOLVED REQ-FEED-001 no test function
+UNRESOLVED REQ-FEED-002 no test function
+OUT REQ-FEED-003 DEFERRED
+UNRESOLVED REQ-FEED-004 no test function
+UNRESOLVED REQ-SEC-001 no test function
+BLOCKER REQ-SEC-003
+UNRESOLVED REQ-SEC-004 no test function
+UNRESOLVED REQ-SEC-005 no test function
+UNRESOLVED REQ-SEC-006 no test function
+UNRESOLVED REQ-SEC-007 no test function
+UNRESOLVED REQ-SEC-008 no test function
+UNRESOLVED REQ-SEC-009 no test function
+UNRESOLVED REQ-SEC-010 no test function
+UNRESOLVED REQ-SEC-011 no test function
+UNRESOLVED REQ-SEC-012 no test function
+BLOCKER REQ-MOD-001
+UNRESOLVED REQ-MOD-003 no test function
+BLOCKER REQ-MOD-004
+BLOCKER REQ-MOD-005
+BLOCKER REQ-MOD-006
+BLOCKER REQ-MOD-007
+OUT REQ-MOD-008 DEFERRED
+UNRESOLVED REQ-MOD-009 no test function
+UNRESOLVED REQ-GOV-002 no test function
+BLOCKER REQ-GOV-003
+BLOCKER REQ-GOV-004
+BLOCKER REQ-GOV-005
+UNRESOLVED REQ-GOV-006 no test function
+UNRESOLVED REQ-GOV-007 no test function
+UNRESOLVED REQ-OPS-001 no test function
+UNRESOLVED REQ-OPS-002 no test function
+UNRESOLVED REQ-OPS-003 no test function
+BLOCKER REQ-OPS-004
+UNRESOLVED REQ-OPS-005 no test function
+UNRESOLVED REQ-OPS-006 no test function
+BLOCKER REQ-OPS-007
+UNRESOLVED REQ-CAP-001 no test function
+UNRESOLVED REQ-CAP-002 no test function
+UNRESOLVED REQ-CAP-003 no test function
+UNRESOLVED REQ-CAP-004 no test function
+UNRESOLVED REQ-CAP-005 no test function
+UNRESOLVED REQ-CAP-006 no test function
+OUT REQ-CAP-007 DEFERRED
+BLOCKER REQ-CAP-008
+UNRESOLVED REQ-ROAD-001 no test function
+UNRESOLVED REQ-ROAD-002 no test function
+UNRESOLVED REQ-ROAD-003 no test function
+UNRESOLVED REQ-ROAD-004 no test function
+UNRESOLVED REQ-QA-001 no test function
+UNRESOLVED REQ-QA-002 no test function
+UNRESOLVED REQ-QA-003 no test function
+UNRESOLVED REQ-QA-004 no test function
+UNRESOLVED REQ-QA-005 no test function
+UNRESOLVED REQ-QA-006 no test function
+UNRESOLVED REQ-QA-007 no test function
+UNRESOLVED REQ-QA-008 no test function
+BLOCKER REQ-QA-009
+BLOCKER REQ-QA-010
+UNRESOLVED REQ-QA-011 no test function
+UNRESOLVED REQ-QA-012 no test function
+UNRESOLVED REQ-QA-013 no test function
+UNRESOLVED REQ-REPO-001 no test function
+UNRESOLVED REQ-REPO-002 no test function
+UNRESOLVED REQ-REPO-003 no test function
+UNRESOLVED REQ-REPO-004 no test function
+UNRESOLVED REQ-RISK-001 no test function
+UNRESOLVED REQ-RISK-002 no test function
+UNRESOLVED REQ-RISK-003 no test function
+BLOCKER REQ-RISK-004
+BLOCKER REQ-RISK-005
+BLOCKER REQ-RISK-006
+BLOCKER REQ-RISK-007
+UNRESOLVED REQ-RISK-008 no test function
+UNRESOLVED REQ-LAUNCH-001 no test function
+UNRESOLVED REQ-SUCCESS-001 no test function
+EXIT:0
+AFTER clean

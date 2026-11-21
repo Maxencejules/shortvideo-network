@@ -1,0 +1,14 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash scripts/devnet/prove-containers.sh
+DIRTY no
+COMMAND bash scripts/devnet/prove-containers.sh
+DATE 2026-11-21T20:42:40+00:00
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+DIRTY no
+DOCKER_HOST=<unset>
+NOTE empty blocks only. No application transaction is submitted, so the hash is the genesis application state.
+NOTE bridge networking is BLOCKED. This run uses host networking.
+scripts/devnet/prove-containers.sh: line 32: docker: command not found
+EXIT:127
+AFTER clean

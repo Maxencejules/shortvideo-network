@@ -1,0 +1,7 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash scripts/gofmt_check.sh
+DIRTY no
+gofmt ok files 754
+EXIT:0
+AFTER clean

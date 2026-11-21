@@ -1,0 +1,34 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD python3 /tmp/svn-setup/compare-builds.py
+DIRTY no
+svn-api match 906968d8919e6f9cc58eb91320a483baaff511862c5d831cf119a4e233bf2720
+svn-broadcaster match dc22bc15971bd7da0a2d6a447440596e41b12305c80805a7cfa5f50f92f45c87
+svn-chainview match 8191c8ef2d59e2fdce3aa929bdb0ba597b92fc7f16cf451b8fbd44f5b7e8891b
+svn-discovery match 48ab29f600996b5deed3c22657eeb3f1cf076992dc74175eed39092e32111f2b
+svn-feed-client match 4c3c1793ab7a6cbe1532d510c9526725176f4d530e4ec866da3fd26ae7419540
+svn-indexer match f712e69a417f4380975eb133bd202206be71332d2cb9b22008320247a4806cd7
+svn-observe match 3d31b0128b1a617124ba13ea2e456a85eb0ae586073560cfbbac9ad65c7c7856
+svn-operator match 4b3056e4895f70524c5e57adc08596c32b200f29c562025bc4b46e88c6ad901b
+svn-provider match c66e367438f02556d52eeefe9f9c1618678d7366c0af9a4db631ce8ae7fb3828
+svn-restore match 28cff26acf2861727f8a46f6ffb1e3d8b2974ac2f7dfb32475e8f134bf8c8cea
+svn-scheduler match ca41dfdc5555b2b21a547bf49f723c13bf9be5263e12a2b3ee66fe2f0e7af3bf
+svnd match 043aeea095c2200bea28bc99dec9b80ce92c5624bb50afc875d0626413c7e8e2
+binaries 12 mismatch 0
+reproducibility
+commit 2bce2e272534316115c2550329c7ed730983da70
+tree 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+cgo 0
+flags -trimpath -buildvcs=true
+source_date_epoch unset
+install fixtures are generated and are not build outputs
+go.sum pins module downloads
+match yes
+bundle_label
+NOT-RELEASED
+licence UNCONFIRMED
+public launch disabled
+goals 28-30 and the human launch gates have not passed
+this tree does not publish a release
+EXIT:0
+AFTER clean

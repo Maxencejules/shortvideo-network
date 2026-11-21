@@ -34,7 +34,8 @@ CREATE TABLE api.uploads (
 );
 CREATE TABLE api.processing_jobs (
     job_id text PRIMARY KEY,
-    upload_id text NOT NULL,
+    upload_id text NOT NULL UNIQUE,
+    idempotency_key text NOT NULL UNIQUE,
     status text NOT NULL,
     created_at timestamptz NOT NULL,
     CHECK (status = 'QUEUED')
@@ -145,8 +146,9 @@ def test_postgres_claim_is_once_and_does_not_publish(tmp_path: Path) -> None:
             VALUES ('acct1', 9, 8);
             INSERT INTO api.uploads (upload_id, content_id, object_name, status)
             VALUES ('u1', 'cpg', :'object_name', 'PROCESSING_QUEUED');
-            INSERT INTO api.processing_jobs (job_id, upload_id, status, created_at)
-            VALUES ('jdb', 'u1', 'QUEUED', now());
+            INSERT INTO api.processing_jobs (
+                job_id, upload_id, idempotency_key, status, created_at
+            ) VALUES ('jdb', 'u1', 'job-jdb', 'QUEUED', now());
             INSERT INTO api.creator_intents (
                 upload_id, input_sha256, input_bytes, output_budget_bytes
             ) VALUES ('u1', :'digest', CAST(:'nbytes' AS bigint), 5000000);

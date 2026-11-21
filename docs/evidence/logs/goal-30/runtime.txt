@@ -1,0 +1,25 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash /tmp/svn-setup/runtime.sh
+DIRTY no
+nproc 4
+mem_kb 16387328
+Linux cursor 6.12.113+ #1 SMP PREEMPT_DYNAMIC Thu Nov 19 03:09:05 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+go_path /agent/repos/shortvideo-network/.toolchains/go/bin/go
+go version go1.26.10 linux/amd64
+Python 3.12.3
+v22.23.4
+ffmpeg: /exec-daemon/tmux-root/lib/libncursesw.so.6: no version information available (required by /lib/x86_64-linux-gnu/libcaca.so.0)
+ffmpeg: /exec-daemon/tmux-root/lib/libncursesw.so.6: no version information available (required by /lib/x86_64-linux-gnu/libcaca.so.0)
+ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+ffprobe: /exec-daemon/tmux-root/lib/libncursesw.so.6: no version information available (required by /lib/x86_64-linux-gnu/libcaca.so.0)
+ffprobe: /exec-daemon/tmux-root/lib/libncursesw.so.6: no version information available (required by /lib/x86_64-linux-gnu/libcaca.so.0)
+ffprobe version 6.1.1-3ubuntu5 Copyright (c) 2007-2023 the FFmpeg developers
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+docker absent
+golangci-lint absent
+tc absent
+unshare present
+NOTE no Docker API request is sent. Port 2375 is not used.
+EXIT:0
+AFTER clean

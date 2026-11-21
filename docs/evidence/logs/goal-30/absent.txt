@@ -1,0 +1,15 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash /tmp/svn-setup/absent.sh
+DIRTY no
+NOTE docker CLI is expected to be absent. No request is sent to port 2375.
+/tmp/svn-setup/absent.sh: line 6: docker: command not found
+docker exit 127
+/tmp/svn-setup/absent.sh: line 11: golangci-lint: command not found
+golangci-lint exit 127
+qdisc noqueue 0: dev lo root refcnt 2 
+qdisc pfifo_fast 0: dev enp0s3 root refcnt 2 bands 3 priomap 1 2 2 2 1 2 0 0 1 1 1 1 1 1 1 1
+qdisc noqueue 0: dev docker0 root refcnt 2 
+tc exit 0
+EXIT:0
+AFTER clean
