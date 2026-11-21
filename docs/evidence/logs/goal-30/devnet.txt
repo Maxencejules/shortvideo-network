@@ -1,0 +1,10 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash /tmp/svn-setup/devnet.sh
+DIRTY no
+INNER GOTOOLCHAIN=local go test -count=1 -timeout 45m -json ./devnet/
+NOTE one VM. This is not a separate-host pass.
+RESULT passed=84 failed=0 skipped=0 packages=1 nonjson=0
+ok github.com/Maxencejules/shortvideo-network/chain/devnet
+EXIT:0
+AFTER clean

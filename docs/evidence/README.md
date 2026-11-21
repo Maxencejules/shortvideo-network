@@ -23,4 +23,6 @@ Do not put secrets, private keys, personal data or live credentials in an eviden
 
 This companion pack is recorded in [goal-00.md](goal-00.md). The repeatable checks are [goal-00/build_companion_pack.py](goal-00/build_companion_pack.py) and [goal-00/recheck.py](goal-00/recheck.py).
 
+The evidence index is [index.md](index.md). Goal 30 is BLOCKED. Completing the thirty goal files is not a release approval.
+
 Goal pages under `docs/goals/` stay exact playbook slices. They are not reflowed into Markdown lists: joining those lines would change the bytes and fail the slice check.

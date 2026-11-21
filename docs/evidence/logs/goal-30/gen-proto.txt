@@ -1,0 +1,7 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash -c bash\ scripts/gen_proto.sh\ \&\&\ untracked=\"\$\(git\ ls-files\ --others\ --exclude-standard\ --\ proto/svn\ proto/gen/python\)\"\ \&\&\ if\ \[\ -n\ \"\$\{untracked\}\"\ \]\;\ then\ echo\ \"\$\{untracked\}\"\;\ exit\ 1\;\ fi\ \&\&\ git\ diff\ --exit-code\ --\ proto/svn\ proto/gen/python
+DIRTY no
+generated 28 proto files
+EXIT:0
+AFTER clean

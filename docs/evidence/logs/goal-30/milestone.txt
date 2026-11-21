@@ -1,0 +1,72 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash -c export\ PATH=\"/agent/repos/shortvideo-network/.venv/bin:/usr/lib/postgresql/18/bin:\$\{PATH\}\"\;\ unset\ SVN_SKIP_DEVNET\;\ echo\ \"NOTE\ one\ VM\,\ multiple\ processes\,\ one\ failure\ domain.\ This\ is\ not\ a\ separate-host\ pass.\"\;\ go\ test\ -count=1\ -timeout\ 20m\ -v\ -run\ TestMilestone\ ./services/milestone/
+DIRTY no
+NOTE one VM, multiple processes, one failure domain. This is not a separate-host pass.
+=== RUN   TestMilestone
+phase=devnet chain_id=shortvideo-dev-c7cba217abafa217 genesis=27d98cca5543adf0806cffeccf49c19b0608663341e7f799ec49ab0d2e12cc64 physical_count=1 independent=false
+phase=devnet-height height=3 app_hash=C99F6FD101842EC3288B12054D3DB4B8268B1B7010067F0D5B10A988A150AC6B validators=4
+phase=chainview account=svn17k2094eezz56d0zs7jyqtvdyqutzr70dawkwvu url=https://127.0.0.1:34209 providers=p1,p2,p3
+phase=chainview account=svn13qtzpmgznqyj8rf4d8wpglj8w9f7dy0nxh6xvu url=https://127.0.0.1:34445 providers=p4
+phase=indexer url=http://127.0.0.1:41507
+phase=postgres version=postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2) port=40013
+phase=api url=http://127.0.0.1:41021 postgres=postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+phase=account creator=a105ade84bdf5a95f6fb5e3b2e9a0634b role=creator operator=a97e7360e2a4d6b81754a8ee3faa3f031 role=operator fixture=false
+phase=scheduler url=http://127.0.0.1:39303 stage=https://127.0.0.1:33111/pkg
+phase=SCHEDULER_AUTH anonymous=401 creator=401
+phase=provider id=p1 url=https://127.0.0.1:43251 outer_account=provider-1
+phase=provider id=p2 url=https://127.0.0.1:43493 outer_account=provider-1
+phase=provider id=p3 url=https://127.0.0.1:42595 outer_account=provider-1
+phase=provider id=p4 url=https://127.0.0.1:42263 outer_account=provider-2
+phase=register-p1 height=12 code=0 txhash=5337B3094762AC4B7866A8DA6E7422C088F2AFE476AF752B2F8025F3B6C6F103
+phase=admit-p1-propose height=14 code=0 txhash=2C05F115A6132E769ECD3F0BC8631A7197ADE4C8E2971BD9BBB9126F8ADB7944
+phase=admit-p1-approve-1 height=15 code=0 txhash=ED095D6F71EBE008A281C03E68681ECBE3B5B163B536F2E3B2FB1F810C02CEA0
+phase=admit-p1-approve-2 height=16 code=0 txhash=D46BA454080D7B3FDA5B6D2E863D9270756D23601D3049D63352B571AFACDAD8
+phase=admit-p1-approve-3 height=17 code=0 txhash=59C8ED7476224780567102F4EA44025BEB0855DBDCF2700A30EC8F9FF7D5A324
+phase=admit-p1-execute height=18 code=0 txhash=A9987FE3C75D67C79E7AAB814304586432CA23CC728C93693FF06D621CB8907A
+phase=register-p2 height=19 code=0 txhash=05D81CE04D634530AFCEAB30390ABAC2894E5E33D23E2048A942FF887DF6A7C2
+phase=admit-p2-propose height=20 code=0 txhash=726C07712D29EB5E8B6E4A4F9B3918DCEA32035C2983560254B099BFEC6B85A3
+phase=admit-p2-approve-1 height=22 code=0 txhash=807612179F60CE947C13E39660FBBD288844504B565E2EF5209BC39CDE087E91
+phase=admit-p2-approve-2 height=23 code=0 txhash=1A26598B80B799E35B06BA38E8C460806F011DACE7751D1594041EAC56585889
+phase=admit-p2-approve-3 height=25 code=0 txhash=442C2579415FB0D74EA6F3DABD61F5A319DDEE9C8056766FE02C25C570C0852F
+phase=admit-p2-execute height=26 code=0 txhash=DF7226B5522AF58B12298797C1433FEACB8E5C78FD538C86BCA2D6292723E289
+phase=register-p3 height=27 code=0 txhash=3DFB3E8053A3FAD4E99593D484D98E529CAF5FC0312A703BB4BF7FB566C3A6B0
+phase=admit-p3-propose height=28 code=0 txhash=4CAB41A02AD08616072250A89D209347F1CA0B107296F9E0ECDCFC1B52664C92
+phase=admit-p3-approve-1 height=30 code=0 txhash=3E579A389FEE71E5F0C930D05918C5FFB80BF850CC481E36EBB5832AA791BDF1
+phase=admit-p3-approve-2 height=31 code=0 txhash=6B1D2E179EC6B2FE9075DB27C3E3DE2A10EE876D48B227D83BB33A94CC3B67E6
+phase=admit-p3-approve-3 height=32 code=0 txhash=AEB00EACFD42CDCE9575FB4994BDC8C0043005DD79B6E4FD9679E5ECFEA6B0BD
+phase=admit-p3-execute height=34 code=0 txhash=FC8E50D9E4EFEBF7EBA5309EA6D1856BC070BD126C51769E2E11892F188939F0
+phase=register-p4 height=35 code=0 txhash=EE1D9FF623AD7AD50F869911B48B31D4499683A3F487A310B5FB52B1A4259B91
+phase=admit-p4-propose height=36 code=0 txhash=580957E5B3678F1C9F30FEB8E2BD96E8DBDFCCE2B5527BC7D497F07F0B803C19
+phase=admit-p4-approve-1 height=37 code=0 txhash=36DE139209F4751E93EA1CBD52A48A6B810F6326B7A5F154A2DF42F21C923165
+phase=admit-p4-approve-2 height=38 code=0 txhash=5CF33AFA5C595799131B3B966594F9B9DAD0638B292AA1C0E20C16A5DBB911C2
+phase=admit-p4-approve-3 height=39 code=0 txhash=410B8A564E4BD870F87C32D5778E262A02BFFB71EA14899A16C527EC8F414CA8
+phase=admit-p4-execute height=40 code=0 txhash=4984547E82BC4F55AF2763D207C9B7B4014A2FDE1CFAB6D94BC947C4709CCC19
+phase=broadcaster url=https://127.0.0.1:39031
+phase=clip bytes=12746 sha256=190072c758fab6a1b799d210630ca3baa449e3a55e856bf003c25331f31bafd6 synthetic=true
+phase=UPLOAD_RESERVED upload=u2d809e28676b08f1462572bb1d127543 content=cddda78c486f2929ac4b4a3f98cb00092 status=RESERVED repeat_upload=u2d809e28676b08f1462572bb1d127543
+phase=UPLOAD_RECEIVED status=204
+phase=PROCESSING_QUEUED status=PROCESSING_QUEUED
+phase=API_PUBLISH_BLOCKED status=403
+    scenario_test.go:39: media: exit status 1
+        Traceback (most recent call last):
+          File "<frozen runpy>", line 189, in _run_module_as_main
+          File "<frozen runpy>", line 148, in _get_module_details
+          File "<frozen runpy>", line 112, in _get_module_details
+          File "/tmp/svn-goal30-src/workers/media/svn_media/__init__.py", line 4, in <module>
+            from svn_media.queue import Pg, Workspace
+          File "/tmp/svn-goal30-src/workers/media/svn_media/queue.py", line 19, in <module>
+            from svn_media.encode import process_input
+          File "/tmp/svn-goal30-src/workers/media/svn_media/encode.py", line 26, in <module>
+            from svn_protocol.schemas import SchemaError, validate_manifest
+          File "/tmp/svn-goal30-src/packages/protocol/svn_protocol/__init__.py", line 3, in <module>
+            from svn_protocol.schemas import SchemaError, validate_manifest
+          File "/tmp/svn-goal30-src/packages/protocol/svn_protocol/schemas.py", line 12, in <module>
+            from jsonschema import Draft202012Validator
+        ModuleNotFoundError: No module named 'jsonschema'
+--- FAIL: TestMilestone (30.68s)
+FAIL
+FAIL	github.com/Maxencejules/shortvideo-network/services/milestone	30.717s
+FAIL
+EXIT:1
+AFTER clean

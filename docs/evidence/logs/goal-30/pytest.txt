@@ -1,0 +1,20 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD /agent/repos/shortvideo-network/.venv/bin/python -m pytest -o addopts=-q\ -ra\ --tb=short
+DIRTY no
+........................................................................ [ 15%]
+........................................................................ [ 30%]
+........................................................................ [ 45%]
+........................................................................ [ 60%]
+..............................................s......................... [ 75%]
+........................................................................ [ 90%]
+.............................................                            [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/unit/test_media_worker.py:564: set SVN_MEDIA_TIMING=1 to measure
+476 passed, 1 skipped in 113.94s (0:01:53)
+EXIT:0
+AFTER dirty
+AFTER_PATH apps/web/dist/index.html
+AFTER_PATH apps/web/dist/operator.html
+AFTER_PATH apps/web/dist/operator.js
+AFTER_PATH apps/web/dist/viewer.js

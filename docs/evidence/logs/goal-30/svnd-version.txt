@@ -1,0 +1,23 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD /tmp/svn-goal30-out/candidate/bundle/bin/svnd version
+DIRTY no
+svnd (devel)
+go go1.26.10
+vcs.revision 2bce2e272534316115c2550329c7ed730983da70
+vcs.modified false
+github.com/cosmos/cosmos-sdk v0.55.0
+github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
+github.com/cometbft/cometbft v0.40.0
+app_version 1
+module auth 7
+module authority 2
+module content 2
+module evidence 2
+module leases 2
+module policy 2
+module providers 2
+module svn 1
+upgrades none
+EXIT:0
+AFTER clean

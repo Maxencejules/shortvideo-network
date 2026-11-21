@@ -1,0 +1,150 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash /tmp/svn-setup/go-unit.sh
+DIRTY yes
+DIRTY_PATH apps/web/dist/index.html
+DIRTY_PATH apps/web/dist/operator.html
+DIRTY_PATH apps/web/dist/operator.js
+DIRTY_PATH apps/web/dist/viewer.js
+INNER GOTOOLCHAIN=local SVN_SKIP_DEVNET=1 go test -count=1 -timeout 20m -json ./...
+NOTE SVN_SKIP_DEVNET=1 skips multi-process chain/devnet tests and TestMilestone. Those skips are not passes.
+MODULE chain
+MODULE_OK chain
+MODULE proto
+MODULE_OK proto
+MODULE agents/provider
+MODULE_OK agents/provider
+MODULE agents/auditor
+MODULE_OK agents/auditor
+MODULE services/broadcaster
+MODULE_OK services/broadcaster
+MODULE services/indexer
+MODULE_OK services/indexer
+MODULE services/scheduler
+MODULE_OK services/scheduler
+MODULE services/observe
+MODULE_OK services/observe
+MODULE services/operator
+MODULE_OK services/operator
+MODULE services/restore
+MODULE_OK services/restore
+MODULE services/api
+go: downloading github.com/go-webauthn/webauthn v0.18.2
+go: downloading github.com/descope/virtualwebauthn v1.0.5
+go: downloading github.com/fxamacker/cbor/v2 v2.9.4
+go: downloading github.com/x448/float16 v0.8.4
+go: downloading github.com/go-webauthn/x v0.3.1
+go: downloading github.com/golang-jwt/jwt/v5 v5.3.1
+go: downloading github.com/google/go-tpm v0.9.8
+go: downloading github.com/tinylib/msgp v1.6.4
+go: downloading github.com/philhofer/fwd v1.2.0
+MODULE_OK services/api
+MODULE services/milestone
+MODULE_OK services/milestone
+RESULT passed=4235 failed=0 skipped=15 packages=89 nonjson=0
+ok github.com/Maxencejules/shortvideo-network/chain/cmd/svnd/cli
+ok github.com/Maxencejules/shortvideo-network/chain/genesis
+ok github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal
+ok github.com/Maxencejules/shortvideo-network/chain/internal/rehearsal/scenario
+ok github.com/Maxencejules/shortvideo-network/chain/internal/statecheck
+ok github.com/Maxencejules/shortvideo-network/chain/devnet
+ok github.com/Maxencejules/shortvideo-network/chain/jcs
+ok github.com/Maxencejules/shortvideo-network/chain/msgkit
+ok github.com/Maxencejules/shortvideo-network/chain/msgkit/msgkittest
+ok github.com/Maxencejules/shortvideo-network/chain/node
+ok github.com/Maxencejules/shortvideo-network/chain/svnerr
+ok github.com/Maxencejules/shortvideo-network/chain/upgrade
+ok github.com/Maxencejules/shortvideo-network/chain/upgrade/conformance
+ok github.com/Maxencejules/shortvideo-network/chain/upgrade/onchain
+ok github.com/Maxencejules/shortvideo-network/chain/x/authority
+ok github.com/Maxencejules/shortvideo-network/chain/x/content
+ok github.com/Maxencejules/shortvideo-network/chain/x/evidence
+ok github.com/Maxencejules/shortvideo-network/chain/cmd/svnd
+ok github.com/Maxencejules/shortvideo-network/chain/x/evidence/evidencetest
+ok github.com/Maxencejules/shortvideo-network/chain/x/leases
+ok github.com/Maxencejules/shortvideo-network/chain/x/authority/difftest
+ok github.com/Maxencejules/shortvideo-network/chain/x/leases/leasestest
+ok github.com/Maxencejules/shortvideo-network/chain/x/policy
+ok github.com/Maxencejules/shortvideo-network/chain/x/policy/policytest
+ok github.com/Maxencejules/shortvideo-network/chain/x/providers
+ok github.com/Maxencejules/shortvideo-network/chain/x/providers/capability
+ok github.com/Maxencejules/shortvideo-network/chain/app
+ok github.com/Maxencejules/shortvideo-network/chain/x/leases/difftest
+ok github.com/Maxencejules/shortvideo-network/chain/x/evidence/difftest
+ok github.com/Maxencejules/shortvideo-network/protocol/check
+ok github.com/Maxencejules/shortvideo-network/agents/provider
+ok github.com/Maxencejules/shortvideo-network/agents/provider/internal/keys
+ok github.com/Maxencejules/shortvideo-network/agents/provider/internal/agent
+ok github.com/Maxencejules/shortvideo-network/agents/provider/cmd/svn-provider
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/classify
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/config
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/batch
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/fetch
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/keys
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/chainclient
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/policy
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/report
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/labels
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/store
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/verify
+ok github.com/Maxencejules/shortvideo-network/agents/auditor/review
+ok github.com/Maxencejules/shortvideo-network/agents/auditor
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api/request
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/api
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/chain
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config/secretfile
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config/strictjson
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/keys
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/logx
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/outbox
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/outbox/outboxcheck
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/cmd/svn-broadcaster
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/config
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/policy
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/pgdev
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/signer
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/faultpoint
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/store
+ok github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/worker
+ok github.com/Maxencejules/shortvideo-network/services/indexer/cmd/svn-indexer
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/api
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/config
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/chain
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/faultpoint
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/project
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/reconcile
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/status
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/engine
+ok github.com/Maxencejules/shortvideo-network/services/indexer/internal/store
+ok github.com/Maxencejules/shortvideo-network/services/scheduler/internal/policy
+ok github.com/Maxencejules/shortvideo-network/services/scheduler/internal/sched
+ok github.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler
+ok github.com/Maxencejules/shortvideo-network/services/observe/cmd/svn-observe
+ok github.com/Maxencejules/shortvideo-network/services/observe/internal/obs
+ok github.com/Maxencejules/shortvideo-network/services/operator/dash
+ok github.com/Maxencejules/shortvideo-network/services/restore/cmd/svn-restore
+ok github.com/Maxencejules/shortvideo-network/services/restore/internal/restore
+ok github.com/Maxencejules/shortvideo-network/services/api/internal/moderation
+ok github.com/Maxencejules/shortvideo-network/services/api/internal/records
+ok github.com/Maxencejules/shortvideo-network/services/api/internal/service/removaltest
+ok github.com/Maxencejules/shortvideo-network/services/api/internal/social
+ok github.com/Maxencejules/shortvideo-network/services/api/internal/service
+ok github.com/Maxencejules/shortvideo-network/services/milestone
+ok github.com/Maxencejules/shortvideo-network/services/milestone/internal/chainview
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetAuditLifecycle
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetBroadcasterQuorumStall
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetBroadcasterLifecycle
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetIndexer
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetLeaseLifecycle
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetLeaseHaltRestart
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetValidatorLifecycle
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetQuorumFollowsVotingPower
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestFourValidatorsCommitRestartAndQuorum
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetRegistryDemo
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetRunsBuiltSvnd
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetUpgradeRehearsal
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetMinorityWrongMigration
+SKIP github.com/Maxencejules/shortvideo-network/chain/devnet TestDevnetGovernedChangeTiming
+SKIP github.com/Maxencejules/shortvideo-network/services/milestone TestMilestone
+EXIT:0
+AFTER clean

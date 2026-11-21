@@ -1,0 +1,26 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD /agent/repos/shortvideo-network/.venv/bin/python -c $'\nimport importlib.util, sys\nfrom pathlib import Path\nfrom collections import Counter\np = Path("scripts/acceptance/audit_matrix.py")\nspec = importlib.util.spec_from_file_location("audit_matrix", p)\nmod = importlib.util.module_from_spec(spec)\nsys.modules["audit_matrix"] = mod\nspec.loader.exec_module(mod)\nrows = mod.parse_matrix(Path("docs/requirements.md").read_text(encoding="utf-8"))\nscopes = Counter(r["scope"] for r in rows)\nprint("rows", len(rows))\nfor key in sorted(scopes):\n    print(f"scope {key} {scopes[key]}")\nins = [r for r in rows if r["scope"] == "IN_SCOPE"]\nprint("in_scope", len(ins))\nprint("test", sum(1 for r in ins if r["disposition"].startswith("TEST:")))\nprint("blocker", sum(1 for r in ins if r["disposition"].startswith("BLOCKER:")))\nprint("other", sum(1 for r in ins if not r["disposition"].startswith(("TEST:", "BLOCKER:"))))\nids = [r["id"] for r in rows if "30" in mod.goal_set(r["goals"])]\nprint("goal30", len(ids))\nprint("goal30_ids")\nprint("\\n".join(ids))\n'
+DIRTY no
+rows 265
+scope DEFERRED 9
+scope IN_SCOPE 250
+scope NON_GOAL 6
+in_scope 250
+test 216
+blocker 34
+other 0
+goal30 10
+goal30_ids
+REQ-PROD-001
+REQ-PROD-011
+REQ-UX-015
+REQ-UX-020
+REQ-UX-021
+REQ-DEV-002
+REQ-MOD-006
+REQ-QA-011
+REQ-LAUNCH-001
+REQ-SUCCESS-001
+EXIT:0
+AFTER clean

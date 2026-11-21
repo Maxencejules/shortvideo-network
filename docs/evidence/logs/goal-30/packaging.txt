@@ -1,0 +1,7 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD /agent/repos/shortvideo-network/.venv/bin/python scripts/packaging.py candidate --out /tmp/svn-goal30-out/candidate
+DIRTY no
+NOT-RELEASED candidate 2bce2e272534316115c2550329c7ed730983da70 tree 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+EXIT:0
+AFTER clean

@@ -1,0 +1,25 @@
+HEAD 2bce2e272534316115c2550329c7ed730983da70
+TREE 925512e799ec3ac42079b2e76bb9a9acd2bc56c7
+CMD bash /tmp/svn-setup/discovery-probe.sh
+DIRTY no
+DISCOVERY 127.0.0.1:44167
+NOTE this binary's handler is social.New. Published /feeds /reports /exports are not that process's routes.
+NOTE the client does not call /v1 or /admin and does not follow a redirect.
+CLIENT operations=12
+CLIENT request spec=docs/protocol/api/client-api.json method=POST path=/upload-intents status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/client-api.json method=GET path=/uploads/u-goal30 status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/client-api.json method=POST path=/publish status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/client-api.json method=GET path=/feeds status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/client-api.json method=POST path=/reports status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/client-api.json method=POST path=/removal status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/client-api.json method=GET path=/exports status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/provider-api.json method=GET path=/capability status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/provider-api.json method=POST path=/offers/o-goal30/acceptance status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/provider-api.json method=GET path=/packages/c-goal30/1 status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/provider-api.json method=POST path=/transfers/t-goal30/receipt status=404 error=- location=-
+CLIENT request spec=docs/protocol/api/provider-api.json method=POST path=/inventory status=404 error=- location=-
+CLIENT private_shortcut=false
+CLIENT interop activitypub=false atproto=false ipfs=false filecoin=false
+CLIENT ok
+EXIT:0
+AFTER clean

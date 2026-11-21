@@ -1,0 +1,32 @@
+HEAD e7591f4b02ebbb2d052641f5831f1ea46e465e93
+TREE 3859fdec157f7b0e997c7e398267190c60cdf129
+CMD /agent/repos/shortvideo-network/.venv/bin/python -m pytest -o addopts=-q\ -ra\ --tb=short
+DIRTY no
+........................................................................ [ 15%]
+....................................................................s... [ 30%]
+........................................................................ [ 45%]
+........................................................................ [ 60%]
+.................................F............s......................... [ 75%]
+.............s.......................................................... [ 90%]
+..............ss.............................                            [100%]
+=================================== FAILURES ===================================
+_______________ test_postgres_claim_is_once_and_does_not_publish _______________
+tests/unit/test_media_postgres.py:159: in test_postgres_claim_is_once_and_does_not_publish
+    assert pg.pull(ws) == 1
+           ^^^^^^^^^^^
+workers/media/svn_media/queue.py:145: in pull
+    text = self.execute(_LIST_SQL)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+workers/media/svn_media/queue.py:135: in execute
+    raise Failure("INTERNAL") from None
+E   svn_media.limits.Failure: Processing failed.
+=========================== short test summary info ============================
+SKIPPED [1] tests/unit/test_creator_browser.py:34: esbuild is not installed; the creator bundle is unverified
+SKIPPED [1] tests/unit/test_media_worker.py:564: set SVN_MEDIA_TIMING=1 to measure
+SKIPPED [1] tests/unit/test_operator_browser.py:31: esbuild is not installed; the operator bundle is unverified
+SKIPPED [1] tests/unit/test_social_browser.py:33: esbuild is not installed; the discovery bundle is unverified
+SKIPPED [1] tests/unit/test_web_viewer.py:83: esbuild is not installed; the viewer bundle is unverified
+FAILED tests/unit/test_media_postgres.py::test_postgres_claim_is_once_and_does_not_publish
+1 failed, 471 passed, 5 skipped in 103.94s (0:01:43)
+EXIT:1
+AFTER clean
