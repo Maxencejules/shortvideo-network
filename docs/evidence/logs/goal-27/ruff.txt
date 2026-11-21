@@ -1,0 +1,8 @@
+HEAD ea1a6aeeb4845df0cb29c913f2f39872c3feac55
+TREE 49103a38fc1a816cf320e2000163efc863e94e10
+CMD bash -c .venv/bin/ruff\ check\ scripts/packaging.py\ tests/unit/test_packaging.py\ \&\&\ .venv/bin/ruff\ format\ --check\ scripts/packaging.py\ tests/unit/test_packaging.py
+DIRTY no
+[1;32mAll checks passed![0m
+2 files already formatted
+EXIT:0
+AFTER clean

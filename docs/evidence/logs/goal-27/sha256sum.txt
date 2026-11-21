@@ -1,0 +1,26 @@
+HEAD ea1a6aeeb4845df0cb29c913f2f39872c3feac55
+TREE 49103a38fc1a816cf320e2000163efc863e94e10
+CMD bash -c cd\ /tmp/svn-goal27-out/bundle\ \&\&\ sha256sum\ -c\ SHA256SUMS
+DIRTY no
+MANIFEST.json: OK
+NOT-RELEASED: OK
+THIRD_PARTY_NOTICES.md: OK
+bin/svn-api: OK
+bin/svn-broadcaster: OK
+bin/svn-chainview: OK
+bin/svn-discovery: OK
+bin/svn-feed-client: OK
+bin/svn-indexer: OK
+bin/svn-observe: OK
+bin/svn-operator: OK
+bin/svn-provider: OK
+bin/svn-restore: OK
+bin/svn-scheduler: OK
+bin/svnd: OK
+ffmpeg-obligations.md: OK
+ffmpeg-observed.txt: OK
+profiles.json: OK
+reproducibility.txt: OK
+sbom.cdx.json: OK
+EXIT:0
+AFTER clean

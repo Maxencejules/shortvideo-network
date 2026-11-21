@@ -1,0 +1,15 @@
+HEAD ea1a6aeeb4845df0cb29c913f2f39872c3feac55
+TREE 49103a38fc1a816cf320e2000163efc863e94e10
+CMD bash -c echo\ LABEL\;\ cat\ /tmp/svn-goal27-out/test-signing/KEY-LABEL.txt\;\ echo\ PUBLIC_FIRST\;\ head\ -n\ 1\ /tmp/svn-goal27-out/test-signing/test-signing-public.pem\;\ if\ test\ -e\ /tmp/svn-goal27-out/test-signing/test-signing-key.pem\;\ then\ echo\ PRIVATE\ present\;\ else\ echo\ PRIVATE\ absent\;\ fi\;\ echo\ PREFIX\;\ find\ /tmp/svn-goal27-out/prefix\ -print
+DIRTY no
+LABEL
+SVN-TEST-SIGNING-KEY-NOT-FOR-A-RELEASE
+PUBLIC_FIRST
+SVN-TEST-SIGNING-KEY-NOT-FOR-A-RELEASE
+PRIVATE absent
+PREFIX
+/tmp/svn-goal27-out/prefix
+/tmp/svn-goal27-out/prefix/operator-data
+/tmp/svn-goal27-out/prefix/operator-data/keep.txt
+EXIT:0
+AFTER clean
