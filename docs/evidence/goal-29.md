@@ -8,7 +8,7 @@ This file is a model-assisted review of commit `82f3d6566046f18b9cbaeeeeab547b1d
 
 - Playbook assignment: GPT-6 Astra, effort EXTRA HIGH (`docs/goals/29-adversarial-review-and-fault-testing.md` line 6). GPT-6 Astra was not used.
 - This run is Cursor cloud agent `bc-9ab3acf4-799f-5759-9a95-031fb3d2fd9c`. `cursor-cloud` `run-info` reported `originalModelName` `grok-4.7-high-fast` and no separate effort or reasoning field. The effort setting is **not reported**. It is not guessed. That is the account default model for this run.
-- On 2026-10-31 (Toronto) the owner said "Don't mind the ai model requirement". On 2026-11-17 the owner confirmed that it applies to all goals. On 2026-11-21 the owner chose to start goal 29 at the account default reasoning. A model mismatch with the playbook is not a blocker.
+- On 2026-10-31 (Toronto) the owner said "Don't mind the ai model requirement". On 2026-11-17 the owner confirmed that it applies to all goals. On 2026-11-21 at 14:09 Toronto, in his chat with shortvideo-builder, Max selected this reply to the question "merge goal 28?" (the option text was offered by shortvideo-builder and chosen by Max): "merge goal 28 pr 33 at 077ab94 as BLOCKED, squash as me, then start goal 29 at the account default reasoning". That choice starts this goal at the account default reasoning. It is not a waiver. A model mismatch with the playbook is not a blocker.
 
 ## Tested revision
 
@@ -58,7 +58,8 @@ Every log below was captured on `82f3d6566046f18b9cbaeeeeab547b1d3b2dc954` while
 | fetch-policy test | [observe-fetch.txt](logs/goal-29/observe-fetch.txt) | line 5 `ok` in 0.002s, line 6 `EXIT:0` |
 | scheduler stall, confirm, and repair tests | [scheduler.txt](logs/goal-29/scheduler.txt) | line 6 `ok` in 15.184s, line 9 `ok` in 0.007s, line 11 `EXIT:0` |
 | stalled-chain deletion test | [moderation.txt](logs/goal-29/moderation.txt) | line 5 `ok` in 0.007s, line 6 `EXIT:0` |
-| rejected chain messages and idempotent replay | [chain-reject.txt](logs/goal-29/chain-reject.txt) | lines 5-8 `ok`, line 9 `EXIT:0` |
+| rejected chain messages and business-id idempotency | [chain-reject.txt](logs/goal-29/chain-reject.txt) | lines 5-8 `ok`, line 9 `EXIT:0` |
+| replay hashes at the same height | [replay-hash.txt](logs/goal-29/replay-hash.txt) | line 22497 lease flow, line 9118 audit flow, line 25016 `ok` in 0.958s, line 25017 `EXIT:0` |
 | altered observation and dishonest auditor | [false-auditor.txt](logs/goal-29/false-auditor.txt) | line 5 `ok` in 0.041s, line 6 `ok` in 0.345s, line 7 `EXIT:0` |
 | admission pytest | [admission.txt](logs/goal-29/admission.txt) | line 5 is three dots and `[100%]`, line 6 `EXIT:0` |
 | `ruff check` on the edited Python files | [ruff.txt](logs/goal-29/ruff.txt) | line 5 contains `All checks passed`, line 6 `EXIT:0` |
@@ -121,7 +122,8 @@ These are the scenarios named in the goal. They ran as processes on this VM.
 | Scenario | What ran | Result |
 | --- | --- | --- |
 | Rejected chain operations leave state unchanged | [chain-reject.txt](logs/goal-29/chain-reject.txt) lines 5-8 | `ok`. The test names are `TestRejectedContentMessagesLeaveTheStore`, `TestRejectedProviderMessagesLeaveTheStore`, `TestRejectedAuditMessagesLeaveTheFullState`, and `TestRejectedLeaseMessagesLeaveTheFullState`. |
-| Replay at the same business id does not write a second effect | [chain-reject.txt](logs/goal-29/chain-reject.txt) line 7, the evidence package | `ok` in 0.050s. The selected test is `TestIdempotentReplay`. |
+| Replay hashes match at the same height | [replay-hash.txt](logs/goal-29/replay-hash.txt) | In-process, not a devnet rerun. `TestLeaseFlowReplayAndQueries` (`chain/app/lease_flow_test.go:242`) calls `replayFresh` (`lease_flow_test.go:247`, `chain/app/lease_net_test.go:74`). That function compares the replayed app hash with the cluster hash after every block (`lease_net_test.go:93`). Line 22497 is `replayed 69 blocks; app hash 4CE8133EB5ADBE02139474F9DFD09AB0B0D46A9EBB7E01F8F8A0896349921E6B equal at every height`. `TestAuditFlowReplayAndQueries` (`chain/app/evidence_measure_test.go:59`, `replayFresh` at `evidence_measure_test.go:103`) line 9118 is `replayed 41 blocks; app hash 7BAA6167560C780937CEAA78270466B3923E8C688E88542AD288D0C480D86B5C equal at every height`. `TestRegistryFlowReplayAndQueries` (`chain/app/registry_flow_test.go:81`) passed in the same command (line 25014). Its comment at `registry_flow_test.go:85` records that `cluster.block` (`chain/app/registry_net_test.go:219`) compared the two nodes' app hash at every height (`registry_net_test.go:243`). That test does not call `replayFresh`. Line 25016 is `ok` in 0.958s. Line 25017 is `EXIT:0`. |
+| A repeated business id does not write a second effect | [chain-reject.txt](logs/goal-29/chain-reject.txt) line 7, the evidence package | `ok` in 0.050s. The selected test is `TestIdempotentReplay` (`chain/x/evidence/submit_test.go:542`). That test is business-id idempotency. It is not the app-hash comparison. |
 | False auditor attestation | [false-auditor.txt](logs/goal-29/false-auditor.txt) lines 5-6 | `ok`. `TestAlteredObservationD1`, `TestRecordStateNeedsTheDigestAlgorithm`, and `TestDishonestAdmittedAuditorInApp`. A mismatched observation is not stored as a passing proof. The app test's own comment says the dishonest batch leaves the full state unchanged at the cap. |
 | Second requester | `TestRemovedLeaseDoesNotHideTheServingCopy` | The other token is 401. The token holder receives the bytes. This is one process refusing a second caller. It is not a proof that every provider will serve every honest caller. |
 | Host loss and repair | [scheduler.txt](logs/goal-29/scheduler.txt) line 6 | `ok` in 15.184s. `TestUnreachableHolderDoesNotExtendConfirm`, `TestReachableByteMismatchStillWaits`, and `TestRepairReverifyFailureIsCooling`. An unreachable holder does not stretch the confirm window into a false confirmation. A failed re-verify stays cooling. |
@@ -173,7 +175,7 @@ The requirements matrix was not edited.
 | --- | --- |
 | REQ-EVID-003 | The false-auditor tests and the second-requester refusal ran. See the logs above. This is not a proof that every auditor is honest. |
 | REQ-SEC-005 | Rewards stay absent. There is no token. The dishonest-auditor and second-requester cases ran. A Sybil campaign on separate machines did not run. |
-| REQ-SEC-007 | Rejected messages in the named tests left state unchanged, and the idempotent replay test passed. A partition of separate validators did not run. DR-29-03. |
+| REQ-SEC-007 | Rejected messages in the named tests left state unchanged. Replay hashes match at the same height in [replay-hash.txt](logs/goal-29/replay-hash.txt): 69 lease-flow blocks and 41 audit-flow blocks, in-process, not a devnet rerun. `TestIdempotentReplay` is the separate business-id check. A partition of separate validators did not run. DR-29-03. |
 | REQ-SEC-011 | This file is the model-assisted review. The human audit is DR-29-01 and is unmet. |
 | REQ-QA-012 | Unit, the named chain tests, provider conformance, scheduler fault tests, and the admission test ran. Property, fuzz, contract, browser, devnet, and load were not rerun. A missing run is not counted as passed. |
 | REQ-QA-013 | Passing the tests in this file is not security against an unrestricted economically motivated network. |
