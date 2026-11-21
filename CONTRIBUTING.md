@@ -25,4 +25,4 @@ Open decisions are `docs/decision-register.md`. The five roles there and in `doc
 
 ## Packaging
 
-`make release-check` is the packaging gate. `make release-candidate` builds a local candidate and labels it NOT-RELEASED. Do not tag or publish from a goal branch.
+`make release-check` is the local packaging gate. The pull-request tests run that same check and do not build the candidate binaries. `make release-candidate` builds a local candidate and labels it NOT-RELEASED. The GitHub release-candidate workflow starts only when someone dispatches it. Do not tag or publish from a goal branch.

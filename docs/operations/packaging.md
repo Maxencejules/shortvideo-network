@@ -28,7 +28,7 @@ Verify a bundle that was already built:
 ( cd "$OUT/bundle" && sha256sum -c SHA256SUMS )
 ```
 
-`make release-check` runs the fast gate: profiles, notices, image text, the workflow policy, the pinned FFmpeg version, the SBOM, and the same install path with fixture binaries. `make release-candidate OUT="$OUT"` runs the scenario above.
+`make release-check` runs the fast gate: profiles, notices, image text, the workflow policy, the pinned FFmpeg version, the SBOM, and the same install path with fixture binaries. The pull-request unit tests run that same check. They do not build the candidate binaries. `make release-candidate OUT="$OUT"` runs the scenario above on a machine you choose. The GitHub workflow of the same name starts only when someone dispatches it.
 
 ## What is non-reproducible on purpose
 

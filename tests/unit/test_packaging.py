@@ -105,8 +105,16 @@ def test_identical_build_directories_match(tmp_path: Path) -> None:
 
 
 def test_release_workflow_does_not_publish() -> None:
+    import yaml
+
     text = (ROOT / ".github" / "workflows" / "release-candidate.yml").read_text(encoding="utf-8")
-    assert "contents: read" in text
+    document = yaml.safe_load(text)
+    assert isinstance(document, dict)
+    # PyYAML 1.1 parses the bare key "on" as True.
+    trigger = document[True]
+    assert isinstance(trigger, dict)
+    assert set(trigger) == {"workflow_dispatch"}
+    assert document["permissions"] == {"contents": "read"}
     lowered = text.lower()
     assert "production" not in lowered
     for needle in ("docker push", "gh release", "npm publish", "git tag", "twine upload"):

@@ -21,4 +21,4 @@ That signature only shows that the checksum file can be signed. It does not auth
 
 ## Owner signature
 
-Release signing is an owner action. The owner signs `SHA256SUMS` with a key this repository does not hold, keeps that key outside the tree, and does not commit it. The release-candidate workflow has `contents: read` and cannot push a tag or a package. This goal does not name a publisher and does not create a tag.
+Release signing is an owner action. The owner signs `SHA256SUMS` with a key this repository does not hold, keeps that key outside the tree, and does not commit it. The release-candidate workflow in `.github/workflows/release-candidate.yml` starts only when someone dispatches it. It has `contents: read` and cannot push a tag or a package. Each pull request runs the packaging check in the unit tests. That check does not build the candidate binaries. A repository environment that requires a second reviewer is not named in that workflow. This goal does not name a publisher and does not create a tag.

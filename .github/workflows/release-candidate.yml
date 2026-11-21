@@ -1,13 +1,14 @@
-# Release-candidate check.
+# Release-candidate build.
+# A person who can dispatch workflows must start this job.
+# It does not run on a pull request or on a push.
 # contents: read is the only permission. The workflow does not tag,
 # publish an image, or upload a package.
+# A repository environment with required reviewers is not named here.
+# scripts/workflow_policy.py rejects a job environment key.
 name: release-candidate
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
