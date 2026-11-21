@@ -1,0 +1,13 @@
+HEAD 8cd0fb8e0ef44a936115c510138a0700db3bd1b7
+TREE 0da071d01cba06b7361493b13cbbae2352a9bed4
+CMD go test -tags svn_capacity -count=1 -timeout 6m -v -run TestCapacityFixture ./services/scheduler/cmd/svn-scheduler
+DIRTY  M scripts/capacity.py;
+=== RUN   TestCapacityFixture
+CAPACITY_PUBLISH package_bytes=64 wall_ms=183 publication=PUBLISHED verified=3 physical_count=1 simulated=true label=one-machine-fixture
+CAPACITY_REPAIR package_bytes=64 wall_ms=20093 state=CONFIRMED source=p2 replacement=p4 stopped=p1 hosts=4 machine=1 simulated=true label=process-stop-not-multi-host
+CAPACITY_SLOW package_bytes=64 wall_ms=981 injected_ms=250 approvals=3 label=in-process-sleep-not-a-shaped-network
+--- PASS: TestCapacityFixture (26.10s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler	26.108s
+EXIT:0
+AFTER  M scripts/capacity.py;

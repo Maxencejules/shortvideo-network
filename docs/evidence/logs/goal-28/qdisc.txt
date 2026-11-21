@@ -1,0 +1,12 @@
+HEAD 14a39c168d148e4ba67f1e009671d9e5ddcb6820
+TREE 278e9dd5e112424481f316d56ea9fd1a82d13eb4
+CMD sudo ip netns add svncap28probe; sudo ip netns exec svncap28probe tc qdisc add dev lo root tbf; sudo ip netns exec svncap28probe tc qdisc add dev lo root netem
+DIRTY no
+TBF
+Error: Specified qdisc kind is unknown.
+TBF_EXIT:2
+NETEM
+Error: Specified qdisc kind is unknown.
+NETEM_EXIT:2
+EXIT:0
+AFTER clean
