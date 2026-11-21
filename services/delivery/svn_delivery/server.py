@@ -5,14 +5,16 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import json
+import os
 import re
 import threading
+import time
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import cast
 from urllib.parse import urlsplit
 
-from svn_delivery.browser import page_html
+from svn_delivery.browser import capacity_page_html, page_html
 from svn_delivery.catalog import Catalog
 from svn_delivery.correlate import correlation_id
 from svn_delivery.errors import DeliveryError
@@ -193,16 +195,28 @@ def _handler(catalog: Catalog, host_id: str, allow_origin: str) -> type[BaseHTTP
             self._fail(DeliveryError("BAD_REQUEST"), True)
 
         def _dispatch(self, include_body: bool) -> None:
+            started = time.monotonic()
+            self._timed_status = 0
+            self._timed_bytes = 0
             path = urlsplit(self.path).path
-            if not _safe_path(self.path) or path != self.path:
-                self._fail(DeliveryError("BAD_REQUEST"), include_body)
-                return
             try:
-                self._route(path, include_body)
-            except DeliveryError as exc:
-                self._fail(exc, include_body)
-            except Exception:
-                self._fail(DeliveryError("UNAVAILABLE"), include_body)
+                if not _safe_path(self.path) or path != self.path:
+                    self._fail(DeliveryError("BAD_REQUEST"), include_body)
+                    return
+                try:
+                    self._route(path, include_body)
+                except DeliveryError as exc:
+                    self._fail(exc, include_body)
+                except Exception:
+                    self._fail(DeliveryError("UNAVAILABLE"), include_body)
+            finally:
+                if catalog.record_timing:
+                    catalog.note_timing(
+                        path,
+                        self._timed_status,
+                        self._timed_bytes,
+                        int((time.monotonic() - started) * 1000),
+                    )
 
         def _route(self, path: str, include_body: bool) -> None:
             playback = _PLAYBACK.fullmatch(path)
@@ -230,7 +244,11 @@ def _handler(catalog: Catalog, host_id: str, allow_origin: str) -> type[BaseHTTP
             if player is not None:
                 if not catalog.grant_live(player.group(1)):
                     raise DeliveryError("NOT_FOUND")
-                html = page_html(player.group(1)).encode("utf-8")
+                content_id = player.group(1)
+                if os.environ.get("SVN_CAPACITY_PLAYTHROUGH") == "1":
+                    html = capacity_page_html(content_id).encode("utf-8")
+                else:
+                    html = page_html(content_id).encode("utf-8")
                 self._send(
                     200,
                     html,
@@ -359,6 +377,8 @@ def _handler(catalog: Catalog, host_id: str, allow_origin: str) -> type[BaseHTTP
             extra: dict[str, str] | None,
             csp: bool = False,
         ) -> None:
+            self._timed_status = status
+            self._timed_bytes = len(body) if status != 304 else 0
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body) if status != 304 else 0))
@@ -477,7 +497,7 @@ def _clean_report(value: object) -> dict[str, object]:
         raise DeliveryError("BAD_REQUEST")
     if not 0 <= ready <= 4 or not 0 <= nonzero <= 20_000_000:
         raise DeliveryError("BAD_REQUEST")
-    return {
+    out: dict[str, object] = {
         "rendered": rendered,
         "caption": caption,
         "error": error,
@@ -487,6 +507,22 @@ def _clean_report(value: object) -> dict[str, object]:
         "readyState": ready,
         "nonzero": nonzero,
     }
+    for key in ("renderMs", "fetchMs", "stallMs", "mediaMs"):
+        if key not in value:
+            continue
+        item = value[key]
+        if isinstance(item, bool) or not isinstance(item, int) or not 0 <= item <= 600_000:
+            raise DeliveryError("BAD_REQUEST")
+        out[key] = item
+    segment = value.get("segment")
+    if segment is not None:
+        if not isinstance(segment, str) or _SEGMENT_NAME.fullmatch(segment) is None:
+            raise DeliveryError("BAD_REQUEST")
+        out["segment"] = segment
+    return out
+
+
+_SEGMENT_NAME = re.compile(r"segments/[a-z0-9][a-z0-9.-]{0,63}")
 
 
 # Imported by tests that want the range parser without a socket.

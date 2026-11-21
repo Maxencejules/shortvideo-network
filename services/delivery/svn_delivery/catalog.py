@@ -86,8 +86,10 @@ class Catalog:
         self._replicas: dict[tuple[str, str, int], Path] = {}
         self._reports: dict[str, dict[str, object]] = {}
         self._hits: list[str] = []
+        self._timings: list[dict[str, object]] = []
         self._delisted: set[str] = set()
         self.record_hits = False
+        self.record_timing = False
         self._chain = "UNAVAILABLE"
         self._load()
 
@@ -352,6 +354,28 @@ class Catalog:
     def clear_hits(self) -> None:
         with self._lock:
             self._hits.clear()
+
+    def note_timing(self, path: str, status: int, nbytes: int, handler_ms: int) -> None:
+        """Remember one handler duration. The list stops at 400 rows."""
+        with self._lock:
+            if len(self._timings) >= 400:
+                return
+            self._timings.append(
+                {
+                    "path": path,
+                    "status": status,
+                    "bytes": nbytes,
+                    "handler_ms": handler_ms,
+                }
+            )
+
+    def timings(self) -> tuple[dict[str, object], ...]:
+        with self._lock:
+            return tuple(dict(item) for item in self._timings)
+
+    def clear_timings(self) -> None:
+        with self._lock:
+            self._timings.clear()
 
     def store_report(self, content_id: str, body: dict[str, object]) -> None:
         with self._lock:
