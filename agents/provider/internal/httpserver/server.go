@@ -38,7 +38,7 @@ func (s *Server) Serve(cert, key string) error {
 	mux.HandleFunc("POST /admin/delist", s.admin(s.delistContent))
 	mux.HandleFunc("POST /admin/rotate", s.admin(s.rotate))
 	httpServer := &http.Server{
-		Handler:           guard(mux),
+		Handler:           correlate(guard(mux)),
 		TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS12},
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       30 * time.Second,

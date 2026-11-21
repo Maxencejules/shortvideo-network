@@ -205,6 +205,8 @@ SOURCE_ALLOW = (
     "services/milestone/",
     # Goal 24 adds the operator dashboard.
     "services/operator/",
+    # Goal 25 adds the observability control plane.
+    "services/observe/",
 )
 WALK_SKIP = {
     ".git",

@@ -37,7 +37,7 @@ func (s *Service) Handler() http.Handler {
 	if s.accounts != nil {
 		s.accounts.Register(mux)
 	}
-	return mux
+	return correlate(mux)
 }
 
 func (s *Service) createIntent(w http.ResponseWriter, r *http.Request) {

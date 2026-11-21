@@ -14,6 +14,7 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 
+from svn_media.correlate import new_id
 from svn_media.encode import process_input
 from svn_media.limits import Failure, Limits, check_id, check_object_name, check_sha256
 
@@ -221,6 +222,7 @@ class Workspace:
         self.ffprobe = ffprobe
         self.pg = pg
         self._faulted = False
+        self.last_correlation_id = ""
         self.root.mkdir(parents=True, mode=0o700, exist_ok=True)
         self._refuse_keys()
         for name in (
@@ -277,6 +279,7 @@ class Workspace:
         check_id(manifest_id)
         if self.has_job(job_id) or self.delisted(content_id):
             raise Failure("REFUSED")
+        self.last_correlation_id = new_id()
         if captions is not None:
             _atomic_bytes(self.root / "captions" / f"{job_id}.vtt", captions)
         record = {
@@ -338,6 +341,7 @@ class Workspace:
         running = self._claim()
         if running is None:
             return None
+        self.last_correlation_id = new_id()
         job_id = running.stem
         claimed = _read_job(running)
         if self.delisted(str(claimed["content_id"])):

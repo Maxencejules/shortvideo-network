@@ -67,7 +67,7 @@ func (s *Service) Handler() http.Handler {
 	if s.dev {
 		mux.HandleFunc("POST /v1/dev/session", s.devSession)
 	}
-	return cors(mux)
+	return correlate(cors(mux))
 }
 
 func (s *Service) discovery(w http.ResponseWriter, r *http.Request) {
@@ -504,7 +504,7 @@ func cors(next http.Handler) http.Handler {
 		if originAllowed(r.Header.Get("Origin")) {
 			w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 			w.Header().Set("Vary", "Origin")
-			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key, X-SVN-Page-Limit, X-SVN-Cached-Generation")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key, X-Correlation-ID, X-SVN-Page-Limit, X-SVN-Cached-Generation")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
 		}
 		if r.Method == http.MethodOptions {
