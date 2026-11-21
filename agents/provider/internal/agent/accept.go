@@ -178,7 +178,7 @@ func (a *Agent) Accept(offerID string, body []byte) (Result, error) {
 	}
 	token, err := newToken()
 	if err != nil {
-		a.release(terms.PackageBytes)
+		a.releaseOffer(in.OfferID, terms.PackageBytes)
 		a.mu.Unlock()
 		return Result{}, fail(500, "token")
 	}
@@ -196,14 +196,14 @@ func (a *Agent) Accept(offerID string, body []byte) (Result, error) {
 	a.st.OfferLease[in.OfferID] = in.LeaseID
 	stage := filepath.Join(a.cfg.DataDir, "staging", in.LeaseID)
 	if err := os.MkdirAll(stage, 0o700); err != nil {
-		a.release(terms.PackageBytes)
+		a.releaseOffer(in.OfferID, terms.PackageBytes)
 		delete(a.st.Leases, in.LeaseID)
 		delete(a.st.OfferLease, in.OfferID)
 		a.mu.Unlock()
 		return Result{}, err
 	}
 	if err := os.WriteFile(filepath.Join(stage, "partial"), []byte("started"), 0o600); err != nil {
-		a.release(terms.PackageBytes)
+		a.releaseOffer(in.OfferID, terms.PackageBytes)
 		delete(a.st.Leases, in.LeaseID)
 		delete(a.st.OfferLease, in.OfferID)
 		a.mu.Unlock()
@@ -401,27 +401,54 @@ func (a *Agent) approved(offerID string) bool {
 	return false
 }
 
-func (a *Agent) reserve(n uint64, key string) error {
+func (a *Agent) reserve(n uint64, offerID string) error {
 	if n > uint64(^uint64(0)>>1) {
 		return fail(409, "insufficient quota")
 	}
-	decision, err := a.observe.Admit(context.Background(), client.KindStorage, int64(n), key)
+	if a.charged == nil {
+		a.charged = map[string]struct{}{}
+	}
+	if _, ok := a.charged[offerID]; ok {
+		return nil
+	}
+	if a.attempts == nil {
+		a.attempts = map[string]int{}
+	}
+	if a.grants == nil {
+		a.grants = map[string]string{}
+	}
+	if id := a.grants[offerID]; id != "" {
+		if err := a.observe.Release(context.Background(), id); err != nil {
+			return fail(503, "admission_unreachable")
+		}
+		delete(a.grants, offerID)
+	}
+	next := a.attempts[offerID] + 1
+	decision, err := a.observe.Admit(context.Background(), client.KindStorage, int64(n), offerID+":"+strconv.Itoa(next))
 	if err != nil {
 		return fail(503, "admission_unreachable")
 	}
 	if !decision.Granted {
 		return fail(429, "admission")
 	}
-	kept := false
-	if decision.Replayed {
-		return nil
-	}
-	defer func() {
-		if kept || decision.Replayed || decision.GrantID == "" {
-			return
+	if err := a.fit(n); err != nil {
+		if !decision.Replayed && decision.GrantID != "" && a.observe.Release(context.Background(), decision.GrantID) == nil {
+			a.attempts[offerID] = next
 		}
-		_ = a.observe.Release(context.Background(), decision.GrantID)
-	}()
+		return err
+	}
+	a.st.UsedBytes += n
+	a.charged[offerID] = struct{}{}
+	a.attempts[offerID] = next
+	if decision.GrantID != "" {
+		a.grants[offerID] = decision.GrantID
+	}
+	return nil
+}
+
+// fit reports whether n more bytes fit the local quota, bandwidth, and disk.
+// It does not change UsedBytes.
+func (a *Agent) fit(n uint64) error {
 	if a.st.UsedBytes > ^uint64(0)-n {
 		return fail(409, "insufficient quota")
 	}
@@ -441,14 +468,28 @@ func (a *Agent) reserve(n uint64, key string) error {
 	if n > ^uint64(0)-a.cfg.MinFreeBytes || avail < n+a.cfg.MinFreeBytes {
 		return fail(409, "insufficient disk")
 	}
-	a.st.UsedBytes += n
-	kept = true
 	return nil
 }
 
-func (a *Agent) release(n uint64) {
+// releaseOffer returns the local bytes and the observe hold for one offer.
+// A later reserve of the same offer opens a new hold. It does not keep the
+// old hold and a second local count.
+func (a *Agent) releaseOffer(offerID string, n uint64) {
 	if a.st.UsedBytes >= n {
 		a.st.UsedBytes -= n
+	} else {
+		a.st.UsedBytes = 0
+	}
+	delete(a.charged, offerID)
+	if a.grants == nil || a.observe == nil {
+		return
+	}
+	id := a.grants[offerID]
+	if id == "" {
+		return
+	}
+	if a.observe.Release(context.Background(), id) == nil {
+		delete(a.grants, offerID)
 	}
 }
 
@@ -460,7 +501,7 @@ func (a *Agent) dropTransfer(lease *store.Lease) {
 		}
 	}
 	if lease.Readiness == store.Transferring || lease.SignatureHex == "" {
-		a.release(lease.PackageBytes)
+		a.releaseOffer(lease.OfferID, lease.PackageBytes)
 		delete(a.st.Leases, lease.LeaseID)
 		delete(a.st.OfferLease, lease.OfferID)
 		os.RemoveAll(packageDir(a.cfg.DataDir, lease))

@@ -191,7 +191,7 @@ func (a *Agent) localEnd(lease *store.Lease, readiness string) {
 		}
 	}
 	removePackage(a.cfg.DataDir, lease)
-	a.release(lease.PackageBytes)
+	a.releaseOffer(lease.OfferID, lease.PackageBytes)
 	lease.Readiness = readiness
 	lease.ServeToken = ""
 }

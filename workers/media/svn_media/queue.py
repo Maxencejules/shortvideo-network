@@ -14,7 +14,7 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 
-from svn_media.admit import processing as admit_processing
+from svn_media.admit import processing_decision, release_grant
 from svn_media.correlate import new_id
 from svn_media.encode import process_input
 from svn_media.limits import Failure, Limits, check_id, check_object_name, check_sha256
@@ -352,7 +352,7 @@ class Workspace:
         claimed = _read_job(running)
         admit_key = claimed.get("admit_key")
         key = str(admit_key) if isinstance(admit_key, str) and admit_key else job_id
-        gate = admit_processing(key)
+        gate, grant_id = processing_decision(key)
         if gate != "granted":
             os.rename(running, self.root / "jobs" / "queued" / running.name)
             return {
@@ -361,8 +361,12 @@ class Workspace:
                 "status": gate,
                 "encoded": False,
             }
+        if grant_id:
+            claimed["grant_id"] = grant_id
+            _atomic_json(running, claimed)
         if self.delisted(str(claimed["content_id"])):
             self._fail(job_id, Failure("CANCELLED"))
+            release_grant(grant_id)
             return {
                 "job_id": job_id,
                 "content_id": str(claimed["content_id"]),
@@ -374,9 +378,11 @@ class Workspace:
             record = self._process(running)
         except Failure as exc:
             self._fail(job_id, exc)
+            release_grant(grant_id)
             if self.pg is not None:
                 self.pg.record_failed(job_id, exc.code)
             raise
+        release_grant(grant_id)
         if self.pg is not None:
             self.pg.record_ready(record)
         return record
@@ -393,6 +399,9 @@ class Workspace:
             if ready.is_file() or (final.is_dir() and _package_valid(final)):
                 if not ready.is_file():
                     self._write_ready(job, final)
+                grant = job.get("grant_id")
+                if isinstance(grant, str):
+                    release_grant(grant)
                 running.unlink(missing_ok=True)
                 shutil.rmtree(self.root / "staging" / str(job["job_id"]), ignore_errors=True)
                 continue
