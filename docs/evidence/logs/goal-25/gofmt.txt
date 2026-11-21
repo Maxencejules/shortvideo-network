@@ -1,6 +1,6 @@
-HEAD c67f1bd1aff7c103e130773414bb513cb68fd6e7
-TREE 064ba76f4fb679a20199eb8229801f8a0f3483e5
-CMD bash -lc gofmt -l services/observe services/api/internal/service/correlate.go services/api/internal/social/correlate.go services/api/internal/social/correlate_test.go services/indexer/internal/api/correlate.go services/indexer/internal/api/correlate_test.go services/scheduler/internal/sched/correlate.go services/scheduler/internal/sched/correlate_test.go services/broadcaster/internal/api/correlate.go agents/provider/internal/httpserver/correlate.go
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD gofmt -l services/observe services/api/internal/service services/broadcaster chain/devnet/audit_test.go chain/devnet/broadcaster_harness_test.go chain/devnet/broadcaster_proc_test.go agents/provider/internal/agent agents/provider/internal/config agents/auditor services/milestone services/scheduler/cmd/svn-scheduler/harness_test.go
 DIRTY no
 EXIT:0
 AFTER clean

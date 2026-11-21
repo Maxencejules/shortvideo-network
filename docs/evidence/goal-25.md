@@ -2,7 +2,7 @@
 
 Status: BLOCKED
 
-`svn-observe` is a loopback control plane for correlation ids, health and readiness, redacted logs, placeholder admission, and a cost worksheet. Thresholds in that process are placeholders. They are not a DEC-005 allowance and they are not a spend cap. No budget owner, rate card, currency approval, or on-call assignment is named. Public launch is disabled. There is no token. This is not an audit and not a production network.
+`svn-observe` is a loopback control plane. API upload intents, output-byte reservations, processing slots, provider storage reservations, audit-batch submits, and broadcaster retries call it. An empty address or a failed request refuses the intake. The caps are placeholders. They are not a DEC-005 allowance and they are not a spend cap. No budget owner, rate card, currency approval, or on-call assignment is named. Public launch is disabled. There is no token. This is not an audit and not a production network.
 
 ## Model and effort
 
@@ -14,13 +14,13 @@ Status: BLOCKED
 
 | Item | Value |
 | --- | --- |
-| Commit | `c67f1bd1aff7c103e130773414bb513cb68fd6e7` |
-| Tree | `064ba76f4fb679a20199eb8229801f8a0f3483e5` |
+| Commit | `5499aeb50aaed35d4d0e495e0a30c8a70b3ce368` |
+| Tree | `89b309b5db885a5c3c00cd2a5a2da194bcab4467` |
 | Base | `5cda9d4fa432bf4a11036fcca6ace83efa62f839` |
 | Branch | `goal-25` |
 | Pull request | https://github.com/Maxencejules/shortvideo-network/pull/30 |
 
-The tested commit message carries `Tested-tree: 064ba76f4fb679a20199eb8229801f8a0f3483e5`. `git rev-parse c67f1bd1aff7c103e130773414bb513cb68fd6e7^{tree}` is that tree. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: 89b309b5db885a5c3c00cd2a5a2da194bcab4467`. `git rev-parse 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368^{tree}` is that tree. Later commits change only `docs/evidence/`.
 
 ## Captures
 
@@ -28,23 +28,28 @@ Every log under [logs/goal-25/](logs/goal-25/) was captured while `git status --
 
 ## Head CI
 
-[Run 44878911551](https://github.com/Maxencejules/shortvideo-network/actions/runs/44878911551) on `c67f1bd1aff7c103e130773414bb513cb68fd6e7` finished with conclusion `success`. All 17 jobs passed. That head is the tested commit. This file is added after that run. A later head that only changes `docs/evidence/` is not that run.
+[Run 44884060271](https://github.com/Maxencejules/shortvideo-network/actions/runs/44884060271) on `5499aeb50aaed35d4d0e495e0a30c8a70b3ce368`. Conclusion: `success`. All jobs passed.
+
+This file is added after that run. A later head that only changes `docs/evidence/` is not that run.
 
 ## What ran
 
 | Command | Scope | Log | Result |
 | --- | --- | --- | --- |
 | runtime versions | repository root | [runtime.txt](logs/goal-25/runtime.txt) | line 11 `EXIT:0` |
-| `gofmt -l` | the Go files this goal added | [gofmt.txt](logs/goal-25/gofmt.txt) | line 5 `EXIT:0` |
-| `go test -count=1 -timeout 180s -v` | `services/observe` | [observe-test.txt](logs/goal-25/observe-test.txt) | line 54 `EXIT:0` |
-| `go test -race` | `services/observe` | [observe-race.txt](logs/goal-25/observe-race.txt) | line 7 `EXIT:0` |
+| `gofmt -l` | the Go files this goal touched | [gofmt.txt](logs/goal-25/gofmt.txt) | line 5 `EXIT:0` |
+| `go test -count=1 -timeout 180s -v` | `services/observe` | [observe-test.txt](logs/goal-25/observe-test.txt) | line 55 `EXIT:0` |
+| `go test -race` | `services/observe` | [observe-race.txt](logs/goal-25/observe-race.txt) | line 8 `EXIT:0` |
 | `go test -count=1` | `services/api/internal/social` | [social-test.txt](logs/goal-25/social-test.txt) | line 6 `EXIT:0` |
 | `go test -count=1` | `services/scheduler` | [scheduler-test.txt](logs/goal-25/scheduler-test.txt) | line 11 `EXIT:0` |
 | `go test -run TestCorrelationHeader` | `services/indexer/internal/api` | [indexer-test.txt](logs/goal-25/indexer-test.txt) | line 6 `EXIT:0` |
-| `go vet` | observe, social, the upload service package, the indexer read API, scheduler, the broadcaster API package, and the provider HTTP package | [govet.txt](logs/goal-25/govet.txt) | line 5 `EXIT:0` |
-| pytest | correlation, the CI wiring check, and the operations docs | [pytest.txt](logs/goal-25/pytest.txt) | line 6 `EXIT:0` |
-| `ruff check` and `ruff format --check` | delivery, the media worker, and the new Python tests | [ruff.txt](logs/goal-25/ruff.txt) | line 7 `EXIT:0` |
-| `python3 -m mypy` | the six files named in the command, not the whole repository | [mypy.txt](logs/goal-25/mypy.txt) | line 6 `EXIT:0` |
+| `go vet` | observe, the API packages, indexer, scheduler, broadcaster, provider, auditor, milestone, and `chain/devnet` | [govet.txt](logs/goal-25/govet.txt) | line 5 `EXIT:0` |
+| `go test -run TestStorageReservation` | provider agent | [provider-admit.txt](logs/goal-25/provider-admit.txt) | line 9 `EXIT:0` |
+| `go test -run TestSubmitRefusesASecondAuditBatch` | auditor chain client | [auditor-admit.txt](logs/goal-25/auditor-admit.txt) | line 10 `EXIT:0` |
+| `go test -run TestCommandsAgainstTheFakeNode` | auditor command line | [auditor-cli.txt](logs/goal-25/auditor-cli.txt) | line 6 `EXIT:0` |
+| pytest | correlation, processing admission, the CI wiring check, operations docs, and the media worker | [pytest.txt](logs/goal-25/pytest.txt) | line 6 `EXIT:0` |
+| `ruff check` and `ruff format --check` | delivery, the media worker, and the named Python tests | [ruff.txt](logs/goal-25/ruff.txt) | line 7 `EXIT:0` |
+| `python3 -m mypy` | the ten files named in the command | [mypy.txt](logs/goal-25/mypy.txt) | line 6 `EXIT:0` |
 | `python3 scripts/scan_secrets.py` | tracked files | [secrets.txt](logs/goal-25/secrets.txt) | line 5 `secret scan ok`, line 6 `EXIT:0` |
 | `python3 scripts/workflow_policy.py` | the workflow file | [workflow.txt](logs/goal-25/workflow.txt) | line 5 `workflow policy ok files 1`, line 6 `EXIT:0` |
 | `python3 scripts/write_sbom.py --check` | lockfiles | [sbom.txt](logs/goal-25/sbom.txt) | line 5 `sbom ok components 1389`, line 6 `EXIT:0` |
@@ -55,17 +60,21 @@ Every log under [logs/goal-25/](logs/goal-25/) was captured while `git status --
 
 [runtime.txt](logs/goal-25/runtime.txt) line 5 is `v22.23.4`. Line 6 is `10.9.9`. Line 7 is `Python 3.12.3`. Line 8 begins with `go version go1.26.10`. Line 9 begins with `Google Chrome 157.0.8103.50`. Line 10 begins with `Linux 6.12.113+`.
 
-[pytest.txt](logs/goal-25/pytest.txt) line 5 is 34 dots and `[100%]`. That is the quiet reporter. It does not print a `passed` count. Line 6 is `EXIT:0`.
+[pytest.txt](logs/goal-25/pytest.txt) line 5 is 48 dots, one `s`, and `[100%]`. That is the quiet reporter. It does not print a `passed` count. Line 6 is `EXIT:0`. The command on line 3 includes `tests/unit/test_goal25_admission.py`.
 
-[ruff.txt](logs/goal-25/ruff.txt) line 5 contains `All checks passed`. Line 6 is `24 files already formatted`.
+[ruff.txt](logs/goal-25/ruff.txt) line 5 contains `All checks passed`. Line 6 is `28 files already formatted`.
 
-[mypy.txt](logs/goal-25/mypy.txt) line 5 is `Success: no issues found in 6 source files`.
+[mypy.txt](logs/goal-25/mypy.txt) line 5 is `Success: no issues found in 10 source files`.
 
-[observe-race.txt](logs/goal-25/observe-race.txt) line 5 and line 6 are the two `ok` lines. The observe module adds no third-party Go module and no `go.sum`. [sbom.txt](logs/goal-25/sbom.txt) line 5 stayed `sbom ok components 1389`.
+[observe-race.txt](logs/goal-25/observe-race.txt) line 5 is the client package with no tests. Lines 6 and 7 are the two `ok` lines. The observe module adds no third-party Go module and no `go.sum`. [sbom.txt](logs/goal-25/sbom.txt) line 5 stayed `sbom ok components 1389`.
 
-[scheduler-test.txt](logs/goal-25/scheduler-test.txt) line 6 is the scheduler command tests, line 7 is policy, and line 9 is the scheduler package that now sets the correlation header.
+[scheduler-test.txt](logs/goal-25/scheduler-test.txt) line 6 is the scheduler command tests, line 7 is policy, and line 9 is the scheduler package. The command tests start provider processes. Those processes reserve storage, so the harness points them at a granting loopback admission stand-in.
 
-The upload service tests, the broadcaster tests, the provider tests, and the indexer tests other than `TestCorrelationHeader` were not run here. PostgreSQL is absent ([pg16.txt](logs/goal-25/pg16.txt) line 5). `go vet` of those packages is [govet.txt](logs/goal-25/govet.txt) line 5, which is not those test suites.
+[provider-admit.txt](logs/goal-25/provider-admit.txt) line 6 is `--- PASS: TestStorageReservationStopsAtTheCap`.
+
+[auditor-admit.txt](logs/goal-25/auditor-admit.txt) line 6 says the chain RPC is a unit-test fake, not a node and not end-to-end evidence. Line 7 is `--- PASS: TestSubmitRefusesASecondAuditBatch`.
+
+The API service suite and the broadcaster worker suite were not run on this machine. PostgreSQL is absent ([pg16.txt](logs/goal-25/pg16.txt) line 5). `go vet` of those packages is [govet.txt](logs/goal-25/govet.txt) line 5, which is not those test suites.
 
 ## Fault injection, quotas, and counters
 
@@ -75,29 +84,45 @@ These readings are the in-process fixture on this commit. They are not a measure
 
 | Check | Line | Observation |
 | --- | --- | --- |
-| Seven components, one correlation id, no chain submission | 10 | `TRACE components=7 chain_submissions=0` |
-| Readiness fails closed, including a database that is down | 13 | `READY fresh=false database_down=true` |
-| Slow processing, low disk, stale commit, distinct quorum, repair with no delivered bytes, recovery | 16 | `SLOW intake_stopped=true DISK low_disk=true STALE diagnosis=stale_commit QUORUM distinct=true REPAIR delivered_repair=0 RECOVERY storage_granted=true` |
-| Upload race at the placeholder cap | 19 | `RACE granted=3 denied=37 limit=3` |
-| Output-byte race | 20 | `BYTES granted=1 denied=7 used=600` |
-| Replay does not consume again; a rate window does not reset storage | 23 | `REPLAY used=0 LOGIN after_window=true STORAGE clock_reset=false` |
-| Processing queue then one release | 26 | `QUEUE running=2 queued=1 denied=1` |
-| An alert does not admit extra work and is not a spend cap | 29 | `ALERT spend_cap=false admitted=true` |
-| Canary and address redaction | 32 | `REDACT canary=false email=false` |
-| Fixture classes are not collapsed | 35 | `FIXTURE user_payload=1000 delivered_total=9700 storage_user=1000 double_count=false` |
-| Unmeasured classes | 36 | `UNMEASURED protocol_overhead,turn_relay,tls_records,chain_gossip,interface_bandwidth,scheduler_job_queue` |
-| No monthly bill | 39 | `WORKSHEET monthly_bill=absent period_product=46400 currency_approved=false` |
-| Private fetch targets | 42 | `FETCH private=refused public=allowed redirect_private=refused` |
-| Playback aggregate drops identity | 45 | `PLAYBACK identity_dropped=true` |
-| Metrics and logs require the token | 48 | `ACCESS metrics=401 logs=401 health=200` |
+| Seven components, one correlation id, no chain submission | 11 | `TRACE components=7 chain_submissions=0` |
+| Readiness fails closed, including a database that is down | 14 | `READY fresh=false database_down=true` |
+| Slow processing, low disk, stale commit, distinct quorum, repair with no delivered bytes, recovery | 17 | `SLOW intake_stopped=true DISK low_disk=true STALE diagnosis=stale_commit QUORUM distinct=true REPAIR delivered_repair=0 RECOVERY storage_granted=true` |
+| Upload race at the placeholder cap | 20 | `RACE granted=3 denied=37 limit=3` |
+| Output-byte race | 21 | `BYTES granted=1 denied=7 used=600` |
+| Replay does not consume again; a rate window does not reset storage | 24 | `REPLAY used=0 LOGIN after_window=true STORAGE clock_reset=false` |
+| Processing queue then one release | 27 | `QUEUE running=2 queued=1 denied=1` |
+| An alert does not admit extra work and is not a spend cap | 30 | `ALERT spend_cap=false admitted=true` |
+| Canary and address redaction | 33 | `REDACT canary=false email=false` |
+| Fixture classes are not collapsed | 36 | `FIXTURE user_payload=1000 delivered_total=9700 storage_user=1000 double_count=false` |
+| Unmeasured classes | 37 | `UNMEASURED protocol_overhead,turn_relay,tls_records,chain_gossip,interface_bandwidth,scheduler_job_queue` |
+| No monthly bill | 40 | `WORKSHEET monthly_bill=absent period_product=46400 currency_approved=false` |
+| Private fetch targets | 43 | `FETCH private=refused public=allowed redirect_private=refused` |
+| Playback aggregate drops identity | 46 | `PLAYBACK identity_dropped=true` |
+| Metrics and logs require the token | 49 | `ACCESS metrics=401 logs=401 health=200` |
 
-The period product on line 39 is `46400` minor units from test-supplied rates of 2 and 3 applied to the fixture bytes. It is labelled `not_a_monthly_forecast` in `services/observe/internal/obs/cost.go:140`. The monthly bill field stays nil (`services/observe/internal/obs/cost.go:115`). Currency stays unapproved. CAD is the proposed preference at `services/observe/internal/obs/obs.go:27`. The budget owner constant is `services/observe/internal/obs/obs.go:24`.
+The period product on line 40 is `46400` minor units from test-supplied rates of 2 and 3 applied to the fixture bytes. It is labelled `not_a_monthly_forecast` in `services/observe/internal/obs/cost.go:140`. The monthly bill field stays nil (`services/observe/internal/obs/cost.go:115`). Currency stays unapproved. CAD is the proposed preference at `services/observe/internal/obs/obs.go:27`. The budget owner constant is `services/observe/internal/obs/obs.go:24`.
 
-Placeholder caps are the constants at `services/observe/internal/obs/obs.go:22` (`PLACEHOLDER`). `services/observe/internal/obs/obs.go:469` sets `SpendCap: false` on every decision.
+Placeholder caps are the constants at `services/observe/internal/obs/obs.go:31` (`DefaultUploadLimit` is 3). The label is `services/observe/internal/obs/obs.go:22` (`PLACEHOLDER`). `services/observe/internal/obs/obs.go:487` sets `SpendCap: false` on every decision.
 
-A media observation on the chain component is refused at `services/observe/internal/obs/observe.go:49`. Chain usability cannot be flipped on without a commit reading (`services/observe/internal/obs/obs.go:324`).
+A media observation on the chain component is refused at `services/observe/internal/obs/observe.go:49`. Chain usability stays false until a commit reading and a quorum reading exist (`services/observe/internal/obs/admit.go:192`). Audit batches and retries stop for a known quorum loss or a known commit age over the limit (`services/observe/internal/obs/admit.go:184`). An unknown chain does not close those two intakes.
 
-Health is public (`services/observe/internal/obs/http.go:15`). Metrics require the token (`services/observe/internal/obs/http.go:20`). A token in the query is refused (`services/observe/internal/obs/http.go:49`).
+Health is public (`services/observe/internal/obs/http.go:15`). `POST /v1/admit` is `services/observe/internal/obs/http.go:17`. Metrics require the token (`services/observe/internal/obs/http.go:20`). A token in the query is refused (`services/observe/internal/obs/http.go:49`).
+
+## Intake that calls admission
+
+`Admit` is `services/observe/internal/obs/admit.go:19`. A caller with an empty address gets `ErrUnreachable` at `services/observe/client/client.go:61`. The same idempotency key does not consume a second unit (`services/observe/internal/obs/admit.go:35`).
+
+| Intake | Where | Refusal |
+| --- | --- | --- |
+| Upload intent | `services/api/internal/service/http.go:85` | `429 ADMISSION` or `503 ADMISSION_UNREACHABLE` at `services/api/internal/service/errors.go:51` and `services/api/internal/service/errors.go:53` |
+| Output bytes | `services/api/internal/service/http.go:93` | same codes |
+| Processing slot, key `job-` plus the upload id | `services/api/internal/service/service.go:216` | same codes, before the job row is finished |
+| Media encode | `workers/media/svn_media/queue.py:355` | status `refused` or `unreachable`, and the job goes back to queued |
+| Storage reservation | `agents/provider/internal/agent/accept.go:408` | `503 admission_unreachable` or `429 admission` at `agents/provider/internal/agent/accept.go:410` and `agents/provider/internal/agent/accept.go:413` |
+| Audit batch | `agents/auditor/chainclient/submit.go:520` | `admission unreachable` or `admission refused` from `agents/auditor/chainclient/submit.go:499` |
+| Broadcaster retry, only when an attempt already exists | `services/broadcaster/internal/worker/attempt.go:48` | `admission unreachable` or `admission refused` |
+
+A replay of a storage grant does not add the bytes again (`agents/provider/internal/agent/accept.go:416`).
 
 ## Instrumentation outside the control plane
 
@@ -105,16 +130,16 @@ Correlation ids are response headers. They are not account ids and they are not 
 
 | Process | Where |
 | --- | --- |
-| Upload API | `services/api/internal/service/http.go:40` |
+| Upload API | `services/api/internal/service/http.go:41` |
 | Discovery, search, and reports | `services/api/internal/social/http.go:70` |
 | Indexer read API | `services/indexer/internal/api/api.go:41` |
 | Broadcaster caller API | `services/broadcaster/internal/api/server.go:227` |
 | Scheduler | `services/scheduler/internal/sched/http.go:67` |
 | Provider agent | `agents/provider/internal/httpserver/server.go:41` |
 | Playback | `services/delivery/svn_delivery/server.py:369` |
-| Media jobs | `workers/media/svn_media/queue.py:282` |
+| Media jobs | `workers/media/svn_media/queue.py:286` |
 
-The job file written at `workers/media/svn_media/queue.py:285` does not include the correlation id. The id stays on the worker object.
+The job file written at `workers/media/svn_media/queue.py:289` does not include the correlation id. The id stays on the worker object.
 
 The chain process is not modified. Commit age and quorum are observations stored by `svn-observe`. They are not transactions. Watch events are not stored and are not written to the chain. `services/observe/internal/obs/observe.go:323` sets `WatchEventsOnChain` to 0.
 
@@ -128,19 +153,24 @@ Interface bandwidth and the scheduler job queue stay unmeasured. That is DR-24-0
 
 | Check | Status | Where |
 | --- | --- | --- |
-| Correlation ids across API, jobs, broadcaster, indexer, chain observations, providers, and playback | VERIFIED for the control plane and the response headers | [observe-test.txt](logs/goal-25/observe-test.txt) line 10. Header wrappers are the table above. |
-| Health and readiness fail closed | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 13. `services/observe/internal/obs/obs.go:334` is `Ready`. |
-| Redaction of a synthetic canary and access control on metrics and logs | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) lines 32 and 48. |
-| Quota race and replay | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) lines 19, 20, and 23. |
-| Slow processing, low disk, stale commit, failed repair, recovery | VERIFIED in process | [observe-test.txt](logs/goal-25/observe-test.txt) line 16. |
-| Byte classes against the fixture, without double counting | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) lines 35 and 36. The numbers are the fixture at `services/observe/internal/obs/observe.go:270`, not this machine's traffic. |
-| Fetch policy rejects private targets | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 42. `services/observe/internal/obs/fetch.go:25` does not dial. Names are refused unless a resolver is injected. |
-| Cost worksheet has no monthly bill | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 39. |
-| Alerts are not a spend cap | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 29. |
-| Playback aggregate has no account and no chain watch event | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 45. |
+| Correlation ids across API, jobs, broadcaster, indexer, chain observations, providers, and playback | VERIFIED for the control plane and the response headers | [observe-test.txt](logs/goal-25/observe-test.txt) line 11. Header wrappers are the table above. |
+| Health and readiness fail closed | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 14. `services/observe/internal/obs/obs.go:352` is `Ready`. |
+| Redaction of a synthetic canary and access control on metrics and logs | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) lines 33 and 49. |
+| In-process quota race and replay | VERIFIED for the control plane | [observe-test.txt](logs/goal-25/observe-test.txt) lines 20, 21, and 24. |
+| Repeated processing jobs through the worker | VERIFIED | [pytest.txt](logs/goal-25/pytest.txt) line 6. `tests/unit/test_goal25_admission.py` holds one slot, replays that key, and the next real job returns `refused` without a package. A missing address returns `unreachable`. |
+| Storage reservation through `reserve` | VERIFIED | [provider-admit.txt](logs/goal-25/provider-admit.txt) line 6. The test reserves 60, replays that offer, refuses the next offer, and refuses a dead address. |
+| Audit batch through `Submit` | VERIFIED against a fake chain RPC | [auditor-admit.txt](logs/goal-25/auditor-admit.txt) lines 6 and 7. The second business id is `admission refused`. The replay is not a second refusal. A dead address is unreachable. [auditor-cli.txt](logs/goal-25/auditor-cli.txt) line 5 is the command path `TestCommandsAgainstTheFakeNode`, which submits through the CLI. The chain is the unit-test fake. |
+| Upload intents and output bytes through the API | VERIFIED by CI, not by a log on this machine | `services/api/internal/service/admit_test.go:10` posts real intents. Two keys pass, the replay of the first does not consume a slot, and the third is `429 ADMISSION`. A second server caps output bytes at 1000 and refuses the next intent. A client pointed at `127.0.0.1:1` is `503 ADMISSION_UNREACHABLE`. This machine did not run it ([pg16.txt](logs/goal-25/pg16.txt) line 5). The go job runs the API module (`scripts/run_tests.py:163`, `.github/workflows/ci.yml:190`). The go-race api shard runs it (`.github/workflows/ci.yml:385`). |
+| Broadcaster retries through `startAttempt` | VERIFIED by CI, not by a log on this machine | `services/broadcaster/internal/worker/admit_test.go:11` admits one retry key twice and the next intent with an existing attempt returns `admission refused`. This machine did not run it. The go job runs the broadcaster module (`scripts/run_tests.py:158`, `.github/workflows/ci.yml:190`). The go-race broadcaster shard runs it (`.github/workflows/ci.yml:379`). |
+| Slow processing, low disk, stale commit, failed repair, recovery | VERIFIED in process | [observe-test.txt](logs/goal-25/observe-test.txt) line 17. |
+| Byte classes against the fixture, without double counting | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) lines 36 and 37. The numbers are the fixture at `services/observe/internal/obs/observe.go:270`, not this machine's traffic. |
+| Fetch policy rejects private targets | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 43. `services/observe/internal/obs/fetch.go:25` does not dial. Names are refused unless a resolver is injected. |
+| Cost worksheet has no monthly bill | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 40. |
+| Alerts are not a spend cap | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 30. |
+| Playback aggregate has no account and no chain watch event | VERIFIED | [observe-test.txt](logs/goal-25/observe-test.txt) line 46. |
 | Social package still passes with the header wrapper | VERIFIED | [social-test.txt](logs/goal-25/social-test.txt) line 5. |
-| Scheduler package still passes with the header wrapper | VERIFIED | [scheduler-test.txt](logs/goal-25/scheduler-test.txt) line 9. |
-| Upload service, broadcaster, provider, and indexer suites | BLOCKED here | PostgreSQL is absent. Those suites were not run. CI on the pull request is the place they run. |
+| Scheduler package still passes with the header wrapper | VERIFIED | [scheduler-test.txt](logs/goal-25/scheduler-test.txt) line 9. The command package on line 6 also passed, including provider offers. |
+| Indexer correlation header | VERIFIED | [indexer-test.txt](logs/goal-25/indexer-test.txt) line 5. The rest of the indexer suite was not run here. |
 | Live four-validator commit age | BLOCKED | No devnet was started for this goal. The stale-commit detector used an injected reading. |
 | Budget, rates, currency, and on-call | BLOCKED | DR-25-01 through DR-25-05. |
 | golangci-lint | BLOCKED | [golangci.txt](logs/goal-25/golangci.txt) line 6 `EXIT:127`. |
@@ -186,9 +216,9 @@ The requirements matrix was not edited.
 | --- | --- |
 | REQ-OPS-003 | The control plane records commit age, quorum loss, index lag, replicas, processing age, playback failures, and unreviewed reports. Quorum loss and index lag are different diagnosis names. The live devnet reading was not taken. |
 | REQ-CAP-003 | The worksheet separates measured units from rates and leaves the monthly bill empty. CAD is not approved. |
-| REQ-SEC-010 | Login, search, upload, report, and discovery have placeholder rate caps. The fetch checker rejects private addresses. The upload service's own rate limits were not re-run here. |
+| REQ-SEC-010 | Login, search, upload, report, and discovery have placeholder rate caps. Upload intents also call admission. The fetch checker rejects private addresses. The API suite was not re-run on this machine. |
 | REQ-UX-019 | Cost counters are the worksheet and the usage report. A service-key rotation is goal 26. |
-| REQ-RISK-005 | BLOCKED on DEC-005. The mechanism stops at a placeholder cap. The allowance number is unset. |
+| REQ-RISK-005 | BLOCKED on DEC-005. Real intake stops at a placeholder cap. The allowance number is unset. |
 | REQ-SCOPE-013 | BLOCKED on DEC-005. |
 
 ## Next safe action

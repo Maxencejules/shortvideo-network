@@ -1,7 +1,7 @@
-HEAD c67f1bd1aff7c103e130773414bb513cb68fd6e7
-TREE 064ba76f4fb679a20199eb8229801f8a0f3483e5
-CMD python3 -m pytest -q tests/unit/test_goal25_correlation.py tests/unit/test_ci_observe.py tests/unit/test_operations_docs.py
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD python3 -m pytest -q tests/unit/test_goal25_correlation.py tests/unit/test_goal25_admission.py tests/unit/test_ci_observe.py tests/unit/test_operations_docs.py tests/unit/test_media_worker.py tests/unit/test_media_delist.py
 DIRTY no
-..................................                                       [100%]
+................................................s.                       [100%]
 EXIT:0
 AFTER clean
