@@ -250,11 +250,12 @@ def _contained(root: Path, rel: str) -> Path:
     parts = Path(rel).parts
     if not rel or rel.startswith("/") or ".." in parts:
         raise PackagingError(f"path escapes: {rel}")
-    path = (root / rel).resolve()
+    path = root / rel
+    parent = path.parent.resolve()
     base = root.resolve()
-    if path != base and base not in path.parents:
+    if parent != base and base not in parent.parents:
         raise PackagingError(f"path escapes: {rel}")
-    return path
+    return parent / path.name
 
 
 def _bundle_files(bundle: Path) -> list[Path]:
@@ -777,6 +778,8 @@ def _fixture_roundtrip() -> None:
             raise PackagingError("uninstall removed operator data")
         if (prefix / "bin").exists():
             raise PackagingError("uninstall left binaries")
+        if (prefix / "current").is_symlink() or (prefix / "current").exists():
+            raise PackagingError("uninstall left the current link")
 
 
 def assemble_bundle(
@@ -911,6 +914,8 @@ def candidate(root: Path, out: Path) -> None:
         raise PackagingError("uninstall removed operator data")
     if (prefix / "bin").exists():
         raise PackagingError("uninstall left binaries")
+    if (prefix / "current").is_symlink() or (prefix / "current").exists():
+        raise PackagingError("uninstall left the current link")
     print(f"NOT-RELEASED candidate {head} tree {tree}")
 
 
