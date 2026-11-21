@@ -9,21 +9,21 @@ This VM measured one synthetic encode, one in-process chain fixture, and one loc
 - Playbook assignment: GPT-6.1 Sol, effort HIGH (`docs/goals/28-performance-load-and-capacity-evidence.md` line 6). GPT-6.1 Sol was not used.
 - This run is Cursor cloud agent `bc-f87002a9-dd37-5f28-a7cb-3196438c7501`. `cursor-cloud` `run-info` reported `originalModelName` `grok-4.7-high-fast` and no separate effort or reasoning field. The effort setting is **not reported**. It is not guessed. That is the account default model for this run. The playbook's GPT-6.1 Sol was replaced by this Cursor cloud agent on that default model.
 - On 2026-10-31 (Toronto) the owner said "Don't mind the ai model requirement". On 2026-11-17 the owner confirmed that it applies to all goals. A model mismatch with the playbook is not a blocker.
-- On 2026-11-21 the owner decided this goal runs on this cloud VM only. There is no approved integration or load runner and no resource budget. No other machine, paid service, or third-party load service was used.
+- On 2026-11-21 at 12:20 Toronto, in his chat with shortvideo-builder, Max selected this reply to the question "merge goal 27?" (the option text was offered by shortvideo-builder and chosen by Max): "merge goal 27 pr 32 at 78623c0 as BLOCKED, squash as me, then start goal 28 on the agent's own vm only". There is no approved integration or load runner and no resource budget. No other machine, paid service, or third-party load service was used.
 
 ## Tested revision
 
 | Item | Value |
 | --- | --- |
-| Commit | `14a39c168d148e4ba67f1e009671d9e5ddcb6820` |
-| Tree | `278e9dd5e112424481f316d56ea9fd1a82d13eb4` |
+| Commit | `61dcd350bf50f083d87039484c97b4da817df427` |
+| Tree | `a4ae0605e6ef15c1b19800590150920d7bf8ee75` |
 | Base | `0600c56aa38c43dc007df4737c0f981e2d66bccf` |
 | Branch | `goal-28` |
 | Pull request | https://github.com/Maxencejules/shortvideo-network/pull/33 |
 
-The tested commit message carries `Tested-tree: 278e9dd5e112424481f316d56ea9fd1a82d13eb4`. `git rev-parse 14a39c168d148e4ba67f1e009671d9e5ddcb6820^{tree}` is that tree. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: a4ae0605e6ef15c1b19800590150920d7bf8ee75`. `git rev-parse 61dcd350bf50f083d87039484c97b4da817df427^{tree}` is that tree. Later commits change only `docs/evidence/`.
 
-Earlier commits on this branch are not this measurement. `8cd0fb8` is the scheduler code before the confirmation change. `3f41470` and `8a439ed` are intermediate and were not the measured tree.
+`14a39c168d148e4ba67f1e009671d9e5ddcb6820` (tree `278e9dd5e112424481f316d56ea9fd1a82d13eb4`) is the measurement of the encode, the chain fixture, and the 64-byte repair timing. This commit adds the confirm tests and a nil `afterConfirm` hook. That hook is not set by the measurement. `8cd0fb8` is the scheduler code before the confirmation change. `3f41470` and `8a439ed` are intermediate and were not measured.
 
 ## Machine
 
@@ -46,28 +46,31 @@ Line 55 is `not_a_universal_minimum` true. Line 56 is `not_an_operating_budget` 
 
 ## Captures
 
-Logs under [logs/goal-28/](logs/goal-28/) other than [repair-before.txt](logs/goal-28/repair-before.txt) were captured while `git status --porcelain` was empty. Each of those files has `DIRTY no` on line 4 and `AFTER clean` as its last status line. [measure.txt](logs/goal-28/measure.txt) line 7 is `DONE`, printed by the capture wrapper after line 6 `AFTER clean`. Nothing tracked was left untracked. A gitignored `.venv` was present and is not in those stamps.
+[confirm-wait.txt](logs/goal-28/confirm-wait.txt) and [conformance.txt](logs/goal-28/conformance.txt) were captured on this tested commit while `git status --porcelain` was empty. Line 4 of each is `DIRTY no`. [confirm-wait.txt](logs/goal-28/confirm-wait.txt) line 17 is `AFTER clean`. [conformance.txt](logs/goal-28/conformance.txt) line 9 is `AFTER clean`.
 
-[repair-before.txt](logs/goal-28/repair-before.txt) is the pre-change repair run. Line 1 is `HEAD 8cd0fb8e0ef44a936115c510138a0700db3bd1b7`. Line 4 is `DIRTY  M scripts/capacity.py;`. Line 13 is the same dirty path. That dirty file was the runner's `-v` flag. The scheduler sources in that tree are the ones before the confirmation change. The after measurement is on the tested commit.
+[measure.txt](logs/goal-28/measure.txt), [measure.json](logs/goal-28/measure.json), [pytest.txt](logs/goal-28/pytest.txt), [ruff.txt](logs/goal-28/ruff.txt), [ruff-format.txt](logs/goal-28/ruff-format.txt), [mypy.txt](logs/goal-28/mypy.txt), and [qdisc.txt](logs/goal-28/qdisc.txt) were captured on `14a39c168d148e4ba67f1e009671d9e5ddcb6820`. Each has `DIRTY no` on line 4. [measure.txt](logs/goal-28/measure.txt) line 7 is `DONE`, printed by the capture wrapper after line 6 `AFTER clean`. Those commands do not run the new confirm tests. Nothing tracked was left untracked. A gitignored `.venv` was present and is not in those stamps.
+
+[repair-before.txt](logs/goal-28/repair-before.txt) is the pre-change repair run. Line 1 is `HEAD 8cd0fb8e0ef44a936115c510138a0700db3bd1b7`. Line 4 is `DIRTY  M scripts/capacity.py;`. Line 13 is the same dirty path. That dirty file was the runner's `-v` flag. The scheduler sources in that tree are the ones before the confirmation change.
 
 ## Head CI
 
-[Run 44931723618](https://github.com/Maxencejules/shortvideo-network/actions/runs/44931723618) is `ci` on `14a39c168d148e4ba67f1e009671d9e5ddcb6820`. Conclusion: `success`. All 17 jobs passed, including `python`, `go`, and `devnet`.
+[Run 44935197283](https://github.com/Maxencejules/shortvideo-network/actions/runs/44935197283) is `ci` on `61dcd350bf50f083d87039484c97b4da817df427`. Conclusion: `success`. All 17 jobs passed, including `python`, `go`, and `devnet`.
 
-Earlier runs on this branch were cancelled when a later commit was pushed: `44931502433`, `44931410669`, and `44931003554`. Those cancellations are the workflow concurrency setting. They are not failures of this commit.
+[Run 44933036853](https://github.com/Maxencejules/shortvideo-network/actions/runs/44933036853) succeeded on `21b6296`, and [run 44931723618](https://github.com/Maxencejules/shortvideo-network/actions/runs/44931723618) succeeded on `14a39c1`. Those are earlier heads. Runs `44931502433`, `44931410669`, and `44931003554` were cancelled when a later commit was pushed. Those cancellations are the workflow concurrency setting. They are not failures of this commit.
 
-This file is added after the `ci` run above. A later head that only changes `docs/evidence/` is not that run.
+This file is added after the `ci` run on `61dcd35`. A later head that only changes `docs/evidence/` is not that run.
 
 ## What ran
 
 | Command | Scope | Log | Result |
 | --- | --- | --- | --- |
-| `scripts/capacity.py measure` | clean tree | [measure.txt](logs/goal-28/measure.txt), [measure.json](logs/goal-28/measure.json) | line 5 `EXIT:0` |
+| `scripts/capacity.py measure` | clean tree of `14a39c1` | [measure.txt](logs/goal-28/measure.txt), [measure.json](logs/goal-28/measure.json) | line 5 `EXIT:0` |
 | pytest of the capacity and delivery unit files | those tests | [pytest.txt](logs/goal-28/pytest.txt) | line 5 is 18 dots and `[100%]`, line 6 `EXIT:0` |
 | `ruff check` | the CI python paths | [ruff.txt](logs/goal-28/ruff.txt) | line 5 contains `All checks passed`, line 6 `EXIT:0` |
 | `ruff format --check` | the same paths | [ruff-format.txt](logs/goal-28/ruff-format.txt) | line 5 `90 files already formatted`, line 6 `EXIT:0` |
 | `mypy` | the configured files | [mypy.txt](logs/goal-28/mypy.txt) | line 5 `Success: no issues found in 72 source files`, line 6 `EXIT:0` |
-| scheduler package tests | conformance, without the capacity tag | [conformance.txt](logs/goal-28/conformance.txt) | line 5 `ok` in 7.487s, line 8 `EXIT:0` |
+| scheduler package tests | conformance plus the confirm tests, without the capacity tag | [conformance.txt](logs/goal-28/conformance.txt) | line 5 `ok` in 22.352s, line 8 `EXIT:0` |
+| the three confirm tests | untagged, `-run` those names | [confirm-wait.txt](logs/goal-28/confirm-wait.txt) | line 16 `EXIT:0` |
 | `tc` qdisc probe | this kernel | [qdisc.txt](logs/goal-28/qdisc.txt) | line 7 `TBF_EXIT:2`, line 10 `NETEM_EXIT:2` |
 
 The procedure is [load-plan.md](../operations/load-plan.md). CI does not run `scripts/capacity.py measure` and does not pass `-tags svn_capacity`.
@@ -144,7 +147,9 @@ The 60-second package was not given to the scheduler. The scheduler fixture is 6
 
 After the confirmation change, [measure.json](logs/goal-28/measure.json) line 134 is repair `wall_ms` 117. Line 132 is `CONFIRMED`. Line 129 is replacement `p4`. Line 131 is source `p2`. Line 122 is the publish before that stop, `wall_ms` 180. Line 141 is the slept publish, `wall_ms` 982, with line 138 `injected_ms` 250 and line 137 `approvals` 3. 250 times 3 is 750. 982 minus 750 is 232, which is the wall time beside those three sleeps. That sleep is in-process. It is not a shaped network.
 
-Before the change, [repair-before.txt](logs/goal-28/repair-before.txt) line 7 is `wall_ms=20093` for the same `CONFIRMED` outcome, source `p2`, replacement `p4`. The default wait is `services/scheduler/internal/sched/sched.go` line 438, 20 seconds. An unreachable holder was keeping `confirm` in that window, and `confirm` then returned anyway. The change skips a holder whose health probe fails (`sched.go` lines 470 and 471). A host that still answers and fails the byte check still waits (`sched.go` line 479 requires `verified > 0`). Repair still verifies the replacement after that wait (`sched.go` line 636) and only then sets `CONFIRMED` (line 641). [conformance.txt](logs/goal-28/conformance.txt) line 5 is the scheduler command tests passing after that change.
+Before the change, [repair-before.txt](logs/goal-28/repair-before.txt) line 7 is `wall_ms=20093` for the same `CONFIRMED` outcome, source `p2`, replacement `p4`. The default wait is `services/scheduler/internal/sched/sched.go` line 447, 20 seconds. An unreachable holder was keeping `confirm` in that window, and `confirm` then returned anyway. The change skips a holder whose health probe fails (`sched.go` lines 479 through 481). A holder that still answers and fails the byte check sets `ready = false` at `sched.go` line 483, so the return at line 488 does not run and the loop waits. Repair verifies the replacement again after that wait (`sched.go` line 652). A failed re-verify cools the job. `CONFIRMED` is the assignment at line 656, which that failure does not reach.
+
+[confirm-wait.txt](logs/goal-28/confirm-wait.txt) is those three cases on this commit. Line 6 is `CONFIRM_UNREACHABLE wall_ms=114 limit_ms=5000 state=CONFIRMED replacement=p4`. 114 is under 2000, and 2000 is under the 5000 ms window. Line 9 is `CONFIRM_MISMATCH wall_ms=1297 limit_ms=1200 state=CONFIRMED replacement=p4`. 1297 is not under 1200, so the reachable mismatch waited out the window and the spare still confirmed. Line 12 is `CONFIRM_REVERIFY state=COOLING replacement=`. That state is not `CONFIRMED`. Line 16 is `EXIT:0`. [conformance.txt](logs/goal-28/conformance.txt) line 5 is the scheduler command tests, including these three, passing on this commit.
 
 ## Arithmetic
 
