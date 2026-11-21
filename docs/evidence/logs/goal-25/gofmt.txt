@@ -1,0 +1,6 @@
+HEAD c67f1bd1aff7c103e130773414bb513cb68fd6e7
+TREE 064ba76f4fb679a20199eb8229801f8a0f3483e5
+CMD bash -lc gofmt -l services/observe services/api/internal/service/correlate.go services/api/internal/social/correlate.go services/api/internal/social/correlate_test.go services/indexer/internal/api/correlate.go services/indexer/internal/api/correlate_test.go services/scheduler/internal/sched/correlate.go services/scheduler/internal/sched/correlate_test.go services/broadcaster/internal/api/correlate.go agents/provider/internal/httpserver/correlate.go
+DIRTY no
+EXIT:0
+AFTER clean

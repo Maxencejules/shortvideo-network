@@ -1,0 +1,6 @@
+HEAD c67f1bd1aff7c103e130773414bb513cb68fd6e7
+TREE 064ba76f4fb679a20199eb8229801f8a0f3483e5
+CMD bash -lc go vet ./services/observe/... ./services/api/internal/social/ ./services/api/internal/service/ ./services/indexer/internal/api/ ./services/scheduler/... ./services/broadcaster/internal/api/ ./agents/provider/internal/httpserver/
+DIRTY no
+EXIT:0
+AFTER clean

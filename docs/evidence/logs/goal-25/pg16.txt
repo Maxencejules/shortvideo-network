@@ -1,0 +1,8 @@
+HEAD c67f1bd1aff7c103e130773414bb513cb68fd6e7
+TREE 064ba76f4fb679a20199eb8229801f8a0f3483e5
+CMD bash -lc if [ -x /usr/lib/postgresql/16/bin/postgres ]; then echo pg16 present; else echo pg16 absent; fi; if [ -x /usr/lib/postgresql/18/bin/postgres ]; then echo pg18 present; else echo pg18 absent; fi; exit 1
+DIRTY no
+pg16 absent
+pg18 absent
+EXIT:1
+AFTER clean

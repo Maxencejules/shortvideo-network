@@ -1,0 +1,7 @@
+HEAD c67f1bd1aff7c103e130773414bb513cb68fd6e7
+TREE 064ba76f4fb679a20199eb8229801f8a0f3483e5
+CMD python3 scripts/workflow_policy.py
+DIRTY no
+workflow policy ok files 1
+EXIT:0
+AFTER clean

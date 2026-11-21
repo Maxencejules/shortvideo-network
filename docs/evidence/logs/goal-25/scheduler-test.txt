@@ -1,0 +1,12 @@
+HEAD c67f1bd1aff7c103e130773414bb513cb68fd6e7
+TREE 064ba76f4fb679a20199eb8229801f8a0f3483e5
+CMD go test -count=1 -timeout 180s ./services/scheduler/...
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/services/scheduler	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/cmd/svn-scheduler	46.391s
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/policy	0.002s
+?   	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/readmodel	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/sched	0.006s
+?   	github.com/Maxencejules/shortvideo-network/services/scheduler/internal/stage	[no test files]
+EXIT:0
+AFTER clean
