@@ -10,6 +10,8 @@ Goal 24 operator onboarding, the role map, and local drain and handoff are in [o
 
 Goal 25 correlation, probes, admission, and the cost worksheet are in [observability.md](observability.md) and [cost-worksheet.md](cost-worksheet.md). Thresholds there are placeholders. Alerts are not a spend cap. No budget owner is named.
 
+Goal 26 backups, restore order, and signer locks are in [backup-and-restore.md](backup-and-restore.md). Retention, custody, and recovery policy are placeholders. The drill's observed times are not service guarantees.
+
 Reading the provider and content registries from a node (ABCI query and gRPC paths, heights, error codes) is in [../architecture/registries.md](../architecture/registries.md#reading-committed-records).
 
 Goal 10 governance and upgrade runbooks (devnet beta only; the specification is [../architecture/governance-and-upgrades.md](../architecture/governance-and-upgrades.md), PROPOSED):
