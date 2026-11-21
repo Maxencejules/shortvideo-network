@@ -40,4 +40,4 @@ The release decision for the goal 30 candidate is **implemented prototype**. The
 
 Goal 06 is VERIFIED on its own earlier revision. That revision is not the goal 30 candidate. Goals 02 and 03 stay IMPLEMENTED. Goals 04 and 07 through 30 stay BLOCKED.
 
-Open on the candidate, and not closed by this index: DR-30-01 through DR-30-11, DR-25-01 through DR-25-12, DR-26-01 through DR-26-12, DR-27-01 through DR-27-13, DR-28-01 through DR-28-11, DR-29-01 through DR-29-06, and finding F-29-05.
+Open on the candidate, and not closed by this index: DR-30-01 through DR-30-12, DR-25-01 through DR-25-12, DR-26-01 through DR-26-12, DR-27-01 through DR-27-13, DR-28-01 through DR-28-11, DR-29-01 through DR-29-06, and finding F-29-05. Of 216 in-scope `TEST:` rows, 33 resolve to a test function. 183 are prose-only dispositions and stay open under DR-30-12.

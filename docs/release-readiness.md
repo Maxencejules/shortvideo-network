@@ -8,7 +8,7 @@ No tradable token, coin, sale, or mining. This file is not an audit, not a produ
 
 **Implemented prototype.**
 
-The three categories are implemented prototype, beta candidate, and beta approved after required human sign-offs. No human sign-off exists, so the category cannot be beta approved. It is also not a beta candidate. A beta candidate would mean the prototype is complete enough to ask a named operator to install, with only those signatures outstanding. The open items include missing independence, an unmet human audit, an unapplied licence, unset quotas, a contract gap on published client paths, an open grant-accounting finding, and load gates that were not met. Those are release blockers, not a short signature list.
+The three categories are implemented prototype, beta candidate, and beta approved after required human sign-offs. No human sign-off exists, so the category cannot be beta approved. It is also not a beta candidate. A beta candidate would mean the prototype is complete enough to ask a named operator to install, with only those signatures outstanding. The open items include missing independence, an unmet human audit, an unapplied licence, unset quotas, a contract gap on published client paths, an open grant-accounting finding, load gates that were not met, and 183 in-scope `TEST:` rows whose dispositions name no test function. Of 216 such rows, 33 resolve (DR-30-12). Those are release blockers, not a short signature list.
 
 The candidate is the commit whose message carries `Tested-tree` and whose tree hash equals that trailer. Later commits may change only `docs/evidence/`. The evidence file records the commit, the tree, the commands, and the exits. A command that was not run is not a pass.
 
@@ -20,6 +20,7 @@ A developer on one machine can build the devnet prototype, run the unit and cont
 
 ## What remains unverified
 
+- Requirement-to-test links. Of 216 in-scope `TEST:` rows, 33 resolve to a test function. 183 are prose-only dispositions and name no test function. DR-30-12. The audit log lists each unresolved id. Those 183 rows are release blockers.
 - No separate operator and no separate machine. The install on the agent VM is a rehearsal. DR-30-01.
 - Separate-host success demonstration. A multi-process run on this VM, if the evidence log has one, is one failure domain. DR-30-07.
 - Owner sign-off for moderation coverage, privacy and rights, funding and quotas, operator participation, and security review. DR-30-02 through DR-30-06.
@@ -93,7 +94,7 @@ Goals 04 and 07 through 29 are BLOCKED in `docs/progress.md` except goal 06, whi
 
 ## Deferred extensions
 
-Stage 6 stays deferred: mobile clients, peer assistance, feed plugins, deeper portability, and reviewed proofs. Public sign-up, monetary rewards, a tradable token, open validator admission, live video, and a commercial music library stay out of this beta. Matrix rows whose scope is not `IN_SCOPE` are out of this release. `scripts/acceptance/audit_matrix.py` resolves each in-scope `TEST:` row to a test function and reads the stamped logs for a pass, fail, or skip. The evidence log lists every unresolved and unrun row. Those rows stay release blockers under DR-30-12.
+Stage 6 stays deferred: mobile clients, peer assistance, feed plugins, deeper portability, and reviewed proofs. Public sign-up, monetary rewards, a tradable token, open validator admission, live video, and a commercial music library stay out of this beta. Matrix rows whose scope is not `IN_SCOPE` are out of this release. `scripts/acceptance/audit_matrix.py` resolves each in-scope `TEST:` row to a test function and reads the stamped logs for a pass, fail, or skip. Of 216 in-scope `TEST:` rows, 33 resolve and 183 are prose-only dispositions. The evidence log lists each unresolved id. Those 183 rows stay release blockers under DR-30-12.
 
 ## Governance and ownership
 
@@ -121,8 +122,8 @@ Rollback and restore are constrained as follows.
 
 Nothing was launched. No DNS name was published. No account was invited outside this VM. No catalogue was served to another person.
 
-If a later human approval names a first community, the bound is the one machine that produced the evidence, one media worker, and invited accounts only. Do not start the page 26 design point. Do not describe several local processes as several operators. Do not enable public sign-up. Do not create a token. Stop if a processing run does not finish inside the 120 second procedure limit in `docs/operations/load-plan.md`, or if the evidence measure for this candidate is blocked. Use synthetic media or media the owner supplies for a test. The creator upload licence text is still unwritten, so do not accept material from outside that test. This paragraph does not authorize that community. DR-30-01 through DR-30-12 would still have to be closed, along with the inherited blockers, before the category could move.
+If a later human approval names a first community, the bound is the one machine that produced the evidence, one media worker, and invited accounts only. Do not start the page 26 design point. Do not describe several local processes as several operators. Do not enable public sign-up. Do not create a token. Stop if a processing run does not finish inside the 120 second procedure limit in `docs/operations/load-plan.md`, or if the evidence measure for this candidate is blocked. Use synthetic media or media the owner supplies for a test. The creator upload licence text is still unwritten, so do not accept material from outside that test. This paragraph does not authorize that community. DR-30-01 through DR-30-12 would still have to be closed, including the 183 unresolved `TEST:` rows in DR-30-12, along with the inherited blockers, before the category could move.
 
 ## Requirement audit
 
-`scripts/acceptance/audit_matrix.py` reads the `requirements-matrix` fence in `docs/requirements.md`. Every in-scope row is `TEST:` or `BLOCKER:`. A `TEST:` sentence is the assigned check. The audit log is the record of which of those checks resolve to a function and which of those functions have a pass, fail, or skip line in the stamped logs. Goal 30 rows are the ten ids in the table above. The contract checker `docs/evidence/goal-01/check_requirements.py` remains the document gate. Neither script approves the protocol.
+`scripts/acceptance/audit_matrix.py` reads the `requirements-matrix` fence in `docs/requirements.md`. Every in-scope row is `TEST:` or `BLOCKER:`. A `TEST:` sentence is the assigned check. Of 216 in-scope `TEST:` rows, 33 resolve to a test function and 183 are prose-only dispositions with no function (DR-30-12). The audit log lists each unresolved id and the pass, fail, or skip line for each resolved function. Goal 30 rows are the ten ids in the table above. The contract checker `docs/evidence/goal-01/check_requirements.py` remains the document gate. Neither script approves the protocol.

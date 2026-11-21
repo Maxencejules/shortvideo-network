@@ -952,11 +952,13 @@ Which in-scope `TEST:` rows resolve to a test function that has a pass, fail, or
 
 ### Why this needs the owner
 
-The matrix disposition is an assignment sentence. A `TEST:` prefix does not name a function that exists, and it does not show that the function ran. `scripts/acceptance/audit_matrix.py` resolves a row when the disposition names a test function that is in the tree, or a test function cites that requirement id. It then reads the stamped logs for that function. A row with no such function, or whose function is absent from those logs, has no pass, fail, or skip record.
+The matrix disposition is an assignment sentence. A `TEST:` prefix does not name a function that exists, and it does not show that the function ran. `scripts/acceptance/audit_matrix.py` resolves a row when the disposition names a test function that is in the tree, or a test function's comment or docstring cites the requirement id. It then reads the stamped logs for that function.
+
+Of 216 in-scope `TEST:` rows, 33 resolve to a test function. Each of those 33 has a pass record in the stamped logs. 183 do not resolve. Those 183 dispositions are prose only and name no test function. The row verdicts on the 33 resolved rows are `fail=0`, `skip=0`, and `unrun=0`. The 183 unresolved rows have no pass, fail, or skip record. The audit log lists each unresolved id.
 
 ### Proposal, not an approval
 
-Unresolved and unrun rows stay release blockers. The goal 30 audit log lists each one. They stay open on this candidate. The release category stays implemented prototype. The audit's row count is only a count.
+The 183 unresolved rows stay release blockers. 33 of 216 is the resolved count. It leaves the other 183 open. The release category stays implemented prototype. The goal 30 audit log is the list.
 
 ### Status
 
