@@ -34,6 +34,7 @@ import (
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 // Exit codes.
@@ -774,6 +775,7 @@ func cmdSubmit(args []string, stdout io.Writer) (int, error) {
 	s := &chainclient.Submitter{
 		Client: chain, Store: st, Key: &key, Gas: cfg.GasLimit,
 		Inclusion: time.Duration(cfg.Window.Inclusion) * time.Second, Interval: pollInterval, Window: cfg.Window,
+		Admit: client.New(os.Getenv("SVN_OBSERVE_URL"), os.Getenv("SVN_OBSERVE_TOKEN")),
 	}
 	return eachBatch(st, ids, stdout, func(b *batch.Batch, summary batch.Summary) (chainclient.Result, error) {
 		return s.Submit(context.Background(), b, summary.RunID)

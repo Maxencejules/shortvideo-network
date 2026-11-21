@@ -12,6 +12,7 @@ use (
 	./services/broadcaster
 	./services/indexer
 	./services/milestone
+	./services/observe
 	./services/operator
 	./services/scheduler
 )

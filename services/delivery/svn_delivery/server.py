@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 
 from svn_delivery.browser import page_html
 from svn_delivery.catalog import Catalog
+from svn_delivery.correlate import correlation_id
 from svn_delivery.errors import DeliveryError
 from svn_delivery.ids import (
     ADAPTER_NAME,
@@ -125,12 +126,20 @@ def _handler(catalog: Catalog, host_id: str, allow_origin: str) -> type[BaseHTTP
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
         server_version = "svn-delivery/1"
+        _correlation: str = ""
 
         def log_message(self, fmt: str, *args: object) -> None:
             return
 
         def log_error(self, fmt: str, *args: object) -> None:
             return
+
+        def _correlation_id(self) -> str:
+            if self._correlation:
+                return self._correlation
+            incoming = self.headers.get("X-Correlation-ID", "")
+            self._correlation = correlation_id(incoming)
+            return self._correlation
 
         def do_GET(self) -> None:  # noqa: N802
             self._dispatch(True)
@@ -357,6 +366,7 @@ def _handler(catalog: Catalog, host_id: str, allow_origin: str) -> type[BaseHTTP
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header("X-SVN-Media-Adapter", _ADAPTER)
+            self.send_header("X-Correlation-ID", self._correlation_id())
             self.send_header("Connection", "close")
             if etag is not None:
                 self.send_header("ETag", etag)
@@ -371,10 +381,13 @@ def _handler(catalog: Catalog, host_id: str, allow_origin: str) -> type[BaseHTTP
             if origin == allow_origin:
                 self.send_header("Access-Control-Allow-Origin", origin)
                 self.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
-                self.send_header("Access-Control-Allow-Headers", "Range, Content-Type")
+                self.send_header(
+                    "Access-Control-Allow-Headers", "Range, Content-Type, X-Correlation-ID"
+                )
                 self.send_header(
                     "Access-Control-Expose-Headers",
-                    "Accept-Ranges, Content-Range, Content-Length, ETag, X-SVN-Media-Adapter",
+                    "Accept-Ranges, Content-Range, Content-Length, ETag, "
+                    "X-SVN-Media-Adapter, X-Correlation-ID",
                 )
                 self.send_header("Access-Control-Max-Age", "600")
             if extra:

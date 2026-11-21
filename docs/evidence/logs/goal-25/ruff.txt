@@ -1,0 +1,8 @@
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD python3 -m ruff check tests/unit/test_goal25_correlation.py tests/unit/test_goal25_admission.py tests/unit/conftest.py tests/unit/test_ci_observe.py tests/unit/test_media_worker.py services/delivery workers/media/svn_media && python3 -m ruff format --check tests/unit/test_goal25_correlation.py tests/unit/test_goal25_admission.py tests/unit/conftest.py tests/unit/test_ci_observe.py tests/unit/test_media_worker.py services/delivery workers/media/svn_media
+DIRTY no
+[1;32mAll checks passed![0m
+28 files already formatted
+EXIT:0
+AFTER clean

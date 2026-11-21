@@ -54,8 +54,46 @@ type provider struct {
 	buf   *bytes.Buffer
 }
 
+var (
+	schedObserveOnce  sync.Once
+	schedObserveURL   string
+	schedObserveToken = "synthetic-observe-25"
+)
+
+// schedObserve is a granting loopback stand-in. Provider storage reservation
+// refuses when svn-observe is absent, and this suite is not a cap test.
+func schedObserve(t *testing.T) (string, string) {
+	t.Helper()
+	schedObserveOnce.Do(func() {
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			return
+		}
+		mux := http.NewServeMux()
+		grant := func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("Authorization") != "Bearer "+schedObserveToken {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"granted":true,"queued":false,"replayed":false,"reason":"admitted","grant_id":"gsched"}`)
+		}
+		mux.HandleFunc("/v1/admit", grant)
+		mux.HandleFunc("/v1/release", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		go func() { _ = http.Serve(ln, mux) }()
+		schedObserveURL = "http://" + ln.Addr().String()
+	})
+	if schedObserveURL == "" {
+		t.Fatal("scheduler admission stand-in did not listen")
+	}
+	return schedObserveURL, schedObserveToken
+}
+
 func startProvider(t *testing.T, bin, id string, quota uint64, src *stage.Stage, chain *chainFix) *provider {
 	t.Helper()
+	observeURL, observeToken := schedObserve(t)
 	base := t.TempDir()
 	dir := filepath.Join(base, "data")
 	cfg := filepath.Join(base, "config.json")
@@ -68,6 +106,7 @@ func startProvider(t *testing.T, bin, id string, quota uint64, src *stage.Stage,
 	body := map[string]any{
 		"provider_id": id, "key_id": "k" + id, "machine_id": "vm-1", "listen": "127.0.0.1:0",
 		"data_dir": dir, "hosting_consent": true, "declared_capacity_bytes": quota, "quota_bytes": quota,
+		"observe_url": observeURL, "observe_token": observeToken,
 		"min_free_bytes": 0, "bandwidth_bytes_per_second": 1 << 20, "transfer_budget_seconds": 30,
 		"max_package_bytes": 1 << 20, "max_term_seconds": 100000, "clock_uncertainty_seconds": 0,
 		"stall_after_seconds": 3600, "chain_id": "shortvideo-dev-1", "chain_url": "https://" + chain.addr,

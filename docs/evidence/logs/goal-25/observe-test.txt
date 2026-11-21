@@ -1,0 +1,56 @@
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD go test -count=1 -timeout 180s -v ./services/observe/...
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/services/observe/client	[no test files]
+=== RUN   TestLoopbackOnly
+--- PASS: TestLoopbackOnly (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/observe/cmd/svn-observe	0.002s
+=== RUN   TestCorrelationAcrossComponents
+    obs_test.go:91: TRACE components=7 chain_submissions=0
+--- PASS: TestCorrelationAcrossComponents (0.00s)
+=== RUN   TestReadinessFailsClosed
+    obs_test.go:115: READY fresh=false database_down=true diagnosis=ok
+--- PASS: TestReadinessFailsClosed (0.00s)
+=== RUN   TestFaultInjectionAndRecovery
+    obs_test.go:213: SLOW intake_stopped=true DISK low_disk=true STALE diagnosis=stale_commit QUORUM distinct=true REPAIR delivered_repair=0 RECOVERY storage_granted=true
+--- PASS: TestFaultInjectionAndRecovery (0.00s)
+=== RUN   TestQuotaRace
+    obs_test.go:275: RACE granted=3 denied=37 limit=3
+    obs_test.go:276: BYTES granted=1 denied=7 used=600
+--- PASS: TestQuotaRace (0.00s)
+=== RUN   TestIdempotentReplayDoesNotConsume
+    obs_test.go:362: REPLAY used=0 LOGIN after_window=true STORAGE clock_reset=false
+--- PASS: TestIdempotentReplayDoesNotConsume (0.00s)
+=== RUN   TestProcessingQueue
+    obs_test.go:408: QUEUE running=2 queued=1 denied=1
+--- PASS: TestProcessingQueue (0.00s)
+=== RUN   TestAlertsAreNotASpendCap
+    obs_test.go:420: ALERT spend_cap=false admitted=true
+--- PASS: TestAlertsAreNotASpendCap (0.00s)
+=== RUN   TestRedactionAndLogRetention
+    obs_test.go:463: REDACT canary=false email=false
+--- PASS: TestRedactionAndLogRetention (0.00s)
+=== RUN   TestFixtureBytes
+    obs_test.go:497: FIXTURE user_payload=1000 delivered_total=9700 storage_user=1000 double_count=false
+    obs_test.go:498: UNMEASURED protocol_overhead,turn_relay,tls_records,chain_gossip,interface_bandwidth,scheduler_job_queue
+--- PASS: TestFixtureBytes (0.00s)
+=== RUN   TestWorksheetHasNoMonthlyBill
+    obs_test.go:542: WORKSHEET monthly_bill=absent period_product=46400 currency_approved=false
+--- PASS: TestWorksheetHasNoMonthlyBill (0.00s)
+=== RUN   TestFetcherRejectsPrivateTargets
+    obs_test.go:590: FETCH private=refused public=allowed redirect_private=refused
+--- PASS: TestFetcherRejectsPrivateTargets (0.00s)
+=== RUN   TestPlaybackDropsIdentity
+    obs_test.go:620: PLAYBACK identity_dropped=true
+--- PASS: TestPlaybackDropsIdentity (0.00s)
+=== RUN   TestMetricsRequireAuthorization
+    obs_test.go:685: ACCESS metrics=401 logs=401 health=200
+--- PASS: TestMetricsRequireAuthorization (0.00s)
+=== RUN   TestDashboardRolesAreUnassigned
+--- PASS: TestDashboardRolesAreUnassigned (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/observe/internal/obs	0.007s
+EXIT:0
+AFTER clean

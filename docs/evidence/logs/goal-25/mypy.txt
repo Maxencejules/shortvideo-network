@@ -1,0 +1,7 @@
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD python3 -m mypy services/delivery/svn_delivery/correlate.py services/delivery/svn_delivery/server.py workers/media/svn_media/correlate.py workers/media/svn_media/queue.py workers/media/svn_media/admit.py workers/media/svn_media/__main__.py tests/unit/test_goal25_correlation.py tests/unit/test_goal25_admission.py tests/unit/conftest.py tests/unit/test_ci_observe.py
+DIRTY no
+Success: no issues found in 10 source files
+EXIT:0
+AFTER clean

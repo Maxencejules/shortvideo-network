@@ -23,6 +23,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	"github.com/Maxencejules/shortvideo-network/chain/x/evidence"
 	evidencev1 "github.com/Maxencejules/shortvideo-network/protocol/svn/evidence/v1"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 // State is the submission state of one batch. Only COMMITTED says that a
@@ -253,6 +254,8 @@ type Submitter struct {
 	// Rand is the source of retry business ids (batch.RetryBusinessID);
 	// nil means crypto/rand.
 	Rand io.Reader
+	// Admit is svn-observe. Nil refuses the submission.
+	Admit *client.Client
 }
 
 type stored struct {
@@ -493,12 +496,29 @@ func (s *Submitter) Submit(ctx context.Context, b *batch.Batch, runID string) (R
 	return s.submit(ctx, b, runID, true)
 }
 
+func (s *Submitter) admitBatch(ctx context.Context, businessID string) error {
+	if s.Admit == nil {
+		return errors.New("admission unreachable")
+	}
+	decision, err := s.Admit.Admit(ctx, client.KindAudit, 1, businessID)
+	if err != nil {
+		return errors.New("admission unreachable")
+	}
+	if !decision.Granted {
+		return errors.New("admission refused")
+	}
+	return nil
+}
+
 func (s *Submitter) submit(ctx context.Context, b *batch.Batch, runID string, mayRebuild bool) (Result, error) {
 	if s.Key == nil {
 		return Result{}, errors.New("chainclient: submit needs the auditor key")
 	}
 	if !bytes.Equal(s.Key.Address(), b.Msg.GetSigner()) {
 		return Result{}, errors.New("chainclient: the key's address is not the batch signer")
+	}
+	if err := s.admitBatch(ctx, b.Msg.GetBusinessId()); err != nil {
+		return Result{}, err
 	}
 	var warnings []string
 	var ack *Ack

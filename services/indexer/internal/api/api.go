@@ -38,7 +38,7 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/leases", s.leases)
 	mux.HandleFunc("GET /v1/deadlines", s.deadlines)
 	mux.HandleFunc("GET /v1/policy", s.policy)
-	return mux
+	return correlate(mux)
 }
 
 func (s Server) status(w http.ResponseWriter, r *http.Request) {

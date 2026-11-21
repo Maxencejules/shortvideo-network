@@ -14,6 +14,7 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/account"
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/moderation"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 var (
@@ -37,7 +38,7 @@ func (s *Service) Handler() http.Handler {
 	if s.accounts != nil {
 		s.accounts.Register(mux)
 	}
-	return mux
+	return correlate(mux)
 }
 
 func (s *Service) createIntent(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +82,19 @@ func (s *Service) createIntent(w http.ResponseWriter, r *http.Request) {
 		writeMapped(w, errRate)
 		return
 	}
+	if err := s.allow(r.Context(), client.KindUploads, 1, body.IdempotencyKey); err != nil {
+		writeMapped(w, err)
+		return
+	}
+	outputKey := body.IdempotencyKey
+	if len(outputKey) > 72 {
+		outputKey = outputKey[:72]
+	}
+	outputGrant, err := s.allowGrant(r.Context(), client.KindOutputBytes, s.limits.OutputReservationBytes, outputKey+":output")
+	if err != nil {
+		writeMapped(w, err)
+		return
+	}
 	uploadID, err := newID("u")
 	if err != nil {
 		writeMapped(w, err)
@@ -110,6 +124,9 @@ func (s *Service) createIntent(w http.ResponseWriter, r *http.Request) {
 		Now:        now,
 	})
 	if err != nil {
+		if outputGrant != "" {
+			_ = s.admit.Release(r.Context(), outputGrant)
+		}
 		writeMapped(w, err)
 		return
 	}

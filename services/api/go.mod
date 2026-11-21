@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/Maxencejules/shortvideo-network/services/observe v0.0.0
 	github.com/fxamacker/cbor/v2 v2.9.4 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/go-webauthn/x v0.3.1 // indirect
@@ -23,3 +24,5 @@ require (
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 )
+
+replace github.com/Maxencejules/shortvideo-network/services/observe => ../observe

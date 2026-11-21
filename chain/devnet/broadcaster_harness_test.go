@@ -196,7 +196,7 @@ func newBnet(t *testing.T) *bnet {
 		fmt.Printf("boundary_uids=same:%d (launcher is not root: one uid, key bytes separated in memory only)\n", n.me.uid)
 	}
 	n.layoutDirs()
-	n.launch = &bcLauncher{t: t, bin: bin, logDir: filepath.Join(n.base, "logs"), env: bcChildEnv}
+	n.launch = &bcLauncher{t: t, bin: bin, logDir: filepath.Join(n.base, "logs"), env: bcObserveEnv(t)}
 	// On a failure, the last lines of each broadcaster log (redacting JSON)
 	// go to the test output before the processes stop; this runs before
 	// the launcher's cleanups. After a canary hit nothing is printed.

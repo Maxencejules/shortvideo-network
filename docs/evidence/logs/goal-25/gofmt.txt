@@ -1,0 +1,6 @@
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD gofmt -l services/observe services/api/internal/service services/broadcaster chain/devnet/audit_test.go chain/devnet/broadcaster_harness_test.go chain/devnet/broadcaster_proc_test.go agents/provider/internal/agent agents/provider/internal/config agents/auditor services/milestone services/scheduler/cmd/svn-scheduler/harness_test.go
+DIRTY no
+EXIT:0
+AFTER clean

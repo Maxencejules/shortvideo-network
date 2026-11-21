@@ -12,6 +12,7 @@ import (
 
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/account"
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/moderation"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 	"github.com/lib/pq"
 )
 
@@ -28,6 +29,7 @@ type Service struct {
 	db       *sql.DB
 	gate     *moderation.Gate
 	ownerMap map[string]string
+	admit    *client.Client
 }
 
 // Options is the process configuration. Database is required.
@@ -50,6 +52,11 @@ type Options struct {
 	EnrollPerMinute   int
 	LoginPerMinute    int
 	SessionTTL        time.Duration
+	// ObserveURL is svn-observe. Empty means intake is refused.
+	ObserveURL   string
+	ObserveToken string
+	// Admit overrides ObserveURL. Tests use it. Production leaves it nil.
+	Admit *client.Client
 }
 
 // New migrates the schema, provisions fixture allowances, and refuses a public launch.
@@ -137,10 +144,14 @@ func New(ctx context.Context, opt Options) (*Service, error) {
 		}
 	}
 	now := nowFunc(opt)
+	admit := opt.Admit
+	if admit == nil {
+		admit = client.New(opt.ObserveURL, opt.ObserveToken)
+	}
 	return &Service{
 		store: store, blob: blob, limits: opt.Limits, verify: verify, accounts: accounts,
 		now: now, delay: opt.ProbeDelay, ffprobe: ffprobe, db: db,
-		gate: moderation.NewGate(),
+		gate: moderation.NewGate(), admit: admit,
 	}, nil
 }
 
@@ -202,8 +213,31 @@ func (s *Service) finish(ctx context.Context, row uploadRow) error {
 		_ = s.blob.Remove(row.ObjectName)
 		return err
 	}
+	if err := s.allow(ctx, client.KindProcessing, 1, "job-"+row.UploadID); err != nil {
+		return err
+	}
 	_, err = s.store.FinishProbe(ctx, row, result, s.now())
 	return err
+}
+
+// allow refuses the intake when svn-observe is unreachable or the cap is full.
+func (s *Service) allow(ctx context.Context, kind string, units int64, key string) error {
+	_, err := s.allowGrant(ctx, kind, units, key)
+	return err
+}
+
+func (s *Service) allowGrant(ctx context.Context, kind string, units int64, key string) (string, error) {
+	if s.admit == nil {
+		return "", errAdmissionDown
+	}
+	d, err := s.admit.Admit(ctx, kind, units, key)
+	if err != nil {
+		return "", errAdmissionDown
+	}
+	if !d.Granted {
+		return "", errAdmission
+	}
+	return d.GrantID, nil
 }
 
 func newID(prefix string) (string, error) {

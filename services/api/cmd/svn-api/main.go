@@ -80,6 +80,8 @@ func run() error {
 		EnrollPerMinute:   file.EnrollPerMinute,
 		LoginPerMinute:    file.LoginPerMinute,
 		SessionTTL:        sessionTTL,
+		ObserveURL:        os.Getenv("SVN_OBSERVE_URL"),
+		ObserveToken:      os.Getenv("SVN_OBSERVE_TOKEN"),
 		Database: pq.Config{
 			Host:     os.Getenv("SVN_API_PGHOST"),
 			Port:     uint16(port),

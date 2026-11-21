@@ -64,7 +64,7 @@ func (s *Sched) Handler() http.Handler {
 		w.Header().Set("Cache-Control", "private, no-store")
 		_, _ = w.Write(body)
 	})
-	return mux
+	return correlate(mux)
 }
 
 type publicationRequest struct {

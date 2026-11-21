@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -240,9 +241,44 @@ func buildAuditor(t *testing.T) string {
 
 // auditorCLI runs the producer binary and returns its exit code and its
 // stdout lines (one JSON object each).
+var (
+	auditObserveOnce  sync.Once
+	auditObserveURL   string
+	auditObserveToken = "synthetic-observe-25"
+)
+
+// auditObserve grants audit batches. The producer refuses submit when
+// svn-observe is absent. This devnet test is not a cap test.
+func auditObserve(t *testing.T) (string, string) {
+	t.Helper()
+	auditObserveOnce.Do(func() {
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			return
+		}
+		mux := http.NewServeMux()
+		mux.HandleFunc("/v1/admit", func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("Authorization") != "Bearer "+auditObserveToken {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"granted":true,"queued":false,"replayed":false,"reason":"admitted","grant_id":"gaudit"}`))
+		})
+		go func() { _ = http.Serve(ln, mux) }()
+		auditObserveURL = "http://" + ln.Addr().String()
+	})
+	if auditObserveURL == "" {
+		t.Fatal("auditor admission stand-in did not listen")
+	}
+	return auditObserveURL, auditObserveToken
+}
+
 func auditorCLI(t *testing.T, bin string, args ...string) (int, []json.RawMessage) {
 	t.Helper()
+	observeURL, observeToken := auditObserve(t)
 	cmd := exec.Command(bin, args...)
+	cmd.Env = append(os.Environ(), "SVN_OBSERVE_URL="+observeURL, "SVN_OBSERVE_TOKEN="+observeToken)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	err := cmd.Run()

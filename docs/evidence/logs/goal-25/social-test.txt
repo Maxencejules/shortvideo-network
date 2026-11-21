@@ -1,0 +1,7 @@
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD go test -count=1 -timeout 180s ./services/api/internal/social/
+DIRTY no
+ok  	github.com/Maxencejules/shortvideo-network/services/api/internal/social	0.311s
+EXIT:0
+AFTER clean

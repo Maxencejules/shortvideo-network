@@ -29,6 +29,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/agents/provider/internal/sign"
 	"github.com/Maxencejules/shortvideo-network/chain/msgkit"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 func TestConformance(t *testing.T) {
@@ -528,6 +529,24 @@ type running struct {
 	buf    *bytes.Buffer
 }
 
+var (
+	providerObserveOnce  sync.Once
+	providerObserveURL   string
+	providerObserveToken string
+	providerObserveErr   error
+)
+
+func providerObserve(t *testing.T) (string, string) {
+	t.Helper()
+	providerObserveOnce.Do(func() {
+		providerObserveURL, providerObserveToken, _, providerObserveErr = client.Listen(client.Permissive(), nil)
+	})
+	if providerObserveErr != nil {
+		t.Fatal(providerObserveErr)
+	}
+	return providerObserveURL, providerObserveToken
+}
+
 func newRunning(t *testing.T, id, keyID, machine string, quota, minFree, bandwidth, budget uint64, uncertainty, stall int64, src *packageServer, chain *chainServer, srcCA, chainCA string) *running {
 	t.Helper()
 	dir := t.TempDir()
@@ -543,8 +562,10 @@ func newRunning(t *testing.T, id, keyID, machine string, quota, minFree, bandwid
 	}
 	sp, _ := strconv.Atoi(port)
 	csp, _ := strconv.Atoi(cp)
+	observeURL, observeToken := providerObserve(t)
 	file := config.File{
 		ProviderID: id, KeyID: keyID, MachineID: machine, Listen: "127.0.0.1:0", DataDir: data,
+		ObserveURL: observeURL, ObserveToken: observeToken,
 		HostingConsent: true, DeclaredCapacityBytes: quota, QuotaBytes: quota, MinFreeBytes: minFree,
 		BandwidthBytesPerSecond: bandwidth, TransferBudgetSeconds: budget, MaxPackageBytes: 1 << 20,
 		MaxTermSeconds: 100000, ClockUncertaintySeconds: uncertainty, StallAfterSeconds: stall,

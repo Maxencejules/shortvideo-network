@@ -1,0 +1,6 @@
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD go vet ./services/observe/... ./services/api/internal/social/ ./services/api/internal/service/ ./services/indexer/internal/api/ ./services/scheduler/... ./services/broadcaster/... ./agents/provider/... ./agents/auditor/... ./services/milestone/... ./chain/devnet/
+DIRTY no
+EXIT:0
+AFTER clean

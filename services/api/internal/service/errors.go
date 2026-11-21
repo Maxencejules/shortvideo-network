@@ -14,6 +14,8 @@ var (
 	errNoAllowance     = errors.New("no allowance")
 	errLimit           = errors.New("limit")
 	errRate            = errors.New("rate")
+	errAdmission       = errors.New("admission")
+	errAdmissionDown   = errors.New("admission unreachable")
 	errMalformed       = errors.New("malformed")
 	errDuration        = errors.New("duration")
 	errDimensions      = errors.New("dimensions")
@@ -45,6 +47,10 @@ func describe(err error) apiError {
 		return apiError{403, "QUOTA_OUTPUT", "processed output budget exceeded"}
 	case errors.Is(err, errRate):
 		return apiError{429, "RATE_LIMIT", "rate limit exceeded"}
+	case errors.Is(err, errAdmission):
+		return apiError{429, "ADMISSION", "admission cap reached"}
+	case errors.Is(err, errAdmissionDown):
+		return apiError{503, "ADMISSION_UNREACHABLE", "admission control is unreachable"}
 	case errors.Is(err, errLimit):
 		return apiError{400, "LIMIT", "input exceeds the proposed limit"}
 	case errors.Is(err, errMalformed):

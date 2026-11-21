@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/Maxencejules/shortvideo-network/services/api/internal/pgdev"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 	"github.com/lib/pq"
 )
 
@@ -117,6 +118,21 @@ type harness struct {
 
 func newHarness(t *testing.T, limits Limits, extra []Fixture) *harness {
 	t.Helper()
+	return newHarnessGate(t, limits, extra, permitAdmit(t))
+}
+
+func permitAdmit(t *testing.T) *client.Client {
+	t.Helper()
+	base, token, stop, err := client.Listen(client.Permissive(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(stop)
+	return client.New(base, token)
+}
+
+func newHarnessGate(t *testing.T, limits Limits, extra []Fixture, gate *client.Client) *harness {
+	t.Helper()
 	a, b := pair(t)
 	fixtures := []Fixture{a, b}
 	fixtures = append(fixtures, extra...)
@@ -130,6 +146,7 @@ func newHarness(t *testing.T, limits Limits, extra []Fixture) *harness {
 		QuarantineDir:     dir,
 		Database:          testConfig,
 		Now:               clk.Now,
+		Admit:             gate,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1027,10 +1044,17 @@ func writeConfig(t *testing.T, path string, fixture Fixture, limits Limits) {
 func startAPI(t *testing.T, bin, cfg, dir, addr, delay string) *exec.Cmd {
 	t.Helper()
 	cmd := exec.Command(bin)
+	observeURL, observeToken, stop, err := client.Listen(client.Permissive(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(stop)
 	cmd.Env = []string{
 		"PATH=" + os.Getenv("PATH"),
 		"LC_ALL=C.UTF-8",
 		"TZ=UTC",
+		"SVN_OBSERVE_URL=" + observeURL,
+		"SVN_OBSERVE_TOKEN=" + observeToken,
 		"SVN_API_CONFIG=" + cfg,
 		"SVN_API_QUARANTINE_DIR=" + dir,
 		"SVN_API_LISTEN=127.0.0.1:0",

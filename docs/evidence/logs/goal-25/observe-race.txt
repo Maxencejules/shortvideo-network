@@ -1,0 +1,9 @@
+HEAD 5499aeb50aaed35d4d0e495e0a30c8a70b3ce368
+TREE 89b309b5db885a5c3c00cd2a5a2da194bcab4467
+CMD go test -race -count=1 -timeout 180s ./services/observe/...
+DIRTY no
+?   	github.com/Maxencejules/shortvideo-network/services/observe/client	[no test files]
+ok  	github.com/Maxencejules/shortvideo-network/services/observe/cmd/svn-observe	1.009s
+ok  	github.com/Maxencejules/shortvideo-network/services/observe/internal/obs	1.027s
+EXIT:0
+AFTER clean

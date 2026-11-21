@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"testing"
@@ -50,6 +51,7 @@ import (
 	leasesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/leases/v1"
 	providersv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/providers/v1"
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 // headerTime is 20 minutes into epoch 490896 (2026-01-01).
@@ -751,8 +753,14 @@ func TestRunSignSubmitReviewUnit(t *testing.T) {
 		n.Commit(hash, 0, "")
 	}
 	key := h.key
+	base, token, stop, err := client.Listen(client.Permissive(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(stop)
 	sub := &chainclient.Submitter{Client: h.chain, Store: st, Key: &key, Gas: h.cfg.GasLimit,
-		Inclusion: time.Second, Interval: 5 * time.Millisecond, Window: h.cfg.Window}
+		Inclusion: time.Second, Interval: 5 * time.Millisecond, Window: h.cfg.Window,
+		Admit: client.New(base, token)}
 	var buf bytes.Buffer
 	code, err := eachBatch(st, []string{signed[0].BatchID, signed[1].BatchID}, &buf, func(b *batch.Batch, s batch.Summary) (chainclient.Result, error) {
 		return sub.Submit(context.Background(), b, s.RunID)
@@ -921,8 +929,35 @@ func (h *harness) configFile(chainRPC, keyPath string) string {
 	return path
 }
 
+var (
+	cliObserveOnce sync.Once
+	cliObserveErr  error
+)
+
+// admitCLI points the in-process command at a granting svn-observe.
+// Submit refuses when that address is empty. This suite is not a cap test.
+func admitCLI(t *testing.T) {
+	t.Helper()
+	cliObserveOnce.Do(func() {
+		base, token, _, err := client.Listen(client.Permissive(), nil)
+		if err != nil {
+			cliObserveErr = err
+			return
+		}
+		if err = os.Setenv("SVN_OBSERVE_URL", base); err != nil {
+			cliObserveErr = err
+			return
+		}
+		cliObserveErr = os.Setenv("SVN_OBSERVE_TOKEN", token)
+	})
+	if cliObserveErr != nil {
+		t.Fatal(cliObserveErr)
+	}
+}
+
 func cliRun(t *testing.T, args ...string) (int, string, string) {
 	t.Helper()
+	admitCLI(t)
 	var stdout, stderr bytes.Buffer
 	done := make(chan int)
 	go func() { done <- cli(args, &stdout, &stderr) }()

@@ -25,6 +25,7 @@ import (
 	"github.com/Maxencejules/shortvideo-network/chain/address"
 	"github.com/Maxencejules/shortvideo-network/chain/app"
 	"github.com/Maxencejules/shortvideo-network/chain/devnet"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 // TestMilestone is the goal 18 upload-to-playback scenario on one machine.
@@ -87,6 +88,8 @@ type mile struct {
 	worker        string
 	clipSHA       string
 	pg            pgInfo
+	observeURL    string
+	observeToken  string
 }
 
 type viewInfo struct {
@@ -177,6 +180,13 @@ func (m *mile) build() {
 
 func (m *mile) boot() {
 	m.t.Helper()
+	base, token, stop, err := client.Listen(client.Permissive(), nil)
+	if err != nil {
+		m.t.Fatal(err)
+	}
+	m.t.Cleanup(stop)
+	m.observeURL = base
+	m.observeToken = token
 	home := filepath.Join(m.work, "devnet")
 	layout, err := devnet.Init(devnet.Options{Home: home})
 	if err != nil {

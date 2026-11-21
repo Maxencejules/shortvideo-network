@@ -213,6 +213,7 @@ func (d *serveDeps) workerConfig(log *slog.Logger) (worker.Config, error) {
 		Outbox:           d.cfg.OutboxLimits(),
 		Numbers:          n,
 		Logger:           log,
+		Retries:          worker.ObserveGate(os.Getenv("SVN_OBSERVE_URL"), os.Getenv("SVN_OBSERVE_TOKEN")),
 	}, nil
 }
 

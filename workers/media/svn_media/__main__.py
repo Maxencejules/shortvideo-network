@@ -47,6 +47,8 @@ def main(argv: list[str] | None = None) -> int:
             if record is None:
                 return 0
             sys.stdout.write(json.dumps(record, sort_keys=True) + "\n")
+            if record.get("status") in {"refused", "unreachable"}:
+                return 1
     except Failure as exc:
         return _fail(exc)
     except Exception:

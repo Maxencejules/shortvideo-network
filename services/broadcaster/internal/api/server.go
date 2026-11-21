@@ -224,7 +224,7 @@ func New(cfg Config, deps Deps) (*Server, error) {
 		cfg: cfg, deps: deps, log: logger, tls: tlsCfg, callers: callers, signers: signers, addr: addr,
 		inFlight: make(chan struct{}, maxInFlight),
 	}
-	s.handler = s.routes()
+	s.handler = correlate(s.routes())
 	return s, nil
 }
 

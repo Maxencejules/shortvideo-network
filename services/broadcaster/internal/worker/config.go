@@ -132,6 +132,13 @@ type Config struct {
 	// Logger receives one record per decision; nil discards. It must
 	// redact (internal/logx): the worker logs ids, hashes and codes only.
 	Logger *slog.Logger
+	// Retries admits a further attempt. Nil refuses the retry.
+	Retries RetryGate
+}
+
+// RetryGate is svn-observe for a repeated attempt. A non-nil error refuses it.
+type RetryGate interface {
+	Admit(ctx context.Context, intentID string) error
 }
 
 // LockKeyOf is the advisory lock key the worker registers for a signer of

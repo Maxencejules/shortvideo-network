@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -130,6 +132,35 @@ type bcLauncher struct {
 // bcChildEnv is the base environment of every broadcaster child: no PG*
 // variable and nothing else of the test's environment.
 var bcChildEnv = []string{"PATH=/usr/bin:/bin", "TZ=UTC", "LC_ALL=C.UTF-8"}
+
+// bcObserveEnv adds a granting loopback admission stand-in. A retry refuses
+// when svn-observe is absent. This suite is not a cap test.
+func bcObserveEnv(t *testing.T) []string {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = ln.Close() })
+	mux := http.NewServeMux()
+	token := "synthetic-observe-25"
+	mux.HandleFunc("/v1/admit", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer "+token {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"granted":true,"queued":false,"replayed":false,"reason":"admitted","grant_id":"gbc"}`))
+	})
+	mux.HandleFunc("/v1/release", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	go func() { _ = http.Serve(ln, mux) }()
+	return append(append([]string{}, bcChildEnv...),
+		"SVN_OBSERVE_URL=http://"+ln.Addr().String(),
+		"SVN_OBSERVE_TOKEN="+token,
+	)
+}
 
 // start starts the binary with args under id, with extra environment
 // entries appended to the base environment.

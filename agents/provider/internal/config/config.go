@@ -46,6 +46,9 @@ type File struct {
 	ChainCA                 string        `json:"chain_ca"`
 	Destinations            []Destination `json:"destinations"`
 	ChainDestinations       []Destination `json:"chain_destinations"`
+	// ObserveURL is the admission control plane. Empty refuses storage reservations.
+	ObserveURL   string `json:"observe_url,omitempty"`
+	ObserveToken string `json:"observe_token,omitempty"`
 }
 
 // Load reads path. Unknown fields are rejected.

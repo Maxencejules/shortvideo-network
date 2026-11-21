@@ -816,7 +816,11 @@ func (m *mile) env() []string {
 	if extra := os.Getenv("SVN_MILESTONE_PATH"); extra != "" {
 		path = extra + ":" + path
 	}
-	return []string{"PATH=" + path, "TZ=UTC", "LC_ALL=C.UTF-8", "HOME=" + home}
+	env := []string{"PATH=" + path, "TZ=UTC", "LC_ALL=C.UTF-8", "HOME=" + home}
+	if m.observeURL != "" {
+		env = append(env, "SVN_OBSERVE_URL="+m.observeURL, "SVN_OBSERVE_TOKEN="+m.observeToken)
+	}
+	return env
 }
 
 func (m *mile) start(name, bin string, args ...string) *child {
