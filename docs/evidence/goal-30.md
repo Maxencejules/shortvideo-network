@@ -2,7 +2,7 @@
 
 Status: BLOCKED
 
-This file records the candidate `fbb301fddae6825d8c707da2e1f9b494b824d4b0` and the checks that ran on this VM. The release decision is **implemented prototype**. It is not a beta candidate and not a beta approved after human sign-off. No owner signed moderation coverage, a privacy and rights policy, funding and quotas, operator participation, or a security review. Public launch stays disabled. There is no token. Completing goals 00 through 30 is not approval.
+This file records the candidate `d41ca0017a4c229d153835df89116842032e23df` and the checks that ran on this VM. The release decision is **implemented prototype**. It is not a beta candidate and not a beta approved after human sign-off. No owner signed moderation coverage, a privacy and rights policy, funding and quotas, operator participation, or a security review. Public launch stays disabled. There is no token. Completing goals 00 through 30 is not approval.
 
 The decision, the blank sign-off rows, the rollback limits, and the unlaunched first-community plan are in `docs/release-readiness.md`. The operator handoff is `docs/operations/operator-handoff.md`. The index is [index.md](index.md).
 
@@ -16,15 +16,17 @@ The decision, the blank sign-off rows, the rollback limits, and the unlaunched f
 
 | Item | Value |
 | --- | --- |
-| Commit | `fbb301fddae6825d8c707da2e1f9b494b824d4b0` |
-| Tree | `6673de4435b88b27cbccb4fe3f6f40070ca5ab0c` |
+| Commit | `d41ca0017a4c229d153835df89116842032e23df` |
+| Tree | `399d4165e541fc022dc03bebe330d4671d4eb72b` |
 | Base | `6d259b8dd159ed21477b3398970e0b0f4848c513` |
 | Branch | `goal-30` |
 | Pull request | https://github.com/Maxencejules/shortvideo-network/pull/35 |
 
-The tested commit message carries `Tested-tree: 6673de4435b88b27cbccb4fe3f6f40070ca5ab0c`. `git rev-parse fbb301fddae6825d8c707da2e1f9b494b824d4b0^{tree}` is that tree. This file is a later commit and changes only `docs/evidence/`.
+The tested commit message carries `Tested-tree: 399d4165e541fc022dc03bebe330d4671d4eb72b`. `git rev-parse d41ca0017a4c229d153835df89116842032e23df^{tree}` is that tree. This file is a later commit and changes only `docs/evidence/`.
 
-`5059a59e5cd6b1a85f545b2b0cb1a4cc9127cb41` added the resolver and carries its own `Tested-tree` trailer. It is not the candidate. Run 44954234157 on that commit failed `ruff format --check`. `fbb301f` is the formatted tree.
+`d41ca00` adds the same 33-of-216 count to the operator handoff. `44e4b3bcdf345bcedf047ef286560a913102cc2b`, tree `39b79e13ea18a0707b1406f3dc221547aff77d56`, recorded that count in the decision register, the release decision, the progress notes, and the evidence index. It carries its own `Tested-tree` trailer. It is not the candidate. Neither commit changes the programs the behavior logs executed. Those logs stay stamped on `fbb301fddae6825d8c707da2e1f9b494b824d4b0`, tree `6673de4435b88b27cbccb4fe3f6f40070ca5ab0c`.
+
+`5059a59e5cd6b1a85f545b2b0cb1a4cc9127cb41` added the resolver and carries its own `Tested-tree` trailer. It is not the candidate. Run 44954234157 on that commit failed `ruff format --check`. `fbb301f` is the formatted resolver.
 
 `2bce2e272534316115c2550329c7ed730983da70`, tree `925512e799ec3ac42079b2e76bb9a9acd2bc56c7`, is the earlier candidate. Logs whose `HEAD` line is that commit were not rerun. The resolver does not change those programs. Where this file cites one of those logs, the `HEAD` line is the authority for which commit it ran.
 
@@ -56,17 +58,15 @@ Port 2375 was not used. No Docker API request was sent. The `docker0` qdisc is a
 
 ## Head CI
 
-[Run 44956653874](https://github.com/Maxencejules/shortvideo-network/actions/runs/44956653874) is `ci` on `fbb301fddae6825d8c707da2e1f9b494b824d4b0`. Conclusion: `success`. All 17 jobs passed: `contract`, `go`, `python`, `node`, `devnet`, `milestone`, and the eleven `go-race` jobs (`app`, `rest`, `indexer`, `broadcaster`, `api`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`).
+[Run 44961593358](https://github.com/Maxencejules/shortvideo-network/actions/runs/44961593358) is `ci` on `d41ca0017a4c229d153835df89116842032e23df`. Conclusion: `success`. All 17 jobs passed: `contract`, `go`, `python`, `node`, `devnet`, `milestone`, and the eleven `go-race` jobs (`app`, `rest`, `indexer`, `broadcaster`, `api`, `devnet`, `devnet-evidence`, `devnet-upgrade`, `devnet-broadcaster`, `devnet-broadcaster-stall`, `devnet-indexer`).
 
-Run 44954234157 on `5059a59` failed the Python job. `ruff format --check` reported `scripts/acceptance/audit_matrix.py` and `tests/unit/test_goal30_acceptance.py`. It is not a result for the candidate.
+Run 44961429095 on `44e4b3b` was cancelled when `d41ca00` was pushed. It is not a result for this candidate. Run 44956653874 on `fbb301f` succeeded for the formatted resolver. Run 44954234157 on `5059a59` failed the Python job because `ruff format --check` reported `scripts/acceptance/audit_matrix.py` and `tests/unit/test_goal30_acceptance.py`. Run 44946962593 on `2bce2e2` succeeded for that earlier candidate. Run 44946187749 on `e7591f4` was cancelled. None of those is a result for this candidate.
 
-Run 44946962593 on `2bce2e2` succeeded for that earlier candidate. Run 44946187749 on `e7591f4` was cancelled. Neither is a result for this candidate.
-
-This file is added after run 44956653874. A later head that only changes `docs/evidence/` is not that run. The GitHub `devnet` job is that runner's container proof. It is not this VM and not a separate operator.
+This file is added after run 44961593358. A later head that only changes `docs/evidence/` is not that run. The GitHub `devnet` job is that runner's container proof. It is not this VM and not a separate operator.
 
 ## What ran
 
-Line 1 of a log is the commit. Line 2 is the tree. The command is the `CMD` line. `EXIT` is the command status. Logs stamped on this candidate are [audit-links.txt](logs/goal-30/audit-links.txt), [go-index.txt](logs/goal-30/go-index.txt), [node-rerun.txt](logs/goal-30/node-rerun.txt), [devnet-index.txt](logs/goal-30/devnet-index.txt), [pytest-v.txt](logs/goal-30/pytest-v.txt), and [milestone-venv.txt](logs/goal-30/milestone-venv.txt). Their `HEAD` is `fbb301fddae6825d8c707da2e1f9b494b824d4b0`. The other logs in the table were stamped on `2bce2e2` and were not rerun.
+Line 1 of a log is the commit. Line 2 is the tree. The command is the `CMD` line. `EXIT` is the command status. Behavior logs stamped on `fbb301f` are [audit-links.txt](logs/goal-30/audit-links.txt), [go-index.txt](logs/goal-30/go-index.txt), [node-rerun.txt](logs/goal-30/node-rerun.txt), [devnet-index.txt](logs/goal-30/devnet-index.txt), [pytest-v.txt](logs/goal-30/pytest-v.txt), and [milestone-venv.txt](logs/goal-30/milestone-venv.txt). Their `HEAD` is `fbb301fddae6825d8c707da2e1f9b494b824d4b0`. This candidate does not change those programs, so those commands were not rerun. The other logs in the table were stamped on `2bce2e2`.
 
 | Command | Log | Result |
 | --- | --- | --- |
@@ -85,9 +85,9 @@ Line 1 of a log is the commit. Line 2 is the tree. The command is the `CMD` line
 | gofmt | [gofmt.txt](logs/goal-30/gofmt.txt) | `EXIT:0` |
 | schema generation | [gen-proto.txt](logs/goal-30/gen-proto.txt) | `EXIT:0`, `AFTER clean` |
 | second client self-check | [self-check.txt](logs/goal-30/self-check.txt) | line 5 `CLIENT source_problems=0`, line 6 `CLIENT operations=12`, line 10 `EXIT:0` |
-| pytest on this candidate | [pytest-v.txt](logs/goal-30/pytest-v.txt) | line 353 one `SKIPPED`, line 497 `481 passed, 1 skipped`, line 498 `EXIT:0` |
+| pytest on `fbb301f` | [pytest-v.txt](logs/goal-30/pytest-v.txt) | line 353 one `SKIPPED`, line 497 `481 passed, 1 skipped`, line 498 `EXIT:0` |
 | pytest on `2bce2e2` | [pytest.txt](logs/goal-30/pytest.txt) | line 13 one skip, line 14 `476 passed, 1 skipped`, line 15 `EXIT:0` |
-| node on this candidate | [node-rerun.txt](logs/goal-30/node-rerun.txt) | eight `# tests` lines sum to 56, eight `# fail` lines are 0, line 421 `EXIT:0` |
+| node on `fbb301f` | [node-rerun.txt](logs/goal-30/node-rerun.txt) | eight `# tests` lines sum to 56, eight `# fail` lines are 0, line 421 `EXIT:0` |
 | node on `2bce2e2` | [node.txt](logs/goal-30/node.txt) | eight `# tests` lines sum to 56, eight `# fail` lines are 0, line 437 `EXIT:0` |
 | Go per-test index | [go-index.txt](logs/goal-30/go-index.txt) | 4235 `PASS` lines, 15 `SKIP` lines, 0 `FAIL` lines, line 4282 `EXIT:0` |
 | Go package summary on `2bce2e2` | [go-unit.txt](logs/goal-30/go-unit.txt) | line 44 `RESULT passed=4235 failed=0 skipped=15 packages=89 nonjson=0`, line 149 `EXIT:0` |
@@ -101,10 +101,10 @@ Line 1 of a log is the commit. Line 2 is the tree. The command is the `CMD` line
 | capacity measure | [capacity.txt](logs/goal-30/capacity.txt) and [capacity-measure.json](logs/goal-30/capacity-measure.json) | command `EXIT:0`. Gates inside the JSON are not all passes. |
 | container proof | [containers.txt](logs/goal-30/containers.txt) | line 12 `docker: command not found`, line 13 `EXIT:127` |
 | absent tools | [absent.txt](logs/goal-30/absent.txt) | docker exit 127, golangci-lint exit 127, `tc` exit 0 |
-| `chain/devnet` on this candidate | [devnet-index.txt](logs/goal-30/devnet-index.txt) | 84 `PASS` lines, line 92 `EXIT:0` |
+| `chain/devnet` on `fbb301f` | [devnet-index.txt](logs/goal-30/devnet-index.txt) | 84 `PASS` lines, line 92 `EXIT:0` |
 | `chain/devnet` summary on `2bce2e2` | [devnet.txt](logs/goal-30/devnet.txt) and [devnet-names.txt](logs/goal-30/devnet-names.txt) | line 7 `RESULT passed=84 failed=0 skipped=0 packages=1 nonjson=0`, line 9 `EXIT:0` |
 
-The Go JSON that `go-unit.txt` summarizes is 227722620 bytes and is not in the repository. Re-running `scripts/acceptance/go_summary.py` on that file printed the same `RESULT` line. [go-index.txt](logs/goal-30/go-index.txt) is the per-test index from this candidate. The raw JSON of that run was deleted after the index was written. [devnet-names.txt](logs/goal-30/devnet-names.txt) line 5 is `pass_events 84 fail_events 0 skip_events 0 parents 32`, which matches the `2bce2e2` summary. [devnet-index.txt](logs/goal-30/devnet-index.txt) has 84 `PASS` lines and no `FAIL` line.
+The Go JSON that `go-unit.txt` summarizes is 227722620 bytes and is not in the repository. Re-running `scripts/acceptance/go_summary.py` on that file printed the same `RESULT` line. [go-index.txt](logs/goal-30/go-index.txt) is the per-test index from `fbb301f`. The raw JSON of that run was deleted after the index was written. [devnet-names.txt](logs/goal-30/devnet-names.txt) line 5 is `pass_events 84 fail_events 0 skip_events 0 parents 32`, which matches the `2bce2e2` summary. [devnet-index.txt](logs/goal-30/devnet-index.txt) has 84 `PASS` lines and no `FAIL` line.
 
 No flake was observed. The two failures in the table have the causes below. They were not rerun until the invocation or the fixture changed.
 
@@ -116,7 +116,7 @@ No flake was observed. The two failures in the table have the causes below. They
 
 `out=15` in the count is the nine deferred rows plus the six non-goal rows. The checker does not approve the protocol. Its own line after `result PASS` says the document check is not an approval and public launch is disabled.
 
-[audit-links.txt](logs/goal-30/audit-links.txt) is the per-row link audit on this candidate. `scripts/acceptance/audit_matrix.py` resolves a `TEST:` row when the disposition names a test function that exists, or a test function's comment or docstring cites the requirement id. It then reads the stamped logs for that function. Line 5 is `RESULT rows=265 in_scope=250 test=216 blocker=34 out=15 goal30=10 resolved=33 unresolved=183 pass=33 fail=0 skip=0 unrun=0 mixed=0`. `33 + 183 = 216`. `216 + 34 = 250`. `250 + 15 = 265`. Lines 6-9 accept the four logs whose `HEAD` is this candidate. Lines 10-241 are the 183 `UNRESOLVED` rows, the 34 `BLOCKER` rows, and the 15 `OUT` rows. Line 242 is `EXIT:0`. Line 243 is `AFTER clean`.
+[audit-links.txt](logs/goal-30/audit-links.txt) is the per-row link audit stamped on `fbb301f`. `scripts/acceptance/audit_matrix.py` resolves a `TEST:` row when the disposition names a test function that exists, or a test function's comment or docstring cites the requirement id. It then reads the stamped logs for that function. Line 5 is `RESULT rows=265 in_scope=250 test=216 blocker=34 out=15 goal30=10 resolved=33 unresolved=183 pass=33 fail=0 skip=0 unrun=0 mixed=0`. `33 + 183 = 216`. `216 + 34 = 250`. `250 + 15 = 265`. Lines 6-9 accept the four logs whose `HEAD` is `fbb301f`. Lines 10-241 are the 183 `UNRESOLVED` rows, the 34 `BLOCKER` rows, and the 15 `OUT` rows. Line 242 is `EXIT:0`. Line 243 is `AFTER clean`.
 
 A row with no test function is unresolved. The 183 unresolved rows are release blockers under DR-30-12. The 33 resolved rows each have a `PASS` record in those logs. That record is the function's result. It does not close an unresolved row, and it does not make this release a beta. `fail=0`, `skip=0`, and `unrun=0` are the row verdicts. [go-index.txt](logs/goal-30/go-index.txt) still contains 15 `SKIP` lines. A resolved function that also has a `PASS` line in [devnet-index.txt](logs/goal-30/devnet-index.txt) is counted as a pass. `TestMilestone` is skip line 4279 of the package index and is not one of the 33 resolved rows.
 
@@ -166,9 +166,9 @@ This is several processes on one machine. It is one failure domain. DR-30-07 sta
 | Distribution 410 | line 97 |
 | Delivery copy removed | line 98 `REMOVED` |
 
-The first `TestMilestone` invocation, [milestone.txt](logs/goal-30/milestone.txt), was stamped on `2bce2e2` and did not set `SVN_MILESTONE_PATH`. The child Python was the distro interpreter. Line 66 is `ModuleNotFoundError: No module named 'jsonschema'`. Line 71 is `EXIT:1`. That run had already reserved the upload and blocked publish (lines 47-51). It stays a failure. The venv run above is the demonstration on this candidate.
+The first `TestMilestone` invocation, [milestone.txt](logs/goal-30/milestone.txt), was stamped on `2bce2e2` and did not set `SVN_MILESTONE_PATH`. The child Python was the distro interpreter. Line 66 is `ModuleNotFoundError: No module named 'jsonschema'`. Line 71 is `EXIT:1`. That run had already reserved the upload and blocked publish (lines 47-50). Line 51 is the media process exit. It stays a failure. The venv run above is the demonstration stamped on `fbb301f`.
 
-The Go package index on this candidate skipped `TestMilestone` ([go-index.txt](logs/goal-30/go-index.txt) line 4279). That skip stays a skip. The same file has 15 `SKIP` lines: fourteen `chain/devnet` tests and `TestMilestone`. [devnet-index.txt](logs/goal-30/devnet-index.txt) is the run without that skip. It has 84 `PASS` lines, line 91 `DEVNET_EXIT 0`, line 92 `EXIT:0`, and line 93 `AFTER clean`. Parent passes include line 10 `TestDevnetAuditLifecycle`, line 11 `TestDevnetBroadcasterQuorumStall`, line 12 `TestDevnetBroadcasterLifecycle`, line 13 `TestDevnetIndexer`, line 88 `TestDevnetUpgradeRehearsal`, line 89 `TestDevnetMinorityWrongMigration`, and line 90 `TestDevnetGovernedChangeTiming`. Four validators here are four processes. They are not four operators. The `2bce2e2` summary [devnet.txt](logs/goal-30/devnet.txt) line 7 is `passed=84 failed=0 skipped=0`, and [devnet-names.txt](logs/goal-30/devnet-names.txt) lines 6-37 are that earlier run's 32 parent names.
+The Go package index on `fbb301f` skipped `TestMilestone` ([go-index.txt](logs/goal-30/go-index.txt) line 4279). That skip stays a skip. The same file has 15 `SKIP` lines: fourteen `chain/devnet` tests and `TestMilestone`. [devnet-index.txt](logs/goal-30/devnet-index.txt) is the run without that skip. It has 84 `PASS` lines, line 91 `DEVNET_EXIT 0`, line 92 `EXIT:0`, and line 93 `AFTER clean`. Parent passes include line 10 `TestDevnetAuditLifecycle`, line 11 `TestDevnetBroadcasterQuorumStall`, line 12 `TestDevnetBroadcasterLifecycle`, line 13 `TestDevnetIndexer`, line 88 `TestDevnetUpgradeRehearsal`, line 89 `TestDevnetMinorityWrongMigration`, and line 90 `TestDevnetGovernedChangeTiming`. Four validators here are four processes. They are not four operators. The `2bce2e2` summary [devnet.txt](logs/goal-30/devnet.txt) line 7 is `passed=84 failed=0 skipped=0`, and [devnet-names.txt](logs/goal-30/devnet-names.txt) lines 6-37 are that earlier run's 32 parent names.
 
 `services/restore` package lines in the `2bce2e2` summary [go-unit.txt](logs/goal-30/go-unit.txt) are line 125 `ok` for `services/restore/cmd/svn-restore` and line 126 `ok` for `services/restore/internal/restore`. Line 127 is `services/api/internal/moderation`. That is the package test. It is not a rehearsed chain-state rollback and not a measured service RTO or RPO. DR-27-06 and DR-26-01 through DR-26-03 stay open. No new number from an earlier goal is reused as this candidate's recovery time.
 
@@ -202,7 +202,7 @@ DR-30-11 stays open. Goal 30 does not change either the published document or th
 
 There is no `LICENSE` file. DEC-006 is not applied. There is no `CODEOWNERS` file. The test signature produced by the packaging flow is a rehearsal key and is not an owner signature. DR-27-05 stays open. Nothing was tagged, published, or installed on another machine.
 
-The `2bce2e2` pytest run wrote four untracked files under `apps/web/dist` ([pytest.txt](logs/goal-30/pytest.txt) lines 17-20). Those files were removed before the packaging command. The packaging log's `DIRTY` line is `no`. This candidate's pytest log records the same four paths at [pytest-v.txt](logs/goal-30/pytest-v.txt) lines 500-503. They were removed before the link audit. That audit's `DIRTY` line is `no`.
+The `2bce2e2` pytest run wrote four untracked files under `apps/web/dist` ([pytest.txt](logs/goal-30/pytest.txt) lines 17-20). Those files were removed before the packaging command. The packaging log's `DIRTY` line is `no`. The `fbb301f` pytest log records the same four paths at [pytest-v.txt](logs/goal-30/pytest-v.txt) lines 500-503. They were removed before the link audit. That audit's `DIRTY` line is `no`.
 
 ## Capacity
 
@@ -220,7 +220,7 @@ DR-30-10 stays open. The page 26 design point was not met. DR-28-01 through DR-2
 
 ## Blocked on this VM
 
-- Container devnet. [containers.txt](logs/goal-30/containers.txt) line 12 is `docker: command not found` and line 13 is `EXIT:127`. DR-30-09. The GitHub `devnet` job in run 44956653874 passed on that runner. It is not this rehearsal.
+- Container devnet. [containers.txt](logs/goal-30/containers.txt) line 12 is `docker: command not found` and line 13 is `EXIT:127`. DR-30-09. The GitHub `devnet` job in run 44961593358 passed on that runner. It is not this rehearsal.
 - golangci-lint. [absent.txt](logs/goal-30/absent.txt) line 9 is `golangci-lint exit 127`.
 - PostgreSQL 16. The server under test is 18.6.
 - Shaped playback. The qdisc kind the measure asks for is unknown. DR-30-10.
@@ -229,9 +229,9 @@ DR-30-10 stays open. The page 26 design point was not met. DR-28-01 through DR-2
 
 ## Fixture fix on the candidate
 
-`workers/media/svn_media/queue.py` line 66 selects `j.idempotency_key`. `services/api/internal/service/store.go` lines 65-68 define `api.processing_jobs` with `idempotency_key text NOT NULL UNIQUE`. The fixture in `e7591f4` created that table without the column. [pytest-e7591f4.txt](logs/goal-30/pytest-e7591f4.txt) line 1 is commit `e7591f4`. The failure is `test_postgres_claim_is_once_and_does_not_publish`, and the summary is `1 failed, 471 passed, 5 skipped`. `tests/unit/test_media_postgres.py` lines 38 and 150 include the column and insert `job-jdb`. [pytest.txt](logs/goal-30/pytest.txt) line 14, on `2bce2e2`, is `476 passed, 1 skipped`. [pytest-v.txt](logs/goal-30/pytest-v.txt) line 497, on this candidate, is `481 passed, 1 skipped`. The five added tests are the resolver tests. The skip on line 353 is `test_sixty_second_input_timing`. `tests/unit/test_media_worker.py` line 565 is `set SVN_MEDIA_TIMING=1 to measure`. That skip is not a timing pass.
+`workers/media/svn_media/queue.py` line 66 selects `j.idempotency_key`. `services/api/internal/service/store.go` lines 65-68 define `api.processing_jobs` with `idempotency_key text NOT NULL UNIQUE`. The fixture in `e7591f4` created that table without the column. [pytest-e7591f4.txt](logs/goal-30/pytest-e7591f4.txt) line 1 is commit `e7591f4`. The failure is `test_postgres_claim_is_once_and_does_not_publish`, and the summary is `1 failed, 471 passed, 5 skipped`. `tests/unit/test_media_postgres.py` lines 38 and 150 include the column and insert `job-jdb`. [pytest.txt](logs/goal-30/pytest.txt) line 14, on `2bce2e2`, is `476 passed, 1 skipped`. [pytest-v.txt](logs/goal-30/pytest-v.txt) line 497, on `fbb301f`, is `481 passed, 1 skipped`. The five added tests are the resolver tests. The skip on line 353 is `test_sixty_second_input_timing`. `tests/unit/test_media_worker.py` line 565 is `set SVN_MEDIA_TIMING=1 to measure`. That skip is not a timing pass.
 
-[node.txt](logs/goal-30/node.txt) ran `npm ci` on `2bce2e2` and exited 0. [node-rerun.txt](logs/goal-30/node-rerun.txt) ran the node tests on this candidate without another `npm ci`. Line 421 is `EXIT:0`. The eight `# tests` lines sum to 56 and the eight `# fail` lines are 0.
+[node.txt](logs/goal-30/node.txt) ran `npm ci` on `2bce2e2` and exited 0. [node-rerun.txt](logs/goal-30/node-rerun.txt) ran the node tests on `fbb301f` without another `npm ci`. Line 421 is `EXIT:0`. The eight `# tests` lines sum to 56 and the eight `# fail` lines are 0.
 
 ## Sign-off placeholders
 
@@ -247,7 +247,7 @@ No name was supplied. Blank is the recorded state.
 
 ## DR-30
 
-All twelve are OPEN in `docs/decision-register.md`. DR-30-01 starts at line 749. DR-30-11's status line is line 945. DR-30-12's status line is line 963.
+All twelve are OPEN in `docs/decision-register.md`. DR-30-01 starts at line 749. DR-30-11's status line is line 945. DR-30-12 starts at line 947. Its count is line 957: 33 of 216 in-scope `TEST:` rows resolve, and 183 are prose-only dispositions. Its status line is line 965.
 
 | ID | State |
 | --- | --- |
@@ -262,7 +262,7 @@ All twelve are OPEN in `docs/decision-register.md`. DR-30-01 starts at line 749.
 | DR-30-09 | OPEN. Container reproduction on this VM. Docker CLI absent. Port 2375 was not used. |
 | DR-30-10 | OPEN. Page 26 design point. The local measure is not 100 viewers and not 10 uploads. |
 | DR-30-11 | OPEN. Published `GET /feeds`, `POST /reports`, and `GET /exports` are not the registered handler paths. |
-| DR-30-12 | OPEN. 183 `TEST:` rows have no test function. [audit-links.txt](logs/goal-30/audit-links.txt) lists each one. A row count is not a pass. |
+| DR-30-12 | OPEN. 33 of 216 in-scope `TEST:` rows resolve. 183 are prose-only dispositions. [audit-links.txt](logs/goal-30/audit-links.txt) lists each unresolved id. |
 
 ## Inherited blockers
 
