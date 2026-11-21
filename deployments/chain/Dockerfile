@@ -1,4 +1,5 @@
 # Build the development chain binary. The image is local. It is not published.
+# No FFmpeg package and no signing key is copied into this image.
 # Digests are the linux/amd64 manifests inspected on 2026-10-31.
 # Go 1.26.10 matches docs/dependencies.md.
 FROM golang:1.26.10-bookworm@sha256:2bba1f6b063d0e09c5297fbd0a7b9664c4931afc4476a779d7c9a3062704f949 AS build

@@ -1,0 +1,223 @@
+{
+  "release_label": "NOT-RELEASED",
+  "licence": "UNCONFIRMED",
+  "public_launch": "disabled",
+  "single_mandatory_operator": false,
+  "commercial_cloud": "not-required",
+  "token": "none",
+  "video_bytes_on_chain": false,
+  "chain_state_rollback": "not-rehearsed",
+  "install_prefix_switch": "rehearsed-by-candidate",
+  "known_limits": [
+    "not-an-audit",
+    "not-independent-operators",
+    "not-interoperability",
+    "dev-machine-is-one-failure-domain",
+    "goals-28-30-not-passed",
+    "public-launch-disabled"
+  ],
+  "replacement_paths": {
+    "dns": "Operators address hosts by IP or their own resolver. No DNS vendor is required.",
+    "identity": "Invited accounts stay on an account service the operator runs. No identity vendor is required. Custody of recovery keys is still an open decision.",
+    "media_storage": "A provider agent stores bytes on its own disk. No object-store vendor is required. Public IPFS is not enabled.",
+    "search": "Discovery is the in-process index from goal 22. An operator can replace that process. No search vendor is required.",
+    "transaction_access": "An operator reads CometBFT on a validator they run, or runs the broadcaster. No gateway is required."
+  },
+  "profiles": [
+    {
+      "id": "dev-machine",
+      "summary": "One Linux machine runs the processes for a development checkout. That is one failure domain and not independent operation.",
+      "commercial_cloud": "not-required",
+      "processes": ["svnd", "svn-api", "svn-indexer", "svn-provider", "media-worker"],
+      "volumes": [
+        {"name": "validator-home", "path": "var/validator", "contents": "chain home for this machine"},
+        {"name": "media-work", "path": "var/media", "contents": "quarantine and encode workspace"}
+      ],
+      "tls": "Loopback certificates are generated when a development process starts. None are in the bundle.",
+      "ports": [
+        {"name": "comet-p2p", "bind": "127.0.0.1", "port": 26656, "published": false},
+        {"name": "comet-rpc", "bind": "127.0.0.1", "port": 26657, "published": false},
+        {"name": "app-grpc", "bind": "127.0.0.1", "port": 27101, "published": false}
+      ],
+      "secrets": [
+        {"name": "dev-fixture", "source": "generated-on-install"},
+        {"name": "validator-key", "source": "operator-supplied"}
+      ],
+      "health": ["svnd version", "each other process exits on usage without binding, except where the profile says so"],
+      "resources": "not-measured",
+      "upgrades": "binary-beside-running",
+      "backups": "goal 26 logical backup; retention is unset",
+      "signer_material": "separate-directory",
+      "untrusted_media": true,
+      "worker_sees_signer": false
+    },
+    {
+      "id": "web-api",
+      "summary": "Account and upload API, the viewer sources, and the broadcaster. The broadcaster signer is a different directory from media.",
+      "commercial_cloud": "not-required",
+      "processes": ["svn-api", "svn-feed-client", "svn-broadcaster", "apps/web"],
+      "volumes": [
+        {"name": "quarantine", "path": "var/quarantine", "contents": "upload bytes before review"},
+        {"name": "broadcaster-signer", "path": "var/broadcaster-signer", "contents": "signer files for this host only"}
+      ],
+      "tls": "Operator-supplied certificate for a public listener. The bundle has none. Development listeners stay on loopback.",
+      "ports": [
+        {"name": "api", "bind": "127.0.0.1", "port": null, "published": false},
+        {"name": "broadcaster", "bind": "127.0.0.1", "port": null, "published": false}
+      ],
+      "secrets": [
+        {"name": "session", "source": "generated-on-install"},
+        {"name": "broadcaster-signer", "source": "operator-supplied"}
+      ],
+      "health": ["process exits when configuration is missing"],
+      "resources": "not-measured",
+      "upgrades": "binary-beside-running",
+      "backups": "database and signer export follow goal 26; this profile does not copy a live signer",
+      "signer_material": "separate-directory",
+      "untrusted_media": false,
+      "worker_sees_signer": false
+    },
+    {
+      "id": "accounts",
+      "summary": "Account service only. It does not run a validator and it does not transcode.",
+      "commercial_cloud": "not-required",
+      "processes": ["svn-api"],
+      "volumes": [
+        {"name": "account-data", "path": "var/accounts", "contents": "sessions and account rows"}
+      ],
+      "tls": "Operator-supplied. Nothing is bundled.",
+      "ports": [
+        {"name": "api", "bind": "127.0.0.1", "port": null, "published": false}
+      ],
+      "secrets": [
+        {"name": "session", "source": "generated-on-install"}
+      ],
+      "health": ["process exits when configuration is missing"],
+      "resources": "not-measured",
+      "upgrades": "binary-beside-running",
+      "backups": "goal 26 database dump; account recovery completion stays refused",
+      "signer_material": "absent",
+      "untrusted_media": false,
+      "worker_sees_signer": false
+    },
+    {
+      "id": "validators",
+      "summary": "svnd only. This profile does not install FFmpeg and does not mount a media workspace.",
+      "commercial_cloud": "not-required",
+      "processes": ["svnd"],
+      "volumes": [
+        {"name": "validator-home", "path": "var/validator", "contents": "chain home, generated on the host"}
+      ],
+      "tls": "CometBFT peer settings are the operator's. The bundle has no certificate and no key.",
+      "ports": [
+        {"name": "comet-p2p", "bind": "127.0.0.1", "port": 26656, "published": false},
+        {"name": "comet-rpc", "bind": "127.0.0.1", "port": 26657, "published": false},
+        {"name": "app-grpc", "bind": "127.0.0.1", "port": 27101, "published": false}
+      ],
+      "secrets": [
+        {"name": "validator-key", "source": "operator-supplied"}
+      ],
+      "health": ["svnd version"],
+      "resources": "not-measured",
+      "upgrades": "binary-beside-running",
+      "backups": "goal 10 halt copy and goal 26; a second live consensus key is refused",
+      "signer_material": "host-local-not-in-bundle",
+      "untrusted_media": false,
+      "worker_sees_signer": false
+    },
+    {
+      "id": "workers",
+      "summary": "Untrusted media processing. This profile has no signer directory and does not run svnd.",
+      "commercial_cloud": "not-required",
+      "processes": ["media-worker", "ffmpeg"],
+      "volumes": [
+        {"name": "media-work", "path": "var/media", "contents": "quarantine input and encode output"}
+      ],
+      "tls": "None. The worker does not serve clients.",
+      "ports": [
+        {"name": "none", "bind": "127.0.0.1", "port": null, "published": false}
+      ],
+      "secrets": [
+        {"name": "none", "source": "none"}
+      ],
+      "health": ["the worker process exits; it does not publish"],
+      "resources": "not-measured",
+      "upgrades": "binary-beside-running",
+      "backups": "media bytes follow goal 26; this host does not hold a validator key",
+      "signer_material": "absent",
+      "untrusted_media": true,
+      "worker_sees_signer": false
+    },
+    {
+      "id": "provider-agents",
+      "summary": "Storage provider agent. Loopback HTTPS in development. It does not run a validator.",
+      "commercial_cloud": "not-required",
+      "processes": ["svn-provider"],
+      "volumes": [
+        {"name": "packages", "path": "var/packages", "contents": "media packages this host stores"}
+      ],
+      "tls": "Development init generates a loopback certificate on the host. It is not in the bundle.",
+      "ports": [
+        {"name": "https", "bind": "127.0.0.1", "port": null, "published": false}
+      ],
+      "secrets": [
+        {"name": "provider-key", "source": "generated-on-install"}
+      ],
+      "health": ["svn-provider without a config exits"],
+      "resources": "not-measured",
+      "upgrades": "binary-beside-running",
+      "backups": "package bytes and the goal 26 media part",
+      "signer_material": "separate-directory",
+      "untrusted_media": false,
+      "worker_sees_signer": false
+    },
+    {
+      "id": "storage",
+      "summary": "Provider agent plus delivery of a ready package. Not a validator and not the encoder.",
+      "commercial_cloud": "not-required",
+      "processes": ["svn-provider", "delivery"],
+      "volumes": [
+        {"name": "packages", "path": "var/packages", "contents": "stored packages"}
+      ],
+      "tls": "Delivery in development uses a loopback certificate generated at start.",
+      "ports": [
+        {"name": "https", "bind": "127.0.0.1", "port": null, "published": false}
+      ],
+      "secrets": [
+        {"name": "provider-key", "source": "generated-on-install"}
+      ],
+      "health": ["process exits when configuration is missing"],
+      "resources": "not-measured",
+      "upgrades": "binary-beside-running",
+      "backups": "goal 26 media part; a live replica is not a historical backup",
+      "signer_material": "separate-directory",
+      "untrusted_media": false,
+      "worker_sees_signer": false
+    },
+    {
+      "id": "query-index",
+      "summary": "Committed-state indexer and the in-process discovery read. Not a validator.",
+      "commercial_cloud": "not-required",
+      "processes": ["svn-indexer", "svn-discovery"],
+      "volumes": [
+        {"name": "postgres", "path": "var/postgres", "contents": "indexer projection"},
+        {"name": "checkpoint", "path": "var/checkpoint", "contents": "index checkpoint"}
+      ],
+      "tls": "Database and RPC stay on loopback in this reference. No certificate is bundled.",
+      "ports": [
+        {"name": "indexer", "bind": "127.0.0.1", "port": null, "published": false},
+        {"name": "discovery", "bind": "127.0.0.1", "port": null, "published": false}
+      ],
+      "secrets": [
+        {"name": "database", "source": "generated-on-install"}
+      ],
+      "health": ["svn-indexer without a subcommand exits", "svn-observe GET /healthz when that process is run"],
+      "resources": "not-measured",
+      "upgrades": "binary-beside-running",
+      "backups": "goal 26 database and checkpoint; a missing height is not empty history",
+      "signer_material": "absent",
+      "untrusted_media": false,
+      "worker_sees_signer": false
+    }
+  ]
+}

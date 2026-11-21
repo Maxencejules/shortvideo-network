@@ -4,13 +4,13 @@ Selected on 2026-10-31 from the sources below. Versions are pins for this reposi
 
 Public launch: DISABLED. No tradable token, coin, sale, or mining.
 
-The project licence split in DEC-006 is not applied. There is no `LICENSE` file. Goal 03 records dependency licences as discovered facts and does not treat the split as an applied licence. Compatibility still has to be confirmed before a later goal adds a licence file.
+The project licence split in DEC-006 is not applied. There is no `LICENSE` file. Goal 03 records dependency licences as discovered facts and does not treat the split as an applied licence. Goal 27 keeps that split unapplied and labels its candidate NOT-RELEASED. Compatibility still has to be confirmed before a licence file is added.
 
 Cosmos Enterprise PoA and Enterprise Groups are commercial-boundary modules in the 2026.1 family. They are not requirements of this repository.
 
 Loops, PeerTube, and Livepeer are references in the blueprint. Their code is not vendored.
 
-This repository does not build or publish an image. Goal 04 records upstream image digests for the compose profile. Those digests are not a project image.
+Goal 27 builds local binaries and does not publish an image. Goal 04 records upstream image digests for the compose profile. Those digests are not a project image.
 
 ## Toolchains
 
