@@ -14,13 +14,13 @@ The local candidate is labelled NOT-RELEASED. A clean clone built the packaged b
 
 | Item | Value |
 | --- | --- |
-| Commit | `ea1a6aeeb4845df0cb29c913f2f39872c3feac55` |
-| Tree | `49103a38fc1a816cf320e2000163efc863e94e10` |
+| Commit | `0d7f14159379918a3eeb9555504354182c03b2a3` |
+| Tree | `fc9a0cec8074c073e205a15e6525709984fabef1` |
 | Base | `8d93835375f268bc37eab58a001f118cdd3953ff` |
 | Branch | `goal-27` |
 | Pull request | https://github.com/Maxencejules/shortvideo-network/pull/32 |
 
-The tested commit message carries `Tested-tree: 49103a38fc1a816cf320e2000163efc863e94e10`. `git rev-parse ea1a6aeeb4845df0cb29c913f2f39872c3feac55^{tree}` is that tree. Later commits change only `docs/evidence/`.
+The tested commit message carries `Tested-tree: fc9a0cec8074c073e205a15e6525709984fabef1`. `git rev-parse 0d7f14159379918a3eeb9555504354182c03b2a3^{tree}` is that tree. Later commits change only `docs/evidence/`.
 
 ## Captures
 
@@ -28,13 +28,13 @@ Every log under [logs/goal-27/](logs/goal-27/) was captured while `git status --
 
 ## Head CI
 
-[Run 44923623969](https://github.com/Maxencejules/shortvideo-network/actions/runs/44923623969) is `ci` on `ea1a6aeeb4845df0cb29c913f2f39872c3feac55`. Conclusion: `success`. All 17 jobs passed, including `python`, `go`, and `devnet`.
+[Run 44926532416](https://github.com/Maxencejules/shortvideo-network/actions/runs/44926532416) is `ci` on `0d7f14159379918a3eeb9555504354182c03b2a3`. Conclusion: `success`. All 17 jobs passed, including `python`, `go`, and `devnet`.
 
-[Run 44923623962](https://github.com/Maxencejules/shortvideo-network/actions/runs/44923623962) is `release-candidate` on the same commit. Conclusion: `success`. Its one job ran `scripts/packaging.py candidate`. That job's binary hashes were not compared with the hashes below.
+The `release-candidate` workflow did not run on this commit. Its trigger is `workflow_dispatch` only (`.github/workflows/release-candidate.yml:10`). Nobody dispatched it. The candidate result below is the local clone.
 
-Earlier runs on this branch were `cancelled` when a later commit was pushed: `44923131924` and `44923131966` on `fc274cb`, `44923179812` and `44923179797` on `29685aa`, `44923420130` and `44923420122` on `e42b042`. Those cancellations are the workflow concurrency setting. They are not failures of this commit.
+Earlier runs on this branch used the previous trigger and are not this commit: `44924774711` and `44924774745` on `5e546f9` succeeded, and `44923623969` and `44923623962` on `ea1a6ae` succeeded. Runs `44923131924`, `44923131966`, `44923179812`, `44923179797`, `44923420130`, and `44923420122` were `cancelled` when a later commit was pushed. Those cancellations are the workflow concurrency setting. They are not failures of this commit.
 
-This file is added after those runs. A later head that only changes `docs/evidence/` is not those runs.
+This file is added after the `ci` run above. A later head that only changes `docs/evidence/` is not that run.
 
 ## What ran
 
@@ -68,11 +68,11 @@ This file is added after those runs. A later head that only changes `docs/eviden
 
 ## Reproducibility
 
-[compare.txt](logs/goal-27/compare.txt) line 9 and line 22 are the same `svnd` digest, `d6e075d16ea39b55fdc5f285feb568ccef313c3d1ca52f95e357cabf9aa497d2`. `diff` printed nothing between the two `sha256sum` listings. Line 31 is `match yes`. Both builds used `CGO_ENABLED=0`, `-trimpath`, and `-buildvcs=true`, and the command unsets `SOURCE_DATE_EPOCH` (`scripts/packaging.py:392`).
+[compare.txt](logs/goal-27/compare.txt) line 9 and line 22 are the same `svnd` digest, `9eacf60d7a2c43a7ffa72a880f430c3cb67a6d4536cc25c1b977d127203ff4e5`. `diff` printed nothing between the two `sha256sum` listings. Line 31 is `match yes`. Both builds set `CGO_ENABLED=0` (`scripts/packaging.py:392`) and `GOFLAGS` to `-trimpath` (`scripts/packaging.py:393`), pass `-trimpath` and `-buildvcs=true` on the `go build` argv (`scripts/packaging.py:402` and `scripts/packaging.py:403`), and unset `SOURCE_DATE_EPOCH` (`scripts/packaging.py:394`).
 
-The install token is generated at install time and is not a build output. It is not in the bundle. The apt index used to fetch the pinned FFmpeg package is not a content digest. The package version is `7:6.1.1-3ubuntu5`, and the observed binary is line 5 of [ffmpeg.txt](logs/goal-27/ffmpeg.txt). Module downloads are pinned by `go.sum`. This comparison is two builds on this VM. The GitHub `release-candidate` job exited 0 and its binaries were not hashed here.
+The install token is generated at install time and is not a build output. It is not in the bundle. The apt index used to fetch the pinned FFmpeg package is not a content digest. The package version is `7:6.1.1-3ubuntu5`, and the observed binary is line 5 of [ffmpeg.txt](logs/goal-27/ffmpeg.txt). Module downloads are pinned by `go.sum`. This comparison is two builds on this VM. The GitHub release-candidate workflow was not dispatched for this commit, so it did not produce a second pair of hashes.
 
-[version.txt](logs/goal-27/version.txt) line 7 is `vcs.revision ea1a6aeeb4845df0cb29c913f2f39872c3feac55`. Line 8 is `vcs.modified false`. Line 21 is `upgrades none`. [buildinfo.txt](logs/goal-27/buildinfo.txt) lines 6 through 8 are the same revision, the commit time, and `vcs.modified=false`. That filtered command included a `-tags` pattern and printed no `-tags` line.
+[version.txt](logs/goal-27/version.txt) line 7 is `vcs.revision 0d7f14159379918a3eeb9555504354182c03b2a3`. Line 8 is `vcs.modified false`. Line 21 is `upgrades none`. [buildinfo.txt](logs/goal-27/buildinfo.txt) lines 6 through 8 are the same revision, the commit time, and `vcs.modified=false`. That filtered command included a `-tags` pattern and printed no `-tags` line.
 
 ## Secret, privilege, and notice scan
 
@@ -82,7 +82,9 @@ Notices in the bundle passed `sha256sum -c` ([sha256sum.txt](logs/goal-27/sha256
 
 Dockerfiles are pinned by digest and end as `USER svn` (`deployments/chain/Dockerfile:14`, `deployments/images/worker.Dockerfile:8`). The worker image does not run `apt-get`. Image build and image run were not executed. Docker is absent ([docker.txt](logs/goal-27/docker.txt) line 6 `EXIT:127`). The daemon on port 2375 was not used.
 
-The release-candidate workflow permission is `contents: read` (`.github/workflows/release-candidate.yml:13`). [workflow.txt](logs/goal-27/workflow.txt) line 5 is `workflow policy ok files 2`.
+The release-candidate workflow trigger is `workflow_dispatch` (`.github/workflows/release-candidate.yml:11`, under the `on` key at `.github/workflows/release-candidate.yml:10`). Its permission line is `contents: read` (`.github/workflows/release-candidate.yml:14`). A person who can dispatch workflows must start it. It does not run on a pull request or on a push. The pull-request tests run `scripts/packaging.py` `check`, which does not build the candidate binaries. [workflow.txt](logs/goal-27/workflow.txt) line 5 is `workflow policy ok files 2`.
+
+That dispatch is not a second-reviewer gate. `scripts/workflow_policy.py:92` reads a job `environment`. `scripts/workflow_policy.py:93` rejects a set value, and `scripts/workflow_policy.py:94` records that error. This tree does not name an environment, and the policy was not weakened to allow one. A protected GitHub environment with required reviewers is a repository setting. The owner would still need to create that environment and then accept a reviewed policy change before this workflow could wait on it. That gap is DR-27-13.
 
 ## Install, uninstall, and upgrade
 
@@ -100,21 +102,21 @@ From [sums.txt](logs/goal-27/sums.txt). These are the bundle copies of the first
 
 | Line | SHA-256 | Path |
 | --- | --- | --- |
-| 5 | `df6a1d60100314570681ae703b77269e475116062b6608d30f8e6a45cdc1f337` | `bin/svn-api` |
-| 6 | `84cc9d4be0905d670728996372429f40ad9113adac39d1605f8615b0e8b9f270` | `bin/svn-broadcaster` |
-| 7 | `202d31928ad2d7404d25b4cb3a6b663dd187911684962176c94ed88b500bb756` | `bin/svn-chainview` |
-| 8 | `d6e075d16ea39b55fdc5f285feb568ccef313c3d1ca52f95e357cabf9aa497d2` | `bin/svnd` |
-| 9 | `b6ec3f40d28f8b9800ce2358797e9fa580bfd207b767dd6b576baf03806ba988` | `bin/svn-discovery` |
-| 10 | `4b3df637869dd59a92d679d18301257661a9cab303ab8fab4edaa1e05f022872` | `bin/svn-feed-client` |
-| 11 | `ba5e95659e0c8676eab6ea458e8dbeec15a5279f1d3309f35a2bb138f138f89f` | `bin/svn-indexer` |
-| 12 | `53aec4e66cbeaaeff0409ee669ecb391c8ed54d1f35c63dabfffc0a0ca479cd2` | `bin/svn-observe` |
-| 13 | `5257aea6531bb63ac56ccd2af6613d96636d583a69f439f072677a454914a7fe` | `bin/svn-operator` |
-| 14 | `0de61c71cbf318758a4b37114209297c67cb4ae034bebb9888374ea193f9f3dc` | `bin/svn-provider` |
-| 15 | `160b615106a0c8c6d7c4d455e40c313928e2c950abe8d422d125b4f65c41607d` | `bin/svn-restore` |
-| 16 | `7d7788349d80d3f5bf144816cb6e0ee63900ba62ea891824e40784998a11e244` | `bin/svn-scheduler` |
-| 17 | `212e54a8fa6ab37560b3ff4acfaf9164ddae225938150380fad230df070afada` | `SHA256SUMS` |
+| 5 | `fe48e742c631d1a4cff55fb0d53e4c4aee4e77eef378b29d483851f7670c3739` | `bin/svn-api` |
+| 6 | `cfd01bb27d2ed4515bb3a1156026db9841b217fefa424ad6ec8428bbed3492ac` | `bin/svn-broadcaster` |
+| 7 | `f3bfe96c890448be7e05b8c82200ca22d0268e71ef013d3acb4dd3ebcba49f88` | `bin/svn-chainview` |
+| 8 | `9eacf60d7a2c43a7ffa72a880f430c3cb67a6d4536cc25c1b977d127203ff4e5` | `bin/svnd` |
+| 9 | `5ea9f8668689ab95c5bdd7177f4ac7789133b33dab6feea73487174053cff9e6` | `bin/svn-discovery` |
+| 10 | `d1300061b6a6aeb7afa68b08c050ba9a1fd26ae851d6b6f60eb0a99f2a367d3c` | `bin/svn-feed-client` |
+| 11 | `de55fc4d2adbd3e08adb51b1f7f863c261ad69cfd5b391d6148354940733d6e3` | `bin/svn-indexer` |
+| 12 | `ffdf4e8ec2392d942f4a53c41041e8c669abe8c2e1e824bf4419f2da0443c711` | `bin/svn-observe` |
+| 13 | `78bead40413b8ab31b0b07181fbbe31ffbc29f33ceac9e641106cf536075f349` | `bin/svn-operator` |
+| 14 | `b0e1c0318278923de0e768b39a3b31306648072a84cf9b3ac5df7edec60060f6` | `bin/svn-provider` |
+| 15 | `d6472b1bd0f502d599c926543ffbca4cb1802cba67103faaf2964c9e2885ef3b` | `bin/svn-restore` |
+| 16 | `be9c578f5aac3c3d951774d9285e5a3a49f2dc602d28b5a209749de09da5c6d5` | `bin/svn-scheduler` |
+| 17 | `dc39acacbe0501cbdc7304196949600e88c635851c2af47456a543b093b8c434` | `SHA256SUMS` |
 | 18 | `a0058174071c0da03a7eabbd70fd738e9d9d116cef80ec8a278f026a67edd7bb` | `NOT-RELEASED` |
-| 19 | `41dbad72a4ea64f80520e45e5263baa65c340c8acdec81a767680a7cf99e2457` | `MANIFEST.json` |
+| 19 | `50970f10591f10455b2924f901c8ca02d0aba70a740353b4beea8c948caa7a3d` | `MANIFEST.json` |
 
 The binaries are not committed. They were left under `/tmp/svn-goal27-out/bundle` on this VM.
 
@@ -142,6 +144,7 @@ DEC-006's default is recorded and not applied. There is no `LICENSE` file. `depl
 | DR-27-10 | OPEN, BLOCKED | Goals 28-30 and the human launch gates have not passed. |
 | DR-27-11 | OPEN, BLOCKED | DR-26-01 through DR-26-12 stay open. This goal does not set retention, custody, or a recovery policy. |
 | DR-27-12 | OPEN | The bundle scan does not treat an ELF parser constant as a key. A key embedded in an ELF would not be caught by that check. |
+| DR-27-13 | OPEN, BLOCKED | The release-candidate build starts only when someone dispatches the workflow. That is not a second reviewer. A protected GitHub environment with required reviewers needs a repository setting this run cannot change, and `scripts/workflow_policy.py:92` through `scripts/workflow_policy.py:94` reject a job environment, so the workflow does not name one. |
 
 ## Inherited blockers
 
@@ -150,7 +153,7 @@ BLOCKED, carried forward. A missing tool is not a pass.
 1. **DEC-001 and DR-07-01.** Custody stays unimplemented. The candidate does not take custody.
 2. **DEC-002.** No operator is named.
 3. **DEC-006.** No licence file.
-4. **One machine.** The candidate processes are this VM, plus one GitHub runner for the workflow job. That is not two independent operators.
+4. **One machine.** The candidate processes are this VM. Pull-request CI runs the packaging check and does not build these binaries. That is not two independent operators.
 5. **Goal 06 and goal 07 mutation runners.** Not re-run.
 6. **golangci-lint.** Not installed.
 7. **Docker.** Not installed. Images were not run.
@@ -164,7 +167,7 @@ The requirements matrix was not edited.
 | --- | --- |
 | REQ-PROD-002 | VERIFIED as a document check. `single_mandatory_operator` is false and replacement paths are present. Two operators were not observed. |
 | REQ-UX-014 | The manifest is `deployments/profiles/profiles.json`. `svn-feed-client` is in the candidate. Goal 02 schemas were already in the tree. This is not an interoperability result. |
-| REQ-ARCH-007 | VERIFIED for the binary install on this Linux VM. No commercial cloud account was required. The GitHub job is a second execution of the same command, not a cloud product dependency. |
+| REQ-ARCH-007 | VERIFIED for the binary install on this Linux VM. No commercial cloud account was required. The GitHub `ci` job runs the packaging check and does not build the candidate. |
 | REQ-ARCH-008 | VERIFIED as documentation of replacement paths in the profile file. |
 | REQ-SEC-012 | `SECURITY.md` is the reporting note. It names no person and no inbox. The dependency pins are unchanged. This is not an audit. |
 | REQ-GOV-002 | `docs/operations/governance-notes.md` keeps protocol governance, community governance, and maintainers apart. None is described as owning user content. |

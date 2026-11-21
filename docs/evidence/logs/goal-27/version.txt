@@ -1,10 +1,10 @@
-HEAD ea1a6aeeb4845df0cb29c913f2f39872c3feac55
-TREE 49103a38fc1a816cf320e2000163efc863e94e10
+HEAD 0d7f14159379918a3eeb9555504354182c03b2a3
+TREE fc9a0cec8074c073e205a15e6525709984fabef1
 CMD /tmp/svn-goal27-out/bundle/bin/svnd version
 DIRTY no
 svnd (devel)
 go go1.26.10
-vcs.revision ea1a6aeeb4845df0cb29c913f2f39872c3feac55
+vcs.revision 0d7f14159379918a3eeb9555504354182c03b2a3
 vcs.modified false
 github.com/cosmos/cosmos-sdk v0.55.0
 github.com/cosmos/cosmos-sdk/store/v2 v2.0.0

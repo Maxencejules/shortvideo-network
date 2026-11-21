@@ -1,10 +1,10 @@
-HEAD ea1a6aeeb4845df0cb29c913f2f39872c3feac55
-TREE 49103a38fc1a816cf320e2000163efc863e94e10
+HEAD 0d7f14159379918a3eeb9555504354182c03b2a3
+TREE fc9a0cec8074c073e205a15e6525709984fabef1
 CMD bash -c go\ version\ -m\ /tmp/svn-goal27-out/bundle/bin/svnd\ \|\ awk\ \"NR==1\ \|\|\ /build\\t-tags\|vcs\\\\.\|mod\\\\tgithub.com\\\\/\(cosmos\\\\/cosmos-sdk\|cometbft\\\\/cometbft\)\ /\"
 DIRTY no
 /tmp/svn-goal27-out/bundle/bin/svnd: go1.26.10
-	build	vcs.revision=ea1a6aeeb4845df0cb29c913f2f39872c3feac55
-	build	vcs.time=2026-11-21T16:15:54Z
+	build	vcs.revision=0d7f14159379918a3eeb9555504354182c03b2a3
+	build	vcs.time=2026-11-21T16:47:55Z
 	build	vcs.modified=false
 EXIT:0
 AFTER clean

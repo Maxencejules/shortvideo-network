@@ -1,5 +1,5 @@
-HEAD ea1a6aeeb4845df0cb29c913f2f39872c3feac55
-TREE 49103a38fc1a816cf320e2000163efc863e94e10
+HEAD 0d7f14159379918a3eeb9555504354182c03b2a3
+TREE fc9a0cec8074c073e205a15e6525709984fabef1
 CMD bash -c echo\ LABEL\;\ cat\ /tmp/svn-goal27-out/test-signing/KEY-LABEL.txt\;\ echo\ PUBLIC_FIRST\;\ head\ -n\ 1\ /tmp/svn-goal27-out/test-signing/test-signing-public.pem\;\ if\ test\ -e\ /tmp/svn-goal27-out/test-signing/test-signing-key.pem\;\ then\ echo\ PRIVATE\ present\;\ else\ echo\ PRIVATE\ absent\;\ fi\;\ echo\ PREFIX\;\ find\ /tmp/svn-goal27-out/prefix\ -print
 DIRTY no
 LABEL
