@@ -944,6 +944,24 @@ The second client does not call the `/v1` aliases and does not follow a redirect
 
 Status: OPEN.
 
+## DR-30-12
+
+### Question
+
+Which in-scope `TEST:` rows resolve to a test function that has a pass, fail, or skip record on the candidate?
+
+### Why this needs the owner
+
+The matrix disposition is an assignment sentence. A `TEST:` prefix does not name a function that exists, and it does not show that the function ran. `scripts/acceptance/audit_matrix.py` resolves a row when the disposition names a test function that is in the tree, or a test function cites that requirement id. It then reads the stamped logs for that function. A row with no such function, or whose function is absent from those logs, has no pass, fail, or skip record.
+
+### Proposal, not an approval
+
+Unresolved and unrun rows stay release blockers. The goal 30 audit log lists each one. They stay open on this candidate. The release category stays implemented prototype. The audit's row count is only a count.
+
+### Status
+
+Status: OPEN.
+
 ## Reversible choices recorded for Goal 01
 
 These are documentation choices. They are not owner approvals.

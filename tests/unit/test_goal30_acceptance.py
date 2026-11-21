@@ -30,6 +30,11 @@ _go: Any = _load("goal30_go_summary", "scripts/acceptance/go_summary.py")
 _client: Any = _load("goal30_second_client", "scripts/acceptance/second_client.py")
 parse_matrix = _audit.parse_matrix
 summarize = _audit.summarize
+index_tests = _audit.index_tests
+resolve_row = _audit.resolve_row
+render = _audit.render
+load_logs = _audit.load_logs
+index_events = _go.index_events
 summarize_go = _go.summarize
 exercise = _client.exercise
 load_operations = _client.load_operations
@@ -190,3 +195,163 @@ def test_go_summary_counts_skip_and_fail() -> None:
     assert "SKIP example TestSkip" in text
     assert "FAIL example TestBad" in text
     assert "boom" in text
+
+
+def _row(row_id: str, scope: str, disposition: str, goals: str = "30") -> dict[str, str]:
+    return {
+        "id": row_id,
+        "scope": scope,
+        "pages": "1",
+        "role": "product/application",
+        "goals": goals,
+        "disposition": disposition,
+        "summary": "fixture",
+    }
+
+
+def _fixture_tree(root: Path) -> None:
+    go_dir = root / "pkg"
+    go_dir.mkdir()
+    (go_dir / "alpha_test.go").write_text(
+        "package pkg\n\n// TestAlpha cites REQ-AAA-001.\nfunc TestAlpha(t *testing.T) {}\n\n"
+        "func TestGamma(t *testing.T) {}\n\nfunc TestDelta(t *testing.T) {}\n",
+        encoding="utf-8",
+    )
+    py_dir = root / "tests" / "unit"
+    py_dir.mkdir(parents=True)
+    (py_dir / "test_beta.py").write_text(
+        '"""REQ-AAA-002 is this file."""\n\ndef test_beta() -> None:\n    pass\n',
+        encoding="utf-8",
+    )
+    web = root / "web"
+    web.mkdir()
+    (web / "labels.test.ts").write_text(
+        'test("covers REQ-NODE-001", () => {\n});\n',
+        encoding="utf-8",
+    )
+
+
+def test_resolver_maps_a_comment_a_name_and_a_log(tmp_path: Path) -> None:
+    _fixture_tree(tmp_path)
+    index = index_tests(tmp_path)
+    rows = [
+        _row("REQ-AAA-001", "IN_SCOPE", "TEST: the alpha check covers the record."),
+        _row(
+            "REQ-AAA-002",
+            "IN_SCOPE",
+            "TEST: tests/unit/test_beta.py runs test_beta.",
+        ),
+        _row("REQ-NODE-001", "IN_SCOPE", "TEST: the label check quotes the limitation."),
+        _row("REQ-AAA-008", "IN_SCOPE", "BLOCKER:DEC-008 stays open."),
+        _row("REQ-AAA-009", "DEFERRED", "OUT: later.", goals="none"),
+    ]
+    log = tmp_path / "log.txt"
+    log.write_text(
+        "HEAD abc\n"
+        "PASS github.com/Maxencejules/shortvideo-network/pkg TestAlpha\n"
+        "tests/unit/test_beta.py::test_beta PASSED\n"
+        "ok 1 - covers REQ-NODE-001\n",
+        encoding="utf-8",
+    )
+    obs, notes = load_logs([log], "")
+    text = render(rows, index, obs, notes)
+    assert "resolved=3 unresolved=0 pass=3 fail=0 skip=0 unrun=0 mixed=0" in text
+    assert "BLOCKER REQ-AAA-008" in text
+    assert "OUT REQ-AAA-009 DEFERRED" in text
+    assert "UNRESOLVED" not in text
+    alpha, problems = resolve_row(rows[0]["id"], rows[0]["disposition"], index)
+    assert problems == ()
+    assert alpha[0].path == "pkg/alpha_test.go"
+    assert alpha[0].function == "TestAlpha"
+    beta, beta_problems = resolve_row(rows[1]["id"], rows[1]["disposition"], index)
+    assert beta_problems == ()
+    assert [item.function for item in beta] == ["test_beta"]
+
+
+def test_resolver_lists_missing_unrun_skip_fail_and_mixed(tmp_path: Path) -> None:
+    _fixture_tree(tmp_path)
+    index = index_tests(tmp_path)
+    rows = [
+        _row("REQ-AAA-003", "IN_SCOPE", "TEST: nothing in the tree cites this sentence."),
+        _row("REQ-AAA-004", "IN_SCOPE", "TEST: TestMissing is the assigned function."),
+        _row("REQ-AAA-005", "IN_SCOPE", "TEST: TestGamma is the assigned function."),
+        _row("REQ-AAA-006", "IN_SCOPE", "TEST: TestAlpha then TestGamma."),
+        _row("REQ-AAA-007", "IN_SCOPE", "TEST: TestDelta is the assigned function."),
+    ]
+    log = tmp_path / "log.txt"
+    log.write_text(
+        "PASS github.com/Maxencejules/shortvideo-network/pkg TestAlpha\n"
+        "SKIP github.com/Maxencejules/shortvideo-network/pkg TestGamma\n"
+        "FAIL github.com/Maxencejules/shortvideo-network/pkg TestDelta\n",
+        encoding="utf-8",
+    )
+    obs, notes = load_logs([log], "")
+    text = render(rows, index, obs, notes)
+    assert "UNRESOLVED REQ-AAA-003 no test function" in text
+    assert "UNRESOLVED REQ-AAA-004 missing function TestMissing" in text
+    assert "SKIP REQ-AAA-005 pkg/alpha_test.go:6 TestGamma" in text
+    assert "MIXED REQ-AAA-006 " in text
+    assert "FAIL REQ-AAA-007 pkg/alpha_test.go:8 TestDelta" in text
+    assert "unresolved=2" in text
+    assert "fail=1" in text
+    assert "skip=1" in text
+    assert "mixed=1" in text
+    assert " pass=0 " in text
+
+
+def test_resolver_ignores_a_log_from_another_head(tmp_path: Path) -> None:
+    _fixture_tree(tmp_path)
+    index = index_tests(tmp_path)
+    rows = [_row("REQ-AAA-001", "IN_SCOPE", "TEST: the alpha check covers the record.")]
+    log = tmp_path / "other.txt"
+    log.write_text(
+        "HEAD old\nPASS github.com/Maxencejules/shortvideo-network/pkg TestAlpha\n",
+        encoding="utf-8",
+    )
+    obs, notes = load_logs([log], "new")
+    text = render(rows, index, obs, notes)
+    assert "ignored" in notes[0]
+    assert "UNRUN REQ-AAA-001 pkg/alpha_test.go:4 TestAlpha" in text
+    assert " pass=0 " in text
+
+
+def test_go_index_lists_passes_as_well_as_skips() -> None:
+    events = [
+        {"Action": "pass", "Package": "example", "Test": "TestOk"},
+        {"Action": "pass", "Package": "example"},
+        {"Action": "skip", "Package": "example", "Test": "TestSkip"},
+        {"Action": "output", "Package": "example", "Test": "TestOk", "Output": "noise"},
+    ]
+    text = "\n".join(index_events(json.dumps(item) for item in events))
+    assert text.splitlines() == ["PASS example TestOk", "SKIP example TestSkip"]
+    kept = index_events(["MODULE chain", json.dumps(events[0])])
+    assert kept == ["MODULE chain", "PASS example TestOk"]
+
+
+def test_real_matrix_resolver_balances_and_names_functions() -> None:
+    rows = parse_matrix((ROOT / "docs" / "requirements.md").read_text(encoding="utf-8"))
+    index = index_tests(ROOT)
+    text = render(rows, index, load_logs([], "")[0], ["LOG none"])
+    first = text.splitlines()[0]
+    assert first.startswith(
+        "RESULT rows=265 in_scope=250 test=216 blocker=34 out=15 goal30=10 "
+    )
+    fields = dict(part.split("=", 1) for part in first.split() if "=" in part)
+    assert int(fields["resolved"]) + int(fields["unresolved"]) == int(fields["test"])
+    verdicts = ("pass", "fail", "skip", "unrun", "mixed")
+    assert sum(int(fields[name]) for name in verdicts) == int(fields["resolved"])
+    by_id = {row["id"]: row for row in rows}
+    linked, problems = resolve_row(
+        "REQ-ACK-001", by_id["REQ-ACK-001"]["disposition"], index
+    )
+    assert problems == ()
+    assert {item.function for item in linked} >= {
+        "TestAckNeverCommits",
+        "TestDevnetBroadcasterLifecycle",
+    }
+    scope_id = "REQ-SCOPE-" + "002"
+    scope, scope_problems = resolve_row(scope_id, by_id[scope_id]["disposition"], index)
+    assert scope == ()
+    assert scope_problems == ("no test function",)
+    assert f"UNRESOLVED {scope_id} no test function" in text
+    assert "BLOCKER REQ-MOD-006" in text

@@ -1,6 +1,8 @@
 """Turn `go test -json` lines into pass, fail, and skip counts.
 
 Lines that are not JSON are counted and printed. They are not dropped.
+``--index`` prints one ``PASS``, ``FAIL``, or ``SKIP`` line per test, including
+passes, and does not keep the test output in memory.
 """
 
 from __future__ import annotations
@@ -8,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -71,10 +74,48 @@ def summarize(text: str) -> str:
     return "\n".join(lines)
 
 
+def index_events(lines: Iterable[str]) -> list[str]:
+    """One line per test result. Package-level events are not test results."""
+    indexed: list[str] = []
+    for raw in lines:
+        if not raw.strip():
+            continue
+        try:
+            event: Any = json.loads(raw)
+        except json.JSONDecodeError:
+            indexed.append(raw.rstrip("\n"))
+            continue
+        if not isinstance(event, dict):
+            continue
+        action = event.get("Action")
+        package = event.get("Package")
+        test = event.get("Test")
+        if action not in {"pass", "fail", "skip"}:
+            continue
+        if not isinstance(package, str) or not isinstance(test, str):
+            continue
+        word = {"pass": "PASS", "fail": "FAIL", "skip": "SKIP"}[str(action)]
+        indexed.append(f"{word} {package} {test}")
+    return indexed
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="go-summary")
-    parser.add_argument("path", type=Path)
+    parser.add_argument("--index", action="store_true")
+    parser.add_argument("path", nargs="?", type=Path)
     args = parser.parse_args(argv)
+    if args.index:
+        if args.path is None or str(args.path) == "-":
+            lines = index_events(sys.stdin)
+        else:
+            with args.path.open(encoding="utf-8", errors="replace") as handle:
+                lines = index_events(handle)
+        text = "\n".join(lines)
+        if text:
+            print(text)
+        return 1 if any(line.startswith("FAIL ") for line in lines) else 0
+    if args.path is None:
+        parser.error("a json path is required")
     text = summarize(args.path.read_text(encoding="utf-8", errors="replace"))
     print(text)
     first = text.splitlines()[0]
