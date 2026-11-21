@@ -63,7 +63,8 @@ def test_repo_images_pass_the_static_scan() -> None:
 def test_private_key_marker_is_refused(tmp_path: Path) -> None:
     bundle = tmp_path / "bundle"
     bundle.mkdir()
-    (bundle / "leak.txt").write_text("-----BEGIN OPENSSH PRIVATE KEY-----\n", encoding="utf-8")
+    header = "-----BEGIN " + "OPENSSH PRIVATE KEY-----\n"
+    (bundle / "leak.txt").write_text(header, encoding="utf-8")
     assert any("private key" in item for item in scan_tree(bundle))
 
 
