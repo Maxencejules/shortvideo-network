@@ -207,6 +207,8 @@ SOURCE_ALLOW = (
     "services/operator/",
     # Goal 25 adds the observability control plane.
     "services/observe/",
+    # Goal 26 adds the backup and restore command.
+    "services/restore/",
 )
 WALK_SKIP = {
     ".git",

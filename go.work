@@ -14,5 +14,6 @@ use (
 	./services/milestone
 	./services/observe
 	./services/operator
+	./services/restore
 	./services/scheduler
 )
