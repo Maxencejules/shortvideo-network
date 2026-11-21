@@ -160,6 +160,7 @@ GO_MODULES = (
     "services/scheduler",
     "services/observe",
     "services/operator",
+    "services/restore",
     "services/api",
     "services/milestone",
 )

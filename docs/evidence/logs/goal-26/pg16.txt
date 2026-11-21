@@ -1,0 +1,7 @@
+HEAD 1728f9e78af4371bc2063b53b56014174e6f09cf
+TREE e2bbe7e7d1f9882127a6b21eb5a5944077743d28
+CMD bash -c if\ \[\ -x\ /usr/lib/postgresql/16/bin/postgres\ \]\;\ then\ /usr/lib/postgresql/16/bin/postgres\ --version\;\ else\ echo\ pg16\ absent\;\ exit\ 1\;\ fi 
+DIRTY no
+pg16 absent
+EXIT:1
+AFTER clean
