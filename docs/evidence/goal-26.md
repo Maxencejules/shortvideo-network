@@ -34,6 +34,8 @@ Every log under [logs/goal-26/](logs/goal-26/) was captured while `git status --
 
 This file is added after that run. A later head that only changes `docs/evidence/` is not that run.
 
+[Run 44891030112](https://github.com/Maxencejules/shortvideo-network/actions/runs/44891030112) on the first evidence commit failed `TestMilestone` with repair state `COOLING`. The same scenario passed on run 44890178806. The milestone sources are unchanged between those two commits.
+
 ## What ran
 
 | Command | Scope | Log | Result |
