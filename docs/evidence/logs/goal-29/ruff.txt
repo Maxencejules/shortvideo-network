@@ -1,0 +1,7 @@
+HEAD 82f3d6566046f18b9cbaeeeeab547b1d3b2dc954
+TREE 0565fac273d92f5caf3f28355aeab3ae53be2582
+CMD .venv/bin/ruff check workers/media/svn_media/admit.py workers/media/svn_media/queue.py tests/unit/test_goal25_admission.py
+DIRTY no
+[1;32mAll checks passed![0m
+EXIT:0
+AFTER clean

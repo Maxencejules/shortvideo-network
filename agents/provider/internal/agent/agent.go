@@ -51,6 +51,12 @@ type Agent struct {
 	ctx      context.Context
 	delisted map[string]struct{}
 	observe  *client.Client
+	// charged is the set of offer ids whose bytes are in UsedBytes.
+	// attempts is how many observe holds this process has opened for that
+	// offer. grants is the hold that is still outstanding.
+	charged  map[string]struct{}
+	attempts map[string]int
+	grants   map[string]string
 }
 
 // Open loads the key and state for cfg. Hosting consent was checked when

@@ -1,0 +1,7 @@
+HEAD 82f3d6566046f18b9cbaeeeeab547b1d3b2dc954
+TREE 0565fac273d92f5caf3f28355aeab3ae53be2582
+CMD .venv/bin/pytest tests/unit/test_goal25_admission.py -q
+DIRTY no
+...                                                                      [100%]
+EXIT:0
+AFTER clean

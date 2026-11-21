@@ -240,13 +240,7 @@ func (a *Agent) Package(contentID, version, token string) ([]byte, error) {
 	if a.st.EndpointDisabled {
 		return nil, fail(503, "endpoint disabled")
 	}
-	var lease *store.Lease
-	for _, item := range a.st.Leases {
-		if item.ContentID == contentID && item.ContentVersion == ver {
-			lease = item
-			break
-		}
-	}
+	lease := selectLease(a.st.Leases, contentID, ver, token)
 	if lease == nil || token == "" || token != lease.ServeToken {
 		if lease != nil && lease.Readiness == store.Serving && token != lease.ServeToken {
 			return nil, fail(401, "unauthorized")
@@ -272,6 +266,32 @@ func (a *Agent) Package(contentID, version, token string) ([]byte, error) {
 	}
 	_ = a.save()
 	return out, nil
+}
+
+// selectLease picks the serving copy whose token matches, then any serving
+// copy, then another lease of the same content version. A removed or expired
+// row must not hide a serving copy. Map order is not a selector.
+func selectLease(leases map[string]*store.Lease, contentID string, ver uint64, token string) *store.Lease {
+	var other *store.Lease
+	var serving *store.Lease
+	for _, item := range leases {
+		if item == nil || item.ContentID != contentID || item.ContentVersion != ver {
+			continue
+		}
+		if item.Readiness == store.Serving && token != "" && token == item.ServeToken {
+			return item
+		}
+		if item.Readiness == store.Serving && serving == nil {
+			serving = item
+		}
+		if other == nil {
+			other = item
+		}
+	}
+	if serving != nil {
+		return serving
+	}
+	return other
 }
 
 // Drain stops new offers and signs the drain payload. Accepted work stays.
@@ -310,7 +330,7 @@ func (a *Agent) Withdraw(id string) (map[string]any, error) {
 	}
 	if lease.Readiness != store.Removed && lease.Readiness != store.Expired {
 		removePackage(a.cfg.DataDir, lease)
-		a.release(lease.PackageBytes)
+		a.releaseOffer(lease.OfferID, lease.PackageBytes)
 	}
 	lease.Readiness = store.Removed
 	lease.ServeToken = ""

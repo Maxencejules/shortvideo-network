@@ -552,10 +552,24 @@ func TestFetcherRejectsPrivateTargets(t *testing.T) {
 		"https://[::1]/",
 		"https://[fd00::1]/",
 		"https://0.0.0.0/",
+		"https://0.0.0.1/",
+		"https://[::ffff:0.0.0.1]/",
+		"https://[::ffff:10.1.2.3]/",
+		"https://100.64.0.1/",
+		"https://192.0.2.1/",
+		"https://192.88.99.1/",
+		"https://198.18.0.1/",
+		"https://198.51.100.1/",
+		"https://203.0.113.10/a",
+		"https://240.0.0.1/",
+		"https://[2001:db8::1]/",
+		"https://[fec0::1]/",
+		"https://127.1/",
+		"https://0x7f000001/",
 		"https://localhost/a",
 		"https://metadata.google.internal/",
-		"http://203.0.113.10/",
-		"https://user:pass@203.0.113.10/",
+		"http://1.2.3.4/",
+		"https://user:pass@1.2.3.4/",
 		"file:///tmp/x",
 		"https://2130706433/",
 	}
@@ -564,7 +578,10 @@ func TestFetcherRejectsPrivateTargets(t *testing.T) {
 			t.Fatalf("allowed %s", raw)
 		}
 	}
-	if err := CheckFetch("https://203.0.113.10/a", "", nil); err != nil {
+	if err := CheckFetch("https://1.2.3.4/a", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := CheckFetch("https://192.0.0.9/", "", nil); err != nil {
 		t.Fatal(err)
 	}
 	if err := CheckFetch("https://example.com/a", "", nil); err == nil {
@@ -572,7 +589,7 @@ func TestFetcherRejectsPrivateTargets(t *testing.T) {
 	}
 	lookup := func(host string) ([]net.IP, error) {
 		if host == "public.test" {
-			return []net.IP{net.ParseIP("203.0.113.10")}, nil
+			return []net.IP{net.ParseIP("1.2.3.4")}, nil
 		}
 		return []net.IP{net.ParseIP("10.0.0.1")}, nil
 	}
@@ -582,7 +599,7 @@ func TestFetcherRejectsPrivateTargets(t *testing.T) {
 	if err := CheckFetch("https://private.test/a", "", lookup); err == nil {
 		t.Fatal("private DNS target was allowed")
 	}
-	err := CheckFetch("https://203.0.113.10/a", "https://127.0.0.1/b", nil)
+	err := CheckFetch("https://1.2.3.4/a", "https://127.0.0.1/b", nil)
 	fe, ok := err.(FetchError)
 	if !ok || fe.Reason != "redirect_private_address" {
 		t.Fatalf("redirect %#v", err)

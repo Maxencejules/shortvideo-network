@@ -1,0 +1,8 @@
+HEAD 82f3d6566046f18b9cbaeeeeab547b1d3b2dc954
+TREE 0565fac273d92f5caf3f28355aeab3ae53be2582
+CMD go test -count=1 -timeout 300s -run TestAlteredObservationD1|TestRecordStateNeedsTheDigestAlgorithm|TestDishonestAdmittedAuditorInApp ./chain/x/evidence/ ./chain/app/
+DIRTY no
+ok  	github.com/Maxencejules/shortvideo-network/chain/x/evidence	0.041s
+ok  	github.com/Maxencejules/shortvideo-network/chain/app	0.345s
+EXIT:0
+AFTER clean

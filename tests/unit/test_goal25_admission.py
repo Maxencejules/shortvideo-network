@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from svn_media.admit import processing
+from svn_media.limits import Failure
 from svn_media.queue import Workspace
 
 
@@ -76,6 +77,22 @@ def test_processing_cap_refuses_the_next_real_job(tmp_path: Path) -> None:
         assert queued.is_file()
         package = tmp_path / "packages" / "cnext01"
         assert not package.exists()
+    finally:
+        proc.kill()
+        proc.wait(timeout=5)
+        _restore_observe(previous_url, previous_token)
+
+
+def test_a_failed_job_returns_the_processing_slot(tmp_path: Path) -> None:
+    previous_url = os.environ.get("SVN_OBSERVE_URL")
+    previous_token = os.environ.get("SVN_OBSERVE_TOKEN")
+    proc = _observe(tmp_path, limit="1", queue="0")
+    try:
+        workspace = Workspace(tmp_path)
+        _enqueue(workspace, "jfail01")
+        with pytest.raises(Failure):
+            workspace.run_once()
+        assert processing("jnext02") == "granted"
     finally:
         proc.kill()
         proc.wait(timeout=5)
