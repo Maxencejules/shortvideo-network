@@ -848,7 +848,23 @@ def run_measure(out: Path) -> int:
     return 0
 
 
+def _pythonpath() -> None:
+    """Match the pytest pythonpath so the runner can import the worker."""
+    for item in (
+        ROOT / "services" / "api",
+        ROOT / "services" / "indexer",
+        ROOT / "services" / "delivery",
+        ROOT / "workers" / "media",
+        ROOT / "packages" / "protocol",
+        ROOT / "proto" / "gen" / "python",
+    ):
+        text = str(item)
+        if text not in sys.path:
+            sys.path.insert(0, text)
+
+
 def main(argv: list[str] | None = None) -> int:
+    _pythonpath()
     parser = argparse.ArgumentParser(prog="capacity")
     sub = parser.add_subparsers(dest="cmd", required=True)
     measure = sub.add_parser("measure")
