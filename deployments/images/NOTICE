@@ -1,0 +1,6 @@
+NOT-RELEASED
+
+This image is a local reference for untrusted media processing.
+It does not contain a validator signing key.
+FFmpeg is not downloaded by this image. The pinned package is Ubuntu 7:6.1.1-3ubuntu5.
+The project licence file is not applied.

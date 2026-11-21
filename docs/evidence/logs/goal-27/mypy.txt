@@ -1,0 +1,7 @@
+HEAD 0d7f14159379918a3eeb9555504354182c03b2a3
+TREE fc9a0cec8074c073e205a15e6525709984fabef1
+CMD .venv/bin/mypy scripts/packaging.py tests/unit/test_packaging.py
+DIRTY no
+Success: no issues found in 2 source files
+EXIT:0
+AFTER clean

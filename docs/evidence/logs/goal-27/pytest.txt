@@ -1,0 +1,7 @@
+HEAD 0d7f14159379918a3eeb9555504354182c03b2a3
+TREE fc9a0cec8074c073e205a15e6525709984fabef1
+CMD /agent/repos/shortvideo-network/.venv/bin/python -m pytest tests/unit/test_packaging.py tests/unit/test_operations_docs.py tests/unit/test_repo_policy.py -q --tb=line
+DIRTY no
+.......................................................                  [100%]
+EXIT:0
+AFTER clean

@@ -1,0 +1,33 @@
+HEAD 0d7f14159379918a3eeb9555504354182c03b2a3
+TREE fc9a0cec8074c073e205a15e6525709984fabef1
+CMD bash -c cd\ /tmp/svn-goal27-out/build-1\ \&\&\ sha256sum\ \*\ \>\ /tmp/b1.txt\;\ cd\ /tmp/svn-goal27-out/build-2\ \&\&\ sha256sum\ \*\ \>\ /tmp/b2.txt\;\ echo\ BUILD1\;\ cat\ /tmp/b1.txt\;\ echo\ BUILD2\;\ cat\ /tmp/b2.txt\;\ diff\ -u\ /tmp/b1.txt\ /tmp/b2.txt\ \&\&\ echo\ match\ yes
+DIRTY no
+BUILD1
+fe48e742c631d1a4cff55fb0d53e4c4aee4e77eef378b29d483851f7670c3739  svn-api
+cfd01bb27d2ed4515bb3a1156026db9841b217fefa424ad6ec8428bbed3492ac  svn-broadcaster
+f3bfe96c890448be7e05b8c82200ca22d0268e71ef013d3acb4dd3ebcba49f88  svn-chainview
+9eacf60d7a2c43a7ffa72a880f430c3cb67a6d4536cc25c1b977d127203ff4e5  svnd
+5ea9f8668689ab95c5bdd7177f4ac7789133b33dab6feea73487174053cff9e6  svn-discovery
+d1300061b6a6aeb7afa68b08c050ba9a1fd26ae851d6b6f60eb0a99f2a367d3c  svn-feed-client
+de55fc4d2adbd3e08adb51b1f7f863c261ad69cfd5b391d6148354940733d6e3  svn-indexer
+ffdf4e8ec2392d942f4a53c41041e8c669abe8c2e1e824bf4419f2da0443c711  svn-observe
+78bead40413b8ab31b0b07181fbbe31ffbc29f33ceac9e641106cf536075f349  svn-operator
+b0e1c0318278923de0e768b39a3b31306648072a84cf9b3ac5df7edec60060f6  svn-provider
+d6472b1bd0f502d599c926543ffbca4cb1802cba67103faaf2964c9e2885ef3b  svn-restore
+be9c578f5aac3c3d951774d9285e5a3a49f2dc602d28b5a209749de09da5c6d5  svn-scheduler
+BUILD2
+fe48e742c631d1a4cff55fb0d53e4c4aee4e77eef378b29d483851f7670c3739  svn-api
+cfd01bb27d2ed4515bb3a1156026db9841b217fefa424ad6ec8428bbed3492ac  svn-broadcaster
+f3bfe96c890448be7e05b8c82200ca22d0268e71ef013d3acb4dd3ebcba49f88  svn-chainview
+9eacf60d7a2c43a7ffa72a880f430c3cb67a6d4536cc25c1b977d127203ff4e5  svnd
+5ea9f8668689ab95c5bdd7177f4ac7789133b33dab6feea73487174053cff9e6  svn-discovery
+d1300061b6a6aeb7afa68b08c050ba9a1fd26ae851d6b6f60eb0a99f2a367d3c  svn-feed-client
+de55fc4d2adbd3e08adb51b1f7f863c261ad69cfd5b391d6148354940733d6e3  svn-indexer
+ffdf4e8ec2392d942f4a53c41041e8c669abe8c2e1e824bf4419f2da0443c711  svn-observe
+78bead40413b8ab31b0b07181fbbe31ffbc29f33ceac9e641106cf536075f349  svn-operator
+b0e1c0318278923de0e768b39a3b31306648072a84cf9b3ac5df7edec60060f6  svn-provider
+d6472b1bd0f502d599c926543ffbca4cb1802cba67103faaf2964c9e2885ef3b  svn-restore
+be9c578f5aac3c3d951774d9285e5a3a49f2dc602d28b5a209749de09da5c6d5  svn-scheduler
+match yes
+EXIT:0
+AFTER clean

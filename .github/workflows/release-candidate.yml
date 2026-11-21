@@ -1,0 +1,50 @@
+# Release-candidate build.
+# A person who can dispatch workflows must start this job.
+# It does not run on a pull request or on a push.
+# contents: read is the only permission. The workflow does not tag,
+# publish an image, or upload a package.
+# A repository environment with required reviewers is not named here.
+# scripts/workflow_policy.py rejects a job environment key.
+name: release-candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-candidate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: "1.26.10"
+          cache: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12.3"
+      - name: Install locked Python dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --require-hashes -r requirements.lock
+      - name: Install pinned FFmpeg
+        run: |
+          set -euo pipefail
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg=7:6.1.1-3ubuntu5
+          ffmpeg -version
+      - name: Build the local candidate and run the smoke scenario
+        run: |
+          .venv/bin/python scripts/packaging.py candidate --out "${RUNNER_TEMP}/svn-candidate"

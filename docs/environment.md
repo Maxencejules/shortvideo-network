@@ -108,7 +108,7 @@ git merge-base --is-ancestor ab5680b4d95da9104bd53b6c294d6eee485b1480 HEAD
 
 ## Commands that stay failed
 
-`make devnet-up`, `make devnet-down`, `make smoke`, `make fault`, and `make release-check` exit non-zero on purpose. Goal 05, Goal 18, Goal 29, and Goal 27 own them. There is no chain binary in this goal.
+`make devnet-up`, `make devnet-down`, `make smoke`, and `make fault` exit non-zero on purpose. Goal 05, Goal 18, and Goal 29 own them. `make release-check` is the Goal 27 packaging gate. It does not publish a release. Goal 04 did not build the chain binary. Later goals do.
 
 ## Runners this profile does not provide
 

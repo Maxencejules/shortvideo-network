@@ -10,7 +10,7 @@ ifeq ($(wildcard $(PY)),)
 PY := python3
 endif
 
-.PHONY: install fmt lint typecheck proto proto-check test unit-python unit-node unit-go contract sbom secrets policy build devnet-up devnet-down devnet-status devnet-resume smoke fault release-check check env-diagnose env-install env-start env-stop env-reset env-smoke env-devnet-keys env-compose env-prove-restart env-prove-failures
+.PHONY: install fmt lint typecheck proto proto-check test unit-python unit-node unit-go contract sbom secrets policy build devnet-up devnet-down devnet-status devnet-resume smoke fault release-check release-candidate check env-diagnose env-install env-start env-stop env-reset env-smoke env-devnet-keys env-compose env-prove-restart env-prove-failures
 
 BIN := $(ROOT)/bin/svnd
 
@@ -95,8 +95,10 @@ fault:
 	@exit 2
 
 release-check:
-	@echo "release-check is not implemented. Goal 27 prepares a release. Public launch is disabled." >&2
-	@exit 2
+	$(PY) scripts/packaging.py check
+
+release-candidate:
+	$(PY) scripts/packaging.py candidate --out "$(or $(OUT),$(ROOT)/dist/candidate)"
 
 env-diagnose:
 	bash scripts/env/diagnose.sh
@@ -129,7 +131,7 @@ env-prove-failures:
 	bash scripts/env/prove-failures.sh
 
 check: fmt lint typecheck proto-check sbom test contract build
-	@echo "smoke, fault, and release-check stay failed on purpose"
+	@echo "smoke and fault stay failed on purpose; release-check is the packaging gate"
 	@$(MAKE) smoke; status=$$?; test $$status -ne 0
 	@$(MAKE) fault; status=$$?; test $$status -ne 0
-	@$(MAKE) release-check; status=$$?; test $$status -ne 0
+	@$(MAKE) release-check

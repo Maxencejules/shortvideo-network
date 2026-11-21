@@ -169,7 +169,7 @@ def test_workflow_policy_passes() -> None:
 
 
 def test_unimplemented_make_targets_fail() -> None:
-    for target in ("smoke", "fault", "release-check"):
+    for target in ("smoke", "fault"):
         completed = subprocess.run(
             ["make", target],
             cwd=ROOT,

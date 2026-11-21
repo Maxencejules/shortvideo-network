@@ -1,0 +1,7 @@
+HEAD 0d7f14159379918a3eeb9555504354182c03b2a3
+TREE fc9a0cec8074c073e205a15e6525709984fabef1
+CMD docker version
+DIRTY no
+environment: line 26: docker: command not found
+EXIT:127
+AFTER clean
