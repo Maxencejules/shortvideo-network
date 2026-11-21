@@ -1044,10 +1044,17 @@ func writeConfig(t *testing.T, path string, fixture Fixture, limits Limits) {
 func startAPI(t *testing.T, bin, cfg, dir, addr, delay string) *exec.Cmd {
 	t.Helper()
 	cmd := exec.Command(bin)
+	observeURL, observeToken, stop, err := client.Listen(client.Permissive(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(stop)
 	cmd.Env = []string{
 		"PATH=" + os.Getenv("PATH"),
 		"LC_ALL=C.UTF-8",
 		"TZ=UTC",
+		"SVN_OBSERVE_URL=" + observeURL,
+		"SVN_OBSERVE_TOKEN=" + observeToken,
 		"SVN_API_CONFIG=" + cfg,
 		"SVN_API_QUARANTINE_DIR=" + dir,
 		"SVN_API_LISTEN=127.0.0.1:0",

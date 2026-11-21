@@ -44,6 +44,7 @@ import (
 	typesv1 "github.com/Maxencejules/shortvideo-network/protocol/svn/types/v1"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/chain"
 	"github.com/Maxencejules/shortvideo-network/services/broadcaster/internal/store"
+	"github.com/Maxencejules/shortvideo-network/services/observe/client"
 )
 
 const smokeChainID = "shortvideo-dev-smoke"
@@ -357,7 +358,13 @@ func TestSmokeProcesses(t *testing.T) {
 // serveID; equal identities are the same-uid fallback.
 func smokeRun(t *testing.T, bin string, signID, serveID identity) {
 	euid := uint32(os.Geteuid())
-	s := &smoke{t: t, env: childEnv, serveID: serveID, signID: signID, bin: bin}
+	observeURL, observeToken, stop, err := client.Listen(client.Permissive(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(stop)
+	env := append(append([]string{}, childEnv...), "SVN_OBSERVE_URL="+observeURL, "SVN_OBSERVE_TOKEN="+observeToken)
+	s := &smoke{t: t, env: env, serveID: serveID, signID: signID, bin: bin}
 	distinct := signID != serveID
 	if distinct {
 		t.Logf("boundary_uids=signer:%d,serve:%d", signID.uid, serveID.uid)

@@ -48,7 +48,20 @@ def _observe(tmp: Path, *, limit: str, queue: str) -> subprocess.Popen[str]:
     return proc
 
 
+def _restore_observe(previous_url: str | None, previous_token: str | None) -> None:
+    if previous_url is None:
+        os.environ.pop("SVN_OBSERVE_URL", None)
+    else:
+        os.environ["SVN_OBSERVE_URL"] = previous_url
+    if previous_token is None:
+        os.environ.pop("SVN_OBSERVE_TOKEN", None)
+    else:
+        os.environ["SVN_OBSERVE_TOKEN"] = previous_token
+
+
 def test_processing_cap_refuses_the_next_real_job(tmp_path: Path) -> None:
+    previous_url = os.environ.get("SVN_OBSERVE_URL")
+    previous_token = os.environ.get("SVN_OBSERVE_TOKEN")
     proc = _observe(tmp_path, limit="1", queue="0")
     try:
         assert processing("jheld") == "granted"
@@ -66,6 +79,7 @@ def test_processing_cap_refuses_the_next_real_job(tmp_path: Path) -> None:
     finally:
         proc.kill()
         proc.wait(timeout=5)
+        _restore_observe(previous_url, previous_token)
 
 
 def test_processing_stops_when_observe_is_down(
