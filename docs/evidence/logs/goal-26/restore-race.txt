@@ -1,0 +1,58 @@
+HEAD 1728f9e78af4371bc2063b53b56014174e6f09cf
+TREE e2bbe7e7d1f9882127a6b21eb5a5944077743d28
+CMD go test -race -count=1 -timeout 180s -v ./services/restore/... 
+DIRTY no
+=== RUN   TestRehearseCommand
+DRILL status=restored digests_match=true authorization_match=true playback_after=true removal_after=true postgres=true rows_match=true
+DRILL observed_rto_seconds=0.465200123 observed_rpo_seconds=0.003018071 rto_rpo_are_service_guarantees=false
+--- PASS: TestRehearseCommand (0.98s)
+=== RUN   TestRotateCommandRefusesWithoutApproval
+restore: operator approval required
+ROTATE old_rejected=true new_accepted=true operator_named=false bytes=32
+--- PASS: TestRotateCommandRefusesWithoutApproval (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/restore/cmd/svn-restore	1.987s
+=== RUN   TestDrillRestoresDatabaseMediaAndIndex
+DRILL status=restored digests_match=true authorization_match=true playback_after=true removal_after=true postgres=true origin_unavailable=true rows_match=true signed_match=true
+DRILL observed_rto_seconds=0.467663656 observed_rpo_seconds=0.002969836 rto_rpo_are_service_guarantees=false
+DRILL corrupt=refused wrong_version=refused incomplete=refused partial=partial missing_media=refused replica_rejected=true secrets_in_ci=false
+--- PASS: TestDrillRestoresDatabaseMediaAndIndex (0.98s)
+=== RUN   TestSignerDoesNotRunTwiceOrRollBack
+SIGNER duplicate=refused
+SIGNER copied_live_key=refused
+SIGNER rollback=refused
+SIGNER stale=refused
+SIGNER unverified=refused
+SIGNER replace=accepted
+SIGNER distinct_keys=true
+--- PASS: TestSignerDoesNotRunTwiceOrRollBack (1.03s)
+=== RUN   TestServiceRotationAndAccountRecovery
+ROTATE old_rejected=true new_accepted=true operator_named=false approval_required=true
+ACCOUNT export_restored=true completion=BLOCKED request=DR-26-05
+--- PASS: TestServiceRotationAndAccountRecovery (0.00s)
+=== RUN   TestEndOfService
+END admissions_stopped=true chain_submitted=false history_erased=false retention_period=UNSET
+--- PASS: TestEndOfService (0.00s)
+=== RUN   TestCanonicalRebuildAndCompatibility
+COMPAT format=SVN-BACKUP-1 schema=1 migration=refused
+UNRECONSTRUCTABLE validator signing state
+UNRECONSTRUCTABLE backup encryption key
+UNRECONSTRUCTABLE account sessions
+UNRECONSTRUCTABLE uncommitted quarantine uploads
+UNRECONSTRUCTABLE moderation complaint text
+UNRECONSTRUCTABLE pruned chain blocks
+UNRECONSTRUCTABLE package versions absent from the current replica set
+APPROVAL DR-26-01 retention period is unset
+APPROVAL DR-26-02 key custody procedure is unset
+APPROVAL DR-26-03 recovery policy and service RTO and RPO targets are unset
+APPROVAL DR-26-04 no operator is named to approve a production restore or a production key rotation
+APPROVAL DR-26-05 account recovery completion waits on the custody decision
+APPROVAL DR-26-06 signer replacement on a live node needs an independent review
+--- PASS: TestCanonicalRebuildAndCompatibility (0.00s)
+=== RUN   TestOriginAndAccess
+ACCESS origin_present=refused mode=refused key_in_backup=false
+--- PASS: TestOriginAndAccess (0.00s)
+PASS
+ok  	github.com/Maxencejules/shortvideo-network/services/restore/internal/restore	3.035s
+EXIT:0
+AFTER clean

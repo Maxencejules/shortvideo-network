@@ -1,0 +1,13 @@
+HEAD 1728f9e78af4371bc2063b53b56014174e6f09cf
+TREE e2bbe7e7d1f9882127a6b21eb5a5944077743d28
+CMD bash -c node\ -v\;\ npm\ -v\;\ python3\ --version\;\ go\ version\;\ \(google-chrome\ --version\ \|\|\ true\)\;\ uname\ -srm\;\ /usr/lib/postgresql/18/bin/postgres\ --version 
+DIRTY no
+v22.23.4
+10.9.9
+Python 3.12.3
+go version go1.26.10 linux/amd64
+Google Chrome 157.0.8103.50 
+Linux 6.12.113+ x86_64
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+EXIT:0
+AFTER clean

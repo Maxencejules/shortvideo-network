@@ -1,0 +1,7 @@
+HEAD 1728f9e78af4371bc2063b53b56014174e6f09cf
+TREE e2bbe7e7d1f9882127a6b21eb5a5944077743d28
+CMD bash -c golangci-lint\ version 
+DIRTY no
+bash: line 1: golangci-lint: command not found
+EXIT:127
+AFTER clean

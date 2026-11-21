@@ -1,0 +1,8 @@
+HEAD 1728f9e78af4371bc2063b53b56014174e6f09cf
+TREE e2bbe7e7d1f9882127a6b21eb5a5944077743d28
+CMD bash -c /usr/lib/postgresql/18/bin/postgres\ --version\;\ /usr/lib/postgresql/18/bin/psql\ --version 
+DIRTY no
+postgres (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+psql (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg24.04+2)
+EXIT:0
+AFTER clean
